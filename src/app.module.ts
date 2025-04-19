@@ -10,6 +10,11 @@ import { TelegramModule } from './modules/telegram/telegram.module';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
 import { RedisModule } from './core/redis/redis.module';
 import { RedisService } from './core/redis/redis.service';
+import { PortalModule } from './modules/portal/portal.module';
+import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
+import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
+import { BitrixDepartmentModule } from './modules/bitrix/endpoints/department/department.module';
+import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 
 @Module({
   imports: [
@@ -22,12 +27,17 @@ import { RedisService } from './core/redis/redis.service';
         REDIS_PORT: process.env.REDIS_PORT,
       })],
     }),
+    AlfaActivityModule,
     DocumentModule,
     QueueModule,
     HooksModule,
     BitrixModule,
     TelegramModule,
-    RedisModule
+    RedisModule,
+    PortalModule,
+    SilentJobHandlersModule,
+    BitrixDepartmentModule,
+    KpiReportModule
   ],
   controllers: [AppController],
   providers: [
@@ -35,5 +45,8 @@ import { RedisService } from './core/redis/redis.service';
     GlobalExceptionFilter,
     RedisService
   ],
+  exports: [
+    BitrixDepartmentModule
+  ]
 })
 export class AppModule { }

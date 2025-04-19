@@ -1,0 +1,45 @@
+// modules/queue/queue-dispatcher.service.ts
+import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { Injectable, Logger } from '@nestjs/common';
+import { QueueNames } from '../constants/queue-names.enum';
+import { SilentJobHandlerId } from 'src/core/silence/constants/silent-job-handlers.enum';
+
+@Injectable()
+export class QueueDispatcherService {
+  private readonly logger = new Logger(QueueDispatcherService.name);
+
+  constructor(
+    @InjectQueue(QueueNames.EVENT) private readonly eventQueue: Queue,
+    @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
+    @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
+
+    // и т.д.
+  ) {
+    this.logger.log('QueueDispatcherService initialized');
+  }
+
+  async dispatch(queueName: QueueNames, jobName: SilentJobHandlerId, data: any) {
+    const queue = this.getQueue(queueName);
+    this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
+    this.logger.log(`Job data: ${JSON.stringify(data)}`);
+    await queue.add(jobName, data);
+    this.logger.log('Job added to queue');
+  }
+
+  getQueue(name: QueueNames): Queue {
+    this.logger.log(`Getting queue: ${name}`);
+    switch (name) {
+      case QueueNames.EVENT:
+        return this.eventQueue;
+      case QueueNames.DOCUMENT:
+        return this.documentQueue;
+      case QueueNames.SILENT:
+        return this.silentQueue;
+      default:
+        const error = `Unknown queue name: ${name}`;
+        this.logger.error(error);
+        throw new Error(error);
+    }
+  }
+}

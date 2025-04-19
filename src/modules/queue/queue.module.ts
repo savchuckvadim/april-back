@@ -1,12 +1,16 @@
 import { BullModule } from '@nestjs/bull';
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { QueueService } from './queue.service';
-import { QueueProcessor } from './queue.processor';
+// import { QueueProcessor } from './queue.processor';
 import { BitrixModule } from '../bitrix/bitrix.module';
 import { RedisModule } from 'src/core/redis/redis.module';
 import { RedisService } from 'src/core/redis/redis.service';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
+import { QueueDispatcherService } from './dispatch/queue-dispatcher.service';
+import { QueueNames } from './constants/queue-names.enum';
+import { SilentJobManagerService } from 'src/core/silence/silent-job-manager.service';
+import { SilentJobProcessor } from './processors/silent-job.processor';
+import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.module';
 
 @Module({
     imports: [
@@ -27,17 +31,33 @@ import { Logger } from '@nestjs/common';
             },
             inject: [ConfigService],
         }),
-        BullModule.registerQueue({
-            name: 'activity',
-        }),
+        BullModule.registerQueue(
+            ...Object.values(QueueNames).map((name) => ({ name }))
+        ),
         BitrixModule,
-        RedisModule
+        RedisModule,
+        SilentJobHandlersModule
     ],
     providers: [
         QueueService,
-        QueueProcessor,
-        RedisService
+        // QueueProcessor,
+        RedisService,
+        QueueDispatcherService,
+        SilentJobManagerService,
+        SilentJobProcessor
     ],
-    exports: [QueueService],
+    exports: [
+        QueueService,
+        QueueDispatcherService,
+        BullModule,
+        SilentJobHandlersModule
+    ],
 })
-export class QueueModule { } 
+export class QueueModule {
+    private readonly logger = new Logger(QueueModule.name);
+
+    constructor() {
+        this.logger.log('QueueModule initialized');
+        this.logger.log('Registered queues:', Object.values(QueueNames));
+    }
+} 

@@ -2,40 +2,44 @@
 
 import {
   Controller, Post, Req, Query,
-  InternalServerErrorException,
+  InternalServerErrorException, Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { QueueService } from '../queue/queue.service';
 import { RedisService } from 'src/core/redis/redis.service';
 
-
-
 @Controller('hooks')
 export class HooksController {
-  constructor(private readonly queueService: QueueService, private readonly redisService: RedisService) { }
+  private readonly logger = new Logger(HooksController.name);
+
+  constructor(
+    private readonly queueService: QueueService,
+    private readonly redisService: RedisService
+  ) {
+    this.logger.log('HooksController initialized');
+  }
 
   @Post('activity')
   async handleActivity(@Req() request: Request, @Query() query: any) {
     try {
-      console.log('[HOOK] handleActivity called');
+      this.logger.log('handleActivity called');
       const redis = this.redisService.getClient();
-      const id = Date.now(); // или nanoid, или uuid
-      console.log(id);
+      const id = Date.now();
+      this.logger.log(`Generated ID: ${id}`);
+
       const body = request.body;
-      const parsedParams = request.query as Record<string, any>; // запрос будет приходить с параметрами в query
-      console.log(parsedParams);
+      const parsedParams = request.query as Record<string, any>;
+      this.logger.log(`Request params: ${JSON.stringify(parsedParams)}`);
 
       const domain = body?.auth?.domain;
-
+      this.logger.log(`Domain: ${domain}`);
 
       const key = 'GO_alfa';
       const lockKey = 'GO_alfa_lock';
-      const ttlMs = 1500;      // сколько ждём "тишины"
+      const ttlMs = 1500;
       const redisRaw = await redis.get(key);
       const current = redisRaw ? JSON.parse(redisRaw) : {};
       const { companyId, title, date, responsible } = parsedParams;
-
-
 
       current[id] = {
         companyId: Number(companyId),
@@ -43,35 +47,31 @@ export class HooksController {
         date,
         responsible,
       };
-      await redis.set(key, JSON.stringify(current));
-      // Установим "флаг тишины" с TTL 1500ms
-      await redis.set(lockKey, '1', 'PX', ttlMs);
+      this.logger.log(`Current data: ${JSON.stringify(current)}`);
 
-      // проверяем — была ли уже задача?
+      await redis.set(key, JSON.stringify(current));
+      await redis.set(lockKey, '1', 'PX', ttlMs);
+      this.logger.log('Data saved to Redis');
+
       const queueKey = 'GO_alfa_job_started';
       const taskExists = await redis.get(queueKey);
-      // const taskExists = await redis.exists(lockKey);
+      this.logger.log(`Task exists: ${!!taskExists}`);
 
       if (!taskExists) {
-        // console.log('[HOOK] ставим задачу в очередь с задержкой');
-        // await this.queueService.addActivityJob({
-        //   domain,
-        // });
-        // // Блокируем повторную постановку задачи на N мс
-        // await redis.set(lockKey, '1', 'PX', ttlMs);
-        // флаг, что задача уже стартовала
-        await redis.set(queueKey, '1', 'EX', 10); // 10 сек чтобы не запустить повторно
-        console.log('[HOOK] ставим задачу в очередь через 2s...');
+        await redis.set(queueKey, '1', 'EX', 10);
+        this.logger.log('Adding activity job to queue');
         await this.queueService.addActivityJob({ domain });
+        this.logger.log('Activity job added to queue');
       }
 
       return { result: true };
-
-      // ... твоя логика
     } catch (error) {
-      console.error('Error in handleActivity', error);
+      this.logger.error('Error in handleActivity');
+      this.logger.error(`Error message: ${error.message}`);
+      this.logger.error(`Stack trace: ${error.stack}`);
 
       throw new InternalServerErrorException('Ошибка в контроллере handleActivity');
     }
   }
 }
+

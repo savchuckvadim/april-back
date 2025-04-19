@@ -8,6 +8,7 @@ import {
 import { Request, Response } from 'express';
 import { TelegramService } from '../../modules/telegram/telegram.service';
 import * as path from 'path';
+import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -57,9 +58,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         await this.telegram.sendMessage(message);
         console.log(message)
-        response.status(status).json({
-            success: false,
+        const responseBody: ApiResponse<null> = {
+            resultCode: EResultCode.ERROR,
             message: error.message,
-        });
+        };
+        response.status(status).json(responseBody);
     }
 }

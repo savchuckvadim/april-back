@@ -34,6 +34,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "docx": "^9.3.0",
+    "exceljs": "^4.4.0",
     "ioredis": "^5.6.1",
     "officegen": "^0.6.5",
     "reflect-metadata": "^0.2.2",
