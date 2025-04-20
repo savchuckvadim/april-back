@@ -11,7 +11,7 @@ export class KpiReportController {
   @HttpCode(200)
   @UseInterceptors()
   async excel(@Body() dto: KpiReportDto, @Res() res: Response) {
-    try {
+    // try {
 
 
       const buffer = await this.excelService.generateExcel(dto);
@@ -20,9 +20,9 @@ export class KpiReportController {
       res.setHeader('Content-Disposition', 'attachment; filename=kpi-report.xlsx');
 
       return res.send(buffer);
-    } catch (error) {
-      console.log(error);
-      throw new HttpException('Ошибка при генерации отчета ', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    // } catch (error) {
+    //   console.log(error);
+    //   throw new HttpException('Ошибка при генерации отчета ', HttpStatus.INTERNAL_SERVER_ERROR);
+    // }
   }
 }
