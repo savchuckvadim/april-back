@@ -29,7 +29,7 @@ import { BitrixCoreModule } from './core/bitrix-core.module';
     // BitrixApiService,
     BitrixActivityCreateService,
     RedisService,
-    // BitrixContextService
+    BitrixContextService
   ],
   exports: [
     // BitrixApiService,

@@ -14,12 +14,12 @@ export class KpiReportController {
     // try {
 
 
-      const buffer = await this.excelService.generateExcel(dto);
+    const buffer = await this.excelService.generateExcel(dto);
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=kpi-report.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=kpi-report.xlsx');
 
-      return res.send(buffer);
+    return res.send(buffer);
     // } catch (error) {
     //   console.log(error);
     //   throw new HttpException('Ошибка при генерации отчета ', HttpStatus.INTERNAL_SERVER_ERROR);

@@ -15,7 +15,8 @@ import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
 import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
 import { BitrixDepartmentModule } from './modules/bitrix/endpoints/department/department.module';
 import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
-
+import { EventSalesModule } from './apps/event-sales/event.module';
+import { GsrModule } from './commands/excel-migrate/gsr.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,7 +38,15 @@ import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
     PortalModule,
     SilentJobHandlersModule,
     BitrixDepartmentModule,
-    KpiReportModule
+    KpiReportModule,
+
+    //flow
+    EventSalesModule,
+
+
+
+    //commands
+    GsrModule
   ],
   controllers: [AppController],
   providers: [

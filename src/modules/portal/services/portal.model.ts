@@ -1,27 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IPortal, IList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup } from '../interfaces/portal.interface';
+import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
 
-@Injectable()
+// @Injectable()
 export class PortalModel {
     private readonly logger = new Logger(PortalModel.name);
 
-    constructor(private readonly telegramService: TelegramService) { }
+    constructor(
+        private readonly portal: IPortal,
+        private readonly telegramService: TelegramService
+
+    ) { }
+
+    getPortal(): IPortal {
+        return this.portal;
+    }
+
     getDepartamentIdByPortal(portal: IPortal, departament: EDepartamentGroup): number {
         //@ts-ignore
         return portal.departament?.group === departament ? portal.departament : 0
     }
-    getListByCode(portal: IPortal, code: string): IList | undefined {
+    getListByCode(portal: IPortal, code: string): IPBXList | undefined {
         return portal.lists?.find(list => list.type === code);
     }
 
-    getIdByCodeFieldList(list: IList, code: string): IField | undefined {
+    getIdByCodeFieldList(list: IPBXList, code: string): IField | undefined {
         return list.bitrixfields?.find(field =>
             field.code.split(`${list.group}_${list.type}_`)[1] === code
         );
     }
 
-    getListFieldsSelectAll(list: IList): string[] {
+    getListFieldsSelectAll(list: IPBXList): string[] {
         return list.bitrixfields?.map(field => field.bitrixCamelId || '') || [];
     }
 
@@ -79,8 +88,8 @@ export class PortalModel {
         return rpa.bitrixfields.find(field => field.code === code);
     }
 
-    getHook(portal: IPortal): string {
-        return `${portal.domain}/hook?access_key=${portal.access_key}`;
+    getHook(): string {
+        return `${this.portal.domain}/hook?access_key=${this.portal.access_key}`;
     }
 
     getStageByCode(portal: IPortal, stageCode: string): string | undefined {

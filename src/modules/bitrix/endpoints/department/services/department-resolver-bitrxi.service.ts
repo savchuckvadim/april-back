@@ -6,6 +6,7 @@ import { DepartmentBitrixService } from "src/modules/bitrix/domain/department/se
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { EDepartamentGroup, IPortal } from "src/modules/portal/interfaces/portal.interface";
 import { PortalService } from "src/modules/portal/portal.service";
+import { PortalProviderService } from "src/modules/portal/services/portal-provider.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";
 
 
@@ -13,22 +14,23 @@ import { PortalModel } from "src/modules/portal/services/portal.model";
 export class DepartmentResolverService {
   private readonly redis: Redis;
   constructor(
-    private readonly portalService: PortalService,
+    // private readonly portalService: PortalService,
     private readonly bitrixService: DepartmentBitrixService,
+    private readonly portalModelProvider: PortalProviderService, // 🔥 новый
     private readonly redisService: RedisService,
     private readonly portalModel: PortalModel
   ) {
 
-    this.redis = redisService.getClient()
+    this.redis = this.redisService.getClient()
   }
 
   async getFullDepartment(domain: string, group: EDepartamentGroup) {
     const day = dayjs().format('MMDD');
     const sessionKey = `department_${domain}_${day}`;
     const fromCache = await this.redis.get(sessionKey);
-    // if (fromCache) return JSON.parse(fromCache);
+    if (fromCache) return JSON.parse(fromCache);
 
-    const portal = await this.portalService.getPortalByDomain(domain);
+    const portal = (await this.portalModelProvider.getModel(domain)).getPortal();
     const baseDepartmentBitrixId = this.portalModel.getDepartamentIdByPortal(portal, group);
 
     const general = await this.bitrixService.getDepartments(portal, { ID: baseDepartmentBitrixId });

@@ -15,8 +15,8 @@ export class DepartmentController {
   @Post('sales')
   @HttpCode(200) 
   async getFullDepartment(@Body() dto: DomainDto) {
-    Logger.log('getFullDepartment dto');
-    Logger.log(dto);
+    // Logger.log('getFullDepartment dto');
+    // Logger.log(dto);
     this.bitrixContext.initFromRequestContext();
 
     return this.resolver.getFullDepartment(dto.domain, EDepartamentGroup.sales);

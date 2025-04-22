@@ -8,7 +8,7 @@ export interface IPortal {
     createdAt?: Date;
     updatedAt?: Date;
     access_key?: string;
-    lists?: IList[];
+    lists?: IPBXList[];
     id?: number;
     departament?: IDepartment;
     smarts?: ISmart[];
@@ -171,7 +171,7 @@ export interface ICompany {
     bitrixfields: IField[];
 }
 
-export interface IList {
+export interface IPBXList {
     group: string;
     type: string;
     bitrixId: string | number;

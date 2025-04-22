@@ -4,17 +4,20 @@ import { IPortal } from '../interfaces/portal.interface';
 @Injectable()
 export class PortalContextService {
     private readonly logger = new Logger(PortalContextService.name);
-    private static instance: PortalContextService;
+    // private static instance: PortalContextService;
     private portal: IPortal;
 
+    // constructor() {
+    //     this.logger.log('PortalContextService initialized');
+    //     if (!PortalContextService.instance) {
+    //         PortalContextService.instance = this;
+    //     }
+    //     return PortalContextService.instance;
+    // }
     constructor() {
         this.logger.log('PortalContextService initialized');
-        if (!PortalContextService.instance) {
-            PortalContextService.instance = this;
-        }
-        return PortalContextService.instance;
-    }
-
+      }
+      
     setPortal(portal: IPortal) {
         this.logger.log(`Setting portal context for domain: ${portal.domain}`);
         this.portal = portal;

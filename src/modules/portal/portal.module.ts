@@ -8,7 +8,8 @@ import { APIOnlineClient } from '../../clients/api-online.client';
 import { PortalModel } from './services/portal.model';
 // import { ClientsModule } from 'src/clients/clients.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
-
+import { PortalProviderService } from './services/portal-provider.service';
+import { PortalModelFactory } from './factory/potal-model.factory';
 @Module({
     imports: [
         HttpModule,
@@ -21,12 +22,16 @@ import { TelegramModule } from 'src/modules/telegram/telegram.module';
         PortalContextService,
         PortalContextMiddleware,
         APIOnlineClient,
-        PortalModel
+        PortalModel,
+        PortalProviderService,
+        PortalModelFactory
     ],
     exports: [
         PortalService,
         PortalContextService,
-        PortalModel
+        PortalModel,
+        PortalProviderService,
+        PortalModelFactory
     ]
 })
 export class PortalModule {
