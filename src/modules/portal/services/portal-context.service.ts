@@ -7,13 +7,7 @@ export class PortalContextService {
     // private static instance: PortalContextService;
     private portal: IPortal;
 
-    // constructor() {
-    //     this.logger.log('PortalContextService initialized');
-    //     if (!PortalContextService.instance) {
-    //         PortalContextService.instance = this;
-    //     }
-    //     return PortalContextService.instance;
-    // }
+ 
     constructor() {
         this.logger.log('PortalContextService initialized');
       }

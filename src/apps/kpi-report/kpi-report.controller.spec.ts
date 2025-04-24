@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KpiReportController } from './kpi-report.controller';
-import { KpiReportService } from './services/kpi-report.service';
+import { KpiReportService } from './services/kpi-report/kpi-report.service';
 
 describe('KpiReportController', () => {
   let controller: KpiReportController;

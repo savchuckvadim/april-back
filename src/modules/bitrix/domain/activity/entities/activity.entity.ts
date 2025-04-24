@@ -7,9 +7,9 @@ export class BitrixActivityEntity {
   private static readonly logger = new Logger(BitrixActivityEntity.name);
 
   static fromDto(dto: CreateBitrixActivityDto) {
-    this.logger.log(`Creating activity entity from DTO: ${JSON.stringify(dto)}`);
+    // this.logger.log(`Creating activity entity from DTO: ${JSON.stringify(dto)}`);
     const responsibleId = dto.responsible.split('_')[1];
-    this.logger.log(`Responsible ID: ${responsibleId}`);
+    // this.logger.log(`Responsible ID: ${responsibleId}`);
 
     const entity = {
       OWNER_TYPE_ID: BitrixOwnerTypeId.COMPANY,
@@ -29,7 +29,7 @@ export class BitrixActivityEntity {
       ],
     };
 
-    this.logger.log(`Created activity entity: ${JSON.stringify(entity)}`);
+    // this.logger.log(`Created activity entity: ${JSON.stringify(entity)}`);
     return entity;
   }
 }

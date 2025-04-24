@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
+import { waitForDebugger } from 'inspector';
 
 // @Injectable()
 export class PortalModel {
@@ -20,8 +21,12 @@ export class PortalModel {
         //@ts-ignore
         return portal.departament?.group === departament ? portal.departament : 0
     }
-    getListByCode(portal: IPortal, code: string): IPBXList | undefined {
-        return portal.lists?.find(list => list.type === code);
+    getListByCode(code: string): IPBXList | undefined {
+        let result = this.portal.lists?.find(list => list.type === code)
+        if(!result) {
+            result = this.portal.bitrixLists?.find(list => list.type === code)
+        }
+        return result;
     }
 
     getIdByCodeFieldList(list: IPBXList, code: string): IField | undefined {
@@ -89,7 +94,8 @@ export class PortalModel {
     }
 
     getHook(): string {
-        return `${this.portal.domain}/hook?access_key=${this.portal.access_key}`;
+
+        return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET }`;
     }
 
     getStageByCode(portal: IPortal, stageCode: string): string | undefined {

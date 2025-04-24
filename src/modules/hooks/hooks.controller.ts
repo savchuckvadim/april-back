@@ -22,14 +22,14 @@ export class HooksController {
   @Post('activity')
   async handleActivity(@Req() request: Request, @Query() query: any) {
     try {
-      this.logger.log('handleActivity called');
+      // this.logger.log('handleActivity called');
       const redis = this.redisService.getClient();
       const id = Date.now();
-      this.logger.log(`Generated ID: ${id}`);
+      // this.logger.log(`Generated ID: ${id}`);
 
       const body = request.body;
       const parsedParams = request.query as Record<string, any>;
-      this.logger.log(`Request params: ${JSON.stringify(parsedParams)}`);
+      // this.logger.log(`Request params: ${JSON.stringify(parsedParams)}`);
 
       const domain = body?.auth?.domain;
       this.logger.log(`Domain: ${domain}`);

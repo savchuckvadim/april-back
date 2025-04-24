@@ -15,5 +15,3 @@ export enum BitrixActivityTypeId {
 
 const logger = new Logger('BitrixConstants');
 
-logger.log('BitrixOwnerTypeId:', BitrixOwnerTypeId);
-logger.log('BitrixActivityTypeId:', BitrixActivityTypeId);

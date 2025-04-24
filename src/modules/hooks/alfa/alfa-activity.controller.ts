@@ -25,8 +25,8 @@ export class AlfaHookController {
   @Post('activity')
   async handleActivity(@Req() req: Request, @Query() query: any) {
     this.logger.log('handleActivity called');
-    this.logger.log(`Request body: ${JSON.stringify(req.body)}`);
-    this.logger.log(`Request query: ${JSON.stringify(query)}`);
+    // this.logger.log(`Request body: ${JSON.stringify(req.body)}`);
+    // this.logger.log(`Request query: ${JSON.stringify(query)}`);
     const domain = req.body?.auth?.domain;
     this.logger.log(`Extracted domain: ${domain}`);
     const data = {
@@ -35,10 +35,11 @@ export class AlfaHookController {
       date: query.date,
       responsible: query.responsible,
     };
-    this.logger.log(`Activity data: ${JSON.stringify(data)}`);
-    this.logger.log(`Domain: ${domain}`);
+    // this.logger.log(`Activity data: ${JSON.stringify(data)}`);
+    // this.logger.log(`Domain: ${domain}`);
+    const domainKey = domain.replace(/\./g, '_'); // чтобы точки не мешались в ключе
     await this.silentManager.handle(
-      'GO_alfa',
+      `GO_alfa_${domainKey}_${data.responsible}`,
       1500,
       data,
       // this.queueDispatcher.getQueue(QueueNames.SILENT),

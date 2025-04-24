@@ -14,17 +14,25 @@ export class PortalProviderService {
   ) {}
 
   async getPortal(domain?: string): Promise<IPortal> {
-    try {
-      return this.portalContext.getPortal();
-    } catch {
-      if (!domain) throw new Error('Domain required for non-context access');
+    if (domain) {
       return this.portalService.getPortalByDomain(domain);
-    }  
+    }
+    return this.portalContext.getPortal();
+    // try {
+    //   return this.portalContext.getPortal();
+    // } catch {
+    //   if (!domain) throw new Error('Domain required for non-context access');
+    //   return this.portalService.getPortalByDomain(domain);
+    // }  
   }
 
   async getModel(domain?: string): Promise<PortalModel> {
     let portal: IPortal;
 
+    if(domain){
+      portal = await this.portalService.getPortalByDomain(domain);
+      return this.portalModelFactory.create(portal);
+    }
     try {
       portal = this.portalContext.getPortal(); // из контекста запроса
     } catch {

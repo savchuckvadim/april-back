@@ -17,8 +17,8 @@ export class BitrixActivityCreateService {
             return;
         }
 
-        this.logger.log(`Creating activities for domain: ${domain}`);
-        this.logger.log(`Raw activities: ${JSON.stringify(rawActivities)}`);
+        // this.logger.log(`Creating activities for domain: ${domain}`);
+        // this.logger.log(`Raw activities: ${JSON.stringify(rawActivities)}`);
 
         if (!domain) {
             this.logger.error('Domain is not provided');
@@ -26,18 +26,24 @@ export class BitrixActivityCreateService {
         }
 
         const bitrixApi = await this.bitrixContext.initFromDomain(domain);
+
         this.logger.log('BitrixApi initialized');
+        this.logger.log('bitrixApi.domain');
+        this.logger.log(bitrixApi.domain);
+        this.logger.log(domain)
+
+
 
         for (const [_, raw] of Object.entries(rawActivities)) {
             const fields = BitrixActivityEntity.fromDto(raw);
-            this.logger.log(`Adding activity for company ${raw.companyId}`);
-            this.logger.log(`Activity fields: ${JSON.stringify(fields)}`);
+            // this.logger.log(`Adding activity for company ${raw.companyId}`);
+            // this.logger.log(`Activity fields: ${JSON.stringify(fields)}`);
             bitrixApi.addCmdBatch(`add_activity_${raw.companyId}`, 'crm.activity.add', { fields });
         }
 
-        this.logger.log('Calling batch');
+        // this.logger.log('Calling batch');
         const result = await bitrixApi.callBatchAsync();
-        this.logger.log(`Batch result: ${JSON.stringify(result)}`);
+        // this.logger.log(`Batch result: ${JSON.stringify(result)}`);
         return result;
     }
 }

@@ -7,7 +7,7 @@ import { APIOnlineClient } from '../../clients/api-online.client';
 @Injectable()
 export class PortalService {
     private readonly logger = new Logger(PortalService.name);
-    private readonly CACHE_TTL = 600; // 10 minutes in seconds
+    private readonly CACHE_TTL = 36000; 
     private readonly redis: Redis;
 
     constructor(

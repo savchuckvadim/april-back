@@ -1,14 +1,15 @@
 export interface IPortal {
     domain: string;
-    
     apiKey: string;
     C_REST_WEB_HOOK_URL: string;
+    C_REST_CLIENT_SECRET: string;
     name?: string;
     description?: string;
     createdAt?: Date;
     updatedAt?: Date;
     access_key?: string;
     lists?: IPBXList[];
+    bitrixLists?: IPBXList[];
     id?: number;
     departament?: IDepartment;
     smarts?: ISmart[];

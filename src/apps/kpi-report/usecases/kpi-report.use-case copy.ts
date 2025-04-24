@@ -5,10 +5,10 @@ import { IField, IPBXList, IPortal, IFieldItem } from 'src/modules/portal/interf
 import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 
 import { PortalModel } from 'src/modules/portal/services/portal.model';
-import { ReportRequestDto } from '../dto/kpi-report-request.dto';
+import { ReportGetRequestDto } from '../dto/kpi-report-request.dto';
 import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
 import { ReportData, Filter, FilterCode, FilterInnerCode } from '../dto/kpi.dto';
-import { ActionService } from '../services/action-service';
+import { ActionService } from '../services/kpi-report/action-service';
 
 @Injectable()
 export class ReportKpiUseCase {
@@ -47,7 +47,7 @@ export class ReportKpiUseCase {
             }
         }
     }
-    async generateKpiReport(dto: ReportRequestDto): Promise<ReportData[]> {
+    async generateKpiReport(dto: ReportGetRequestDto): Promise<ReportData[]> {
         const departament = dto.filters.departament;
         const dateFrom = dto.filters.dateFrom;
         const dateTo = dto.filters.dateTo;
@@ -206,7 +206,7 @@ export class ReportKpiUseCase {
             }
 
             const resultKpiPlan = {
-                id: 0,
+                id: '0',
                 count: resultKpiPlanCount,
                 action: {
                     actionItem: actionItem!,
@@ -218,7 +218,7 @@ export class ReportKpiUseCase {
             };
 
             const resultKpiDone = {
-                id: 1,
+                id: '1',
                 count: resultKpiDoneCount,
                 action: {
                     actionItem: actionItem!,

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { IFieldItem } from "src/modules/portal/interfaces/portal.interface";
-import { Filter, FilterCode, FilterInnerCode } from "../dto/kpi.dto";
+import { Filter, FilterCode, FilterInnerCode } from "../../dto/kpi.dto";
 
 
 
@@ -10,7 +10,7 @@ export class ActionService {
     getActionWithTypeData(actionType: IFieldItem, action: IFieldItem): Filter {
         const result: any = {};
 
-        const atCode = actionType.code ;
+        const atCode = actionType.code;
         const acCode = action.code;
 
         switch (acCode) {
@@ -19,9 +19,11 @@ export class ActionService {
                 if (['xo', 'call', 'call_in_progress', 'call_in_money'].includes(atCode)) {
                     result.innerCode = `call_${acCode}`;
                     result.name = `Звонок ${action.name}`;
+
                 } else if (['presentation', 'presentation_uniq'].includes(atCode)) {
                     result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;
                     result.name = `${actionType.name} ${this.getFeminineForm(action.name)}`;
+
                 } else if (
                     ['ev_success', 'ev_fail'].includes(atCode) &&
                     acCode !== 'plan'
@@ -40,7 +42,13 @@ export class ActionService {
 
             case 'act_send': {
                 if (
-                    ['ev_offer', 'ev_offer_pres', 'ev_invoice', 'ev_invoice_pres', 'ev_contract'].includes(atCode)
+                    [
+                        'ev_offer',
+                        'ev_offer_pres',
+                        'ev_invoice',
+                        'ev_invoice_pres',
+                        'ev_contract'
+                    ].includes(atCode)
                 ) {
                     result.code = `${atCode}_${acCode}` as FilterCode;
                     result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;

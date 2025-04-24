@@ -7,11 +7,12 @@ import * as http from 'http';
 import { TelegramService } from '../../telegram/telegram.service';
 import { AxiosResponse } from 'axios';
 import { IPortal } from '../../portal/interfaces/portal.interface';
+import { IBitrixBatchResponse, IBitrixBatchResponseResult } from './type/bitrix-api.intterface';
 
 @Injectable()
 export class BitrixApiService {
   private readonly logger = new Logger(BitrixApiService.name);
-  private domain: string;
+  public domain: string;
   private apiKey: string;
   private cmdBatch: Record<string, string> = {};
   private semaphore: Semaphore;
@@ -27,7 +28,7 @@ export class BitrixApiService {
     this.apiKey = '';
     this.semaphore = new Semaphore(10);
     this.axiosOptions = {
-      timeout: 5000,
+      timeout: 25000,
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true }),
     };
@@ -49,7 +50,7 @@ export class BitrixApiService {
   }
 
   private dictToQueryString(method: string, data: Record<string, any>): string {
-    this.logger.log(`Converting data to query string for method: ${method}`);
+    // this.logger.log(`Converting data to query string for method: ${method}`);
     const queryParts: string[] = [];
 
     const processItem = (key: string, value: any) => {
@@ -78,18 +79,23 @@ export class BitrixApiService {
     }
 
     const queryString = `${method}?${queryParts.join('&')}`;
-    this.logger.log(`Generated query string: ${queryString}`);
+    // this.logger.log(`Generated query string: ${queryString}`);
     return queryString;
   }
 
   addCmdBatch(cmd: string, method: string, query: Record<string, any>) {
-    this.logger.log(`Adding command to batch: ${cmd}`);
-    this.logger.log(`Method: ${method}`);
-    this.logger.log(`Query: ${JSON.stringify(query)}`);
+    // this.logger.log(`Adding command to batch: ${cmd}`);
+    // this.logger.log(`Method: ${method}`);
+    // this.logger.log(`Query: ${JSON.stringify(query)}`);
+    // this.logger.log(`Domain: ${this.domain}`);
     const url = this.dictToQueryString(method, query);
     if (!this.cmdBatch[cmd]) {
       this.cmdBatch[cmd] = url;
     }
+  }
+
+  getCmdBatch(): Record<string, string> {
+    return this.cmdBatch;
   }
 
   async call(method: string, data: Record<string, any>): Promise<any> {
@@ -110,10 +116,11 @@ export class BitrixApiService {
   }
 
   async callBatch(): Promise<any[]> {
-    this.logger.log('Calling batch');
+    // this.logger.log('Calling batch');
+    // this.logger.log(`Domain: ${this.domain}`);
     const results = [] as string[];
     const commands = Object.entries(this.cmdBatch);
-    this.logger.log(`Number of commands: ${commands.length}`);
+    // this.logger.log(`Number of commands: ${commands.length}`);
 
     for (let i = 0; i < commands.length; i += 50) {
       const batch = commands.slice(i, i + 50);
@@ -129,15 +136,19 @@ export class BitrixApiService {
 
       const url = `https://${this.domain}/${this.apiKey}/batch`;
       try {
-        this.logger.log(`Making batch request to: ${url}`);
+        // this.logger.log(`Making batch request to: ${url}`);
         const response: AxiosResponse<any> = await firstValueFrom(
           this.httpService.post(url, batchPayload, this.axiosOptions),
         );
-        this.logger.log(`Batch request successful: ${JSON.stringify(response.data)}`);
+        // this.logger.log(`Batch request successful: ${JSON.stringify(response.data)}`);
         results.push(response.data.result);
       } catch (error) {
         this.logger.error(`Batch request failed: ${error.message}`);
-        await this.telegramBot.sendMessageAdminError(`Batch error: ${JSON.stringify(error?.response?.data || error)}`);
+        await this.telegramBot.sendMessageAdminError(`Batch error:
+          callBatch
+          ${this.domain}
+          ${batch.slice(0, 20).join('\n')}
+          ${JSON.stringify(error?.message)}`);
         results.push(error);
       }
     }
@@ -146,25 +157,56 @@ export class BitrixApiService {
     return results;
   }
 
-  async callBatchAsync(): Promise<any[]> {
+  async callBatchAsync(): Promise<IBitrixBatchResponseResult[]> {
     this.logger.log('Calling batch async');
     const commands = Object.entries(this.cmdBatch);
-    this.logger.log(`Number of commands: ${commands.length}`);
-    this.logger.log(`Commands: ${JSON.stringify(commands)}`);
+    // this.logger.log(`Number of commands: ${commands.length}`);
+    // this.logger.log(`Domain: ${this.domain}`);
+    // this.logger.log(`Commands: ${JSON.stringify(commands)}`);
     const tasks: Promise<any>[] = [];
 
     for (let i = 0; i < commands.length; i += 50) {
       const batch = commands.slice(i, i + 50);
       tasks.push(this.executeBatch(batch));
     }
+    this.logger.log(`length of tasks: ${tasks.length}`);
 
     const results = await Promise.all(tasks);
     this.cmdBatch = {};
     return results;
   }
+  async callBatchWithConcurrency(limit = 3): Promise<IBitrixBatchResponseResult[]> {
+    this.logger.log('Calling batch async with concurrency limit:', limit);
+
+    const commands = Object.entries(this.cmdBatch);
+    const results: IBitrixBatchResponseResult[] = [];
+
+    let index = 0;
+
+    const runBatch = async (): Promise<void> => {
+      while (index < commands.length) {
+        const start = index;
+        index += 50;
+        const batch = commands.slice(start, index);
+        const result = await this.executeBatch(batch);
+
+        if (result && typeof result === 'object' && 'result' in result) {
+          results.push(result);
+        } else {
+          this.logger.warn(`Skipping failed batch at index ${start}`);
+        }
+      }
+    };
+
+    // Запускаем до `limit` параллельных воркеров
+    await Promise.all(Array(limit).fill(0).map(() => runBatch()));
+
+    this.cmdBatch = {};
+    return results;
+  }
 
   private async executeBatch(batch: [string, string][]) {
-    this.logger.log(`Executing batch of ${batch.length} commands`);
+    // this.logger.log(`Executing batch of ${batch.length} commands`);
     const cmd: Record<string, string> = {};
     for (const [key, val] of batch) {
       cmd[key] = val;
@@ -177,30 +219,44 @@ export class BitrixApiService {
       this.logger.log(`Making batch request to: ${url}`);
       const response = await firstValueFrom(
         this.httpService.post(url, payload, this.axiosOptions),
-      );
+      ) as AxiosResponse<IBitrixBatchResponse>;
 
-      const result = response.data.result;
-      this.logger.log(`Batch request successful: ${JSON.stringify(result)}`);
-      await this.handleBatchErrors(response.data, 'executeBatch');
+      const result = response.data.result as IBitrixBatchResponseResult;
+      // this.logger.log(`Batch request successful: ${JSON.stringify(result)}`);
+      // this.logger.log(`Domain: ${this.domain}`);
+      const batchResultsCount = Object.keys(result.result).length;
+      this.logger.log(`Batch results count: ${batchResultsCount}`);
+      await this.handleBatchErrors(result, 'executeBatch');
       return result;
     } catch (error) {
       const msg = error?.response?.data || error;
-      this.logger.error(`Execute batch failed: ${JSON.stringify(msg)}`);
+      // this.logger.error(`Execute batch failed: ${JSON.stringify(msg)}`);
       await this.telegramBot.sendMessageAdminError(
-        `Execute batch failed: ${JSON.stringify(msg)}`
+        `Execute batch failed: ${JSON.stringify(error)}`
       );
       return error;
     }
   }
 
-  private async handleBatchErrors(result: any, context = 'Batch error'): Promise<void> {
+  private async handleBatchErrors(result: IBitrixBatchResponseResult, context = 'Batch error'): Promise<void> {
     if (!result?.result_error) return;
+    this.logger.log(`
+      success
+      Domain: 
+      ${this.domain}
+      `);
+
+
 
     const errorEntries = Object.entries(result.result_error);
     for (const [key, error] of errorEntries) {
-      const message = `[${context}] Ошибка в ${key}: ${JSON.stringify(error)}`;
-      this.logger.error(message);
+      const message = `[${context}] Ошибка в ${key}: ${JSON.stringify(error)}
+      
+      Domain: ${this.domain}
+      `;
+      this.logger.log(`result_error: ${message}`);
       await this.telegramBot.sendMessageAdminError(message);
+
     }
   }
 }

@@ -17,7 +17,22 @@ export class DepartmentBitrixService {
     this.bitrix.initFromPortal(portal);
     return await this.bitrix.call('user.get', {
       FILTER: { UF_DEPARTMENT: id, ACTIVE: true },
-      SELECT: ['ID', 'NAME', 'LAST_NAME', 'EMAIL', 'UF_DEPARTMENT', 'UF_EMPLOYMENT_DATE', 'UF_PHONE_INNER', 'UF_USR_1570437798556', 'USER_TYPE', 'WORK_PHONE', 'WORK_POSITION', 'UF_HEAD_DEPARTMENT']
+      SELECT: [
+        'ID', 
+        'NAME', 
+        'LAST_NAME', 
+        'EMAIL', 
+        'UF_DEPARTMENT', 
+        'UF_EMPLOYMENT_DATE', 
+        'UF_PHONE_INNER', 
+        'UF_USR_1570437798556', 
+        'USER_TYPE', 
+        'WORK_PHONE', 
+        'WORK_POSITION', 
+        'UF_HEAD_DEPARTMENT',
+        'UF_DEPARTMENT_HEAD',
+        
+      ]
     });
   }
 

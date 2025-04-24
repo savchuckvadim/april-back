@@ -31,7 +31,7 @@ export type KPIAction = {
 
 }
 export type KPI = {
-    id: number
+    id: string
     action: Filter
     count: number
     list?: Array<KPIListItem>

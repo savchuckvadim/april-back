@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Row, Workbook, Worksheet } from 'exceljs';
-import { KpiReportDto } from '../dto/kpi.dto';
+import { KpiReportDto } from '../../dto/kpi.dto';
 import { Buffer } from 'buffer';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
