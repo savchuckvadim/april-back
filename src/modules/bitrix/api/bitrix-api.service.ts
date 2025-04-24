@@ -133,7 +133,15 @@ export class BitrixApiService {
         halt: 0,
         cmd,
       };
-
+      if (!this.domain || !this.apiKey) {
+        this.logger.error('Domain or API key is not set');
+        await this.telegramBot.sendMessageAdminError(`
+          BitrixApiService
+          callBatch
+          Domain or API key is not set
+          `);
+          
+      }
       const url = `https://${this.domain}/${this.apiKey}/batch`;
       try {
         // this.logger.log(`Making batch request to: ${url}`);
@@ -147,7 +155,7 @@ export class BitrixApiService {
         await this.telegramBot.sendMessageAdminError(`Batch error:
           callBatch
           ${this.domain}
-          ${batch.slice(0, 20).join('\n')}
+        
           ${JSON.stringify(error?.message)}`);
         results.push(error);
       }
