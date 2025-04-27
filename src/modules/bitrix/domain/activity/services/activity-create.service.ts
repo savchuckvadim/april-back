@@ -42,7 +42,7 @@ export class BitrixActivityCreateService {
         }
 
         // this.logger.log('Calling batch');
-        const result = await bitrixApi.callBatchAsync();
+        const result = await bitrixApi.callBatchWithConcurrency(2);
         // this.logger.log(`Batch result: ${JSON.stringify(result)}`);
         return result;
     }
