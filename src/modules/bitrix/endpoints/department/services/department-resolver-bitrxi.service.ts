@@ -4,8 +4,7 @@ import Redis from "ioredis";
 import { RedisService } from "src/core/redis/redis.service";
 import { DepartmentBitrixService } from "src/modules/bitrix/domain/department/services/department-bitrxi.service";
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
-import { EDepartamentGroup, IPortal } from "src/modules/portal/interfaces/portal.interface";
-import { PortalService } from "src/modules/portal/portal.service";
+import { EDepartamentGroup, } from "src/modules/portal/interfaces/portal.interface";
 import { PortalProviderService } from "src/modules/portal/services/portal-provider.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";
 
@@ -32,7 +31,7 @@ export class DepartmentResolverService {
 
     const portal = (await this.portalModelProvider.getModel(domain)).getPortal();
     const baseDepartmentBitrix = this.portalModel.getDepartamentIdByPortal(portal, group);
-    const baseDepartmentBitrixId =     baseDepartmentBitrix?.id
+    const baseDepartmentBitrixId =     baseDepartmentBitrix?.bitrixId
     Logger.log('baseDepartmentBitrixId')
     Logger.log('baseDepartmentBitrixId')
     Logger.log('baseDepartmentBitrixId')

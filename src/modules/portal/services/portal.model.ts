@@ -21,6 +21,13 @@ export class PortalModel {
         //@ts-ignore
         return portal.departament?.group === departament ? portal.departament : 0
     }
+
+    getDepartamentIdByCode(code: 'sales' | 'service', departament: EDepartamentGroup): IPDepartment | undefined {
+             //@ts-ignore
+        return this.portal.departament?.group === departament ? this.portal.departament : 0
+    }
+
+
     getListByCode(code: string): IPBXList | undefined {
         let result = this.portal.lists?.find(list => list.type === code)
         if(!result) {

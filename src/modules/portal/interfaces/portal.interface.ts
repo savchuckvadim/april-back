@@ -195,4 +195,5 @@ export interface IPDepartment{
     id: number
     group: string
     type: string
+    bitrixId:number
 }
