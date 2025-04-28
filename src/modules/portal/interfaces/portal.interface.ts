@@ -190,3 +190,9 @@ export interface IPortalResponse {
     data?: IPortal;
     error?: string;
 } 
+
+export interface IPDepartment{
+    id: number
+    group: string
+    type: string
+}

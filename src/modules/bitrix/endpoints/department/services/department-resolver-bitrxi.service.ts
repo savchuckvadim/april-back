@@ -28,11 +28,16 @@ export class DepartmentResolverService {
     const day = dayjs().format('MMDD');
     const sessionKey = `department_${domain}_${day}`;
     const fromCache = await this.redis.get(sessionKey);
-    if (fromCache) return JSON.parse(fromCache);
+    // if (fromCache) return JSON.parse(fromCache);
 
     const portal = (await this.portalModelProvider.getModel(domain)).getPortal();
-    const baseDepartmentBitrixId = this.portalModel.getDepartamentIdByPortal(portal, group);
-
+    const baseDepartmentBitrix = this.portalModel.getDepartamentIdByPortal(portal, group);
+    const baseDepartmentBitrixId =     baseDepartmentBitrix?.id
+    Logger.log('baseDepartmentBitrixId')
+    Logger.log('baseDepartmentBitrixId')
+    Logger.log('baseDepartmentBitrixId')
+    Logger.log('baseDepartmentBitrixId')
+    Logger.log(baseDepartmentBitrixId)
     const general = await this.bitrixService.getDepartments(portal, { ID: baseDepartmentBitrixId });
     const children = await this.bitrixService.getDepartments(portal, { PARENT: baseDepartmentBitrixId });
 

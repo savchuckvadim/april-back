@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup } from '../interfaces/portal.interface';
+import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup, IPDepartment } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
 import { waitForDebugger } from 'inspector';
 
@@ -17,7 +17,7 @@ export class PortalModel {
         return this.portal;
     }
 
-    getDepartamentIdByPortal(portal: IPortal, departament: EDepartamentGroup): number {
+    getDepartamentIdByPortal(portal: IPortal, departament: EDepartamentGroup): IPDepartment | undefined {
         //@ts-ignore
         return portal.departament?.group === departament ? portal.departament : 0
     }
