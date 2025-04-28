@@ -17,6 +17,7 @@ import { BitrixDepartmentModule } from './modules/bitrix/endpoints/department/de
 import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 import { EventSalesModule } from './apps/event-sales/event.module';
 import { GsrModule } from './commands/excel-migrate/gsr.module';
+import { HealthController } from './health.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -48,7 +49,11 @@ import { GsrModule } from './commands/excel-migrate/gsr.module';
     //commands
     GsrModule
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    HealthController
+  
+  ],
   providers: [
     AppService,
     GlobalExceptionFilter,
