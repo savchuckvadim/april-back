@@ -18,7 +18,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { PBXModule } from './modules/pbx/pbx.module';
 import { WsModule } from './core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
-import { AlfaActivityRegistryService } from './modules/hooks/alfa/services/alfa-activity-init-module.service';
+import { HooksModule } from './modules/hooks/hooks.module';
 @Module({
   imports: [
 
@@ -66,7 +66,7 @@ import { AlfaActivityRegistryService } from './modules/hooks/alfa/services/alfa-
 
     //dependency modules with on init
     AlfaActivityModule,
-
+    HooksModule
 
   ],
   controllers: [
