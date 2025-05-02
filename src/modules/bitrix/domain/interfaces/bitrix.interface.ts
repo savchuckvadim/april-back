@@ -11,7 +11,7 @@ export interface IBXDepartment {
     PARENT: string // "1"
     SORT: number
     UF_HEAD?: number // "1"
-    USERS: IBXUser[] | null
+    USERS?: IBXUser[] | null
 }
 
 export interface IBXTask {

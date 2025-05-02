@@ -22,15 +22,15 @@ export class PortalModel {
         return portal.departament?.group === departament ? portal.departament : 0
     }
 
-    getDepartamentIdByCode(code: 'sales' | 'service', departament: EDepartamentGroup): IPDepartment | undefined {
-             //@ts-ignore
-        return this.portal.departament?.group === departament ? this.portal.departament : 0
+    getDepartamentIdByCode(departament: EDepartamentGroup): IPDepartment | undefined {
+
+        return this.portal.departament?.group === departament ? this.portal.departament : undefined
     }
 
 
     getListByCode(code: string): IPBXList | undefined {
         let result = this.portal.lists?.find(list => list.type === code)
-        if(!result) {
+        if (!result) {
             result = this.portal.bitrixLists?.find(list => list.type === code)
         }
         return result;
@@ -102,7 +102,7 @@ export class PortalModel {
 
     getHook(): string {
 
-        return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET }`;
+        return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET}`;
     }
 
     getStageByCode(portal: IPortal, stageCode: string): string | undefined {

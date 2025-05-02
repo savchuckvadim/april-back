@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Scope } from '@nestjs/common';
 import { FailDto } from '../dto/fail.dto';
 import { EventSalesFlowDto } from '../dto/event-sales-flow.dto';
 import { ReportDto } from '../dto/report.dto';
@@ -9,7 +9,7 @@ import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
 import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class EventSalesFlowUseCase {
     private hook: string;
     private portal: IPortal;
@@ -54,7 +54,7 @@ export class EventSalesFlowUseCase {
 
 
     async init(data: EventSalesFlowDto): Promise<this> {
-        this.portalModel = await this.portalProvider.getModel();
+        this.portalModel = await this.portalProvider.getModelFromRequest();
         this.portal = this.portalModel.getPortal();
         this.isPostSale = data.isPostSale ?? false;
         this.postFail = data.fail;

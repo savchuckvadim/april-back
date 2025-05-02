@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Scope } from '@nestjs/common';
 import { IPortal } from '../interfaces/portal.interface';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class PortalContextService {
     private readonly logger = new Logger(PortalContextService.name);
     // private static instance: PortalContextService;

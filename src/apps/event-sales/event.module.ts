@@ -5,12 +5,14 @@ import { PortalModule } from "src/modules/portal/portal.module";
 import { BitrixModule } from "src/modules/bitrix/bitrix.module";
 import { TelegramModule } from "src/modules/telegram/telegram.module";
 import { HttpModule } from "@nestjs/axios";
+import { PBXModule } from "src/modules/pbx/pbx.module";
 
 
 @Module({
     imports: [
-        PortalModule,
-        BitrixModule,
+        // PortalModule,
+        // BitrixModule,
+        PBXModule,
         TelegramModule,
         HttpModule
     ],  

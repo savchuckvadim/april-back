@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { BitrixActivityCreateService } from 'src/modules/bitrix/domain/activity/services/activity-create.service';
+import { AlfaActivityData } from '../types/alfa-activity-data.interface';
 
-export interface AlfaActivityData {
-    companyId: number;
-    title: string;
-    date: string;
-    responsible: string;
-}
+// export interface AlfaActivityData {
+//     companyId: number;
+//     title: string;
+//     date: string;
+//     responsible: string;
+// }
 
 @Injectable()
 export class AlfaActivityService {

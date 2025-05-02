@@ -4,44 +4,45 @@ import Redis from "ioredis";
 import { RedisService } from "src/core/redis/redis.service";
 import { DepartmentBitrixService } from "src/modules/bitrix/domain/department/services/department-bitrxi.service";
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
-import { EDepartamentGroup, } from "src/modules/portal/interfaces/portal.interface";
+import { EDepartamentGroup, IPortal, } from "src/modules/portal/interfaces/portal.interface";
 import { PortalProviderService } from "src/modules/portal/services/portal-provider.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";
 
-
+// C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
 @Injectable()
 export class DepartmentResolverService {
   private readonly redis: Redis;
+
   constructor(
-    // private readonly portalService: PortalService,
     private readonly bitrixService: DepartmentBitrixService,
-    private readonly portalModelProvider: PortalProviderService, // 🔥 новый
     private readonly redisService: RedisService,
-    private readonly portalModel: PortalModel
+    private readonly portalProvider: PortalProviderService
+
   ) {
 
     this.redis = this.redisService.getClient()
   }
-
+  
   async getFullDepartment(domain: string, group: EDepartamentGroup) {
     const day = dayjs().format('MMDD');
     const sessionKey = `department_${domain}_${day}`;
     const fromCache = await this.redis.get(sessionKey);
     // if (fromCache) return JSON.parse(fromCache);
 
-    const portal = (await this.portalModelProvider.getModel(domain)).getPortal();
-    const baseDepartmentBitrix = this.portalModel.getDepartamentIdByPortal(portal, group);
-    const baseDepartmentBitrixId =     baseDepartmentBitrix?.bitrixId
+    const portal = await this.portalProvider.getModelFromRequest();
+    const baseDepartmentBitrix = portal.getDepartamentIdByCode(group);
+    
+    const baseDepartmentBitrixId = baseDepartmentBitrix?.bitrixId
     Logger.log('baseDepartmentBitrixId')
     Logger.log('baseDepartmentBitrixId')
     Logger.log('baseDepartmentBitrixId')
     Logger.log('baseDepartmentBitrixId')
     Logger.log(baseDepartmentBitrixId)
-    const general = await this.bitrixService.getDepartments(portal, { ID: baseDepartmentBitrixId });
-    const children = await this.bitrixService.getDepartments(portal, { PARENT: baseDepartmentBitrixId });
+    const general = await this.bitrixService.getDepartments({ ID: baseDepartmentBitrixId });
+    const children = await this.bitrixService.getDepartments({ PARENT: baseDepartmentBitrixId });
 
-    const generalWithUsers = await this.bitrixService.enrichWithUsers(portal, general);
-    const childrenWithUsers = await this.bitrixService.enrichWithUsers(portal, children);
+    const generalWithUsers = await this.bitrixService.enrichWithUsers( general);
+    const childrenWithUsers = await this.bitrixService.enrichWithUsers( children);
 
     const allUsers: IBXUser[] = []
     const allDepartments = [...generalWithUsers, ...childrenWithUsers].map(d => d?.USERS?.map(u => {

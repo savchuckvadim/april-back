@@ -15,16 +15,17 @@ export class PortalContextMiddleware implements NestMiddleware {
     }
 
     async use(req: Request, res: Response, next: NextFunction) {
-        // this.logger.log('Request received', {
-        //     path: req.path,
-        //     method: req.method,
-        //     body: req.body,
-        //     query: req.query
-        // });
-
+        this.logger.log('Request received PortalContextMiddleware', {
+            path: req.path,
+            method: req.method,
+            // body: req.body,
+            query: req.query
+        });
+        this.logger.log(`PortalContextMiddleware baseUrl: ${req.baseUrl}`);
+        this.logger.log(`PortalContextMiddleware path: ${req.path}`);
         const domain = req.body?.auth?.domain || req.query?.domain || req.body?.domain;
         this.logger.log(`PortalContextMiddleware Extracted domain: ${domain}`);
-
+        
         if (domain) {
             try {
                 const portal = await this.portalService.getPortalByDomain(domain);

@@ -1,6 +1,5 @@
 // report-kpi.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { BitrixContextService } from 'src/modules/bitrix/services/bitrix-context.service';
 import { IField, IPBXList, IPortal, IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 
 import { PortalModel } from 'src/modules/portal/services/portal.model';
@@ -9,37 +8,50 @@ import { PortalProviderService } from 'src/modules/portal/services/portal-provid
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { BitrixApiService } from 'src/modules/bitrix/api/bitrix-api.service';
-import { IBitrixBatchResponseResult } from 'src/modules/bitrix/api/type/bitrix-api.intterface';
+import { BitrixApiService } from 'src/modules/bitrix/core/http/bitrix-api.service';
+import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
+import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
 
 @Injectable()
 export class ReportKpiUseCase {
-    protected domain: string;
+    // protected domain: string;
     protected portal: IPortal;
     protected portalKPIList?: IPBXList;
     protected portalHistoryList?: IPBXList;
     protected hook: string;
     private portalModel: PortalModel;
-    private bitrixApi: BitrixApiService;
+    // private bitrixApi: BitrixApiService;
 
     constructor(
 
-        private readonly bitrixContext: BitrixContextService,
-        // private readonly portalContext: PortalContextService,
         private readonly portalProvider: PortalProviderService,
-    ) { }
+        private readonly bitrixApi: BitrixApiService, // scope: REQUEST
+        // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
+    ) { 
+
+        
+
+    }
 
     async init(domain: string) {
-        this.domain = domain;
-        this.portalModel = await this.portalProvider.getModel(domain);
-        // const portalResponse = await this.portalService.getPortal(domain);
+        // this.domain = domain;
+        this.portalModel = await this.portalProvider.getModelFromRequest();
         const portal = this.portalModel.getPortal();
+
+
+        //for queue
+        // this.portalModel = await this.portalProvider.getModelByDomain(domain);
+        // const portal = this.portalModel.getPortal();
 
         if (!portal) throw new Error('Portal not found');
 
+        // //for queue
+        // this.bitrixApi = await this.bxFactory.create(portal)
+
+
         this.portal = portal;
         this.hook = this.portalModel.getHook();
-        this.bitrixApi = this.bitrixContext.getApi();
+
         this.portalKPIList = this.portalModel.getListByCode('kpi');
         this.portalHistoryList = this.portalModel.getListByCode('history');
 
@@ -54,7 +66,7 @@ export class ReportKpiUseCase {
         const dateTo = dto.dateTo;
 
         const listId = this.portalKPIList?.bitrixId;
-        const listFields = this.portalKPIList?.bitrixfields;
+        // const listFields = this.portalKPIList?.bitrixfields;
         const {
             eventAction,
             eventActionType,
@@ -83,48 +95,9 @@ export class ReportKpiUseCase {
             listId as string
         )
         // const commandsResult = bitrixApi.getCmdBatch();
-        const results = await this.bitrixApi.callBatchWithConcurrency(5);
+        const results = await this.bitrixApi.callBatchWithConcurrency(3);
         const report = this.getCalculateResults(results, departament, currentActionsData)
-        // const report = [] as ReportData[];
 
-        // for (const user of departament) {
-
-        //     const userId = user.ID
-        //     const userName = user.NAME + ' ' + user.LAST_NAME
-
-        //     let userReport = {
-        //         user: user,
-        //         userName: userName,
-        //         kpi: [] as KPI[]
-        //     } as ReportData
-        //     for (const action of currentActionsData) {
-        //         const innerCode = action.innerCode;
-        //         const cmdKey = `user_${userId}_action_${action.code}`;
-        //         const kpi = {
-        //             id: action.innerCode,
-        //             action: action,
-        //             count: 0,
-
-        //         } as KPI
-        //         for (const result of results) {
-        //             for (const resultKey in result.result) {
-        //                 if (resultKey === cmdKey) {
-
-
-        //                     kpi.count = Number(result.result_total[resultKey]) || 0
-
-        //                     userReport.kpi.push(kpi)
-
-        //                 }
-        //             }
-
-
-        //         }
-        //     }
-
-        //     userReport = this.proccesResultCommunications(userReport) as ReportData
-        //     report.push(userReport)
-        // }
 
 
         return report;
@@ -354,51 +327,7 @@ export class ReportKpiUseCase {
             }
 
 
-            // for (const currentAction of currentActionsData) {
-            //     const code = currentAction.code;
-            //     const innerCode = currentAction.innerCode;
 
-            //     const isResultCommunication = innerCode.includes('result_communication');
-            //     const isNoResultCommunication = innerCode.includes('noresult_communication');
-
-            //     if (!isResultCommunication && !isNoResultCommunication) {
-            //         const isCall = code.includes('call');
-            //         const isCallInProgress = code.includes('call_in_progress');
-            //         const isCallInMoney = code.includes('call_in_money');
-            //         const isXO = code.includes('xo');
-
-            //         // Взять только звонок без прогресс и моней
-            //         if (isCall && !isXO && !isCallInProgress && !isCallInMoney) {
-            //             const actionValueBitrixId = currentAction.actionItem.bitrixId;
-            //             const actionTypeValueBitrixId = currentAction.actionTypeItem.bitrixId;
-
-            //             // Формируем ключ команды, используя ID пользователя и ID действия для уникальности
-            //             const cmdKey = `user_${userId}_action_${code}`;
-
-            //             // Добавляем команду в массив команд
-
-            //             const getListData = {
-            //                 IBLOCK_TYPE_ID: 'lists',
-            //                 IBLOCK_ID: listId,
-            //                 filter: {
-            //                     [`${actionFieldId}`]: actionValueBitrixId,
-            //                     [`${actionTypeFieldId}`]: actionTypeValueBitrixId,
-            //                     [`${eventResponsibleFieldId}`]: userId,
-            //                     [`${dateFieldForHookFrom}`]: dateFrom,
-            //                     [`${dateFieldForHookTo}`]: dateTo,
-            //                 },
-            //                 select: ['ID']
-
-            //             }
-            //             if (userId == 2153) {
-            //                 Logger.log(cmdKey)
-
-
-            //             }
-            //             bitrixApi.addCmdBatch(cmdKey, 'lists.element.get', getListData);
-            //         }
-            //     }
-            // }
         }
 
     }
@@ -509,49 +438,6 @@ export class ReportKpiUseCase {
         }
         return report;
     }
-    // private proccessCallItems(reportData: ReportData): ReportData {
 
-
-    //     let originalKpiItemPlan = null as KPI | null;
-    //     let originalKpiItemDone = null as KPI | null;
-    //     reportData.kpi.forEach(kpi => {
-    //         const isOriginalPlan = kpi.action.innerCode === 'call_plan' && kpi.action.code === 'call_plan';
-    //         const isOriginalDone = kpi.action.innerCode === 'call_done' && kpi.action.code === 'call_done';
-
-    //         if (isOriginalPlan) {
-    //             originalKpiItemPlan = { ...kpi };
-    //         }
-    //         if (isOriginalDone) {
-    //             originalKpiItemDone = { ...kpi };
-    //         }
-
-
-    //     });
-    //     reportData.kpi.forEach(kpi => {
-    //         const isOriginalPlan = kpi.action.innerCode === 'call_plan' && kpi.action.code === 'call_plan';
-    //         const isOriginalDone = kpi.action.innerCode === 'call_done' && kpi.action.code === 'call_done';
-
-    //         if (!isOriginalPlan && kpi.action.innerCode === 'call_plan' && originalKpiItemPlan) {
-    //             originalKpiItemPlan.count += kpi.count;
-    //         }
-    //         if (!isOriginalDone && kpi.action.innerCode === 'call_done' && originalKpiItemDone) {
-    //             originalKpiItemDone.count += kpi.count;
-    //         }
-
-
-    //     });
-    //     const result = reportData.kpi.filter(kpi => kpi.action.innerCode !== 'call_plan' && kpi.action.innerCode !== 'call_done') as KPI[];
-
-    //     if (originalKpiItemDone) {
-    //         result.unshift(originalKpiItemDone);
-    //     }
-    //     if (originalKpiItemPlan) {
-    //         result.unshift(originalKpiItemPlan);
-    //     }
-    //     return {
-    //         ...reportData,
-    //         kpi: result
-    //     };
-    // }
 
 }

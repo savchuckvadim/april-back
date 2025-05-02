@@ -1,40 +1,41 @@
 // report-kpi.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { BitrixContextService } from 'src/modules/bitrix/services/bitrix-context.service';
 
 import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
-import { BitrixApiService } from 'src/modules/bitrix/api/bitrix-api.service';
+import { BitrixApiService } from 'src/modules/bitrix/core/http/bitrix-api.service';
 import { GetCallingStatisticFiltersDto } from '../dto/calling-statistic.dto';
 import { CALLING_TYPES, CallingDuration, ICallingStatisticResult, VoximplantFilter } from '../types/calling-statistic.type';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { IBitrixBatchResponseResult } from 'src/modules/bitrix/api/type/bitrix-api.intterface';
+import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
 
 @Injectable()
 export class CallingStatisticUseCase {
 
-    private bitrixApi: BitrixApiService;
+    // private bitrixApi: BitrixApiService;
 
     constructor(
 
-        private readonly bitrixContext: BitrixContextService,
+        private readonly bitrixApi: BitrixApiService,
         // private readonly portalContext: PortalContextService,
         private readonly portalProvider: PortalProviderService,
     ) { }
 
-    async init(domain: string) {
+    // async init(
+    //     // domain: string
+    // ) {
 
-        const portalModel = await this.portalProvider.getModel(domain);
-        const portal = portalModel.getPortal();
+    //     const portalModel = await this.portalProvider.getModelFromRequest();
+    //     const portal = portalModel.getPortal();
 
-        if (!portal) throw new Error('Portal not found');
-
-
-
-        this.bitrixApi = this.bitrixContext.getApi();
+    //     if (!portal) throw new Error('Portal not found');
 
 
 
-    }
+    //     // this.bitrixApi = this.bitrixContext.getApi();
+
+
+
+    // }
 
     async get(dto: GetCallingStatisticFiltersDto): Promise<ICallingStatisticResult[]> {
 
@@ -78,7 +79,7 @@ export class CallingStatisticUseCase {
         }
         const response = await this.bitrixApi.callBatchWithConcurrency(2)
         const result = this.getFormedResults(response, users, method)
-    
+
         return result;
 
     }
@@ -121,26 +122,26 @@ export class CallingStatisticUseCase {
                 const cmdkey = `${method}_${type.id}_${userId}`
 
                 results.forEach(res => {
-               
-                        for (const key in res.result_total) {
-                     
-                            if (key === cmdkey) {
-                                const calling = {
-                                    id: type.id,
-                                    action: type.action,
-                                    count: Number(res.result_total[key]),
-                                    duration: 0
-                                }
-                                resultUserReport.callings.push(calling)
+
+                    for (const key in res.result_total) {
+
+                        if (key === cmdkey) {
+                            const calling = {
+                                id: type.id,
+                                action: type.action,
+                                count: Number(res.result_total[key]),
+                                duration: 0
                             }
+                            resultUserReport.callings.push(calling)
                         }
-                    
+                    }
+
                 })
 
             })
 
 
-  
+
             result.push(resultUserReport);
         }
         return result;

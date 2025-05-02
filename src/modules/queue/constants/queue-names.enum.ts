@@ -4,6 +4,8 @@ export enum QueueNames {
     DOCUMENT = 'document',
     TELEGRAM = 'telegram',
     SILENT = 'silent', // новая универсальная
+    SALES_KPI_REPORT='sales-kpi-report',
+    PING='ping'
     // добавишь по мере надобности
   }
   

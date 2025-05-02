@@ -4,6 +4,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueNames } from '../constants/queue-names.enum';
 import { SilentJobHandlerId } from 'src/core/silence/constants/silent-job-handlers.enum';
+import { JobNames } from '../constants/job-names.enum';
 
 @Injectable()
 export class QueueDispatcherService {
@@ -13,7 +14,7 @@ export class QueueDispatcherService {
     @InjectQueue(QueueNames.EVENT) private readonly eventQueue: Queue,
     @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
     @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
-
+    // @InjectQueue(QueueNames.SALES_KPI_REPORT) private readonly salesKpiReportQueue: Queue,
     // и т.д.
   ) {
     this.logger.log('QueueDispatcherService initialized');
@@ -36,6 +37,8 @@ export class QueueDispatcherService {
         return this.documentQueue;
       case QueueNames.SILENT:
         return this.silentQueue;
+  
+
       default:
         const error = `Unknown queue name: ${name}`;
         this.logger.error(error);

@@ -1,45 +1,39 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger, Scope } from "@nestjs/common";
 import { PortalService } from "../portal.service";
-import { PortalContextService } from "./portal-context.service";
 import { IPortal } from "../interfaces/portal.interface";
 import { PortalModelFactory } from "../factory/potal-model.factory";
 import { PortalModel } from "./portal.model";
+import { PortalContextService } from "./portal-context.service";
 
 @Injectable()
 export class PortalProviderService {
   constructor(
     private readonly portalService: PortalService,
-    private readonly portalContext: PortalContextService,
-    private readonly portalModelFactory: PortalModelFactory
-  ) {}
 
-  async getPortal(domain?: string): Promise<IPortal> {
-    if (domain) {
-      return this.portalService.getPortalByDomain(domain);
-    }
-    return this.portalContext.getPortal();
-    // try {
-    //   return this.portalContext.getPortal();
-    // } catch {
-    //   if (!domain) throw new Error('Domain required for non-context access');
-    //   return this.portalService.getPortalByDomain(domain);
-    // }  
+    private readonly modelFactory: PortalModelFactory,
+    private readonly portalContext: PortalContextService, // scope: REQUEST
+  ) { 
+    // Logger.log(this)
   }
 
-  async getModel(domain?: string): Promise<PortalModel> {
-    let portal: IPortal;
+  async getPortalFromRequest(): Promise<IPortal> {
+    if (!this.portalContext) throw new Error('Request context not available');
+    return this.portalContext.getPortal();
+  }
+  async getPortalByDomain(domain: string): Promise<IPortal> {
+    Logger.log('getPortalByDomain: ' + domain);
+    return this.portalService.getPortalByDomain(domain);
+  }
 
-    if(domain){
-      portal = await this.portalService.getPortalByDomain(domain);
-      return this.portalModelFactory.create(portal);
-    }
-    try {
-      portal = this.portalContext.getPortal(); // из контекста запроса
-    } catch {
-      if (!domain) throw new Error('Domain required for portal model outside request');
-      portal = await this.portalService.getPortalByDomain(domain); // вручную
-    }
+  async getModelFromRequest(): Promise<PortalModel> {
+    const portal = await this.getPortalFromRequest();
+    return this.modelFactory.create(portal);
+  }
 
-    return this.portalModelFactory.create(portal); // модель с методами
+  async getModelByDomain(domain: string): Promise<PortalModel> {
+    Logger.log('getModelByDomain: ' + domain);
+    const portal = await this.getPortalByDomain(domain);
+    Logger.log('getModelByDomain: ' + portal?.id);
+    return this.modelFactory.create(portal);
   }
 }

@@ -21,6 +21,7 @@ export class APIOnlineClient {
 
     async request(method: 'get' | 'post', endpoint: string, data: any, dataName: string) {
         try {
+            this.logger.log(`Request API ONLINE`);
             this.logger.log(`Making ${method.toUpperCase()} request to ${endpoint}`);
             // this.logger.log(`Request data: ${JSON.stringify(data)}`);
 

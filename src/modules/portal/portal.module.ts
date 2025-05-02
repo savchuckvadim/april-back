@@ -10,6 +10,10 @@ import { PortalModel } from './services/portal.model';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { PortalProviderService } from './services/portal-provider.service';
 import { PortalModelFactory } from './factory/potal-model.factory';
+import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
+import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
+
+// C:\Projects\April-KP\april-next\back\src\modules\portal\portal.module.ts
 @Module({
     imports: [
         HttpModule,
@@ -20,16 +24,13 @@ import { PortalModelFactory } from './factory/potal-model.factory';
     providers: [
         PortalService,
         PortalContextService,
-        PortalContextMiddleware,
-        APIOnlineClient,
-        PortalModel,
         PortalProviderService,
-        PortalModelFactory
+        PortalModelFactory,
+        APIOnlineClient
     ],
     exports: [
         PortalService,
         PortalContextService,
-        PortalModel,
         PortalProviderService,
         PortalModelFactory
     ]
@@ -38,8 +39,20 @@ export class PortalModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
             .apply(PortalContextMiddleware)
-            .forRoutes({ path: '*', method: RequestMethod.ALL });
+            .exclude({ path: '/api/queue/ping', method: RequestMethod.ALL })
+            .exclude('/hooks/*path')  // не кладём portal
+            .exclude('api/queue/ping')  // не кладём portal
+            .forRoutes(KpiReportController, DepartmentController)
+        // .forRoutes({ path: '*', method: RequestMethod.ALL });
 
-            // .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
+        // .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
     }
-} 
+}
+
+
+
+// PortalService	Получает портал (с кэшем в Redis)
+// PortalModelFactory + PortalModel	Доступ к методам портала
+// PortalProviderService	Обёртка, работает с domain → model
+// PortalContextService	Только для scope: REQUEST, хранит portal
+// PortalContextMiddleware	Парсит domain и кладёт в context
