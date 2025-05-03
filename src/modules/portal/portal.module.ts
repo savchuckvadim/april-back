@@ -38,8 +38,9 @@ export class PortalModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
             .apply(PortalContextMiddleware)
-            .exclude({ path: '/api/queue/ping', method: RequestMethod.ALL })
+            .exclude({ path: '/queue/ping', method: RequestMethod.ALL })
             .exclude('/hooks/*path')  // не кладём portal
+            .exclude('/kpi-report/download')  // не кладём portal
             .exclude('api/queue/ping')  // не кладём portal
             .forRoutes(KpiReportController, DepartmentController)
         // .forRoutes({ path: '*', method: RequestMethod.ALL });

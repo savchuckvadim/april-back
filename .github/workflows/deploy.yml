@@ -1,4 +1,4 @@
-name: Deploy kpi-sales on push to main
+name: Deploy NEST BACK API on push to main
 
 on:
   push:

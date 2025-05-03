@@ -7,6 +7,7 @@ import { CallingStatisticUseCase } from './usecases/kpi-calling-statistic.use-ca
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { SalesKpiReportQueueProcessor } from './queue/kpi-report.processor';
+import { KpiReportDownloadController } from './kpi-report-download.controller';
 @Module({
   imports: [
 
@@ -14,7 +15,7 @@ import { SalesKpiReportQueueProcessor } from './queue/kpi-report.processor';
     QueueModule,
  
   ],
-  controllers: [KpiReportController],
+  controllers: [KpiReportController, KpiReportDownloadController],
   providers: [
     ExcelReportService,
     ReportKpiUseCase,
