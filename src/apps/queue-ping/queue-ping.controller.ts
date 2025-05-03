@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UseInterceptors } from '@nestjs/common';
 import { QueuePingDto } from './dto/queue.dto';
 import { QueuePingDispatchService } from './queue/queue-ping.dispatch.service';
 
@@ -9,6 +9,11 @@ export class QueuePingController {
 
   ) { }
 
+  @Get('test')
+  @UseInterceptors()
+  async get(): Promise<string> {
+    return 'hello test';
+  }
 
   @Post('ping')
   @HttpCode(200)
