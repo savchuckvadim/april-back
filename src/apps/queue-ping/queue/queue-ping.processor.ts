@@ -6,6 +6,7 @@ import { WsService } from "src/core/ws";
 import { Logger } from "@nestjs/common";
 import { QueuePingUseCase } from "../use-cases/queue-ping.use-case";
 import { QueuePingDto } from "../dto/queue.dto";
+import { PortalService } from "src/modules/portal/portal.service";
 
 
 @Processor(QueueNames.PING)
@@ -16,11 +17,12 @@ export class QueuePingQueueProcessor {
 
         private readonly useCase: QueuePingUseCase,
         private readonly ws: WsService, // WebSocket шлюз
-        
+        private readonly portalService: PortalService,
         /// NO!! scope: REQUEST
     ) {
 
-
+        this.logger.log('QueuePingQueueProcessor initialized')
+        // this.logger.log(this.portalService.getHook)
     }
 
     @Process(JobNames.PING)
@@ -29,7 +31,9 @@ export class QueuePingQueueProcessor {
         const socketId = dto.socketId
         this.logger.log('QUEUE PING HANDLE')
         this.logger.log(dto.domain)
-
+        const portal = await this.portalService.getPortalByDomain(dto.domain)
+        this.logger.log('portal.C_REST_CLIENT_SECRET')
+        this.logger.log(portal.C_REST_CLIENT_SECRET)
         await this.useCase.init(dto.domain)
         this.logger.log(dto.socketId)
         const result = await this.useCase.case(dto);

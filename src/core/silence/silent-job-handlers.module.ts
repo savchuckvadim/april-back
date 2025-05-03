@@ -11,7 +11,7 @@ export class SilentJobHandlersModule {
   private readonly logger = new Logger(SilentJobHandlersModule.name);
 
   constructor(private readonly registry: SilentJobHandlersRegistry) {
-    this.logger.log('SilentJobHandlersModule initialized');
+    this.logger.log('SilentJobHandlersModule initialized ✅');
     this.logger.log(`Registry available: ${!!this.registry}`);
   }
 }

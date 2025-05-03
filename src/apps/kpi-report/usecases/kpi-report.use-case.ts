@@ -1,16 +1,16 @@
 // report-kpi.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IField, IPBXList, IPortal, IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
-import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { BitrixApiService } from 'src/modules/bitrix/core/http/bitrix-api.service';
+import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
 import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
 import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
+import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 
 @Injectable()
 export class ReportKpiUseCase {
@@ -24,18 +24,18 @@ export class ReportKpiUseCase {
 
     constructor(
 
-        private readonly portalProvider: PortalProviderService,
-        private readonly bitrixApi: BitrixApiService, // scope: REQUEST
+        private readonly portalContext: PortalContextService,
+        private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
         // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
-    ) { 
+    ) {
 
-        
+
 
     }
 
     async init(domain: string) {
         // this.domain = domain;
-        this.portalModel = await this.portalProvider.getModelFromRequest();
+        this.portalModel = this.portalContext.getModel();
         const portal = this.portalModel.getPortal();
 
 

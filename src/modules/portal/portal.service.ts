@@ -3,6 +3,8 @@ import { RedisService } from 'src/core/redis/redis.service';
 import { IPortal, IPortalResponse } from './interfaces/portal.interface';
 import { Redis } from 'ioredis';
 import { APIOnlineClient } from '../../clients/api-online.client';
+import { PortalModelFactory } from './factory/potal-model.factory';
+import { PortalModel } from './services/portal.model';
 
 @Injectable()
 export class PortalService {
@@ -12,7 +14,8 @@ export class PortalService {
 
     constructor(
         private readonly redisService: RedisService,
-        private readonly apiOnlineClient: APIOnlineClient
+        private readonly apiOnlineClient: APIOnlineClient,
+        private readonly modelFactory: PortalModelFactory
     ) {
         this.logger.log('PortalService initialized');
         this.redis = this.redisService.getClient();
@@ -47,7 +50,12 @@ export class PortalService {
         this.logger.error(`Error getting portal: ${response.message}`);
         throw new Error(response.message);
     }
-
+    async getModelByDomain(domain: string): Promise<PortalModel> {
+        Logger.log('getModelByDomain: ' + domain);
+        const portal = await this.getPortalByDomain(domain);
+        Logger.log('getModelByDomain: ' + portal?.id);
+        return this.modelFactory.create(portal);
+      }
     async getHook(domain: string): Promise<string> {
         this.logger.log(`Getting hook for domain: ${domain}`);
         const portal = await this.getPortalByDomain(domain);

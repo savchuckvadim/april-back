@@ -1,6 +1,6 @@
 // src/modules/bitrix/core/bitrix-core.module.ts
 import { Module } from '@nestjs/common';
-import { BitrixApiService } from './http/bitrix-api.service';
+import { BitrixRequestApiService } from './http/bitrix-request-api.service';
 // import { BitrixContextService } from '../services/bitrix-context.service';
 import { PortalModule } from 'src/modules/portal/portal.module';
 import { RedisModule } from 'src/core/redis/redis.module';
@@ -12,14 +12,14 @@ import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
 @Module({
   imports: [PortalModule, RedisModule, TelegramModule, HttpModule],
   providers: [
-    
-    BitrixApiService,     // для HTTP
+
+    BitrixRequestApiService,     // для HTTP
     BitrixApiFactoryService,   // для очередей
-    
+
 
   ],
   exports: [
-    BitrixApiService,
+    BitrixRequestApiService,
     BitrixApiFactoryService
 
   ],

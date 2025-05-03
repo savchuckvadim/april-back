@@ -8,7 +8,6 @@ import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
 import { RedisModule } from './core/redis/redis.module';
-import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
 import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
 import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 import { EventSalesModule } from './apps/event-sales/event.module';
@@ -19,6 +18,10 @@ import { PBXModule } from './modules/pbx/pbx.module';
 import { WsModule } from './core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
 import { HooksModule } from './modules/hooks/hooks.module';
+import { BitrixModule } from './modules/bitrix/bitrix.module';
+import { PortalModule } from './modules/portal/portal.module';
+import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
+
 @Module({
   imports: [
 
@@ -38,46 +41,26 @@ import { HooksModule } from './modules/hooks/hooks.module';
     DocumentModule,
     QueueModule,
     // HooksModule,
-    // BitrixModule,
-    // PortalModule,
+    AlfaActivityModule,
+    BitrixModule,
+    PortalModule,
     PBXModule,
     TelegramModule,
     RedisModule,
-
     SilentJobHandlersModule,
-
     KpiReportModule,
-
-    //flow
     EventSalesModule,
-
-
-
-    //commands
     GsrModule,
-
-    //ws
     WsModule,
-
-
-    //test queue ws
-    QueuePingModule,
-
-
-    //dependency modules with on init
-    AlfaActivityModule,
-    HooksModule
-
+    QueuePingModule
   ],
   controllers: [
     AppController,
     HealthController
-
   ],
   providers: [
     AppService,
     GlobalExceptionFilter,
   ],
-
 })
 export class AppModule { }

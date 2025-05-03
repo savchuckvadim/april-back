@@ -8,7 +8,7 @@ export class HooksService {
     private readonly bitrixActivityCreateService: BitrixActivityCreateService
   ) { 
     Logger.log('HooksService constructor ✅')
-    Logger.log(this.bitrixActivityCreateService)
+    // Logger.log(this.bitrixActivityCreateService)
   }
   create(domain: string, rawActivities: Record<string, any>) {
     this.bitrixActivityCreateService.createActivities(domain, rawActivities)

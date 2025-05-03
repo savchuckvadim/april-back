@@ -2,8 +2,8 @@ import { Body, Controller, HttpCode, HttpException, HttpStatus, Logger, Post } f
 import { DepartmentResolverService } from './services/department-resolver-bitrxi.service';
 import { DomainDto } from './dto/domain.dto';
 import { EDepartamentGroup, IPortal } from 'src/modules/portal/interfaces/portal.interface';
-import { BitrixApiService } from '../../core/http/bitrix-api.service';
-import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
+import { BitrixRequestApiService } from '../../core/http/bitrix-request-api.service';
+import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 // import { BitrixContextService } from '../../services/bitrix-context.service';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\department.controller.ts
@@ -11,8 +11,8 @@ import { PortalProviderService } from 'src/modules/portal/services/portal-provid
 export class DepartmentController {
   constructor(
     private readonly resolver: DepartmentResolverService,
-    private readonly bitrixApi: BitrixApiService,
-    private readonly portalProvider: PortalProviderService
+    // private readonly bitrixApi: BitrixRequestApiService,
+    private readonly portalService: PortalContextService
   ) {
 
   }
@@ -22,12 +22,12 @@ export class DepartmentController {
   async getFullDepartment(@Body() dto: DomainDto) {
     // Logger.log('getFullDepartment dto');
 
-    const portal = await this.portalProvider.getPortalByDomain(dto.domain)
-    const Portal = await this.portalProvider.getModelByDomain(dto.domain)
+    const portal =  this.portalService.getPortal()
+    const Portal =  this.portalService.getModel()
     if (portal && Portal) {
 
 
-      this.bitrixApi.initFromPortal(portal);
+      // this.bitrixApi.initFromPortal(portal);
 
       return this.resolver.getFullDepartment(dto.domain, EDepartamentGroup.sales);
     }

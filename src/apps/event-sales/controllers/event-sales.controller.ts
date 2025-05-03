@@ -1,17 +1,13 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
-import { PortalProviderService } from "src/modules/portal/services/portal-provider.service";
-// import { BitrixContextService } from "src/modules/bitrix/services/bitrix-context.service";
 import { EventSalesFlowDto } from "../dto/event-sales-flow.dto";
 import { EventSalesFlowUseCase } from "../use-cases/flow.use-case";
-import { BitrixApiService } from "src/modules/bitrix/core/http/bitrix-api.service";
-
 
 @Controller('event-sales')
 export class EventSalesController {
     constructor(
-        private readonly portalProvider: PortalProviderService,
+        // private readonly portalService: PortalContextService,
         // private readonly bitrixContext: BitrixContextService,
-        private readonly bitrixApi: BitrixApiService,
+        // private readonly bitrixApi: BitrixRequestApiService,
         private readonly flowService: EventSalesFlowUseCase
     ) { }
 

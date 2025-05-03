@@ -5,11 +5,9 @@ import { QueueModule } from 'src/modules/queue/queue.module';
 import { QueuePingUseCase } from './use-cases/queue-ping.use-case';
 import { QueuePingDispatchService } from './queue/queue-ping.dispatch.service';
 import { QueuePingQueueProcessor } from './queue/queue-ping.processor';
-import { WsService } from 'src/core/ws';
 import { PortalModule } from 'src/modules/portal/portal.module';
 import { BitrixModule } from 'src/modules/bitrix/bitrix.module';
-import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
-import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
+import { PortalService } from 'src/modules/portal/portal.service';
 
 @Module({
   imports: [
@@ -18,18 +16,18 @@ import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-ap
     BitrixModule,
     // PBXModule,
     QueueModule,
- 
+
   ],
   controllers: [QueuePingController],
   providers: [
-    PortalProviderService,
+
     QueuePingQueueProcessor,
-    QueuePingUseCase, 
+    QueuePingUseCase,
     QueuePingDispatchService,
 
   ],
   exports: [
-
+   
   ]
 })
-export class QueuePingModule {}
+export class QueuePingModule { }

@@ -1,5 +1,7 @@
 import { Injectable, Logger, Scope } from '@nestjs/common';
 import { IPortal } from '../interfaces/portal.interface';
+import { PortalModelFactory } from '../factory/potal-model.factory';
+import { PortalModel } from './portal.model';
 
 @Injectable({ scope: Scope.REQUEST })
 export class PortalContextService {
@@ -8,7 +10,10 @@ export class PortalContextService {
     private portal: IPortal;
 
  
-    constructor() {
+    constructor(
+        private readonly modelFactory: PortalModelFactory,
+    ) {
+       
         this.logger.log('PortalContextService initialized');
       }
       
@@ -26,4 +31,9 @@ export class PortalContextService {
         this.logger.log(`Portal found: ${this.portal.domain}`);
         return this.portal;
     }
+
+    getModel(): PortalModel {
+        const portal = this.getPortal();
+        return this.modelFactory.create(portal);
+      }
 } 

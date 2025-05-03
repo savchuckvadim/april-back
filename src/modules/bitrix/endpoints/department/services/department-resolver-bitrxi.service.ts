@@ -5,7 +5,7 @@ import { RedisService } from "src/core/redis/redis.service";
 import { DepartmentBitrixService } from "src/modules/bitrix/domain/department/services/department-bitrxi.service";
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { EDepartamentGroup, IPortal, } from "src/modules/portal/interfaces/portal.interface";
-import { PortalProviderService } from "src/modules/portal/services/portal-provider.service";
+import { PortalContextService } from "src/modules/portal/services/portal-context.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
@@ -16,7 +16,7 @@ export class DepartmentResolverService {
   constructor(
     private readonly bitrixService: DepartmentBitrixService,
     private readonly redisService: RedisService,
-    private readonly portalProvider: PortalProviderService
+    private readonly portalContext: PortalContextService
 
   ) {
 
@@ -29,7 +29,7 @@ export class DepartmentResolverService {
     const fromCache = await this.redis.get(sessionKey);
     // if (fromCache) return JSON.parse(fromCache);
 
-    const portal = await this.portalProvider.getModelFromRequest();
+    const portal =  this.portalContext.getModel();
     const baseDepartmentBitrix = portal.getDepartamentIdByCode(group);
     
     const baseDepartmentBitrixId = baseDepartmentBitrix?.bitrixId

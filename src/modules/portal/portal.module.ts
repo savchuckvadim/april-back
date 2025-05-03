@@ -8,7 +8,6 @@ import { APIOnlineClient } from '../../clients/api-online.client';
 import { PortalModel } from './services/portal.model';
 // import { ClientsModule } from 'src/clients/clients.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
-import { PortalProviderService } from './services/portal-provider.service';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
 import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
@@ -22,16 +21,16 @@ import { DepartmentController } from '../bitrix/endpoints/department/department.
         TelegramModule
     ],
     providers: [
-        PortalService,
-        PortalContextService,
-        PortalProviderService,
+        PortalService,  //for standalone queue etc
+        PortalContextService, //from request
+   
         PortalModelFactory,
         APIOnlineClient
     ],
     exports: [
-        PortalService,
-        PortalContextService,
-        PortalProviderService,
+        PortalService, //for standalone queue etc
+        PortalContextService, //from request
+   
         PortalModelFactory
     ]
 })
@@ -40,7 +39,7 @@ export class PortalModule {
         consumer
             .apply(PortalContextMiddleware)
             .exclude({ path: '/api/queue/ping', method: RequestMethod.ALL })
-            // .exclude('/hooks/*path')  // не кладём portal
+            .exclude('/hooks/*path')  // не кладём portal
             .exclude('api/queue/ping')  // не кладём portal
             .forRoutes(KpiReportController, DepartmentController)
         // .forRoutes({ path: '*', method: RequestMethod.ALL });
@@ -53,6 +52,5 @@ export class PortalModule {
 
 // PortalService	Получает портал (с кэшем в Redis)
 // PortalModelFactory + PortalModel	Доступ к методам портала
-// PortalProviderService	Обёртка, работает с domain → model
 // PortalContextService	Только для scope: REQUEST, хранит portal
 // PortalContextMiddleware	Парсит domain и кладёт в context

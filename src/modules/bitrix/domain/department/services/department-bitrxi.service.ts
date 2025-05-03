@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import { BitrixApiService } from "src/modules/bitrix/core/http/bitrix-api.service";
+import { BitrixRequestApiService } from "src/modules/bitrix/core/http/bitrix-request-api.service";
 import { IBXDepartment, IBXUser } from "../../interfaces/bitrix.interface";
 
 @Injectable()
 export class DepartmentBitrixService {
   constructor(
-    private readonly bitrixApi: BitrixApiService
+    private readonly bitrixApi: BitrixRequestApiService
   ) { }
 
 

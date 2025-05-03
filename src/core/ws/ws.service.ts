@@ -1,7 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CreateWDto } from './dto/create-w.dto';
-import { UpdateWDto } from './dto/update-w.dto';
-import { WsGateway } from './ws.gateway';
 import { Server, Socket } from 'socket.io';
 
 @Injectable()

@@ -1,7 +1,5 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
+import { WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import { WsService } from './ws.service';
-import { CreateWDto } from './dto/create-w.dto';
-import { UpdateWDto } from './dto/update-w.dto';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 

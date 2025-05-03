@@ -6,8 +6,8 @@ import { ReportDto } from '../dto/report.dto';
 import { PlanDto } from '../dto/plan.dto';
 import { LeadDto } from '../dto/lead.dto';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
-import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
+import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class EventSalesFlowUseCase {
@@ -50,11 +50,11 @@ export class EventSalesFlowUseCase {
 
     // остальные поля...
 
-    constructor(private readonly portalProvider: PortalProviderService) { }
+    constructor(private readonly portalContext: PortalContextService) { }
 
 
     async init(data: EventSalesFlowDto): Promise<this> {
-        this.portalModel = await this.portalProvider.getModelFromRequest();
+        this.portalModel =  this.portalContext.getModel();
         this.portal = this.portalModel.getPortal();
         this.isPostSale = data.isPostSale ?? false;
         this.postFail = data.fail;

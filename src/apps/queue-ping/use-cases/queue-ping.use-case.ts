@@ -1,19 +1,20 @@
-import { BitrixApiService } from "src/modules/bitrix/core/http/bitrix-api.service";
 import { BitrixApiFactoryService } from "src/modules/bitrix/core/queue/bitrix-api.factory.service";
-import { PortalProviderService } from "src/modules/portal/services/portal-provider.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";
 import { QueuePingDto } from "../dto/queue.dto";
-import { queuePbxInit } from "../lib/queuePbxInit.util";
-import { HttpException, HttpStatus, Inject, Logger } from "@nestjs/common";
-import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
+import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { BitrixApiQueueApiService } from "src/modules/bitrix/core/queue/bitrix-queue-api.service";
+import { PortalService } from "src/modules/portal/portal.service";
+
+@Injectable()
 export class QueuePingUseCase {
 
     private portalModel: PortalModel;
-    private bitrixApi: BitrixApiService;
+    private bitrixApi: BitrixApiQueueApiService;
     constructor(
-        @Inject(PortalProviderService)
-        private readonly portalProvider: PortalProviderService,
+    
+        private readonly portalService: PortalService, //for queue standalone
         /// NO!! scope: REQUEST
         private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
     ) {
@@ -25,11 +26,11 @@ export class QueuePingUseCase {
 
         try {
 
-            const provider = this.portalProvider
+            const provider = this.portalService
 
             Logger.log('[queuePbxInit] called with domain: ' + domain);
 
-            Logger.log('[queuePbxInit] called with provider: ' + provider);
+            Logger.log('[queuePbxInit] called with provider: ' + this.portalService);
 
 
             this.portalModel = await provider.getModelByDomain(domain);

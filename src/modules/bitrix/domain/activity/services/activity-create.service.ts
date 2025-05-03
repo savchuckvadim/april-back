@@ -1,8 +1,8 @@
 // infrastructure/services/activity-create.service.ts
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
-import { PortalProviderService } from 'src/modules/portal/services/portal-provider.service';
 import { BitrixActivityEntity } from '../entities/activity.entity';
+import { PortalService } from 'src/modules/portal/portal.service';
 // import { BitrixContextService } from 'src/modules/bitrix/services/bitrix-context.service';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class BitrixActivityCreateService {
 
     constructor(
         private readonly bitrixApiFactory: BitrixApiFactoryService,
-        private readonly portalProvider: PortalProviderService
+        private readonly portalService: PortalService
 
     ) {
         this.logger.log('BitrixActivityCreateService initialized');
@@ -30,7 +30,7 @@ export class BitrixActivityCreateService {
             this.logger.error('Domain is not provided');
             throw new Error('Domain is required to create activities');
         }
-        const portal = await this.portalProvider.getPortalByDomain(domain)
+        const portal = await this.portalService.getPortalByDomain(domain)
         if (portal) {
             const bitrixApi = this.bitrixApiFactory.create(portal);
 
