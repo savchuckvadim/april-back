@@ -21,6 +21,7 @@ import { HooksModule } from './modules/hooks/hooks.module';
 import { BitrixModule } from './modules/bitrix/bitrix.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
+import { EventServiceModule } from './apps/event-service/event-service.module';
 
 @Module({
   imports: [
@@ -52,7 +53,8 @@ import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
     EventSalesModule,
     GsrModule,
     WsModule,
-    QueuePingModule
+    QueuePingModule,
+    EventServiceModule
   ],
   controllers: [
     AppController,

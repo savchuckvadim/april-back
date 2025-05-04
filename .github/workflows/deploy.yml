@@ -36,6 +36,16 @@ jobs:
               sleep 5
             done
 
+            sleep 5
+            echo "⏳1 Жду, пока контейнер nest-api поднимется..."
 
+            sleep 35
+            echo "⏳1 Жду, пока контейнер nest-api поднимется..."
+
+
+            sleep 55
+            echo "⏳1 Жду, пока контейнер nest-api поднимется..."
+            
+            
             docker ps -a
             docker logs nest-api || true

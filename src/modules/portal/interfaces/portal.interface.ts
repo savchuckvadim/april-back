@@ -12,7 +12,7 @@ export interface IPortal {
     bitrixLists?: IPBXList[];
     id?: number;
     departament?: IDepartment;
-    smarts?: ISmart[];
+    smarts?: IPSmart[];
     deal?: IDeal;
     rpas?: IRPA[];
     company?: ICompany;
@@ -39,7 +39,7 @@ export interface IField {
     name: string;
     title: string;
     bitrixId: string;
-    bitrixCamelId?: string;
+    bitrixCamelId: string;
     entity_id?: number;
     parent_type?: string;
     bitrixfielditems?: Record<string, any>;
@@ -96,7 +96,7 @@ export interface IRPA {
     bitrixfields: IField[];
 }
 
-export interface ISmart {
+export interface IPSmart {
     id: number;
     portal_id: number;
     type: string;

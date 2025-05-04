@@ -56,44 +56,44 @@ export class PortalModel {
         return item;
     }
 
-    getDealCategoryByCode(portal: IPortal, code: string): ICategory | undefined {
-        return portal.deal?.categories.find(category => category.code === code);
+    getDealCategoryByCode( code: string): ICategory | undefined {
+        return this.portal.deal?.categories.find(category => category.code === code);
     }
 
-    getDealFieldByCode(portal: IPortal, code: string): IField | undefined {
-        return portal.deal?.bitrixfields.find(field => field.code === code);
+    getDealFieldByCode( code: string): IField | undefined {
+        return this.portal.deal?.bitrixfields.find(field => field.code === code);
     }
 
-    getDealFieldItemByCode(portal: IPortal, code: string): IFieldItem | undefined {
-        for (const field of portal.deal?.bitrixfields || []) {
+    getDealFieldItemByCode(code: string): IFieldItem | undefined {
+        for (const field of this.portal.deal?.bitrixfields || []) {
             const item = field.items.find(item => item.code === code);
             if (item) return item;
         }
         return undefined;
     }
 
-    getDealFieldItemByBitrixID(portal: IPortal, bitrixId: number): IFieldItem | undefined {
-        for (const field of portal.deal?.bitrixfields || []) {
+    getDealFieldItemByBitrixID(bitrixId: number): IFieldItem | undefined {
+        for (const field of this.portal.deal?.bitrixfields || []) {
             const item = field.items.find(item => item.bitrixId === bitrixId);
             if (item) return item;
         }
         return undefined;
     }
 
-    getDealFieldsSelectAll(portal: IPortal): string[] {
-        return portal.deal?.bitrixfields.map(field => field.bitrixId.toString()) || [];
+    getDealFieldsSelectAll(): string[] {
+        return this.portal.deal?.bitrixfields.map(field => field.bitrixId.toString()) || [];
     }
 
     getBitrixIdByIdFieldItemList(items: IFieldItem[], value: number): string | undefined {
         return items.find(item => item.bitrixId === value)?.code;
     }
 
-    getRpaByCode(portal: IPortal, code: string): IRPA | undefined {
-        return portal.rpas?.find(rpa => rpa.code === code);
+    getRpaByCode( code: string): IRPA | undefined {
+        return this.portal.rpas?.find(rpa => rpa.code === code);
     }
 
-    getRpaById(portal: IPortal, id: number): IRPA | undefined {
-        return portal.rpas?.find(rpa => rpa.bitrixId === id);
+    getRpaById( id: number): IRPA | undefined {
+        return this.portal.rpas?.find(rpa => rpa.bitrixId === id);
     }
 
     getRpaFieldByCode(rpa: IRPA, code: string): IField | undefined {
@@ -105,16 +105,16 @@ export class PortalModel {
         return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET}`;
     }
 
-    getStageByCode(portal: IPortal, stageCode: string): string | undefined {
-        for (const category of portal.deal?.categories || []) {
+    getStageByCode(stageCode: string): string | undefined {
+        for (const category of this.portal.deal?.categories || []) {
             const stage = category.stages.find(stage => stage.code === stageCode);
             if (stage) return stage.bitrixId;
         }
         return undefined;
     }
 
-    getStageRpaByCode(portal: IPortal, rpaCode: string, stageCode: string): string | undefined {
-        const rpa = this.getRpaByCode(portal, rpaCode);
+    getStageRpaByCode( rpaCode: string, stageCode: string): string | undefined {
+        const rpa = this.getRpaByCode(rpaCode);
         if (!rpa) return undefined;
 
         for (const category of rpa.categories) {
@@ -124,16 +124,16 @@ export class PortalModel {
         return undefined;
     }
 
-    getCompanyFieldByCode(portal: IPortal, code: string): IField | undefined {
-        return portal.company?.bitrixfields.find(field => field.code === code);
+    getCompanyFieldByCode(code: string): IField | undefined {
+        return this.portal.company?.bitrixfields.find(field => field.code === code);
     }
 
-    getPresetForName(portal: IPortal, code: string) {
-        return portal.bx_rq?.find(preset => preset.code === code);
+    getPresetForName(code: string) {
+        return this.portal.bx_rq?.find(preset => preset.code === code);
     }
 
-    getSmartByCode(portal: IPortal, code: string) {
-        return portal.smarts?.find(smart => smart.name === code);
+    getSmartByCode(code: string) {
+        return this.portal.smarts?.find(smart => smart.name === code);
     }
 
     getSmartFieldByCode(smart: any, code: string): IField | undefined {
@@ -144,12 +144,12 @@ export class PortalModel {
         return field;
     }
 
-    getContactField(portal: IPortal, fieldCode: string): IField | undefined {
-        return portal.contact?.bitrixfields.find(field => field.code === fieldCode);
+    getContactField( fieldCode: string): IField | undefined {
+        return this.portal.contact?.bitrixfields.find(field => field.code === fieldCode);
     }
 
-    getContactValueItem(portal: IPortal, value: number, fieldCode: string): string | undefined {
-        const field = this.getContactField(portal, fieldCode);
+    getContactValueItem(value: number, fieldCode: string): string | undefined {
+        const field = this.getContactField(fieldCode);
         if (!field) return undefined;
 
         return field.items.find(item => item.bitrixId === value)?.code;
