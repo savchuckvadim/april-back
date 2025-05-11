@@ -7,7 +7,7 @@ nest-vscode-debugging
 /.vscode
 
 # Logs
-logs
+/logs
 *.log
 /loki-data
 /uploads
