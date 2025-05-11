@@ -6,8 +6,9 @@ import * as https from 'https';
 import * as http from 'http';
 import { TelegramService } from '../../../telegram/telegram.service';
 import { AxiosResponse } from 'axios';
-import { IBitrixBatchResponse, IBitrixBatchResponseResult } from '../interface/bitrix-api.intterface';
+import { IBitrixBatchResponse, IBitrixBatchResponseResult, IBitrixResponse } from '../interface/bitrix-api.intterface';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
+import { BXApiSchema, EBXEntity, EBxMethod, EBxNamespace, TBXRequest, TBXResponse } from '../domain';
 
 
 export class BitrixBaseApi {
@@ -52,7 +53,7 @@ export class BitrixBaseApi {
 
         const processItem = (key: string, value: any) => {
             key = key.trim();
-            if (typeof value === 'object' && !Array.isArray(value)) {
+            if (value &&typeof value === 'object' && !Array.isArray(value)) {
                 for (const [subKey, subValue] of Object.entries(value)) {
                     processItem(`${key}[${subKey.trim()}]`, subValue);
                 }
@@ -91,6 +92,31 @@ export class BitrixBaseApi {
         }
     }
 
+
+    addCmdBatchType<
+        NAMESPACE extends keyof BXApiSchema,
+        ENTITY extends keyof BXApiSchema[NAMESPACE],
+        METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY]
+    >(
+        cmd: string,
+        namespace: NAMESPACE,
+        entity: ENTITY,
+        method: METHOD,
+        data: TBXRequest<NAMESPACE, ENTITY, METHOD>
+    ) {
+        const resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+
+        // Transform data to a plain object if necessary
+        const plainData = { ...data } as Record<string, any>;
+
+        const url = this.dictToQueryString(resultMethod, plainData);
+        if (!this.cmdBatch[cmd]) {
+            this.cmdBatch[cmd] = url;
+        }
+    }
+
+
+
     getCmdBatch(): Record<string, string> {
         return this.cmdBatch;
     }
@@ -112,9 +138,37 @@ export class BitrixBaseApi {
         }
     }
 
+    async callType<
+        NAMESPACE extends keyof BXApiSchema,
+        ENTITY extends keyof BXApiSchema[NAMESPACE],
+        METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY]
+    >(
+        namespace: NAMESPACE,
+        entity: ENTITY,
+        method: METHOD,
+        data: TBXRequest<NAMESPACE, ENTITY, METHOD>
+    ): Promise<TBXResponse<NAMESPACE, ENTITY, METHOD>> {
+        this.logger.log(`Making API call to method: ${String(method)}`);
+        this.logger.log(`Data: ${JSON.stringify(data)}`);
+        const url = `https://${this.domain}/${this.apiKey}/${String(namespace)}.${String(entity)}.${String(method)}`;
+        try {
+            const response = await firstValueFrom(
+                this.httpService.post(url, data, this.axiosOptions),
+            ) as AxiosResponse<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>>;
+            this.logger.log(`API call successful: ${JSON.stringify(response.data)}`);
+            return response.data.result;
+        } catch (error) {
+            this.logger.error(`API call failed: ${error.message}`);
+            await this.telegramBot.sendMessageAdminError(`Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`);
+            throw error;
+        }
+    }
+
+
     async callBatch(): Promise<any[]> {
         // this.logger.log('Calling batch');
         // this.logger.log(`Domain: ${this.domain}`);
+
         const results = [] as string[];
         const commands = Object.entries(this.cmdBatch);
         // this.logger.log(`Number of commands: ${commands.length}`);

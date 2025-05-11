@@ -26,8 +26,7 @@ export class PortalService {
         const cacheKey = `portal_${domain}`;
         const cached = await this.redis.get(cacheKey);
 
-        //@ts-ignore
-        // this.logger.log(`Cached portal: ${!!cached}`);
+        
         if (cached) {
             this.logger.log('Returning cached portal');
             const portal = JSON.parse(cached);

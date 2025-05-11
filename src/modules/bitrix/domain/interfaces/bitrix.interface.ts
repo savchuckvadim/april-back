@@ -118,9 +118,12 @@ export interface IBXLead {
     [key: string]: string | number
 }
 export interface IBXCompany {
+    ASSIGNED_BY_ID: string
     ID: number
     TITLE: string
-    PRES_COUNT: number
+    UF_CRM_PRES_COUNT: number
+    UF_CRM_USER_CARDNUM: string
+    COMMENTS: string
 }
 export interface IBXSmart {
     ID: number
@@ -130,8 +133,16 @@ export interface IBXSmart {
 export interface IBXDeal {
     ID: number
     TITLE: string
+    CONTACT_IDS?: string[] | number[]
+    CATEGORY_ID: string
+    STAGE_ID: string
+    COMPANY_ID: string
+    COMMENTS: string
+    ASSIGNED_BY_ID: string
+    CREATED_BY_ID: string
     UF_CRM_OP_MHISTORY?: string[]
     UF_CRM_OP_CURRENT_STATUS?: string
+   
 }
 
 
@@ -149,12 +160,49 @@ export interface IBXList {
 }
 
 export interface IBXContact {
-    ID: number
-    NAME: string
-    // LAST_NAME: string
+    ASSIGNED_BY_ID?: string | number
+    ID?: number
+    NAME?: string
+    COMPANY_ID?: string | number
+    LAST_NAME?: string
     // TYPE_ID: 'client'
     // SOURCE_ID: number
-    PHONE: string //wrong
-    EMAIL: string //wrong
-    POST: string
+    // PHONE: string //wrong
+    PHONE?: {
+        VALUE: string,
+        TYPE: string
+    }[]
+    EMAIL?: {
+        VALUE: string,
+        TYPE: string
+    }[]
+    POST?: string
+    COMMENTS?: string
+}
+
+
+
+export interface IBXProductRow {
+    ownerType: "D",
+    ownerId: string | number,
+    productRows: IBXProductRowRow[]
+
+}
+
+export interface IBXProductRowRow {
+    id?: number
+    priceNetto?: number
+    price?: number
+    discountSum?: number
+    discountTypeId?: number
+
+    productName?: string
+    quantity?: number
+    customized?: string
+    supply?: string
+    measureCode?: string
+    measureId?: number | string
+    sort?: number
+
+
 }

@@ -17,11 +17,13 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { PBXModule } from './modules/pbx/pbx.module';
 import { WsModule } from './core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
-import { HooksModule } from './modules/hooks/hooks.module';
 import { BitrixModule } from './modules/bitrix/bitrix.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
 // import { EventServiceModule } from './apps/event-service/event-service.module';
+import { KonstructorModule } from './apps/konstructor/konstructor.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { MetricsModule } from './core/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -38,8 +40,9 @@ import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
         REDIS_PORT: process.env.REDIS_PORT,
       })],
     }),
-
-    DocumentModule,
+  
+    MetricsModule,
+    WsModule,
     QueueModule,
     // HooksModule,
     AlfaActivityModule,
@@ -51,9 +54,10 @@ import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
     SilentJobHandlersModule,
     KpiReportModule,
     EventSalesModule,
-    GsrModule,
-    WsModule,
+    // GsrModule,
+ 
     QueuePingModule,
+    KonstructorModule,
     // EventServiceModule
   ],
   controllers: [

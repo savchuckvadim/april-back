@@ -9,6 +9,11 @@ nest-vscode-debugging
 # Logs
 logs
 *.log
+/loki-data
+/uploads
+/uploads/**
+/loki-data/**
+
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*

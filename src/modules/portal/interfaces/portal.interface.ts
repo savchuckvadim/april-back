@@ -13,12 +13,14 @@ export interface IPortal {
     id?: number;
     departament?: IDepartment;
     smarts?: IPSmart[];
-    deal?: IDeal;
+    // deal?: IDeal;
+    deals: IDeal[];
     rpas?: IRPA[];
     company?: ICompany;
     contact?: IContact;
     lead?: Record<string, any>;
     bx_rq?: IPresetRQ[];
+    measures: IPPortalMeasure[];
 }
 
 export interface IFieldItem {
@@ -35,7 +37,7 @@ export interface IFieldItem {
 export interface IField {
     ID?: number;
     type: string;
-    code: string;
+    code: IFieldCode;
     name: string;
     title: string;
     bitrixId: string;
@@ -45,7 +47,11 @@ export interface IField {
     bitrixfielditems?: Record<string, any>;
     items: IFieldItem[];
 }
-
+export type IFieldCode =
+    'ork_current_contract_fin_date' |
+    'supply_date' |
+    'sales_kpi_event_date' |
+    'sales_kpi_event_type' | string
 export interface ICategory {
     id: number;
     type: string;
@@ -189,11 +195,46 @@ export interface IPortalResponse {
     success: boolean;
     data?: IPortal;
     error?: string;
-} 
+}
 
-export interface IPDepartment{
+export interface IPDepartment {
     id: number
     group: string
     type: string
-    bitrixId:number
+    bitrixId: number
 }
+
+
+export interface IPMeasure {
+    id: number;
+    created_at: string;
+    updated_at: string;
+    name: string;
+    shortName: string;
+    fullName: string;
+    code: PMeasureCode;
+    type: 'service' | 'product' | 'lic' | 'abon' | string;
+}
+
+export interface IPPortalMeasure {
+    id: number;
+    measure_id: number;
+    portal_id: number;
+    bitrixId: string;
+    name: string;
+    shortName: string;
+    fullName: string;
+    created_at: string;
+    updated_at: string;
+    measure: IPMeasure;
+}
+
+export type PMeasureCode =
+    | 'month'
+    | 'piece'
+    | 'licHalf'
+    | 'licYear'
+    | 'licTwoYears'
+    | 'abonHalf'
+    | 'abonYear'
+    | 'abonTwoYears';

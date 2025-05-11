@@ -11,6 +11,7 @@ import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
 import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
+import { GsrServiceController } from 'src/commands/excel-migrate/gsr.controller';
 
 // C:\Projects\April-KP\april-next\back\src\modules\portal\portal.module.ts
 @Module({

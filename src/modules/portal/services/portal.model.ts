@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup, IPDepartment } from '../interfaces/portal.interface';
+import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup, IPDepartment, IPPortalMeasure, PMeasureCode, IFieldCode } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
 import { waitForDebugger } from 'inspector';
 
@@ -16,6 +16,11 @@ export class PortalModel {
     getPortal(): IPortal {
         return this.portal;
     }
+    getHook(): string {
+
+        return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET}`;
+    }
+
 
     getDepartamentIdByPortal(portal: IPortal, departament: EDepartamentGroup): IPDepartment | undefined {
         //@ts-ignore
@@ -55,17 +60,24 @@ export class PortalModel {
         }
         return item;
     }
-
-    getDealCategoryByCode( code: string): ICategory | undefined {
-        return this.portal.deal?.categories.find(category => category.code === code);
+    getDealCategories(): any {
+        return this.portal.deals[0].categories;
     }
-
-    getDealFieldByCode( code: string): IField | undefined {
-        return this.portal.deal?.bitrixfields.find(field => field.code === code);
+    getDealCategoryByCode(code: 'service_base' | 'tmc_base' | 'sales_base' | 'sales_presentation'): ICategory | undefined {
+        return this.portal.deals[0].categories.find(category => category.code === code);
     }
-
+    getDealFields(): IField[] {
+        return this.portal.deals[0].bitrixfields || [];
+    }
+    getDealFieldByCode(code: IFieldCode): IField | undefined {
+        return this.portal.deals[0].bitrixfields.find(field => field.code === code);
+    }
+    getDealFieldBitrixIdByCode(code: IFieldCode): string {
+        const field = this.portal.deals[0].bitrixfields.find(field => field.code === code)
+        return `UF_CRM_${field?.bitrixId}` || '';
+    }
     getDealFieldItemByCode(code: string): IFieldItem | undefined {
-        for (const field of this.portal.deal?.bitrixfields || []) {
+        for (const field of this.portal.deals[0].bitrixfields || []) {
             const item = field.items.find(item => item.code === code);
             if (item) return item;
         }
@@ -73,7 +85,7 @@ export class PortalModel {
     }
 
     getDealFieldItemByBitrixID(bitrixId: number): IFieldItem | undefined {
-        for (const field of this.portal.deal?.bitrixfields || []) {
+        for (const field of this.portal.deals[0].bitrixfields || []) {
             const item = field.items.find(item => item.bitrixId === bitrixId);
             if (item) return item;
         }
@@ -81,18 +93,45 @@ export class PortalModel {
     }
 
     getDealFieldsSelectAll(): string[] {
-        return this.portal.deal?.bitrixfields.map(field => field.bitrixId.toString()) || [];
+        return this.portal.deals[0].bitrixfields.map(field => field.bitrixId.toString()) || [];
+    }
+    getCompanyFields(): IField[] {
+        return this.portal.company?.bitrixfields || [];
+    }
+
+    getCompanyFieldByCode(code: string): IField | undefined {
+        return this.portal.company?.bitrixfields.find(field => field.code === code);
+    }
+
+    getContactFields(): IField[] {
+        return this.portal.contact?.bitrixfields || [];
+    }
+    getContactField(fieldCode: string): IField | undefined {
+        return this.portal.contact?.bitrixfields.find(field => field.code === fieldCode);
+    }
+    getContactFieldBitrixId(fieldCode: string): string {
+        const field = this.portal.contact?.bitrixfields.find(field => field.code === fieldCode)
+        if (!field) return '';
+        const result = this.getFieldBitrixId(field)
+        return result;
+    }
+
+    getContactValueItem(value: number, fieldCode: string): string | undefined {
+        const field = this.getContactField(fieldCode);
+        if (!field) return undefined;
+
+        return field.items.find(item => item.bitrixId === value)?.code;
     }
 
     getBitrixIdByIdFieldItemList(items: IFieldItem[], value: number): string | undefined {
         return items.find(item => item.bitrixId === value)?.code;
     }
 
-    getRpaByCode( code: string): IRPA | undefined {
+    getRpaByCode(code: string): IRPA | undefined {
         return this.portal.rpas?.find(rpa => rpa.code === code);
     }
 
-    getRpaById( id: number): IRPA | undefined {
+    getRpaById(id: number): IRPA | undefined {
         return this.portal.rpas?.find(rpa => rpa.bitrixId === id);
     }
 
@@ -100,20 +139,17 @@ export class PortalModel {
         return rpa.bitrixfields.find(field => field.code === code);
     }
 
-    getHook(): string {
 
-        return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET}`;
-    }
 
     getStageByCode(stageCode: string): string | undefined {
-        for (const category of this.portal.deal?.categories || []) {
+        for (const category of this.portal.deals[0].categories || []) {
             const stage = category.stages.find(stage => stage.code === stageCode);
             if (stage) return stage.bitrixId;
         }
         return undefined;
     }
 
-    getStageRpaByCode( rpaCode: string, stageCode: string): string | undefined {
+    getStageRpaByCode(rpaCode: string, stageCode: string): string | undefined {
         const rpa = this.getRpaByCode(rpaCode);
         if (!rpa) return undefined;
 
@@ -124,9 +160,7 @@ export class PortalModel {
         return undefined;
     }
 
-    getCompanyFieldByCode(code: string): IField | undefined {
-        return this.portal.company?.bitrixfields.find(field => field.code === code);
-    }
+
 
     getPresetForName(code: string) {
         return this.portal.bx_rq?.find(preset => preset.code === code);
@@ -144,14 +178,23 @@ export class PortalModel {
         return field;
     }
 
-    getContactField( fieldCode: string): IField | undefined {
-        return this.portal.contact?.bitrixfields.find(field => field.code === fieldCode);
+
+    getMeasures(): IPPortalMeasure[] {
+        return this.portal.measures;
+    }
+    getMeasureByCode(code: PMeasureCode): IPPortalMeasure {
+        return this.portal.measures.find(measure => measure.measure.code === code) as IPPortalMeasure;
     }
 
-    getContactValueItem(value: number, fieldCode: string): string | undefined {
-        const field = this.getContactField(fieldCode);
-        if (!field) return undefined;
 
-        return field.items.find(item => item.bitrixId === value)?.code;
+
+    getFieldBitrixId(field: IField): string {
+        return `UF_CRM_${field.bitrixId}`;
+    }
+
+    getFieldItemByCode(field: IField, itemCode: string): IFieldItem | undefined {
+      
+
+        return field.items.find(item => item.code === itemCode);
     }
 } 

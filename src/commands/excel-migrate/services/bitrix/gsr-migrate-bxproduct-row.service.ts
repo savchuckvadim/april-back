@@ -1,0 +1,46 @@
+import { Injectable } from "@nestjs/common";
+import { GsrMigrateBitrixAbstract } from "./gsr-migrate-bitrix-abstract.service";
+import { MigrateToBxDto } from "../../dto/migrate-to-bx.dto";
+import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix/core";
+import { IBXProductRow, IBXProductRowRow } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { IPPortalMeasure } from "src/modules/portal/interfaces/portal.interface";
+
+
+
+@Injectable()
+export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract {
+
+
+
+    getProductRowCommand(element: MigrateToBxDto, dealCommandCode: string) {
+        const pMeasure = this.portal.getMeasureByCode("month") as IPPortalMeasure
+
+        const productRowCommandCode = `${EBxNamespace.CRM_ITEM}.${EBXEntity.PRODUCT_ROW}.${EBxMethod.SET}.${element.id}`
+        const productTotal = {
+            ownerId: `$result[${dealCommandCode}]`,
+            ownerType: 'D',
+            productRows: [] as IBXProductRowRow[]
+        } as IBXProductRow
+
+        element.products.forEach((product, i) => {
+            const row = {
+                price: Number(product.monthSum),
+                quantity: product.quantity,
+                productName: product.name,
+                measureId: pMeasure.bitrixId,
+
+            }
+            productTotal.productRows.push(row)
+
+        });
+
+        this.bitrixApi.addCmdBatchType(
+            productRowCommandCode,
+            EBxNamespace.CRM_ITEM,
+            EBXEntity.PRODUCT_ROW,
+            EBxMethod.SET,
+            productTotal
+        )
+    }
+
+}
