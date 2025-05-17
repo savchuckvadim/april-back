@@ -5,13 +5,15 @@ import { PortalService } from './portal.service';
 import { PortalContextService } from './services/portal-context.service';
 import { PortalContextMiddleware } from './middleware/portal-context.middleware';
 import { APIOnlineClient } from '../../clients/api-online.client';
-import { PortalModel } from './services/portal.model';
+
 // import { ClientsModule } from 'src/clients/clients.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
 import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
-import { GsrServiceController } from 'src/commands/excel-migrate/gsr.controller';
+import { AlfaController } from 'src/apps/alfa/alfa.controller';
+import { ListController } from '../bitrix/endpoints/list/bx-list-endpoint.controller';
+
 
 // C:\Projects\April-KP\april-next\back\src\modules\portal\portal.module.ts
 @Module({
@@ -24,14 +26,14 @@ import { GsrServiceController } from 'src/commands/excel-migrate/gsr.controller'
     providers: [
         PortalService,  //for standalone queue etc
         PortalContextService, //from request
-   
+
         PortalModelFactory,
         APIOnlineClient
     ],
     exports: [
         PortalService, //for standalone queue etc
         PortalContextService, //from request
-   
+
         PortalModelFactory
     ]
 })
@@ -43,7 +45,12 @@ export class PortalModule {
             .exclude('/hooks/*path')  // не кладём portal
             .exclude('/kpi-report/download')  // не кладём portal
             .exclude('api/queue/ping')  // не кладём portal
-            .forRoutes(KpiReportController, DepartmentController)
+            .forRoutes(
+                KpiReportController,
+                DepartmentController,
+                AlfaController,
+                ListController
+            )
         // .forRoutes({ path: '*', method: RequestMethod.ALL });
 
         // .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });

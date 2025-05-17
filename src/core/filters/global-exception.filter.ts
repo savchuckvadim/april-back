@@ -4,6 +4,8 @@ import {
     ArgumentsHost,
     HttpException,
     HttpStatus,
+    BadRequestException,
+    Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { TelegramService } from '../../modules/telegram/telegram.service';
@@ -12,12 +14,27 @@ import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+    private readonly logger = new Logger(GlobalExceptionFilter.name);
+
     constructor(private readonly telegram: TelegramService) { }
 
     async catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const request = ctx.getRequest<Request>();
         const response = ctx.getResponse<Response>();
+
+        if (exception instanceof BadRequestException) {
+            const errorResponse = exception.getResponse();
+            const details = typeof errorResponse === 'object'
+                ? JSON.stringify(errorResponse, null, 2)
+                : errorResponse;
+
+            const message = `❌ Validation error:\n${details}`;
+            this.logger.error(message);
+            await this.telegram.sendMessage(message);
+
+            return response.status(400).json(errorResponse);
+        }
 
         const status =
             exception instanceof HttpException

@@ -3,10 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { IField, IPBXList, IPortal, IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 
 import { PortalModel } from 'src/modules/portal/services/portal.model';
-import { ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
+import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
-import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
 import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
 import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
@@ -52,8 +51,8 @@ export class ReportKpiUseCase {
         this.portal = portal;
         this.hook = this.portalModel.getHook();
 
-        this.portalKPIList = this.portalModel.getListByCode('kpi');
-        this.portalHistoryList = this.portalModel.getListByCode('history');
+        this.portalKPIList = this.portalModel.getListByCode('sales_kpi');
+        this.portalHistoryList = this.portalModel.getListByCode('sales_history');
 
 
     }
@@ -194,12 +193,12 @@ export class ReportKpiUseCase {
             }
         }
 
-        return currentActionsData
+        return currentActionsData.sort((a, b) => a.order - b.order);
 
     }
 
     private generateBatchCommands = (
-        departament: IBXUser[],
+        departament: BXUserDto[],
         currentActionsData: Filter[],
         eventResponsibleFieldId: string,
 
@@ -372,13 +371,13 @@ export class ReportKpiUseCase {
             }
             if (kpi.action.innerCode === 'call_plan') {
                 targetKpiItemResultPlan.action = { ...kpi.action };
-                targetKpiItemResultPlan.action.name = 'Запланированные Коммуникации'
+                targetKpiItemResultPlan.action.name = 'План'
 
                 targetKpiItemResultPlan.action.innerCode = 'result_communication_plan'
             }
             if (kpi.action.innerCode === 'call_done') {
                 targetKpiItemResultDone.action = { ...kpi.action };
-                targetKpiItemResultDone.action.name = 'Результативные Коммуникации'
+                targetKpiItemResultDone.action.name = 'Результативные'
                 targetKpiItemResultDone.action.innerCode = 'result_communication_done'
             }
 
@@ -394,7 +393,7 @@ export class ReportKpiUseCase {
 
     private getCalculateResults = (
         results: IBitrixBatchResponseResult[],
-        departament: IBXUser[],
+        departament: BXUserDto[],
         currentActionsData: Filter[]
     ): ReportData[] => {
         const report = [] as ReportData[];

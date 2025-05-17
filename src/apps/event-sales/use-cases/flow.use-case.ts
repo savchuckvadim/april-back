@@ -1,15 +1,15 @@
 import { Injectable, Logger, Scope } from '@nestjs/common';
-import { FailDto } from '../dto/fail.dto';
-import { EventSalesFlowDto } from '../dto/event-sales-flow.dto';
-import { ReportDto } from '../dto/report.dto';
+import { FailDto } from '../dto/event-sale-flow/fail.dto';
+import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
+import { ReportDto } from '../dto/event-sale-flow/report.dto';
 
-import { PlanDto } from '../dto/plan.dto';
-import { LeadDto } from '../dto/lead.dto';
+import { PlanDto } from '../dto/event-sale-flow/plan.dto';
+import { LeadDto } from '../dto/event-sale-flow/lead.dto';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
+import { PortalService } from 'src/modules/portal/portal.service';
 
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class EventSalesFlowUseCase {
     private hook: string;
     private portal: IPortal;
@@ -50,11 +50,12 @@ export class EventSalesFlowUseCase {
 
     // остальные поля...
 
-    constructor(private readonly portalContext: PortalContextService) { }
+    constructor(private readonly portalService: PortalService) { }
 
 
     async init(data: EventSalesFlowDto): Promise<this> {
-        this.portalModel =  this.portalContext.getModel();
+        this.portalModel = await this.portalService.getModelByDomain(data.domain);
+
         this.portal = this.portalModel.getPortal();
         this.isPostSale = data.isPostSale ?? false;
         this.postFail = data.fail;

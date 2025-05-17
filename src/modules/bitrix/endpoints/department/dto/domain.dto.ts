@@ -1,6 +1,6 @@
-export class DomainDto {
-    domain: EClients
-}
+import { ApiProperty } from "@nestjs/swagger";
+import { IsEnum } from "class-validator";
+
 
 export enum EClients {
     dev='april-dev.bitrix24.ru',
@@ -9,4 +9,10 @@ export enum EClients {
     gsirk='gsirk.bitrix24.ru',
     alfacentr='alfacentr.bitrix24.ru',
 
+}
+
+export class DomainDto {
+    @IsEnum(EClients)
+    @ApiProperty({ enum: EClients }) // для отображения в Swagger
+    domain: EClients
 }

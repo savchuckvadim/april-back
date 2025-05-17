@@ -3,6 +3,7 @@ export type Product = {
     name: string,
     quantity: number,
     monthSum: string,
+    armId: string,
 }
 
 export type Contact = {
@@ -29,7 +30,7 @@ export type Contract = {
     contractPrepayment: string
 }
 export class MigrateToBxDto {
-    id: string | null;
+    id: string;
     company: string;
     // kit: '' as string,
     products: Product[];

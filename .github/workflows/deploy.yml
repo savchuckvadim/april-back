@@ -28,62 +28,21 @@ jobs:
             tmux new -d -s deploy-session-nest-api "docker-compose up -d --build && echo ✅ nest-api Готово"
 
             echo "⏳ Жду, пока контейнер nest-api поднимется..."
-            for i in {1..90}; do
-              if docker ps --filter "name=nest-api" --filter "status=running" | grep nest-api; then
-                echo "✅ Контейнер запущен!"
+            old_id=$(docker ps --filter "name=nest-api" --format "{{.ID}}")
+
+            docker-compose up -d --build
+
+            echo "⏳ Жду, пока произойдёт обновление контейнера..."
+            for i in {1..60}; do
+              new_id=$(docker ps --filter "name=nest-api" --format "{{.ID}}")
+              if [ "$new_id" != "$old_id" ]; then
+                echo "✅ Контейнер обновился: $old_id → $new_id"
                 break
               fi
-              echo "⌛ Ожидание запуска контейнера..."
-              sleep 5
+              echo "⌛ Контейнер ещё старый, жду..."
+              sleep 2
             done
 
-            sleep 5
-            echo "⏳1 Жду, пока контейнер nest-api поднимется..."
-
-            sleep 35
-            echo "⏳1 Жду, пока контейнер nest-api поднимется..."
-
-
-            sleep 55
-            echo "⏳1 Жду, пока контейнер nest-api поднимется..."
-
-            sleep 5
-            echo "⏳2 Жду, пока контейнер nest-api поднимется..."
-
-            sleep 35
-            echo "⏳2 Жду, пока контейнер nest-api поднимется..."
-
-
-            sleep 55
-            echo "⏳2 Жду, пока контейнер nest-api поднимется..."
-            
-            docker ps -a
-
-
-            sleep 35
-            echo "⏳3 Жду, пока контейнер nest-api поднимется..."
-
-
-            sleep 55
-            echo "⏳3 Жду, пока контейнер nest-api поднимется..."
-
-
-            sleep 35
-            echo "⏳4 Жду, пока контейнер nest-api поднимется..."
-            docker ps -a
-
-            sleep 55
-            echo "⏳4 Жду, пока контейнер nest-api поднимется..."
-            
-
-            sleep 35
-            echo "⏳5 Жду, пока контейнер nest-api поднимется..."
-
-
-            sleep 55
-            echo "⏳5 Жду, пока контейнер nest-api поднимется..."
-
-            docker ps -a
             sleep 35
             echo "⏳6 Жду, пока контейнер nest-api поднимется..."
 

@@ -1,6 +1,8 @@
 import { IBXContact } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { EEventItemResultType, WorkStatus, NoresultReason, FailType, FailReason } from '../types/report-types';
-import { IsBoolean, IsObject, IsString } from 'class-validator';
+import { EEventItemResultType, WorkStatus, NoresultReason, FailType, FailReason } from '../../types/report-types';
+import { IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ContactDto } from './contact.dto';
 
 export class ReportDto {
   @IsString()
@@ -29,8 +31,10 @@ export class ReportDto {
     current: FailReason;
   };
 
-  @IsObject()
-  contact: IBXContact;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ContactDto)
+  contact: ContactDto | null;
 
   @IsBoolean()
   isNoCall: boolean;

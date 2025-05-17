@@ -85,29 +85,31 @@ export interface IBXTask {
 export interface IBXUser {
     ACTIVE: boolean
     DATE_REGISTER: string
-    EMAIL: string
-    ID: number
-    IS_ONLINE: string
-    LAST_ACTIVITY_DATE: Array<string>
-    LAST_LOGIN: string
+    EMAIL?: string
+    ID: number | string
+    IS_ONLINE?: string
+    LAST_ACTIVITY_DATE?: string
+    LAST_LOGIN?: string
     LAST_NAME: string
     NAME: string
-    PERSONAL_BIRTHDAY: string
-    PERSONAL_CITY: string
-    PERSONAL_GENDER: string
-    PERSONAL_MOBILE: string
-    PERSONAL_PHOTO: string
-    PERSONAL_WWW: string
-    SECOND_NAME: string
-    TIMESTAMP_X: Array<string>
-    TIME_ZONE_OFFSET: string
+    PERSONAL_BIRTHDAY?: string
+    PERSONAL_CITY?: string
+    PERSONAL_GENDER?: string
+    PERSONAL_MOBILE?: string
+    PERSONAL_PHOTO?: string
+    PERSONAL_WWW?: string
+    SECOND_NAME?: string
+ 
+    TIMESTAMP_X?: Array<string>
+    TIME_ZONE_OFFSET?: string
     UF_DEPARTMENT: Array<number>
-    UF_EMPLOYMENT_DATE: string
-    UF_PHONE_INNER: string
+    UF_EMPLOYMENT_DATE?: string
+    UF_PHONE_INNER?: string
     // UF_USR_1570437798556: boolean
-    USER_TYPE: string
-    WORK_PHONE: string
-    WORK_POSITION: string
+    USER_TYPE?: string
+    WORK_PHONE?: string
+    WORK_POSITION?: string
+
     // XML_ID: string
 }
 
@@ -122,7 +124,7 @@ export interface IBXCompany {
     ID: number
     TITLE: string
     UF_CRM_PRES_COUNT: number
-    UF_CRM_USER_CARDNUM: string
+    UF_CRM_USER_CARDNUM: string  //регистрационный лист номер
     COMMENTS: string
 }
 export interface IBXSmart {
@@ -131,6 +133,7 @@ export interface IBXSmart {
 }
 
 export interface IBXDeal {
+    [key: string]: string | number | string[] | number[] | boolean | undefined
     ID: number
     TITLE: string
     CONTACT_IDS?: string[] | number[]
@@ -142,6 +145,8 @@ export interface IBXDeal {
     CREATED_BY_ID: string
     UF_CRM_OP_MHISTORY?: string[]
     UF_CRM_OP_CURRENT_STATUS?: string
+    UF_CRM_UC_ID?: string[] //id комплекта арм Garant
+    UF_CRM_RPA_ARM_COMPLECT_ID?: string[] //id комплекта арм RPA April
    
 }
 

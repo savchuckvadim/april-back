@@ -10,6 +10,8 @@ import { GsrMigrateBitrixDealService } from "./services/bitrix/gsr-migrate-bxdea
 import { GsrMigrateBitrixCompanyService } from "./services/bitrix/gsr-migrate-bxcompany.service";
 import { GsrMigrateBitrixProductRowService } from "./services/bitrix/gsr-migrate-bxproduct-row.service";
 import { GsrMigrateBitrixContactService } from "./services/bitrix/gsr-migrate-bxcontact.service";
+import { BxDealRepository } from "src/modules/bitrix/domain/crm/deal/bx-deal.repository";
+import { BxCompanyRepository } from "src/modules/bitrix/domain/crm/company/bx-company.repository";
 @Injectable()
 export class GsrBitrixService {
     private bitrixApi: BitrixApiQueueApiService
@@ -41,7 +43,7 @@ export class GsrBitrixService {
         this.contactService.setContext(this.bitrixApi, this.portal);
 
         data.forEach((element, index) => {
-            if (index >= 100 ) {
+            if (index >= 100) {
                 const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.ADD}.${element.id}`
                 this.companyService.getCompanyCommand(element, companyCmd)
                 const dealCmd = `${EBxNamespace.CRM}.${EBXEntity.DEAL}.${EBxMethod.ADD}.${element.id}`
@@ -63,6 +65,149 @@ export class GsrBitrixService {
             result,
 
         }
+    }
+
+    async getDeals(domain: string, data: MigrateToBxDto[]) {
+        this.portal = await this.portalService.getModelByDomain(domain);
+        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
+        const pDealCategory = this.portal.getDealCategoryByCode('service_base')
+
+        const dealRepository = new BxDealRepository(this.bitrixApi)
+        const companyRepository = new BxCompanyRepository(this.bitrixApi)
+
+        data.forEach((element, index) => {
+            if (element.id) {
+                const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.LIST}.${element.id}`
+                companyRepository.getCompanyListBtch(
+                    companyCmd,
+                    {
+                        UF_CRM_USER_CARDNUM: element.id.toString()
+                    },
+                    ['ID', 'TITLE']
+
+                )
+
+
+
+            }
+        });
+        const response = await this.bitrixApi.callBatchWithConcurrency(1);
+        let total = 0
+        const result = {
+            result: {} as { [key: string]: any; },
+            total
+        }
+        response.map(r => {
+
+
+            for (const i in r.result) {
+                if (r.result[i][0]) {
+                    // r.result[i].map(item => result.result.push({ [`${i}_${result.total}`]: item }))
+                    result.result[`${i}_${result.total}`] = r.result[i]
+                } else {
+                    result.result.push({ [`${i}`]: null })
+                }
+
+                result.total += 1
+            }
+
+        })
+        const doubles = Object.values(result.result).filter(value => value.length > 1)
+        return { result: result.result, doubles: doubles }
+    }
+
+
+    async updateDeals(domain: string, data: MigrateToBxDto[]) {
+        this.portal = await this.portalService.getModelByDomain(domain);
+        const pDealContractEndField2 = this.portal.getDealFieldBitrixIdByCode('contract_end')
+
+
+
+        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
+        const pDealCategory = this.portal.getDealCategoryByCode('service_base')
+
+        const dealRepository = new BxDealRepository(this.bitrixApi)
+        const companyRepository = new BxCompanyRepository(this.bitrixApi)
+
+        this.productRowService.setContext(this.bitrixApi, this.portal);
+       
+        data.forEach((element, index) => {
+            if (element.id && element.id == '61-40762-000464') {
+                //@ts-ignore
+              
+                const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.LIST}.${element.id}`
+                companyRepository.getCompanyListBtch(
+                    companyCmd,
+                    {
+                        UF_CRM_USER_CARDNUM: element.id.toString()
+                    },
+                    ['ID', 'TITLE']
+
+                )
+
+                dealRepository.getDealListBtch(
+                    `list_deals_of_${element.id.toString()}`,
+                    {
+                        CATEGORY_ID: pDealCategory?.bitrixId || '',
+                        COMPANY_ID: `$result[${companyCmd}][0][ID]`
+                    },
+                    ['ID', 'TITLE']
+
+                )
+
+                dealRepository.getDealBtch(
+                    `get_deals_of_${element.id.toString()}`,
+                    `$result[list_deals_of_${element.id.toString()}][0][ID]`,
+
+
+                )
+                const armIds = element.products.map(p => p.armId)
+                dealRepository.updateDealBtch(
+                    `update_deal_${element.id.toString()}`,
+                    `$result[get_deals_of_${element.id.toString()}][ID]`,
+                    {
+                        UF_CRM_RPA_ARM_COMPLECT_ID: armIds,
+                        [pDealContractEndField2]: element.contract.contractEndDate,
+
+                    }
+
+
+                )
+                this.productRowService.getProductRowCommandById(element, `$result[get_deals_of_${element.id.toString()}][ID]`)
+
+
+                dealRepository.getDealBtch(
+                    `post_get_deals_of_${element.id.toString()}`,
+                    `$result[get_deals_of_${element.id.toString()}][ID]`,
+
+
+                )
+
+            }
+        });
+        const response = await this.bitrixApi.callBatchWithConcurrency(1);
+        // let total = 0
+        const result = {
+            result: response, // {} as { [key: string]: any; },
+            // total
+        }
+        // response.map(r => {
+
+
+        //     for (const i in r.result) {
+        //         if (r.result[i][0]) {
+        //             // r.result[i].map(item => result.result.push({ [`${i}_${result.total}`]: item }))
+        //             result.result[`${i}_${result.total}`] = r.result[i]
+        //         } else {
+        //             result.result.push({ [`${i}`]: null })
+        //         }
+
+        //         result.total += 1
+        //     }
+
+        // })
+        // const doubles = Object.values(result.result).filter(value => value.length > 1)
+        return { result: result.result, data }
     }
 
 }

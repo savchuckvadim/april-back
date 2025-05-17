@@ -1,4 +1,3 @@
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
@@ -9,6 +8,7 @@ import { getSwaggerConfig } from './core/config/swagger/swagger.config';
 import { cors } from './core/config/cors/cors.config';
 import { winstonLogger } from './core/config/logs/logger';
 import { WinstonModule } from 'nest-winston';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 
 
 async function bootstrap() {
@@ -17,6 +17,36 @@ async function bootstrap() {
     snapshot: true,
     logger: WinstonModule.createLogger({ instance: winstonLogger })
   });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      forbidUnknownValues: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+      exceptionFactory: (errors) => {
+        const validationErrors = errors.map((e) => ({
+          property: e.property,
+          constraints: e.constraints,
+          children: e.children?.map((c) => ({
+            property: c.property,
+            constraints: c.constraints,
+            children: c.children,
+          })),
+        }));
+
+        console.error('[Validation Error]', validationErrors);
+
+        return new BadRequestException({
+          message: 'Validation failed',
+          errors: validationErrors
+        });
+      },
+    }),
+  );
+
+
   app.setGlobalPrefix('api');
 
   // глобально подключаем interceptor

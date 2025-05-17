@@ -2,10 +2,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
-import { GetCallingStatisticFiltersDto } from '../dto/calling-statistic.dto';
+import { GetCallingStatisticDto, GetCallingStatisticFiltersDto } from '../dto/calling-statistic.dto';
 import { CALLING_TYPES, CallingDuration, ICallingStatisticResult, VoximplantFilter } from '../types/calling-statistic.type';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
+import { parseToISO } from '../lib/date-util';
 
 @Injectable()
 export class CallingStatisticUseCase {
@@ -16,7 +17,7 @@ export class CallingStatisticUseCase {
 
         private readonly bitrixApi: BitrixRequestApiService,
         // private readonly portalContext: PortalContextService,
-       
+
     ) { }
 
     // async init(
@@ -36,9 +37,20 @@ export class CallingStatisticUseCase {
 
     // }
 
-    async get(dto: GetCallingStatisticFiltersDto): Promise<ICallingStatisticResult[]> {
+    async get(dto: GetCallingStatisticDto): Promise<ICallingStatisticResult[]> {
 
-        const { departament: users, dateFrom, dateTo } = dto;
+        // Logger.log(dto)
+
+        const departament = dto.filters.departament
+        // const dateFrom = parseToISO(dto.filters.dateFrom, 0)
+        const dateFrom = dto.filters.dateFrom
+        const dateTo = dto.filters.dateTo
+        console.log('dateFrom original', dto.filters.dateFrom); // должно быть "2025-05-13"
+        console.log('dateFrom', dateFrom); // должно быть "2025-05-13"
+        console.log('typeof', typeof dto.filters.dateFrom); // должно быть string
+        console.log('dateTo', dto.filters.dateTo); // должно быть "2025-05-13"
+        console.log('typeof', typeof dto.filters.dateTo); // должно быть string
+
 
         const callingsTypes = CALLING_TYPES.map((type) => ({
             ...type,
@@ -50,13 +62,13 @@ export class CallingStatisticUseCase {
 
 
 
-        for (const user of users) {
+        for (const user of departament) {
             const userId = user.ID;
-            const resultUserReport = {
-                user,
-                userName: user.NAME,
-                callings: JSON.parse(JSON.stringify(callingsTypes)), // deep clone
-            };
+            // const resultUserReport = {
+            //     user,
+            //     userName: user.NAME,
+            //     callings: JSON.parse(JSON.stringify(callingsTypes)), // deep clone
+            // };
 
             callingsTypes.forEach(type => {
                 const filter: any = this.buildVoximplantFilter(
@@ -69,7 +81,7 @@ export class CallingStatisticUseCase {
                 const data = {
                     'FILTER': filter,
                 }
-                Logger.log(filter)
+                // Logger.log(filter)
                 this.bitrixApi.addCmdBatch(key, method, data)
             })
 
@@ -77,14 +89,14 @@ export class CallingStatisticUseCase {
 
         }
         const response = await this.bitrixApi.callBatchWithConcurrency(2)
-        const result = this.getFormedResults(response, users, method)
+        const result = this.getFormedResults(response, departament, method)
 
         return result;
 
     }
 
     private buildVoximplantFilter = (
-        userId: number,
+        userId: number | string,
         dateFrom: string,
         dateTo: string,
         duration: CallingDuration,

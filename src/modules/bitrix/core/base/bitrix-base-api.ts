@@ -53,7 +53,7 @@ export class BitrixBaseApi {
 
         const processItem = (key: string, value: any) => {
             key = key.trim();
-            if (value &&typeof value === 'object' && !Array.isArray(value)) {
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
                 for (const [subKey, subValue] of Object.entries(value)) {
                     processItem(`${key}[${subKey.trim()}]`, subValue);
                 }
@@ -104,7 +104,11 @@ export class BitrixBaseApi {
         method: METHOD,
         data: TBXRequest<NAMESPACE, ENTITY, METHOD>
     ) {
-        const resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+        let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+        if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
+            resultMethod = `${String(entity)}.${String(method)}`
+        }
+
 
         // Transform data to a plain object if necessary
         const plainData = { ...data } as Record<string, any>;
@@ -138,6 +142,39 @@ export class BitrixBaseApi {
         }
     }
 
+    // async callType<
+    //     NAMESPACE extends keyof BXApiSchema,
+    //     ENTITY extends keyof BXApiSchema[NAMESPACE],
+    //     METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY]
+    // >(
+    //     namespace: NAMESPACE,
+    //     entity: ENTITY,
+    //     method: METHOD,
+    //     data: TBXRequest<NAMESPACE, ENTITY, METHOD>
+    // ): Promise<TBXResponse<NAMESPACE, ENTITY, METHOD>> {
+    //     this.logger.log(`Making API call to method: ${String(method)}`);
+    //     this.logger.log(`Data: ${JSON.stringify(data)}`);
+    //     let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+    //     if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
+    //         resultMethod = `${String(entity)}.${String(method)}`
+    //     }
+
+    //     const url = `https://${this.domain}/${this.apiKey}/${resultMethod}`;
+
+
+    //     try {
+    //         const response = await firstValueFrom(
+    //             this.httpService.post(url, data, this.axiosOptions),
+    //         ) as AxiosResponse<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>>;
+    //         this.logger.log(`API call successful: ${JSON.stringify(response.data)}`);
+    //         return response.data.result;
+    //     } catch (error) {
+    //         this.logger.error(`API call failed: ${error.message}`);
+    //         await this.telegramBot.sendMessageAdminError(`Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`);
+    //         throw error;
+    //     }
+    // }
+
     async callType<
         NAMESPACE extends keyof BXApiSchema,
         ENTITY extends keyof BXApiSchema[NAMESPACE],
@@ -147,23 +184,29 @@ export class BitrixBaseApi {
         entity: ENTITY,
         method: METHOD,
         data: TBXRequest<NAMESPACE, ENTITY, METHOD>
-    ): Promise<TBXResponse<NAMESPACE, ENTITY, METHOD>> {
+    ): Promise<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>> {
         this.logger.log(`Making API call to method: ${String(method)}`);
         this.logger.log(`Data: ${JSON.stringify(data)}`);
-        const url = `https://${this.domain}/${this.apiKey}/${String(namespace)}.${String(entity)}.${String(method)}`;
+        let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+        if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
+            resultMethod = `${String(entity)}.${String(method)}`
+        }
+
+        const url = `https://${this.domain}/${this.apiKey}/${resultMethod}`;
+
+
         try {
             const response = await firstValueFrom(
                 this.httpService.post(url, data, this.axiosOptions),
             ) as AxiosResponse<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>>;
             this.logger.log(`API call successful: ${JSON.stringify(response.data)}`);
-            return response.data.result;
+            return response.data;
         } catch (error) {
             this.logger.error(`API call failed: ${error.message}`);
             await this.telegramBot.sendMessageAdminError(`Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`);
             throw error;
         }
     }
-
 
     async callBatch(): Promise<any[]> {
         // this.logger.log('Calling batch');

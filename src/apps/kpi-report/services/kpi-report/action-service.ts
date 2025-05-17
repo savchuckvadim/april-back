@@ -16,13 +16,15 @@ export class ActionService {
         switch (acCode) {
             case 'plan':
             case 'done': {
+                const { actionName } = this.getFeminineActionForm(acCode);
                 if (['xo', 'call', 'call_in_progress', 'call_in_money'].includes(atCode)) {
                     result.innerCode = `call_${acCode}`;
-                    result.name = `Звонок ${action.name}`;
+                    result.name = `Звонок`;
 
-                } else if (['presentation', 'presentation_uniq'].includes(atCode)) {
+                } else if (['presentation', 'presentation_uniq', 'presentation_contact_uniq'].includes(atCode)) {
                     result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;
-                    result.name = `${actionType.name} ${this.getFeminineForm(action.name)}`;
+                    const { actionTypeName } = this.getFeminineActionTypeForm(atCode);
+                    result.name = ` ${actionTypeName}`;
 
                 } else if (
                     ['ev_success', 'ev_fail'].includes(atCode) &&
@@ -33,7 +35,9 @@ export class ActionService {
                 } else {
                     break;
                 }
-
+                if (actionName) {
+                    result.name = `${actionName} ${result.name}`;
+                }
                 result.code = `${atCode}_${acCode}` as FilterCode;
                 result.actionItem = action;
                 result.actionTypeItem = actionType;
@@ -71,15 +75,76 @@ export class ActionService {
             default:
                 break;
         }
-
+        result.order = this.getActionOrder(result.innerCode);
         return result as Filter;
     }
 
     // 🔤 Аналог функции для женского рода
-    private getFeminineForm(value: string): string {
+    private getFeminineActionForm(actionCode: string,): { actionName: string, } {
         // TODO: адаптируй под свою логику
         // Пример: если value = "проведён", вернуть "проведена"
         // Тут можно подключить отдельный словарь или API
-        return value;
+        let actionName = ''
+
+        if (actionCode === 'plan') {
+            actionName = 'План'
+        }
+
+        return { actionName };
+    }
+
+    private getFeminineActionTypeForm(actionTypeCode: string): { actionTypeName: string } {
+        // TODO: адаптируй под свою логику
+        // Пример: если value = "проведён", вернуть "проведена"
+        // Тут можно подключить отдельный словарь или API
+
+        let actionTypeName = ''
+
+        if (actionTypeCode === 'presentation') {
+            actionTypeName = 'Презентация'
+        } else if (actionTypeCode === 'presentation_uniq') {
+            actionTypeName = 'През. по сделке'
+        } else if (actionTypeCode === 'presentation_contact_uniq') {
+            actionTypeName = 'През. по контакту'
+        }
+
+        return { actionTypeName };
+    }
+
+    private getActionOrder(actionCode: FilterInnerCode): number {
+        switch (actionCode) {
+            case 'call_plan':
+                return 1;
+            case 'call_done':
+                return 2;
+            case 'presentation_plan':
+                return 3;
+            case 'presentation_done':
+                return 4;
+            case 'presentation_uniq_plan':
+                return 5;
+            case 'presentation_uniq_done':
+                return 6;
+            case 'presentation_contact_uniq_plan':
+                return 7;
+            case 'presentation_contact_uniq_done':
+                return 8;
+            case 'ev_offer_act_send':
+                return 9;
+            case 'ev_offer_pres_act_send':
+                return 10;
+            case 'ev_invoice_act_send':
+                return 11;
+            case 'ev_invoice_pres_act_send':
+                return 12;
+            case 'ev_contract_act_send':
+                return 13;
+            case 'ev_success_done':
+                return 14;
+            case 'ev_fail_done':
+                return 15;
+            default:
+                return 0;
+        }
     }
 }

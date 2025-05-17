@@ -33,17 +33,17 @@ export class PortalModel {
     }
 
 
-    getListByCode(code: string): IPBXList | undefined {
-        let result = this.portal.lists?.find(list => list.type === code)
+    getListByCode(code: 'sales_kpi' | 'sales_history' | 'presentation' | 'service_history'): IPBXList | undefined {
+        let result = this.portal.lists?.find(list => `${list.group}_${list.type}` === code)
         if (!result) {
-            result = this.portal.bitrixLists?.find(list => list.type === code)
+            result = this.portal.bitrixLists?.find(list => `${list.group}_${list.type}` === code)
         }
         return result;
     }
 
     getIdByCodeFieldList(list: IPBXList, code: string): IField | undefined {
         return list.bitrixfields?.find(field =>
-            field.code.split(`${list.group}_${list.type}_`)[1] === code
+            field.code === `${list.group}_${list.type}_${code}`
         );
     }
 
@@ -193,7 +193,7 @@ export class PortalModel {
     }
 
     getFieldItemByCode(field: IField, itemCode: string): IFieldItem | undefined {
-      
+
 
         return field.items.find(item => item.code === itemCode);
     }

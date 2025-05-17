@@ -4,6 +4,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueNames } from '../constants/queue-names.enum';
 import { SilentJobHandlerId } from 'src/core/silence/constants/silent-job-handlers.enum';
+import { TranscribeJobHandlerId } from '../constants/transcribe-job-handler-id.enum';
 import { JobNames } from '../constants/job-names.enum';
 
 @Injectable()
@@ -15,12 +16,12 @@ export class QueueDispatcherService {
     @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
     @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
     @InjectQueue(QueueNames.SALES_KPI_REPORT) private readonly salesKpiReportQueue: Queue,
-    // и т.д.
+    @InjectQueue(QueueNames.TRANSCRIBE_AUDIO) private readonly transcribeAudioQueue: Queue,
   ) {
     this.logger.log('QueueDispatcherService initialized');
   }
 
-  async dispatch(queueName: QueueNames, jobName: SilentJobHandlerId, data: any) {
+  async dispatch(queueName: QueueNames, jobName: SilentJobHandlerId | TranscribeJobHandlerId, data: any) {
     const queue = this.getQueue(queueName);
     this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
     this.logger.log(`Job data: ${JSON.stringify(data)}`);
@@ -39,6 +40,8 @@ export class QueueDispatcherService {
         return this.silentQueue;
       case QueueNames.SALES_KPI_REPORT:
         return this.salesKpiReportQueue;
+      case QueueNames.TRANSCRIBE_AUDIO:
+        return this.transcribeAudioQueue;
 
       default:
         const error = `Unknown queue name: ${name}`;

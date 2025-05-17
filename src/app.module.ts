@@ -24,6 +24,8 @@ import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
 import { KonstructorModule } from './apps/konstructor/konstructor.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsModule } from './core/metrics/metrics.module';
+import { AlfaModule } from './apps/alfa/alfa.module';
+import { TranscriptionModule } from './modules/transcription/transcription.module';
 
 @Module({
   imports: [
@@ -40,7 +42,7 @@ import { MetricsModule } from './core/metrics/metrics.module';
         REDIS_PORT: process.env.REDIS_PORT,
       })],
     }),
-  
+
     MetricsModule,
     WsModule,
     QueueModule,
@@ -54,11 +56,14 @@ import { MetricsModule } from './core/metrics/metrics.module';
     SilentJobHandlersModule,
     KpiReportModule,
     EventSalesModule,
-    // GsrModule,
- 
+    GsrModule,
+
     QueuePingModule,
     KonstructorModule,
+    AlfaModule,
     // EventServiceModule
+
+    TranscriptionModule
   ],
   controllers: [
     AppController,

@@ -48,7 +48,7 @@ export class KpiReportController {
     // const domain = dto.domain;
     const filters = dto.filters;
     // await this.callingStatisticUseCase.init(domain);
-    const result = await this.callingStatisticUseCase.get(filters);
+    const result = await this.callingStatisticUseCase.get(dto);
     return result;
 
   }

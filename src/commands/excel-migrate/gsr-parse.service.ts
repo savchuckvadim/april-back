@@ -188,14 +188,15 @@ export class GsrParseService {
                     name: complectName?.toString().trim() as string,
                     quantity: quantityStringCell ? this.parseQuantity(quantityStringCell?.toString().trim()) : 0 as number,
                     monthSum: monthSumCell?.toString().trim() || '0' as string,
+                    armId: `${complectId?.toString().trim()} - ${complectName?.toString().trim()}` as string,
 
                 });
             }
 
             // добавляем договор
-            if (contractEndDateCell || contractTypeCell || contractPrepaymentCell) {
+            if (contractEndDateCell && contractTypeCell && contractPrepaymentCell) {
                 currentCompany.contract = {
-                    contractEndDate: contractEndDateCell ? this.parseDate(contractEndDateCell as string | Date | number)?.toString().trim() : '' as string,
+                    contractEndDate: this.parseDate(contractEndDateCell as string | Date | number) as string,
                     contractType: contractTypeCell?.toString().trim() as string,
                     contractPrepayment: contractPrepaymentCell?.toString().trim() as string,
                 };

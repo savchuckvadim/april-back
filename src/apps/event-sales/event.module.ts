@@ -6,6 +6,8 @@ import { BitrixModule } from "src/modules/bitrix/bitrix.module";
 import { TelegramModule } from "src/modules/telegram/telegram.module";
 import { HttpModule } from "@nestjs/axios";
 import { PBXModule } from "src/modules/pbx/pbx.module";
+import { EventSalesBxActivityController } from "./controllers/bx-activity.controller";
+import { EventSalesActivityUseCase } from "./use-cases/bx-activity.use-case";
 
 
 @Module({
@@ -16,8 +18,14 @@ import { PBXModule } from "src/modules/pbx/pbx.module";
         TelegramModule,
         HttpModule
     ],  
-    controllers: [EventSalesController],
-    providers: [EventSalesFlowUseCase],
+    controllers: [
+        EventSalesController,
+        EventSalesBxActivityController
+    ],
+    providers: [
+        EventSalesFlowUseCase,
+        EventSalesActivityUseCase
+    ],
     exports: [EventSalesFlowUseCase]
 
 })

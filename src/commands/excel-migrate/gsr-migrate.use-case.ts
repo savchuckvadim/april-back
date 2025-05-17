@@ -17,4 +17,16 @@ export class GsrMigrateUseCase {
         return result
 
     }
+
+    async getDeals(domain: string, filePath: string) {
+        const parsedData = await this.parseService.parseExcel(filePath);
+        const result = await this.bitrixService.getDeals(domain, parsedData);
+        return result
+    }
+
+    async updateDeals(domain: string, filePath: string) {
+        const parsedData = await this.parseService.parseExcel(filePath);
+        const result = await this.bitrixService.updateDeals(domain, parsedData);
+        return result
+    }
 }

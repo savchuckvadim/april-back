@@ -7,10 +7,16 @@ import { RedisModule } from 'src/core/redis/redis.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
 import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
+// import { BxDealRepository } from './domain/entities/crm/deal/bx-deal.repository';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\core\bitrix-core.module.ts
 
 @Module({
-  imports: [PortalModule, RedisModule, TelegramModule, HttpModule],
+  imports: [
+    PortalModule, 
+    RedisModule, 
+    TelegramModule, 
+    HttpModule
+  ],
   providers: [
 
     BitrixRequestApiService,     // для HTTP
@@ -20,7 +26,8 @@ import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
   ],
   exports: [
     BitrixRequestApiService,
-    BitrixApiFactoryService
+    BitrixApiFactoryService,
+    
 
   ],
 })

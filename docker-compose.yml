@@ -21,6 +21,8 @@ services:
       - ./src:/app/src      # 🔁 Монтируем исходники
       - ./tsconfig.json:/app/tsconfig.json
       - ./nest-cli.json:/app/nest-cli.json
+      - ./keys:/app/keys
+      - ./storage:/app/storage
     networks:
       - app-network
 

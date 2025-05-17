@@ -43,4 +43,35 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
         )
     }
 
+    getProductRowCommandById(element: MigrateToBxDto, dealId: string) {
+        const pMeasure = this.portal.getMeasureByCode("month") as IPPortalMeasure
+
+        const productRowCommandCode = `${EBxNamespace.CRM_ITEM}.${EBXEntity.PRODUCT_ROW}.${EBxMethod.SET}.${element.id}`
+        const productTotal = {
+            ownerId: dealId,
+            ownerType: 'D',
+            productRows: [] as IBXProductRowRow[]
+        } as IBXProductRow
+
+        element.products.forEach((product, i) => {
+            const row = {
+                price: Number(product.monthSum),
+                quantity: product.quantity,
+                productName: product.name,
+                measureId: pMeasure.bitrixId,
+
+            }
+            productTotal.productRows.push(row)
+
+        });
+
+        this.bitrixApi.addCmdBatchType(
+            productRowCommandCode,
+            EBxNamespace.CRM_ITEM,
+            EBXEntity.PRODUCT_ROW,
+            EBxMethod.SET,
+            productTotal
+        )
+    }
+
 }

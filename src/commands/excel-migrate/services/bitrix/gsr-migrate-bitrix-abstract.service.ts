@@ -1,5 +1,3 @@
-import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix/core";
-
 import { Injectable } from "@nestjs/common";
 import { BitrixApiQueueApiService } from "src/modules/bitrix/core/queue/bitrix-queue-api.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";

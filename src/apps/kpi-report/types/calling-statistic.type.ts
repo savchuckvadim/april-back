@@ -34,7 +34,7 @@ export type CallingTypeAction = typeof CALLING_TYPES[number]['action'];
 // "Наборов номера" | "Звонки > 30 сек" | ...
 
 export type VoximplantFilter = {
-    PORTAL_USER_ID: number;
+    PORTAL_USER_ID: number | string;
     '>CALL_START_DATE': string;
     '<CALL_START_DATE': string;
     '>CALL_DURATION'?: Exclude<CallingDuration, 'all'>;
