@@ -31,7 +31,8 @@ export class TranscriptionService {
         duration: string,
         department: string,
         entityType: string,
-        entityId: string
+        entityId: string,
+        entityName: string
 
     ): Promise<string | null> {
         let transcriptionId: string | undefined;
@@ -49,6 +50,7 @@ export class TranscriptionService {
                 user_id: userId,
                 entity_type: entityType,
                 entity_id: entityId,
+                entity_name: entityName,
                 status: 'processing',
                 symbols_count: 0,
                 price: 0,

@@ -36,7 +36,8 @@ export class StartTranscriptionUseCase {
                 duration: dto.duration,
                 department: dto.department,
                 entityType: dto.entityType,
-                entityId: dto.entityId
+                entityId: dto.entityId,
+                entityName: dto.entityName
             },
         );
 

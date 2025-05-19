@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { QueueNames } from 'src/modules/queue/constants/queue-names.enum';
 import { TranscribeJobHandlerId } from 'src/modules/queue/constants/transcribe-job-handler-id.enum';
-import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
 import { TranscriptionService } from '../services/transcription.service';
 
 interface TranscribeAudioJobData {
@@ -20,7 +19,7 @@ interface TranscribeAudioJobData {
     department: string;
     entityType: string;
     entityId: string;
-
+    entityName: string;
 }
 
 @Processor(QueueNames.TRANSCRIBE_AUDIO)
@@ -49,7 +48,8 @@ export class TranscribeAudioProcessor {
                 duration,
                 department,
                 entityType,
-                entityId
+                entityId,
+                entityName
              } = job.data;
 
             await this.transcriptionService.transcribe(
@@ -65,7 +65,8 @@ export class TranscribeAudioProcessor {
                 duration,
                 department,
                 entityType,
-                entityId
+                entityId,
+                entityName
             );
 
             this.logger.debug(`Completed transcription job for taskId: ${job.data.taskId}`);

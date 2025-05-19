@@ -14,7 +14,7 @@ export interface IOnlineTranscription {
     user_name?: string;
     entity_type?: string;
     entity_id?: string;
-
+    entity_name?: string;
 
     app?: string;
     department?: string;

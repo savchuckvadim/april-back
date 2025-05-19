@@ -57,6 +57,11 @@ export class TranscriptionRequestDto {
     @IsNotEmpty()
     entityId: string;
 
+    @ApiProperty({ description: 'Entity ID' })
+    @IsString()
+    @IsNotEmpty()
+    entityName: string;
+
     @ApiProperty({ description: 'Domain of the portal' })
     @IsString()
     @IsNotEmpty()
