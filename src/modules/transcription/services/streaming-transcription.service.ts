@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { YandexAuthService } from 'src/core/yandex/yandex-auth.service';
+import { YandexAuthService } from 'src/clients/yandex/yandex-auth.service';
 
 
 @Injectable()

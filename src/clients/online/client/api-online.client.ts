@@ -16,14 +16,15 @@ export class APIOnlineClient {
         this.logger.log('APIOnlineClient initialized');
         this.baseUrl = this.configService.get('API_ONLINE_URL') as string;
         this.apiKey = this.configService.get('API_ONLINE_KEY') as string;
-        // this.logger.log(`Base URL: ${this.baseUrl}`);
+        this.logger.log(`Base URL: ${this.baseUrl}`);
     }
 
-    async request(method: 'get' | 'post', endpoint: string, data: any, dataName: string) {
+    async request(method: 'get' | 'post' | 'put', endpoint: string, data: any, dataName: string) {
         try {
             this.logger.log(`Request API ONLINE`);
             this.logger.log(`Making ${method.toUpperCase()} request to ${endpoint}`);
-            // this.logger.log(`Request data: ${JSON.stringify(data)}`);
+            this.logger.log(`full endpoint: ${this.baseUrl}/${endpoint}`);
+            this.logger.log(`data: ${JSON.stringify(data)}`);
 
             const response = await firstValueFrom(
                 this.httpService[method](

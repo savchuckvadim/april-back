@@ -29,6 +29,14 @@ export class StartTranscriptionUseCase {
                 taskId,
                 domain: dto.domain,
                 userId: dto.userId,
+                userName: dto.userName,
+                appName: dto.appName,
+                activityId: dto.activityId,
+                fileId: dto.fileId,
+                duration: dto.duration,
+                department: dto.department,
+                entityType: dto.entityType,
+                entityId: dto.entityId
             },
         );
 

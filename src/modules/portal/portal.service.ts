@@ -2,14 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from 'src/core/redis/redis.service';
 import { IPortal, IPortalResponse } from './interfaces/portal.interface';
 import { Redis } from 'ioredis';
-import { APIOnlineClient } from '../../clients/api-online.client';
+import { APIOnlineClient } from '../../clients/online/';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { PortalModel } from './services/portal.model';
 
 @Injectable()
 export class PortalService {
     private readonly logger = new Logger(PortalService.name);
-    private readonly CACHE_TTL = 36000; 
+    private readonly CACHE_TTL = 36000;
     private readonly redis: Redis;
 
     constructor(
@@ -26,7 +26,7 @@ export class PortalService {
         const cacheKey = `portal_${domain}`;
         const cached = await this.redis.get(cacheKey);
 
-        
+
         if (cached) {
             this.logger.log('Returning cached portal');
             const portal = JSON.parse(cached);
@@ -54,7 +54,7 @@ export class PortalService {
         const portal = await this.getPortalByDomain(domain);
         Logger.log('getModelByDomain: ' + portal?.id);
         return this.modelFactory.create(portal);
-      }
+    }
     async getHook(domain: string): Promise<string> {
         this.logger.log(`Getting hook for domain: ${domain}`);
         const portal = await this.getPortalByDomain(domain);

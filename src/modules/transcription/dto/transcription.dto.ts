@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class TranscriptionRequestDto {
     @ApiProperty({ description: 'URL of the audio file to transcribe' })
@@ -16,6 +16,46 @@ export class TranscriptionRequestDto {
     @IsString()
     @IsNotEmpty()
     userId: string;
+
+    @ApiProperty({ description: 'User name' })
+    @IsString()
+    @IsNotEmpty()
+    userName: string;
+
+    @ApiProperty({ description: 'Application name' })
+    @IsString()
+    @IsNotEmpty()
+    appName: string;
+
+    @ApiProperty({ description: 'Activity ID' })
+    @IsString()
+    @IsNotEmpty()
+    activityId: string;
+
+    @ApiProperty({ description: 'File ID' })
+    @IsString()
+    @IsNotEmpty()
+    fileId: string;
+
+    @ApiProperty({ description: 'Duration of the audio file' })
+    @IsString()
+    @IsNotEmpty()
+    duration: string;
+
+    @ApiProperty({ description: 'Department' })
+    @IsString()
+    @IsNotEmpty()
+    department: string;
+
+    @ApiProperty({ description: 'Entity type' })
+    @IsString()
+    @IsNotEmpty()
+    entityType: string;
+
+    @ApiProperty({ description: 'Entity ID' })
+    @IsString()
+    @IsNotEmpty()
+    entityId: string;
 
     @ApiProperty({ description: 'Domain of the portal' })
     @IsString()
@@ -35,4 +75,9 @@ export class TranscriptionResponseDto {
 
     @ApiProperty({ description: 'Error message (if status is error)', required: false })
     error?: string;
-} 
+
+    @ApiProperty({ description: 'Transcription ID' })
+    transcriptionId?: number;
+}
+
+

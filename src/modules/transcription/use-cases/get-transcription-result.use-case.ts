@@ -15,9 +15,11 @@ export class GetTranscriptionResultUseCase {
         const status = await redis.get(`transcription:${taskId}:status`);
         const error = await redis.get(`transcription:${taskId}:error`);
         const text = await redis.get(`transcription:${taskId}:text`);
-
+        const transcriptionId = await redis.get(`transcription:${taskId}:transcriptionId`) as string | undefined;
+       
         const response: TranscriptionResponseDto = {
             taskId,
+            transcriptionId: transcriptionId ? parseInt(transcriptionId) : undefined,
             status: status || 'not_found',
         };
 

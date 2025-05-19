@@ -12,6 +12,15 @@ interface TranscribeAudioJobData {
     taskId: string;
     domain: string;
     userId: string;
+    userName: string;
+    appName: string;
+    activityId: string;
+    fileId: string;
+    duration: string;
+    department: string;
+    entityType: string;
+    entityId: string;
+
 }
 
 @Processor(QueueNames.TRANSCRIBE_AUDIO)
@@ -27,14 +36,36 @@ export class TranscribeAudioProcessor {
         try {
             this.logger.debug(`Processing transcription job for taskId: ${job.data.taskId}`);
 
-            const { fileUrl, fileName, taskId, domain, userId } = job.data;
+            const { 
+                fileUrl, 
+                fileName, 
+                taskId, 
+                domain, 
+                userId, 
+                userName,
+                appName,
+                activityId,
+                fileId,
+                duration,
+                department,
+                entityType,
+                entityId
+             } = job.data;
 
             await this.transcriptionService.transcribe(
                 fileUrl,
                 fileName,
                 taskId,
                 domain,
-                userId
+                userId,
+                userName,
+                appName,
+                activityId,
+                fileId,
+                duration,
+                department,
+                entityType,
+                entityId
             );
 
             this.logger.debug(`Completed transcription job for taskId: ${job.data.taskId}`);

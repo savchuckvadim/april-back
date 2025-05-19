@@ -4,7 +4,7 @@ import { RedisModule } from 'src/core/redis/redis.module';
 import { PortalService } from './portal.service';
 import { PortalContextService } from './services/portal-context.service';
 import { PortalContextMiddleware } from './middleware/portal-context.middleware';
-import { APIOnlineClient } from '../../clients/api-online.client';
+import { APIOnlineClient } from '../../clients/online/client/api-online.client';
 
 // import { ClientsModule } from 'src/clients/clients.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
@@ -13,7 +13,7 @@ import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
 import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
 import { AlfaController } from 'src/apps/alfa/alfa.controller';
 import { ListController } from '../bitrix/endpoints/list/bx-list-endpoint.controller';
-
+import { OnlineClientModule } from '../../clients/online';
 
 // C:\Projects\April-KP\april-next\back\src\modules\portal\portal.module.ts
 @Module({
@@ -21,7 +21,8 @@ import { ListController } from '../bitrix/endpoints/list/bx-list-endpoint.contro
         HttpModule,
         RedisModule,
         // ClientsModule,
-        TelegramModule
+        TelegramModule,
+        OnlineClientModule
     ],
     providers: [
         PortalService,  //for standalone queue etc
