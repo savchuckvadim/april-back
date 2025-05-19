@@ -18,4 +18,5 @@ RUN npm run build
 EXPOSE 3000
 
 # Запуск приложения
-CMD ["node", "dist/main"]
+# CMD ["node", "dist/main"]
+CMD ["npm", "run", "start:with-css"]
