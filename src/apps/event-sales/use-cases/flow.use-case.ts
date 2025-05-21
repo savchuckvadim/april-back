@@ -8,6 +8,8 @@ import { LeadDto } from '../dto/event-sale-flow/lead.dto';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { PortalService } from 'src/modules/portal/portal.service';
+import { IBXPlacement } from 'src/modules/bitrix/domain/interfaces/bitrix-placement.intreface';
+import { EBXEntity } from 'src/modules/bitrix/core';
 
 @Injectable()
 export class EventSalesFlowUseCase {
@@ -24,7 +26,7 @@ export class EventSalesFlowUseCase {
 
     private isUnplannedPresentation?: boolean;
     private entityType: string | null = null;
-    private entityId: number | null = null;
+    private entityId: number ;
     private currentTask: any;
 
     private resultStatus: string;
@@ -114,6 +116,9 @@ export class EventSalesFlowUseCase {
             isPresentationDone: this.isPresentationDone,
             nowDate: this.nowDate,
             isDealFlow: this.isDealFlow,
+            entityType: this.entityType,
+            entityId: this.entityId,
+
 
         }
 
@@ -123,8 +128,14 @@ export class EventSalesFlowUseCase {
         // ...
     }
 
-    private setEntityTypeAndId(placement: any): void {
-        // ...
+    private setEntityTypeAndId(placement: IBXPlacement | undefined): void {
+        if (!placement) {
+            this.entityType = null;
+            this.entityId = 0;
+            return;
+        }
+        this.entityType = placement.placement.includes('LEAD') ? EBXEntity.LEAD : EBXEntity.COMPANY;
+        this.entityId = placement.options.ID as number;
     }
 
     private setPlanDetails(plan: any): void {

@@ -1,8 +1,10 @@
+import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { IBXContact } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 
-export class ContactDto implements IBXContact {
+export class ContactDto {
     @IsNumber()
+    @Type(() => Number)
     ID: number;
 
     @IsString()

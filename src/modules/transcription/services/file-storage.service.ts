@@ -134,10 +134,10 @@ export class FileStorageService {
         }
     }
 
-    async deleteAudioFile(filePath: string): Promise<void> {
-        // Удаляем только локальные файлы
-        if (!filePath.startsWith('http')) {
-            await this.storageService.deleteFile(filePath);
-        }
-    }
+    // async deleteAudioFile(filePath: string): Promise<void> {
+    //     // Удаляем только локальные файлы
+    //     if (!filePath.startsWith('http')) {
+    //         await this.storageService.deleteFile(filePath);
+    //     }
+    // }
 } 

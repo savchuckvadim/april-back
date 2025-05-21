@@ -83,10 +83,8 @@ export class TranscriptionService {
                 await this.updateStatus(taskId, 'done', null, text, transcriptionId);
 
                 if (transcriptionId) {
-                    const transcriptionOnline = await this.onlineClient.updateTranscription({
+                    void await this.onlineClient.updateTranscription({
                  
-              
-
                         status: 'done',
                         symbols_count: text.length,
                         price: 0,
@@ -101,7 +99,7 @@ export class TranscriptionService {
             await this.updateStatus(taskId, 'error', 'Transcription failed', transcriptionId);
 
             if (transcriptionId) {
-                const errorUpdateTranscription = await this.onlineClient.updateTranscription({
+                void await this.onlineClient.updateTranscription({
 
                     status: 'error',
                     symbols_count: text.length,
