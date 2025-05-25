@@ -1,6 +1,6 @@
 
 import { Type } from "class-transformer";
-import { IsEnum, ValidateNested } from "class-validator";
+import { IsEnum, IsString, ValidateNested } from "class-validator";
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { IFieldItem } from "src/modules/portal/interfaces/portal.interface";
 
@@ -11,7 +11,9 @@ export enum EDownloadType {
 }
 
 export class DateRangeDto {
+    @IsString()
     from: string;
+    @IsString()
     to: string;
 }
 
