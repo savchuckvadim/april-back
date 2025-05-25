@@ -103,7 +103,7 @@ export class ActionService {
         if (actionTypeCode === 'presentation') {
             actionTypeName = 'Презентация'
         } else if (actionTypeCode === 'presentation_uniq') {
-            actionTypeName = 'През. по сделке'
+            actionTypeName = 'През. уникальная'
         } else if (actionTypeCode === 'presentation_contact_uniq') {
             actionTypeName = 'През. по контакту'
         }

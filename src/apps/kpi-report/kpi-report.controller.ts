@@ -9,7 +9,7 @@ import { CallingStatisticUseCase } from './usecases/kpi-calling-statistic.use-ca
 @Controller('kpi-report')
 export class KpiReportController {
   constructor(
-    private readonly excelService: ExcelReportService,
+    // private readonly excelService: ExcelReportService,
     private readonly reportKpiUseCase: ReportKpiUseCase,
     private readonly callingStatisticUseCase: CallingStatisticUseCase,
    
