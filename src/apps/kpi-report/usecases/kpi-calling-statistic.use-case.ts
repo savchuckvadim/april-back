@@ -69,7 +69,9 @@ export class CallingStatisticUseCase {
             //     userName: user.NAME,
             //     callings: JSON.parse(JSON.stringify(callingsTypes)), // deep clone
             // };
-
+            if (!userId) {
+                continue;
+            }
             callingsTypes.forEach(type => {
                 const filter: any = this.buildVoximplantFilter(
                     userId,

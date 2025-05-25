@@ -1,9 +1,135 @@
-
-import { Type } from "class-transformer";
-import { IsEnum, IsString, ValidateNested } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import { IsArray, IsEnum, IsString, ValidateNested, IsNumber, IsOptional, IsBoolean, IsDate } from "class-validator";
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { IFieldItem } from "src/modules/portal/interfaces/portal.interface";
 
+// Wrapper classes for external interfaces
+export class BitrixUser implements IBXUser {
+    @IsBoolean()
+    @IsOptional()
+    ACTIVE?: boolean;
+
+    @IsString()
+    @IsOptional()
+    DATE_REGISTER?: string;
+
+    @IsString()
+    @IsOptional()
+    EMAIL?: string;
+
+    @IsNumber()
+    @IsOptional()
+    @Transform(({ value }) => typeof value === 'string' ? Number(value) : value)
+    ID?: number | string;
+
+    @IsString()
+    @IsOptional()
+    IS_ONLINE?: string;
+
+    @IsString()
+    @IsOptional()
+    LAST_ACTIVITY_DATE?: string;
+
+    @IsString()
+    @IsOptional()
+    LAST_LOGIN?: string;
+
+    @IsString()
+    @IsOptional()
+    LAST_NAME?: string;
+
+    @IsString()
+    @IsOptional()
+    NAME?: string;
+
+    @IsString()
+    @IsOptional()
+    PERSONAL_BIRTHDAY?: string;
+
+    @IsString()
+    @IsOptional()
+    PERSONAL_CITY?: string;
+
+    @IsString()
+    @IsOptional()
+    PERSONAL_GENDER?: string;
+
+    @IsString()
+    @IsOptional()
+    PERSONAL_MOBILE?: string;
+
+    @IsString()
+    @IsOptional()
+    PERSONAL_PHOTO?: string;
+
+    @IsString()
+    @IsOptional()
+    PERSONAL_WWW?: string;
+
+    @IsString()
+    @IsOptional()
+    SECOND_NAME?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    TIMESTAMP_X?: string[];
+
+    @IsString()
+    @IsOptional()
+    TIME_ZONE_OFFSET?: string;
+
+    @IsArray()
+    @IsNumber({}, { each: true })
+    @IsOptional()
+    UF_DEPARTMENT?: number[];
+
+    @IsString()
+    @IsOptional()
+    UF_EMPLOYMENT_DATE?: string;
+
+    @IsString()
+    @IsOptional()
+    UF_PHONE_INNER?: string;
+
+    @IsString()
+    @IsOptional()
+    USER_TYPE?: string;
+
+    @IsString()
+    @IsOptional()
+    WORK_PHONE?: string;
+
+    @IsString()
+    @IsOptional()
+    WORK_POSITION?: string;
+}
+
+export class FieldItem implements IFieldItem {
+    @IsNumber()
+    id: number;
+
+    @IsDate()
+    created_at: Date;
+
+    @IsDate()
+    updated_at: Date;
+
+    @IsNumber()
+    bitrixfield_id: number;
+
+    @IsString()
+    name: string;
+
+    @IsString()
+    title: string;
+
+    @IsString()
+    code: string;
+
+    @IsNumber()
+    bitrixId: number;
+}
 
 export enum EDownloadType {
     EXCEL = 'excel',
@@ -16,11 +142,29 @@ export class DateRangeDto {
     @IsString()
     to: string;
 }
+export class ReportData {
+    @ValidateNested()
+    @Type(() => BitrixUser)
+    user: BitrixUser;
+
+    @IsString()
+    userName?: string;
+
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => KPI)
+    kpi: KPI[];
+}
+
 
 export class KpiReportDto {
 
     @IsEnum(EDownloadType)
     type: EDownloadType;
+
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ReportData)
     report: ReportData[]
 
 
@@ -32,44 +176,62 @@ export class KpiReportDto {
 }
 
 
-export interface ReportData {
-    user: IBXUser;
-    userName?: string
-    // callings: KPICall[]
-    kpi: KPI[]
+
+
+export class KPIAction {
+    @IsNumber()
+    id: number;
+
+    @IsString()
+    name: string;
 }
 
-export type KPIAction = {
-    id: number
-    name: string
-    // shortName?: string
-
-}
-export type KPI = {
-    id: string
-    action: Filter
-    count: number
-    list?: Array<KPIListItem>
-
-}
-type KPIListItem = {
-    id: number
-    crm: string
-    name: string
-    date: string
-    file: string
-    link: string
-    action: KPIAction
-}
-export type Filter = {
-    order: number
-    actionItem: IFieldItem
-    actionTypeItem: IFieldItem
-    innerCode: FilterInnerCode
-    name?: string
-    code: FilterCode
 
 
+// export class KPIListItem {
+//     @IsNumber()
+//     id: number;
+
+//     @IsString()
+//     crm: string;
+
+//     @IsString()
+//     name: string;
+
+//     @IsString()
+//     date: string;
+
+//     @IsString()
+//     file: string;
+
+//     @IsString()
+//     link: string;
+
+//     @ValidateNested()
+//     @Type(() => KPIAction)
+//     action: KPIAction;
+// }
+
+export class Filter {
+    @IsNumber()
+    order: number;
+
+    @ValidateNested()
+    @Type(() => FieldItem)
+    actionItem: FieldItem;
+
+    @ValidateNested()
+    @Type(() => FieldItem)
+    actionTypeItem: FieldItem;
+
+    @IsString()
+    innerCode: FilterInnerCode;
+
+    @IsString()
+    name?: string;
+
+    @IsString()
+    code: FilterCode;
 }
 
 export type FilterInnerCode = 'result_communication_done' |
@@ -94,3 +256,19 @@ export type FilterCode = 'xo_plan' | //тип события презентац�
     'ev_offer_act_send' | 'ev_offer_pres_act_send' | 'ev_invoice_act_send' | 'ev_invoice_pres_act_send' | 'ev_contract_act_send' | 'ev_success_done' |
     'ev_fail_done'
 
+export class KPI {
+    @IsString()
+    id: string;
+
+    @ValidateNested()
+    @Type(() => Filter)
+    action: Filter;
+
+    @IsNumber()
+    count: number;
+
+    // @IsArray()
+    // @ValidateNested({ each: true })
+    // @Type(() => KPIListItem)
+    // list?: Array<KPIListItem>;
+}

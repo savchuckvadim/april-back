@@ -83,15 +83,15 @@ export interface IBXTask {
     ufCrmTask: Array<string>
 }
 export interface IBXUser {
-    ACTIVE: boolean
-    DATE_REGISTER: string
+    ACTIVE?: boolean
+    DATE_REGISTER?: string
     EMAIL?: string
-    ID: number | string
+    ID?: number | string
     IS_ONLINE?: string
     LAST_ACTIVITY_DATE?: string
     LAST_LOGIN?: string
-    LAST_NAME: string
-    NAME: string
+    LAST_NAME?: string
+    NAME?: string
     PERSONAL_BIRTHDAY?: string
     PERSONAL_CITY?: string
     PERSONAL_GENDER?: string
@@ -102,7 +102,7 @@ export interface IBXUser {
 
     TIMESTAMP_X?: Array<string>
     TIME_ZONE_OFFSET?: string
-    UF_DEPARTMENT: Array<number>
+    UF_DEPARTMENT?: Array<number>
     UF_EMPLOYMENT_DATE?: string
     UF_PHONE_INNER?: string
     // UF_USR_1570437798556: boolean
