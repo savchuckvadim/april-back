@@ -26,6 +26,9 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsModule } from './core/metrics/metrics.module';
 import { AlfaModule } from './apps/alfa/alfa.module';
 import { TranscriptionModule } from './modules/transcription/transcription.module';
+import { GarantPricesModule } from './commands/garant-prices/garant-prices.module';
+import { FieldsModule } from './commands/fields/fields.module';
+import { CategoryModule } from './commands/category/category.module';
 
 @Module({
   imports: [
@@ -63,7 +66,10 @@ import { TranscriptionModule } from './modules/transcription/transcription.modul
     AlfaModule,
     // EventServiceModule
 
-    TranscriptionModule
+    TranscriptionModule,
+    GarantPricesModule,
+    FieldsModule,
+    CategoryModule
   ],
   controllers: [
     AppController,

@@ -1,4 +1,3 @@
-import { IBXContact } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { EEventItemResultType, WorkStatus, NoresultReason, FailType, FailReason } from '../../types/report-types';
 import { IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';

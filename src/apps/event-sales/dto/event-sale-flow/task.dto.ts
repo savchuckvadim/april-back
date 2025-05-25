@@ -1,6 +1,7 @@
-import { EBXTaskMark, IBXDeal, IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { EBXTaskMark, IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { EV_TYPE, IEventTask } from "../../types/task-types";
 import { PresentationStateCount } from "../../types/presentation-types";
+import { IBXDeal } from "src/modules/bitrix";
 
 export class EventTaskDto implements IEventTask {
     name: string;

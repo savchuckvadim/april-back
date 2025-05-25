@@ -1,6 +1,7 @@
-import { EBxMethod } from "../../../core/domain/consts/bitrix-api.enum";
-import { IBXCompany } from "../../interfaces/bitrix.interface";
-import { CrmGetRequestType, CrmAddRequestType, CrmUpdateRequestType, CrmListRequestType } from "../type/crm-request.type";
+import { EBxMethod } from "../../../../core";
+import { IBXField } from "../../fields/bx-field.interface";
+import { CrmGetRequestType, CrmAddRequestType, CrmUpdateRequestType, CrmListRequestType } from "../../type/crm-request.type";
+import { IBXCompany } from "../interface/bx-company.interface";
 
 export type CompanySchema = {
     [EBxMethod.GET]: {
@@ -18,5 +19,13 @@ export type CompanySchema = {
     [EBxMethod.UPDATE]: {
         request: CrmUpdateRequestType<IBXCompany>; // Contains id (lowercase) and fields
         response: number; // Bitrix often returns a boolean success as number or specific status, matching DealSchema
+    };
+    [EBxMethod.USER_FIELD_LIST]: {
+        request: { filter: { [key: string]: any }, select?: string[] };
+        response: IBXField[];
+    };
+    [EBxMethod.USER_FIELD_GET]: {
+        request: { id: number | string, select?: string[] };
+        response: IBXField;
     };
 }; 

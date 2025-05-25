@@ -6,7 +6,12 @@ export enum BitrixOwnerTypeId {
   CONTACT = 3,
   LEAD = 1
 }
-
+export enum BitrixOwnerType {
+  COMPANY = 'C',
+  DEAL = 'D',
+  CONTACT = 'CO',
+  LEAD = 'L'
+}
 export enum BitrixActivityTypeId {
   CALL = 1,
   MEETING = 2,

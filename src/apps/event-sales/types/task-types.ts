@@ -1,5 +1,6 @@
-import {  IBXDeal, IBXTask, IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { IBXTask } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { PresentationStateCount } from "./presentation-types";
+import { IBXDeal } from "src/modules/bitrix/domain";
 
 
 export interface IEventTask extends IBXTask {

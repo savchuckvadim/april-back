@@ -9,6 +9,7 @@ import { PortalModule } from '../portal/portal.module';
 import { BitrixCoreModule } from './core/bitrix-core.module';
 import { BitrixDomainModule } from './domain/bitrix-domain.module';
 import { BitrixEndpointsModule } from './endpoints/endpoints.module';
+import { BitrixService } from './bitrix.service';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\bitrix.module.ts
 @Module({
   imports: [
@@ -26,12 +27,13 @@ import { BitrixEndpointsModule } from './endpoints/endpoints.module';
   ],
   providers: [
     RedisService,
-
+    BitrixService
   ],
   exports: [
     BitrixCoreModule,
     BitrixDomainModule,
-    BitrixEndpointsModule
+    BitrixEndpointsModule,
+    BitrixService
   ],
 
 })

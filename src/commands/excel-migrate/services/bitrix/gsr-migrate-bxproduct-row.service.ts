@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { GsrMigrateBitrixAbstract } from "./gsr-migrate-bitrix-abstract.service";
 import { MigrateToBxDto } from "../../dto/migrate-to-bx.dto";
-import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix/core";
-import { IBXProductRow, IBXProductRowRow } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix";
 import { IPPortalMeasure } from "src/modules/portal/interfaces/portal.interface";
+import { BitrixOwnerType, IBXProductRow, IBXProductRowRow } from "src/modules/bitrix";
 
 
 
@@ -18,7 +18,7 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
         const productRowCommandCode = `${EBxNamespace.CRM_ITEM}.${EBXEntity.PRODUCT_ROW}.${EBxMethod.SET}.${element.id}`
         const productTotal = {
             ownerId: `$result[${dealCommandCode}]`,
-            ownerType: 'D',
+            ownerType: BitrixOwnerType.DEAL,
             productRows: [] as IBXProductRowRow[]
         } as IBXProductRow
 
@@ -34,11 +34,8 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
 
         });
 
-        this.bitrixApi.addCmdBatchType(
+        this.bitrix.batch.productRow.set(
             productRowCommandCode,
-            EBxNamespace.CRM_ITEM,
-            EBXEntity.PRODUCT_ROW,
-            EBxMethod.SET,
             productTotal
         )
     }
@@ -65,11 +62,8 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
 
         });
 
-        this.bitrixApi.addCmdBatchType(
+        this.bitrix.batch.productRow.set(
             productRowCommandCode,
-            EBxNamespace.CRM_ITEM,
-            EBXEntity.PRODUCT_ROW,
-            EBxMethod.SET,
             productTotal
         )
     }

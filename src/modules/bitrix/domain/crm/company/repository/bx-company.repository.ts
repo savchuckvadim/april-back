@@ -1,14 +1,16 @@
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { EBxMethod, EBxNamespace } from "../../../core/domain/consts/bitrix-api.enum";
-import { EBXEntity } from "../../../core/domain/consts/bitrix-entities.enum";
-import { IBXCompany } from "../../interfaces/bitrix.interface";
+import { BitrixBaseApi } from "src/modules/bitrix/core";
+import { EBxMethod, EBxNamespace, EBXEntity } from "src/modules/bitrix/";
+import { IBXCompany } from "../interface/bx-company.interface";
 
 
 export class BxCompanyRepository {
-    constructor(private readonly bitrixService: BitrixBaseApi) { }
+    constructor(
+        private readonly bxApi: BitrixBaseApi
 
-    async getCompany(companyId: number) {
-        return this.bitrixService.callType(
+    ) { }
+
+    async get(companyId: number) {
+        return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.GET,
@@ -16,8 +18,8 @@ export class BxCompanyRepository {
         );
     }
 
-    async getCompanyBtch(cmdCode: string, companyId: number) {
-        return this.bitrixService.addCmdBatchType(
+    async getBtch(cmdCode: string, companyId: number | string) {
+        return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
@@ -26,8 +28,8 @@ export class BxCompanyRepository {
         );
     }
 
-    async getCompanyList(filter: Partial<IBXCompany>, select?: string[]) {
-        return this.bitrixService.callType(
+    async getList(filter: Partial<IBXCompany>, select?: string[]) {
+        return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.LIST,
@@ -35,8 +37,8 @@ export class BxCompanyRepository {
         );
     }
 
-    async getCompanyListBtch(cmdCode: string, filter: Partial<IBXCompany>, select?: string[]) {
-        return this.bitrixService.addCmdBatchType(
+    async getListBtch(cmdCode: string, filter: Partial<IBXCompany>, select?: string[]) {
+        return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
@@ -66,8 +68,8 @@ export class BxCompanyRepository {
     // ! — не равно
     // Фильтр LIKE не работает с полями типа crm_status, crm_contact, crm_company (тип сделки TYPE_ID, стадия STAGE_ID и так далее).
 
-    async setCompany(data: { [key: string]: any }) { // Consider using Partial<IBXCompany> or a more specific DTO if possible
-        return this.bitrixService.callType(
+    async set(data: { [key: string]: any }) { // Consider using Partial<IBXCompany> or a more specific DTO if possible
+        return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.ADD,
@@ -75,12 +77,59 @@ export class BxCompanyRepository {
         );
     }
 
-    async updateCompany(id: number, data: Partial<IBXCompany>) {
-        return this.bitrixService.callType(
+    async setBtch(cmdCode: string, data: { [key: string]: any }) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.ADD,
+            { fields: data }
+        )
+    }
+    async update(id: number | string, data: Partial<IBXCompany>) {
+        return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.UPDATE,
             { id: id, fields: data }
+        );
+    }
+
+    async updateBtch(cmdCode: string, id: number | string, data: Partial<IBXCompany>) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.UPDATE,
+            { id: id, fields: data }
+        );
+    }
+
+    async getFieldList(filter: { [key: string]: any }, select?: string[]) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_LIST,
+            { select, filter }
+        );
+    }
+
+    async getField(id: number | string) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_GET,
+            { id, select: ['ID', 'USER_TYPE_ID', 'FIELD_NAME', 'MULTIPLE', 'EDIT_FORM_LABEL', 'LIST'] }
+        );
+    }
+
+    async getFieldBtch(cmdCode: string, id: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_GET,
+            { id, select: ['ID', 'USER_TYPE_ID', 'FIELD_NAME', 'MULTIPLE', 'EDIT_FORM_LABEL', 'LIST'] }
         );
     }
 } 

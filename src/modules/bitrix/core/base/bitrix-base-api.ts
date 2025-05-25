@@ -8,7 +8,7 @@ import { TelegramService } from '../../../telegram/telegram.service';
 import { AxiosResponse } from 'axios';
 import { IBitrixBatchResponse, IBitrixBatchResponseResult, IBitrixResponse } from '../interface/bitrix-api.intterface';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
-import { BXApiSchema, EBXEntity, EBxMethod, EBxNamespace, TBXRequest, TBXResponse } from '../domain';
+import { BXApiSchema, EBxNamespace, TBXRequest, TBXResponse } from '../domain';
 
 
 export class BitrixBaseApi {
@@ -339,7 +339,18 @@ export class BitrixBaseApi {
             return error;
         }
     }
+    clearResult(result: IBitrixBatchResponseResult[]) {
+        const results = [] as any[]
+        result.map(res => {
+            if (Object.keys(res.result).length > 0) {
+                for (const key in res.result) {
+                    results.push(res.result[key])
+                }
+            }
 
+        })
+        return results
+    }
     private async handleBatchErrors(result: IBitrixBatchResponseResult, context = 'Batch error'): Promise<void> {
         if (!result?.result_error) return;
         this.logger.log(`

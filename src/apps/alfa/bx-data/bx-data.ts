@@ -19,14 +19,17 @@ export const dealData = {
         bitrixId: 'UF_CRM_1743414391',
         name: 'ФИО директора',
         type: 'string',
+        code: 'directorName'
     },
-    directorBsed: {
-        bitrixId: 'Руководитель действует на основании',
-        name: 'База директора',
+    directorBased: {
+        bitrixId: '',
+        name: 'Руководитель действует на основании',
         type: 'string',
+        code: 'directorBased'
     },
     directorPhone: {
         bitrixId: 'UF_CRM_1743414493',
         name: 'Телефон директора',
+        code: 'directorPhone'
     }
 }

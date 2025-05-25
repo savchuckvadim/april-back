@@ -87,4 +87,13 @@ export class StorageService {
         const filePath = this.getFilePath(type, subPath, fileName);
         return this.fileExists(filePath);
     }
+    async readFileByType(type: StorageType, filePath: string, fileName: string): Promise<Buffer> {
+        try {
+            const path = join(this.storagePath, type, filePath, fileName);
+            return await fs.readFile(path);
+        } catch (error) {
+            this.logger.error('Error reading file:', error);
+            throw error;
+        }
+    }
 } 

@@ -99,7 +99,7 @@ export interface IBXUser {
     PERSONAL_PHOTO?: string
     PERSONAL_WWW?: string
     SECOND_NAME?: string
- 
+
     TIMESTAMP_X?: Array<string>
     TIME_ZONE_OFFSET?: string
     UF_DEPARTMENT: Array<number>
@@ -119,36 +119,13 @@ export interface IBXLead {
     UF_CRM_LEAD_QUEST_URL: string
     [key: string]: string | number
 }
-export interface IBXCompany {
-    ASSIGNED_BY_ID: string
-    ID: number
-    TITLE: string
-    UF_CRM_PRES_COUNT: number
-    UF_CRM_USER_CARDNUM: string  //регистрационный лист номер
-    COMMENTS: string
-}
+
 export interface IBXSmart {
     ID: number
     TITLE: string
 }
 
-export interface IBXDeal {
-    [key: string]: string | number | string[] | number[] | boolean | undefined
-    ID: number
-    TITLE: string
-    CONTACT_IDS?: string[] | number[]
-    CATEGORY_ID: string
-    STAGE_ID: string
-    COMPANY_ID: string
-    COMMENTS: string
-    ASSIGNED_BY_ID: string
-    CREATED_BY_ID: string
-    UF_CRM_OP_MHISTORY?: string[]
-    UF_CRM_OP_CURRENT_STATUS?: string
-    UF_CRM_UC_ID?: string[] //id комплекта арм Garant
-    UF_CRM_RPA_ARM_COMPLECT_ID?: string[] //id комплекта арм RPA April
-   
-}
+
 
 
 export interface IBXList {
@@ -164,50 +141,27 @@ export interface IBXList {
 
 }
 
-export interface IBXContact {
-    ASSIGNED_BY_ID?: string | number
-    ID?: number
-    NAME?: string
-    COMPANY_ID?: string | number
-    LAST_NAME?: string
-    // TYPE_ID: 'client'
-    // SOURCE_ID: number
-    // PHONE: string //wrong
-    PHONE?: {
-        VALUE: string,
-        TYPE: string
+
+
+
+
+export interface IBXUserField {
+    ID: number
+    NAME: string
+    SORT: number
+    USER_TYPE_ID: string
+    MANDATORY: string
+    MULTIPLE: string
+    DEFAULT_VALUE: string
+    LIST_TYPE: string
+    SHOW_FILTER: string
+    SHOW_FILTER_INPUT: string
+}
+
+export interface IBXUserEnumerationField extends IBXUserField {
+    LIST_VALUES: {
+        VALUE: string
+        SORT: number
     }[]
-    EMAIL?: {
-        VALUE: string,
-        TYPE: string
-    }[]
-    POST?: string
-    COMMENTS?: string
 }
 
-
-
-export interface IBXProductRow {
-    ownerType: "D",
-    ownerId: string | number,
-    productRows: IBXProductRowRow[]
-
-}
-
-export interface IBXProductRowRow {
-    id?: number
-    priceNetto?: number
-    price?: number
-    discountSum?: number
-    discountTypeId?: number
-
-    productName?: string
-    quantity?: number
-    customized?: string
-    supply?: string
-    measureCode?: string
-    measureId?: number | string
-    sort?: number
-
-
-}

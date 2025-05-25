@@ -1,35 +1,36 @@
 import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix/core";
-
 import { Injectable } from "@nestjs/common";
 import { MigrateToBxDto } from "./dto/migrate-to-bx.dto";
 import { BitrixApiQueueApiService } from "src/modules/bitrix/core/queue/bitrix-queue-api.service";
 import { PortalService } from "src/modules/portal/portal.service";
-import { BitrixApiFactoryService } from "src/modules/bitrix/core/queue/bitrix-api.factory.service";
 import { PortalModel } from "src/modules/portal/services/portal.model";
 import { GsrMigrateBitrixDealService } from "./services/bitrix/gsr-migrate-bxdeal.service";
 import { GsrMigrateBitrixCompanyService } from "./services/bitrix/gsr-migrate-bxcompany.service";
 import { GsrMigrateBitrixProductRowService } from "./services/bitrix/gsr-migrate-bxproduct-row.service";
 import { GsrMigrateBitrixContactService } from "./services/bitrix/gsr-migrate-bxcontact.service";
-import { BxDealRepository } from "src/modules/bitrix/domain/crm/deal/bx-deal.repository";
-import { BxCompanyRepository } from "src/modules/bitrix/domain/crm/company/bx-company.repository";
+import { BitrixService } from "src/modules/bitrix/";
+
+
 @Injectable()
 export class GsrBitrixService {
     private bitrixApi: BitrixApiQueueApiService
     private portal: PortalModel
     constructor(
-
-        private readonly bitrixApiFactory: BitrixApiFactoryService,
+        private readonly bitrix: BitrixService,
+        // private readonly bitrixApiFactory: BitrixApiFactoryService,
         private readonly portalService: PortalService,
         private readonly companyService: GsrMigrateBitrixCompanyService,
         private readonly dealService: GsrMigrateBitrixDealService,
         private readonly productRowService: GsrMigrateBitrixProductRowService,
-        private readonly contactService: GsrMigrateBitrixContactService
+        private readonly contactService: GsrMigrateBitrixContactService,
+
     ) { }
 
     async migrateToBitrix(domain: string, data: MigrateToBxDto[]) {
         this.portal = await this.portalService.getModelByDomain(domain);
-        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
 
+        this.bitrix.init(this.portal.getPortal())
+        
         const testField = this.portal.getCompanyFieldByCode('concurents_multiple')
         console.log(testField)
 
@@ -37,10 +38,10 @@ export class GsrBitrixService {
 
 
         // // передаём shared context
-        this.companyService.setContext(this.bitrixApi, this.portal);
-        this.dealService.setContext(this.bitrixApi, this.portal);
-        this.productRowService.setContext(this.bitrixApi, this.portal);
-        this.contactService.setContext(this.bitrixApi, this.portal);
+        this.companyService.setContext(this.bitrix, this.portal);
+        this.dealService.setContext(this.bitrix, this.portal);
+        this.productRowService.setContext(this.bitrix, this.portal);
+        this.contactService.setContext(this.bitrix, this.portal);
 
         data.forEach((element, index) => {
             if (index >= 100) {
@@ -69,16 +70,16 @@ export class GsrBitrixService {
 
     async getDeals(domain: string, data: MigrateToBxDto[]) {
         this.portal = await this.portalService.getModelByDomain(domain);
-        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
+        // this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
         const pDealCategory = this.portal.getDealCategoryByCode('service_base')
 
-        const dealRepository = new BxDealRepository(this.bitrixApi)
-        const companyRepository = new BxCompanyRepository(this.bitrixApi)
+        // const dealRepository = new BxDealRepository(this.bitrixApi)
+        // const companyRepository = new BxCompanyRepository(this.bitrixApi)
 
         data.forEach((element, index) => {
             if (element.id) {
                 const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.LIST}.${element.id}`
-                companyRepository.getCompanyListBtch(
+                this.bitrix.batch.company.getList(
                     companyCmd,
                     {
                         UF_CRM_USER_CARDNUM: element.id.toString()
@@ -91,7 +92,7 @@ export class GsrBitrixService {
 
             }
         });
-        const response = await this.bitrixApi.callBatchWithConcurrency(1);
+        const response = await this.bitrix.api.callBatchWithConcurrency(1);
         let total = 0
         const result = {
             result: {} as { [key: string]: any; },
@@ -123,20 +124,20 @@ export class GsrBitrixService {
 
 
 
-        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
+        // this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
         const pDealCategory = this.portal.getDealCategoryByCode('service_base')
+        // const dealRepository = this.bitrixDealBatchService
+        // const dealRepository = new BxDealRepository(this.bitrixApi)
+        // const companyRepository = new BxCompanyRepository(this.bitrixApi)
 
-        const dealRepository = new BxDealRepository(this.bitrixApi)
-        const companyRepository = new BxCompanyRepository(this.bitrixApi)
+        this.productRowService.setContext(this.bitrix, this.portal);
 
-        this.productRowService.setContext(this.bitrixApi, this.portal);
-       
         data.forEach((element, index) => {
             if (element.id && element.id == '61-40762-000464') {
                 //@ts-ignore
-              
+
                 const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.LIST}.${element.id}`
-                companyRepository.getCompanyListBtch(
+                this.bitrix.batch.company.getList(
                     companyCmd,
                     {
                         UF_CRM_USER_CARDNUM: element.id.toString()
@@ -145,7 +146,7 @@ export class GsrBitrixService {
 
                 )
 
-                dealRepository.getDealListBtch(
+                this.bitrix.batch.deal.getList(
                     `list_deals_of_${element.id.toString()}`,
                     {
                         CATEGORY_ID: pDealCategory?.bitrixId || '',
@@ -155,14 +156,14 @@ export class GsrBitrixService {
 
                 )
 
-                dealRepository.getDealBtch(
+                this.bitrix.batch.deal.get(
                     `get_deals_of_${element.id.toString()}`,
                     `$result[list_deals_of_${element.id.toString()}][0][ID]`,
 
 
                 )
                 const armIds = element.products.map(p => p.armId)
-                dealRepository.updateDealBtch(
+                this.bitrix.batch.deal.update(
                     `update_deal_${element.id.toString()}`,
                     `$result[get_deals_of_${element.id.toString()}][ID]`,
                     {
@@ -176,7 +177,7 @@ export class GsrBitrixService {
                 this.productRowService.getProductRowCommandById(element, `$result[get_deals_of_${element.id.toString()}][ID]`)
 
 
-                dealRepository.getDealBtch(
+                this.bitrix.batch.deal.get(
                     `post_get_deals_of_${element.id.toString()}`,
                     `$result[get_deals_of_${element.id.toString()}][ID]`,
 

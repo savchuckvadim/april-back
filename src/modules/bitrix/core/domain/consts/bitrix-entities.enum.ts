@@ -6,9 +6,13 @@ export enum EBXEntity {
     LEAD = 'lead',
     TASK = 'task',
     PRODUCT_ROW = 'productrow',
- 
+    USER_FIELD = 'userfield',
+    USER_FIELD_ENUMERATION = 'userfield.enumeration',
     LISTS = 'lists',
     ACTIVITY = 'activity',
-    FILE='file'
+    FILE='file',
+    CATEGORY='category',
+    STATUS='status',
+    
 
 };

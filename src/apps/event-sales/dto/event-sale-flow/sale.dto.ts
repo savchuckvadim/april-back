@@ -1,4 +1,4 @@
-import { IBXDeal } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { IBXDeal } from "src/modules/bitrix";
 
 export class SaleDto {
     relationSalePresDeal?: IBXDeal  | null 

@@ -31,11 +31,9 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
 
             //chk_garant_yes
             //chk_garant_no
-            this.bitrixApi.addCmdBatchType(
+            this.bitrix.batch.contact.set(
                 contactCommandCode,
-                EBxNamespace.CRM,
-                EBXEntity.CONTACT,
-                EBxMethod.ADD,
+
                 {
                     fields: {
                         ASSIGNED_BY_ID: "221",

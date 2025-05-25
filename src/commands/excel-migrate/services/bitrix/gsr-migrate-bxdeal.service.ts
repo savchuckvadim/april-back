@@ -19,11 +19,8 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
         const pDealContractTypeField = this.portal.getDealFieldBitrixIdByCode('contract_type')
 
         console.log(pDealContractTypeField)
-        this.bitrixApi.addCmdBatchType(
+        this.bitrix.batch.deal.set(
             dealCommandCode,
-            EBxNamespace.CRM,
-            EBXEntity.DEAL,
-            EBxMethod.ADD,
             {
                 fields: {
                     ASSIGNED_BY_ID: "221",
@@ -46,15 +43,10 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
     }
 
     getDealUpdateCommand(contactCommands: string[], dealCommandCode: string) {
-        this.bitrixApi.addCmdBatchType(
+        this.bitrix.batch.deal.contactItemsSet(
             `${dealCommandCode}_updt_to_contacts`,
-            EBxNamespace.CRM,
-            EBXEntity.DEAL,
-            EBxMethod.CONTACT_ITEMS_SET,
-            {
-                id: `$result[${dealCommandCode}]`,
-                items: contactCommands.map((cmd, index) => ({ CONTACT_ID: `$result[${cmd}]`, SORT: index + 2 }))
-            }
+            dealCommandCode,
+            contactCommands
         )
     }
 

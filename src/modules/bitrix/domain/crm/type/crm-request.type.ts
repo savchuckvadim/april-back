@@ -1,5 +1,7 @@
 export type CrmAddRequestType<T> = {
     fields: Partial<T>;
+    // ownerId?: number | string;
+    // ownerType?: string;
 }
 
 export type CrmGetRequestType = {
