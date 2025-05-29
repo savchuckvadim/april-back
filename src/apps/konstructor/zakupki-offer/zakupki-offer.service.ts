@@ -65,7 +65,7 @@ export class ZakupkiOfferCreateService {
         const { infoblocksLeft, infoblocksRight } = this.getInfoblocks(dto.complect, regionsNames);
         const totalProduct = this.getTotalProduct(dto.total);
         const providersSums = this.getSumsProviders(dto.otherProviders, totalProduct.totalSum, totalProduct.totalSumMonth);
-        const testingInfoblocksWithDescription = await this.getTotalInfoblocksData(dto.complect, dto.regions);
+        // const testingInfoblocksWithDescription = await this.getTotalInfoblocksData(dto.complect, dto.regions);
         const data = {
             ...providerData,
             ...otherProvider1Data,
@@ -93,14 +93,14 @@ export class ZakupkiOfferCreateService {
         const buf = doc.toBuffer();
         const mainPath = `konstructor/zoffer/${dto.domain}/${dto.userId}`
         await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, mainPath);
-        const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, mainPath, this.documentName));
+        // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, mainPath, this.documentName));
 
         const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'zoffer', `${this.documentName}`);
         const link = `${this.baseUrl}${rootLink}`;
         this.setInBitrix(dto.companyId, dto.userId, link, documentNumber, dto.dealId)
         return {
             link,
-            testingInfoblocksWithDescription
+            // testingInfoblocksWithDescription
         };
     }
 
