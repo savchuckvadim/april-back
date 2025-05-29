@@ -9,7 +9,9 @@ import {
   FieldsSchema,
   FieldsEnumerationSchema,
   BxCategorySchema,
-  BxStatusSchema
+  BxStatusSchema,
+  BxItemSchema,
+  TimelineCommentSchema
 } from "src/modules/bitrix/";
 
 
@@ -28,6 +30,8 @@ export type BXApiSchema = {
     [EBXEntity.ACTIVITY]: ActivitySchema
     [EBXEntity.CATEGORY]: BxCategorySchema  
     [EBXEntity.STATUS]: BxStatusSchema
+    [EBXEntity.ITEM]: BxItemSchema
+    [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema
   };
   [EBxNamespace.TASKS]: {
     [EBXEntity.TASK]: TasksSchema

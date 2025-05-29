@@ -29,6 +29,10 @@ import { TranscriptionModule } from './modules/transcription/transcription.modul
 import { GarantPricesModule } from './commands/garant-prices/garant-prices.module';
 import { FieldsModule } from './commands/fields/fields.module';
 import { CategoryModule } from './commands/category/category.module';
+import { ChangeDealCategoryModule } from './commands/change-deal-category/change-deal-category.module';
+import { StorageModule } from './core/storage/storage.module';
+import { FileLinkModule } from './core/file-link/file-link.module';
+import { PrismaModule } from './core/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -69,7 +73,12 @@ import { CategoryModule } from './commands/category/category.module';
     TranscriptionModule,
     GarantPricesModule,
     FieldsModule,
-    CategoryModule
+    CategoryModule,
+    ChangeDealCategoryModule,
+
+    StorageModule,
+    FileLinkModule,
+    PrismaModule
   ],
   controllers: [
     AppController,

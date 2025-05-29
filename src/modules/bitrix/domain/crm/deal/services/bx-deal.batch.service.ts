@@ -19,8 +19,8 @@ export class BxDealBatchService {
         return this.repo.getBtch(cmdCode, dealId);
     }
 
-    getList(cmdCode: string, filter: Partial<IBXDeal>, select?: string[]) {
-        return this.repo.getListBtch(cmdCode, filter, select);
+    getList(cmdCode: string, filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
+        return this.repo.getListBtch(cmdCode, filter, select, order);
     }
 
     set(cmdCode: string, data: { [key: string]: any }) {

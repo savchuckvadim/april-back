@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 import { BitrixBaseApi } from './core/base/bitrix-base-api';
 import { BitrixApiFactoryService } from './core/queue/bitrix-api.factory.service';
-import { BxCompanyService, BxContactBatchService, BxContactService, 
+import {
+    BxCompanyService, BxContactBatchService, BxContactService,
     BxDealService, BxProductRowBatchService, BxProductRowService,
-    BxCategoryService, BxStatusService
+    BxCategoryService, BxStatusService, BxItemService, BxItemBatchService,
+    BxTimelineService, BxTimelineBatchService
 } from './domain/crm/';
 import { IPortal } from '../portal/interfaces/portal.interface';
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
@@ -18,12 +20,17 @@ export class BitrixService {
     public contact: BxContactService
     public category: BxCategoryService
     public status: BxStatusService
+    public item: BxItemService
+    public timeline: BxTimelineService
+
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
         company: null as unknown as BxCompanyBatchService,
         productRow: null as unknown as BxProductRowBatchService,
-        contact: null as unknown as BxContactBatchService
+        contact: null as unknown as BxContactBatchService,
+        item: null as unknown as BxItemBatchService,
+        timeline: null as unknown as BxTimelineBatchService
     }
     constructor(
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
@@ -37,6 +44,10 @@ export class BitrixService {
         private readonly bitrixContactBatchService: BxContactBatchService,
         private readonly bitrixCategoryService: BxCategoryService,
         private readonly bitrixStatusService: BxStatusService,
+        private readonly bitrixItemService: BxItemService,
+        private readonly bitrixItemBatchService: BxItemBatchService,
+        private readonly bitrixTimelineService: BxTimelineService,
+        private readonly bitrixTimelineBatchService: BxTimelineBatchService
     ) { }
     init(portal: IPortal) {
         this.api = this.bitrixApiFactoryService.create(portal);
@@ -46,6 +57,8 @@ export class BitrixService {
         this.initContact()
         this.initCategory()
         this.initStatus()
+        this.initItem()
+        this.initTimeline()
     }
 
     private initDeal() {
@@ -80,5 +93,17 @@ export class BitrixService {
     private initStatus() {
         this.status = this.bitrixStatusService
         this.status.init(this.api)
+    }
+    private initItem() {
+        this.item = this.bitrixItemService
+        this.item.init(this.api)
+        this.batch.item = this.bitrixItemBatchService
+        this.batch.item.init(this.api)
+    }
+    private initTimeline() {
+        this.timeline = this.bitrixTimelineService
+        this.timeline.init(this.api)
+        this.batch.timeline = this.bitrixTimelineBatchService
+        this.batch.timeline.init(this.api)
     }
 }

@@ -1,3 +1,5 @@
+import { BitrixOwnerTypeId } from "src/modules/bitrix";
+
 export type CrmAddRequestType<T> = {
     fields: Partial<T>;
     // ownerId?: number | string;
@@ -23,3 +25,8 @@ export type CrmUpdateRequestType<T> = {
     fields: Partial<T>;
 }
 
+export type CrmUpdateItemRequestType<T> = {
+    id: number | string;
+    entityTypeId: BitrixOwnerTypeId;
+    fields: Partial<T>;
+}

@@ -244,6 +244,7 @@ export class BitrixBaseApi {
                 );
                 // this.logger.log(`Batch request successful: ${JSON.stringify(response.data)}`);
                 results.push(response.data.result);
+                await this.sleep(100);
             } catch (error) {
                 this.logger.error(`Batch request failed: ${error.message}`);
                 await this.telegramBot.sendMessageAdminError(`Batch error:
@@ -297,6 +298,8 @@ export class BitrixBaseApi {
                 } else {
                     this.logger.warn(`Skipping failed batch at index ${start}`);
                 }
+                // 💤 Задержка между вызовами
+                await this.sleep(100);
             }
         };
 
@@ -372,6 +375,11 @@ export class BitrixBaseApi {
 
         }
     }
+
+    private async sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
 }
 
 // Вспомогательный семафор

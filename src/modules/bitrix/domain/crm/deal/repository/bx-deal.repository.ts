@@ -13,7 +13,7 @@ export class BxDealRepository {
     }
 
     async get(dealId: number) {
-        return this.bxApi.callType(
+        return await this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.GET,
@@ -31,22 +31,22 @@ export class BxDealRepository {
         );
     }
 
-    async getList(filter: Partial<IBXDeal>, select?: string[]) {
+    async getList(filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.LIST,
-            { select, filter }
+            { select, filter, order }
         );
     }
 
-    async getListBtch(cmdCode: string, filter: Partial<IBXDeal>, select?: string[]) {
+    async getListBtch(cmdCode: string, filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.LIST,
-            { select, filter }
+            { select, filter, order }
         );
     }
     //     field_n — название поля, по которому будет отфильтрована выборка элементов

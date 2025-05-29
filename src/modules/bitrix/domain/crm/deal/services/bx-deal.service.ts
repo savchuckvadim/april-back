@@ -16,8 +16,8 @@ export class BxDealService {
     get(dealId: number) {
         return this.repo.get(dealId);
     }
-    getList(filter: Partial<IBXDeal>, select?: string[]) {
-        return this.repo.getList(filter, select);
+    getList(filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
+        return this.repo.getList(filter, select, order);
     }
     set(data: { [key: string]: any }) {
         return this.repo.set(data);

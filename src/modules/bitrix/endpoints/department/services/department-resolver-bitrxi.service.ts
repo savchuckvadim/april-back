@@ -27,7 +27,7 @@ export class DepartmentResolverService {
     const day = dayjs().format('MMDD');
     const sessionKey = `department_${domain}_${day}`;
     const fromCache = await this.redis.get(sessionKey);
-    // if (fromCache) return JSON.parse(fromCache);
+    if (fromCache) return JSON.parse(fromCache);
 
     const portal =  this.portalContext.getModel();
     const baseDepartmentBitrix = portal.getDepartamentIdByCode(group);

@@ -81,13 +81,13 @@ export class PortalService {
         }
     }
 
-    async updatePortalData(domain: string, data: IPortal): Promise<IPortalResponse> {
-        this.logger.log(`Updating portal data for domain: ${domain}`);
-        await this.redis.set(domain, JSON.stringify(data), 'EX', this.CACHE_TTL);
-        this.logger.log('Portal data updated successfully');
-        return {
-            success: true,
-            data: data as IPortal
-        };
-    }
+    // async updatePortalData(domain: string, data: IPortal): Promise<IPortalResponse> {
+    //     this.logger.log(`Updating portal data for domain: ${domain}`);
+    //     await this.redis.set(domain, JSON.stringify(data), 'EX', this.CACHE_TTL);
+    //     this.logger.log('Portal data updated successfully');
+    //     return {
+    //         success: true,
+    //         data: data as IPortal
+    //     };
+    // }
 } 

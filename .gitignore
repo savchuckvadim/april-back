@@ -69,3 +69,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 
 docker-compose-redis.yml
+docker-compose-dev.yml
+/db_data/**
+/db_dev
+/db_prod/**

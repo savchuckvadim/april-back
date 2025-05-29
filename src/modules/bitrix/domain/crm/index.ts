@@ -44,3 +44,17 @@ export * from './category/services/bx-category.service'
 export * from './status/interface/bx-status.interface'
 export * from './status/schema/bx-status.schema'
 export * from './status/services/bx-status.service'
+
+//crm.item
+export * from './item/interface/item.interface'
+export * from './item/schema/bx-item.schema'
+export * from './item/services/bx-item.batch.service'
+export * from './item/services/bx-item.service'
+
+//crm.timeline
+export * from './timeline/interface/bx-timeline.interface'
+export * from './timeline/schema/bx-timeline.schema'
+export * from './timeline/services/bx-timeline.batch.service'
+export * from './timeline/services/bx-timeline.service'
+
+

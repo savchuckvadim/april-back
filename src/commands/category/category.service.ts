@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { GetCategoryListDto, GetCategoryWithStagesDto, GetStagesDto } from './dto/get-category.dto';
 import { BitrixService } from 'src/modules/bitrix/bitrix.service';
 import { PortalService } from 'src/modules/portal/portal.service';
+import { PortalModel } from 'src/modules/portal/services/portal.model';
 
 
 
 @Injectable()
 export class CategoryService {
-
+  private Portal: PortalModel
   constructor(
     private readonly bitrix: BitrixService,
     private readonly portalService: PortalService,
@@ -16,6 +17,7 @@ export class CategoryService {
   async init(domain: string) {
     const portal = await this.portalService.getPortalByDomain(domain);
     this.bitrix.init(portal);
+    this.Portal = await this.portalService.getModelByDomain(domain);
   }
 
   async get(dto: GetCategoryWithStagesDto) {
@@ -41,6 +43,10 @@ export class CategoryService {
     return this.bitrix.status.getList({ CATEGORY_ID: dto.categoryId });
   }
 
+  async getPortalSmart(domain: string) {
+    await this.init(domain)
+    return this.Portal.getPortal().smarts;
+  }
 
 
 }

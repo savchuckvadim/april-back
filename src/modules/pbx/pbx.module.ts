@@ -1,17 +1,20 @@
 import { Module } from "@nestjs/common";
 import { PortalModule } from "../portal/portal.module";
-import { BitrixCoreModule } from "../bitrix/core/bitrix-core.module";
 import { BitrixModule } from "../bitrix/bitrix.module";
-
+import { PBXService } from "./pbx.servise";
 // pbx.module.ts
 @Module({
     imports: [
       PortalModule,
       BitrixModule,
     ],
+    providers: [
+      PBXService
+    ],
     exports: [
       PortalModule,
       BitrixModule,
+      PBXService
     ],
   })
   export class PBXModule {}

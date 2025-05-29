@@ -6,7 +6,8 @@ import { BitrixProductRowDomainModule } from "./product-row/bx-product-row.modul
 import { BitrixContactDomainModule } from "./contact/bx-contact.module";
 import { BitrixCategoryDomainModule } from "./category/bx-category.module";
 import { BitrixStatusDomainModule } from "./status/bx-status.module";
-
+import { BitrixItemDomainModule } from "./item/bx-item.module";
+import { BxTimelineModule } from "./timeline/bx-timeline.module";
 @Module({
     imports: [
         BitrixDealDomainModule,
@@ -14,7 +15,9 @@ import { BitrixStatusDomainModule } from "./status/bx-status.module";
         BitrixProductRowDomainModule,
         BitrixContactDomainModule,
         BitrixCategoryDomainModule,
-        BitrixStatusDomainModule
+        BitrixStatusDomainModule,
+        BitrixItemDomainModule,
+        BxTimelineModule
     ],
     providers: [
 
@@ -27,6 +30,8 @@ import { BitrixStatusDomainModule } from "./status/bx-status.module";
         BitrixContactDomainModule,
         BitrixCategoryDomainModule,
         BitrixStatusDomainModule,
+        BitrixItemDomainModule,
+        BxTimelineModule,
         BxFieldService
     ]
 })

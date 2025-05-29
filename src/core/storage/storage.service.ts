@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Global, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createWriteStream, createReadStream, existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
@@ -15,6 +15,7 @@ export enum StorageType {
     PRIVATE = 'private'
 }
 
+@Global()
 @Injectable()
 export class StorageService {
     private readonly logger = new Logger(StorageService.name);
@@ -96,4 +97,15 @@ export class StorageService {
             throw error;
         }
     }
+
+    async countFilesInDirectory(type: StorageType, subPath: string): Promise<number> {
+        try {
+          const dirPath = this.getFilePath(type, subPath, ''); // получаем путь к папке
+          const files = await fs.readdir(dirPath);
+          return files.length;
+        } catch (err) {
+          this.logger.error(`Ошибка при подсчёте файлов в папке ${type}/${subPath}:`, err);
+          return 0;
+        }
+      }
 } 
