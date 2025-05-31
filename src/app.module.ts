@@ -49,7 +49,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
         REDIS_PORT: process.env.REDIS_PORT,
       })],
     }),
-
+    PrismaModule,
     MetricsModule,
     WsModule,
     QueueModule,
@@ -78,7 +78,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
 
     StorageModule,
     FileLinkModule,
-    PrismaModule
+    
   ],
   controllers: [
     AppController,

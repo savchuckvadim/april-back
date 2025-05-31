@@ -105,7 +105,7 @@ export class StorageService {
           return files.length;
         } catch (err) {
           this.logger.error(`Ошибка при подсчёте файлов в папке ${type}/${subPath}:`, err);
-          return 0;
+          return 1;
         }
       }
 } 

@@ -8,19 +8,21 @@ import { StorageService, StorageType } from "src/core/storage/";
 import { FileLinkService } from "src/core/file-link/file-link.service";
 import { ConfigService } from "@nestjs/config";
 import { OtherProvidersDto, Provider1FieldCode, Provider2FieldCode, ProviderOtherFieldDto } from "./dto/other-provider.dto";
-import { RecipientDto } from "./dto/recipient.dto";
-import { ProviderDto } from "./dto/provider.dto";
+
 import dayjs from "dayjs";
 import 'dayjs/locale/ru'; // подключаем русскую локаль
 import localizedFormat from "dayjs/plugin/localizedFormat";
-import { ComplectDto } from "./dto/complect.dto";
-import { ProductRowDto } from "./dto/product-row/product-row.dto";
-import { rubles } from 'rubles';
+import {
+    RecipientDto,
+} from "src/apps/konstructor/document-generate";
+// import { rubles } from 'rubles';
+import { formatRuble } from "../document-generate/lib/rubles.util";
 import { PBXService } from "src/modules/pbx/pbx.servise";
 import { BitrixEntityType, BitrixService } from "src/modules/bitrix";
-import { RegionsDto } from "./dto/region.dto";
-import { InfoblockService } from "../domain/infoblock/infoblock.service";
 import { LibreOfficeService } from "src/modules/libre-office/libre-office.service";
+import { ProviderDto } from "../domain/provider";
+import { DocumentInfoblockService } from "../document-generate/";
+import { DocumentTotalRowService } from "../document-generate/";
 @Injectable()
 export class ZakupkiOfferCreateService {
     private readonly baseUrl: string;
@@ -28,29 +30,37 @@ export class ZakupkiOfferCreateService {
     private bitrix: BitrixService
     private documentName: string = '3 КП';
     private documentNumber: string = '';
+    private currentYear: string;
+    private resultPath: string;
+    private doc: Docxtemplater<PizZip>
     constructor(
         private readonly storage: StorageService,
         private readonly fileLinkService: FileLinkService,
         private readonly configService: ConfigService,
         private readonly pbx: PBXService,
-        private readonly infoblockService: InfoblockService,
-        private readonly libreOfficeService: LibreOfficeService
+        private readonly libreOfficeService: LibreOfficeService,
+        private readonly documentInfoblockService: DocumentInfoblockService,
+        private readonly totalRowService: DocumentTotalRowService,
+
     ) {
         dayjs.extend(localizedFormat);
         dayjs.locale('ru'); // устанавливаем локаль
+
+        this.currentYear = dayjs().format('YYYY');
         this.baseUrl = this.configService.get('APP_URL') as string;
-
+        this.getDocTemplater()
     }
-
-    async createZakupkiOffer(dto: ZakupkiOfferCreateDto) {
-        const { bitrix } = await this.pbx.init(dto.domain)
-        this.bitrix = bitrix
-        // const templatePath = path.resolve(__dirname, '../../storage/app/konstructor/templates/zoffer/april-template.docx');
+    private getDocTemplater() {
         const templatePath = this.storage.getFilePath(StorageType.APP, 'konstructor/templates/zoffer', 'april-template.docx');
         const content = fs.readFileSync(templatePath, 'binary');
 
         const zip = new PizZip(content);
-        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        this.doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    }
+    async createZakupkiOffer(dto: ZakupkiOfferCreateDto) {
+        this.resultPath = `konstructor/zoffer/${this.currentYear}/${dto.domain}/${dto.userId}`;
+        const { bitrix } = await this.pbx.init(dto.domain)
+        this.bitrix = bitrix
 
         this.contractPeriod = this.getContractPeriod(dto.contractStart, dto.contractEnd);
         const { documentDate, documentNumber } = await this.getDocumentDateAndNumber(dto.domain, dto.userId);
@@ -61,9 +71,9 @@ export class ZakupkiOfferCreateService {
         const otherProvider1Data = await this.getProviderOtherData(dto.otherProviders, 'provider1');
         const otherProvider2Data = await this.getProviderOtherData(dto.otherProviders, 'provider2');
         const recipientData = this.getRecipientData(dto.recipient);
-        const regionsNames = this.getRegions(dto.regions);
-        const { infoblocksLeft, infoblocksRight } = this.getInfoblocks(dto.complect, regionsNames);
-        const totalProduct = this.getTotalProduct(dto.total);
+        // const regionsNames = this.getRegions(dto.regions);
+        const { infoblocksLeft, infoblocksRight } = this.documentInfoblockService.getInfoblocks(dto.complect, dto.regions);
+        const totalProduct = this.totalRowService.getZofferData(dto.total);
         const providersSums = this.getSumsProviders(dto.otherProviders, totalProduct.totalSum, totalProduct.totalSumMonth);
         // const testingInfoblocksWithDescription = await this.getTotalInfoblocksData(dto.complect, dto.regions);
         const data = {
@@ -81,7 +91,7 @@ export class ZakupkiOfferCreateService {
         }
 
         try {
-            doc.render(data);
+            this.doc.render(data);
 
 
 
@@ -90,20 +100,28 @@ export class ZakupkiOfferCreateService {
         }
 
 
-        const buf = doc.toBuffer();
-        const mainPath = `konstructor/zoffer/${dto.domain}/${dto.userId}`
-        await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, mainPath);
-        // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, mainPath, this.documentName));
+        // const buf = this.doc.toBuffer();
+        // await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, this.resultPath);
+        // // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, this.resultPath, this.documentName));
 
-        const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'zoffer', `${this.documentName}`);
-        const link = `${this.baseUrl}${rootLink}`;
+        // const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'zoffer', this.currentYear, `${this.documentName}`);
+        // const link = `${this.baseUrl}${rootLink}`;
+        const link = await this.createLink(dto.domain, dto.userId)
         this.setInBitrix(dto.companyId, dto.userId, link, documentNumber, dto.dealId)
         return {
             link,
             // testingInfoblocksWithDescription
         };
     }
+    private async createLink(domain: string, userId: number, ) {
+        const buf = this.doc.toBuffer();
+        await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, this.resultPath);
+        // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, this.resultPath, this.documentName));
 
+        const rootLink = await this.fileLinkService.createPublicLink(domain, userId, 'konstructor', 'zoffer', this.currentYear, `${this.documentName}`);
+        const link = `${this.baseUrl}${rootLink}`;
+        return link
+    }
     private async getProviderData(providerInitData: ProviderDto) {
         const rq = providerInitData.rq;
         const fullname = rq.shortname;
@@ -172,95 +190,51 @@ export class ZakupkiOfferCreateService {
     }
 
     async getDocumentDateAndNumber(domain: string, userId: number): Promise<{ documentDate: string, documentNumber: string }> {
-        const filesCount = await this.storage.countFilesInDirectory(StorageType.PUBLIC, `konstructor/zoffer/${domain}/${userId}`);
+        const filesCount = await this.storage.countFilesInDirectory(StorageType.PUBLIC, this.resultPath);
 
         const documentDate = dayjs().format('D MMMM YYYY [г.]');
         const documentNumber = `${documentDate.slice(0, 2)}${userId}-${filesCount + 1}`;
         return { documentDate, documentNumber };
     }
 
-    private getInfoblocks(complect: ComplectDto[], regions: string[]) {
-        const infoblocksLeft: string[] = [];
-        const infoblocksRight: string[] = [];
-        const infoblocks: string[] = [];
-        complect.forEach(iData => {
+    // private getInfoblocks(complect: ComplectDto[], regions: string[]) {
+    //     const infoblocksLeft: string[] = [];
+    //     const infoblocksRight: string[] = [];
+    //     const infoblocks: string[] = [];
+    //     complect.forEach(iData => {
 
-            iData.value.forEach(iBlock => {
-                if (iBlock.code === 'reg') {
-                    regions.map(regionName => infoblocks.push(regionName))
-                } else {
-                    iBlock.checked && infoblocks.push(iBlock.title || iBlock.name);
-                }
+    //         iData.value.forEach(iBlock => {
+    //             if (iBlock.code === 'reg') {
+    //                 regions.map(regionName => infoblocks.push(regionName))
+    //             } else {
+    //                 iBlock.checked && infoblocks.push(iBlock.title || iBlock.name);
+    //             }
 
-            })
-        })
-        infoblocks.forEach((iblockName, index) => {
-            if (index < infoblocks.length / 2) {
-                infoblocksLeft.push(iblockName);
-            } else {
-                infoblocksRight.push(iblockName);
-            }
-        })
-        // const infoblocksLeft = infoblocksFirst.join(', ');
-        // const infoblocksRight = infoblocksSecond.join(', ');
-        return { infoblocksLeft, infoblocksRight };
-    }
-    private getRegions(regions: RegionsDto): string[] {
-        const resultRegions: string[] = [];
-        [regions.inComplect, regions.favorite, regions.noWidth].map(region => {
-            region.forEach(r => {
-                resultRegions.push(r.infoblock)
-            })
-        });
-        return resultRegions;
-    }
-
-    private async getTotalInfoblocksData(complect: ComplectDto[], regions: RegionsDto) {
-
-        const infoblocks: string[] = [];
-        complect.forEach(iData => {
-
-            iData.value.forEach(iBlock => {
-
-                iBlock.checked && iBlock.code && infoblocks.push(iBlock.code as string);
+    //         })
+    //     })
+    //     infoblocks.forEach((iblockName, index) => {
+    //         if (index < infoblocks.length / 2) {
+    //             infoblocksLeft.push(iblockName);
+    //         } else {
+    //             infoblocksRight.push(iblockName);
+    //         }
+    //     })
+    //     // const infoblocksLeft = infoblocksFirst.join(', ');
+    //     // const infoblocksRight = infoblocksSecond.join(', ');
+    //     return { infoblocksLeft, infoblocksRight };
+    // }
+    // private getRegions(regions: RegionsDto): string[] {
+    //     const resultRegions: string[] = [];
+    //     [regions.inComplect, regions.favorite, regions.noWidth].map(region => {
+    //         region.forEach(r => {
+    //             resultRegions.push(r.infoblock)
+    //         })
+    //     });
+    //     return resultRegions;
+    // }
 
 
-            })
-        })
 
-        const resultRegions: string[] = [];
-        [regions.inComplect, regions.favorite, regions.noWidth].map(region => {
-            region.forEach(r => {
-                resultRegions.push(r.name)
-            })
-        });
-        const allCodes = [...infoblocks, ...resultRegions] as string[];
-        const allInfoblocks = await this.infoblockService.getInfoblocksByCodse(allCodes);
-        return allInfoblocks;
-    }
-
-    private getTotalProduct(total: ProductRowDto) {
-        const totalPrice = total.price;
-
-
-        const totalProductName = total.name
-        const supplyShortName = total.currentSupply.name
-        const supplyFullName = total.currentSupply.quantityForKp
-        const totalSumMonth = Number((totalPrice.month / total.product.contractCoefficient).toFixed(2))
-        const totalSum = Number((totalPrice.sum / total.product.contractCoefficient).toFixed(2))
-        const totalQuantity = Number((totalPrice.quantity * total.product.contractCoefficient).toFixed(2))
-        const totalMeasure = 'мес.' // totalPrice.measure.name
-
-        return {
-            totalProductName,
-            supplyShortName,
-            supplyFullName,
-            totalSumMonth,
-            totalSum,
-            totalQuantity,
-            totalMeasure
-        }
-    }
 
     private getContractPeriod(contractStart: string, contractEnd: string) {
         const contractStartFormatted = contractStart ? dayjs(contractStart).format('D MMMM YYYY [г.]') : '___________________________________';
@@ -289,12 +263,12 @@ export class ZakupkiOfferCreateService {
         const coefficient2: number = searchedCoefficient2 || 1.5
         const totalSumProvider1 = Number((totalSum * coefficient1).toFixed(2))
         const totalSumProvider2 = Number((totalSum * coefficient2).toFixed(2))
-        const totalSumCaseProvider1 = rubles(totalSumProvider1)
-        const totalSumCaseProvider2 = rubles(totalSumProvider2)
+        const totalSumCaseProvider1 = formatRuble(totalSumProvider1)
+        const totalSumCaseProvider2 = formatRuble(totalSumProvider2)
         const totalSumMonthProvider1 = Number((totalSumMonth * coefficient1).toFixed(2))
         const totalSumMonthProvider2 = Number((totalSumMonth * coefficient2).toFixed(2))
-        const totalSumMonthCaseProvider1 = rubles(totalSumMonthProvider1)
-        const totalSumMonthCaseProvider2 = rubles(totalSumMonthProvider2)
+        const totalSumMonthCaseProvider1 = formatRuble(totalSumMonthProvider1)
+        const totalSumMonthCaseProvider2 = formatRuble(totalSumMonthProvider2)
         return {
             totalSumProvider1,
             totalSumProvider2,

@@ -6,13 +6,15 @@ import { StorageModule } from "src/core/storage/storage.module";
 import { FileLinkModule } from "src/core/file-link/file-link.module";
 import { InfoblockModule } from "../domain/infoblock/infoblock.module";
 import { LibreOfficeModule } from "src/modules/libre-office/libre-office.module";
+import { DocumentGenerateModule } from "../document-generate/document-generate.module";
 @Module({
     imports: [
         PBXModule,
         StorageModule,
         FileLinkModule,
         InfoblockModule,
-        LibreOfficeModule
+        LibreOfficeModule,
+        DocumentGenerateModule
     ],
     controllers: [ZakupkiOfferController],
     providers: [ZakupkiOfferCreateService],

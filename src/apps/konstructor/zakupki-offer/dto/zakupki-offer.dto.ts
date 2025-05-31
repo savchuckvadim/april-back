@@ -9,47 +9,24 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { OtherProvidersDto } from './other-provider.dto';
-import { ProviderDto } from './provider.dto';
-import { RecipientDto } from './recipient.dto';
-import { ContractDto } from './contract.dto';
-import { SupplyDto } from './supply.dto';
-import { PriceDto } from './price-cells.dto';
-import { RegionDto, RegionsDto } from './region.dto';
-import { ComplectDto } from './complect.dto';
-import { ProductRowDto, ProductRowsItemsDto } from './product-row/product-row.dto';
-import { ProductRowSetDto } from './product-row-set/product-row-set.dto';
+
+import { 
+    ProductRowDto, 
+    ProductRowsItemsDto, 
+    ProductRowSetDto,
+  
+    RecipientDto,
+    ContractDto,
+    SupplyDto,
+    PriceDto,
+    RegionDto,
+    RegionsDto,
+    ComplectDto
+} from 'src/apps/konstructor/document-generate';
+import { ProviderDto } from '../../domain/provider';
 
 
-class TemplateFieldDto {
-    @IsNumber() id: number;
-    @IsNumber() number: number;
-    @IsArray() items: any[];
-    @IsString() name: string;
-    @IsString() code: string;
-    @IsString() type: string;
-    @IsNumber() isGeneral: number;
-    @IsNumber() isDefault: number;
-    @IsNumber() isRequired: number;
-    @IsOptional() @IsString() value: string;
-    @IsOptional() @IsString() description: string;
-    @IsOptional() @IsString() bitixId: string;
-    @IsOptional() @IsString() bitrixTemplateId: string;
-    @IsNumber() isActive: number;
-    @IsNumber() isPlural: number;
-    @IsNumber() isClient: number;
-}
 
-class TemplateDto {
-    @IsNumber() id: number;
-    @IsString() name: string;
-    @IsString() code: string;
-    @IsString() type: string;
-    @IsString() portal: string;
-    @IsArray() @ValidateNested({ each: true }) @Type(() => ProviderDto) providers: ProviderDto[];
-    @IsArray() @ValidateNested({ each: true }) @Type(() => TemplateFieldDto) fields: TemplateFieldDto[];
-    @IsArray() counters: any[];
-    @IsNumber() number: number;
-}
 
 class PlacementDto {
     @IsString() placement: string;

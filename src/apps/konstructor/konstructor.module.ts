@@ -4,11 +4,14 @@ import { InitSupplyService } from './supply/init-supply.ts/init-supply.service';
 import { InitSupplyUseCase } from './supply/init-supply.ts/init-supply.use-case';
 import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
 import { InfoblockModule } from './domain/infoblock/infoblock.module';
+import { ContractGenerateModule } from './contract/generate/contract-generate.module';
+import { OfferModule } from './offer/offer.module';
 @Module({
   imports: [
     ZakupkiOfferModule,
     InfoblockModule,
-
+    ContractGenerateModule,
+    OfferModule
   ],
   controllers: [InitSupplyController],
   providers: [
@@ -17,7 +20,9 @@ import { InfoblockModule } from './domain/infoblock/infoblock.module';
   ],
   exports: [
     ZakupkiOfferModule,
-    InfoblockModule
+    InfoblockModule,
+    ContractGenerateModule,
+    OfferModule
   ]
 })
 export class KonstructorModule { }
