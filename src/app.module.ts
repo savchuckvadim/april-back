@@ -1,7 +1,6 @@
 import { Logger, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DocumentModule } from './modules/document/document.module';
 import { QueueModule } from './modules/queue/queue.module';
 
 import { ConfigModule } from '@nestjs/config';
@@ -13,7 +12,6 @@ import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 import { EventSalesModule } from './apps/event-sales/event.module';
 import { GsrModule } from './commands/excel-migrate/gsr.module';
 import { HealthController } from './health.controller';
-import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { PBXModule } from './modules/pbx/pbx.module';
 import { WsModule } from './core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
@@ -22,7 +20,6 @@ import { PortalModule } from './modules/portal/portal.module';
 import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
 // import { EventServiceModule } from './apps/event-service/event-service.module';
 import { KonstructorModule } from './apps/konstructor/konstructor.module';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsModule } from './core/metrics/metrics.module';
 import { AlfaModule } from './apps/alfa/alfa.module';
 import { TranscriptionModule } from './modules/transcription/transcription.module';
@@ -33,7 +30,7 @@ import { ChangeDealCategoryModule } from './commands/change-deal-category/change
 import { StorageModule } from './core/storage/storage.module';
 import { FileLinkModule } from './core/file-link/file-link.module';
 import { PrismaModule } from './core/prisma/prisma.module';
-
+import { GarantModule } from './modules/garant/garant.module';
 @Module({
   imports: [
 
@@ -78,7 +75,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
 
     StorageModule,
     FileLinkModule,
-    
+    GarantModule
   ],
   controllers: [
     AppController,

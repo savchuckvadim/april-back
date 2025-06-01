@@ -3,15 +3,15 @@ import { InitSupplyController } from './supply/init-supply.ts/init-supply.contro
 import { InitSupplyService } from './supply/init-supply.ts/init-supply.service';
 import { InitSupplyUseCase } from './supply/init-supply.ts/init-supply.use-case';
 import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
-import { InfoblockModule } from './domain/infoblock/infoblock.module';
 import { ContractGenerateModule } from './contract/generate/contract-generate.module';
 import { OfferModule } from './offer/offer.module';
+import { GarantModule } from 'src/modules/garant/garant.module';
 @Module({
   imports: [
     ZakupkiOfferModule,
-    InfoblockModule,
     ContractGenerateModule,
-    OfferModule
+    OfferModule,
+    GarantModule
   ],
   controllers: [InitSupplyController],
   providers: [
@@ -20,7 +20,6 @@ import { OfferModule } from './offer/offer.module';
   ],
   exports: [
     ZakupkiOfferModule,
-    InfoblockModule,
     ContractGenerateModule,
     OfferModule
   ]

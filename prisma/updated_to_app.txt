@@ -1,0 +1,74 @@
+
+model infoblocks {
+  id                 BigInt    @id @default(autoincrement())
+  number             Int
+  name               String
+  title              String?
+  description        String?   @db.Text
+  descriptionForSale String?   @db.Text
+  shortDescription   String?   @db.Text
+  weight             String
+  code               String
+  inGroupId          Int
+  groupId            BigInt?
+  isLa               Boolean
+  isFree             Boolean
+  isShowing          Boolean
+  isSet              Boolean
+  isProduct          Boolean?
+  isPackage          Boolean?
+  tag                String?
+  parent_id          BigInt?
+  relation_id        BigInt?
+  related_id         BigInt?
+  excluded_id        BigInt?
+  created_at         DateTime? @default(now())
+  updated_at         DateTime? @updatedAt
+
+  // Relations
+  group info_groups? @relation("GroupToInfoblocks", fields: [groupId], references: [id])
+
+  // Self-referential relations
+  parent   infoblocks?  @relation("ParentToChild", fields: [parent_id], references: [id])
+  children infoblocks[] @relation("ParentToChild")
+
+  relation          infoblocks?  @relation("RelationToInfoblock", fields: [relation_id], references: [id])
+  relatedInfoblocks infoblocks[] @relation("RelationToInfoblock")
+
+  related     infoblocks?  @relation("RelatedToInfoblock", fields: [related_id], references: [id])
+  relatedFrom infoblocks[] @relation("RelatedToInfoblock")
+
+  excluded     infoblocks?  @relation("ExcludedToInfoblock", fields: [excluded_id], references: [id])
+  excludedFrom infoblocks[] @relation("ExcludedToInfoblock")
+
+  // Package relations
+  packages          infoblocks[] @relation("PackageToInfoblocks")
+  packageInfoblocks infoblocks[] @relation("PackageToInfoblocks")
+
+  // Many-to-many relations
+  complects                                  complect_infoblock[]
+  garant_packages                            garant_packages[]
+  infoblock_info_group                       infoblock_info_group[]
+  infoblock_package_infoblock_idToinfoblocks infoblock_package[]    @relation("infoblock_package_infoblock_idToinfoblocks")
+  infoblock_package_package_idToinfoblocks   infoblock_package[]    @relation("infoblock_package_package_idToinfoblocks")
+}
+
+model info_groups {
+  id                 BigInt    @id @default(autoincrement())
+  number             Int
+  code               String
+  name               String
+  title              String
+  description        String?   @db.Text
+  descriptionForSale String?   @db.Text
+  shortDescription   String?   @db.Text
+  type               String
+  productType        String
+  created_at         DateTime? @default(now())
+  updated_at         DateTime? @updatedAt
+
+  // Relations
+  infoblocks           infoblocks[]           @relation("GroupToInfoblocks")
+  garant_packages      garant_packages[]
+  infoblock_info_group infoblock_info_group[]
+}

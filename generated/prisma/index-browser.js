@@ -451,25 +451,8 @@ exports.Prisma.FilesScalarFieldEnum = {
   entity_type: 'entity_type'
 };
 
-exports.Prisma.Info_groupsScalarFieldEnum = {
-  id: 'id',
-  created_at: 'created_at',
-  updated_at: 'updated_at',
-  number: 'number',
-  code: 'code',
-  name: 'name',
-  title: 'title',
-  description: 'description',
-  descriptionForSale: 'descriptionForSale',
-  shortDescription: 'shortDescription',
-  type: 'type',
-  productType: 'productType'
-};
-
 exports.Prisma.InfoblocksScalarFieldEnum = {
   id: 'id',
-  created_at: 'created_at',
-  updated_at: 'updated_at',
   number: 'number',
   name: 'name',
   title: 'title',
@@ -484,14 +467,30 @@ exports.Prisma.InfoblocksScalarFieldEnum = {
   isFree: 'isFree',
   isShowing: 'isShowing',
   isSet: 'isSet',
+  isProduct: 'isProduct',
+  isPackage: 'isPackage',
+  tag: 'tag',
   parent_id: 'parent_id',
   relation_id: 'relation_id',
   related_id: 'related_id',
   excluded_id: 'excluded_id',
-  group_id: 'group_id',
-  isProduct: 'isProduct',
-  isPackage: 'isPackage',
-  tag: 'tag'
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Info_groupsScalarFieldEnum = {
+  id: 'id',
+  number: 'number',
+  code: 'code',
+  name: 'name',
+  title: 'title',
+  description: 'description',
+  descriptionForSale: 'descriptionForSale',
+  shortDescription: 'shortDescription',
+  type: 'type',
+  productType: 'productType',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 };
 
 exports.Prisma.JobsScalarFieldEnum = {
@@ -1225,6 +1224,27 @@ exports.Prisma.User_selected_templatesScalarFieldEnum = {
   updated_at: 'updated_at'
 };
 
+exports.Prisma.Portal_regionScalarFieldEnum = {
+  portal_id: 'portal_id',
+  region_id: 'region_id',
+  own_abs: 'own_abs',
+  own_tax: 'own_tax',
+  own_tax_abs: 'own_tax_abs'
+};
+
+exports.Prisma.RegionsScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  number: 'number',
+  title: 'title',
+  code: 'code',
+  infoblock: 'infoblock',
+  abs: 'abs',
+  tax: 'tax',
+  tax_abs: 'tax_abs'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1449,17 +1469,6 @@ exports.Prisma.filesOrderByRelevanceFieldEnum = {
   entity_type: 'entity_type'
 };
 
-exports.Prisma.info_groupsOrderByRelevanceFieldEnum = {
-  code: 'code',
-  name: 'name',
-  title: 'title',
-  description: 'description',
-  descriptionForSale: 'descriptionForSale',
-  shortDescription: 'shortDescription',
-  type: 'type',
-  productType: 'productType'
-};
-
 exports.Prisma.infoblocksOrderByRelevanceFieldEnum = {
   name: 'name',
   title: 'title',
@@ -1469,6 +1478,17 @@ exports.Prisma.infoblocksOrderByRelevanceFieldEnum = {
   weight: 'weight',
   code: 'code',
   tag: 'tag'
+};
+
+exports.Prisma.info_groupsOrderByRelevanceFieldEnum = {
+  code: 'code',
+  name: 'name',
+  title: 'title',
+  description: 'description',
+  descriptionForSale: 'descriptionForSale',
+  shortDescription: 'shortDescription',
+  type: 'type',
+  productType: 'productType'
 };
 
 exports.Prisma.jobsOrderByRelevanceFieldEnum = {
@@ -1921,6 +1941,12 @@ exports.Prisma.user_selected_templatesOrderByRelevanceFieldEnum = {
   sale_text_4: 'sale_text_4',
   sale_text_5: 'sale_text_5'
 };
+
+exports.Prisma.regionsOrderByRelevanceFieldEnum = {
+  title: 'title',
+  code: 'code',
+  infoblock: 'infoblock'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -1951,8 +1977,8 @@ exports.Prisma.ModelName = {
   failed_jobs: 'failed_jobs',
   fields: 'fields',
   files: 'files',
-  info_groups: 'info_groups',
   infoblocks: 'infoblocks',
+  info_groups: 'info_groups',
   jobs: 'jobs',
   links: 'links',
   measures: 'measures',
@@ -1998,7 +2024,9 @@ exports.Prisma.ModelName = {
   report_settings: 'report_settings',
   supplies: 'supplies',
   transcriptions: 'transcriptions',
-  user_selected_templates: 'user_selected_templates'
+  user_selected_templates: 'user_selected_templates',
+  portal_region: 'portal_region',
+  regions: 'regions'
 };
 
 /**

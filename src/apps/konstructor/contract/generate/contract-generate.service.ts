@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import 'dayjs/locale/ru';
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import { ProductRowDto } from "../../document-generate";
-import { ProviderService, RqEntity } from "../../domain/provider";
+import { ProviderService, RqEntity } from "../../../../modules/garant/provider";
 import { DocumentTotalRowService } from "../../document-generate/product-rows/total-row.service";
 import { ClientTypeEnum } from "../../document-generate/type/client.type";
 import { ContractSpecificationDto } from "../../document-generate/dto/specification/specification.dto";
@@ -95,7 +95,7 @@ export class ContractGenerateService {
         // const mainPath = `konstructor/contract/${dto.domain}/${dto.userId}`;
         await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, this.resultPath);
 
-        const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'contract',  this.currentYear, `${this.documentName}`);
+        const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'contract', this.currentYear, `${this.documentName}`);
         const link = `${this.baseUrl}${rootLink}`;
 
         await this.setInBitrix(dto.companyId, dto.userId, link, documentNumber, dto.dealId);

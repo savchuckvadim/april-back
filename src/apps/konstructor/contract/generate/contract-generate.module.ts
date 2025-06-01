@@ -5,7 +5,7 @@ import { PBXModule } from "src/modules/pbx/pbx.module";
 import { StorageModule } from "src/core/storage/storage.module";
 import { FileLinkModule } from "src/core/file-link/file-link.module";
 import { LibreOfficeModule } from "src/modules/libre-office/libre-office.module";
-import { ProviderModule } from "../../domain/provider";
+import { ProviderModule } from "../../../../modules/garant/provider";
 import { DocumentGenerateModule } from "../../document-generate/document-generate.module";
 @Module({
     imports: [

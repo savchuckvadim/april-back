@@ -20,7 +20,7 @@ import { formatRuble } from "../document-generate/lib/rubles.util";
 import { PBXService } from "src/modules/pbx/pbx.servise";
 import { BitrixEntityType, BitrixService } from "src/modules/bitrix";
 import { LibreOfficeService } from "src/modules/libre-office/libre-office.service";
-import { ProviderDto } from "../domain/provider";
+import { ProviderDto } from "../../../modules/garant/provider";
 import { DocumentInfoblockService } from "../document-generate/";
 import { DocumentTotalRowService } from "../document-generate/";
 @Injectable()
@@ -32,7 +32,7 @@ export class ZakupkiOfferCreateService {
     private documentNumber: string = '';
     private currentYear: string;
     private resultPath: string;
-    private doc: Docxtemplater<PizZip>
+   
     constructor(
         private readonly storage: StorageService,
         private readonly fileLinkService: FileLinkService,
@@ -48,20 +48,20 @@ export class ZakupkiOfferCreateService {
 
         this.currentYear = dayjs().format('YYYY');
         this.baseUrl = this.configService.get('APP_URL') as string;
-        this.getDocTemplater()
+       
     }
     private getDocTemplater() {
         const templatePath = this.storage.getFilePath(StorageType.APP, 'konstructor/templates/zoffer', 'april-template.docx');
         const content = fs.readFileSync(templatePath, 'binary');
 
         const zip = new PizZip(content);
-        this.doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        return new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
     }
     async createZakupkiOffer(dto: ZakupkiOfferCreateDto) {
         this.resultPath = `konstructor/zoffer/${this.currentYear}/${dto.domain}/${dto.userId}`;
         const { bitrix } = await this.pbx.init(dto.domain)
         this.bitrix = bitrix
-
+        const doc = this.getDocTemplater()
         this.contractPeriod = this.getContractPeriod(dto.contractStart, dto.contractEnd);
         const { documentDate, documentNumber } = await this.getDocumentDateAndNumber(dto.domain, dto.userId);
         this.documentNumber = documentNumber;
@@ -91,7 +91,7 @@ export class ZakupkiOfferCreateService {
         }
 
         try {
-            this.doc.render(data);
+            doc.render(data);
 
 
 
@@ -100,12 +100,7 @@ export class ZakupkiOfferCreateService {
         }
 
 
-        // const buf = this.doc.toBuffer();
-        // await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, this.resultPath);
-        // // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, this.resultPath, this.documentName));
-
-        // const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'zoffer', this.currentYear, `${this.documentName}`);
-        // const link = `${this.baseUrl}${rootLink}`;
+        await this.saveFile(doc)
         const link = await this.createLink(dto.domain, dto.userId)
         this.setInBitrix(dto.companyId, dto.userId, link, documentNumber, dto.dealId)
         return {
@@ -113,11 +108,14 @@ export class ZakupkiOfferCreateService {
             // testingInfoblocksWithDescription
         };
     }
-    private async createLink(domain: string, userId: number, ) {
-        const buf = this.doc.toBuffer();
+    private async saveFile(doc: Docxtemplater) {
+        const buf = doc.toBuffer();
         await this.storage.saveFile(buf, this.documentName, StorageType.PUBLIC, this.resultPath);
         // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, this.resultPath, this.documentName));
 
+    }
+    private async createLink( domain: string, userId: number,) {
+     
         const rootLink = await this.fileLinkService.createPublicLink(domain, userId, 'konstructor', 'zoffer', this.currentYear, `${this.documentName}`);
         const link = `${this.baseUrl}${rootLink}`;
         return link

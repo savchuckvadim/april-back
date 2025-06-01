@@ -10,11 +10,11 @@ import {
 } from 'class-validator';
 import { OtherProvidersDto } from './other-provider.dto';
 
-import { 
-    ProductRowDto, 
-    ProductRowsItemsDto, 
+import {
+    ProductRowDto,
+    ProductRowsItemsDto,
     ProductRowSetDto,
-  
+
     RecipientDto,
     ContractDto,
     SupplyDto,
@@ -23,7 +23,7 @@ import {
     RegionsDto,
     ComplectDto
 } from 'src/apps/konstructor/document-generate';
-import { ProviderDto } from '../../domain/provider';
+import { ProviderDto } from '../../../../modules/garant/provider';
 
 
 

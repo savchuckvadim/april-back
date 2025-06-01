@@ -4,15 +4,15 @@ import { ZakupkiOfferController } from "./zakupki-offer.controller";
 import { PBXModule } from "src/modules/pbx/pbx.module";
 import { StorageModule } from "src/core/storage/storage.module";
 import { FileLinkModule } from "src/core/file-link/file-link.module";
-import { InfoblockModule } from "../domain/infoblock/infoblock.module";
 import { LibreOfficeModule } from "src/modules/libre-office/libre-office.module";
 import { DocumentGenerateModule } from "../document-generate/document-generate.module";
+import { GarantModule } from "src/modules/garant/garant.module";
 @Module({
     imports: [
         PBXModule,
         StorageModule,
         FileLinkModule,
-        InfoblockModule,
+        GarantModule,
         LibreOfficeModule,
         DocumentGenerateModule
     ],
