@@ -1,5 +1,5 @@
 import { rubles } from 'rubles';
-import { convert as convertNumberToWordsRu } from 'number-to-words-ru'
+// import { convert as convertNumberToWordsRu } from 'number-to-words-ru'
 //todo https://www.npmjs.com/package/number-to-words-ru
 export const formatRuble = (value: number): string => {
     // return new Intl.NumberFormat('ru-RU', {
