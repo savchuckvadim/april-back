@@ -15,12 +15,23 @@ export type ActivitySchema = {
         request: CrmListRequestType<BXActivityRequestFields>;
         response: IBXActivity[];
     };
+    [EBxMethod.ADD]: {
+        request: {
+            fields:  Partial<IBXActivity>
+        };
+        response: number;
+    };
     [EBxMethod.UPDATE]: {
         request: {
-            taskId: number | string
-            fields: Partial<IBXTask>
+            id: number | string
+            fields: Partial<IBXActivity>
         };
-        response: { tasks: IBXTask[] };
+        response: { tasks: IBXActivity[] };
     };
+    [EBxMethod.DELETE]: {
+        request: { id: number | string };
+        response: { tasks: IBXActivity[] };
+    };
+
 
 };

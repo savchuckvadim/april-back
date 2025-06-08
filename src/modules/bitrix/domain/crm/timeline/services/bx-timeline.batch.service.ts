@@ -4,10 +4,16 @@ import { IBXTimelineComment } from "../interface/bx-timeline.interface";
 import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 
 
-@Injectable()
+
 export class BxTimelineBatchService {
     private repo: BxTimelineRepository
-    constructor() { }
+
+    clone(api: BitrixBaseApi): BxTimelineBatchService {
+        const instance = new BxTimelineBatchService();
+        instance.init(api);
+        return instance;
+    }
+
 
     init(api: BitrixBaseApi) {
         this.repo = new BxTimelineRepository(api);

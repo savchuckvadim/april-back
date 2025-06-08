@@ -2,11 +2,17 @@ import { Injectable } from "@nestjs/common";
 import { BxCompanyRepository } from "../repository/bx-company.repository";
 import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { IBXCompany } from "../interface/bx-company.interface";
+import { IBXField } from "../../fields/bx-field.interface";
 
-@Injectable()
+
 export class BxCompanyService {
     private repo: BxCompanyRepository
-    constructor() { }
+
+    clone(api: BitrixBaseApi): BxCompanyService {
+        const instance = new BxCompanyService();
+        instance.init(api);
+        return instance;
+    }
 
     init(api: BitrixBaseApi) {
         this.repo = new BxCompanyRepository(api);
@@ -20,11 +26,11 @@ export class BxCompanyService {
         return this.repo.getList(filter, select);
     }
 
-    set(data: { [key: string]: any }) {
+    set(data: Partial<IBXCompany>) {
         return this.repo.set(data);
     }
 
-    update(companyId: number | string, data: { [key: string]: any }) {
+    update(companyId: number | string, data: Partial<IBXCompany>) {
         return this.repo.update(companyId, data);
     }
 
@@ -34,5 +40,8 @@ export class BxCompanyService {
 
     getField(id: number | string) {
         return this.repo.getField(id);
+    }
+    addField(fields: Partial<IBXField>) {
+        return this.repo.setField(fields);
     }
 }

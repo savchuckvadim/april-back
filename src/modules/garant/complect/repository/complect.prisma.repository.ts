@@ -233,4 +233,12 @@ export class ComplectPrismaRepository implements ComplectRepository {
             return null;
         }
     }
+
+    async findByCode(code: string): Promise<ComplectEntity | null> {
+        const result = await this.prisma.complects.findFirst({
+            where: { code }
+        });
+        if (!result) return null;
+        return createComplectEntityFromPrisma(result);
+    }
 } 

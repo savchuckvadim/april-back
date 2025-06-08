@@ -186,7 +186,7 @@ export class BitrixBaseApi {
         data: TBXRequest<NAMESPACE, ENTITY, METHOD>
     ): Promise<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>> {
         this.logger.log(`Making API call to method: ${String(method)}`);
-        this.logger.log(`Data: ${JSON.stringify(data)}`);
+      
         let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
         if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
             resultMethod = `${String(entity)}.${String(method)}`
@@ -199,7 +199,7 @@ export class BitrixBaseApi {
             const response = await firstValueFrom(
                 this.httpService.post(url, data, this.axiosOptions),
             ) as AxiosResponse<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>>;
-            this.logger.log(`API call successful: ${JSON.stringify(response.data)}`);
+            this.logger.log(`API call successful: ${JSON.stringify(resultMethod)}`);
             return response.data;
         } catch (error) {
             this.logger.error(`API call failed: ${error.message}`);

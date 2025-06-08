@@ -4,16 +4,22 @@ import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class GsrMigrateBitrixCompanyService extends GsrMigrateBitrixAbstract {
+
     getCompanyCommand(element: MigrateToBxDto, companyCommandCode: string) {
+        const name = element.company
+        const title = name ? name.replace(/[\r\n]+/g, ' ') : ''
+       
+    
         this.bitrix.batch.company.set(
             companyCommandCode,
 
             {
-                fields: {
-                    ASSIGNED_BY_ID: "221",
-                    TITLE: element.company,
-                    UF_CRM_USER_CARDNUM: element.id as string,
-                }
+
+                ASSIGNED_BY_ID: this.userId,
+                TITLE: title,
+                UF_CRM_USER_CARDNUM: element.id as string,
+                COMMENTS: element.company,
+
 
             }
         )

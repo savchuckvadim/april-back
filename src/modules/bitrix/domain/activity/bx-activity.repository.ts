@@ -43,8 +43,8 @@ export class BxActivityRepository {
     async getListBtch(cmdCode: string, filter: Partial<BXActivityRequestFields>, select?: string[]) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
-            EBxNamespace.TASKS,
-            EBXEntity.TASK,
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
             EBxMethod.LIST,
             { select, filter }
         );
@@ -87,10 +87,10 @@ export class BxActivityRepository {
     }
 
 
-    async delete(activityId: number) {
+    async delete(activityId: number | string) {
         return this.bitrixService.callType(
-            EBxNamespace.TASKS,
-            EBXEntity.TASK,
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
             EBxMethod.DELETE,
             { id: activityId }
         );
@@ -99,8 +99,8 @@ export class BxActivityRepository {
     async deleteBtch(cmdCode: string, activityId: number | string) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
-            EBxNamespace.TASKS,
-            EBXEntity.TASK,
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
             EBxMethod.DELETE,
             { id: activityId, }
         );
@@ -138,23 +138,39 @@ export class BxActivityRepository {
     //     );
     // }
 
-
-    async update(taskId: number | string, data: { [key: string]: any }) {
+    async create(data:  Partial<IBXActivity>) {
         return this.bitrixService.callType(
-            EBxNamespace.TASKS,
-            EBXEntity.TASK,
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
+            EBxMethod.ADD,
+            { fields: data }
+        );
+    }
+    async createBtch(cmdCode: string, data:  Partial<IBXActivity>) {
+        return this.bitrixService.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
+            EBxMethod.ADD,
+            { fields: data }
+        );
+    }
+    async update(id: number | string, data: Partial<IBXActivity>) {
+        return this.bitrixService.callType(
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
             EBxMethod.UPDATE,
-            { taskId, fields: data }
+            { id, fields: data }
         );
     }
 
-    async updateBtch(cmdCode: string, taskId: number | string, data: { [key: string]: any }) {
+    async updateBtch(cmdCode: string, id: number | string, data: Partial<IBXActivity>) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
-            EBxNamespace.TASKS,
-            EBXEntity.TASK,
+            EBxNamespace.CRM,
+            EBXEntity.ACTIVITY,
             EBxMethod.UPDATE,
-            { taskId, fields: data }
+            { id, fields: data }
         );
     }
 }

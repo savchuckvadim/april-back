@@ -2,9 +2,9 @@ import { Injectable } from "@nestjs/common";
 import { ComplectEntity } from "../complect.entity";
 import { ComplectRepository } from "../repository/complect.repository";
 import { CreateComplectDto } from "../dto/create-complect.dto";
-import { InfoblockEntity } from '../../infoblock/infoblock.entity';
+import { InfoblockLightEntity } from '../../infoblock/infoblock.entity';
 import { InfoblockService } from '../../infoblock/infoblock.service';
-
+import { getLightFromEntity } from '../../infoblock/lib/infoblock-entity.util';
 @Injectable()
 export class ComplectService {
     constructor(
@@ -32,7 +32,14 @@ export class ComplectService {
         return this.complectRepository.update(complect);
     }
 
-    async getAvailableInfoblocks(): Promise<InfoblockEntity[] | null> {
-        return this.infoblockService.getInfoblocks();
+    async getAvailableInfoblocks(id: string): Promise<InfoblockLightEntity[] | undefined> {
+        const complect = await this.findById(id);
+        if (!complect) {
+            throw new Error('Комплект не найден');
+        }
+        if (!complect.infoblocks) {
+            throw new Error('Инфоблоки у комплекта не найдены');
+        }
+        return complect.infoblocks.map(infoblock => getLightFromEntity(infoblock));
     }
 } 

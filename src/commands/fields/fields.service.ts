@@ -1,34 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import { PortalService } from 'src/modules/portal/portal.service';
+
 import { BitrixService } from 'src/modules/bitrix/';
 import { BitrixEnumerationOption, IBXField } from 'src/modules/bitrix/';
 
 
-@Injectable()
 export class FieldsService {
     constructor(
-
-        private readonly portalService: PortalService,
         private readonly bitrix: BitrixService
     ) {
     }
-    async init(domain: string) {
-        const portal = await this.portalService.getPortalByDomain(domain);
-        this.bitrix.init(portal);
-    }
+
     async getDealFields() {
+
         const list = await this.bitrix.deal.getFieldsList({
-            'SORT': 1
+            'SORT': 1,
+           
+
         });
 
         const batchResult = await this.getDetailFields(list.result)
         const rowResults = this.bitrix.api.clearResult(batchResult) as IBXField[]
-        return this.prepareFields(rowResults)
+        const fields = this.prepareFields(rowResults)
+        const filtredFields = fields.filter(field => field.name.includes('Участник 10'))
+        return { count: filtredFields.length, filtredFields }
     }
     async getUserFieldsEnumeration() {
+
         const list = await this.bitrix.deal.getFieldsList({
             'USER_TYPE_ID': 'enumeration'
         });
+        
         return await this.getDetailFields(list.result)
 
     }

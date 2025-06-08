@@ -10,8 +10,9 @@ import {
 } from './domain/crm/';
 import { IPortal } from '../portal/interfaces/portal.interface';
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
+import { ServiceClonerFactory } from './domain/service-clone.factory';
 
-@Injectable()
+// @Injectable()
 export class BitrixService {
     public api: BitrixBaseApi
     public deal: BxDealService
@@ -34,20 +35,8 @@ export class BitrixService {
     }
     constructor(
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
-        private readonly bitrixDealService: BxDealService,
-        private readonly bitrixDealBatchService: BxDealBatchService,
-        private readonly bitrixCompanyService: BxCompanyService,
-        private readonly bitrixCompanyBatchService: BxCompanyBatchService,
-        private readonly bitrixProductRowService: BxProductRowService,
-        private readonly bitrixProductRowBatchService: BxProductRowBatchService,
-        private readonly bitrixContactService: BxContactService,
-        private readonly bitrixContactBatchService: BxContactBatchService,
-        private readonly bitrixCategoryService: BxCategoryService,
-        private readonly bitrixStatusService: BxStatusService,
-        private readonly bitrixItemService: BxItemService,
-        private readonly bitrixItemBatchService: BxItemBatchService,
-        private readonly bitrixTimelineService: BxTimelineService,
-        private readonly bitrixTimelineBatchService: BxTimelineBatchService
+        private readonly cloner: ServiceClonerFactory,
+       
     ) { }
     init(portal: IPortal) {
         this.api = this.bitrixApiFactoryService.create(portal);
@@ -62,48 +51,34 @@ export class BitrixService {
     }
 
     private initDeal() {
-        this.deal = this.bitrixDealService
-        this.deal.init(this.api)
-        this.batch.deal = this.bitrixDealBatchService
-        this.batch.deal.init(this.api)
+        this.deal = this.cloner.clone(BxDealService, this.api);
+        this.batch.deal = this.cloner.clone(BxDealBatchService, this.api);
     }
 
     private initCompany() {
-        this.company = this.bitrixCompanyService
-        this.company.init(this.api)
-        this.batch.company = this.bitrixCompanyBatchService
-        this.batch.company.init(this.api)
+        this.company = this.cloner.clone(BxCompanyService, this.api);
+        this.batch.company = this.cloner.clone(BxCompanyBatchService, this.api);
     }
     private initProductRow() {
-        this.productRow = this.bitrixProductRowService
-        this.productRow.init(this.api)
-        this.batch.productRow = this.bitrixProductRowBatchService
-        this.batch.productRow.init(this.api)
+        this.productRow = this.cloner.clone(BxProductRowService, this.api);
+        this.batch.productRow = this.cloner.clone(BxProductRowBatchService, this.api);
     }
     private initContact() {
-        this.contact = this.bitrixContactService
-        this.contact.init(this.api)
-        this.batch.contact = this.bitrixContactBatchService
-        this.batch.contact.init(this.api)
+        this.contact = this.cloner.clone(BxContactService, this.api);
+        this.batch.contact = this.cloner.clone(BxContactBatchService, this.api);
     }
     private initCategory() {
-        this.category = this.bitrixCategoryService
-        this.category.init(this.api)
+        this.category = this.cloner.clone(BxCategoryService, this.api);
     }
     private initStatus() {
-        this.status = this.bitrixStatusService
-        this.status.init(this.api)
+        this.status = this.cloner.clone(BxStatusService, this.api);
     }
     private initItem() {
-        this.item = this.bitrixItemService
-        this.item.init(this.api)
-        this.batch.item = this.bitrixItemBatchService
-        this.batch.item.init(this.api)
+        this.item = this.cloner.clone(BxItemService, this.api);
+        this.batch.item = this.cloner.clone(BxItemBatchService, this.api);
     }
     private initTimeline() {
-        this.timeline = this.bitrixTimelineService
-        this.timeline.init(this.api)
-        this.batch.timeline = this.bitrixTimelineBatchService
-        this.batch.timeline.init(this.api)
+        this.timeline = this.cloner.clone(BxTimelineService, this.api);
+        this.batch.timeline = this.cloner.clone(BxTimelineBatchService, this.api);
     }
 }

@@ -5,12 +5,13 @@ import { IBXDeal } from "../interface/bx-deal.interface";
 
 @Injectable()
 export class BxDealBatchService {
-    private repo: BxDealRepository
-    constructor(
-
-    ) {
-
+    clone(api: BitrixBaseApi): BxDealBatchService {
+        const instance = new BxDealBatchService();
+        instance.init(api);
+        return instance;
     }
+
+    private repo: BxDealRepository
 
     init(api: BitrixBaseApi) {
         this.repo = new BxDealRepository(api);
@@ -23,10 +24,10 @@ export class BxDealBatchService {
         return this.repo.getListBtch(cmdCode, filter, select, order);
     }
 
-    set(cmdCode: string, data: { [key: string]: any }) {
+    set(cmdCode: string, data: Partial<IBXDeal>) {
         return this.repo.setBtch(cmdCode, data);
     }
-    update(cmdCode: string, dealId: number | string, data: { [key: string]: any }) {
+    update(cmdCode: string, dealId: number | string, data: Partial<IBXDeal>) {
         return this.repo.updateBtch(cmdCode, dealId, data);
     }
     getField(cmdCode: string, id: number | string) {

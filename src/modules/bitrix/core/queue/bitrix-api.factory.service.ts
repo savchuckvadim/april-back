@@ -22,20 +22,17 @@ import { BitrixApiQueueApiService } from "./bitrix-queue-api.service";
 // }
 @Injectable()
 export class BitrixApiFactoryService {
-  private bitrixApi: BitrixApiQueueApiService;
+
   constructor(
     private readonly telegram: TelegramService,
     private readonly http: HttpService
   ) { }
 
   create(portal: IPortal): BitrixApiQueueApiService {
-    this.bitrixApi = new BitrixApiQueueApiService(portal, this.http, this.telegram);
-    // return new BitrixApiQueueApiService(portal, this.http, this.telegram);
-    return this.bitrixApi;
+    return new BitrixApiQueueApiService(portal, this.http, this.telegram);
+
   }
-  getBitrixApi(): BitrixApiQueueApiService {
-    return this.bitrixApi;
-  }
+
 }
 
 

@@ -20,6 +20,8 @@ model agents {
   code       String    @db.VarChar(255)
   number     String    @db.VarChar(255)
   withTax    Boolean   @default(false)
+  portal     portals   @relation("PortalProviders", fields: [portalId], references: [id])
+  rq         rqs?      @relation(fields: [rqId], references: [id])
 }
 
 model bitrixfield_items {
@@ -324,6 +326,8 @@ model f_items {
   value       String?   @db.VarChar(255)
   bitrixId    String?   @db.VarChar(255)
   fieldNumber String    @db.VarChar(255)
+  fields      fields?   @relation(fields: [fieldsId], references: [id])
+  fieldsId    BigInt?   @db.UnsignedBigInt
 }
 
 model failed_jobs {
@@ -337,23 +341,25 @@ model failed_jobs {
 }
 
 model fields {
-  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at       DateTime? @db.Timestamp(0)
-  updated_at       DateTime? @db.Timestamp(0)
+  id               BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
   number           Int
-  name             String    @db.VarChar(255)
-  code             String    @db.VarChar(255)
-  type             String    @db.VarChar(255)
-  isGeneral        Boolean
-  isDefault        Boolean
-  isRequired       Boolean
-  value            String?   @db.VarChar(255)
-  description      String?   @db.LongText
-  bitixId          String?   @db.VarChar(255)
-  bitrixTemplateId String?   @db.VarChar(255)
-  isActive         Boolean
-  isPlural         Boolean
-  isClient         Boolean?
+  name             String           @db.VarChar(255)
+  code             String           @db.VarChar(255)
+  type             String?          @db.VarChar(255)
+  isGeneral        Boolean          @default(false)
+  isDefault        Boolean          @default(false)
+  isRequired       Boolean          @default(false)
+  value            String?          @db.Text
+  description      String?          @db.Text
+  bitixId          String?          @db.VarChar(255)
+  bitrixTemplateId String?          @db.VarChar(255)
+  isActive         Boolean          @default(false)
+  isPlural         Boolean          @default(false)
+  created_at       DateTime?        @db.Timestamp(0)
+  updated_at       DateTime?        @db.Timestamp(0)
+  template_field   template_field[]
+  items            f_items[]
+  
 }
 
 model files {
@@ -384,7 +390,7 @@ model infoblocks {
   weight             String
   code               String
   inGroupId          Int
-  groupId            BigInt?
+  group_id           BigInt?
   isLa               Boolean
   isFree             Boolean
   isShowing          Boolean
@@ -400,7 +406,7 @@ model infoblocks {
   updated_at         DateTime? @updatedAt
 
   // Relations
-  group info_groups? @relation("GroupToInfoblocks", fields: [groupId], references: [id])
+  group info_groups? @relation("GroupToInfoblocks", fields: [group_id], references: [id])
 
   // Self-referential relations
   parent   infoblocks?  @relation("ParentToChild", fields: [parent_id], references: [id])
@@ -572,6 +578,8 @@ model portals {
   C_REST_CLIENT_SECRET    String?                   @db.Text
   C_REST_WEB_HOOK_URL     String?                   @db.Text
   number                  Int
+  agents                  agents[]                  @relation("PortalProviders")
+  templates               templates[]               @relation("PortalTemplates")
   bitrix_apps             bitrix_apps[]
   bitrixlists             bitrixlists[]
   btx_companies           btx_companies[]
@@ -666,6 +674,7 @@ model rqs {
   stampId               BigInt?      @db.UnsignedBigInt
   agentId               BigInt?      @db.UnsignedBigInt
   rq_counter            rq_counter[]
+  agents                agents[]
 }
 
 model smarts {
@@ -754,6 +763,11 @@ model template_field {
   updated_at  DateTime? @db.Timestamp(0)
   template_id BigInt    @db.UnsignedBigInt
   field_id    BigInt    @db.UnsignedBigInt
+  templates   templates @relation(fields: [template_id], references: [id])
+  fields      fields    @relation(fields: [field_id], references: [id])
+
+  @@index([template_id])
+  @@index([field_id])
 }
 
 model templates {
@@ -765,7 +779,9 @@ model templates {
   type             String             @db.VarChar(255)
   link             String?            @db.VarChar(255)
   portalId         BigInt             @db.UnsignedBigInt
+  portal           portals            @relation("PortalTemplates", fields: [portalId], references: [id])
   template_counter template_counter[]
+  template_field   template_field[]
 }
 
 model timezones {

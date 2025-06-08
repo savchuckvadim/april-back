@@ -3,26 +3,32 @@ import { BxDealRepository } from "../repository/bx-deal.repository";
 import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { IBXDeal } from "../interface/bx-deal.interface";
 
-@Injectable()
+
 export class BxDealService {
+    clone(api: BitrixBaseApi): BxDealService {
+        const instance = new BxDealService();
+        instance.init(api);
+        return instance;
+    }
+
     private repo: BxDealRepository
-    constructor() { }
+
 
 
     init(api: BitrixBaseApi) {
         this.repo = new BxDealRepository(api);
     }
 
-    get(dealId: number) {
-        return this.repo.get(dealId);
+    get(dealId: number, select?: string[]) {
+        return this.repo.get(dealId, select);
     }
     getList(filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
         return this.repo.getList(filter, select, order);
     }
-    set(data: { [key: string]: any }) {
+    set(data: Partial<IBXDeal>) {
         return this.repo.set(data);
     }
-    update(dealId: number | string, data: { [key: string]: any }) {
+    update(dealId: number | string, data: Partial<IBXDeal>) {
         return this.repo.update(dealId, data);
     }
     getFieldsList(filter: { [key: string]: any }, select?: string[]) {

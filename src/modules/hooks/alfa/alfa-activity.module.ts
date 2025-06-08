@@ -6,19 +6,21 @@ import { QueueModule } from '../../queue/queue.module';
 import { SilenceModule } from 'src/core/silence/silence.module';
 import { AlfaHookController } from './alfa-activity.controller';
 import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.module';
-import { BitrixModule } from 'src/modules/bitrix/bitrix.module';
-import { PortalModule } from 'src/modules/portal/portal.module';
+
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
 import { AlfaActivityHookService } from './services/alfa-activity-hook.service';
+import { PBXModule } from 'src/modules/pbx/pbx.module';
+import { AlfaBxActivityCreateService } from './services/activity-create.service';
 
 @Module({
   imports: [
     QueueModule,
     SilenceModule,
     SilentJobHandlersModule,
-    BitrixModule,
-    PortalModule,
+    // BitrixModule,
+    // PortalModule,
+    PBXModule,
     TelegramModule,
     HttpModule,
     // RedisModule
@@ -26,7 +28,7 @@ import { AlfaActivityHookService } from './services/alfa-activity-hook.service';
   controllers: [AlfaHookController],
   providers: [
     AlfaActivityHookService,
-    // BitrixActivityCreateService,
+    AlfaBxActivityCreateService,
 
   ],
   exports: [AlfaActivityHookService]

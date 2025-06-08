@@ -1,12 +1,16 @@
-import { Injectable } from "@nestjs/common";
 import { BxContactRepository } from "../repository/bx-contact.repository";
 import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { IBXContact } from "../interface/bx-contact.interface";
 
-@Injectable()
+
 export class BxContactBatchService {
     private repo: BxContactRepository
-    constructor() { }
+
+    clone(api: BitrixBaseApi): BxContactBatchService {
+        const instance = new BxContactBatchService();
+        instance.init(api);
+        return instance;
+    }
 
     init(api: BitrixBaseApi) {
         this.repo = new BxContactRepository(api);
@@ -20,11 +24,11 @@ export class BxContactBatchService {
         return this.repo.getListBtch(cmdCode, filter, select);
     }
 
-    set(cmdCode: string, data: { [key: string]: any }) {
+    set(cmdCode: string, data: Partial<IBXContact>  ) {
         return this.repo.setBtch(cmdCode, data);
     }
 
-    update(cmdCode: string, contactId: number | string, data: { [key: string]: any }) {
+    update(cmdCode: string, contactId: number | string, data: Partial<IBXContact>) {
         return this.repo.updateBtch(cmdCode, contactId, data);
     }
 

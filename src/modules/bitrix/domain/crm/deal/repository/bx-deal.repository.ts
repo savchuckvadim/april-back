@@ -12,12 +12,12 @@ export class BxDealRepository {
         // this.bxApi = this.bxApiFactoryService.getBitrixApi();
     }
 
-    async get(dealId: number) {
+    async get(dealId: number, select?: string[]) {
         return await this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.GET,
-            { ID: dealId, select: ['ID'] }
+            { ID: dealId, select }
         );
     }
 
@@ -73,7 +73,7 @@ export class BxDealRepository {
 
     // Список до
 
-    async set(data: { [key: string]: any }) {
+    async set(data: Partial<IBXDeal>) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.DEAL,
@@ -81,7 +81,7 @@ export class BxDealRepository {
             { fields: data }
         );
     }
-    async setBtch(cmdCode: string, data: { [key: string]: any }) {
+    async setBtch(cmdCode: string, data: Partial<IBXDeal>) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -91,7 +91,7 @@ export class BxDealRepository {
         );
     }
 
-    async update(dealId: number | string, data: { [key: string]: any }) {
+    async update(dealId: number | string, data: Partial<IBXDeal>) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.DEAL,
@@ -100,7 +100,7 @@ export class BxDealRepository {
         );
     }
 
-    async updateBtch(cmdCode: string, dealId: number | string, data: { [key: string]: any }) {
+    async updateBtch(cmdCode: string, dealId: number | string, data: Partial<IBXDeal>) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,

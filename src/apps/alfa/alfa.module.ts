@@ -2,9 +2,17 @@ import { Module } from '@nestjs/common';
 import { AlfaController } from './alfa.controller';
 import { CreateDealUseCase } from './use-cases/create-deal.use-case';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
+import { BxDealService } from './services/bx-deal.service';
+import { BxFieldsService } from './services/bx-field.service';
 @Module({
-  imports: [PBXModule],
+  imports: [
+    PBXModule
+  ],
   controllers: [AlfaController],
-  providers: [CreateDealUseCase],
+  providers: [
+    CreateDealUseCase,
+    BxDealService,
+    BxFieldsService
+  ],
 })
-export class AlfaModule {}
+export class AlfaModule { }

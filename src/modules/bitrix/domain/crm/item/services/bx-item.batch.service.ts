@@ -4,13 +4,14 @@ import { BxItemRepository } from "../repository/bx-item.repository";
 import { IBXItem } from "../interface/item.interface";
 import { BitrixOwnerTypeId } from "../../../enums/bitrix-constants.enum";
 
-@Injectable()
+
 export class BxItemBatchService {
     private repo: BxItemRepository
-    constructor(
 
-    ) {
-
+    clone(api: BitrixBaseApi): BxItemBatchService {
+        const instance = new BxItemBatchService();
+        instance.init(api);
+        return instance;
     }
 
     init(api: BitrixBaseApi) {

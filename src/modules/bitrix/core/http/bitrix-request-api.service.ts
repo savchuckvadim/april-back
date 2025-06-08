@@ -1,8 +1,5 @@
 import { Injectable, Optional, Scope } from '@nestjs/common';
-
 import { HttpService } from '@nestjs/axios';
-
-
 import { TelegramService } from '../../../telegram/telegram.service';
 import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 import { BitrixBaseApi } from '../base/bitrix-base-api';

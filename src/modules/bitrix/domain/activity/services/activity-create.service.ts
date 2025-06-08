@@ -1,18 +1,19 @@
 // infrastructure/services/activity-create.service.ts
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
+// import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
 import { BitrixActivityEntity } from '../entities/activity.entity';
-import { PortalService } from 'src/modules/portal/portal.service';
+// import { PortalService } from 'src/modules/portal/portal.service';
 // import { BitrixContextService } from 'src/modules/bitrix/services/bitrix-context.service';
+import { PBXService } from 'src/modules/pbx/pbx.servise';
 
 @Injectable()
 export class BitrixActivityCreateService {
     private readonly logger = new Logger(BitrixActivityCreateService.name);
 
     constructor(
-        private readonly bitrixApiFactory: BitrixApiFactoryService,
-        private readonly portalService: PortalService
-
+        // private readonly bitrixApiFactory: BitrixApiFactoryService,
+        // private readonly portalService: PortalService
+        private readonly pbx: PBXService
     ) {
         this.logger.log('BitrixActivityCreateService initialized');
     }
@@ -22,18 +23,18 @@ export class BitrixActivityCreateService {
             this.logger.log('No activities to create');
             return;
         }
-
+        const {bitrix, portal} = await this.pbx.init(domain);
         this.logger.log(`Creating activities for domain: ${domain}`);
         // this.logger.log(`Raw activities: ${JSON.stringify(rawActivities)}`);
 
-        if (!domain) {
-            this.logger.error('Domain is not provided');
-            throw new Error('Domain is required to create activities');
-        }
-        const portal = await this.portalService.getPortalByDomain(domain)
+        // if (!domain) {
+        //     this.logger.error('Domain is not provided');
+        //     throw new Error('Domain is required to create activities');
+        // }
+        // const portal = await this.portalService.getPortalByDomain(domain)
         if (portal) {
-            const bitrixApi = this.bitrixApiFactory.create(portal);
-
+            // const bitrixApi = this.bitrixApiFactory.create(portal);
+            const bitrixApi = bitrix.api;
             this.logger.log('BitrixApi initialized');
             this.logger.log('bitrixApi.domain');
             this.logger.log(bitrixApi.domain);

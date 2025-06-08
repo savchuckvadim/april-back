@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ComplectService } from './services/complect.service';
 import { ComplectEntity } from './complect.entity';
 import { CreateComplectDto } from './dto/create-complect.dto';
-import { InfoblockEntity } from '../infoblock/infoblock.entity';
+import { InfoblockEntity, InfoblockLightEntity } from '../infoblock/infoblock.entity';
 
 @ApiTags('Garant Complect')
 @Controller('complect')
@@ -65,14 +65,24 @@ export class ComplectController {
         return this.complectService.update(id, updateComplectDto);
     }
 
-    @Get('infoblocks/available')
+    @Get('infoblocks/available/:id')
     @ApiOperation({ summary: 'Получить список доступных инфоблоков' })
     @ApiResponse({
         status: 200,
         description: 'Список доступных инфоблоков',
-        type: [InfoblockEntity]
+        type: [InfoblockLightEntity]
     })
-    async getAvailableInfoblocks(): Promise<InfoblockEntity[] | null> {
-        return this.complectService.getAvailableInfoblocks();
+    @ApiResponse({
+        status: 404,
+        description: 'Комплект не найден'
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Инфоблоки у комплекта не найдены'
+    })
+    async getAvailableInfoblocks(
+        @Param('id') id: string
+    ): Promise<InfoblockLightEntity[] | undefined> {
+        return await this.complectService.getAvailableInfoblocks(id);
     }
 } 

@@ -4,10 +4,7 @@ import {
   Controller, Post, Req, Query, Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { SilentJobHandlerId } from 'src/core/silence/constants/silent-job-handlers.enum';
-import { SilentJobManagerService } from 'src/core/silence/silent-job-manager.service';
 import { AlfaActivityHookService } from './services/alfa-activity-hook.service';
-// import { QueueDispatcherService } from 'src/modules/queue/dispatch/queue-dispatcher.service';
 
 
 @Controller('hooks/alfa')
@@ -15,9 +12,6 @@ export class AlfaHookController {
   private readonly logger = new Logger(AlfaHookController.name);
 
   constructor(
-    // private readonly queueDispatcher: QueueDispatcherService,
-
-    // private readonly silentManager: SilentJobManagerService
     private readonly alfaActivityHookService: AlfaActivityHookService
   ) {
     this.logger.log('AlfaHookController initialized');
@@ -27,8 +21,6 @@ export class AlfaHookController {
   @Post('activity')
   async handleActivity(@Req() req: Request, @Query() query: any) {
     this.logger.log('handleActivity called');
-    // this.logger.log(`Request body: ${JSON.stringify(req.body)}`);
-    // this.logger.log(`Request query: ${JSON.stringify(query)}`);
     const domain = req.body?.auth?.domain;
     this.logger.log(`Extracted domain: ${domain}`);
     // const data = {

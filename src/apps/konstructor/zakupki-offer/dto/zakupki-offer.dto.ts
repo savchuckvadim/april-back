@@ -23,7 +23,7 @@ import {
     RegionsDto,
     ComplectDto
 } from 'src/apps/konstructor/document-generate';
-import { ProviderDto } from '../../../../modules/garant/provider';
+import { ProviderDto } from '../../../../modules/portal-konstructor/provider';
 
 
 

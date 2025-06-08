@@ -1,5 +1,5 @@
 import { PrismaService } from "src/core/prisma";
-import { InfogroupEntity } from "../infogroup.entity";
+import { InfogroupEntity, InfogroupProductType, InfogroupType } from "../infogroup.entity";
 
 
 export function createInfogroupEntityFromPrisma(data: NonNullable<Awaited<ReturnType<PrismaService['info_groups']['findUnique']>>>): InfogroupEntity {
@@ -12,8 +12,8 @@ export function createInfogroupEntityFromPrisma(data: NonNullable<Awaited<Return
     entity.descriptionForSale = data.descriptionForSale;
     entity.shortDescription = data.shortDescription;
     entity.code = data.code;
-    entity.type = data.type;
-    entity.productType = data.productType;
+    entity.type = data.type as InfogroupType;
+    entity.productType = data.productType as InfogroupProductType;
     entity.created_at = data.created_at;
     entity.updated_at = data.updated_at;
     return entity;

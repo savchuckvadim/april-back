@@ -81,6 +81,7 @@ export enum RQ_ITEM_CODE {
 
     PHONE = 'phone',
     DOCUMENT = 'document',
+    DOCUMENT_DATE = 'docDate',
     DOCUMENT_SERIES = 'docSeries',
     DOCUMENT_NUMBER = 'docNum',
     ISSUED_BY = 'issued_by',

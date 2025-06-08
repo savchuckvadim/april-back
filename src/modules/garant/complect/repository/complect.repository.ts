@@ -5,4 +5,5 @@ export abstract class ComplectRepository {
     abstract update(complect: Partial<ComplectEntity>): Promise<ComplectEntity | null>;
     abstract findById(id: string): Promise<ComplectEntity | null>;
     abstract findMany(): Promise<ComplectEntity[] | null>;
+    abstract findByCode(code: string): Promise<ComplectEntity | null>;
 } 

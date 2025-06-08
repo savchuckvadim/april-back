@@ -4,3 +4,4 @@ export * from './infogroup.controller'
 export * from './infogroup.module'
 export * from './lib/infogroup-entity.util'
 
+

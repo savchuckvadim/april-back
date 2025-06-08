@@ -14,6 +14,7 @@ export enum EBxMethod {
     GET = 'get',
     USER_FIELD_LIST = 'userfield.list',
     USER_FIELD_GET = 'userfield.get',
+    USER_FIELD_ADD = 'userfield.add',
     LIST = 'list',
     DELETE = 'delete',
     CONTACT_ITEMS_SET = 'contact.items.set',

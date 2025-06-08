@@ -9,10 +9,10 @@ import { PortalModule } from 'src/modules/portal/portal.module';
         PortalModule,
     ],
     providers: [
-        BitrixActivityCreateService
+        // BitrixActivityCreateService
     ],
     exports: [
-        BitrixActivityCreateService
+        // BitrixActivityCreateService
     ]
 })
 export class BitrixActivityDomainModule { }

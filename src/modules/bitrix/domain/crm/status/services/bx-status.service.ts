@@ -4,10 +4,16 @@ import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { IBXStatus } from "../interface/bx-status.interface";
 
 
-@Injectable()
+
 export class BxStatusService {
     private repo: BxStatusRepository
-    constructor() { }
+
+    clone(api: BitrixBaseApi): BxStatusService {
+        const instance = new BxStatusService();
+        instance.init(api);
+        return instance;
+    }
+
 
     init(api: BitrixBaseApi) {
         this.repo = new BxStatusRepository(api);

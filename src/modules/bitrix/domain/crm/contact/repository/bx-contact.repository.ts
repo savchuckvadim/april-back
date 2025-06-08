@@ -46,7 +46,7 @@ export class BxContactRepository {
         );
     }
 
-    async set(data: { [key: string]: any }) {
+    async set(data: Partial<IBXContact>) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
@@ -55,7 +55,7 @@ export class BxContactRepository {
         );
     }
 
-    async setBtch(cmdCode: string, data: { [key: string]: any }) {
+    async setBtch(cmdCode: string, data: Partial<IBXContact>) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -69,8 +69,8 @@ export class BxContactRepository {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: id }
+            EBxMethod.UPDATE,
+            { id: id, fields: data }
         );
     }
 
@@ -79,8 +79,8 @@ export class BxContactRepository {
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: id }
+            EBxMethod.UPDATE,
+            { id, fields: data }
         );
     }
 

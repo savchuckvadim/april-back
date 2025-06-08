@@ -16,6 +16,6 @@ export class AlfaController {
   ) {
     const fullDto = { ...body, dealId: Number(dealId) };
     Logger.log(body)
-    return this.alfaUseCase.createDeal(fullDto);
+    return this.alfaUseCase.onDealCreate(fullDto);
   }
 }

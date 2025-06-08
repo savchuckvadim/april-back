@@ -10,11 +10,12 @@ export class GsrMigrateUseCase {
 
     ) { }
 
-    async migrate(domain: string, filePath: string) {
-        const parsedData = await this.parseService.parseExcel(filePath);
+    async migrate(domain: string, userId: string, filePath: string) {
+        const parsedData = (await this.parseService.parseExcel(filePath)).filter((item, i) => i > 1);
 
-        const result = await this.bitrixService.migrateToBitrix(domain, parsedData);
-        return result
+
+        const result = await this.bitrixService.migrateToBitrix(domain, userId, parsedData);
+        return { count: parsedData.length, result }
 
     }
 
@@ -24,9 +25,9 @@ export class GsrMigrateUseCase {
         return result
     }
 
-    async updateDeals(domain: string, filePath: string) {
+    async updateDeals(domain: string, userId: string, filePath: string) {
         const parsedData = await this.parseService.parseExcel(filePath);
-        const result = await this.bitrixService.updateDeals(domain, parsedData);
+        const result = await this.bitrixService.updateDeals(domain, userId, parsedData);
         return result
     }
 }

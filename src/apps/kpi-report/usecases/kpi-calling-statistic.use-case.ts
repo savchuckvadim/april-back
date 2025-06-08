@@ -1,12 +1,11 @@
 // report-kpi.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
-import { GetCallingStatisticDto, GetCallingStatisticFiltersDto } from '../dto/calling-statistic.dto';
+import { GetCallingStatisticDto } from '../dto/calling-statistic.dto';
 import { CALLING_TYPES, CallingDuration, ICallingStatisticResult, VoximplantFilter } from '../types/calling-statistic.type';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
-import { parseToISO } from '../lib/date-util';
 
 @Injectable()
 export class CallingStatisticUseCase {

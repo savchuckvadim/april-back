@@ -1,5 +1,5 @@
 import { BitrixBaseApi } from "src/modules/bitrix/core";
-import { EBxMethod, EBxNamespace, EBXEntity } from "src/modules/bitrix/";
+import { EBxMethod, EBxNamespace, EBXEntity, IBXField } from "src/modules/bitrix/";
 import { IBXCompany } from "../interface/bx-company.interface";
 
 
@@ -68,7 +68,7 @@ export class BxCompanyRepository {
     // ! — не равно
     // Фильтр LIKE не работает с полями типа crm_status, crm_contact, crm_company (тип сделки TYPE_ID, стадия STAGE_ID и так далее).
 
-    async set(data: { [key: string]: any }) { // Consider using Partial<IBXCompany> or a more specific DTO if possible
+    async set(data: Partial<IBXCompany>) { // Consider using Partial<IBXCompany> or a more specific DTO if possible
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
@@ -77,7 +77,7 @@ export class BxCompanyRepository {
         );
     }
 
-    async setBtch(cmdCode: string, data: { [key: string]: any }) {
+    async setBtch(cmdCode: string, data: Partial<IBXCompany> ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -117,7 +117,7 @@ export class BxCompanyRepository {
     async getField(id: number | string) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
-            EBXEntity.DEAL,
+            EBXEntity.COMPANY,
             EBxMethod.USER_FIELD_GET,
             { id, select: ['ID', 'USER_TYPE_ID', 'FIELD_NAME', 'MULTIPLE', 'EDIT_FORM_LABEL', 'LIST'] }
         );
@@ -127,9 +127,28 @@ export class BxCompanyRepository {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
-            EBXEntity.DEAL,
+            EBXEntity.COMPANY,
             EBxMethod.USER_FIELD_GET,
             { id, select: ['ID', 'USER_TYPE_ID', 'FIELD_NAME', 'MULTIPLE', 'EDIT_FORM_LABEL', 'LIST'] }
+        );
+    }
+
+    async setField(fields: Partial<IBXField>) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.USER_FIELD_ADD,
+            {fields}
+        );
+    }
+
+    async setFieldBtch(cmdCode: string, fields: Partial<IBXField>) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.USER_FIELD_ADD,
+            {fields}
         );
     }
 } 

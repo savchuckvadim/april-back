@@ -31,6 +31,7 @@ import { StorageModule } from './core/storage/storage.module';
 import { FileLinkModule } from './core/file-link/file-link.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
+import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
 @Module({
   imports: [
 
@@ -75,7 +76,8 @@ import { GarantModule } from './modules/garant/garant.module';
 
     StorageModule,
     FileLinkModule,
-    GarantModule
+    GarantModule,
+    PortalKonstructorModule
   ],
   controllers: [
     AppController,

@@ -20,7 +20,7 @@ import { formatRuble } from "../document-generate/lib/rubles.util";
 import { PBXService } from "src/modules/pbx/pbx.servise";
 import { BitrixEntityType, BitrixService } from "src/modules/bitrix";
 import { LibreOfficeService } from "src/modules/libre-office/libre-office.service";
-import { ProviderDto } from "../../../modules/garant/provider";
+import { ProviderDto } from "../../../modules/portal-konstructor/provider";
 import { DocumentInfoblockService } from "../document-generate/";
 import { DocumentTotalRowService } from "../document-generate/";
 @Injectable()
@@ -32,7 +32,7 @@ export class ZakupkiOfferCreateService {
     private documentNumber: string = '';
     private currentYear: string;
     private resultPath: string;
-   
+
     constructor(
         private readonly storage: StorageService,
         private readonly fileLinkService: FileLinkService,
@@ -48,7 +48,7 @@ export class ZakupkiOfferCreateService {
 
         this.currentYear = dayjs().format('YYYY');
         this.baseUrl = this.configService.get('APP_URL') as string;
-       
+
     }
     private getDocTemplater() {
         const templatePath = this.storage.getFilePath(StorageType.APP, 'konstructor/templates/zoffer', 'april-template.docx');
@@ -114,8 +114,8 @@ export class ZakupkiOfferCreateService {
         // const pdf = await this.libreOfficeService.convertToPdf(this.storage.getFilePath(StorageType.PUBLIC, this.resultPath, this.documentName));
 
     }
-    private async createLink( domain: string, userId: number,) {
-     
+    private async createLink(domain: string, userId: number,) {
+
         const rootLink = await this.fileLinkService.createPublicLink(domain, userId, 'konstructor', 'zoffer', this.currentYear, `${this.documentName}`);
         const link = `${this.baseUrl}${rootLink}`;
         return link

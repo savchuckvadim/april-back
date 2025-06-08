@@ -28,4 +28,8 @@ export type CompanySchema = {
         request: { id: number | string, select?: string[] };
         response: IBXField;
     };
+    [EBxMethod.USER_FIELD_ADD]: {
+        request: { fields: Partial<IBXField> };
+        response: IBXField;
+    };
 }; 

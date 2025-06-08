@@ -5,8 +5,11 @@ import { IField } from "src/modules/portal/interfaces/portal.interface";
 
 
 export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
-
-    getContactCommand(element: MigrateToBxDto, companyCommandCode: string):string[] {
+    private isValidEmail(email: string): boolean {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+        return emailRegex.test(email.trim());
+    }
+    getContactCommand(element: MigrateToBxDto, companyCommandCode: string): string[] {
         const contactCodes = [] as string[]
         element.contacts.forEach((contact, index) => {
 
@@ -29,35 +32,34 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
                 chkFieldBxValue[chkFieldBitrixId] = chekFieldValue
             }
 
-            //chk_garant_yes
-            //chk_garant_no
+            const email = contact.email?.trim();
+
+            const emailField = this.isValidEmail(email)
+                ? [{ VALUE: email, TYPE: 'WORK' }]
+                : []; // ← пустой массив, Bitrix проглоти
+
             this.bitrix.batch.contact.set(
                 contactCommandCode,
 
                 {
-                    fields: {
-                        ASSIGNED_BY_ID: "221",
-                        COMPANY_ID: `$result[${companyCommandCode}]`,
-                        NAME: contact.name,
-                        COMMENTS: this.getComment(contact),
-                        PHONE: [
-                            {
-                                VALUE: contact.phone,
-                                TYPE: 'WORK'
-                            }
-                        ],
-                        EMAIL: [
-                            {
-                                VALUE: contact.email,
-                                TYPE: 'WORK'
-                            }
-                        ],
-                        POST: contact.position,
-                        [hlPfieldBitrixId]: contact.conmtactGl,
-                        [skapPfieldBitrixId]: contact.contactSkap,
-                        ...chkFieldBxValue
 
-                    }
+                    ASSIGNED_BY_ID: this.userId,
+                    COMPANY_ID: `$result[${companyCommandCode}]`,
+                    NAME: contact.name,
+                    COMMENTS: this.getComment(contact),
+                    PHONE: [
+                        {
+                            VALUE: contact.phone,
+                            TYPE: 'WORK'
+                        }
+                    ],
+                    EMAIL: emailField,
+                    POST: contact.position,
+                    [hlPfieldBitrixId]: contact.conmtactGl,
+                    [skapPfieldBitrixId]: contact.contactSkap,
+                    ...chkFieldBxValue
+
+
 
                 }
             )

@@ -3,10 +3,16 @@ import { BxContactRepository } from "../repository/bx-contact.repository";
 import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { IBXContact } from "../interface/bx-contact.interface";
 
-@Injectable()
+
 export class BxContactService {
     private repo: BxContactRepository
-    constructor() { }
+
+    clone(api: BitrixBaseApi): BxContactService {
+        const instance = new BxContactService();
+        instance.init(api);
+        return instance;
+    }
+
 
     init(api: BitrixBaseApi) {
         this.repo = new BxContactRepository(api);
@@ -20,11 +26,11 @@ export class BxContactService {
         return this.repo.getList(filter, select);
     }
 
-    set(data: { [key: string]: any }) {
+    set(data:  Partial<IBXContact>) {
         return this.repo.set(data);
     }
 
-    update(contactId: number | string, data: { [key: string]: any }) {
+    update(contactId: number | string, data: Partial<IBXContact>) {
         return this.repo.update(contactId, data);
     }
 

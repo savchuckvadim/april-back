@@ -9,8 +9,8 @@ import { BxDealBatchService } from './services/bx-deal.batch.service';
         BitrixCoreModule
     ],
     providers: [
-        BxDealService,
-        BxDealBatchService
+        // BxDealService,
+        // BxDealBatchService
     ],
     exports: [
         BxDealService,

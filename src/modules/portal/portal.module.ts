@@ -49,7 +49,7 @@ export class PortalModule {
             .forRoutes(
                 KpiReportController,
                 DepartmentController,
-                AlfaController,
+                // AlfaController,
                 ListController
             )
         // .forRoutes({ path: '*', method: RequestMethod.ALL });

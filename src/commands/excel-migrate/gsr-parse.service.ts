@@ -186,8 +186,8 @@ export class GsrParseService {
             if (complectName) {
                 currentCompany.products.push({
                     name: complectName?.toString().trim() as string,
-                    quantity: quantityStringCell ? this.parseQuantity(quantityStringCell?.toString().trim()) : 0 as number,
-                    monthSum: monthSumCell?.toString().trim() || '0' as string,
+                    quantity: quantityStringCell ? Number(this.parseQuantity(quantityStringCell?.toString().trim())) : 1 as number,
+                    monthSum: monthSumCell ? this.trimLast3IfDash(monthSumCell.toString()).trim() : '0' as string,
                     armId: `${complectId?.toString().trim()} - ${complectName?.toString().trim()}` as string,
 
                 });
@@ -218,7 +218,9 @@ export class GsrParseService {
         return result;
 
     }
-
+    private trimLast3IfDash(str: string): string {
+        return str.replace(/-\w{2}$/, '');
+    }
     private parseDate(supplyDateCell: string | Date | number) {
         let supplyDate = '';
         if (supplyDateCell instanceof Date) {

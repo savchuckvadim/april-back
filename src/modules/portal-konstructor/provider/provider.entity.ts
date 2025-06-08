@@ -1,9 +1,10 @@
 export class ProviderEntity {
-    id: number;
+    id: string;
     name: string;
-    rq: RqEntity;
+    rqId: string;
     domain: string;
-   
+    withTax: boolean;
+
 }
 
 export class RqEntity {
@@ -43,7 +44,7 @@ export class RqEntity {
     bankAdress: string;
     bankOther: string;
     qrs: any[];
- 
+
     // logos: LogoEntity[];
     // stamps: LogoEntity[];
     // signatures: LogoEntity[];
@@ -56,3 +57,6 @@ export class LogoEntity {
     path: string;
 }
 
+export class ProviderEntityWithRq extends ProviderEntity {
+    rq: RqEntity;
+}

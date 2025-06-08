@@ -4,7 +4,7 @@ import { TemplateDto } from "./dto/template.dto";
 import { PlacementDto } from "src/apps/event-sales/dto/event-sale-flow/placement.dto";
 import { ComplectDto, ContractDto, PriceDto, RecipientDto, RegionDto, RegionsDto, SupplyDto } from "../document-generate";
 import { OfferSettingSDto } from "./dto/offer-settings.dto";
-import { ProviderDto } from "../../../modules/garant/provider/provider.dto";
+import { ProviderDto } from "../../../modules/portal-konstructor/provider/provider.dto";
 import { InvoiceSettingsDto } from "./dto/invoice-settings.dto";
 
 

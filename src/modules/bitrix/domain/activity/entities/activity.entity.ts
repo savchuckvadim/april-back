@@ -17,7 +17,7 @@ export class BitrixActivityEntity {
       TYPE_ID: BitrixActivityTypeId.CALL,
       SUBJECT: dto.title,
       RESPONSIBLE_ID: responsibleId,
-      START_TIME: new Date().toISOString(),
+      START_TIME:  dto.date, //new Date().toISOString(),
       END_TIME: dto.date,
       COMMUNICATIONS: [
         {

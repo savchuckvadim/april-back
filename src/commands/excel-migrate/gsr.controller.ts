@@ -9,6 +9,7 @@ import { ApiOperation, ApiParam, ApiProperty, ApiResponse, ApiTags } from "@nest
 import { IBitrixBatchResponseResult, IBitrixBatchError } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
 import { IBXTask } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { TaskUseCase } from "./task.use-case";
+import { IsString, IsNotEmpty } from "class-validator";
 
 
 // class BitrixBatchResponseResultDto implements IBitrixBatchResponseResult {
@@ -24,7 +25,15 @@ import { TaskUseCase } from "./task.use-case";
 //     @ApiProperty()
 //     result_next: { [key: string]: any }[];
 // }
-
+class GsrMigrateDto {
+    @IsString()
+    @IsNotEmpty()
+    domain: string
+    @IsString()
+    @IsNotEmpty()
+    userId: string
+   
+}
 @Controller('gsr-service')
 export class GsrServiceController {
     constructor(
@@ -47,10 +56,10 @@ export class GsrServiceController {
         }),
     )
     async parseFile(
-        @Body() body: { domain: string },
+        @Body() body: GsrMigrateDto,
         @UploadedFile() file: Express.Multer.File,
         @Res() res: Response) {
-        const result = await this.migrateUseCase.migrate(body.domain, file.path);
+        const result = await this.migrateUseCase.migrate(body.domain, body.userId, file.path);
         return res.send(result);
     }
 
@@ -100,10 +109,10 @@ export class GsrServiceController {
         }),
     )
     async updateDeals(
-        @Body() body: { domain: string },
+        @Body() body: GsrMigrateDto,
         @UploadedFile() file: Express.Multer.File,
         @Res() res: Response) {
-        const result = await this.migrateUseCase.updateDeals(body.domain, file.path);
+        const result = await this.migrateUseCase.updateDeals(body.domain, body.userId, file.path);
         return res.send(result);
     }
 

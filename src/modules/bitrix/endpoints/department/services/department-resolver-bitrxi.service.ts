@@ -33,11 +33,8 @@ export class DepartmentResolverService {
     const baseDepartmentBitrix = portal.getDepartamentIdByCode(group);
     
     const baseDepartmentBitrixId = baseDepartmentBitrix?.bitrixId
-    Logger.log('baseDepartmentBitrixId')
-    Logger.log('baseDepartmentBitrixId')
-    Logger.log('baseDepartmentBitrixId')
-    Logger.log('baseDepartmentBitrixId')
-    Logger.log(baseDepartmentBitrixId)
+
+    
     const general = await this.bitrixService.getDepartments({ ID: baseDepartmentBitrixId });
     const children = await this.bitrixService.getDepartments({ PARENT: baseDepartmentBitrixId });
 

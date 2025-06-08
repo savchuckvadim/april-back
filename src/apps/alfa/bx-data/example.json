@@ -1,0 +1,2962 @@
+ [
+      {
+        "id": "3744",
+        "bitrixId": "UF_CRM_1697180594",
+        "type": "string",
+        "name": "offerId",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "4362",
+        "bitrixId": "UF_CRM_1697424559",
+        "type": "string",
+        "name": "companyId",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "5872",
+        "bitrixId": "UF_CRM_1701860715",
+        "type": "string",
+        "name": "Информация о товарах",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "5880",
+        "bitrixId": "UF_CRM_1702361108",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "12422",
+            "name": "Аванс (количество в товарах)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "12424",
+            "name": "На весь период обслуживания (количество месяцев действия договора)",
+            "sort": "20"
+          }
+        ],
+        "name": "Представление цены",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8170",
+        "bitrixId": "UF_CRM_1743414243",
+        "type": "string",
+        "name": "Наименование учреждения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8172",
+        "bitrixId": "UF_CRM_1743414340",
+        "type": "string",
+        "name": "Должность руководителя",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8174",
+        "bitrixId": "UF_CRM_1743414391",
+        "type": "string",
+        "name": "ФИО руководителя",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8176",
+        "bitrixId": "UF_CRM_1743414441",
+        "type": "string",
+        "name": "Руководитель действует на основании",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8178",
+        "bitrixId": "UF_CRM_1743414485",
+        "type": "string",
+        "name": "Контактное лицо для обмена документами (ФИО)",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8180",
+        "bitrixId": "UF_CRM_1743414644",
+        "type": "string",
+        "name": "Контактное лицо для направления комплекта документов \"Учетная политика\" (ФИО, мобильный телефон, e-mail)",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8230",
+        "bitrixId": "UF_CRM_1743659184",
+        "type": "iblock_element",
+        "name": "Товары семинары",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8234",
+        "bitrixId": "UF_CRM_1743659741",
+        "type": "string",
+        "name": "Участник 1 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8236",
+        "bitrixId": "UF_CRM_1743659780",
+        "type": "string",
+        "name": "Участник 1 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8238",
+        "bitrixId": "UF_CRM_1743659794",
+        "type": "string",
+        "name": "Участник 1 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8240",
+        "bitrixId": "UF_CRM_1743659827",
+        "type": "string",
+        "name": "Участник 2 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8242",
+        "bitrixId": "UF_CRM_1743659845",
+        "type": "string",
+        "name": "Участник 2 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8244",
+        "bitrixId": "UF_CRM_1743659861",
+        "type": "string",
+        "name": "Участник 2 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8246",
+        "bitrixId": "UF_CRM_1743659888",
+        "type": "boolean",
+        "name": "Участник 2 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8248",
+        "bitrixId": "UF_CRM_1743659916",
+        "type": "boolean",
+        "name": "Участник 1 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8250",
+        "bitrixId": "UF_CRM_1743659983",
+        "type": "string",
+        "name": "Участники Семинара",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8270",
+        "bitrixId": "UF_CRM_1743993344",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17746",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17748",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17914",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 1 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8272",
+        "bitrixId": "UF_CRM_1743993367",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17750",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17752",
+            "name": "Заочно",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17918",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 2 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8294",
+        "bitrixId": "UF_CRM_1743995114",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17754",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17756",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17758",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "17760",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "17762",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "17764",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18998",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 1 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8296",
+        "bitrixId": "UF_CRM_1743995695",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17766",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17768",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17770",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "17772",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "17774",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "17776",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18994",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 2 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8298",
+        "bitrixId": "UF_CRM_1743995807",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17778",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17780",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17784",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "17786",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 1 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8300",
+        "bitrixId": "UF_CRM_1743995854",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17788",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17790",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17794",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "17796",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 2 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8302",
+        "bitrixId": "UF_CRM_1743995970",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17798",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17800",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17802",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 1 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8304",
+        "bitrixId": "UF_CRM_1743996011",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17804",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17806",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17808",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 2 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8306",
+        "bitrixId": "UF_CRM_1743996051",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17810",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17812",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 1 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8308",
+        "bitrixId": "UF_CRM_1743996080",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17814",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17816",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 2 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8310",
+        "bitrixId": "UF_CRM_1743996124",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17818",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 1 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8312",
+        "bitrixId": "UF_CRM_1743996152",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17820",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 2 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8314",
+        "bitrixId": "UF_CRM_1743996669",
+        "type": "string",
+        "name": "Участник 1 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8316",
+        "bitrixId": "UF_CRM_1743996681",
+        "type": "string",
+        "name": "Участник 2 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8318",
+        "bitrixId": "UF_CRM_1743996762",
+        "type": "boolean",
+        "name": "Добавить больше участников",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8320",
+        "bitrixId": "UF_CRM_1743996788",
+        "type": "string",
+        "name": "Поле для добавления участников",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8322",
+        "bitrixId": "UF_CRM_1743997299",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17822",
+            "name": "Семинар",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17824",
+            "name": "ППК",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17826",
+            "name": "Семинар + ППК",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "17828",
+            "name": "УП",
+            "sort": "40"
+          }
+        ],
+        "name": "Форма регистрации",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8380",
+        "bitrixId": "UF_CRM_1744005060",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17932",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17934",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17936",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 1 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8384",
+        "bitrixId": "UF_CRM_1744005370",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17944",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17946",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17948",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 2 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8394",
+        "bitrixId": "UF_CRM_1744089697",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17986",
+            "name": "2 - 3 июня Пименов В.В. «Учёт и отчётность в учреждении бюджетной сферы-2025. Анализируем задолженность, совершенствуем ЭДО, обсуждаем инвентаризацию и исправляем ошибки». Пересмотр в 2025 году \"бухгалтерской\" нормативной базы с учетом опыта проверок, суд",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "17988",
+            "name": "4 июня Волгина Ю.Н. «Учёт и отчётность в учреждении бюджетной сферы-2025. Анализируем задолженность, совершенствуем ЭДО, обсуждаем инвентаризацию и исправляем ошибки». Пересмотр в 2025 году \"бухгалтерской\" нормативной базы с учетом опыта проверок, судебны",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "17990",
+            "name": "2,3 и 4 июня(три дня)",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 1 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "8398",
+        "bitrixId": "UF_CRM_1744090469",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "17998",
+            "name": "2 - 3 июня Пименов В.В. «Учёт и отчётность в учреждении бюджетной сферы-2025. Анализируем задолженность, совершенствуем ЭДО, обсуждаем инвентаризацию и исправляем ошибки». Пересмотр в 2025 году \"бухгалтерской\" нормативной базы с учетом опыта проверок, суд",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18000",
+            "name": "4 июня Волгина Ю.Н. «Учёт и отчётность в учреждении бюджетной сферы-2025. Анализируем задолженность, совершенствуем ЭДО, обсуждаем инвентаризацию и исправляем ошибки». Пересмотр в 2025 году \"бухгалтерской\" нормативной базы с учетом опыта проверок, судебны",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18002",
+            "name": "2,3 и 4 июня(три дня)",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 2 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "8416",
+        "bitrixId": "UF_CRM_1744112127",
+        "type": "string",
+        "name": "Контактное лицо для обмена документами (E-mail))",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8418",
+        "bitrixId": "UF_CRM_1744112153",
+        "type": "string",
+        "name": "Контактное лицо для обмена документами (Телефон)",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8420",
+        "bitrixId": "UF_CRM_1744112305",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18016",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18018",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8430",
+        "bitrixId": "UF_CRM_1744358047",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18030",
+            "name": "Физическое лицо",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18032",
+            "name": "Юридическое лицо",
+            "sort": "20"
+          }
+        ],
+        "name": "Вы являетесь физическим или юридическим лицом?",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8432",
+        "bitrixId": "UF_CRM_1744358668",
+        "type": "string",
+        "name": "ФИО (Физлцио)",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8468",
+        "bitrixId": "UF_CRM_1744363400",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18038",
+            "name": "Учетная политика 2025",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18040",
+            "name": "Учетная политика 2024/2025",
+            "sort": "20"
+          }
+        ],
+        "name": "Пакет",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8540",
+        "bitrixId": "UF_CRM_1747384334",
+        "type": "string",
+        "name": "Участник 3 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8542",
+        "bitrixId": "UF_CRM_1747384369",
+        "type": "string",
+        "name": "Участник 4 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8544",
+        "bitrixId": "UF_CRM_1747384385",
+        "type": "string",
+        "name": "Участник 5 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8546",
+        "bitrixId": "UF_CRM_1747384398",
+        "type": "string",
+        "name": "Участник 6 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8548",
+        "bitrixId": "UF_CRM_1747384409",
+        "type": "string",
+        "name": "Участник 7 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8550",
+        "bitrixId": "UF_CRM_1747384420",
+        "type": "string",
+        "name": "Участник 8 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8552",
+        "bitrixId": "UF_CRM_1747384430",
+        "type": "string",
+        "name": "Участник 9 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8554",
+        "bitrixId": "UF_CRM_1747384442",
+        "type": "string",
+        "name": "Участник 10 ФИО",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8556",
+        "bitrixId": "UF_CRM_1747384467",
+        "type": "string",
+        "name": "Участник 3 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8558",
+        "bitrixId": "UF_CRM_1747384476",
+        "type": "string",
+        "name": "Участник 4 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8560",
+        "bitrixId": "UF_CRM_1747384486",
+        "type": "string",
+        "name": "Участник 5 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8562",
+        "bitrixId": "UF_CRM_1747384495",
+        "type": "string",
+        "name": "Участник 6 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8564",
+        "bitrixId": "UF_CRM_1747384505",
+        "type": "string",
+        "name": "Участник 7 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8566",
+        "bitrixId": "UF_CRM_1747384514",
+        "type": "string",
+        "name": "Участник 8 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8568",
+        "bitrixId": "UF_CRM_1747384523",
+        "type": "string",
+        "name": "Участник 9 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8570",
+        "bitrixId": "UF_CRM_1747384532",
+        "type": "string",
+        "name": "Участник 10 E-mail",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8572",
+        "bitrixId": "UF_CRM_1747384567",
+        "type": "string",
+        "name": "Участник 3 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8574",
+        "bitrixId": "UF_CRM_1747384577",
+        "type": "string",
+        "name": "Участник 4 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8576",
+        "bitrixId": "UF_CRM_1747384586",
+        "type": "string",
+        "name": "Участник 5 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8578",
+        "bitrixId": "UF_CRM_1747384595",
+        "type": "string",
+        "name": "Участник 6 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8580",
+        "bitrixId": "UF_CRM_1747384604",
+        "type": "string",
+        "name": "Участник 7 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8582",
+        "bitrixId": "UF_CRM_1747384612",
+        "type": "string",
+        "name": "Участник 8 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8584",
+        "bitrixId": "UF_CRM_1747384621",
+        "type": "string",
+        "name": "Участник 9 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8586",
+        "bitrixId": "UF_CRM_1747384631",
+        "type": "string",
+        "name": "Участник 10 Телефон",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8588",
+        "bitrixId": "UF_CRM_1747384718",
+        "type": "boolean",
+        "name": "Участник 3 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8590",
+        "bitrixId": "UF_CRM_1747384744",
+        "type": "boolean",
+        "name": "Участник 4 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8592",
+        "bitrixId": "UF_CRM_1747384762",
+        "type": "boolean",
+        "name": "Участник 5 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8594",
+        "bitrixId": "UF_CRM_1747384786",
+        "type": "boolean",
+        "name": "Участник 6 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8612",
+        "bitrixId": "UF_CRM_1747384803",
+        "type": "boolean",
+        "name": "Участник 7 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8654",
+        "bitrixId": "UF_CRM_1747384831",
+        "type": "boolean",
+        "name": "Участник 8 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8656",
+        "bitrixId": "UF_CRM_1747384849",
+        "type": "boolean",
+        "name": "Участник 9 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8658",
+        "bitrixId": "UF_CRM_1747384866",
+        "type": "boolean",
+        "name": "Участник 10 ППК",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8660",
+        "bitrixId": "UF_CRM_1747384959",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18152",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18154",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18156",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 3 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8672",
+        "bitrixId": "UF_CRM_1747385104",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18164",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18166",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18168",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 4 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8674",
+        "bitrixId": "UF_CRM_1747385142",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18170",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18172",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18174",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 5 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8680",
+        "bitrixId": "UF_CRM_1747385392",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18188",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18190",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18192",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 6 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8684",
+        "bitrixId": "UF_CRM_1747385508",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18200",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18202",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18204",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 7 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8686",
+        "bitrixId": "UF_CRM_1747385550",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18206",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18208",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18210",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 8 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8688",
+        "bitrixId": "UF_CRM_1747385586",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18212",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18214",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18216",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 9 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8690",
+        "bitrixId": "UF_CRM_1747385631",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18218",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18220",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18222",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 10 Формат участия",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8780",
+        "bitrixId": "UF_CRM_1747732322",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18248",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18250",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18252",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18254",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18256",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18258",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18962",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 3 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8782",
+        "bitrixId": "UF_CRM_1747732381",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18260",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18262",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18264",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18266",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18268",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18270",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18966",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 4 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8784",
+        "bitrixId": "UF_CRM_1747732607",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18272",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18274",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18276",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18278",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18280",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18282",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18970",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 5 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8786",
+        "bitrixId": "UF_CRM_1747732710",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18284",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18286",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18288",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18290",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18292",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18294",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18974",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 6 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8788",
+        "bitrixId": "UF_CRM_1747732788",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18296",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18298",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18300",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18302",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18304",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18306",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18978",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 7 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8790",
+        "bitrixId": "UF_CRM_1747732876",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18308",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18310",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18312",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18314",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18316",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18318",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18982",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 8 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8792",
+        "bitrixId": "UF_CRM_1747732930",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18320",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18322",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18324",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18326",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18328",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18330",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18986",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 9 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8794",
+        "bitrixId": "UF_CRM_1747733091",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18332",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18334",
+            "name": "«Главный бухгалтер бюджетной сферы (код B). Новые стандарты учёта и отчётности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18336",
+            "name": "«Главный бухгалтер бюджетной сферы (код С). Новые стандарты учета и отчетности. Налоги. Планирование. Контроль», 120 часов",
+            "sort": "30"
+          },
+          {
+            "bitrixId": "18338",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18340",
+            "name": "«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов",
+            "sort": "50"
+          },
+          {
+            "bitrixId": "18342",
+            "name": "«Учет заработной платы в организациях государственного сектора. Последние изменения, сложные практические вопросы взаимодействия кадровой службы и бухгалтерии», 60 часов",
+            "sort": "60"
+          },
+          {
+            "bitrixId": "18990",
+            "name": "«Актуальные вопросы финансового контроля в бюджетной сфере», 72 часа",
+            "sort": "70"
+          }
+        ],
+        "name": "Участник 10 Программы повышения квалификации для главных бухгалтеров и бухгалтеров бюджетной сферы",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8796",
+        "bitrixId": "UF_CRM_1747733202",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18344",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18346",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18350",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18352",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 3 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8798",
+        "bitrixId": "UF_CRM_1747733273",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18354",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18356",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18360",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18362",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 4 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8800",
+        "bitrixId": "UF_CRM_1747733440",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18364",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18366",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18370",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18372",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 5 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8802",
+        "bitrixId": "UF_CRM_1747733504",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18374",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18376",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18380",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18382",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 6 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8804",
+        "bitrixId": "UF_CRM_1747733555",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18384",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18386",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18390",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18392",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 7 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8806",
+        "bitrixId": "UF_CRM_1747733562",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18394",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18396",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18400",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18402",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 7 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8808",
+        "bitrixId": "UF_CRM_1747734032",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18404",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18406",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18410",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18412",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 8 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8810",
+        "bitrixId": "UF_CRM_1747734102",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18414",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18416",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18420",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18422",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 9 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8812",
+        "bitrixId": "UF_CRM_1747734152",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18424",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 40 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18426",
+            "name": "«Главный бухгалтер государственного учреждения здравоохранения (код B)», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18430",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 40 часов",
+            "sort": "40"
+          },
+          {
+            "bitrixId": "18432",
+            "name": "«Бухгалтер государственного учреждения здравоохранения (код А)». 120 часов",
+            "sort": "50"
+          }
+        ],
+        "name": "Участник 10 Программы повышения квалификации для главных бухгалтеров и бухгалтеров государственного учреждения здравоохранения",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8926",
+        "bitrixId": "UF_CRM_1747736411",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18610",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18612",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18614",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 3 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8928",
+        "bitrixId": "UF_CRM_1747736452",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18616",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18618",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18620",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 4 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8930",
+        "bitrixId": "UF_CRM_1747736493",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18622",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18624",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18626",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 5 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8932",
+        "bitrixId": "UF_CRM_1747736541",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18628",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18630",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18632",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 6 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8934",
+        "bitrixId": "UF_CRM_1747736578",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18634",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18636",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18638",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 7 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8946",
+        "bitrixId": "UF_CRM_1747736644",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18670",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18672",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18674",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 8 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8948",
+        "bitrixId": "UF_CRM_1747736686",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18676",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18678",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18680",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 9 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8950",
+        "bitrixId": "UF_CRM_1747736731",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18682",
+            "name": "«Организация закупок товаров, работ и услуг отдельными видами юридических лиц»,  60 часов",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18684",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 120 часов",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18686",
+            "name": "«Контрактная система в сфере закупок товаров, работ, услуг для обеспечения государственных (муниципальных) нужд», 40 часов",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 10 Программы повышения квалификации для специалистов по закупкам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8952",
+        "bitrixId": "UF_CRM_1747736794",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18688",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18690",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 3 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8954",
+        "bitrixId": "UF_CRM_1747736833",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18692",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18694",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов  (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 4 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8966",
+        "bitrixId": "UF_CRM_1747737358",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18722",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18724",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 5 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8968",
+        "bitrixId": "UF_CRM_1747737393",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18726",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18728",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 6 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8970",
+        "bitrixId": "UF_CRM_1747737425",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18730",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18732",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 7 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8972",
+        "bitrixId": "UF_CRM_1747737461",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18734",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18736",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 8 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8982",
+        "bitrixId": "UF_CRM_1747737495",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18754",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18756",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 9 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8984",
+        "bitrixId": "UF_CRM_1747737527",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18758",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код А)",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18760",
+            "name": "«Правовое регулирование трудовых отношений и кадрового делопроизводства: последние изменения, типичные нарушения и ответственность за их совершение», 40 часов (Код Е)",
+            "sort": "20"
+          }
+        ],
+        "name": "Участник 10 Программы повышения квалификации для специалистов по кадрам",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8986",
+        "bitrixId": "UF_CRM_1747737569",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18762",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 3 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8988",
+        "bitrixId": "UF_CRM_1747737593",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18764",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 4 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8990",
+        "bitrixId": "UF_CRM_1747737619",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18766",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 5 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8992",
+        "bitrixId": "UF_CRM_1747737658",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18768",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 6 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8994",
+        "bitrixId": "UF_CRM_1747737693",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18770",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 7 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8996",
+        "bitrixId": "UF_CRM_1747737717",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18772",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 8 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "8998",
+        "bitrixId": "UF_CRM_1747737742",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18774",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 9 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9000",
+        "bitrixId": "UF_CRM_1747737770",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18776",
+            "name": "«Основы профилактики коррупции» (в соответствии с профессиональным стандартом \"Специалист в сфере предупреждения коррупционных правонарушений\"), 40 часов",
+            "sort": "10"
+          }
+        ],
+        "name": "Участник 10 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9022",
+        "bitrixId": "UF_CRM_1747737835",
+        "type": "string",
+        "name": "Участник 3 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9024",
+        "bitrixId": "UF_CRM_1747737846",
+        "type": "string",
+        "name": "Участник 4 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9026",
+        "bitrixId": "UF_CRM_1747737857",
+        "type": "string",
+        "name": "Участник 5 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9028",
+        "bitrixId": "UF_CRM_1747737867",
+        "type": "string",
+        "name": "Участник 6 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9030",
+        "bitrixId": "UF_CRM_1747737878",
+        "type": "string",
+        "name": "Участник 7 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9032",
+        "bitrixId": "UF_CRM_1747737889",
+        "type": "string",
+        "name": "Участник 8 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9034",
+        "bitrixId": "UF_CRM_1747737900",
+        "type": "string",
+        "name": "Участник 9 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9036",
+        "bitrixId": "UF_CRM_1747737911",
+        "type": "string",
+        "name": "Участник 10 Комментарий",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9038",
+        "bitrixId": "UF_CRM_1747738037",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18802",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18804",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18806",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 3 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9040",
+        "bitrixId": "UF_CRM_1747738081",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18808",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18810",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18812",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 4 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9042",
+        "bitrixId": "UF_CRM_1747738118",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18814",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18816",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18818",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 5 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9044",
+        "bitrixId": "UF_CRM_1747738174",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18820",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18822",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18824",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 6 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9046",
+        "bitrixId": "UF_CRM_1747738224",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18826",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18828",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18830",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 7 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9048",
+        "bitrixId": "UF_CRM_1747738256",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18832",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18834",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18836",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 8 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9050",
+        "bitrixId": "UF_CRM_1747738292",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18838",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18840",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18842",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 9 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9052",
+        "bitrixId": "UF_CRM_1747738329",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18844",
+            "name": "Очно",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18846",
+            "name": "Онлайн",
+            "sort": "20"
+          },
+          {
+            "bitrixId": "18848",
+            "name": "Пойду только на ППК",
+            "sort": "30"
+          }
+        ],
+        "name": "Участник 10 Формат участия v2",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9054",
+        "bitrixId": "UF_CRM_1747738499",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 3 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9056",
+        "bitrixId": "UF_CRM_1747738523",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 4 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9058",
+        "bitrixId": "UF_CRM_1747738539",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 5 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9060",
+        "bitrixId": "UF_CRM_1747738557",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 6 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9062",
+        "bitrixId": "UF_CRM_1747738576",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 7 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9064",
+        "bitrixId": "UF_CRM_1747738594",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 8 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9066",
+        "bitrixId": "UF_CRM_1747738613",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 9 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9068",
+        "bitrixId": "UF_CRM_1747738629",
+        "type": "enumeration",
+        "list": [],
+        "name": "Участник 10 Дни участия v2",
+        "code": null,
+        "multiple": true,
+        "mandatory": false
+      },
+      {
+        "id": "9118",
+        "bitrixId": "UF_CRM_1747804436",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18898",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18900",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 3",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9120",
+        "bitrixId": "UF_CRM_1747804458",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18902",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18904",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 4",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9122",
+        "bitrixId": "UF_CRM_1747804485",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18906",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18908",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 5",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9124",
+        "bitrixId": "UF_CRM_1747804511",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18910",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18912",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 6",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9126",
+        "bitrixId": "UF_CRM_1747804687",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18914",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18916",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 7",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9128",
+        "bitrixId": "UF_CRM_1747804713",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18918",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18920",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 8",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9130",
+        "bitrixId": "UF_CRM_1747804738",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18922",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18924",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 9",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      },
+      {
+        "id": "9132",
+        "bitrixId": "UF_CRM_1747804761",
+        "type": "enumeration",
+        "list": [
+          {
+            "bitrixId": "18926",
+            "name": "Да",
+            "sort": "10"
+          },
+          {
+            "bitrixId": "18928",
+            "name": "Нет",
+            "sort": "20"
+          }
+        ],
+        "name": "Добавить участника 10",
+        "code": null,
+        "multiple": false,
+        "mandatory": false
+      }
+    ]
