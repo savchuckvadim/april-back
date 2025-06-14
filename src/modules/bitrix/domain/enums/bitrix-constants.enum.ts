@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+
 
 export enum BitrixOwnerTypeId {
   COMPANY = 4,
@@ -26,5 +26,5 @@ export enum BitrixActivityTypeId {
   EMAIL = 3,
 }
 
-const logger = new Logger('BitrixConstants');
+
 

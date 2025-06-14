@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-
+import { IPortal } from '../portal/interfaces/portal.interface';
 import { BitrixBaseApi } from './core/base/bitrix-base-api';
 import { BitrixApiFactoryService } from './core/queue/bitrix-api.factory.service';
 import {
@@ -8,9 +7,19 @@ import {
     BxCategoryService, BxStatusService, BxItemService, BxItemBatchService,
     BxTimelineService, BxTimelineBatchService
 } from './domain/crm/';
-import { IPortal } from '../portal/interfaces/portal.interface';
+
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
+import {
+    
+    BxProductBatchService,
+    BxProductService
+} from './domain/catalog';
+import {
+    BxListBatchService,
+    BxListService,
+    
+} from './domain/list';
 
 // @Injectable()
 export class BitrixService {
@@ -23,6 +32,8 @@ export class BitrixService {
     public status: BxStatusService
     public item: BxItemService
     public timeline: BxTimelineService
+    public list: BxListService
+    public product: BxProductService
 
 
     public batch = {
@@ -31,12 +42,14 @@ export class BitrixService {
         productRow: null as unknown as BxProductRowBatchService,
         contact: null as unknown as BxContactBatchService,
         item: null as unknown as BxItemBatchService,
-        timeline: null as unknown as BxTimelineBatchService
+        timeline: null as unknown as BxTimelineBatchService,
+        list: null as unknown as BxListBatchService,
+        product: null as unknown as BxProductBatchService
     }
     constructor(
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
         private readonly cloner: ServiceClonerFactory,
-       
+
     ) { }
     init(portal: IPortal) {
         this.api = this.bitrixApiFactoryService.create(portal);
@@ -48,6 +61,8 @@ export class BitrixService {
         this.initStatus()
         this.initItem()
         this.initTimeline()
+        this.initList()
+        this.initProduct()
     }
 
     private initDeal() {
@@ -80,5 +95,13 @@ export class BitrixService {
     private initTimeline() {
         this.timeline = this.cloner.clone(BxTimelineService, this.api);
         this.batch.timeline = this.cloner.clone(BxTimelineBatchService, this.api);
+    }
+    private initList() {
+        this.list = this.cloner.clone(BxListService, this.api);
+        this.batch.list = this.cloner.clone(BxListBatchService, this.api);
+    }
+    private initProduct() {
+        this.product = this.cloner.clone(BxProductService, this.api);
+        this.batch.product = this.cloner.clone(BxProductBatchService, this.api);
     }
 }

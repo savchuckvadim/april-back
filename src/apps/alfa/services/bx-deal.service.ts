@@ -1,19 +1,22 @@
-import { Injectable } from "@nestjs/common";
-import { BxFieldsService } from "./bx-field.service";
-import { PBXService } from "src/modules/pbx/pbx.servise";
-import { BitrixEntityType, BitrixService } from "src/modules/bitrix";
-import { DealValue } from "../lib/deal-field.helper";
 
-@Injectable()
+import { BitrixService } from "src/modules/bitrix";
+import { DealValue } from "./deal-helper/deal-values-helper.service";
+
+
+enum BitrixEntityType {
+    DEAL = 'deal',
+    COMPANY = 'company',
+    CONTACT = 'contact',
+    LEAD = 'lead'
+  }
+
 export class BxDealService {
     private bitrix: BitrixService
     constructor(
-        private readonly pbx: PBXService
 
     ) { }
 
-    async init(domain: string) {
-        const { bitrix } = await this.pbx.init(domain);
+    async init(bitrix: BitrixService) {
         this.bitrix = bitrix;
     }
 
@@ -26,8 +29,7 @@ export class BxDealService {
 
     async setTimeline(dealId: number, dealValues: DealValue[]) {
         const comment = this.getComment(dealValues)
-        console.log(dealId)
-        console.log(comment)
+
         await this.setTimelineComment(dealId, comment)
     }
     getComment(dealValues: DealValue[]) {
@@ -37,7 +39,7 @@ export class BxDealService {
         for (const participant in participants) {
             comment += participants[participant] + "\n \n"
         }
-    
+
         return comment
     }
     getParticipants(dealValues: DealValue[]) {
@@ -48,10 +50,18 @@ export class BxDealService {
             if (value.name.includes('Участник')) {
                 for (let i = 1; i <= 11; i++) {
                     const key = `Участник ${i}`
-                    if (value.name.includes(key) && value.value) {
-                        if (!participants[i]) participants[i] = "👤[B]" + key + "[/B] \n"
-                        participants[i] += "[B]"+ value.name + ":[/B] " + value.value + " \n"
+                    if (i === 1) {
+                        if (value.name.includes(key) && !value.name.includes("10") && value.value) {
+                            if (!participants[i]) participants[i] = "👤[B]" + key + "[/B] \n"
+                            participants[i] += "[B]" + value.name + ":[/B] " + value.value + " \n"
+                        }
+                    } else {
+                        if (value.name.includes(key) && value.value) {
+                            if (!participants[i]) participants[i] = "👤[B]" + key + "[/B] \n"
+                            participants[i] += "[B]" + value.name + ":[/B] " + value.value + " \n"
+                        }
                     }
+
                 }
             }
         })

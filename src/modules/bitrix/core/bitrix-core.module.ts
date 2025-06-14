@@ -1,5 +1,5 @@
 // src/modules/bitrix/core/bitrix-core.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BitrixRequestApiService } from './http/bitrix-request-api.service';
 // import { BitrixContextService } from '../services/bitrix-context.service';
 import { PortalModule } from 'src/modules/portal/portal.module';

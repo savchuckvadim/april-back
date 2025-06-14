@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 import Redis from "ioredis";
 import { RedisService } from "src/core/redis/redis.service";
@@ -6,7 +6,7 @@ import { DepartmentBitrixService } from "src/modules/bitrix/domain/department/se
 import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { EDepartamentGroup, IPortal, } from "src/modules/portal/interfaces/portal.interface";
 import { PortalContextService } from "src/modules/portal/services/portal-context.service";
-import { PortalModel } from "src/modules/portal/services/portal.model";
+
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
 @Injectable()

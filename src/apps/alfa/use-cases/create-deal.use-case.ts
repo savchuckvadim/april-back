@@ -1,35 +1,83 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { CreateDealDto } from "../dto/create-deal.dto";
-import { getBxFieldsIdsForSelect, getDealValues, updateDealDataFromBitrixResponse } from "../lib/deal-field.helper";
 import { BxDealService } from "../services/bx-deal.service";
 import { BxFieldsService } from "../services/bx-field.service";
+import { DealFieldHelperService } from "../services/deal-helper/deal-field-helper.service";
+import { DealFieldValuesHelperService } from "../services/deal-helper/deal-values-helper.service";
+import { PBXService } from "@/modules/pbx";
+import { bxProductData } from "../bx-data/bx-product-data";
+import { dealData } from "../bx-data/bx-data";
+import { DealFieldsTemplate } from "../type/deal-field.type";
 @Injectable()
 export class CreateDealUseCase {
     constructor(
-        private readonly bxDealService: BxDealService,
-        private readonly bxFieldsService: BxFieldsService
+
+        private readonly pbx: PBXService
+
 
     ) { }
     async init(domain: string) {
-        await this.bxDealService.init(domain);
-        await this.bxFieldsService.init(domain);
+        const { bitrix } = await this.pbx.init(domain);
+        const bxDealService = new BxDealService();
+        const bxFieldsService = new BxFieldsService();
+        await bxDealService.init(bitrix);
+        await bxFieldsService.init(bitrix);
+        return {
+            bitrix,
+            bxDealService,
+            bxFieldsService
+        }
     }
     async onDealCreate(data: CreateDealDto) {
-        await this.init(data.auth.domain);
+        const {
+            bitrix,
+            bxDealService,
+            bxFieldsService
+        } = await this.init(data.auth.domain);
 
 
-    
 
 
-        const fields = await this.bxFieldsService.getDealFields();
-        const fieldData = updateDealDataFromBitrixResponse(fields);
-        const bxFieldsIds = getBxFieldsIdsForSelect(fieldData);
+
+        const fields = await bxFieldsService.getDealFields();
+        const fieldData = DealFieldHelperService.updateDealDataFromBitrixResponse(fields);
+        const bxFieldsIds = DealFieldHelperService.getBxFieldsIdsForSelect(fieldData);
 
 
-        const deal = await this.bxDealService.getDeal(data.dealId, bxFieldsIds);
-        const dealValues = getDealValues(deal, fieldData);
-        
-        deal && deal.ID && await this.bxDealService.setTimeline(deal.ID, dealValues)
+
+
+
+        const deal = await bxDealService.getDeal(data.dealId, bxFieldsIds);
+        const dealValues = DealFieldValuesHelperService.getDealValues(deal, fieldData);
+
+
+        const testSerachingProductName = (fieldData as DealFieldsTemplate).participants[1].seminar.ppk_program.accountant_gos.list[0].name as string
+        console.log('testSerachingProductName', testSerachingProductName)
+        const test = '«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов'
+        const productsResponse = await bitrix.product.getList({
+            "=active": "Y",
+            "iblockId": 24,
+            // '%name': test
+            [`%${bxProductData.SERVICE_NAME_FOR_BILL.bitrixId}`]: test
+        },
+            [
+                "iblockId",
+                'active',
+                'name',
+                'price',
+                'currencyId',
+                'id',
+
+            ]
+
+        )
+        const products = productsResponse.result
+        const productsTotal = productsResponse.total
+
+        console.log('products', products)
+        console.log('productsTotal', productsTotal)
+
+        deal && deal.ID && await bxDealService.setTimeline(deal.ID, dealValues)
 
         return deal;
     }

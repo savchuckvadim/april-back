@@ -6,12 +6,14 @@ import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
 import { ContractGenerateModule } from './contract/generate/contract-generate.module';
 import { OfferModule } from './offer/offer.module';
 import { GarantModule } from 'src/modules/garant/garant.module';
+import { KonstructorInitModule } from './init/konstructor-init.module';
 @Module({
   imports: [
     ZakupkiOfferModule,
     ContractGenerateModule,
     OfferModule,
-    GarantModule
+    GarantModule,
+    KonstructorInitModule
   ],
   controllers: [InitSupplyController],
   providers: [
@@ -21,7 +23,8 @@ import { GarantModule } from 'src/modules/garant/garant.module';
   exports: [
     ZakupkiOfferModule,
     ContractGenerateModule,
-    OfferModule
+    OfferModule,
+    KonstructorInitModule
   ]
 })
 export class KonstructorModule { }

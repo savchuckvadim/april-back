@@ -10,6 +10,7 @@ import { GsrMigrateBitrixProductRowService } from './services/bitrix/gsr-migrate
 import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bxcontact.service';
 import { ContactsCreateUseCase } from './contacts-create.use-case';
 import { TaskUseCase } from './task.use-case';
+import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
 @Module({
   imports: [
     PBXModule
@@ -24,7 +25,8 @@ import { TaskUseCase } from './task.use-case';
     GsrMigrateBitrixProductRowService,
     GsrMigrateBitrixContactService,
     ContactsCreateUseCase,
-    TaskUseCase
+    TaskUseCase,
+    GsrSheetsMigrateUseCase
   ],
 })
 export class GsrModule { }

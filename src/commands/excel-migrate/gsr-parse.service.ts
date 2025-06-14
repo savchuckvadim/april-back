@@ -130,17 +130,17 @@ export class GsrParseService {
                 // новая компания
                 if (currentCompany) data.push(currentCompany);
                 currentCompany = {
-                    id: idCell.toString() as string,
+                    id: idCell.toString() || '' as string,
 
 
-                    company: companyCell?.toString().trim() as string,
-                    document: documentCell?.toString().trim() as string,
+                    company: companyCell?.toString().trim() || '' as string,
+                    document: documentCell?.toString().trim() || '' as string,
 
                     // kit: kitCell?.toString().trim() as string,
-                    payinfo: payinfoCell?.toString().trim() as string,
-                    complectInfo: complectInfoCell?.toString().trim() as string,
-                    concurent: concurentCell?.toString().trim() as string,
-                    supplyDate: this.parseDate(supplyDateCell as string | Date | number) as string,
+                    payinfo: payinfoCell?.toString().trim() || '' as string,
+                    complectInfo: complectInfoCell?.toString().trim() || '' as string,
+                    concurent: concurentCell?.toString().trim() || '' as string,
+                    supplyDate: this.parseDate(supplyDateCell as string | Date | number) || '' as string,
                     contacts: [],
                     contract: {
                         contractEndDate: '',
@@ -196,13 +196,13 @@ export class GsrParseService {
             // добавляем договор
             if (contractEndDateCell && contractTypeCell && contractPrepaymentCell) {
                 currentCompany.contract = {
-                    contractEndDate: this.parseDate(contractEndDateCell as string | Date | number) as string,
-                    contractType: contractTypeCell?.toString().trim() as string,
-                    contractPrepayment: contractPrepaymentCell?.toString().trim() as string,
+                    contractEndDate: this.parseDate(contractEndDateCell as string | Date | number, true) as string,
+                    contractType: contractTypeCell?.toString().trim() || '' as string,
+                    contractPrepayment: contractPrepaymentCell?.toString().trim() || '' as string,
                 };
             }
         });
-        Logger.log(currentCompany)
+
         if (currentCompany.id) data.push(currentCompany);
 
         fs.unlinkSync(filePath); // очищаем за собой
@@ -221,16 +221,45 @@ export class GsrParseService {
     private trimLast3IfDash(str: string): string {
         return str.replace(/-\w{2}$/, '');
     }
-    private parseDate(supplyDateCell: string | Date | number) {
+    private parseDate(supplyDateCell: string | Date | number, isContractEnd?: boolean) {
         let supplyDate = '';
+
+        if (!supplyDateCell) {
+            return supplyDate;
+        }
+
         if (supplyDateCell instanceof Date) {
             supplyDate = dayjs(supplyDateCell).format('YYYY-MM-DD');
         } else if (typeof supplyDateCell === 'number') {
             supplyDate = dayjs(new Date((supplyDateCell - 25569) * 86400 * 1000)).format('YYYY-MM-DD');
         } else if (typeof supplyDateCell === 'string') {
-            const parsed = dayjs(supplyDateCell);
-            supplyDate = parsed.isValid() ? parsed.format('YYYY-MM-DD') : '';
+            // Remove 'г' suffix if present
+            const cleanDate = supplyDateCell.replace('г', '').trim();
+
+            // Handle DD.MM.YYYY or DD.MM.YY format
+            const parts = cleanDate.split('.');
+            if (parts.length === 3) {
+                const [day, month, year] = parts;
+                // Handle short year format (YY)
+                const fullYear = year.length === 2 ? `20${year}` : year;
+                try {
+                    const date = dayjs(`${fullYear}-${month}-${day}`);
+                    if (date.isValid()) {
+                        supplyDate = date.format('YYYY-MM-DD');
+                    }
+                } catch (e) {
+                    Logger.warn(`Failed to parse date: ${supplyDateCell}`);
+                }
+            } else {
+                const parsed = dayjs(cleanDate);
+                supplyDate = parsed.isValid() ? parsed.format('YYYY-MM-DD') : '';
+            }
         }
+
+        !isContractEnd && Logger.log('DateCell', supplyDateCell)
+        !isContractEnd && Logger.log(supplyDateCell)
+        !isContractEnd && Logger.log('Date', supplyDate)
+        !isContractEnd && Logger.log(supplyDate)
         return supplyDate;
     }
 

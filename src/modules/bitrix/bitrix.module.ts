@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { TelegramModule } from '../telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
@@ -19,7 +19,7 @@ import { ServiceClonerFactory } from './domain/service-clone.factory';
     ConfigModule,
     HttpModule, // 👈 обязательно
     RedisModule,
-    PortalModule,
+    forwardRef(() => PortalModule),
     BitrixCoreModule,
     // BitrixDomainModule,
     BitrixEndpointsModule

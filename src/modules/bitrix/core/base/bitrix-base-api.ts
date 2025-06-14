@@ -200,6 +200,8 @@ export class BitrixBaseApi {
                 this.httpService.post(url, data, this.axiosOptions),
             ) as AxiosResponse<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>>;
             this.logger.log(`API call successful: ${JSON.stringify(resultMethod)}`);
+           
+           
             return response.data;
         } catch (error) {
             this.logger.error(`API call failed: ${error.message}`);

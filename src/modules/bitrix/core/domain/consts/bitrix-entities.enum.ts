@@ -15,6 +15,7 @@ export enum EBXEntity {
     FILE='file',
     CATEGORY='category',
     STATUS='status',
+    PRODUCT='product',
     
 
 };

@@ -4,7 +4,8 @@ export enum EBxNamespace {
     LISTS = 'lists',
     CRM_ITEM = 'crm.item',
     WITHOUT_NAMESPACE = 'without.namespace',
-    DISK='disk'
+    DISK='disk',
+    CATALOG='catalog'
 }
 
 export enum EBxMethod {

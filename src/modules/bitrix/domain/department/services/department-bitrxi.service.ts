@@ -8,7 +8,11 @@ export class DepartmentBitrixService {
     private readonly bitrixApi: BitrixRequestApiService
   ) { }
 
+  async getDepartmentsAll() {
 
+    const res = await this.bitrixApi.call('department.get', {});
+    return res.result;
+  }
   async getDepartments(filter: any) {
 
     const res = await this.bitrixApi.call('department.get', filter);

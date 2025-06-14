@@ -1,0 +1,7 @@
+export * from './garant.module'
+export * from './region'
+export * from './infoblock'
+export * from './complect'
+export * from './supply'
+export * from './infogroup'
+export * from './price'

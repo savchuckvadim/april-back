@@ -1,19 +1,16 @@
 
 import { BitrixService } from 'src/modules/bitrix/';
 import { BitrixEnumerationOption, IBXField } from 'src/modules/bitrix/';
-import { PBXService } from 'src/modules/pbx';
 import { AlfaBxField } from '../type/bx-deal-field.type';
-import { Injectable } from '@nestjs/common';
 
-@Injectable()
+
 export class BxFieldsService {
     private bitrix: BitrixService
     constructor(
-        private readonly pbx: PBXService
+
     ) {
     }
-    async init(domain: string) {
-        const { bitrix } = await this.pbx.init(domain);
+    async init(bitrix: BitrixService) {
         this.bitrix = bitrix;
     }
     async getDealFields(): Promise<AlfaBxField[]> {
@@ -27,7 +24,19 @@ export class BxFieldsService {
         const batchResult = await this.getDetailFields(list.result)
         const rowResults = this.bitrix.api.clearResult(batchResult) as IBXField[]
         const fields = this.prepareFields(rowResults)
-        // const filtredFields = fields.filter(field => field.name.includes('Участник 10'))
+        const filtredFields = fields.filter(field => field.name.includes('Участник 2'))
+        console.log('BxFieldsService filtredFields')
+        filtredFields.map(field => {
+            if (field.name.includes('Участник 2 Дни участия v2')
+                || field.name.includes('Участник 2 Формат участия v2')
+            ) {
+                console.log(field.name)
+                console.log(field.bitrixId)
+                console.log(field.type)
+                console.log(field.list)
+                console.log(field.multiple)
+            }
+        })
         return fields
     }
 

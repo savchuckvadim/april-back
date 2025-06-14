@@ -20,7 +20,7 @@ export class EventSalesController {
         // this.bitrixContext.initFromRequestContext();
         // const service = new EventSalesFlowUseCase(this.portalProvider);
         await this.flowService.init(dto);
-        const result = await this.flowService.getFlow();
+        const result = await this.flowService.getFlow(dto.domain);
         return result;
     }
 }

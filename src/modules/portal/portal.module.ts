@@ -11,8 +11,6 @@ import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
 import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
-import { AlfaController } from 'src/apps/alfa/alfa.controller';
-import { ListController } from '../bitrix/endpoints/list/bx-list-endpoint.controller';
 import { OnlineClientModule } from '../../clients/online';
 
 // C:\Projects\April-KP\april-next\back\src\modules\portal\portal.module.ts
@@ -50,7 +48,7 @@ export class PortalModule {
                 KpiReportController,
                 DepartmentController,
                 // AlfaController,
-                ListController
+                // ListController
             )
         // .forRoutes({ path: '*', method: RequestMethod.ALL });
 

@@ -1,11 +1,11 @@
-import { EBxMethod } from "../../core/domain/consts/bitrix-api.enum";
-import { IBXList } from "../interfaces/bitrix.interface";
+import { EBxMethod } from "../../../core/domain/consts/bitrix-api.enum";
+import { IBXList } from "../../interfaces/bitrix.interface";
 
 
 export type ListGetRequestType = {
     'IBLOCK_TYPE_ID': 'lists',
     'IBLOCK_CODE'?: string | 'sales_kpi' | 'sales_history' | 'presentation' | 'ork_history'
-    
+
 }
 
 export type ListFieldsGetRequestType = {
@@ -14,7 +14,7 @@ export type ListFieldsGetRequestType = {
     FIELD_ID?: string
 }
 
-export type ListSchema = {
+export type BxListSchema = {
 
     [EBxMethod.GET]: {
         request: ListGetRequestType;

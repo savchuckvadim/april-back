@@ -15,7 +15,7 @@ export class GsrMigrateUseCase {
 
 
         const result = await this.bitrixService.migrateToBitrix(domain, userId, parsedData);
-        return { count: parsedData.length, result }
+        return { count: parsedData.length, result: result, parsedData: parsedData.map(item => ({ supplyDate: item.supplyDate, ...item.contract })) }
 
     }
 

@@ -10,6 +10,7 @@ import { IBitrixBatchResponseResult, IBitrixBatchError } from 'src/modules/bitri
 import { IBXTask } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { TaskUseCase } from "./task.use-case";
 import { IsString, IsNotEmpty } from "class-validator";
+import { GsrSheetsMigrateUseCase } from "./gsr-sheets-migrate.use-case";
 
 
 // class BitrixBatchResponseResultDto implements IBitrixBatchResponseResult {
@@ -40,10 +41,33 @@ export class GsrServiceController {
 
         private readonly migrateUseCase: GsrMigrateUseCase,
         private readonly contactsCreateUseCase: ContactsCreateUseCase,
-        private readonly taskUseCase: TaskUseCase
+        private readonly taskUseCase: TaskUseCase,
+        private readonly sheetsMigrateUseCase: GsrSheetsMigrateUseCase
+
     ) { }
 
-    @Post('parse')
+    // @Post('parse')
+    // @UseInterceptors(
+    //     FileInterceptor('file', {
+    //         storage: diskStorage({
+    //             destination: './uploads',
+    //             filename: (_, file, cb) => {
+    //                 const uniqueName = `${Date.now()}${extname(file.originalname)}`;
+    //                 cb(null, uniqueName);
+    //             },
+    //         }),
+    //     }),
+    // )
+    // async parseFile(
+    //     @Body() body: GsrMigrateDto,
+    //     @UploadedFile() file: Express.Multer.File,
+    //     @Res() res: Response) {
+    //     const result = await this.migrateUseCase.migrate(body.domain, body.userId, file.path);
+    //     return res.send(result);
+    // }
+
+
+    @Post('sheets-parse')
     @UseInterceptors(
         FileInterceptor('file', {
             storage: diskStorage({
@@ -55,11 +79,11 @@ export class GsrServiceController {
             }),
         }),
     )
-    async parseFile(
+    async sheetsParse(
         @Body() body: GsrMigrateDto,
         @UploadedFile() file: Express.Multer.File,
         @Res() res: Response) {
-        const result = await this.migrateUseCase.migrate(body.domain, body.userId, file.path);
+        const result = await this.sheetsMigrateUseCase.migrate(body.domain, body.userId, file.path);
         return res.send(result);
     }
 

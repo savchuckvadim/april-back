@@ -41,8 +41,8 @@ export class GsrBitrixService {
         this.contactService.setContext(this.bitrix, this.portal, userId);
         const results = [] as IBitrixBatchResponseResult[][]
         let count = 0
-        for (let i = 0; i < data.length; i += 3) {
-            const chunk = data.slice(i, i + 3)
+        for (let i = 0; i < data.length; i += 1) {
+            const chunk = data.slice(i, i + 1)
 
 
             chunk.forEach((element, index) => {

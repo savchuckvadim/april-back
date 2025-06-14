@@ -8,6 +8,11 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@apps/*": ["./src/apps/*"],
+      "@pbx": ["./src/modules/pbx/index.ts"],
+    },
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",

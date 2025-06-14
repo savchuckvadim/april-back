@@ -33,7 +33,7 @@ export class PortalModel {
     }
 
 
-    getListByCode(code: 'sales_kpi' | 'sales_history' | 'presentation' | 'service_history'): IPBXList | undefined {
+    getListByCode(code: 'sales_kpi' | 'sales_history' | 'presentation' | 'ork_history'): IPBXList | undefined {
         let result = this.portal.lists?.find(list => `${list.group}_${list.type}` === code)
         if (!result) {
             result = this.portal.bitrixLists?.find(list => `${list.group}_${list.type}` === code)

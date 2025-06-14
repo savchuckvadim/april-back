@@ -66,7 +66,7 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
 
         const comment = ' <br><b>Информация об оплате</b> ' + element.payinfo + '   </br> ' +
             ' <br><b>Комплект/Сервисы</b> ' + element.complectInfo + '   </br>  ' +
-            ' <br><b>Информация об документах</b> ' + element.document + '   </br>  ' +
+            ' <br><b>Информация о документах</b> ' + element.document + '   </br>  ' +
             ' <br><b>Конкурент</b> ' + element.concurent + '   </br> '
 
         return comment

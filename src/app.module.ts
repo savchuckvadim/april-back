@@ -32,6 +32,7 @@ import { FileLinkModule } from './core/file-link/file-link.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
 import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
+import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
 @Module({
   imports: [
 
@@ -77,7 +78,10 @@ import { PortalKonstructorModule } from './modules/portal-konstructor/portal-kon
     StorageModule,
     FileLinkModule,
     GarantModule,
-    PortalKonstructorModule
+    PortalKonstructorModule,
+
+
+    BxDepartmentModule
   ],
   controllers: [
     AppController,

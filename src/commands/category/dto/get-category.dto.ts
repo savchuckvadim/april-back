@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsString, IsEnum, IsNumber } from "class-validator";
-import { BitrixOwnerTypeId } from "src/modules/bitrix";
+import { BitrixOwnerTypeId } from "./category-response.dto";
+
 
 export class GetCategoryListDto {
 

@@ -1,7 +1,7 @@
-import {  EBxNamespace } from "../consts/bitrix-api.enum";
+import { EBxNamespace } from "../consts/bitrix-api.enum";
 import { EBXEntity } from "../consts/bitrix-entities.enum";
-import { ListSchema } from "src/modules/bitrix/domain/list/list.schema";
-import { 
+import { BxListSchema } from "@/modules/bitrix/";
+import {
   CompanySchema,
   ContactSchema,
   DealSchema,
@@ -11,7 +11,8 @@ import {
   BxCategorySchema,
   BxStatusSchema,
   BxItemSchema,
-  TimelineCommentSchema
+  TimelineCommentSchema,
+  BxCatalogSchema
 } from "src/modules/bitrix/";
 
 
@@ -28,7 +29,7 @@ export type BXApiSchema = {
     [EBXEntity.USER_FIELD]: FieldsSchema;
     [EBXEntity.USER_FIELD_ENUMERATION]: FieldsEnumerationSchema;
     [EBXEntity.ACTIVITY]: ActivitySchema
-    [EBXEntity.CATEGORY]: BxCategorySchema  
+    [EBXEntity.CATEGORY]: BxCategorySchema
     [EBXEntity.STATUS]: BxStatusSchema
     [EBXEntity.ITEM]: BxItemSchema
     [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema
@@ -51,6 +52,9 @@ export type BXApiSchema = {
   };
 
   [EBxNamespace.WITHOUT_NAMESPACE]: {
-    [EBXEntity.LISTS]: ListSchema;
+    [EBXEntity.LISTS]: BxListSchema;
+  };
+  [EBxNamespace.CATALOG]: {
+    [EBXEntity.PRODUCT]: BxCatalogSchema
   };
 };

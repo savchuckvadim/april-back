@@ -1,6 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { BitrixOwnerTypeId } from "src/modules/bitrix";
 
+export enum BitrixOwnerTypeId {
+    COMPANY = 4,
+    DEAL = 2,
+    CONTACT = 3,
+    LEAD = 1
+  }
 export class CategoryResponseDto {
     @ApiProperty({
         description: 'Category ID',
