@@ -3,9 +3,9 @@ FROM node:20-slim
 
 
 # Установка LibreOffice
-RUN apt update && \
-    apt install -y libreoffice libreoffice-writer && \
-    apt clean && rm -rf /var/lib/apt/lists/*
+# RUN apt update && \
+#     apt install -y libreoffice libreoffice-writer && \
+#     apt clean && rm -rf /var/lib/apt/lists/*
 
 
 # Рабочая директория
