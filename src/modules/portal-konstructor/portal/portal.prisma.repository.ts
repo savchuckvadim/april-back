@@ -53,4 +53,21 @@ export class PortalPrismaRepository implements PortalRepository {
 
         return result.map(portal => createPortalEntityFromPrisma(portal));
     }
+
+    async updateWebhook(domain: string, webhook: string): Promise<PortalEntity | null> {
+        const result = await this.prisma.portals.findFirst({
+            where: { domain },
+            
+        });
+        if (!result) return null;
+        const updated = await this.prisma.portals.update({
+            where: { id: result.id },
+            data: {
+                 C_REST_WEB_HOOK_URL: webhook,
+                 C_REST_CLIENT_ID: webhook,
+                 C_REST_CLIENT_SECRET: webhook
+                }
+        });
+        return createPortalEntityFromPrisma(updated);
+    }
 } 

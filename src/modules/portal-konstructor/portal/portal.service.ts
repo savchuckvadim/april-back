@@ -23,4 +23,8 @@ export class PortalService {
     async getPortalById(id: number): Promise<PortalEntity | null> {
         return this.portalRepository.findById(id);
     }
+
+    async updateWebhook(domain: string, webhook: string): Promise<PortalEntity | null> {
+        return this.portalRepository.updateWebhook(domain, webhook);
+    }
 }

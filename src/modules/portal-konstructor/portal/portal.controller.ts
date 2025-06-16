@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from "@nestjs/common";
+import { Body, Controller, Get, Param, Put } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { PortalService } from "./portal.service";
 import { PortalEntity } from "./portal.entity";
@@ -22,6 +22,10 @@ export class PortalController {
     @Get()
     async getPortals(): Promise<PortalEntity[] | null> {
         return await this.service.getPortals();
+    }
+    @Put('webhook/:domain')
+    async updateWebhook(@Param('domain') domain: string, @Body() body: { webhook: string }): Promise<PortalEntity | null> {
+        return await this.service.updateWebhook(domain, body.webhook);
     }
  
 }
