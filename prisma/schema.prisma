@@ -1,8 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "../generated/prisma"
-    binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "windows"]
-
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "windows"]
 }
 
 datasource db {
@@ -360,7 +359,6 @@ model fields {
   updated_at       DateTime?        @db.Timestamp(0)
   template_field   template_field[]
   items            f_items[]
-  
 }
 
 model files {
