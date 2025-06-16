@@ -24,16 +24,16 @@ export class PortalService {
     async getPortalByDomain(domain: string): Promise<IPortal> {
         this.logger.log(`Getting portal for domain: ${domain}`);
         const cacheKey = `portal_${domain}`;
-        const cached = await this.redis.get(cacheKey);
+        // const cached = await this.redis.get(cacheKey);
 
 
-        if (cached) {
-            this.logger.log('Returning cached portal');
-            const portal = JSON.parse(cached);
-            this.logger.log(`Cached portal domain: ${portal?.domain}`);
-            this.logger.log(`Cached portal webhook: ${portal?.C_REST_WEB_HOOK_URL}`);
-            return portal;
-        }
+        // if (cached) {
+        //     this.logger.log('Returning cached portal');
+        //     const portal = JSON.parse(cached);
+        //     this.logger.log(`Cached portal domain: ${portal?.domain}`);
+        //     this.logger.log(`Cached portal webhook: ${portal?.C_REST_WEB_HOOK_URL}`);
+        //     return portal;
+        // }
 
         this.logger.log('Portal not found in cache, requesting from API');
         const response = await this.apiOnlineClient.request('post', 'getportal', { domain }, 'portal');

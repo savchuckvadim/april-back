@@ -9,7 +9,7 @@ export class BxCategoryRepository {
         private readonly bxApi: BitrixBaseApi
     ) { }
 
-    async get(id: number | string, entityTypeId: BitrixOwnerTypeId) {
+    async get(id: number | string, entityTypeId: BitrixOwnerTypeId | string) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CATEGORY,
@@ -17,7 +17,7 @@ export class BxCategoryRepository {
             { id, entityTypeId });
     }
 
-    async getList(entityTypeId: BitrixOwnerTypeId) {
+    async getList(entityTypeId: BitrixOwnerTypeId | string) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CATEGORY,

@@ -31,6 +31,31 @@ export class BxItemRepository {
             { id: id, entityTypeId, fields: data }
         );
     }
-   
 
+    async list( entityTypeId: string, filter?: Partial<IBXItem>) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.LIST,
+            { entityTypeId }
+        );
+    }
+
+    async get(id: number | string, entityTypeId: string) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.GET,
+            { id, entityTypeId }
+        );
+    }
+
+    async add(entityTypeId: string, data: Partial<IBXItem>) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.ADD,
+            { entityTypeId, fields: data }
+        );
+    }
 }

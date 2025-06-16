@@ -6,6 +6,7 @@ export enum EBXEntity {
     LEAD = 'lead',
     TASK = 'task',
     ITEM = 'item',
+    TYPE = 'type',
     TIMELINE_COMMENT = 'timeline.comment',
     PRODUCT_ROW = 'productrow',
     USER_FIELD = 'userfield',

@@ -8,6 +8,8 @@ import { PBXService } from "@/modules/pbx";
 import { bxProductData } from "../bx-data/bx-product-data";
 import { dealData } from "../bx-data/bx-data";
 import { DealFieldsTemplate } from "../type/deal-field.type";
+import { BxSmartService } from "../services/bx-smart.service";
+
 @Injectable()
 export class CreateDealUseCase {
     constructor(
@@ -20,19 +22,22 @@ export class CreateDealUseCase {
         const { bitrix } = await this.pbx.init(domain);
         const bxDealService = new BxDealService();
         const bxFieldsService = new BxFieldsService();
+        const bxSmartService = new BxSmartService();
         await bxDealService.init(bitrix);
         await bxFieldsService.init(bitrix);
         return {
             bitrix,
             bxDealService,
-            bxFieldsService
+            bxFieldsService,
+            bxSmartService
         }
     }
     async onDealCreate(data: CreateDealDto) {
         const {
             bitrix,
             bxDealService,
-            bxFieldsService
+            bxFieldsService,
+            bxSmartService
         } = await this.init(data.auth.domain);
 
 
@@ -76,6 +81,8 @@ export class CreateDealUseCase {
 
         console.log('products', products)
         console.log('productsTotal', productsTotal)
+
+        await bxSmartService.setParticipantsSmarts(dealValues);
 
         deal && deal.ID && await bxDealService.setTimeline(deal.ID, dealValues)
 

@@ -16,7 +16,7 @@ export type CrmListRequestType<T> = {
     select?: string[];
     order?: {
         [key in keyof T]?: 'asc' | 'desc' | 'ASC' | 'DESC'
-    
+
     }
 
 }
@@ -28,5 +28,29 @@ export type CrmUpdateRequestType<T> = {
 export type CrmUpdateItemRequestType<T> = {
     id: number | string;
     entityTypeId: BitrixOwnerTypeId;
+    fields: Partial<T>;
+}
+
+
+export type CrmItemRequestType<T, O extends BitrixOwnerTypeId | string> = {
+    id?: number | string;
+    entityTypeId: O;
+    fields: Partial<T>;
+}
+
+export type CrmItemListRequestType<T extends BitrixOwnerTypeId | string> = {
+
+    entityTypeId: T;
+    filter?: Partial<T>;
+}
+
+export type CrmItemGetRequestType<T extends BitrixOwnerTypeId | string> = {
+    id: number | string;
+    entityTypeId: T;
+
+}
+
+export type CrmItemAddRequestType<T, O extends BitrixOwnerTypeId | string> = {
+    entityTypeId: O;
     fields: Partial<T>;
 }

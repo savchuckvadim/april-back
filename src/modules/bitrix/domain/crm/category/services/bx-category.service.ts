@@ -12,10 +12,10 @@ export class BxCategoryService {
     init(api: BitrixBaseApi) {
         this.repo = new BxCategoryRepository(api);
     }
-    async get(id: number | string, entityTypeId: BitrixOwnerTypeId) {
+    async get(id: number | string, entityTypeId: BitrixOwnerTypeId | string) {
         return await this.repo.get(id, entityTypeId);
     }
-    async getList(entityTypeId: BitrixOwnerTypeId) {
+    async getList(entityTypeId: BitrixOwnerTypeId | string) {
         return await this.repo.getList(entityTypeId);
     }
 }

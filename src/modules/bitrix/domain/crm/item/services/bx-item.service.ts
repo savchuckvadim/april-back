@@ -23,7 +23,17 @@ export class BxItemService {
     update(id: number | string, entityTypeId: BitrixOwnerTypeId.DEAL, data: Partial<IBXItem>) {
         return this.repo.update(id, entityTypeId, data);
     }
-    
 
+    list(entityTypeId: string, filter?: Partial<IBXItem>) {
+        return this.repo.list(entityTypeId, filter);
+    }
+
+    get(id: number | string, entityTypeId: string) {
+        return this.repo.get(id, entityTypeId);
+    }
+
+    add(entityTypeId: string, data: Partial<IBXItem>) {
+        return this.repo.add(entityTypeId, data);
+    }
 
 }

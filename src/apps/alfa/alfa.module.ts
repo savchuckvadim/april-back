@@ -4,15 +4,20 @@ import { CreateDealUseCase } from './use-cases/create-deal.use-case';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { BxDealService } from './services/bx-deal.service';
 import { BxFieldsService } from './services/bx-field.service';
+import { TestSmartService } from './services/test-smart.service';
+import { AlfaSmartController } from './alfa-smart.controller';
+
+
 @Module({
   imports: [
     PBXModule
   ],
-  controllers: [AlfaController],
+  controllers: [AlfaController, AlfaSmartController],
   providers: [
     CreateDealUseCase,
     BxDealService,
-    BxFieldsService
+    BxFieldsService,
+    TestSmartService
   ],
 })
 export class AlfaModule { }

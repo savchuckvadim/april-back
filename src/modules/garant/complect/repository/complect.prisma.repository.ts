@@ -7,6 +7,8 @@ import { InfogroupEntity } from "../../infogroup/infogroup.entity";
 import { createInfoblockEntityFromPrisma } from "../../infoblock/lib/infoblock-entity.util";
 import { createComplectEntityFromPrisma } from "../lib/complect-entity.util";
 import { createInfogroupEntityFromPrisma } from "../../infogroup/lib/infogroup-entity.util";
+
+
 @Injectable()
 export class ComplectPrismaRepository implements ComplectRepository {
     constructor(
@@ -17,6 +19,7 @@ export class ComplectPrismaRepository implements ComplectRepository {
 
     async create(complect: Partial<ComplectEntity>): Promise<ComplectEntity | null> {
         try {
+         
             const result = await this.prisma.complects.create({
                 data: {
                     name: complect.name!,

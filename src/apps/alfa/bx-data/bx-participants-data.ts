@@ -217,7 +217,7 @@ const participant_1 = {
                     }
                 ],
                 name: "Участник 1 Программы повышения квалификации для специалистов по кадрам",
-                code: null,
+                code: 'kadry',
                 multiple: false,
                 mandatory: false
 
@@ -234,7 +234,7 @@ const participant_1 = {
                     }
                 ],
                 name: "Участник 1 Программы повышения квалификации для специалистов по антикоррупционной деятельности",
-                code: null,
+                code: 'corruption',
                 multiple: false,
                 mandatory: false
             }

@@ -6,11 +6,11 @@ import { BitrixOwnerTypeId } from "src/modules/bitrix/domain/enums/bitrix-consta
 export type BxCategorySchema = {
 
     [EBxMethod.LIST]: {
-        request: { entityTypeId: BitrixOwnerTypeId };
+        request: { entityTypeId: BitrixOwnerTypeId | string };
         response: { categories: IBXCategory[] };
     };
     [EBxMethod.GET]: {
-        request: { id: number | string, entityTypeId: BitrixOwnerTypeId };
+        request: { id: number | string, entityTypeId: BitrixOwnerTypeId | string };
         response: { category: IBXCategory };
     };
 };

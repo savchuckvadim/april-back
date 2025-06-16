@@ -22,6 +22,7 @@ export enum EBxMethod {
     CONTACT_ADD = 'contact.add',
     CONTACT_ITEMS_GET = 'contact.items.get',
     FIELD_GET = 'field.get',
-    FIELDS = 'fields'
+    FIELDS = 'fields',
+    GET_BY_ENTITY_TYPE_ID = 'getByEntityTypeId'
     
 }
