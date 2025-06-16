@@ -11,6 +11,10 @@ import { OtherProvidersDto, Provider1FieldCode, Provider2FieldCode, ProviderOthe
 
 import dayjs from "dayjs";
 import 'dayjs/locale/ru'; // подключаем русскую локаль
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import {
     RecipientDto,
@@ -19,7 +23,7 @@ import {
 import { formatRuble } from "../document-generate/lib/rubles.util";
 import { PBXService } from "src/modules/pbx/pbx.servise";
 import { BitrixEntityType, BitrixService } from "src/modules/bitrix";
-import { LibreOfficeService } from "src/modules/libre-office/libre-office.service";
+
 import { ProviderDto } from "../../../modules/portal-konstructor/provider";
 import { DocumentInfoblockService } from "../document-generate/";
 import { DocumentTotalRowService } from "../document-generate/";
@@ -27,7 +31,7 @@ import { DocumentTotalRowService } from "../document-generate/";
 export class ZakupkiOfferCreateService {
     private readonly baseUrl: string;
     private contractPeriod: string;
-    private bitrix: BitrixService
+   
     private documentName: string = '3 КП';
     private documentNumber: string = '';
     private currentYear: string;
@@ -38,14 +42,18 @@ export class ZakupkiOfferCreateService {
         private readonly fileLinkService: FileLinkService,
         private readonly configService: ConfigService,
         private readonly pbx: PBXService,
-        private readonly libreOfficeService: LibreOfficeService,
+      
         private readonly documentInfoblockService: DocumentInfoblockService,
         private readonly totalRowService: DocumentTotalRowService,
 
     ) {
         dayjs.extend(localizedFormat);
         dayjs.locale('ru'); // устанавливаем локаль
+        dayjs.extend(utc);
+        dayjs.extend(timezone);
+        dayjs.tz.setDefault('Europe/Moscow');
 
+        
         this.currentYear = dayjs().format('YYYY');
         this.baseUrl = this.configService.get('APP_URL') as string;
 
@@ -59,8 +67,8 @@ export class ZakupkiOfferCreateService {
     }
     async createZakupkiOffer(dto: ZakupkiOfferCreateDto) {
         this.resultPath = `konstructor/zoffer/${this.currentYear}/${dto.domain}/${dto.userId}`;
-        const { bitrix } = await this.pbx.init(dto.domain)
-        this.bitrix = bitrix
+       
+    
         const doc = this.getDocTemplater()
         this.contractPeriod = this.getContractPeriod(dto.contractStart, dto.contractEnd);
         const { documentDate, documentNumber } = await this.getDocumentDateAndNumber(dto.domain, dto.userId);
@@ -102,7 +110,7 @@ export class ZakupkiOfferCreateService {
 
         await this.saveFile(doc)
         const link = await this.createLink(dto.domain, dto.userId)
-        this.setInBitrix(dto.companyId, dto.userId, link, documentNumber, dto.dealId)
+        this.setInBitrix(dto.domain, dto.companyId, dto.userId, link, documentNumber, dto.dealId)
         return {
             link,
             // testingInfoblocksWithDescription
@@ -285,9 +293,10 @@ export class ZakupkiOfferCreateService {
         return message
     }
 
-    async setInBitrix(companyId: string, userId: number | string, link: string, documentNumber: string, dealId?: number | string) {
+    async setInBitrix(domain: string, companyId: string, userId: number | string, link: string, documentNumber: string, dealId?: number | string) {
         const commentMessage = this.getCommentMessage(link, documentNumber as string);
-        this.bitrix.batch.timeline.addTimelineComment(
+        const { bitrix } = await this.pbx.init(domain)
+        bitrix.batch.timeline.addTimelineComment(
             `add_timeline_company_${companyId}`,
             {
 
@@ -297,7 +306,7 @@ export class ZakupkiOfferCreateService {
                 AUTHOR_ID: userId.toString(),
 
             })
-        dealId && this.bitrix.batch.timeline.addTimelineComment(
+        dealId && bitrix.batch.timeline.addTimelineComment(
             `add_timeline_deal_${dealId}`,
             {
 
@@ -306,7 +315,7 @@ export class ZakupkiOfferCreateService {
                 COMMENT: commentMessage,
                 AUTHOR_ID: userId.toString(),
             })
-        this.bitrix.api.callBatchWithConcurrency(1)
+        bitrix.api.callBatchWithConcurrency(1)
     }
 }
 

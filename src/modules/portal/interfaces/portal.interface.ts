@@ -3,6 +3,8 @@ export interface IPortal {
     apiKey: string;
     C_REST_WEB_HOOK_URL: string;
     C_REST_CLIENT_SECRET: string;
+    C_REST_CLIENT_ID: string;
+    key: string;
     name?: string;
     description?: string;
     createdAt?: Date;

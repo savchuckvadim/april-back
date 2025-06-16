@@ -41,7 +41,8 @@ export class BitrixBaseApi {
     initFromPortal(portal: IPortal) {
         this.logger.log(`Initializing BitrixApi from portal: ${portal.domain}`);
         this.domain = portal.domain;
-        this.apiKey = portal.C_REST_WEB_HOOK_URL;
+
+        this.apiKey = portal.key;
         this.cmdBatch = {};
     }
 
