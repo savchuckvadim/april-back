@@ -24,6 +24,7 @@ jobs:
             echo "🧩 Подключение к серверу NEST API"
             cd /var/www/html/back.april-app
             git pull origin main
+            docker-compose up down
             tmux kill-session -t deploy-session-nest-api || true
             tmux new -d -s deploy-session-nest-api "docker-compose up -d --build && echo ✅ nest-api Готово"
 
