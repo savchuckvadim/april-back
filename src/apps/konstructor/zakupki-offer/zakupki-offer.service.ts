@@ -22,11 +22,19 @@ import {
 // import { rubles } from 'rubles';
 import { formatRuble } from "../document-generate/lib/rubles.util";
 import { PBXService } from "src/modules/pbx/pbx.servise";
-import { BitrixEntityType, BitrixService } from "src/modules/bitrix";
 
 import { ProviderDto } from "../../../modules/portal-konstructor/provider";
 import { DocumentInfoblockService } from "../document-generate/";
 import { DocumentTotalRowService } from "../document-generate/";
+
+enum BitrixEntityType {
+    DEAL = 'deal',
+    COMPANY = 'company',
+    CONTACT = 'contact',
+    LEAD = 'lead'
+  }
+
+
 @Injectable()
 export class ZakupkiOfferCreateService {
     private readonly baseUrl: string;
@@ -53,7 +61,7 @@ export class ZakupkiOfferCreateService {
         dayjs.extend(timezone);
         dayjs.tz.setDefault('Europe/Moscow');
 
-        
+
         this.currentYear = dayjs().format('YYYY');
         this.baseUrl = this.configService.get('APP_URL') as string;
 
@@ -110,7 +118,7 @@ export class ZakupkiOfferCreateService {
 
         await this.saveFile(doc)
         const link = await this.createLink(dto.domain, dto.userId)
-        this.setInBitrix(dto.domain, dto.companyId, dto.userId, link, documentNumber, dto.dealId)
+        await this.setInBitrix(dto.domain, dto.companyId, dto.userId, link, documentNumber, dto.dealId)
         return {
             link,
             // testingInfoblocksWithDescription
@@ -243,8 +251,9 @@ export class ZakupkiOfferCreateService {
 
 
     private getContractPeriod(contractStart: string, contractEnd: string) {
-        const contractStartFormatted = contractStart ? dayjs(contractStart).format('D MMMM YYYY [г.]') : '___________________________________';
-        const contractEndFormatted = contractEnd ? dayjs(contractEnd).format('D MMMM YYYY [г.]') : '___________________________________';
+        const tz = 'Europe/Moscow';
+        const contractStartFormatted = contractStart ? dayjs(contractStart).tz(tz).format('D MMMM YYYY [г.]') : '___________________________________';
+        const contractEndFormatted = contractEnd ? dayjs(contractEnd).tz(tz).format('D MMMM YYYY [г.]') : '___________________________________';
         const period = `c ${contractStartFormatted} по ${contractEndFormatted}`;
 
         return period
@@ -315,7 +324,7 @@ export class ZakupkiOfferCreateService {
                 COMMENT: commentMessage,
                 AUTHOR_ID: userId.toString(),
             })
-        bitrix.api.callBatchWithConcurrency(1)
+        await bitrix.api.callBatchWithConcurrency(1)
     }
 }
 
