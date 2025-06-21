@@ -1,5 +1,6 @@
 import { IBXDeal } from "@/modules/bitrix";
 import { DealField, DealFieldsTemplate, DealValueListItem, EnumerationField } from "../../type/deal-field.type";
+import { BxDealDataKeys, TDealData } from "../../bx-data/bx-data";
 
 // Интерфейс для значения поля сделки
 export interface DealValue {
@@ -14,12 +15,13 @@ export class DealFieldValuesHelperService {
     /**
      * Получает значения полей сделки на основе шаблона
      */
-    public static getDealValues(deal: IBXDeal, fieldsTemplate: DealFieldsTemplate): DealValue[] {
+    public static getDealValues(deal: IBXDeal, fieldsTemplate: TDealData): DealValue[] {
         const values: DealValue[] = [];
-        const fields = this.flattenFieldsTemplate(fieldsTemplate);
+        let fields = this.flattenFieldsTemplate(fieldsTemplate);
 
+        fields = this.filterParticipants(fields, deal, fieldsTemplate)
         for (const field of fields) {
-            const dealValue = deal[field.bitrixId];
+            const dealValue = deal[field.bitrixId] === '0' ? 'Нет' : deal[field.bitrixId] === '1' ? 'Да' : deal[field.bitrixId];
 
             if (this.isValidValue(dealValue)) {
                 const result = this.createDealValue(field, dealValue);
@@ -28,14 +30,49 @@ export class DealFieldValuesHelperService {
                 }
             }
         }
-
+       
         return values;
+    }
+    private static filterParticipants(fields: DealField[], deal: IBXDeal, fieldsTemplate: TDealData): DealField[] {
+
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][1].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 1') && field.name.includes('Участник 10')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][2].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 2')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][3].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 3')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][4].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 4')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][5].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 5')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][6].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 6')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][7].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 7')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][8].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 8')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][9].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 9')))
+        }
+        if (!deal[fieldsTemplate[BxDealDataKeys.participants][10].name.bitrixId]) {
+            fields = fields.filter(field => (!field.name.includes('Участник 10')))
+        }
+        
+        return fields
     }
 
     /**
      * Преобразует вложенный шаблон полей в плоский массив
      */
-    private static flattenFieldsTemplate(template: DealFieldsTemplate): DealField[] {
+    private static flattenFieldsTemplate(template: TDealData): DealField[] {
         const fields: DealField[] = [];
 
         for (const [key, value] of Object.entries(template)) {

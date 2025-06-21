@@ -16,6 +16,7 @@ export class TestSmartService {
             EBxNamespace.CRM,
             EBXEntity.TYPE,
             EBxMethod.LIST,
+            //@ts-ignore
             {}
         );
         return smarts;
@@ -66,6 +67,7 @@ export class TestSmartService {
             EBxNamespace.CRM,
             EBXEntity.TYPE,
             EBxMethod.LIST,
+             //@ts-ignore
             {}
         );
         const smarts = [] as IBXItem[]

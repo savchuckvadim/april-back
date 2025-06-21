@@ -53,7 +53,7 @@ export class APIOnlineClient {
                     };
                 } else {
                     this.logger.error(`${dataName} was not found in response`);
-                    this.logger.error(`Response data: ${JSON.stringify(responseData)}`);
+                    this.logger.error(`Response data: ${JSON.stringify(responseData, this.bigIntReplacer)}`);
                     return {
                         resultCode: 1,
                         message: 'Invalid data',
@@ -62,7 +62,7 @@ export class APIOnlineClient {
                 }
             } else {
                 this.logger.error(`Error in API request: ${response.status}`);
-                this.logger.error(`Response data: ${JSON.stringify(response.data)}`);
+                this.logger.error(`Response data: ${JSON.stringify(response.data, this.bigIntReplacer)}`);
                 return {
                     resultCode: 1,
                     message: 'Error in API request',
@@ -78,5 +78,12 @@ export class APIOnlineClient {
                 message: error.message
             };
         }
+    }
+
+    private bigIntReplacer(key: string, value: any): any {
+        if (typeof value === 'bigint') {
+            return value.toString();
+        }
+        return value;
     }
 } 

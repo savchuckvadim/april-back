@@ -5,7 +5,7 @@ import { UpdatePortalDto } from "./dto/update-portal.dto";
 import { PortalOuterService } from "./portal-outer.service";
 
 
-@ApiTags('Portal Konstructor')
+@ApiTags('Portal Outer')
 @Controller('portal-outer')
 export class PortalOuterController {
     constructor(

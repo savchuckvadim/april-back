@@ -34,4 +34,3 @@ export type DealFieldsTemplate = {
     readonly [key: string]: DealField | DealFieldsTemplate;
 };
 
-export type DealData = typeof import('../bx-data/bx-data').dealData; 

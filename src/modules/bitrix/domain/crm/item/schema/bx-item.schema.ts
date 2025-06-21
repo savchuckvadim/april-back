@@ -13,17 +13,17 @@ export type BxItemSchema = {
     };
 
     [EBxMethod.LIST]: {
-        request: CrmItemListRequestType<string>;
-        response: IBXItem[];
+        request: CrmItemListRequestType<IBXItem['entityTypeId']>;
+        response: { items: IBXItem[] };
     };
 
     [EBxMethod.GET]: {
-        request: CrmItemGetRequestType<string>;
-        response: IBXItem;
+        request: CrmItemGetRequestType<string | number>;
+        response: { item: IBXItem };
     };
 
     [EBxMethod.ADD]: {
         request: CrmItemAddRequestType<IBXItem, string>;
-        response: IBXItem;
+        response: { item: IBXItem };
     };
 };

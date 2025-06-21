@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AlfaBxField } from '../../type/bx-deal-field.type';
-import { dealData } from '../../bx-data/bx-data';
+import { BxDealData, BxDealDataKeys, TDealData, TField, TFieldSelect } from '../../bx-data/bx-data';
 import { DealField, DealFieldsTemplate } from '../../type/deal-field.type';
 
 @Injectable()
@@ -8,8 +8,8 @@ export class DealFieldHelperService {
     /**
      * Обновляет шаблон полей сделки на основе ответа от Bitrix
      */
-    public static updateDealDataFromBitrixResponse(bitrixResponse: AlfaBxField[]): DealFieldsTemplate {
-        const updatedDealData = this.createDeepCopy(dealData);
+    public static updateDealDataFromBitrixResponse(bitrixResponse: AlfaBxField[]): TDealData {
+        const updatedDealData = this.createDeepCopy<TDealData>(BxDealData);
         this.updateFields(updatedDealData, bitrixResponse);
         return updatedDealData;
     }
@@ -17,7 +17,7 @@ export class DealFieldHelperService {
     /**
      * Получает список ID полей для выборки
     */
-    public static getBxFieldsIdsForSelect(data: DealFieldsTemplate): string[] {
+    public static getBxFieldsIdsForSelect(data: TDealData): string[] {
         const bxFieldsIds = ['ID', 'NAME'] as string[];
         const fields = this.flattenFieldsTemplate(data);
 
@@ -40,21 +40,37 @@ export class DealFieldHelperService {
     /**
      * Обновляет поля в шаблоне на основе ответа от Bitrix
      */
-    private static updateFields(template: DealFieldsTemplate, bitrixFields: AlfaBxField[]): void {
-        const fields = this.flattenFieldsTemplate(template);
-
-        for (const field of fields) {
-            if (this.isDealField(field)) {
-                this.updateField(field, bitrixFields);
+    private static updateFields(template: TDealData, bitrixFields: AlfaBxField[]): TDealData {
+       
+        for (const key in template) {
+            if (key === BxDealDataKeys.participants) {
+                for (const participant of Object.values(template[key])) {
+                    for (const parKey in participant) {
+                        if ((participant[parKey] as TField).type === 'enumeration') {
+                            const bitrixField = bitrixFields.find(f => f.bitrixId === (participant[parKey] as TField).bitrixId);
+                            if (bitrixField) {
+                                (participant[parKey] as TFieldSelect).list = bitrixField.list || [];
+                            }
+                        }
+                    }
+                }
+            } else {
+                if ((template[key] as TField).type === 'enumeration') {
+                    const bitrixField = bitrixFields.find(f => f.bitrixId === (template[key] as TField).bitrixId);
+                    if (bitrixField) {
+                        (template[key] as TFieldSelect).list = bitrixField.list || [];
+                    }
+                }
             }
         }
+        return template;
     }
 
     /**
      * Преобразует вложенный шаблон полей в плоский массив
      */
-    private static flattenFieldsTemplate(template: DealFieldsTemplate): (DealField | DealFieldsTemplate)[] {
-        const result: (DealField | DealFieldsTemplate)[] = [];
+    private static flattenFieldsTemplate(template: TDealData): (TField | TFieldSelect)[] {
+        const result: (TField | TFieldSelect)[] = [];
 
         for (const value of Object.values(template)) {
             if (this.isDealField(value)) {
@@ -70,7 +86,7 @@ export class DealFieldHelperService {
     /**
      * Проверяет, является ли объект полем сделки
      */
-    private static isDealField(obj: any): obj is DealField {
+    private static isDealField(obj: any): obj is TField {
         return obj &&
             typeof obj === 'object' &&
             'bitrixId' in obj &&

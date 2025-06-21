@@ -24,12 +24,12 @@ export class BxItemService {
         return this.repo.update(id, entityTypeId, data);
     }
 
-    list(entityTypeId: string, filter?: Partial<IBXItem>) {
-        return this.repo.list(entityTypeId, filter);
+    list(entityTypeId: string, filter?: Partial<IBXItem>, select?: string[]) {
+        return this.repo.list(entityTypeId, filter, select);
     }
 
-    get(id: number | string, entityTypeId: string) {
-        return this.repo.get(id, entityTypeId);
+    get(id: number | string, entityTypeId: string, select?: string[]) {
+        return this.repo.get(id, entityTypeId, select);
     }
 
     add(entityTypeId: string, data: Partial<IBXItem>) {

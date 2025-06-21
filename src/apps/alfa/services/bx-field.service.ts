@@ -24,19 +24,19 @@ export class BxFieldsService {
         const batchResult = await this.getDetailFields(list.result)
         const rowResults = this.bitrix.api.clearResult(batchResult) as IBXField[]
         const fields = this.prepareFields(rowResults)
-        const filtredFields = fields.filter(field => field.name.includes('Участник 2'))
-        console.log('BxFieldsService filtredFields')
-        filtredFields.map(field => {
-            if (field.name.includes('Участник 2 Дни участия v2')
-                || field.name.includes('Участник 2 Формат участия v2')
-            ) {
-                console.log(field.name)
-                console.log(field.bitrixId)
-                console.log(field.type)
-                console.log(field.list)
-                console.log(field.multiple)
-            }
-        })
+        // const filtredFields = fields.filter(field => field.name.includes('Участник 2'))
+        // console.log('BxFieldsService filtredFields')
+        // filtredFields.map(field => {
+        //     if (field.name.includes('Участник 2 Дни участия v2')
+        //         || field.name.includes('Участник 2 Формат участия v2')
+        //     ) {
+        //         console.log(field.name)
+        //         console.log(field.bitrixId)
+        //         console.log(field.type)
+        //         console.log(field.list)
+        //         console.log(field.multiple)
+        //     }
+        // })
         return fields
     }
 

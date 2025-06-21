@@ -2,7 +2,7 @@ import { EBxMethod } from "src/modules/bitrix/core";
 import { IBXProduct } from "../interface/bx-product.interface";
 import { CrmListRequestType } from "../../crm/type/crm-request.type";
 
-export class BxCatalogSchema {
+export type BxCatalogSchema = {
     [EBxMethod.GET]: {
         request: {
             id: number | string;
@@ -15,6 +15,6 @@ export class BxCatalogSchema {
             filter: Partial<IBXProduct>;
             select: (keyof IBXProduct)[];
         };
-        response: {product: IBXProduct[]};
+        response: {products: IBXProduct[]};
     };
 }

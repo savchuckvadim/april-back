@@ -6,10 +6,18 @@ import { DealFieldHelperService } from "../services/deal-helper/deal-field-helpe
 import { DealFieldValuesHelperService } from "../services/deal-helper/deal-values-helper.service";
 import { PBXService } from "@/modules/pbx";
 import { bxProductData } from "../bx-data/bx-product-data";
-import { dealData } from "../bx-data/bx-data";
 import { DealFieldsTemplate } from "../type/deal-field.type";
 import { BxSmartService } from "../services/bx-smart.service";
+import { BxCompanyService } from "../services/bx-company.service";
+import { BxDealDataKeys } from "../bx-data/bx-data";
+import { BxProductService } from "../services/bx-product.service";
 
+export enum BitrixEntityType {
+    DEAL = 'deal',
+    COMPANY = 'company',
+    CONTACT = 'contact',
+    LEAD = 'lead'
+}
 @Injectable()
 export class CreateDealUseCase {
     constructor(
@@ -23,13 +31,19 @@ export class CreateDealUseCase {
         const bxDealService = new BxDealService();
         const bxFieldsService = new BxFieldsService();
         const bxSmartService = new BxSmartService();
+        const bxCompanyService = new BxCompanyService(bitrix);
+        const bxProductService = new BxProductService(bitrix);
         await bxDealService.init(bitrix);
         await bxFieldsService.init(bitrix);
+        await bxSmartService.init(bitrix);
+
         return {
             bitrix,
             bxDealService,
             bxFieldsService,
-            bxSmartService
+            bxSmartService,
+            bxCompanyService,
+            bxProductService
         }
     }
     async onDealCreate(data: CreateDealDto) {
@@ -37,7 +51,9 @@ export class CreateDealUseCase {
             bitrix,
             bxDealService,
             bxFieldsService,
-            bxSmartService
+            bxSmartService,
+            bxCompanyService,
+            bxProductService
         } = await this.init(data.auth.domain);
 
 
@@ -49,43 +65,54 @@ export class CreateDealUseCase {
         const bxFieldsIds = DealFieldHelperService.getBxFieldsIdsForSelect(fieldData);
 
 
-
+        const testInn = fieldData[BxDealDataKeys.inn]
+        console.log('testInn', testInn)
 
 
         const deal = await bxDealService.getDeal(data.dealId, bxFieldsIds);
         const dealValues = DealFieldValuesHelperService.getDealValues(deal, fieldData);
 
+        if (deal && deal.ID) {
+            const dealId = deal.ID
+            const products = await bxProductService.addPpkProducts(dealId, dealValues)
+           
 
-        const testSerachingProductName = (fieldData as DealFieldsTemplate).participants[1].seminar.ppk_program.accountant_gos.list[0].name as string
-        console.log('testSerachingProductName', testSerachingProductName)
-        const test = '«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов'
-        const productsResponse = await bitrix.product.getList({
-            "=active": "Y",
-            "iblockId": 24,
-            // '%name': test
-            [`%${bxProductData.SERVICE_NAME_FOR_BILL.bitrixId}`]: test
-        },
-            [
-                "iblockId",
-                'active',
-                'name',
-                'price',
-                'currencyId',
-                'id',
+        }
 
-            ]
 
-        )
-        const products = productsResponse.result
-        const productsTotal = productsResponse.total
 
-        console.log('products', products)
-        console.log('productsTotal', productsTotal)
+        // const testSerachingProductName = (fieldData as DealFieldsTemplate).participants[1].seminar.ppk_program.accountant_gos.list[0].name as string
+        // console.log('testSerachingProductName', testSerachingProductName)
+        // const test = '«Бухгалтер бюджетной сферы (код А). Нефинансовые активы. Расчёты. Обязательства», 120 часов'
+        // const productsResponse = await bitrix.product.getList({
+        //     "=active": "Y",
+        //     "iblockId": 24,
+        //     // '%name': test
+        //     // [`%${bxProductData.SEMINAR_TOPIC.bitrixId}`]: testSerachingProductName
+        // },
+        //     [
+        //         "iblockId",
+        //         'active',
+        //         'name',
+        //         'price',
+        //         'currencyId',
+        //         'id',
 
-        await bxSmartService.setParticipantsSmarts(dealValues);
 
+        //     ]
+
+        // )
+        // const products = productsResponse.result
+        // const productsTotal = productsResponse.total
+
+        // console.log('products', products)
+        // console.log('productsTotal', productsTotal)
+
+        // await bxSmartService.setParticipantsSmarts(dealValues);
+        const inn = dealValues.find(value => value.code === BxDealDataKeys.inn)?.value as string
+        console.log('inn', inn)
         deal && deal.ID && await bxDealService.setTimeline(deal.ID, dealValues)
-
+        deal && deal.ID && inn && await bxCompanyService.searchCompany(deal.ID, inn)
         return deal;
     }
 

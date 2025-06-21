@@ -8,6 +8,7 @@ import { BitrixCategoryDomainModule } from "./category/bx-category.module";
 import { BitrixStatusDomainModule } from "./status/bx-status.module";
 import { BitrixItemDomainModule } from "./item/bx-item.module";
 import { BxTimelineModule } from "./timeline/bx-timeline.module";
+import { BitrixSmartTypeDomainModule } from "./smart-type/bx-smart-type-domain.module";
 @Module({
     imports: [
         BitrixDealDomainModule,
@@ -17,7 +18,8 @@ import { BxTimelineModule } from "./timeline/bx-timeline.module";
         BitrixCategoryDomainModule,
         BitrixStatusDomainModule,
         BitrixItemDomainModule,
-        BxTimelineModule
+        BxTimelineModule,
+        BitrixSmartTypeDomainModule
     ],
     providers: [
 
@@ -32,7 +34,8 @@ import { BxTimelineModule } from "./timeline/bx-timeline.module";
         BitrixStatusDomainModule,
         BitrixItemDomainModule,
         BxTimelineModule,
-        BxFieldService
+        BxFieldService,
+        BitrixSmartTypeDomainModule
     ]
 })
 export class BxCrmDomainModule { }

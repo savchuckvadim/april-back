@@ -10,6 +10,7 @@ export enum EBXEntity {
     TIMELINE_COMMENT = 'timeline.comment',
     PRODUCT_ROW = 'productrow',
     USER_FIELD = 'userfield',
+    USER_FIELD_CONFIG = 'userfieldconfig',
     USER_FIELD_ENUMERATION = 'userfield.enumeration',
     LISTS = 'lists',
     ACTIVITY = 'activity',

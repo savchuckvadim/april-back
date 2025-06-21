@@ -20,6 +20,8 @@ import {
     BxListService,
     
 } from './domain/list';
+import { BxUserFieldConfigBatchService, BxUserFieldConfigService } from './domain/userfieldconfig';
+import { BxSmartTypeService } from './domain/crm/smart-type/services/bx-smart-type.service';
 
 // @Injectable()
 export class BitrixService {
@@ -34,7 +36,8 @@ export class BitrixService {
     public timeline: BxTimelineService
     public list: BxListService
     public product: BxProductService
-
+    public userFieldConfig: BxUserFieldConfigService
+    public smartType: BxSmartTypeService
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -44,7 +47,8 @@ export class BitrixService {
         item: null as unknown as BxItemBatchService,
         timeline: null as unknown as BxTimelineBatchService,
         list: null as unknown as BxListBatchService,
-        product: null as unknown as BxProductBatchService
+        product: null as unknown as BxProductBatchService,
+        userFieldConfig: null as unknown as BxUserFieldConfigBatchService
     }
     constructor(
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
@@ -63,6 +67,8 @@ export class BitrixService {
         this.initTimeline()
         this.initList()
         this.initProduct()
+        this.initUserFieldConfig()
+        this.initSmartType()
     }
 
     private initDeal() {
@@ -104,4 +110,12 @@ export class BitrixService {
         this.product = this.cloner.clone(BxProductService, this.api);
         this.batch.product = this.cloner.clone(BxProductBatchService, this.api);
     }
+    private initUserFieldConfig() {
+        this.userFieldConfig = this.cloner.clone(BxUserFieldConfigService, this.api);
+        this.batch.userFieldConfig = this.cloner.clone(BxUserFieldConfigBatchService, this.api);
+    }
+    private initSmartType() {
+        this.smartType = this.cloner.clone(BxSmartTypeService, this.api);
+    }
+
 }

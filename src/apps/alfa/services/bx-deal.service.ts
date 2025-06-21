@@ -1,14 +1,10 @@
 
 import { BitrixService } from "src/modules/bitrix";
 import { DealValue } from "./deal-helper/deal-values-helper.service";
+import { BitrixEntityType } from "../use-cases/create-deal.use-case";
 
 
-enum BitrixEntityType {
-    DEAL = 'deal',
-    COMPANY = 'company',
-    CONTACT = 'contact',
-    LEAD = 'lead'
-  }
+
 
 export class BxDealService {
     private bitrix: BitrixService
@@ -47,7 +43,8 @@ export class BxDealService {
 
         } as Record<string, string>
         dealValues.forEach((value) => {
-            if (value.name.includes('Участник')) {
+            if (value.name.includes('Участник') && value.value && value.value !== '0') {
+                
                 for (let i = 1; i <= 11; i++) {
                     const key = `Участник ${i}`
                     if (i === 1) {

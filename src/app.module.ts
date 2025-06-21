@@ -33,6 +33,8 @@ import { PrismaModule } from './core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
 import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
 import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
+import { PBXInstallModule } from './modules/install/install-module';
+import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 @Module({
   imports: [
 
@@ -57,6 +59,8 @@ import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module
     BitrixModule,
     PortalModule,
     PBXModule,
+    PBXInstallModule,
+    PbxDomainModule,
     TelegramModule,
     RedisModule,
     SilentJobHandlersModule,

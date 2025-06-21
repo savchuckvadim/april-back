@@ -33,7 +33,7 @@ export class BxCompanyRepository {
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.LIST,
-            { select, filter }
+            { select, filter, start:  -1 }
         );
     }
 
