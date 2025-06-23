@@ -4,3 +4,6 @@ dist
 Dockerfile
 docker-compose.yml
 nest-vscode-debugging
+
+/storage
+/storage/**
