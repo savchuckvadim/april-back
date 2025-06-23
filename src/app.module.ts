@@ -35,6 +35,7 @@ import { PortalKonstructorModule } from './modules/portal-konstructor/portal-kon
 import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
 import { PBXInstallModule } from './modules/install/install-module';
 import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
+import { HelperModule } from './modules/helper/helper.module';
 @Module({
   imports: [
 
@@ -85,7 +86,11 @@ import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
     PortalKonstructorModule,
 
 
-    BxDepartmentModule
+    BxDepartmentModule,
+
+
+
+    HelperModule
   ],
   controllers: [
     AppController,

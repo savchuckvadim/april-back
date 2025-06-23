@@ -26,7 +26,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         if (exception instanceof BadRequestException) {
             const errorResponse = exception.getResponse();
             const details = typeof errorResponse === 'object'
-                ? JSON.stringify(errorResponse, this.bigIntReplacer, 2)
+                ? JSON.stringify(errorResponse, null, 2)
                 : errorResponse;
 
             const message = `❌ Validation error:\n${details}`;
@@ -44,7 +44,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const error =
             exception instanceof Error
                 ? exception
-                : new Error(JSON.stringify(exception, this.bigIntReplacer));
+                : new Error(JSON.stringify(exception));
 
         // Разбор stack trace
         let file = '';
@@ -88,10 +88,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         response.status(status).json(responseBody);
     }
 
-    private bigIntReplacer(key: string, value: any): any {
-        if (typeof value === 'bigint') {
-            return value.toString();
-        }
-        return value;
-    }
+    // private bigIntReplacer(key: string, value: any): any {
+    //     if (typeof value === 'bigint') {
+    //         return value.toString();
+    //     }
+    //     return value;
+    // }
 }
