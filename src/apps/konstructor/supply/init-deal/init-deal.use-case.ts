@@ -197,7 +197,7 @@ export class InitDealUseCase {
 
 
             if (portalRpaField) {
-                if (isFiles && portalRpaField.type === 'file') {
+                if (isFiles && portalRpaField.type !== 'file') {
                     continue
                 }
                 if (!isFiles && portalRpaField.type === 'file') {
