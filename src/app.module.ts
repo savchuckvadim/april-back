@@ -84,9 +84,10 @@ import { EventServiceAppModule } from './apps/event-service/event-service-app.mo
     // EventServiceModule
 
     TranscriptionModule,
-    GarantPricesModule,
+
 
     //commands
+    // GarantPricesModule,
     // GsrModule,
     // FieldsModule,
     // CategoryModule,

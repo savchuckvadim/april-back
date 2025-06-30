@@ -18,7 +18,7 @@ export class SchedulerService {
         private readonly dispatcher: QueueDispatcherService
     ) { }
 
-    @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Europe/Moscow' })
+    @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Europe/Moscow' })
     async handleDailyTasks() {
         this.logger.log('⏰ Scheduled task started at 05:00');
 
