@@ -82,7 +82,7 @@ export enum RQ_ITEM_CODE {
     PHONE = 'phone',
     DOCUMENT = 'document',
     DOCUMENT_DATE = 'docDate',
-    DOCUMENT_SERIES = 'docSeries',
+    DOCUMENT_SERIES = 'docSer',
     DOCUMENT_NUMBER = 'docNum',
     ISSUED_BY = 'issued_by',
     DEPARTMENT_CODE = 'dep_code',
@@ -107,7 +107,7 @@ export enum BANK_RQ_ITEM_CODE {
     BANK_ADDRESS = 'bank_address',
 }
 export interface RqItem<T extends string> {
-    type: "string" | "text" | "date";
+    type: "string" | "text" | "date" | 'file' | 'select';
     name: string;
     isRequired: boolean;
     code: T;
@@ -120,6 +120,7 @@ export interface RqItem<T extends string> {
     order: number;
     component?: "base" | "contract" | "invoice" | "client";
     isHidden?: boolean; //скрытый
+    
 }
 
 

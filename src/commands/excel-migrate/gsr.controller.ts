@@ -4,28 +4,16 @@ import { diskStorage } from "multer";
 import { extname } from "path";
 import { Response } from "express";
 import { GsrMigrateUseCase } from "./gsr-migrate.use-case";
-import { ContactCreateDto, ContactsCreateUseCase } from "./contacts-create.use-case";
-import { ApiOperation, ApiParam, ApiProperty, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { IBitrixBatchResponseResult, IBitrixBatchError } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
+import { ContactsCreateUseCase } from "./contacts-create.use-case";
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { IBXTask } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
 import { TaskUseCase } from "./task.use-case";
 import { IsString, IsNotEmpty } from "class-validator";
 import { GsrSheetsMigrateUseCase } from "./gsr-sheets-migrate.use-case";
+import { Express } from "express";
 
 
-// class BitrixBatchResponseResultDto implements IBitrixBatchResponseResult {
-//     @ApiProperty()
-//     result: { [key: string]: { ID: number | string } };
 
-//     @ApiProperty()
-//     result_error: { [key: string]: IBitrixBatchError } | [];
-
-//     @ApiProperty()
-//     result_total: { [key: string]: any }[];
-
-//     @ApiProperty()
-//     result_next: { [key: string]: any }[];
-// }
 class GsrMigrateDto {
     @IsString()
     @IsNotEmpty()
@@ -35,6 +23,7 @@ class GsrMigrateDto {
     userId: string
    
 }
+@ApiTags('Commands')
 @Controller('gsr-service')
 export class GsrServiceController {
     constructor(
@@ -46,25 +35,25 @@ export class GsrServiceController {
 
     ) { }
 
-    // @Post('parse')
-    // @UseInterceptors(
-    //     FileInterceptor('file', {
-    //         storage: diskStorage({
-    //             destination: './uploads',
-    //             filename: (_, file, cb) => {
-    //                 const uniqueName = `${Date.now()}${extname(file.originalname)}`;
-    //                 cb(null, uniqueName);
-    //             },
-    //         }),
-    //     }),
-    // )
-    // async parseFile(
-    //     @Body() body: GsrMigrateDto,
-    //     @UploadedFile() file: Express.Multer.File,
-    //     @Res() res: Response) {
-    //     const result = await this.migrateUseCase.migrate(body.domain, body.userId, file.path);
-    //     return res.send(result);
-    // }
+    @Post('parse')
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: './uploads',
+                filename: (_, file, cb) => {
+                    const uniqueName = `${Date.now()}${extname(file.originalname)}`;
+                    cb(null, uniqueName);
+                },
+            }),
+        }),
+    )
+    async parseFile(
+        @Body() body: GsrMigrateDto,
+        @UploadedFile() file: Express.Multer.File,
+        @Res() res: Response) {
+        const result = await this.migrateUseCase.migrate(body.domain, body.userId, file.path);
+        return res.send(result);
+    }
 
 
     @Post('sheets-parse')

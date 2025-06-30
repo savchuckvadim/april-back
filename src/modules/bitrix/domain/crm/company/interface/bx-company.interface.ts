@@ -5,4 +5,5 @@ export interface IBXCompany {
     UF_CRM_PRES_COUNT: number
     UF_CRM_USER_CARDNUM: string  //регистрационный лист номер
     COMMENTS: string
+    [key: string]: any
 }

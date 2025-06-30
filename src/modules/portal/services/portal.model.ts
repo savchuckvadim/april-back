@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup, IPDepartment, IPPortalMeasure, PMeasureCode, IFieldCode } from '../interfaces/portal.interface';
+import { IPortal, IPBXList, IField, IFieldItem, IRPA, ICategory, EDepartamentGroup, IPDepartment, IPPortalMeasure, PMeasureCode, IFieldCode, IDeal } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
 import { waitForDebugger } from 'inspector';
 
@@ -60,6 +60,10 @@ export class PortalModel {
         }
         return item;
     }
+    getDeal(): IDeal {
+        return this.portal.deals[0];
+    }
+
     getDealCategories(): any {
         return this.portal.deals[0].categories;
     }
@@ -135,11 +139,28 @@ export class PortalModel {
         return this.portal.rpas?.find(rpa => rpa.bitrixId === id);
     }
 
-    getRpaFieldByCode(rpa: IRPA, code: string): IField | undefined {
+    getRpaFieldByCode(rpaCode: string, code: string): IField | undefined {
+        const rpa = this.getRpaByCode(rpaCode);
+        if (!rpa) return undefined;
         return rpa.bitrixfields.find(field => field.code === code);
     }
 
+    getRpaFieldBitrixIdByCode(rpaCode: 'supply' | string, code: string): string | undefined {
+        const rpa = this.getRpaByCode(rpaCode);
+        const field = this.getRpaFieldByCode(rpaCode, code);
+        if (!field || !rpa) return undefined;
 
+        return this.getRpaFieldBitrixId(rpa.bitrixId, field);
+    }
+
+    getRpaFieldBitrixId(rpaTypeId: number, field: IField | undefined): string {
+        if (!field) {
+            throw new Error('Field not found')
+        }
+        return `UF_RPA_${rpaTypeId}_${field.bitrixId}`
+    }
+
+ 
 
     getStageByCode(stageCode: string): string | undefined {
         for (const category of this.portal.deals[0].categories || []) {
@@ -166,8 +187,8 @@ export class PortalModel {
         return this.portal.bx_rq?.find(preset => preset.code === code);
     }
 
-    getSmartByCode(code: string) {
-        return this.portal.smarts?.find(smart => smart.name === code);
+    getSmartByType(type: 'service_offer' | 'service_month' | 'presentation') {
+        return this.portal.smarts?.find(smart => smart.type === type);
     }
 
     getSmartFieldByCode(smart: any, code: string): IField | undefined {

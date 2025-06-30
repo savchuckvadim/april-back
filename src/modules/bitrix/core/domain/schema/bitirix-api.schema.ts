@@ -1,6 +1,6 @@
 import { EBxMethod, EBxNamespace } from "../consts/bitrix-api.enum";
 import { EBXEntity } from "../consts/bitrix-entities.enum";
-import { BxCatalogSchema, BxListSchema, IBXItem, UserFieldConfigSchema } from "@/modules/bitrix/";
+import { BxCatalogSchema, BxListSchema, BxRpaItemSchema, IBXItem, UserFieldConfigSchema } from "@/modules/bitrix/";
 import {
   CompanySchema,
   ContactSchema,
@@ -36,6 +36,7 @@ export type BXApiSchema = {
     [EBXEntity.ITEM]: BxItemSchema
     [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema
     [EBXEntity.TYPE]: BxSmartTypeSchema
+    
     //   [EBxMethod.LIST]: {
     //     request: { filter?: Partial<IBXItem>, select?: string[] };
     //     response: IBXItem[];
@@ -65,6 +66,9 @@ export type BXApiSchema = {
     //     response: number;
     //   };
     // }
+  };
+  [EBxNamespace.RPA]: {
+    [EBXEntity.ITEM]: BxRpaItemSchema
   };
   [EBxNamespace.TASKS]: {
     [EBXEntity.TASK]: TasksSchema

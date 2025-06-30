@@ -25,25 +25,33 @@ async function bootstrap() {
       forbidUnknownValues: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
-      exceptionFactory: (errors) => {
-        const validationErrors = errors.map((e) => ({
-          property: e.property,
-          constraints: e.constraints,
-          children: e.children?.map((c) => ({
-            property: c.property,
-            constraints: c.constraints,
-            children: c.children,
-          })),
-        }));
-
-        console.error('[Validation Error]', validationErrors);
-
-        return new BadRequestException({
-          message: 'Validation failed',
-          errors: validationErrors
-        });
-      },
     }),
+
+    // new ValidationPipe({
+    //   whitelist: true,
+    //   forbidNonWhitelisted: false,
+    //   forbidUnknownValues: true,
+    //   transform: true,
+    //   transformOptions: { enableImplicitConversion: true },
+    //   exceptionFactory: (errors) => {
+    //     const validationErrors = errors.map((e) => ({
+    //       property: e.property,
+    //       constraints: e.constraints,
+    //       children: e.children?.map((c) => ({
+    //         property: c.property,
+    //         constraints: c.constraints,
+    //         children: c.children,
+    //       })),
+    //     }));
+
+    //     console.error('[Validation Error]', validationErrors);
+
+    //     return new BadRequestException({
+    //       message: 'Validation failed',
+    //       errors: validationErrors
+    //     });
+    //   },
+    // }),
   );
 
 

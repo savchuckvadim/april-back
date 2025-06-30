@@ -17,11 +17,12 @@ export class QueueDispatcherService {
     @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
     @InjectQueue(QueueNames.SALES_KPI_REPORT) private readonly salesKpiReportQueue: Queue,
     @InjectQueue(QueueNames.TRANSCRIBE_AUDIO) private readonly transcribeAudioQueue: Queue,
+    @InjectQueue(QueueNames.SERVICE_DEALS_SCHEDULE) private readonly serviceDealsScheduleQueue: Queue,
   ) {
     this.logger.log('QueueDispatcherService initialized');
   }
 
-  async dispatch(queueName: QueueNames, jobName: SilentJobHandlerId | TranscribeJobHandlerId, data: any) {
+  async dispatch(queueName: QueueNames, jobName: SilentJobHandlerId | TranscribeJobHandlerId | JobNames, data: any) {
     const queue = this.getQueue(queueName);
     this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
     this.logger.log(`Job data: ${JSON.stringify(data)}`);
@@ -42,6 +43,8 @@ export class QueueDispatcherService {
         return this.salesKpiReportQueue;
       case QueueNames.TRANSCRIBE_AUDIO:
         return this.transcribeAudioQueue;
+      case QueueNames.SERVICE_DEALS_SCHEDULE:
+        return this.serviceDealsScheduleQueue;
 
       default:
         const error = `Unknown queue name: ${name}`;

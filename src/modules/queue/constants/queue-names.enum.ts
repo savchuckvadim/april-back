@@ -6,6 +6,10 @@ export enum QueueNames {
   SILENT = 'silent', // новая универсальная
   SALES_KPI_REPORT = 'sales-kpi-report',
   PING = 'ping',
-  TRANSCRIBE_AUDIO = 'transcribe-audio'
+  TRANSCRIBE_AUDIO = 'transcribe-audio',
   // добавишь по мере надобности
+
+
+  //event service
+  SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
 }

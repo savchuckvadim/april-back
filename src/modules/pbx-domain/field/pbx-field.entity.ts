@@ -10,8 +10,8 @@ export type PbxFieldWithItems = NonNullable<Awaited<ReturnType<PrismaService['bi
 
 export enum PbxFieldEntityType {
     SMART = 'App\\Models\\Smart',
-    COMPANY = 'App\\Models\\Company',
-    CONTACT = 'App\\Models\\Contact',
+    COMPANY = 'App\\Models\\BtxCompany',
+    CONTACT = 'App\\Models\\BtxContact',
     LEAD = 'App\\Models\\Lead',
     DEAL = 'App\\Models\\Deal',
 }

@@ -18,6 +18,6 @@ export enum EBXEntity {
     CATEGORY='category',
     STATUS='status',
     PRODUCT='product',
-    
+    RPA='rpa',
 
 };

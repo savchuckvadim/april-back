@@ -417,6 +417,8 @@ exports.Prisma.Failed_jobsScalarFieldEnum = {
 
 exports.Prisma.FieldsScalarFieldEnum = {
   id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
   number: 'number',
   name: 'name',
   code: 'code',
@@ -430,8 +432,7 @@ exports.Prisma.FieldsScalarFieldEnum = {
   bitrixTemplateId: 'bitrixTemplateId',
   isActive: 'isActive',
   isPlural: 'isPlural',
-  created_at: 'created_at',
-  updated_at: 'updated_at'
+  isClient: 'isClient'
 };
 
 exports.Prisma.FilesScalarFieldEnum = {
@@ -453,6 +454,8 @@ exports.Prisma.FilesScalarFieldEnum = {
 
 exports.Prisma.InfoblocksScalarFieldEnum = {
   id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
   number: 'number',
   name: 'name',
   title: 'title',
@@ -462,24 +465,25 @@ exports.Prisma.InfoblocksScalarFieldEnum = {
   weight: 'weight',
   code: 'code',
   inGroupId: 'inGroupId',
-  group_id: 'group_id',
+  groupId: 'groupId',
   isLa: 'isLa',
   isFree: 'isFree',
   isShowing: 'isShowing',
   isSet: 'isSet',
-  isProduct: 'isProduct',
-  isPackage: 'isPackage',
-  tag: 'tag',
   parent_id: 'parent_id',
   relation_id: 'relation_id',
   related_id: 'related_id',
   excluded_id: 'excluded_id',
-  created_at: 'created_at',
-  updated_at: 'updated_at'
+  group_id: 'group_id',
+  isProduct: 'isProduct',
+  isPackage: 'isPackage',
+  tag: 'tag'
 };
 
 exports.Prisma.Info_groupsScalarFieldEnum = {
   id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
   number: 'number',
   code: 'code',
   name: 'name',
@@ -488,9 +492,7 @@ exports.Prisma.Info_groupsScalarFieldEnum = {
   descriptionForSale: 'descriptionForSale',
   shortDescription: 'shortDescription',
   type: 'type',
-  productType: 'productType',
-  created_at: 'created_at',
-  updated_at: 'updated_at'
+  productType: 'productType'
 };
 
 exports.Prisma.JobsScalarFieldEnum = {
@@ -728,7 +730,9 @@ exports.Prisma.Template_fieldScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   template_id: 'template_id',
-  field_id: 'field_id'
+  field_id: 'field_id',
+  fieldsId: 'fieldsId',
+  templatesId: 'templatesId'
 };
 
 exports.Prisma.TemplatesScalarFieldEnum = {
@@ -877,7 +881,7 @@ exports.Prisma.Btx_contactsScalarFieldEnum = {
   portal_id: 'portal_id'
 };
 
-exports.Prisma.Bx_document_dealsScalarFieldEnum = {
+exports.Prisma.BxDocumentDealScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -927,7 +931,10 @@ exports.Prisma.Bx_document_dealsScalarFieldEnum = {
   invoice: 'invoice',
   contractDocument: 'contractDocument',
   act: 'act',
-  isFavorite: 'isFavorite'
+  isFavorite: 'isFavorite',
+  shadowDealId: 'shadowDealId',
+  serviceSmartId: 'serviceSmartId',
+  smartId: 'smartId'
 };
 
 exports.Prisma.Bx_rqsScalarFieldEnum = {
@@ -1738,7 +1745,7 @@ exports.Prisma.btx_contactsOrderByRelevanceFieldEnum = {
   code: 'code'
 };
 
-exports.Prisma.bx_document_dealsOrderByRelevanceFieldEnum = {
+exports.Prisma.BxDocumentDealOrderByRelevanceFieldEnum = {
   title: 'title',
   domain: 'domain',
   dealName: 'dealName',
@@ -2008,7 +2015,7 @@ exports.Prisma.ModelName = {
   bitrix_settings: 'bitrix_settings',
   bitrix_tokens: 'bitrix_tokens',
   btx_contacts: 'btx_contacts',
-  bx_document_deals: 'bx_document_deals',
+  BxDocumentDeal: 'BxDocumentDeal',
   bx_rqs: 'bx_rqs',
   complect_infoblock: 'complect_infoblock',
   complects: 'complects',

@@ -2,12 +2,13 @@ import { Controller, HttpCode, Post, Body, Res, UseInterceptors, HttpException, 
 import { ExcelReportService } from './services/kpi-report/kpi-report.service';
 import { KpiReportDto } from './dto/kpi.dto';
 import { Response } from 'express';
+// import { TelegramService } from '@/modules/telegram/telegram.service';
 
 @Controller('kpi-report')
 export class KpiReportDownloadController {
   constructor(
     private readonly excelService: ExcelReportService,
-
+    // private readonly telegram: TelegramService
    
 
   ) { }

@@ -35,6 +35,7 @@ export enum ContractSpecificationCodeEnum {
     PK_COMMENT1 = 'specification_pk_comment1',
     PK_COMMENT = 'specification_pk_comment',
     COMPLECT_NAME = 'complect_name',
+    
 
 
    

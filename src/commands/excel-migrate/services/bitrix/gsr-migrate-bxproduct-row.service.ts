@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { GsrMigrateBitrixAbstract } from "./gsr-migrate-bitrix-abstract.service";
 import { MigrateToBxDto } from "../../dto/migrate-to-bx.dto";
-import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix";
+import {  EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix";
 import { IPPortalMeasure } from "src/modules/portal/interfaces/portal.interface";
-import { BitrixOwnerType, IBXProductRow, IBXProductRowRow } from "src/modules/bitrix";
+import { IBXProductRow, IBXProductRowRow } from "src/modules/bitrix";
+import { BitrixOwnerType } from "src/modules/bitrix/domain/enums/bitrix-constants.enum";
 
 
 

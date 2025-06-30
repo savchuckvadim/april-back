@@ -36,12 +36,17 @@ import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module
 import { PBXInstallModule } from './modules/install/install-module';
 import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventServiceAppModule } from './apps/event-service/event-service-app.module';
+
+
 @Module({
   imports: [
 
     // DevtoolsModule.register({
     //   http: process.env.NODE_ENV !== 'production'
     // }),
+
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -51,10 +56,14 @@ import { HelperModule } from './modules/helper/helper.module';
         REDIS_PORT: process.env.REDIS_PORT,
       })],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     MetricsModule,
     WsModule,
     QueueModule,
+
+    //apps
+    EventServiceAppModule,
     // HooksModule,
     AlfaActivityModule,
     BitrixModule,
@@ -67,7 +76,7 @@ import { HelperModule } from './modules/helper/helper.module';
     SilentJobHandlersModule,
     KpiReportModule,
     EventSalesModule,
-    GsrModule,
+
 
     QueuePingModule,
     KonstructorModule,
@@ -76,9 +85,12 @@ import { HelperModule } from './modules/helper/helper.module';
 
     TranscriptionModule,
     GarantPricesModule,
-    FieldsModule,
-    CategoryModule,
-    ChangeDealCategoryModule,
+
+    //commands
+    // GsrModule,
+    // FieldsModule,
+    // CategoryModule,
+    // ChangeDealCategoryModule,
 
     StorageModule,
     FileLinkModule,

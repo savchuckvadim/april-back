@@ -43,7 +43,7 @@ export class BxCompanyRepository {
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.LIST,
-            { select, filter }
+            { select, filter, start: -1 }
         );
     }
     //     field_n — название поля, по которому будет отфильтрована выборка элементов

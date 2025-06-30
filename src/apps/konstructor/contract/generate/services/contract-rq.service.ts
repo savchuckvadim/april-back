@@ -60,8 +60,8 @@ export class ContractRqService {
             client_role: roles.client,
 
             client_role_case: roles.clientCase,
-            client_direct_position: clientRq.fields.find(field => field.code === 'position')?.value || '',
-            client_direct_fio: clientRq.fields.find(field => field.code === 'director')?.value || '',
+            client_direct_position: clientRq.fields.find(field => field.code === 'position')?.value as string || '',
+            client_direct_fio: clientRq.fields.find(field => field.code === 'director')?.value as string || '',
         }
 
 

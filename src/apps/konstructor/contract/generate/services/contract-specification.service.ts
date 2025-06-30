@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { ContractSpecificationDto } from "src/apps/konstructor/document-generate/dto/specification/specification.dto";
+import { ContractSpecificationDto } from "@/apps/konstructor/document-generate/dto/specification/specification.dto";
 
 @Injectable()
 export class ContractSpecificationService {
@@ -42,7 +42,7 @@ export class ContractSpecificationService {
             }
 
             if (value.code === 'complect_name') {
-                complect_name = domain !== 'gsr.bitrix24.ru' ? `\n${value.value}\n` : value.value;
+                complect_name = domain !== 'gsr.bitrix24.ru' ? `\n${value.value}\n` : value.value as string;
             }
 
             if (['specification_ers', 'specification_ers_packets', 'specification_ers_in_packets', 'specification_ifree'].includes(value.code)) {
@@ -66,11 +66,11 @@ export class ContractSpecificationService {
             }
 
             if (value.code === 'lic_long') {
-                licLong = value.value;
+                licLong = value.value as string;
             }
 
             if (value.code === 'specification_supply_quantity') {
-                loginsQuantity = value.value;
+                loginsQuantity = value.value as string;
             }
 
             // if (value.code === 'contract_internet_email') {
@@ -82,31 +82,31 @@ export class ContractSpecificationService {
             }
 
             if (value.code === 'specification_pk_comment1') {
-                specification_pk_comment1 = value.value;
+                specification_pk_comment1 = value.value as string;
             }
 
             if (value.code === 'specification_pk_comment') {
-                specification_pk_comment = value.value;
+                specification_pk_comment = value.value as string;
             }
 
             if (value.code === 'specification_email_comment') {
-                specification_email_comment = value.value;
+                specification_email_comment = value.value as string;
             }
 
             if (value.code === 'specification_distributive') {
-                specification_distributive = value.value;
+                specification_distributive = value.value as string;
             }
 
             if (value.code === 'specification_distributive_comment') {
-                specification_distributive_comment = value.value;
+                specification_distributive_comment = value.value as string;
             }
 
             if (value.code === 'specification_dway') {
-                specification_dway = value.value;
+                specification_dway = value.value as string;
             }
 
             if (value.code === 'specification_dway_comment') {
-                specification_dway_comment = value.value;
+                specification_dway_comment = value.value as string;
             }
         }
 

@@ -11,11 +11,18 @@ import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bx
 import { ContactsCreateUseCase } from './contacts-create.use-case';
 import { TaskUseCase } from './task.use-case';
 import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
+import { AlfaServiceController } from './alfa/alfa-migrate.controller';
+import { AlfaMigrateUseCase } from './alfa/alfa-migrate.use-case';
+import { AlfaBitrixService } from './alfa/services/alfa-bitrix.service';
+import { AlfaMigrateBitrixCompanyService } from './alfa/services/bitrix/alfa-migrate-bxcompany.service';
+import { AlfaParseService } from './alfa/services/alfa-parse.service';
+
+
 @Module({
   imports: [
     PBXModule
   ],
-  controllers: [GsrServiceController],
+  controllers: [GsrServiceController, AlfaServiceController],
   providers: [
     GsrParseService,
     GsrMigrateUseCase,
@@ -26,7 +33,14 @@ import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
     GsrMigrateBitrixContactService,
     ContactsCreateUseCase,
     TaskUseCase,
-    GsrSheetsMigrateUseCase
+    GsrSheetsMigrateUseCase,
+
+
+    
+    AlfaMigrateUseCase,
+    AlfaBitrixService,
+    AlfaMigrateBitrixCompanyService,
+    AlfaParseService
   ],
 })
 export class GsrModule { }

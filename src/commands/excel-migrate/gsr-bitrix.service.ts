@@ -1,8 +1,7 @@
 import { EBXEntity, EBxMethod, EBxNamespace } from "src/modules/bitrix/core";
 import { Injectable } from "@nestjs/common";
 import { MigrateToBxDto } from "./dto/migrate-to-bx.dto";
-import { BitrixApiQueueApiService } from "src/modules/bitrix/core/queue/bitrix-queue-api.service";
-import { PortalService } from "src/modules/portal/portal.service";
+
 import { PortalModel } from "src/modules/portal/services/portal.model";
 import { GsrMigrateBitrixDealService } from "./services/bitrix/gsr-migrate-bxdeal.service";
 import { GsrMigrateBitrixCompanyService } from "./services/bitrix/gsr-migrate-bxcompany.service";
@@ -28,7 +27,7 @@ export class GsrBitrixService {
     ) { }
 
     async migrateToBitrix(domain: string, userId: string, data: MigrateToBxDto[]) {
-       
+
         const { bitrix, PortalModel } = await this.pbx.init(domain)
         this.bitrix = bitrix
         this.portal = PortalModel
@@ -41,38 +40,39 @@ export class GsrBitrixService {
         this.contactService.setContext(this.bitrix, this.portal, userId);
         const results = [] as IBitrixBatchResponseResult[][]
         let count = 0
-        for (let i = 0; i < data.length; i += 1) {
-            const chunk = data.slice(i, i + 1)
+        // for (let i = 0; i < data.length; i += 1) {
+        //     const chunk = data.slice(i, i + 1)
 
 
-            chunk.forEach((element, index) => {
+            // chunk.
+            data.forEach((element, index) => {
                 // console.log(index)
                 // if (index > 1) {
-                    console.log(element)
-                    const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.ADD}.${element.id}`
-                    this.companyService.getCompanyCommand(element, companyCmd)
 
-                    const dealCmd = `${EBxNamespace.CRM}.${EBXEntity.DEAL}.${EBxMethod.ADD}.${element.id}`
-                    const cntcCmds = this.contactService.getContactCommand(element, companyCmd)
+                const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.ADD}.${element.id}`
+                this.companyService.getCompanyCommand(element, companyCmd)
 
-                    this.dealService.getDealCommand(element, companyCmd, dealCmd, cntcCmds)
-                    this.productRowService.getProductRowCommand(element, dealCmd)
-                    this.dealService.getDealUpdateCommand(cntcCmds, dealCmd)
+                const dealCmd = `${EBxNamespace.CRM}.${EBXEntity.DEAL}.${EBxMethod.ADD}.${element.id}`
+                const cntcCmds = this.contactService.getContactCommand(element, companyCmd)
+
+                this.dealService.getDealCommand(element, companyCmd, dealCmd, cntcCmds)
+                this.productRowService.getProductRowCommand(element, dealCmd)
+                this.dealService.getDealUpdateCommand(cntcCmds, dealCmd)
 
                 // }
             });
-            
-            const result = await this.bitrix.api.callBatchWithConcurrency(1)
 
+            const result = await this.bitrix.api.callBatchWithConcurrency(1)
+            console.log(result)
             results.push(result)
-            count += 1
-            await new Promise(resolve => {
-                console.log('wait')
-                console.log(chunk)
-                console.log(count)
-                setTimeout(resolve, 700)
-            })
-        }
+            // count += 1
+            // await new Promise(resolve => {
+            //     console.log('wait')
+            //     console.log(chunk)
+            //     console.log(count)
+            //     setTimeout(resolve, 700)
+            // })
+        // }
         return {
             // commands,
             // portal: this.portal,

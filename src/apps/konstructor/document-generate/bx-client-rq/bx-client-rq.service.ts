@@ -14,7 +14,7 @@ export class DocumentClientBxRqService {
         if (clientType === ClientTypeEnum.FIZ) {
             return this.prepareClientFizRq(clientRq);
         } else {
-            fullname = clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.FULLNAME)?.value || fullname;
+            fullname = clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.FULLNAME)?.value as string || fullname as string;
         }
         inn = `ИНН: ${clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.INN)?.value || inn}`;
         return [fullname, inn];
@@ -25,7 +25,7 @@ export class DocumentClientBxRqService {
         let fullname = '________________________________________';
         let inn = '________________________________________';
 
-        fullname = clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.PERSON_NAME)?.value || fullname;
+        fullname = clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.PERSON_NAME)?.value as string || fullname;
 
 
 
@@ -35,7 +35,7 @@ export class DocumentClientBxRqService {
         result.push(inn);
 
         let documentType = '_____________________________';
-        const documentTypeValue = clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.DOCUMENT)?.value;
+        const documentTypeValue = clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.DOCUMENT)?.value as string;
         documentType = documentTypeValue ? documentTypeValue : `Документ: ${documentType}`;
         result.push(documentType);
         let docSeries = '_____________________________';

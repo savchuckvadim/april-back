@@ -119,7 +119,7 @@ export interface IPSmart {
     crm: string;
     forFilterId: number;
     forFilter: string;
-    bitrixfields: any[];
+    bitrixfields: IField[];
     fields: IField[];
     categories: ICategory[];
 }

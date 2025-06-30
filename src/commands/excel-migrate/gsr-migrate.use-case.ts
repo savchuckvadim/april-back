@@ -11,9 +11,9 @@ export class GsrMigrateUseCase {
     ) { }
 
     async migrate(domain: string, userId: string, filePath: string) {
-        const parsedData = (await this.parseService.parseExcel(filePath)).filter((item, i) => i > 1);
+        const parsedData = (await this.parseService.parseExcel(filePath)).filter((_, i) => i > 0);
 
-
+        // return parsedData
         const result = await this.bitrixService.migrateToBitrix(domain, userId, parsedData);
         return { count: parsedData.length, result: result, parsedData: parsedData.map(item => ({ supplyDate: item.supplyDate, ...item.contract })) }
 

@@ -22,6 +22,9 @@ import {
 } from './domain/list';
 import { BxUserFieldConfigBatchService, BxUserFieldConfigService } from './domain/userfieldconfig';
 import { BxSmartTypeService } from './domain/crm/smart-type/services/bx-smart-type.service';
+import { BxRpaItemService } from './domain/rpa/item/services/bx-rpa-item.service';
+import { BxRpaItemBatchService } from './domain/rpa/item/services/bx-rpa-item.batch.service';
+import { BxFileService } from './domain/file/bx-file.service';
 
 // @Injectable()
 export class BitrixService {
@@ -38,6 +41,8 @@ export class BitrixService {
     public product: BxProductService
     public userFieldConfig: BxUserFieldConfigService
     public smartType: BxSmartTypeService
+    public rpaItem: BxRpaItemService
+    public file: BxFileService
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -48,7 +53,8 @@ export class BitrixService {
         timeline: null as unknown as BxTimelineBatchService,
         list: null as unknown as BxListBatchService,
         product: null as unknown as BxProductBatchService,
-        userFieldConfig: null as unknown as BxUserFieldConfigBatchService
+        userFieldConfig: null as unknown as BxUserFieldConfigBatchService,
+        rpaItem: null as unknown as BxRpaItemBatchService
     }
     constructor(
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
@@ -69,6 +75,8 @@ export class BitrixService {
         this.initProduct()
         this.initUserFieldConfig()
         this.initSmartType()
+        this.initRpaItem()
+        this.initFile()
     }
 
     private initDeal() {
@@ -116,6 +124,13 @@ export class BitrixService {
     }
     private initSmartType() {
         this.smartType = this.cloner.clone(BxSmartTypeService, this.api);
+    }
+    private initRpaItem() {
+        this.rpaItem = this.cloner.clone(BxRpaItemService, this.api);
+        this.batch.rpaItem = this.cloner.clone(BxRpaItemBatchService, this.api);
+    }
+    private initFile() {
+        this.file = this.cloner.clone(BxFileService, this.api);
     }
 
 }

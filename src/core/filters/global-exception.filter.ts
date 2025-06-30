@@ -23,18 +23,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const request = ctx.getRequest<Request>();
         const response = ctx.getResponse<Response>();
 
-        if (exception instanceof BadRequestException) {
-            const errorResponse = exception.getResponse();
-            const details = typeof errorResponse === 'object'
-                ? JSON.stringify(errorResponse, null, 2)
-                : errorResponse;
+        // if (exception instanceof BadRequestException) {
+        //     const errorResponse = exception.getResponse();
+        //     const details = typeof errorResponse === 'object'
+        //         ? JSON.stringify(errorResponse, null, 2)
+        //         : errorResponse;
 
-            const message = `❌ Validation error:\n${details}`;
-            this.logger.error(message);
-            await this.telegram.sendMessage(message);
+        //     const message = `❌ Validation error:\n${details}`;
+        //     this.logger.error(message);
+        //     await this.telegram.sendMessage(message);
 
-            return response.status(400).json(errorResponse);
-        }
+        //     return response.status(400).json(errorResponse);
+        // }
 
         const status =
             exception instanceof HttpException
@@ -45,6 +45,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             exception instanceof Error
                 ? exception
                 : new Error(JSON.stringify(exception));
+
+
+        // Обработка валидационных ошибок
+        if (
+            exception instanceof BadRequestException &&
+            typeof exception.getResponse === 'function'
+        ) {
+            return await this.handleValidationException(exception, request, response);
+        }
+
 
         // Разбор stack trace
         let file = '';
@@ -88,10 +98,40 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         response.status(status).json(responseBody);
     }
 
-    // private bigIntReplacer(key: string, value: any): any {
-    //     if (typeof value === 'bigint') {
-    //         return value.toString();
-    //     }
-    //     return value;
-    // }
+
+
+
+
+    private async handleValidationException(
+        exception: BadRequestException,
+        request: Request,
+        response: Response
+    ) {
+        const res = exception.getResponse();
+       
+        // const details = typeof res === 'object'
+        //     ? JSON.stringify(res, null, 2)
+        //     : res;
+
+
+        const messageArray =
+            typeof res === 'object' && res !== null && 'message' in res
+                ? (res as any).message
+                : [];
+
+        const validationMessages = Array.isArray(messageArray)
+            ? messageArray.join('\n- ')
+            : String(messageArray);
+
+        const fullMessage = `❌ Validation error:\n- ${validationMessages}\n\n📍 URL: ${request.method} ${request.url} `;
+        this.logger.warn(fullMessage);
+        await this.telegram.sendMessage(fullMessage);
+
+        return response.status(400).json({
+            resultCode: EResultCode.ERROR,
+            message: 'Validation failed',
+            errors: messageArray,
+           
+        });
+    }
 }

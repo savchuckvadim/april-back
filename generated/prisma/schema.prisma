@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "../generated/prisma"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -20,14 +20,15 @@ model agents {
   code       String    @db.VarChar(255)
   number     String    @db.VarChar(255)
   withTax    Boolean   @default(false)
-  portal     portals   @relation("PortalProviders", fields: [portalId], references: [id])
-  rq         rqs?      @relation(fields: [rqId], references: [id])
+
+  portal portals @relation("PortalProviders", fields: [portalId], references: [id])
+  rq     rqs?    @relation(fields: [rqId], references: [id])
 }
 
 model bitrixfield_items {
   id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
   created_at       DateTime?          @db.Timestamp(0)
-  updated_at       DateTime?          @db.Timestamp(0)
+  updated_at       DateTime?          @updatedAt @db.Timestamp(0)
   bitrixfield_id   BigInt             @db.UnsignedBigInt
   name             String             @db.VarChar(255)
   title            String             @db.VarChar(255)
@@ -45,7 +46,7 @@ model bitrixfields {
   entity_id         BigInt              @db.UnsignedBigInt
   parent_type       String              @db.VarChar(255)
   created_at        DateTime?           @db.Timestamp(0)
-  updated_at        DateTime?           @db.Timestamp(0)
+  updated_at        DateTime?           @updatedAt @db.Timestamp(0)
   type              String              @db.VarChar(255)
   title             String              @db.VarChar(255)
   name              String              @db.VarChar(255)
@@ -341,24 +342,26 @@ model failed_jobs {
 }
 
 model fields {
-  id               BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
   number           Int
-  name             String           @db.VarChar(255)
-  code             String           @db.VarChar(255)
-  type             String?          @db.VarChar(255)
-  isGeneral        Boolean          @default(false)
-  isDefault        Boolean          @default(false)
-  isRequired       Boolean          @default(false)
-  value            String?          @db.Text
-  description      String?          @db.Text
-  bitixId          String?          @db.VarChar(255)
-  bitrixTemplateId String?          @db.VarChar(255)
-  isActive         Boolean          @default(false)
-  isPlural         Boolean          @default(false)
-  created_at       DateTime?        @db.Timestamp(0)
-  updated_at       DateTime?        @db.Timestamp(0)
-  template_field   template_field[]
-  items            f_items[]
+  name             String    @db.VarChar(255)
+  code             String    @db.VarChar(255)
+  type             String    @db.VarChar(255)
+  isGeneral        Boolean
+  isDefault        Boolean
+  isRequired       Boolean
+  value            String?   @db.VarChar(255)
+  description      String?   @db.LongText
+  bitixId          String?   @db.VarChar(255)
+  bitrixTemplateId String?   @db.VarChar(255)
+  isActive         Boolean
+  isPlural         Boolean
+  isClient         Boolean?
+
+  template_field template_field[]
+  items          f_items[]
 }
 
 model files {
@@ -379,77 +382,72 @@ model files {
 }
 
 model infoblocks {
-  id                 BigInt    @id @default(autoincrement())
-  number             Int
-  name               String
-  title              String?
-  description        String?   @db.Text
-  descriptionForSale String?   @db.Text
-  shortDescription   String?   @db.Text
-  weight             String
-  code               String
-  inGroupId          Int
-  group_id           BigInt?
-  isLa               Boolean
-  isFree             Boolean
-  isShowing          Boolean
-  isSet              Boolean
-  isProduct          Boolean?
-  isPackage          Boolean?
-  tag                String?
-  parent_id          BigInt?
-  relation_id        BigInt?
-  related_id         BigInt?
-  excluded_id        BigInt?
-  created_at         DateTime? @default(now())
-  updated_at         DateTime? @updatedAt
-
-  // Relations
-  group info_groups? @relation("GroupToInfoblocks", fields: [group_id], references: [id])
-
-  // Self-referential relations
-  parent   infoblocks?  @relation("ParentToChild", fields: [parent_id], references: [id])
-  children infoblocks[] @relation("ParentToChild")
-
-  relation          infoblocks?  @relation("RelationToInfoblock", fields: [relation_id], references: [id])
-  relatedInfoblocks infoblocks[] @relation("RelationToInfoblock")
-
-  related     infoblocks?  @relation("RelatedToInfoblock", fields: [related_id], references: [id])
-  relatedFrom infoblocks[] @relation("RelatedToInfoblock")
-
-  excluded     infoblocks?  @relation("ExcludedToInfoblock", fields: [excluded_id], references: [id])
-  excludedFrom infoblocks[] @relation("ExcludedToInfoblock")
-
-  // Package relations
-  packages          infoblocks[] @relation("PackageToInfoblocks")
-  packageInfoblocks infoblocks[] @relation("PackageToInfoblocks")
-
-  // Many-to-many relations
+  id                                         BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at                                 DateTime?              @db.Timestamp(0)
+  updated_at                                 DateTime?              @updatedAt @db.Timestamp(0)
+  number                                     Int
+  name                                       String                 @db.VarChar(255)
+  title                                      String?                @db.VarChar(255)
+  description                                String?                @db.LongText
+  descriptionForSale                         String?                @db.LongText
+  shortDescription                           String?                @db.Text
+  weight                                     String                 @db.VarChar(255)
+  code                                       String                 @db.VarChar(255)
+  inGroupId                                  Int
+  groupId                                    BigInt                 @db.UnsignedBigInt
+  isLa                                       Boolean
+  isFree                                     Boolean
+  isShowing                                  Boolean
+  isSet                                      Boolean
+  parent_id                                  BigInt?                @db.UnsignedBigInt
+  relation_id                                BigInt?                @db.UnsignedBigInt
+  related_id                                 BigInt?                @db.UnsignedBigInt
+  excluded_id                                BigInt?                @db.UnsignedBigInt
+  group_id                                   BigInt?                @db.UnsignedBigInt
+  isProduct                                  Boolean?
+  isPackage                                  Boolean?
+  tag                                        String?                @db.VarChar(255)
   complects                                  complect_infoblock[]
   garant_packages                            garant_packages[]
   infoblock_info_group                       infoblock_info_group[]
   infoblock_package_infoblock_idToinfoblocks infoblock_package[]    @relation("infoblock_package_infoblock_idToinfoblocks")
   infoblock_package_package_idToinfoblocks   infoblock_package[]    @relation("infoblock_package_package_idToinfoblocks")
+  excluded                                   infoblocks?            @relation("ExcludedToInfoblock", fields: [excluded_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "infoblocks_excluded_id_foreign")
+  excludedFrom                               infoblocks[]           @relation("ExcludedToInfoblock")
+  group                                      info_groups?           @relation("GroupToInfoblocks", fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "infoblocks_group_id_foreign")
+  parent                                     infoblocks?            @relation("ParentToChild", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "infoblocks_parent_id_foreign")
+  children                                   infoblocks[]           @relation("ParentToChild")
+  related                                    infoblocks?            @relation("RelatedToInfoblock", fields: [related_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "infoblocks_related_id_foreign")
+  relatedFrom                                infoblocks[]           @relation("RelatedToInfoblock")
+  relation                                   infoblocks?            @relation("RelationToInfoblock", fields: [relation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "infoblocks_relation_id_foreign")
+  relatedInfoblocks                          infoblocks[]           @relation("RelationToInfoblock")
+  // Package relations
+  packages                                   infoblocks[]           @relation("PackageToInfoblocks")
+  packageInfoblocks                          infoblocks[]           @relation("PackageToInfoblocks")
+
+  @@index([excluded_id], map: "infoblocks_excluded_id_foreign")
+  @@index([group_id], map: "infoblocks_group_id_foreign")
+  @@index([parent_id], map: "infoblocks_parent_id_foreign")
+  @@index([related_id], map: "infoblocks_related_id_foreign")
+  @@index([relation_id], map: "infoblocks_relation_id_foreign")
 }
 
 model info_groups {
-  id                 BigInt    @id @default(autoincrement())
-  number             Int
-  code               String
-  name               String
-  title              String
-  description        String?   @db.Text
-  descriptionForSale String?   @db.Text
-  shortDescription   String?   @db.Text
-  type               String
-  productType        String
-  created_at         DateTime? @default(now())
-  updated_at         DateTime? @updatedAt
-
-  // Relations
-  infoblocks           infoblocks[]           @relation("GroupToInfoblocks")
+  id                   BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at           DateTime?              @db.Timestamp(0)
+  updated_at           DateTime?              @updatedAt @db.Timestamp(0)
+  number               Int
+  code                 String                 @db.VarChar(255)
+  name                 String                 @db.VarChar(255)
+  title                String                 @db.VarChar(255)
+  description          String?                @db.LongText
+  descriptionForSale   String?                @db.LongText
+  shortDescription     String?                @db.Text
+  type                 String                 @db.VarChar(255)
+  productType          String                 @db.VarChar(255)
   garant_packages      garant_packages[]
   infoblock_info_group infoblock_info_group[]
+  infoblocks           infoblocks[]           @relation("GroupToInfoblocks")
 }
 
 model jobs {
@@ -577,8 +575,6 @@ model portals {
   C_REST_CLIENT_SECRET    String?                   @db.Text
   C_REST_WEB_HOOK_URL     String?                   @db.Text
   number                  Int
-  agents                  agents[]                  @relation("PortalProviders")
-  templates               templates[]               @relation("PortalTemplates")
   bitrix_apps             bitrix_apps[]
   bitrixlists             bitrixlists[]
   btx_companies           btx_companies[]
@@ -596,6 +592,8 @@ model portals {
   smarts                  smarts[]
   timezones               timezones[]
   user_selected_templates user_selected_templates[]
+  templates               templates[]               @relation("PortalTemplates")
+  agents                  agents[]                  @relation("PortalProviders")
 }
 
 model price_row_cells {
@@ -757,16 +755,15 @@ model template_counter {
 }
 
 model template_field {
-  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at  DateTime? @db.Timestamp(0)
-  updated_at  DateTime? @db.Timestamp(0)
-  template_id BigInt    @db.UnsignedBigInt
-  field_id    BigInt    @db.UnsignedBigInt
-  templates   templates @relation(fields: [template_id], references: [id])
-  fields      fields    @relation(fields: [field_id], references: [id])
-
-  @@index([template_id])
-  @@index([field_id])
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at  DateTime?  @db.Timestamp(0)
+  updated_at  DateTime?  @db.Timestamp(0)
+  template_id BigInt     @db.UnsignedBigInt
+  field_id    BigInt     @db.UnsignedBigInt
+  fields      fields?    @relation(fields: [fieldsId], references: [id])
+  fieldsId    BigInt?    @db.UnsignedBigInt
+  templates   templates? @relation(fields: [templatesId], references: [id])
+  templatesId BigInt?    @db.UnsignedBigInt
 }
 
 model templates {
@@ -935,10 +932,10 @@ model btx_contacts {
   @@index([portal_id], map: "btx_contacts_portal_id_foreign")
 }
 
-model bx_document_deals {
+model BxDocumentDeal {
   id                 BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at         DateTime? @db.Timestamp(0)
-  updated_at         DateTime? @db.Timestamp(0)
+  created_at         DateTime? @default(now()) @db.Timestamp(0)
+  updated_at         DateTime? @updatedAt @db.Timestamp(0)
   portalId           BigInt?   @db.UnsignedBigInt
   dealId             Int?
   userId             Int?
@@ -986,6 +983,11 @@ model bx_document_deals {
   contractDocument   String?   @db.LongText
   act                String?   @db.LongText
   isFavorite         Boolean?
+  shadowDealId       Int?
+  serviceSmartId     Int?
+  smartId            Int?
+
+  @@map("bx_document_deals")
 }
 
 model bx_rqs {
@@ -1330,16 +1332,15 @@ model user_selected_templates {
 
 model portal_region {
   portal_id   BigInt   @db.UnsignedBigInt
-  region_id   BigInt
+  region_id   BigInt   @db.UnsignedBigInt
   own_abs     Decimal? @db.Decimal(8, 2)
   own_tax     Decimal? @db.Decimal(8, 2)
   own_tax_abs Decimal? @db.Decimal(8, 2)
-
-  // Relations
-  portal portals @relation(fields: [portal_id], references: [id], onDelete: Cascade)
-  region regions @relation(fields: [region_id], references: [id], onDelete: Cascade)
+  portal      portals  @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_region_portal_id_foreign")
+  region      regions  @relation(fields: [region_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_region_region_id_foreign")
 
   @@id([portal_id, region_id])
+  @@index([region_id], map: "portal_region_region_id_foreign")
 }
 
 model regions {
