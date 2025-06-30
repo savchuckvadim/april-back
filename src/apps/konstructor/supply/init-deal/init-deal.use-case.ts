@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InitDealDto } from "./dto/init-deal.dto";
 import { PBXService } from "@/modules/pbx";
-import { BitrixService, IBXDeal, IBXItem, IBxRpaItem } from "@/modules/bitrix";
+import { BitrixService, EBXEntity, IBXDeal, IBXItem, IBxRpaItem } from "@/modules/bitrix";
 import { IDeal, IPSmart, IRPA } from "@/modules/portal/interfaces/portal.interface";
 import { PortalModel } from "@/modules/portal/services/portal.model";
 import { CopyInnerDealService } from "./services/copy-inner-deal.service";
@@ -104,18 +104,24 @@ export class InitDealUseCase {
             )
 
             for (const key in dealValuesFromFiles) {
-                bitrix.batch.deal.update(
-                    `update_deal_${newDealId}_${key}`,
-                    newDealId, {
-                    [key]: dealValuesFromFiles[key]
-                }
+                const response = await bitrix.deal.update(
+                    // `update_deal_${newDealId}_${key}`,
+                    newDealId,
+                    {
+                        [key]: dealValuesFromFiles[key]
+                    }
 
                 )
-                await this.telegram.sendMessage(JSON.stringify(dealValuesFromFiles))
+                await Promise.all([
+                    this.telegram.sendMessage(JSON.stringify(dealValuesFromFiles)),
+                    this.telegram.sendMessage(JSON.stringify(response.result))
+                ])
+               
             }
-            await bitrix.api.callBatchWithConcurrency(1)
+            // await bitrix.api.callBatchWithConcurrency(1)
 
             const rpaComment = this.getCommentRpaMessage(domain, newDealId)
+            const rpaCommentEntity = this.getCommentEntityMessage(domain, entityTypeId, itemId)
             await bitrix.api.call(
                 'rpa.timeline.add',
                 {
@@ -128,6 +134,13 @@ export class InitDealUseCase {
                     },
                 }
             );
+            await bitrix.timeline.addTimelineComment({
+                ENTITY_ID: Number(newDealId),
+                ENTITY_TYPE: EBXEntity.DEAL,
+                COMMENT: rpaCommentEntity,
+                AUTHOR_ID: '1',
+
+            })
 
         }
 
@@ -142,6 +155,11 @@ export class InitDealUseCase {
     private getCommentRpaMessage(domain: string, newDealId: number) {
         const link = `https://${domain}/crm/deal/details/${newDealId}/`
         const message = `🚀 <a href="${link}" target="_blank">Сделка создана</a>`;
+        return message
+    }
+    private getCommentEntityMessage(domain: string, rpaTypeId: number, rpaId: number) {
+        const link = `https://${domain}/rpa/item/${rpaTypeId}/${rpaId}/`
+        const message = `✅ <a href="${link}" target="_blank">Карточка поставки</a>`;
         return message
     }
     private async getDealValuesFromOfferSmart(
