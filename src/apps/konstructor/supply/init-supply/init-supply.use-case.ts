@@ -99,7 +99,7 @@ export class InitSupplyUseCase {
 
     private getCommentEntityMessage(domain: string, rpaTypeId: number, rpaId: number) {
         const link = `https://${domain}/rpa/item/${rpaTypeId}/${rpaId}/`
-        const message = `📝 <a href="${link}" target="_blank">Перезаключение</a>`;
+        const message = `📝 <a href="${link}"  target="_blank">Перезаключение</a>`;
         return message
     }
 
