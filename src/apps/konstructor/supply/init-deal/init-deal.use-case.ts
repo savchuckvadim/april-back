@@ -6,6 +6,7 @@ import { IDeal, IPSmart, IRPA } from "@/modules/portal/interfaces/portal.interfa
 import { PortalModel } from "@/modules/portal/services/portal.model";
 import { CopyInnerDealService } from "./services/copy-inner-deal.service";
 import { TelegramService } from "@/modules/telegram/telegram.service";
+import { CopyProductRowsService } from "./services/copy-product-rows.service";
 
 
 @Injectable()
@@ -93,7 +94,10 @@ export class InitDealUseCase {
         console.log('dealValues')
         console.log(dealValues)
         const newDealResponse = await bitrix.deal.set(dealValues)
+        await this.telegram.sendMessage(JSON.stringify('newDealResponse.resul'))
+
         const newDealId = newDealResponse.result
+        this.telegram.sendMessage(JSON.stringify(newDealId))
         if (portalRpa) {
             const dealValuesFromFiles = await this.getDealFieldValuesFromRpa(
                 rpa,
@@ -113,10 +117,11 @@ export class InitDealUseCase {
 
                 )
                 await Promise.all([
+                    this.telegram.sendMessage(JSON.stringify(newDealId)),
                     this.telegram.sendMessage(JSON.stringify(dealValuesFromFiles)),
                     this.telegram.sendMessage(JSON.stringify(response.result))
                 ])
-               
+
             }
             // await bitrix.api.callBatchWithConcurrency(1)
 
@@ -147,6 +152,9 @@ export class InitDealUseCase {
 
 
         if (serviceSmartId && oldDealId) {
+            const productRowService = new CopyProductRowsService(oldDealId, newDealId, domain, bitrix, this.telegram)
+            await productRowService.copyProductRows()
+
             void await this.copyInnerDealService.copyInnerDeal(serviceSmartId, newDealId, domain)
         }
         // return dealValues
@@ -213,25 +221,26 @@ export class InitDealUseCase {
 
 
             if (portalRpaField) {
-                if (isFiles && portalRpaField.type !== 'file') {
-                    continue
-                }
+
+
                 if (!isFiles && portalRpaField.type === 'file') {
                     continue
                 }
-                const fieldCode = portalRpaField.code
-                const dealField = portalDeal.bitrixfields.find(field => field.code === fieldCode)
+                if ((isFiles && (portalRpaField.type !== 'file' || portalRpaField.code === 'current_invoice' || portalRpaField.code === 'current_suply_report')) || !isFiles) {
+                    const fieldCode = portalRpaField.code
+                    const dealField = portalDeal.bitrixfields.find(field => field.code === fieldCode)
 
-                if (dealField) {
-                    // dealValues[`UF_CRM_${dealField.bitrixId}`] = rpa[key]
-                    const rawValue = rpa[key];
+                    if (dealField) {
+                        // dealValues[`UF_CRM_${dealField.bitrixId}`] = rpa[key]
+                        const rawValue = rpa[key];
 
-                    const value = await this.prepareFieldValue(rawValue, bitrix, fieldCode)
-                    if (value) {
-                        dealValues[`UF_CRM_${dealField.bitrixId}`] = value;
+                        const value = await this.prepareFieldValue(rawValue, bitrix, fieldCode)
+                        if (value) {
+                            dealValues[`UF_CRM_${dealField.bitrixId}`] = value;
+                        }
+
+
                     }
-
-
                 }
             }
         }

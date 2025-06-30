@@ -15,4 +15,5 @@ export class BxProductRowService {
     set(data: IBXProductRow) {
         return this.repo.set(data);
     }
+   
 } 
