@@ -20,6 +20,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           timeout: 30m
+        
+          debug: true
           script: |
             echo "🧩 Подключение к серверу NEST API"
             cd /var/www/html/back.april-app

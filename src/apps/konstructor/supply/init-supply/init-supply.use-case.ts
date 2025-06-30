@@ -7,12 +7,14 @@ import { PBXService } from "@/modules/pbx/pbx.servise";
 import { IBxRpaItem } from "@/modules/bitrix/domain/rpa/item/interface/bx-rpa-item.interface";
 import { EBXEntity, EBxMethod, EBxNamespace, IBXTimelineComment } from "@/modules/bitrix";
 import { PortalModel } from "@/modules/portal/services/portal.model";
+import { TelegramService } from "@/modules/telegram/telegram.service";
 
 
 @Injectable()
 export class InitSupplyUseCase {
 
     constructor(
+       
         private readonly pbx: PBXService,
         private readonly initSupplyService: InitSupplyService,
         private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,

@@ -24,11 +24,13 @@ import { InfoblockLtService } from "./services/rpa-timeline-comment/infoblock/in
 import { InfoblocksCommentService } from "./services/rpa-timeline-comment/infoblocks-comment.service";
 import { ContractCommentService } from "./services/rpa-timeline-comment/contract-comment.service";
 import { TotalSumCommentService } from "./services/rpa-timeline-comment/total-comment.service";
+import { TelegramModule } from "@/modules/telegram/telegram.module";
 
 @Module({
     imports: [
         PBXModule,
-        ProviderModule
+        ProviderModule,
+        TelegramModule
     ],
     controllers: [InitSupplyController],
     providers: [

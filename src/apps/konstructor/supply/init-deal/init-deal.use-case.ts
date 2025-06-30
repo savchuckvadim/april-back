@@ -5,6 +5,7 @@ import { BitrixService, IBXDeal, IBXItem, IBxRpaItem } from "@/modules/bitrix";
 import { IDeal, IPSmart, IRPA } from "@/modules/portal/interfaces/portal.interface";
 import { PortalModel } from "@/modules/portal/services/portal.model";
 import { CopyInnerDealService } from "./services/copy-inner-deal.service";
+import { TelegramService } from "@/modules/telegram/telegram.service";
 
 
 @Injectable()
@@ -12,7 +13,8 @@ export class InitDealUseCase {
 
     constructor(
         private readonly pbx: PBXService,
-        private readonly copyInnerDealService: CopyInnerDealService
+        private readonly copyInnerDealService: CopyInnerDealService,
+        private readonly telegram: TelegramService,
     ) { }
 
     async execute(dto: InitDealDto) {
@@ -107,7 +109,9 @@ export class InitDealUseCase {
                     newDealId, {
                     [key]: dealValuesFromFiles[key]
                 }
+
                 )
+                await this.telegram.sendMessage(JSON.stringify(dealValuesFromFiles))
             }
             await bitrix.api.callBatchWithConcurrency(1)
 

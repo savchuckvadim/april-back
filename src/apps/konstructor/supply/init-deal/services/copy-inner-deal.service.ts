@@ -17,7 +17,7 @@ export class CopyInnerDealService {
                 domain
             },
         });
-       
+
         if (!deal) {
             await this.telegram.sendMessage(
                 `Сделка с таким serviceSmartId не найдена: ${domain} ${serviceSmartId}`,
@@ -49,7 +49,9 @@ export class CopyInnerDealService {
             `Сделка скопирована: ${domain} ${serviceSmartId}`,
         )
         await this.telegram.sendMessage(
-            JSON.stringify(newDeal),
+            JSON.stringify(newDeal, (_, value) =>
+                typeof value === 'bigint' ? value.toString() : value
+            ),
         )
         return newDeal;
     }
