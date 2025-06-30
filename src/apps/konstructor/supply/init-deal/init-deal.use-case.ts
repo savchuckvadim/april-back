@@ -126,8 +126,6 @@ export class InitDealUseCase {
                         title: 'Перезаключение: Новая Сделка',
                         description: rpaComment,
                     },
-
-
                 }
             );
 
