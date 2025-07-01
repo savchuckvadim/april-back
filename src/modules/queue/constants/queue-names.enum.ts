@@ -12,4 +12,5 @@ export enum QueueNames {
 
   //event service
   SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
+  SERVICE_DEALS = 'service-deals',
 }

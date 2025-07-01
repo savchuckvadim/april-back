@@ -18,6 +18,7 @@ export class QueueDispatcherService {
     @InjectQueue(QueueNames.SALES_KPI_REPORT) private readonly salesKpiReportQueue: Queue,
     @InjectQueue(QueueNames.TRANSCRIBE_AUDIO) private readonly transcribeAudioQueue: Queue,
     @InjectQueue(QueueNames.SERVICE_DEALS_SCHEDULE) private readonly serviceDealsScheduleQueue: Queue,
+    @InjectQueue(QueueNames.SERVICE_DEALS) private readonly serviceDealsQueue: Queue,
   ) {
     this.logger.log('QueueDispatcherService initialized');
   }
@@ -45,6 +46,8 @@ export class QueueDispatcherService {
         return this.transcribeAudioQueue;
       case QueueNames.SERVICE_DEALS_SCHEDULE:
         return this.serviceDealsScheduleQueue;
+      case QueueNames.SERVICE_DEALS:
+        return this.serviceDealsQueue;
 
       default:
         const error = `Unknown queue name: ${name}`;

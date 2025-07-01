@@ -11,13 +11,14 @@ export class CopyInnerDealService {
     ) { }
 
     public async copyInnerDeal(serviceSmartId: number, newDealId: number, domain: string) {
+        console.log('copyInnerDeal', serviceSmartId, newDealId, domain)
         const deal = await this.prisma.bxDocumentDeal.findFirst({
             where: {
                 serviceSmartId,
                 domain
             },
         });
-
+        console.log('deal', deal)
         if (!deal) {
             await this.telegram.sendMessage(
                 `Сделка с таким serviceSmartId не найдена: ${domain} ${serviceSmartId}`,
@@ -44,7 +45,7 @@ export class CopyInnerDealService {
                 // created_at и updated_at НЕ указываем — проставятся автоматически
             },
         });
-
+        console.log('newDeal', newDeal)
         await this.telegram.sendMessage(
             `Сделка скопирована: ${domain} ${serviceSmartId}`,
         )

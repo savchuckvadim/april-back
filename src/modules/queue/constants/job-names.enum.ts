@@ -8,4 +8,5 @@ export enum JobNames {
 
     //event service
     SERVICE_DEAL_MOVE_STAGES = 'service-deal-move-stages',
+    SERVICE_DEAL_INIT = 'service-deal-init',
   }

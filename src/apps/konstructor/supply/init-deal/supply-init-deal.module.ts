@@ -5,17 +5,22 @@ import { PBXModule } from "@/modules/pbx";
 import { CopyInnerDealService } from "./services/copy-inner-deal.service";
 import { OnlineModule } from "@/clients/online/client/online/api-online.module";
 import { TelegramModule } from "@/modules/telegram/telegram.module";
+import { QueueModule } from "@/modules/queue/queue.module";
+import { InitDealProcessor } from "./processor/init-deal.processor";
+import { TelegramService } from "@/modules/telegram/telegram.service";
 
 @Module({
     imports: [
         PBXModule,
         OnlineModule,
-        TelegramModule
+        TelegramModule,
+        QueueModule
     ],
     controllers: [InitDealController],
     providers: [
         InitDealUseCase,
-        CopyInnerDealService
+        CopyInnerDealService,
+        InitDealProcessor,
     ],
     exports: []
 })

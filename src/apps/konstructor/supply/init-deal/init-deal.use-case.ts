@@ -19,7 +19,7 @@ export class InitDealUseCase {
     ) { }
 
     async execute(dto: InitDealDto) {
-        console.log(dto)
+
         const domain = dto.auth.domain
         const { bitrix, PortalModel, portal } = await this.pbx.init(domain)
 
@@ -37,11 +37,10 @@ export class InitDealUseCase {
             id: itemId
         })
         const rpa = rpaResponse.result.item
-        console.log(rpa)
+
         const companyId = this.getCompanyIdFromRpa(rpa, PortalModel)
         const oldDealId = this.getDealIdFromRpa(rpa, PortalModel)
-        console.log('companyId')
-        console.log(companyId)
+
         const portalRpa = PortalModel.getRpaByCode('supply')
         const offerServicePortalSmart = PortalModel.getSmartByType('service_offer')
         const offerSmartEntityType = offerServicePortalSmart?.entityTypeId
@@ -51,19 +50,15 @@ export class InitDealUseCase {
         // console.log('offerServicePortalSmart')
         // console.log(offerServicePortalSmart)
 
-        console.log('offerSmartEntityType')
-        console.log(offerSmartEntityType)
 
-        console.log('offerSmartInRpaId')
-        console.log(offerSmartInRpaId)
 
 
         let serviceSmartId = null as number | null
         if (rpa && offerSmartEntityType && offerSmartInRpaId) {
-            console.log(rpa[offerSmartInRpaId])
+
             const offerSmartResponse = await bitrix.item.get(rpa[offerSmartInRpaId].toString(), offerSmartEntityType.toString())
             const offerSmart = offerSmartResponse.result.item
-            console.log(offerSmart)
+
             serviceSmartId = Number(offerSmart.id)
             const dealValuesFromOfferSmart = await this.getDealValuesFromOfferSmart(
                 offerSmart,
@@ -85,19 +80,17 @@ export class InitDealUseCase {
             )
             dealValues = { ...dealValues, ...dealValuesFromRpa }
         }
-        console.log('targetCategoryDeal')
-        console.log(targetCategoryDeal?.bitrixId)
+
         dealValues.CATEGORY_ID = targetCategoryDeal?.bitrixId
         dealValues.COMPANY_ID = companyId?.toString() || ''
         // console.log('companyId')
         // console.log(companyId)
-        console.log('dealValues')
-        console.log(dealValues)
+
         const newDealResponse = await bitrix.deal.set(dealValues)
-        await this.telegram.sendMessage(JSON.stringify('newDealResponse.resul'))
+
 
         const newDealId = newDealResponse.result
-        this.telegram.sendMessage(JSON.stringify(newDealId))
+
         if (portalRpa) {
             const dealValuesFromFiles = await this.getDealFieldValuesFromRpa(
                 rpa,
@@ -116,11 +109,8 @@ export class InitDealUseCase {
                     }
 
                 )
-                await Promise.all([
-                    this.telegram.sendMessage(JSON.stringify(newDealId)),
-                    this.telegram.sendMessage(JSON.stringify(dealValuesFromFiles)),
-                    this.telegram.sendMessage(JSON.stringify(response.result))
-                ])
+
+
 
             }
             // await bitrix.api.callBatchWithConcurrency(1)
@@ -152,10 +142,16 @@ export class InitDealUseCase {
 
 
         if (serviceSmartId && oldDealId) {
-            const productRowService = new CopyProductRowsService(oldDealId, newDealId, domain, bitrix, this.telegram)
-            await productRowService.copyProductRows()
+            const productRowService = new CopyProductRowsService(
+                oldDealId,
+                newDealId,
+                bitrix,
 
-            void await this.copyInnerDealService.copyInnerDeal(serviceSmartId, newDealId, domain)
+            )
+            offerServicePortalSmart
+                && void await productRowService.copyProductFromSmartToDeal(serviceSmartId, offerServicePortalSmart)
+
+            await this.copyInnerDealService.copyInnerDeal(serviceSmartId, newDealId, domain)
         }
         // return dealValues
 
@@ -226,7 +222,8 @@ export class InitDealUseCase {
                 if (!isFiles && portalRpaField.type === 'file') {
                     continue
                 }
-                if ((isFiles && (portalRpaField.type !== 'file' || portalRpaField.code === 'current_invoice' || portalRpaField.code === 'current_suply_report')) || !isFiles) {
+
+                if ((isFiles && (portalRpaField.type === 'file' || portalRpaField.code === 'current_invoice' || portalRpaField.code === 'current_suply')) || !isFiles) {
                     const fieldCode = portalRpaField.code
                     const dealField = portalDeal.bitrixfields.find(field => field.code === fieldCode)
 
@@ -242,7 +239,11 @@ export class InitDealUseCase {
 
                     }
                 }
+
+
             }
+
+
         }
         return dealValues
     }
@@ -259,7 +260,8 @@ export class InitDealUseCase {
         } else {
             if (rawValue?.urlMachine || rawValue?.downloadUrl) {
                 const url = rawValue?.urlMachine || rawValue?.downloadUrl
-                value = await bitrix.file.downloadBitrixFileAndConvertToBase64(url)
+                const fileData = await bitrix.file.downloadBitrixFileAndConvertToBase64(url)
+                value = { fileData }
 
             }
         }

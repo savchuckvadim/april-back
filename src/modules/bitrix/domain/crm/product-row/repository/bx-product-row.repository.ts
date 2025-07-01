@@ -3,6 +3,7 @@ import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { EBxMethod, EBxNamespace } from "../../../../core/domain/consts/bitrix-api.enum";
 import { EBXEntity } from "../../../../core/domain/consts/bitrix-entities.enum";
 import { IBXProductRow } from "../interface/bx-product-row.interface";
+import { ListProductRowDto } from "../dto/list-product-row.sto";
 
 export class BxProductRowRepository {
 
@@ -14,7 +15,7 @@ export class BxProductRowRepository {
 
 
     async set(data: IBXProductRow) {
-        return this.bxApi.callType(
+        return await this.bxApi.callType(
             EBxNamespace.CRM_ITEM,
             EBXEntity.PRODUCT_ROW,
             EBxMethod.SET,
@@ -28,6 +29,15 @@ export class BxProductRowRepository {
             EBXEntity.PRODUCT_ROW,
             EBxMethod.SET,
             data
+        );
+    }
+
+    async list(data: ListProductRowDto) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM_ITEM,
+            EBXEntity.PRODUCT_ROW,
+            EBxMethod.LIST,
+            { filter: data }
         );
     }
 
