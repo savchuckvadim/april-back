@@ -19,26 +19,49 @@ export class BxDealService {
         this.repo = new BxDealRepository(api);
     }
 
-    get(dealId: number, select?: string[]) {
-        return this.repo.get(dealId, select);
+    async get(dealId: number, select?: string[]) {
+        return await this.repo.get(dealId, select);
     }
-    getList(filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
-        return this.repo.getList(filter, select, order);
+    async getList(filter: Partial<IBXDeal>, select?: string[], order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
+        return await this.repo.getList(filter, select, order);
     }
-    set(data: Partial<IBXDeal>) {
-        return this.repo.set(data);
+    async all(filter: Partial<IBXDeal>, select?: string[]) {
+        const deals: IBXDeal[] = [];
+        let needMore = true;
+        let nextId = 0;
+        while (needMore) {
+            const fullFilter = {
+                ...filter,
+                '>ID': nextId
+            }
+            const { result } = await this.repo.getList(fullFilter, select, {
+                ID: 'ASC'
+            });
+            if (result.length === 0) {
+                break;
+            }
+            nextId = result[result.length - 1]?.ID ?? 0;
+            if (nextId === 0) {
+                needMore = false;
+            }
+            deals.push(...result);
+        }
+        return deals;
     }
-    update(dealId: number | string, data: Partial<IBXDeal>) {
-        return this.repo.update(dealId, data);
+    async set(data: Partial<IBXDeal>) {
+        return await this.repo.set(data);
     }
-    getFieldsList(filter: { [key: string]: any }, select?: string[]) {
-        return this.repo.getFieldList(filter, select);
+    async update(dealId: number | string, data: Partial<IBXDeal>) {
+        return await this.repo.update(dealId, data);
     }
-    getField(id: number | string) {
-        return this.repo.getField(id);
+    async getFieldsList(filter: { [key: string]: any }, select?: string[]) {
+        return await this.repo.getFieldList(filter, select);
     }
-    contactItemsSet(dealId: number | string, contactIds: number[] | string[]) {
-        return this.repo.contactItemsSet(dealId, contactIds);
+    async getField(id: number | string) {
+        return await this.repo.getField(id);
+    }
+    async contactItemsSet(dealId: number | string, contactIds: number[] | string[]) {
+        return await this.repo.contactItemsSet(dealId, contactIds);
     }
 
 
