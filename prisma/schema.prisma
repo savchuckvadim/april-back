@@ -761,10 +761,10 @@ model template_field {
   updated_at  DateTime?  @db.Timestamp(0)
   template_id BigInt     @db.UnsignedBigInt
   field_id    BigInt     @db.UnsignedBigInt
-  fields      fields?    @relation(fields: [fieldsId], references: [id])
-  fieldsId    BigInt?    @db.UnsignedBigInt
-  templates   templates? @relation(fields: [templatesId], references: [id])
-  templatesId BigInt?    @db.UnsignedBigInt
+  fields      fields?    @relation(fields: [field_id], references: [id])
+  // fieldsId    BigInt?    @db.UnsignedBigInt
+  templates   templates? @relation(fields: [template_id], references: [id])
+  // templatesId BigInt?    @db.UnsignedBigInt
 }
 
 model templates {
