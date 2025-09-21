@@ -1,4 +1,3 @@
-import { APIOnlineClient } from "@/clients/online";
 import { PrismaService } from "@/core/prisma/prisma.service";
 import { TelegramService } from "@/modules/telegram/telegram.service";
 import { Injectable } from "@nestjs/common";
@@ -18,7 +17,7 @@ export class CopyInnerDealService {
                 domain
             },
         });
-        console.log('deal', deal)
+
         if (!deal) {
             await this.telegram.sendMessage(
                 `Сделка с таким serviceSmartId не найдена: ${domain} ${serviceSmartId}`,

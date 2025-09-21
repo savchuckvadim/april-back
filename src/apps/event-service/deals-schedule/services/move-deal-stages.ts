@@ -77,9 +77,6 @@ export class MoveDealStagesService {
                 dealsIds += `, ${deal.ID}`;
 
 
-
-
-                console.log(deal.ID, targetStage);
                 results.push({
                     dealId: deal.ID,
                     oldStage: deal.STAGE_ID,
@@ -96,7 +93,7 @@ export class MoveDealStagesService {
             }
         }
         const batch = await bitrix.api.callBatch();
-        console.log(batch);
+ 
         if (dealsIds) {
             await this.telegramService.sendMessage(`nest moves deals: ${dealsIds}`);
         }
