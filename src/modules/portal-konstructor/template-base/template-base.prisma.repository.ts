@@ -57,7 +57,7 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
             where: { portalId: portal.id },
             include: {
                 template_counter: true,
-                template_field: true
+                // template_field: true
             }
         });
         if (!result) return null;
