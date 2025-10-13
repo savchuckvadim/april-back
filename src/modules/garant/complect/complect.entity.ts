@@ -1,4 +1,4 @@
-import { InfoblockEntity } from "../infoblock/infoblock.entity";
+import { InfoblockEntity } from '../infoblock/infoblock.entity';
 
 export class ComplectEntity {
     id: string;
@@ -22,4 +22,4 @@ export class ComplectEntity {
     created_at?: Date;
     updated_at?: Date;
     infoblocks?: InfoblockEntity[];
-} 
+}

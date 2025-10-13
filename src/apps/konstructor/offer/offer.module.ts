@@ -10,16 +10,15 @@ import { DocumentGenerateModule } from '../document-generate/document-generate.m
 import { OfferPdfService } from './offer.pdf.service';
 import { PdfService } from './pdf-generator/pdf.generator.service';
 @Module({
-  imports: [
-    PBXModule,
-    StorageModule,
-    FileLinkModule,
-    ConfigModule,
-    LibreOfficeModule,
-    DocumentGenerateModule
-
-  ],
-  controllers: [OfferController],
-  providers: [OfferService, OfferPdfService, PdfService],
+    imports: [
+        PBXModule,
+        StorageModule,
+        FileLinkModule,
+        ConfigModule,
+        LibreOfficeModule,
+        DocumentGenerateModule,
+    ],
+    controllers: [OfferController],
+    providers: [OfferService, OfferPdfService, PdfService],
 })
-export class OfferModule { }
+export class OfferModule {}

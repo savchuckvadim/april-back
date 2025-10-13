@@ -1,48 +1,53 @@
-import { ComplectEntity, ComplectService, InfoblockEntity, InfogroupProductType, InfogroupService, InfogroupType } from "@/modules/garant";
-import { Injectable } from "@nestjs/common";
-
+import {
+    ComplectEntity,
+    ComplectService,
+    InfoblockEntity,
+    InfogroupProductType,
+    InfogroupService,
+    InfogroupType,
+} from '@/modules/garant';
+import { Injectable } from '@nestjs/common';
 
 export interface Complects {
-    prof: Complect[]
-    universal: Complect[]
-
+    prof: Complect[];
+    universal: Complect[];
 }
 interface Complect {
-    id: number
-    name: string
-    title: string
-    fullTitle: string
-    shortTitle: string
-    tag: string
-    className: string
-    number: number
-    weight: number
-    withConsalting: boolean
-    isChanging: boolean
-    filling: string[] //  "Законодательство России",...
+    id: number;
+    name: string;
+    title: string;
+    fullTitle: string;
+    shortTitle: string;
+    tag: string;
+    className: string;
+    number: number;
+    weight: number;
+    withConsalting: boolean;
+    isChanging: boolean;
+    filling: string[]; //  "Законодательство России",...
 
-    ers: number[]
-    packetsEr: number[]
-    ersInPacket: number[]
+    ers: number[];
+    packetsEr: number[];
+    ersInPacket: number[];
     // lt: number[]
     // ltInPacket: number[]
     // freeBlocks: number[]
     // consalting: number[]
     // star: number[]
     codes: {
-        filling: string[]
+        filling: string[];
 
-        ers: string[]
-        packetsEr: string[]
-        ersInPacket: string[]
+        ers: string[];
+        packetsEr: string[];
+        ersInPacket: string[];
         // lt: string[]
         // ltInPacket: string[]
         // freeBlocks: string[]
         // consalting: string[]
         // star: string[]
-    }
+    };
     // consaltingProduct: number
-    type: 'prof' | 'universal'
+    type: 'prof' | 'universal';
     // withStar: boolean
 
     // regions: number[]
@@ -51,30 +56,37 @@ interface Complect {
 export class InitComplectService {
     constructor(
         private readonly complectService: ComplectService,
-        private readonly infoGroupService: InfogroupService
-    ) { }
+        private readonly infoGroupService: InfogroupService,
+    ) {}
 
     async get(): Promise<Complects | null> {
-        const complects = await this.complectService.findAll()
-        if (!complects) return null
+        const complects = await this.complectService.findAll();
+        if (!complects) return null;
 
         return {
-            prof: complects.filter(complect => complect.type === 'prof').map(complect => this.getComplectItem(complect)),
-            universal: complects.filter(complect => complect.type === 'universal').map(complect => this.getComplectItem(complect))
-        }
+            prof: complects
+                .filter(complect => complect.type === 'prof')
+                .map(complect => this.getComplectItem(complect)),
+            universal: complects
+                .filter(complect => complect.type === 'universal')
+                .map(complect => this.getComplectItem(complect)),
+        };
     }
 
     private getComplectItem(complect: ComplectEntity): Complect {
-
         if (!complect.infoblocks) {
-            throw new Error('Infoblocks in Complect not found' + `${{
-                id: complect.id,
-                name: complect.name,
-                className: complect.code,
-            }
-                }`)
+            throw new Error(
+                'Infoblocks in Complect not found' +
+                    `${{
+                        id: complect.id,
+                        name: complect.name,
+                        className: complect.code,
+                    }}`,
+            );
         }
-        const { filling, infoblocks } = this.getFillingAndInfoblocks(complect.infoblocks)
+        const { filling, infoblocks } = this.getFillingAndInfoblocks(
+            complect.infoblocks,
+        );
 
         return {
             id: Number(complect.id),
@@ -109,58 +121,73 @@ export class InitComplectService {
                 // freeBlocks: this.getFreeBlocks(complect.infoblocks).codes,
                 // consalting: this.getConsalting(complect.infoblocks).codes,
                 // star: this.getStar(complect.infoblocks).codes,
-            }
-
-        }
+            },
+        };
     }
 
-    private getFillingAndInfoblocks(iblocks: InfoblockEntity[]): { filling: string[], infoblocks: string[] } {
-        const filtredInfoblocks = iblocks
-            .filter(iblock => !iblock.isFree)
-            .filter(iblock => iblock.group?.type === InfogroupType.INFOBLOCKS)
-            .filter(iblock => iblock.group?.productType === InfogroupProductType.GARANT)
-
-        const filling = filtredInfoblocks.map(iblock => iblock.name)
-        const infoblocks = filtredInfoblocks.map(iblock => iblock.code)
-
-        return { filling, infoblocks }
-    }
-
-    private getErs(iblocks: InfoblockEntity[]): { numbers: number[], codes: string[] } {
-        const filtredInfoblocks = iblocks
-            .filter(iblock => iblock.group?.type === InfogroupType.ER)
-        const numbers = filtredInfoblocks.map(iblock => iblock.number)
-        const codes = filtredInfoblocks.map(iblock => iblock.code)
-
-        return { numbers, codes }
-    }
-
-    private getPacketsErs(iblocks: InfoblockEntity[]): {
-        numbers: number[], codes: string[]
+    private getFillingAndInfoblocks(iblocks: InfoblockEntity[]): {
+        filling: string[];
+        infoblocks: string[];
     } {
         const filtredInfoblocks = iblocks
             .filter(iblock => !iblock.isFree)
-            .filter(iblock => iblock.group?.code === 'per')
+            .filter(iblock => iblock.group?.type === InfogroupType.INFOBLOCKS)
+            .filter(
+                iblock =>
+                    iblock.group?.productType === InfogroupProductType.GARANT,
+            );
 
-        const numbers = filtredInfoblocks.map(iblock => iblock.number)
-        const codes = filtredInfoblocks.map(iblock => iblock.code)
+        const filling = filtredInfoblocks.map(iblock => iblock.name);
+        const infoblocks = filtredInfoblocks.map(iblock => iblock.code);
 
-        return { numbers, codes }
+        return { filling, infoblocks };
     }
 
-    private getErsInPacket(iblocks: InfoblockEntity[]): { numbers: number[], codes: string[] } {
-        const numbers = [] as number[]
-        const codes = [] as string[]
+    private getErs(iblocks: InfoblockEntity[]): {
+        numbers: number[];
+        codes: string[];
+    } {
+        const filtredInfoblocks = iblocks.filter(
+            iblock => iblock.group?.type === InfogroupType.ER,
+        );
+        const numbers = filtredInfoblocks.map(iblock => iblock.number);
+        const codes = filtredInfoblocks.map(iblock => iblock.code);
+
+        return { numbers, codes };
+    }
+
+    private getPacketsErs(iblocks: InfoblockEntity[]): {
+        numbers: number[];
+        codes: string[];
+    } {
         const filtredInfoblocks = iblocks
-            .filter(iblock => iblock.group?.code === 'per')
+            .filter(iblock => !iblock.isFree)
+            .filter(iblock => iblock.group?.code === 'per');
+
+        const numbers = filtredInfoblocks.map(iblock => iblock.number);
+        const codes = filtredInfoblocks.map(iblock => iblock.code);
+
+        return { numbers, codes };
+    }
+
+    private getErsInPacket(iblocks: InfoblockEntity[]): {
+        numbers: number[];
+        codes: string[];
+    } {
+        const numbers = [] as number[];
+        const codes = [] as string[];
+        const filtredInfoblocks = iblocks.filter(
+            iblock => iblock.group?.code === 'per',
+        );
 
         filtredInfoblocks.map(iblock => {
-            iblock.packageInfoblocks && iblock.packageInfoblocks.map((piblock: InfoblockEntity) => {
-                numbers.push(piblock.number)
-                codes.push(piblock.code)
-            })
-        })
+            iblock.packageInfoblocks &&
+                iblock.packageInfoblocks.map((piblock: InfoblockEntity) => {
+                    numbers.push(piblock.number);
+                    codes.push(piblock.code);
+                });
+        });
 
-        return { numbers, codes }
+        return { numbers, codes };
     }
 }

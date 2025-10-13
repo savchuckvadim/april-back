@@ -1,8 +1,15 @@
-import { EBxMethod } from "@/modules/bitrix/core";
-import { SmartTypeAddRequestDto, SmartTypeListResponseDto, SmartTypeResponseDto, SmartTypeUpdateRequestDto } from "../dto/smart-type-add.dto";
-import { SmartTypeGetByEntityTypeIdRequestDto, SmartTypeGetRequestDto, SmartTypeListRequestDto } from "../dto/smart-type.dto";
-
-
+import { EBxMethod } from '@/modules/bitrix/core';
+import {
+    SmartTypeAddRequestDto,
+    SmartTypeListResponseDto,
+    SmartTypeResponseDto,
+    SmartTypeUpdateRequestDto,
+} from '../dto/smart-type-add.dto';
+import {
+    SmartTypeGetByEntityTypeIdRequestDto,
+    SmartTypeGetRequestDto,
+    SmartTypeListRequestDto,
+} from '../dto/smart-type.dto';
 
 export type BxSmartTypeSchema = {
     [EBxMethod.ADD]: {
@@ -29,5 +36,4 @@ export type BxSmartTypeSchema = {
         request: SmartTypeGetRequestDto;
         response: { id: number };
     };
-   
 };

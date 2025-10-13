@@ -1,5 +1,5 @@
-import { IsString } from "class-validator";
-import { IsOptional } from "class-validator";
+import { IsString } from 'class-validator';
+import { IsOptional } from 'class-validator';
 
 export class RecipientDto {
     @IsOptional() @IsString() companyName: string;

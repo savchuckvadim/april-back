@@ -1,8 +1,15 @@
-import { PrismaService } from "src/core/prisma";
-import { InfogroupEntity, InfogroupProductType, InfogroupType } from "../infogroup.entity";
+import { PrismaService } from 'src/core/prisma';
+import {
+    InfogroupEntity,
+    InfogroupProductType,
+    InfogroupType,
+} from '../infogroup.entity';
 
-
-export function createInfogroupEntityFromPrisma(data: NonNullable<Awaited<ReturnType<PrismaService['info_groups']['findUnique']>>>): InfogroupEntity {
+export function createInfogroupEntityFromPrisma(
+    data: NonNullable<
+        Awaited<ReturnType<PrismaService['info_groups']['findUnique']>>
+    >,
+): InfogroupEntity {
     const entity = new InfogroupEntity();
     entity.id = data.id.toString();
     entity.number = data.number;

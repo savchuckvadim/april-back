@@ -1,15 +1,13 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/core/prisma";
-import { InfoblockRepository } from "./infoblock.repository";
-import { InfoblockEntity } from "./infoblock.entity";
-import { createInfoblockEntityFromPrisma } from "./lib/infoblock-entity.util";
-import { createInfogroupEntityFromPrisma } from "../infogroup/lib/infogroup-entity.util";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/core/prisma';
+import { InfoblockRepository } from './infoblock.repository';
+import { InfoblockEntity } from './infoblock.entity';
+import { createInfoblockEntityFromPrisma } from './lib/infoblock-entity.util';
+import { createInfogroupEntityFromPrisma } from '../infogroup/lib/infogroup-entity.util';
 
 @Injectable()
 export class InfoblockPrismaRepository implements InfoblockRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: number): Promise<InfoblockEntity | null> {
         const result = await this.prisma.infoblocks.findUnique({
@@ -21,8 +19,8 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
                 related: true,
                 excluded: true,
                 packages: true,
-                packageInfoblocks: true
-            }
+                packageInfoblocks: true,
+            },
         });
 
         if (!result) return null;
@@ -59,8 +57,12 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
             entity.excluded = createInfoblockEntityFromPrisma(result.excluded);
         }
 
-        entity.packages = result.packages.map(pkg => createInfoblockEntityFromPrisma(pkg));
-        entity.packageInfoblocks = result.packageInfoblocks.map(pkg => createInfoblockEntityFromPrisma(pkg));
+        entity.packages = result.packages.map(pkg =>
+            createInfoblockEntityFromPrisma(pkg),
+        );
+        entity.packageInfoblocks = result.packageInfoblocks.map(pkg =>
+            createInfoblockEntityFromPrisma(pkg),
+        );
 
         return entity;
     }
@@ -69,7 +71,9 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
         const result = await this.prisma.infoblocks.findMany();
         if (!result) return null;
 
-        return result.map(infoblock => createInfoblockEntityFromPrisma(infoblock));
+        return result.map(infoblock =>
+            createInfoblockEntityFromPrisma(infoblock),
+        );
     }
 
     async findByCode(code: string): Promise<InfoblockEntity | null> {
@@ -78,8 +82,8 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
             include: {
                 group: {
                     include: {
-                        infoblocks: true
-                    }
+                        infoblocks: true,
+                    },
                 },
                 parent: true,
                 relation: true,
@@ -87,15 +91,15 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
                 excluded: true,
                 infoblock_package_infoblock_idToinfoblocks: {
                     include: {
-                        infoblocks_infoblock_package_package_idToinfoblocks: true
-                    }
+                        infoblocks_infoblock_package_package_idToinfoblocks: true,
+                    },
                 },
                 infoblock_package_package_idToinfoblocks: {
                     include: {
-                        infoblocks_infoblock_package_infoblock_idToinfoblocks: true
-                    }
-                }
-            }
+                        infoblocks_infoblock_package_infoblock_idToinfoblocks: true,
+                    },
+                },
+            },
         });
         if (!infoblock) return null;
 
@@ -103,10 +107,14 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
 
         // Handle relations
         if (infoblock.group) {
-            const groupEntity = createInfogroupEntityFromPrisma(infoblock.group);
+            const groupEntity = createInfogroupEntityFromPrisma(
+                infoblock.group,
+            );
 
             if (infoblock.group.infoblocks) {
-                groupEntity.infoblocks = infoblock.group.infoblocks.map(ib => createInfoblockEntityFromPrisma(ib));
+                groupEntity.infoblocks = infoblock.group.infoblocks.map(ib =>
+                    createInfoblockEntityFromPrisma(ib),
+                );
             }
 
             entity.group = groupEntity;
@@ -117,7 +125,9 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
         }
 
         if (infoblock.relation) {
-            entity.relation = createInfoblockEntityFromPrisma(infoblock.relation);
+            entity.relation = createInfoblockEntityFromPrisma(
+                infoblock.relation,
+            );
         }
 
         if (infoblock.related) {
@@ -125,21 +135,29 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
         }
 
         if (infoblock.excluded) {
-            entity.excluded = createInfoblockEntityFromPrisma(infoblock.excluded);
+            entity.excluded = createInfoblockEntityFromPrisma(
+                infoblock.excluded,
+            );
         }
 
         // Handle parent packages (where this infoblock is a part of)
         if (infoblock.infoblock_package_infoblock_idToinfoblocks) {
-            entity.packages = infoblock.infoblock_package_infoblock_idToinfoblocks.map(pkg =>
-                createInfoblockEntityFromPrisma(pkg.infoblocks_infoblock_package_package_idToinfoblocks)
-            );
+            entity.packages =
+                infoblock.infoblock_package_infoblock_idToinfoblocks.map(pkg =>
+                    createInfoblockEntityFromPrisma(
+                        pkg.infoblocks_infoblock_package_package_idToinfoblocks,
+                    ),
+                );
         }
 
         // Handle infoblocks in package (where this infoblock is a package)
         if (infoblock.infoblock_package_package_idToinfoblocks) {
-            entity.packageInfoblocks = infoblock.infoblock_package_package_idToinfoblocks.map(pkg =>
-                createInfoblockEntityFromPrisma(pkg.infoblocks_infoblock_package_infoblock_idToinfoblocks)
-            );
+            entity.packageInfoblocks =
+                infoblock.infoblock_package_package_idToinfoblocks.map(pkg =>
+                    createInfoblockEntityFromPrisma(
+                        pkg.infoblocks_infoblock_package_infoblock_idToinfoblocks,
+                    ),
+                );
         }
 
         return entity;
@@ -151,7 +169,9 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
         });
         if (!infoblocks) return null;
 
-        return infoblocks.map(infoblock => createInfoblockEntityFromPrisma(infoblock));
+        return infoblocks.map(infoblock =>
+            createInfoblockEntityFromPrisma(infoblock),
+        );
     }
 
     async findManyWithRelations(): Promise<InfoblockEntity[] | null> {
@@ -163,8 +183,8 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
                 related: true,
                 excluded: true,
                 packages: true,
-                packageInfoblocks: true
-            }
+                packageInfoblocks: true,
+            },
         });
         if (!infoblocks) return null;
 
@@ -176,25 +196,37 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
             }
 
             if (infoblock.parent) {
-                entity.parent = createInfoblockEntityFromPrisma(infoblock.parent);
+                entity.parent = createInfoblockEntityFromPrisma(
+                    infoblock.parent,
+                );
             }
 
             if (infoblock.relation) {
-                entity.relation = createInfoblockEntityFromPrisma(infoblock.relation);
+                entity.relation = createInfoblockEntityFromPrisma(
+                    infoblock.relation,
+                );
             }
 
             if (infoblock.related) {
-                entity.related = createInfoblockEntityFromPrisma(infoblock.related);
+                entity.related = createInfoblockEntityFromPrisma(
+                    infoblock.related,
+                );
             }
 
             if (infoblock.excluded) {
-                entity.excluded = createInfoblockEntityFromPrisma(infoblock.excluded);
+                entity.excluded = createInfoblockEntityFromPrisma(
+                    infoblock.excluded,
+                );
             }
 
-            entity.packages = infoblock.packages.map(pkg => createInfoblockEntityFromPrisma(pkg));
-            entity.packageInfoblocks = infoblock.packageInfoblocks.map(pkg => createInfoblockEntityFromPrisma(pkg));
+            entity.packages = infoblock.packages.map(pkg =>
+                createInfoblockEntityFromPrisma(pkg),
+            );
+            entity.packageInfoblocks = infoblock.packageInfoblocks.map(pkg =>
+                createInfoblockEntityFromPrisma(pkg),
+            );
 
             return entity;
         });
     }
-}   
+}

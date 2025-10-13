@@ -1,12 +1,10 @@
-import { Injectable } from "@nestjs/common";
-import { SupplyEntity } from "../../supply.entity";
-import { SupplyRepository } from "../../supply.repository";
+import { Injectable } from '@nestjs/common';
+import { SupplyEntity } from '../../supply.entity';
+import { SupplyRepository } from '../../supply.repository';
 
 @Injectable()
 export class SupplyService {
-    constructor(
-        private readonly supplyRepository: SupplyRepository
-    ) { }
+    constructor(private readonly supplyRepository: SupplyRepository) {}
 
     async create(supply: Partial<SupplyEntity>): Promise<SupplyEntity | null> {
         return this.supplyRepository.create(supply);
@@ -23,5 +21,4 @@ export class SupplyService {
     async findMany(): Promise<SupplyEntity[] | null> {
         return this.supplyRepository.findMany();
     }
-
-} 
+}

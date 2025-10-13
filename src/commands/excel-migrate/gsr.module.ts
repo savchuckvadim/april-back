@@ -17,30 +17,25 @@ import { AlfaBitrixService } from './alfa/services/alfa-bitrix.service';
 import { AlfaMigrateBitrixCompanyService } from './alfa/services/bitrix/alfa-migrate-bxcompany.service';
 import { AlfaParseService } from './alfa/services/alfa-parse.service';
 
-
 @Module({
-  imports: [
-    PBXModule
-  ],
-  controllers: [GsrServiceController, AlfaServiceController],
-  providers: [
-    GsrParseService,
-    GsrMigrateUseCase,
-    GsrBitrixService,
-    GsrMigrateBitrixCompanyService,
-    GsrMigrateBitrixDealService,
-    GsrMigrateBitrixProductRowService,
-    GsrMigrateBitrixContactService,
-    ContactsCreateUseCase,
-    TaskUseCase,
-    GsrSheetsMigrateUseCase,
+    imports: [PBXModule],
+    controllers: [GsrServiceController, AlfaServiceController],
+    providers: [
+        GsrParseService,
+        GsrMigrateUseCase,
+        GsrBitrixService,
+        GsrMigrateBitrixCompanyService,
+        GsrMigrateBitrixDealService,
+        GsrMigrateBitrixProductRowService,
+        GsrMigrateBitrixContactService,
+        ContactsCreateUseCase,
+        TaskUseCase,
+        GsrSheetsMigrateUseCase,
 
-
-    
-    AlfaMigrateUseCase,
-    AlfaBitrixService,
-    AlfaMigrateBitrixCompanyService,
-    AlfaParseService
-  ],
+        AlfaMigrateUseCase,
+        AlfaBitrixService,
+        AlfaMigrateBitrixCompanyService,
+        AlfaParseService,
+    ],
 })
-export class GsrModule { }
+export class GsrModule {}

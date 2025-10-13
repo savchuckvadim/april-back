@@ -13,7 +13,7 @@ export class BitrixActivityCreateService {
     constructor(
         // private readonly bitrixApiFactory: BitrixApiFactoryService,
         // private readonly portalService: PortalService
-        private readonly pbx: PBXService
+        private readonly pbx: PBXService,
     ) {
         this.logger.log('BitrixActivityCreateService initialized');
     }
@@ -23,7 +23,7 @@ export class BitrixActivityCreateService {
             this.logger.log('No activities to create');
             return;
         }
-        const {bitrix, portal} = await this.pbx.init(domain);
+        const { bitrix, portal } = await this.pbx.init(domain);
         this.logger.log(`Creating activities for domain: ${domain}`);
         // this.logger.log(`Raw activities: ${JSON.stringify(rawActivities)}`);
 
@@ -38,15 +38,17 @@ export class BitrixActivityCreateService {
             this.logger.log('BitrixApi initialized');
             this.logger.log('bitrixApi.domain');
             this.logger.log(bitrixApi.domain);
-            this.logger.log(domain)
-
-
+            this.logger.log(domain);
 
             for (const [_, raw] of Object.entries(rawActivities)) {
                 const fields = BitrixActivityEntity.fromDto(raw);
                 // this.logger.log(`Adding activity for company ${raw.companyId}`);
                 // this.logger.log(`Activity fields: ${JSON.stringify(fields)}`);
-                bitrixApi.addCmdBatch(`add_activity_${raw.companyId}`, 'crm.activity.add', { fields });
+                bitrixApi.addCmdBatch(
+                    `add_activity_${raw.companyId}`,
+                    'crm.activity.add',
+                    { fields },
+                );
             }
 
             // this.logger.log('Calling batch');
@@ -54,7 +56,9 @@ export class BitrixActivityCreateService {
             // this.logger.log(`Batch result: ${JSON.stringify(result)}`);
             return result;
         }
-        throw new HttpException('BitrixActivityCreateService portal notfound for domain: ' + domain, HttpStatus.BAD_REQUEST)
-
+        throw new HttpException(
+            'BitrixActivityCreateService portal notfound for domain: ' + domain,
+            HttpStatus.BAD_REQUEST,
+        );
     }
 }

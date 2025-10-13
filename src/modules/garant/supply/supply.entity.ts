@@ -21,4 +21,4 @@ export class SupplyEntity {
     lcontractPropEmail: string | null;
     created_at: Date | null;
     updated_at: Date | null;
-} 
+}

@@ -1,5 +1,3 @@
-
-
 // Базовые интерфейсы для типизации
 export interface DealValueListItem {
     readonly name: string;
@@ -33,4 +31,3 @@ export type DealField = EnumerationField | SimpleField;
 export type DealFieldsTemplate = {
     readonly [key: string]: DealField | DealFieldsTemplate;
 };
-

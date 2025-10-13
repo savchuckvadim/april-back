@@ -1,54 +1,57 @@
-import { CONTRACT_LTYPE } from "./contract.type";
-
-
+import { CONTRACT_LTYPE } from './contract.type';
 
 export enum BX_ADDRESS_TYPE {
     PRIMARY = 1,
     REGISTERED = 6,
     REGISTERED_FIZ = 4,
-
 }
 export const addressMap = {
-    [BX_ADDRESS_TYPE.PRIMARY]: { name_type: "Фактический адрес", code: "fact" },
-    [BX_ADDRESS_TYPE.REGISTERED]: { name_type: "Юридический адрес", code: "registred" },
-    [BX_ADDRESS_TYPE.REGISTERED_FIZ]: { name_type: "Адрес прописки", code: "registred_fiz" },
+    [BX_ADDRESS_TYPE.PRIMARY]: { name_type: 'Фактический адрес', code: 'fact' },
+    [BX_ADDRESS_TYPE.REGISTERED]: {
+        name_type: 'Юридический адрес',
+        code: 'registred',
+    },
+    [BX_ADDRESS_TYPE.REGISTERED_FIZ]: {
+        name_type: 'Адрес прописки',
+        code: 'registred_fiz',
+    },
 } as const;
 
 // Тип для ключей (type_id)
 export type AddressTypeId = keyof typeof addressMap;
 
 // Тип для значений
-export type AddressDetails = typeof addressMap[AddressTypeId];
+export type AddressDetails = (typeof addressMap)[AddressTypeId];
 
 export enum SupplyTypeEnum {
     INTERNET = 'internet',
-    PROXIMA = 'proxima'
+    PROXIMA = 'proxima',
 }
 
-export type SupplyTypesType = SupplyTypeEnum.INTERNET | SupplyTypeEnum.PROXIMA
+export type SupplyTypesType = SupplyTypeEnum.INTERNET | SupplyTypeEnum.PROXIMA;
 
 export enum RQ_TYPE {
-    ORGANIZATION = "org",
-    BUDGET = "org_state",
-    IP = "ip",
-    FIZ = "fiz",
-    ADVOKAT = "advokat",
+    ORGANIZATION = 'org',
+    BUDGET = 'org_state',
+    IP = 'ip',
+    FIZ = 'fiz',
+    ADVOKAT = 'advokat',
 }
 export enum RQ_TYPE_NAME {
-    ORGANIZATION = "Организация",
-    BUDGET = "Бюджетники",
-    IP = "ИП",
-    FIZ = "Физ лицо",
-    ADVOKAT = "Адвокат",
+    ORGANIZATION = 'Организация',
+    BUDGET = 'Бюджетники',
+    IP = 'ИП',
+    FIZ = 'Физ лицо',
+    ADVOKAT = 'Адвокат',
 }
 
 export enum CONTRACT_RQ_GROUP {
-    RQ = "rq",
-    BANK = "bank",
-    ADDRESS = "address",
-    CONTRACT = "contract",
-    SPECIFICATION = "specification",
-    SUPPLY = "supply",
+    RQ = 'rq',
+    BANK = 'bank',
+    ADDRESS = 'address',
+    CONTRACT = 'contract',
+    SPECIFICATION = 'specification',
+    SUPPLY = 'supply',
 }
 
 export enum RQ_ITEM_CODE {
@@ -58,7 +61,6 @@ export enum RQ_ITEM_CODE {
     LAST_NAME = 'last_name',
     FIRST_NAME = 'first_name',
     SECOND_NAME = 'second_name',
-
 
     DIRECTOR_NAME = 'director',
     DIRECTOR_POSITION = 'position',
@@ -78,7 +80,6 @@ export enum RQ_ITEM_CODE {
     OKVED_DESCRIPTION = 'okved_description',
     OKVED_DESCRIPTION_CASE = 'okved_description_case',
 
-
     PHONE = 'phone',
     DOCUMENT = 'document',
     DOCUMENT_DATE = 'docDate',
@@ -86,8 +87,6 @@ export enum RQ_ITEM_CODE {
     DOCUMENT_NUMBER = 'docNum',
     ISSUED_BY = 'issued_by',
     DEPARTMENT_CODE = 'dep_code',
-
-
 }
 export enum ADDRESS_RQ_ITEM_CODE {
     ADDRESS_COUNTRY = 'address_country',
@@ -107,7 +106,7 @@ export enum BANK_RQ_ITEM_CODE {
     BANK_ADDRESS = 'bank_address',
 }
 export interface RqItem<T extends string> {
-    type: "string" | "text" | "date" | 'file' | 'select';
+    type: 'string' | 'text' | 'date' | 'file' | 'select';
     name: string;
     isRequired: boolean;
     code: T;
@@ -118,13 +117,10 @@ export interface RqItem<T extends string> {
     isActive: boolean;
     isDisable: boolean;
     order: number;
-    component?: "base" | "contract" | "invoice" | "client";
+    component?: 'base' | 'contract' | 'invoice' | 'client';
     isHidden?: boolean; //скрытый
-    
 }
 
-
-export type BankRqItemType = RqItem<BANK_RQ_ITEM_CODE>
-export type AddressRqItemType = RqItem<ADDRESS_RQ_ITEM_CODE>
-export type RqItemType = RqItem<RQ_ITEM_CODE>
-
+export type BankRqItemType = RqItem<BANK_RQ_ITEM_CODE>;
+export type AddressRqItemType = RqItem<ADDRESS_RQ_ITEM_CODE>;
+export type RqItemType = RqItem<RQ_ITEM_CODE>;

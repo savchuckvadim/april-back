@@ -11,7 +11,7 @@ export class APIOnlineClient {
 
     constructor(
         private readonly httpService: HttpService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
     ) {
         this.logger.log('APIOnlineClient initialized');
         this.baseUrl = this.configService.get('API_ONLINE_URL') as string;
@@ -19,24 +19,27 @@ export class APIOnlineClient {
         this.logger.log(`Base URL: ${this.baseUrl}`);
     }
 
-    async request(method: 'get' | 'post' | 'put', endpoint: string, data: any, dataName: string) {
+    async request(
+        method: 'get' | 'post' | 'put',
+        endpoint: string,
+        data: any,
+        dataName: string,
+    ) {
         try {
             this.logger.log(`Request API ONLINE`);
-            this.logger.log(`Making ${method.toUpperCase()} request to ${endpoint}`);
+            this.logger.log(
+                `Making ${method.toUpperCase()} request to ${endpoint}`,
+            );
             this.logger.log(`full endpoint: ${this.baseUrl}/${endpoint}`);
             this.logger.log(`data: ${JSON.stringify(data)}`);
 
             const response = await firstValueFrom(
-                this.httpService[method](
-                    `${this.baseUrl}/${endpoint}`,
-                    data,
-                    {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-API-KEY': this.apiKey
-                        }
-                    }
-                )
+                this.httpService[method](`${this.baseUrl}/${endpoint}`, data, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-API-KEY': this.apiKey,
+                    },
+                }),
             );
 
             if (response.status >= 200 && response.status < 300) {
@@ -49,24 +52,28 @@ export class APIOnlineClient {
                     return {
                         resultCode: 0,
                         message: 'success',
-                        data: responseData[dataName]
+                        data: responseData[dataName],
                     };
                 } else {
                     this.logger.error(`${dataName} was not found in response`);
-                    this.logger.error(`Response data: ${JSON.stringify(responseData)}`);
+                    this.logger.error(
+                        `Response data: ${JSON.stringify(responseData)}`,
+                    );
                     return {
                         resultCode: 1,
                         message: 'Invalid data',
-                        data: responseData
+                        data: responseData,
                     };
                 }
             } else {
                 this.logger.error(`Error in API request: ${response.status}`);
-                this.logger.error(`Response data: ${JSON.stringify(response.data)}`);
+                this.logger.error(
+                    `Response data: ${JSON.stringify(response.data)}`,
+                );
                 return {
                     resultCode: 1,
                     message: 'Error in API request',
-                    data: response.data
+                    data: response.data,
                 };
             }
         } catch (error) {
@@ -75,8 +82,8 @@ export class APIOnlineClient {
             this.logger.error(`Stack trace: ${error.stack}`);
             return {
                 resultCode: 1,
-                message: error.message
+                message: error.message,
             };
         }
     }
-} 
+}

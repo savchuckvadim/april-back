@@ -6,20 +6,22 @@ import { TranscriptionResponseDto } from '../dto/transcription.dto';
 export class GetTranscriptionResultUseCase {
     private readonly logger = new Logger(GetTranscriptionResultUseCase.name);
 
-    constructor(
-        private readonly redisService: RedisService,
-    ) { }
+    constructor(private readonly redisService: RedisService) {}
 
     async execute(taskId: string): Promise<TranscriptionResponseDto> {
         const redis = this.redisService.getClient();
         const status = await redis.get(`transcription:${taskId}:status`);
         const error = await redis.get(`transcription:${taskId}:error`);
         const text = await redis.get(`transcription:${taskId}:text`);
-        const transcriptionId = await redis.get(`transcription:${taskId}:transcriptionId`) as string | undefined;
-       
+        const transcriptionId = (await redis.get(
+            `transcription:${taskId}:transcriptionId`,
+        )) as string | undefined;
+
         const response: TranscriptionResponseDto = {
             taskId,
-            transcriptionId: transcriptionId ? parseInt(transcriptionId) : undefined,
+            transcriptionId: transcriptionId
+                ? parseInt(transcriptionId)
+                : undefined,
             status: status || 'not_found',
         };
 
@@ -46,4 +48,4 @@ export class GetTranscriptionResultUseCase {
 
         return response;
     }
-} 
+}

@@ -3,21 +3,26 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ComplectService } from './services/complect.service';
 import { ComplectEntity } from './complect.entity';
 import { CreateComplectDto } from './dto/create-complect.dto';
-import { InfoblockEntity, InfoblockLightEntity } from '../infoblock/infoblock.entity';
+import {
+    InfoblockEntity,
+    InfoblockLightEntity,
+} from '../infoblock/infoblock.entity';
 
 @ApiTags('Garant Complect')
 @Controller('complect')
 export class ComplectController {
-    constructor(private readonly complectService: ComplectService) { }
+    constructor(private readonly complectService: ComplectService) {}
 
     @Post()
     @ApiOperation({ summary: 'Создать новый комплект' })
     @ApiResponse({
         status: 201,
         description: 'Комплект успешно создан',
-        type: ComplectEntity
+        type: ComplectEntity,
     })
-    async create(@Body() createComplectDto: CreateComplectDto): Promise<ComplectEntity | null> {
+    async create(
+        @Body() createComplectDto: CreateComplectDto,
+    ): Promise<ComplectEntity | null> {
         return this.complectService.create(createComplectDto);
     }
 
@@ -26,7 +31,7 @@ export class ComplectController {
     @ApiResponse({
         status: 200,
         description: 'Список всех комплектов',
-        type: [ComplectEntity]
+        type: [ComplectEntity],
     })
     async findAll(): Promise<ComplectEntity[] | null> {
         return this.complectService.findAll();
@@ -37,11 +42,11 @@ export class ComplectController {
     @ApiResponse({
         status: 200,
         description: 'Комплект найден',
-        type: ComplectEntity
+        type: ComplectEntity,
     })
     @ApiResponse({
         status: 404,
-        description: 'Комплект не найден'
+        description: 'Комплект не найден',
     })
     async findOne(@Param('id') id: string): Promise<ComplectEntity | null> {
         return this.complectService.findById(id);
@@ -52,15 +57,15 @@ export class ComplectController {
     @ApiResponse({
         status: 200,
         description: 'Комплект успешно обновлен',
-        type: ComplectEntity
+        type: ComplectEntity,
     })
     @ApiResponse({
         status: 404,
-        description: 'Комплект не найден'
+        description: 'Комплект не найден',
     })
     async update(
         @Param('id') id: string,
-        @Body() updateComplectDto: CreateComplectDto
+        @Body() updateComplectDto: CreateComplectDto,
     ): Promise<ComplectEntity | null> {
         return this.complectService.update(id, updateComplectDto);
     }
@@ -70,19 +75,19 @@ export class ComplectController {
     @ApiResponse({
         status: 200,
         description: 'Список доступных инфоблоков',
-        type: [InfoblockLightEntity]
+        type: [InfoblockLightEntity],
     })
     @ApiResponse({
         status: 404,
-        description: 'Комплект не найден'
+        description: 'Комплект не найден',
     })
     @ApiResponse({
         status: 404,
-        description: 'Инфоблоки у комплекта не найдены'
+        description: 'Инфоблоки у комплекта не найдены',
     })
     async getAvailableInfoblocks(
-        @Param('id') id: string
+        @Param('id') id: string,
     ): Promise<InfoblockLightEntity[] | undefined> {
         return await this.complectService.getAvailableInfoblocks(id);
     }
-} 
+}

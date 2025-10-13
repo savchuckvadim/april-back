@@ -1,23 +1,14 @@
-import { Module } from "@nestjs/common";
-import { PortalModule } from "../portal/portal.module";
-import { BitrixModule } from "../bitrix/bitrix.module";
-import { PBXService } from "./pbx.servise";
+import { Module } from '@nestjs/common';
+import { PortalModule } from '../portal/portal.module';
+import { BitrixModule } from '../bitrix/bitrix.module';
+import { PBXService } from './pbx.servise';
 // pbx.module.ts
 @Module({
-    imports: [
-      PortalModule,
-      BitrixModule,
-    ],
-    providers: [
-      PBXService
-    ],
-    exports: [
-      PortalModule,
-      BitrixModule,
-      PBXService
-    ],
-  })
-  export class PBXModule {}
+    imports: [PortalModule, BitrixModule],
+    providers: [PBXService],
+    exports: [PortalModule, BitrixModule, PBXService],
+})
+export class PBXModule {}
 
 //   src/
 // ├── modules/
@@ -38,5 +29,3 @@ import { PBXService } from "./pbx.servise";
 // │   │   │   ├── bitrix-api.factory.ts     # 🔴 для очередей (new + init)
 // │   │   │   ├── bitrix-context.ts         # 🔴 { portal, bitrixApi } — универсальный объект
 // │   │   │   └── bitrix-core.module.ts     # экспортирует API + factory
-
-  

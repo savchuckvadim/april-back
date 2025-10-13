@@ -1,37 +1,39 @@
-import { BitrixService, IUserFieldConfig, IUserFieldConfigEnumerationItem } from "@/modules/bitrix";
-import { Field, ListItem } from "../../type/parse.type";
-import { EUserFieldType } from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface'
-import { IBitrixBatchResponseResult } from "@/modules/bitrix/core/interface/bitrix-api.intterface";
-
+import {
+    BitrixService,
+    IUserFieldConfig,
+    IUserFieldConfigEnumerationItem,
+} from '@/modules/bitrix';
+import { Field, ListItem } from '../../type/parse.type';
+import { EUserFieldType } from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface';
+import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 
 export class InstallSmartFieldsService {
+    public constructor(private readonly bitrix: BitrixService) { }
 
-    public constructor(
-        private readonly bitrix: BitrixService
-    ) { }
-
-    public async installFields(fields: Field[], smartId: number): Promise<IBitrixBatchResponseResult[]> {
-
+    public async installFields(
+        fields: Field[],
+        smartId: number,
+    ): Promise<IBitrixBatchResponseResult[]> {
         for (const field of fields) {
             if (!field.isNeedUpdate) continue;
 
-            const fltToBx: Partial<IUserFieldConfig> = this.getFldToBx(field, smartId)
+            const fltToBx: Partial<IUserFieldConfig> = this.getFldToBx(
+                field,
+                smartId,
+            );
 
-            this.bitrix.batch.userFieldConfig.addBtch(
-                field.code,
-                {
-                    moduleId: 'crm',
-                    field: fltToBx
-                });
-
-
-
+            this.bitrix.batch.userFieldConfig.addBtch(field.code, {
+                moduleId: 'crm',
+                field: fltToBx,
+            });
         }
-        return await this.bitrix.api.callBatchWithConcurrency(1)
-
+        return await this.bitrix.api.callBatchWithConcurrency(1);
     }
 
-    private getFldToBx(field: Field, smartId: number): Partial<IUserFieldConfig> {
+    private getFldToBx(
+        field: Field,
+        smartId: number,
+    ): Partial<IUserFieldConfig> {
         const fltToBx: Partial<IUserFieldConfig> = {
             entityId: `CRM_${smartId}`,
             userTypeId: field.type,
@@ -45,26 +47,29 @@ export class InstallSmartFieldsService {
             sort: field.order,
             xmlId: field.code,
             editFormLabel: {
-                'ru': field.name,
-            }
-
-        }
+                ru: field.name,
+            },
+        };
         if (field.type === EUserFieldType.ENUMERATION) {
-            fltToBx.enum = this.getFldEnumeration(field.list)
+            fltToBx.enum = this.getFldEnumeration(field.list);
         }
-        return fltToBx
+        return fltToBx;
     }
 
-    private getFldEnumeration(list: ListItem[]): IUserFieldConfigEnumerationItem[] {
-        return list.map(item => this.getFldEnumerationItem(item))
+    private getFldEnumeration(
+        list: ListItem[],
+    ): IUserFieldConfigEnumerationItem[] {
+        return list.map(item => this.getFldEnumerationItem(item));
     }
 
-    private getFldEnumerationItem(item: ListItem): IUserFieldConfigEnumerationItem {
+    private getFldEnumerationItem(
+        item: ListItem,
+    ): IUserFieldConfigEnumerationItem {
         return {
             value: item.VALUE,
             def: 'N',
             sort: item.SORT,
-            xmlId: item.CODE
-        }
+            xmlId: item.CODE,
+        };
     }
-}   
+}

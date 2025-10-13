@@ -1,7 +1,6 @@
-import { Type } from "class-transformer";
+import { Type } from 'class-transformer';
 
-import { ValidateNested, IsNumber, IsBoolean } from "class-validator";
-
+import { ValidateNested, IsNumber, IsBoolean } from 'class-validator';
 
 export class PresentationCountDto {
     @IsNumber()
@@ -12,12 +11,11 @@ export class PresentationCountDto {
 
     @IsNumber()
     deal: number;
-
 }
 export class PresentationDto {
     @ValidateNested()
     @Type(() => PresentationCountDto)
-    count: PresentationCountDto
+    count: PresentationCountDto;
 
     @IsBoolean()
     isPresentationDone: boolean;
@@ -25,4 +23,3 @@ export class PresentationDto {
     @IsBoolean()
     isUnplannedPresentation: boolean;
 }
-

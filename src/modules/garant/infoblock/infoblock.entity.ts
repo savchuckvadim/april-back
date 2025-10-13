@@ -1,4 +1,4 @@
-import { InfogroupEntity } from "../infogroup/infogroup.entity";
+import { InfogroupEntity } from '../infogroup/infogroup.entity';
 
 export class InfoblockEntity {
     id: string;
@@ -35,7 +35,6 @@ export class InfoblockEntity {
     packages?: InfoblockEntity[];
     packageInfoblocks?: InfoblockEntity[];
 }
-
 
 export class InfoblockLightEntity {
     id: string;

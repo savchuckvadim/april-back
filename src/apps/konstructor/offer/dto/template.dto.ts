@@ -1,12 +1,12 @@
-import { Type } from "class-transformer";
-import { IsOptional, ValidateNested } from "class-validator";
+import { Type } from 'class-transformer';
+import { IsOptional, ValidateNested } from 'class-validator';
 
-import { IsArray } from "class-validator";
+import { IsArray } from 'class-validator';
 
-import { IsString } from "class-validator";
+import { IsString } from 'class-validator';
 
-import { IsNumber } from "class-validator";
-import { ProviderDto } from "../../../../modules/portal-konstructor/provider";
+import { IsNumber } from 'class-validator';
+import { ProviderDto } from '../../../../modules/portal-konstructor/provider';
 
 class TemplateFieldDto {
     @IsNumber() id: number;
@@ -33,8 +33,14 @@ export class TemplateDto {
     @IsString() code: string;
     @IsString() type: string;
     @IsString() portal: string;
-    @IsArray() @ValidateNested({ each: true }) @Type(() => ProviderDto) providers: ProviderDto[];
-    @IsArray() @ValidateNested({ each: true }) @Type(() => TemplateFieldDto) fields: TemplateFieldDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ProviderDto)
+    providers: ProviderDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => TemplateFieldDto)
+    fields: TemplateFieldDto[];
     @IsArray() counters: any[];
     @IsNumber() number: number;
 }

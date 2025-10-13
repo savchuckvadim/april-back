@@ -17,4 +17,4 @@ import { SupplyReportController } from './domain/interfaces/controllers/supply-r
     ],
     exports: [GenerateSupplyReportUseCase],
 })
-export class SupplyReportModule { }
+export class SupplyReportModule {}

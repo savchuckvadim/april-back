@@ -13,7 +13,7 @@ export class SilentJobManagerService {
 
     constructor(
         private readonly redisService: RedisService,
-        private readonly queueDispatcher: QueueDispatcherService
+        private readonly queueDispatcher: QueueDispatcherService,
     ) {
         this.logger.log('SilentJobManagerService initialized');
     }
@@ -61,7 +61,6 @@ export class SilentJobManagerService {
         // console.log(jobName);
         // console.log(jobPayload);
 
-    
         const dispatchData = {
             key: keyPrefix,
             handlerId: jobName,
@@ -73,13 +72,18 @@ export class SilentJobManagerService {
         if (!alreadyQueued) {
             this.logger.log('Queueing new job');
             await redis.set(jobKey, '1', 'EX', 10);
-            await this.queueDispatcher.dispatch(QueueNames.SILENT, jobName, dispatchData);
-
+            await this.queueDispatcher.dispatch(
+                QueueNames.SILENT,
+                jobName,
+                dispatchData,
+            );
         }
     }
 
     async collectAndClear<T>(keyPrefix: string): Promise<Record<string, T>> {
-        this.logger.log(`Collecting and clearing data for key prefix ${keyPrefix}`);
+        this.logger.log(
+            `Collecting and clearing data for key prefix ${keyPrefix}`,
+        );
         const redis = this.redisService.getClient();
         const key = `${keyPrefix}_data`;
         const raw = await redis.get(key);
@@ -105,7 +109,6 @@ export class SilentJobManagerService {
         //     await redis.del(lockKey); // снимаем "тишину", чтобы job пошёл
         // }
 
-
         while (true) {
             const isSilent = !(await redis.exists(lockKey));
             if (isSilent) {
@@ -113,7 +116,7 @@ export class SilentJobManagerService {
                 break;
             }
             // this.logger.log(`Still waiting for silence, checking again in ${interval}ms`);
-            await new Promise((resolve) => setTimeout(resolve, interval));
+            await new Promise(resolve => setTimeout(resolve, interval));
         }
     }
 }

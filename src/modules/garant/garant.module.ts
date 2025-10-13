@@ -1,11 +1,10 @@
-import { Module } from "@nestjs/common";
-import { InfoblockModule } from "./infoblock";
-import { ComplectModule } from "./complect";
-import { InfogroupModule } from "./infogroup";
-import { SupplyModule } from "./supply";
-import { PriceModule } from "./price";
-import { RegionModule } from "./region";
-
+import { Module } from '@nestjs/common';
+import { InfoblockModule } from './infoblock';
+import { ComplectModule } from './complect';
+import { InfogroupModule } from './infogroup';
+import { SupplyModule } from './supply';
+import { PriceModule } from './price';
+import { RegionModule } from './region';
 
 @Module({
     imports: [
@@ -14,7 +13,7 @@ import { RegionModule } from "./region";
         ComplectModule,
         SupplyModule,
         InfogroupModule,
-        RegionModule
+        RegionModule,
     ],
     exports: [
         PriceModule,
@@ -22,7 +21,7 @@ import { RegionModule } from "./region";
         ComplectModule,
         SupplyModule,
         InfogroupModule,
-        RegionModule
-    ]
+        RegionModule,
+    ],
 })
-export class GarantModule { }
+export class GarantModule {}

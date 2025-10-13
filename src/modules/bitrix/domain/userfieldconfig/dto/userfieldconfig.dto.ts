@@ -1,45 +1,36 @@
-import { IUserFieldConfig } from "../interface/userfieldconfig.interface"
+import { IUserFieldConfig } from '../interface/userfieldconfig.interface';
 
 class UserFieldConfigBaseDto {
-    moduleId: 'crm' | 'rpa'
+    moduleId: 'crm' | 'rpa';
 }
 
 export class UserFieldConfigGetDto extends UserFieldConfigBaseDto {
-    id: string | number
-
+    id: string | number;
 }
 
 export class UserFieldConfigListDto extends UserFieldConfigBaseDto {
-
-    select?: Partial<IUserFieldConfig>
+    select?: Partial<IUserFieldConfig>;
     order?: {
-        "id": "DESC"
-    }
-    filter: Partial<IUserFieldConfig>
-    start?: -1
-
+        id: 'DESC';
+    };
+    filter: Partial<IUserFieldConfig>;
+    start?: -1;
 }
 
 export class UserFieldConfigAddDto extends UserFieldConfigBaseDto {
-
-    field: Partial<IUserFieldConfig>
-
-
+    field: Partial<IUserFieldConfig>;
 }
 export class UserFieldConfigUpdateDto extends UserFieldConfigAddDto {
-    id: string | number
-
-
+    id: string | number;
 }
 export class UserFieldConfigDeleteDto extends UserFieldConfigBaseDto {
-    id: string | number
-
+    id: string | number;
 }
 
 export class UserFieldConfigResponseFieldDto extends UserFieldConfigBaseDto {
-    field: IUserFieldConfig
+    field: IUserFieldConfig;
 }
 
 export class UserFieldConfigResponseFieldsDto {
-    fields: IUserFieldConfig[]
+    fields: IUserFieldConfig[];
 }

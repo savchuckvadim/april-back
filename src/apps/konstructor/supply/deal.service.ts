@@ -3,22 +3,31 @@ import axios from 'axios';
 
 @Injectable()
 export class DealService {
-
     async initDeal(data: any, portal: any): Promise<any> {
         const bxDeal = this.getBxDeal(data.auth.domain, portal.accessKey);
         const bxRpa = this.getBxRpa(data.auth.domain, portal.accessKey);
 
-        const rpa = await bxRpa.getRpa(data.document_id.type_id, data.document_id.rpa_id);
+        const rpa = await bxRpa.getRpa(
+            data.document_id.type_id,
+            data.document_id.rpa_id,
+        );
         const pRpaSupple = this.getRpaByCode(portal, 'supply');
 
         const dealFields = this.collectDealFields(pRpaSupple, rpa);
-        const initDealFields = this.transformRpaFieldsToDealFields(portal, dealFields);
+        const initDealFields = this.transformRpaFieldsToDealFields(
+            portal,
+            dealFields,
+        );
 
-        const dealCategoryId = this.getDealCategoryByCode(portal, 'service_base');
+        const dealCategoryId = this.getDealCategoryByCode(
+            portal,
+            'service_base',
+        );
         const rpaCrmBaseDeal = initDealFields[`UF_CRM_RPA_CRM_BASE_DEAL`];
 
         const fieldFile = await this.prepareFieldFile(rpa);
-        const baseDealFieldsValue = await bxDeal.getDealFieldsValue(rpaCrmBaseDeal);
+        const baseDealFieldsValue =
+            await bxDeal.getDealFieldsValue(rpaCrmBaseDeal);
 
         Object.assign(initDealFields, {
             COMPANY_ID: rpa.RPA_CRM_COMPANY,
@@ -27,15 +36,19 @@ export class DealService {
             UF_CRM_RPA_ARM_CLIENT_ID: rpa.RPA_ARM_CLIENT_ID,
             ASSIGNED_BY_ID: rpa.MANAGER_OS,
             UF_CRM_MANAGER_EDU: rpa.MANAGER_EDU,
-            ...baseDealFieldsValue
+            ...baseDealFieldsValue,
         });
 
         const stageCode = this.calculateStageCode(rpa.CONTRACT_END);
-        initDealFields["UF_CRM_CURRENT_CONTRACT"] = "";
-        initDealFields["UF_CRM_CURRENT_INVOICE"] = "";
-        initDealFields["UF_CRM_CURRENT_SUPPLY"] = "";
+        initDealFields['UF_CRM_CURRENT_CONTRACT'] = '';
+        initDealFields['UF_CRM_CURRENT_INVOICE'] = '';
+        initDealFields['UF_CRM_CURRENT_SUPPLY'] = '';
 
-        const deal = await bxDeal.initNewElement(initDealFields, dealCategoryId.bitrixId, stageCode);
+        const deal = await bxDeal.initNewElement(
+            initDealFields,
+            dealCategoryId.bitrixId,
+            stageCode,
+        );
         const dealId = deal.result[0];
 
         await bxDeal.updateDeal(dealId, initDealFields);
@@ -44,7 +57,13 @@ export class DealService {
         this.copyProductRowsFromBaseDeal(rpa.RPA_CRM_BASE_DEAL, bxDeal, dealId);
         this.updateCompanyAndContacts(portal, rpa, data.auth.domain);
 
-        await this.addTimelineToDealAndRpa(bxDeal, bxRpa, data, dealId, pRpaSupple);
+        await this.addTimelineToDealAndRpa(
+            bxDeal,
+            bxRpa,
+            data,
+            dealId,
+            pRpaSupple,
+        );
         await this.initOrkTasks(portal, data.auth.domain, rpa, dealId);
 
         await this.notifyDealCreation(dealId, data.auth.domain);
@@ -56,10 +75,17 @@ export class DealService {
         // Simulate BxDeal service
         return {
             getDealFieldsValue: async (dealId: any) => ({}),
-            initNewElement: async (initDealFields: any, dealCategoryId: number, stageCode: string) => ({ result: [1] }),
-            updateDeal: async (dealId: number, fields: any) => { },
+            initNewElement: async (
+                initDealFields: any,
+                dealCategoryId: number,
+                stageCode: string,
+            ) => ({ result: [1] }),
+            updateDeal: async (dealId: number, fields: any) => {},
             getProductRows: async (baseDealId: number) => [],
-            setProductRows: async (dealServiceId: number, productRows: any) => { }
+            setProductRows: async (
+                dealServiceId: number,
+                productRows: any,
+            ) => {},
         };
     }
 
@@ -67,7 +93,11 @@ export class DealService {
         // Simulate BxRpa service
         return {
             getRpa: async (typeId: number, rpaId: number) => ({}),
-            addTimeline: async (text: string, typeId: number, itemId: number) => { }
+            addTimeline: async (
+                text: string,
+                typeId: number,
+                itemId: number,
+            ) => {},
         };
     }
 
@@ -101,7 +131,11 @@ export class DealService {
         return {};
     }
 
-    private async copyProductRowsFromBaseDeal(baseDealId: number, bxDeal: any, dealServiceId: number): Promise<void> {
+    private async copyProductRowsFromBaseDeal(
+        baseDealId: number,
+        bxDeal: any,
+        dealServiceId: number,
+    ): Promise<void> {
         const productRows = await bxDeal.getProductRows(baseDealId);
         productRows.forEach(row => {
             row.OWNER_ID = dealServiceId;
@@ -109,20 +143,38 @@ export class DealService {
         await bxDeal.setProductRows(dealServiceId, productRows);
     }
 
-    private async updateCompanyAndContacts(portal: any, rpa: any, domain: string): Promise<void> {
+    private async updateCompanyAndContacts(
+        portal: any,
+        rpa: any,
+        domain: string,
+    ): Promise<void> {
         // Simulate updating company and contacts
     }
 
-    private async addTimelineToDealAndRpa(bxDeal: any, bxRpa: any, data: any, dealId: number, pRpaSupple: any): Promise<void> {
+    private async addTimelineToDealAndRpa(
+        bxDeal: any,
+        bxRpa: any,
+        data: any,
+        dealId: number,
+        pRpaSupple: any,
+    ): Promise<void> {
         // Simulate adding timeline to deal and RPA
     }
 
-    private async initOrkTasks(portal: any, domain: string, rpa: any, dealServiceId: number): Promise<void> {
+    private async initOrkTasks(
+        portal: any,
+        domain: string,
+        rpa: any,
+        dealServiceId: number,
+    ): Promise<void> {
         // Simulate initializing ORK tasks
     }
 
-    private async notifyDealCreation(dealId: number, domain: string): Promise<void> {
+    private async notifyDealCreation(
+        dealId: number,
+        domain: string,
+    ): Promise<void> {
         // Simulate notifying deal creation
         console.log(`Created Deal: ${dealId}`);
     }
-} 
+}

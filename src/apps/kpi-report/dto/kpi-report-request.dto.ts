@@ -14,7 +14,7 @@ import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 
 // export class BXUserDto implements IBXUser {
 //     @ApiProperty()
-    
+
 //     @IsNumberString()
 //     ID: number;
 
@@ -38,13 +38,9 @@ import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 //     @IsString()
 //     WORK_POSITION: string;
 
-
-
 //     @ApiProperty({ type: [Number] })
 //     @IsArray()
 //     UF_DEPARTMENT: number[];
-
-
 
 //     @ApiProperty({ required: false })
 //     @IsOptional()
@@ -53,7 +49,6 @@ import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 //     @ApiProperty()
 //     @IsString()
 //     USER_TYPE: string;
-
 
 //     @IsString()
 //     ACTIVE: boolean;
@@ -103,75 +98,73 @@ import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 //     @IsString()
 //     UF_PHONE_INNER: string;
 
-
-
 // }
 
 export class BXUserDto {
     @ApiProperty()
     @IsNumberString()
     ID: string;
-  
+
     @ApiProperty()
     @IsString()
     NAME: string;
-  
+
     @ApiProperty()
     @IsString()
     LAST_NAME: string;
-  }
+}
 export class ReportGetFiltersDto {
     @ApiProperty()
     @IsString()
     dateFrom: string;
-  
+
     @ApiProperty()
     @IsString()
     dateTo: string;
-  
+
     @ApiProperty({ type: [String] })
     @IsArray()
     userIds: Array<string | number>;
-  
+
     @ApiProperty({ type: [BXUserDto] })
     @ValidateNested({ each: true })
     @Type(() => BXUserDto)
     @IsArray()
     departament: BXUserDto[];
-  
+
     @ApiProperty()
     @IsString()
     userFieldId: string;
-  
+
     @ApiProperty()
     @IsString()
     dateFieldId: string;
-  
+
     @ApiProperty()
     @IsString()
     actionFieldId: string;
-  
+
     @ApiProperty()
     @IsObject()
     currentActions: any;
-  }
+}
 
-  export class ReportGetRequestDto {
+export class ReportGetRequestDto {
     @ApiProperty()
     @IsString()
     domain: string;
-  
+
     @ApiProperty({ type: ReportGetFiltersDto })
     @ValidateNested()
     @Type(() => ReportGetFiltersDto)
     filters: ReportGetFiltersDto;
-  
+
     // @ApiProperty({ required: false })
     // @IsOptional()
     // @IsString()
     // socketId?: string;
-  }
-  
+}
+
 // export class ReportGetFiltersDto {
 //     dateFrom: string;
 //     dateTo: string;

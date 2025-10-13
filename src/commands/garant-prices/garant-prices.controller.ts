@@ -3,10 +3,10 @@ import { GarantPricesService } from './garant-prices.service';
 
 @Controller('garant-prices')
 export class GarantPricesController {
-  constructor(private readonly garantPricesService: GarantPricesService) {}
+    constructor(private readonly garantPricesService: GarantPricesService) {}
 
-  @Get()
-  async updateGarantPrices() {
-    return this.garantPricesService.update();
-  }
+    @Get()
+    async updateGarantPrices() {
+        return this.garantPricesService.update();
+    }
 }

@@ -5,18 +5,16 @@ import { FileStorageService } from './file-storage.service';
 import { StreamingTranscriptionService } from './streaming-transcription.service';
 import { OnlineTranscriptionService } from 'src/clients/online';
 
-
 @Injectable()
 export class TranscriptionService {
     private readonly logger = new Logger(TranscriptionService.name);
 
     constructor(
-
         private readonly redisService: RedisService,
         private readonly fileStorageService: FileStorageService,
         private readonly streamingTranscriptionService: StreamingTranscriptionService,
-        private readonly onlineClient: OnlineTranscriptionService
-    ) { }
+        private readonly onlineClient: OnlineTranscriptionService,
+    ) {}
 
     async transcribe(
         fileUrl: string,
@@ -32,99 +30,150 @@ export class TranscriptionService {
         department: string,
         entityType: string,
         entityId: string,
-        entityName: string
-
+        entityName: string,
     ): Promise<string | null> {
         let transcriptionId: string | undefined;
         try {
             await this.updateStatus(taskId, 'processing');
 
-            const transcriptionOnline = await this.onlineClient.sendTranscription({
-                user_name: userName,
-                app: appName,
-                activity_id: activityId,
-                file_id: fileId,
-                duration: duration,
-                department: department,
-                domain: domain,
-                user_id: userId,
-                entity_type: entityType,
-                entity_id: entityId,
-                entity_name: entityName,
-                status: 'processing',
-                symbols_count: 0,
-                price: 0,
-                text: '',
-                provider: 'yandex'
-
-            })
+            const transcriptionOnline =
+                await this.onlineClient.sendTranscription({
+                    user_name: userName,
+                    app: appName,
+                    activity_id: activityId,
+                    file_id: fileId,
+                    duration: duration,
+                    department: department,
+                    domain: domain,
+                    user_id: userId,
+                    entity_type: entityType,
+                    entity_id: entityId,
+                    entity_name: entityName,
+                    status: 'processing',
+                    symbols_count: 0,
+                    price: 0,
+                    text: '',
+                    provider: 'yandex',
+                });
             if (transcriptionOnline && transcriptionOnline.id) {
                 transcriptionId = transcriptionOnline.id;
             }
-            this.logger.log(`Transcription online: ${JSON.stringify(transcriptionOnline)}`);
+            this.logger.log(
+                `Transcription online: ${JSON.stringify(transcriptionOnline)}`,
+            );
             // Пытаемся получить URL файла из хранилища
-            let fileUri = await this.fileStorageService.getFileUrl(fileName, domain, userId);
+            let fileUri = await this.fileStorageService.getFileUrl(
+                fileName,
+                domain,
+                userId,
+            );
 
             // Если файла нет в хранилище, скачиваем и сохраняем
             if (!fileUri) {
-                this.logger.log('File not found in storage, downloading from URL');
-                fileUri = await this.fileStorageService.downloadAndSaveFile(fileUrl, fileName, domain, userId);
+                this.logger.log(
+                    'File not found in storage, downloading from URL',
+                );
+                fileUri = await this.fileStorageService.downloadAndSaveFile(
+                    fileUrl,
+                    fileName,
+                    domain,
+                    userId,
+                );
                 if (!fileUri) {
-                    await this.updateStatus(taskId, 'error', 'Failed to download or save file');
+                    await this.updateStatus(
+                        taskId,
+                        'error',
+                        'Failed to download or save file',
+                    );
                     return null;
                 }
             }
 
             // Start transcription using S3 URI
-            const operationId = await this.streamingTranscriptionService.transcribeAudio(fileUri);
-            const text = await this.streamingTranscriptionService.getTranscriptionResult(operationId);
+            const operationId =
+                await this.streamingTranscriptionService.transcribeAudio(
+                    fileUri,
+                );
+            const text =
+                await this.streamingTranscriptionService.getTranscriptionResult(
+                    operationId,
+                );
 
             if (text) {
-                await this.updateStatus(taskId, 'done', null, text, transcriptionId);
+                await this.updateStatus(
+                    taskId,
+                    'done',
+                    null,
+                    text,
+                    transcriptionId,
+                );
 
                 if (transcriptionId) {
-                    void await this.onlineClient.updateTranscription({
-                 
-                        status: 'done',
-                        symbols_count: text.length,
-                        price: 0,
-                        text,
-                        provider: 'yandex'
-
-                    }, transcriptionId)
+                    void (await this.onlineClient.updateTranscription(
+                        {
+                            status: 'done',
+                            symbols_count: text.length,
+                            price: 0,
+                            text,
+                            provider: 'yandex',
+                        },
+                        transcriptionId,
+                    ));
                 }
                 return text;
             }
 
-            await this.updateStatus(taskId, 'error', 'Transcription failed', transcriptionId);
+            await this.updateStatus(
+                taskId,
+                'error',
+                'Transcription failed',
+                transcriptionId,
+            );
 
             if (transcriptionId) {
-                void await this.onlineClient.updateTranscription({
-
-                    status: 'error',
-                    symbols_count: text.length,
-                    price: 0,
-                    text,
-                    provider: 'yandex'
-
-                }, transcriptionId)
+                void (await this.onlineClient.updateTranscription(
+                    {
+                        status: 'error',
+                        symbols_count: text.length,
+                        price: 0,
+                        text,
+                        provider: 'yandex',
+                    },
+                    transcriptionId,
+                ));
             }
 
             return null;
         } catch (error) {
             this.logger.error('Transcription error:', error);
-            await this.updateStatus(taskId, 'error', error.message, transcriptionId);
+            await this.updateStatus(
+                taskId,
+                'error',
+                error.message,
+                transcriptionId,
+            );
             return null;
         }
     }
 
-    private async updateStatus(taskId: string, status: string, error?: string | null, text?: string, transcriptionId?: string): Promise<void> {
+    private async updateStatus(
+        taskId: string,
+        status: string,
+        error?: string | null,
+        text?: string,
+        transcriptionId?: string,
+    ): Promise<void> {
         const redis = this.redisService.getClient();
         const key = `transcription:${taskId}`;
 
         await redis.set(`${key}:status`, status, 'EX', 3600); // 1 hour TTL
         if (transcriptionId) {
-            await redis.set(`${key}:transcriptionId`, transcriptionId as string, 'EX', 3600);
+            await redis.set(
+                `${key}:transcriptionId`,
+                transcriptionId as string,
+                'EX',
+                3600,
+            );
         }
 
         if (error) {
@@ -135,4 +184,4 @@ export class TranscriptionService {
             await redis.set(`${key}:text`, text, 'EX', 3600);
         }
     }
-} 
+}

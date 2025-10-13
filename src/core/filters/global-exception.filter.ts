@@ -16,7 +16,7 @@ import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 export class GlobalExceptionFilter implements ExceptionFilter {
     private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-    constructor(private readonly telegram: TelegramService) { }
+    constructor(private readonly telegram: TelegramService) {}
 
     async catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
@@ -46,15 +46,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 ? exception
                 : new Error(JSON.stringify(exception));
 
-
         // Обработка валидационных ошибок
         if (
             exception instanceof BadRequestException &&
             typeof exception.getResponse === 'function'
         ) {
-            return await this.handleValidationException(exception, request, response);
+            return await this.handleValidationException(
+                exception,
+                request,
+                response,
+            );
         }
-
 
         // Разбор stack trace
         let file = '';
@@ -63,8 +65,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         let code = '';
         try {
             const stackLines = error.stack?.split('\n') || [];
-            const target = stackLines.find((l) =>
-                l.includes('/src/') || l.includes('src\\')
+            const target = stackLines.find(
+                l => l.includes('/src/') || l.includes('src\\'),
             );
             if (target) {
                 const match = target.match(/\((.*):(\d+):(\d+)\)/);
@@ -81,16 +83,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             console.warn('Stack trace parse failed', e);
         }
 
-
-        const ip = request.headers['x-forwarded-for'] || request.socket.remoteAddress;
+        const ip =
+            request.headers['x-forwarded-for'] || request.socket.remoteAddress;
         const userAgent = request.headers['user-agent'] || 'unknown';
         const referer = request.headers['referer'] || 'n/a';
-
 
         const message = `⚠️ Ошибка: ${error.name}\n\n📄 Файл: ${file}\n🔢 Строка: ${line}\n🔧 Функция: ${func}\n\n💥 Код: ${code}\n\n📬 Сообщение: ${error.message}\n\n📍 URL: ${request.method} ${request.url}\n🧭 User-Agent: ${userAgent}\n🌍 IP: ${ip}\n🔗 Referer: ${referer}
         `;
         await this.telegram.sendMessage(message);
-        console.log(message)
+        console.log(message);
         const responseBody: ApiResponse<null> = {
             resultCode: EResultCode.ERROR,
             message: error.message,
@@ -98,21 +99,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         response.status(status).json(responseBody);
     }
 
-
-
-
-
     private async handleValidationException(
         exception: BadRequestException,
         request: Request,
-        response: Response
+        response: Response,
     ) {
         const res = exception.getResponse();
-       
+
         // const details = typeof res === 'object'
         //     ? JSON.stringify(res, null, 2)
         //     : res;
-
 
         const messageArray =
             typeof res === 'object' && res !== null && 'message' in res
@@ -131,7 +127,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             resultCode: EResultCode.ERROR,
             message: 'Validation failed',
             errors: messageArray,
-           
         });
     }
 }

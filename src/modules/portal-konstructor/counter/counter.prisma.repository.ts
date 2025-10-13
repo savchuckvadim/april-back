@@ -1,14 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/core/prisma";
-import { CounterRepository } from "./counter.repository";
-import { CounterEntity } from "./counter.entity";
-import { createCounterEntityFromPrisma } from "./lib/counter-entity.util";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/core/prisma';
+import { CounterRepository } from './counter.repository';
+import { CounterEntity } from './counter.entity';
+import { createCounterEntityFromPrisma } from './lib/counter-entity.util';
 
 @Injectable()
 export class CounterPrismaRepository implements CounterRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: number): Promise<CounterEntity | null> {
         const result = await this.prisma.counters.findUnique({
@@ -16,15 +14,15 @@ export class CounterPrismaRepository implements CounterRepository {
             include: {
                 template_counter: {
                     include: {
-                        templates: true
-                    }
+                        templates: true,
+                    },
                 },
                 rq_counter: {
                     include: {
-                        rqs: true
-                    }
-                }
-            }
+                        rqs: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
@@ -37,22 +35,22 @@ export class CounterPrismaRepository implements CounterRepository {
             where: {
                 rq_counter: {
                     some: {
-                        rq_id: BigInt(rqId)
-                    }
-                }
+                        rq_id: BigInt(rqId),
+                    },
+                },
             },
             include: {
                 template_counter: {
                     include: {
-                        templates: true
-                    }
+                        templates: true,
+                    },
                 },
                 rq_counter: {
                     include: {
-                        rqs: true
-                    }
-                }
-            }
+                        rqs: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
@@ -65,22 +63,22 @@ export class CounterPrismaRepository implements CounterRepository {
             where: {
                 template_counter: {
                     some: {
-                        template_id: BigInt(templateId)
-                    }
-                }
+                        template_id: BigInt(templateId),
+                    },
+                },
             },
             include: {
                 template_counter: {
                     include: {
-                        templates: true
-                    }
+                        templates: true,
+                    },
                 },
                 rq_counter: {
                     include: {
-                        rqs: true
-                    }
-                }
-            }
+                        rqs: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
@@ -100,19 +98,19 @@ export class CounterPrismaRepository implements CounterRepository {
             include: {
                 template_counter: {
                     include: {
-                        templates: true
-                    }
+                        templates: true,
+                    },
                 },
                 rq_counter: {
                     include: {
-                        rqs: true
-                    }
-                }
-            }
+                        rqs: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
 
         return result.map(counter => createCounterEntityFromPrisma(counter));
     }
-} 
+}

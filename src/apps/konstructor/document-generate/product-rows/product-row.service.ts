@@ -1,7 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import { ProductRowDto } from "../dto/product-row/product-row.dto";
-import { ClientTypeEnum } from "../type/client.type";
-
+import { Injectable } from '@nestjs/common';
+import { ProductRowDto } from '../dto/product-row/product-row.dto';
+import { ClientTypeEnum } from '../type/client.type';
 
 export interface Product {
     productNumber: number;
@@ -17,15 +16,24 @@ export interface Product {
 
 @Injectable()
 export class DocumentProductRowService {
-
-
-    public getProducts(arows: ProductRowDto[], contractName: string, isProduct: boolean, contractCoefficient: number, clientType: ClientTypeEnum): Product[] {
-        const contractFullName = isProduct ? `${contractName} длительность ${contractCoefficient} мес.` : contractName;
+    public getProducts(
+        arows: ProductRowDto[],
+        contractName: string,
+        isProduct: boolean,
+        contractCoefficient: number,
+        clientType: ClientTypeEnum,
+    ): Product[] {
+        const contractFullName = isProduct
+            ? `${contractName} длительность ${contractCoefficient} мес.`
+            : contractName;
         const products: Product[] = [];
 
         for (let i = 0; i < arows.length; i++) {
             const row = arows[i];
-            const productQuantity = clientType === ClientTypeEnum.ORG_STATE ? 1 : row.price.quantity;
+            const productQuantity =
+                clientType === ClientTypeEnum.ORG_STATE
+                    ? 1
+                    : row.price.quantity;
 
             products.push({
                 productNumber: i + 1,
@@ -40,8 +48,16 @@ export class DocumentProductRowService {
         return products;
     }
 
-    private getSupplyProducts(arows: any[], contractName: string, isProduct: boolean, contractCoefficient: number, clientType: ClientTypeEnum): Product[] {
-        const contractFullName = isProduct ? `${contractName} длительность ${contractCoefficient} мес.` : contractName;
+    private getSupplyProducts(
+        arows: any[],
+        contractName: string,
+        isProduct: boolean,
+        contractCoefficient: number,
+        clientType: ClientTypeEnum,
+    ): Product[] {
+        const contractFullName = isProduct
+            ? `${contractName} длительность ${contractCoefficient} мес.`
+            : contractName;
         const products: Product[] = [];
 
         for (let i = 0; i < arows.length; i++) {
@@ -49,7 +65,8 @@ export class DocumentProductRowService {
             const productQuantity = row.price.quantity;
             const productContractCoefficient = row.product.contractCoefficient;
             const quantity = productQuantity * productContractCoefficient;
-            const complect_sup = row.productType === 'garant' ? row.currentSupply.name : '';
+            const complect_sup =
+                row.productType === 'garant' ? row.currentSupply.name : '';
 
             const productPrice = Number(row.price.current).toFixed(2);
             const productSum = Number(row.price.sum).toFixed(2);
@@ -70,5 +87,4 @@ export class DocumentProductRowService {
 
         return products;
     }
-
 }

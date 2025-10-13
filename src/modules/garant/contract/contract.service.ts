@@ -1,19 +1,21 @@
-import { Injectable } from "@nestjs/common";
-import { ContractRepository } from "./contract.repository";
-import { ContractEntity } from "./contract.entity";
-import { PortalContractEntity } from "./portal-contract.entity";
+import { Injectable } from '@nestjs/common';
+import { ContractRepository } from './contract.repository';
+import { ContractEntity } from './contract.entity';
+import { PortalContractEntity } from './portal-contract.entity';
 
 @Injectable()
 export class ContractService {
-    constructor(
-        private readonly contractRepository: ContractRepository,
-    ) { }
+    constructor(private readonly contractRepository: ContractRepository) {}
 
-    async create(contract: Partial<ContractEntity>): Promise<ContractEntity | null> {
+    async create(
+        contract: Partial<ContractEntity>,
+    ): Promise<ContractEntity | null> {
         return await this.contractRepository.create(contract);
     }
 
-    async update(contract: Partial<ContractEntity>): Promise<ContractEntity | null> {
+    async update(
+        contract: Partial<ContractEntity>,
+    ): Promise<ContractEntity | null> {
         return await this.contractRepository.update(contract);
     }
 
@@ -25,7 +27,9 @@ export class ContractService {
         return await this.contractRepository.findMany();
     }
 
-    async findByPortalId(portalId: number): Promise<PortalContractEntity[] | null> {
+    async findByPortalId(
+        portalId: number,
+    ): Promise<PortalContractEntity[] | null> {
         return await this.contractRepository.findByPortalId(portalId);
     }
-} 
+}

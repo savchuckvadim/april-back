@@ -3,17 +3,17 @@ import { WsGateway } from './ws.gateway';
 import { WsService } from './ws.service';
 
 describe('WsGateway', () => {
-  let gateway: WsGateway;
+    let gateway: WsGateway;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [WsGateway, WsService],
-    }).compile();
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [WsGateway, WsService],
+        }).compile();
 
-    gateway = module.get<WsGateway>(WsGateway);
-  });
+        gateway = module.get<WsGateway>(WsGateway);
+    });
 
-  it('should be defined', () => {
-    expect(gateway).toBeDefined();
-  });
+    it('should be defined', () => {
+        expect(gateway).toBeDefined();
+    });
 });

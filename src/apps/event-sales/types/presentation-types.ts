@@ -5,9 +5,7 @@ export enum PresentationCountProp {
 }
 
 export interface PresentationStateCount {
-    [PresentationCountProp.COMPANY]: number,
-    [PresentationCountProp.SMART]: number,
-    [PresentationCountProp.DEAL]: number,
+    [PresentationCountProp.COMPANY]: number;
+    [PresentationCountProp.SMART]: number;
+    [PresentationCountProp.DEAL]: number;
 }
-
-

@@ -72,17 +72,24 @@ export class TranscriptionResponseDto {
     @ApiProperty({ description: 'Task ID for tracking transcription status' })
     taskId: string;
 
-    @ApiProperty({ description: 'Status of the transcription task', enum: ['started', 'processing', 'done', 'error'] })
+    @ApiProperty({
+        description: 'Status of the transcription task',
+        enum: ['started', 'processing', 'done', 'error'],
+    })
     status: string;
 
-    @ApiProperty({ description: 'Transcribed text (if status is done)', required: false })
+    @ApiProperty({
+        description: 'Transcribed text (if status is done)',
+        required: false,
+    })
     text?: string;
 
-    @ApiProperty({ description: 'Error message (if status is error)', required: false })
+    @ApiProperty({
+        description: 'Error message (if status is error)',
+        required: false,
+    })
     error?: string;
 
     @ApiProperty({ description: 'Transcription ID' })
     transcriptionId?: number;
 }
-
-

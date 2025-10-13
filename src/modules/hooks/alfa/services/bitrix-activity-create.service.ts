@@ -5,7 +5,6 @@
 // import { RedisService } from 'src/core/redis/redis.service';
 // import { AlfaActivityData } from './alfa-activity.service';
 
-
 // @Injectable()
 // export class BitrixActivityCreateService {
 //     constructor(private readonly bitrixApi: BitrixApiService, private readonly redisService: RedisService) { }
@@ -15,7 +14,6 @@
 //         if (!activities || Object.keys(activities).length === 0) return;
 
 //         this.bitrixApi.init();
-
 
 //         for (const [_, params] of Object.entries(activities)) {
 //             try {

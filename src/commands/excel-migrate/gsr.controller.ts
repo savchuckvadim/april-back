@@ -1,38 +1,43 @@
-import { Body, Controller, Get, Param, Post, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
-import { diskStorage } from "multer";
-import { extname } from "path";
-import { Response } from "express";
-import { GsrMigrateUseCase } from "./gsr-migrate.use-case";
-import { ContactsCreateUseCase } from "./contacts-create.use-case";
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { IBXTask } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
-import { TaskUseCase } from "./task.use-case";
-import { IsString, IsNotEmpty } from "class-validator";
-import { GsrSheetsMigrateUseCase } from "./gsr-sheets-migrate.use-case";
-import { Express } from "express";
-
-
+import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    Post,
+    Res,
+    UploadedFile,
+    UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { Response } from 'express';
+import { GsrMigrateUseCase } from './gsr-migrate.use-case';
+import { GetDealsDto } from './dtos/get-deals.dto';
+import { ContactsCreateUseCase } from './contacts-create.use-case';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { IBXTask } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import { TaskUseCase } from './task.use-case';
+import { IsString, IsNotEmpty } from 'class-validator';
+import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
+import { Express } from 'express';
 
 class GsrMigrateDto {
     @IsString()
     @IsNotEmpty()
-    domain: string
+    domain: string;
     @IsString()
     @IsNotEmpty()
-    userId: string
-   
+    userId: string;
 }
 @ApiTags('Commands')
 @Controller('gsr-service')
 export class GsrServiceController {
     constructor(
-
         private readonly migrateUseCase: GsrMigrateUseCase,
         private readonly contactsCreateUseCase: ContactsCreateUseCase,
         private readonly taskUseCase: TaskUseCase,
-        private readonly sheetsMigrateUseCase: GsrSheetsMigrateUseCase
-
+        private readonly sheetsMigrateUseCase: GsrSheetsMigrateUseCase,
     ) { }
 
     @Post('parse')
@@ -50,11 +55,15 @@ export class GsrServiceController {
     async parseFile(
         @Body() body: GsrMigrateDto,
         @UploadedFile() file: Express.Multer.File,
-        @Res() res: Response) {
-        const result = await this.migrateUseCase.migrate(body.domain, body.userId, file.path);
+        @Res() res: Response,
+    ) {
+        const result = await this.migrateUseCase.migrate(
+            body.domain,
+            body.userId,
+            file.path,
+        );
         return res.send(result);
     }
-
 
     @Post('sheets-parse')
     @UseInterceptors(
@@ -71,8 +80,13 @@ export class GsrServiceController {
     async sheetsParse(
         @Body() body: GsrMigrateDto,
         @UploadedFile() file: Express.Multer.File,
-        @Res() res: Response) {
-        const result = await this.sheetsMigrateUseCase.migrate(body.domain, body.userId, file.path);
+        @Res() res: Response,
+    ) {
+        const result = await this.sheetsMigrateUseCase.migrate(
+            body.domain,
+            body.userId,
+            file.path,
+        );
         return res.send(result);
     }
 
@@ -88,7 +102,6 @@ export class GsrServiceController {
     //     return result;
     // }
 
-
     @Post('get-deals')
     @UseInterceptors(
         FileInterceptor('file', {
@@ -102,10 +115,14 @@ export class GsrServiceController {
         }),
     )
     async getDeals(
-        @Body() body: { domain: string },
+        @Body() body: GetDealsDto,
         @UploadedFile() file: Express.Multer.File,
-        @Res() res: Response) {
-        const result = await this.migrateUseCase.getDeals(body.domain, file.path);
+        @Res() res: Response,
+    ) {
+        const result = await this.migrateUseCase.getDeals(
+            body.domain,
+            file.path,
+        );
         return res.send(result);
     }
 
@@ -124,8 +141,13 @@ export class GsrServiceController {
     async updateDeals(
         @Body() body: GsrMigrateDto,
         @UploadedFile() file: Express.Multer.File,
-        @Res() res: Response) {
-        const result = await this.migrateUseCase.updateDeals(body.domain, body.userId, file.path);
+        @Res() res: Response,
+    ) {
+        const result = await this.migrateUseCase.updateDeals(
+            body.domain,
+            body.userId,
+            file.path,
+        );
         return res.send(result);
     }
 
@@ -134,16 +156,14 @@ export class GsrServiceController {
     @ApiParam({
         name: 'domain',
         description: 'Domain of the Bitrix portal',
-        example: 'example.bitrix24.ru'
+        example: 'example.bitrix24.ru',
     })
     @ApiResponse({
         status: 200,
         description: 'Returns list of tasks',
         // type: [IBXTask ] // или создайте TaskDto если нужна более специфичная структура
     })
-    async getTasks(
-        @Param('domain') domain: string
-    ){
-        return await this.taskUseCase.getTasks(domain)
+    async getTasks(@Param('domain') domain: string) {
+        return await this.taskUseCase.getTasks(domain);
     }
 }

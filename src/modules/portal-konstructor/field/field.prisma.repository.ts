@@ -1,14 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/core/prisma";
-import { FieldRepository } from "./field.repository";
-import { FieldEntity } from "./field.entity";
-import { createFieldEntityFromPrisma } from "./lib/field-entity.util";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/core/prisma';
+import { FieldRepository } from './field.repository';
+import { FieldEntity } from './field.entity';
+import { createFieldEntityFromPrisma } from './lib/field-entity.util';
 
 @Injectable()
 export class FieldPrismaRepository implements FieldRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: number): Promise<FieldEntity | null> {
         const result = await this.prisma.fields.findUnique({
@@ -16,10 +14,10 @@ export class FieldPrismaRepository implements FieldRepository {
             include: {
                 template_field: {
                     include: {
-                        templates: true
-                    }
-                }
-            }
+                        templates: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
@@ -33,10 +31,10 @@ export class FieldPrismaRepository implements FieldRepository {
             include: {
                 template_field: {
                     include: {
-                        templates: true
-                    }
-                }
-            }
+                        templates: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
@@ -56,14 +54,14 @@ export class FieldPrismaRepository implements FieldRepository {
             include: {
                 template_field: {
                     include: {
-                        templates: true
-                    }
-                }
-            }
+                        templates: true,
+                    },
+                },
+            },
         });
 
         if (!result) return null;
 
         return result.map(field => createFieldEntityFromPrisma(field));
     }
-} 
+}

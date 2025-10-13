@@ -61,16 +61,28 @@ export class BitrixListFlowService {
         // Звонок	event_type	call
         // Презентация	event_type	presentation
         // ... many other types
-        if (eventType === 'call' || eventType === 'warm' || eventType === 'supply') {
+        if (
+            eventType === 'call' ||
+            eventType === 'warm' ||
+            eventType === 'supply'
+        ) {
             return 'call';
         }
         if (eventType === 'presentation') {
             return 'presentation';
         }
-        if (eventType === 'hot' || eventType === 'inProgress' || eventType === 'in_progress') {
+        if (
+            eventType === 'hot' ||
+            eventType === 'inProgress' ||
+            eventType === 'in_progress'
+        ) {
             return 'call_in_progress';
         }
-        if (eventType === 'moneyAwait' || eventType === 'money_await' || eventType === 'money') {
+        if (
+            eventType === 'moneyAwait' ||
+            eventType === 'money_await' ||
+            eventType === 'money'
+        ) {
             return 'call_in_money';
         }
         if (eventType === 'fail') {
@@ -94,8 +106,10 @@ export class BitrixListFlowService {
             const code = workStatus.code;
             switch (code) {
                 case 'inJob':
-                    if (currentEventType === 'hot') return 'op_status_in_progress';
-                    if (currentEventType === 'moneyAwait') return 'op_status_money_await';
+                    if (currentEventType === 'hot')
+                        return 'op_status_in_progress';
+                    if (currentEventType === 'moneyAwait')
+                        return 'op_status_money_await';
                     return 'op_status_in_work';
                 case 'setAside':
                     return 'op_status_in_long';
@@ -169,7 +183,9 @@ export class BitrixListFlowService {
                     return btxField.bitrixCamelId;
                 }
                 if (btxField.items) {
-                    const btxFieldItem = btxField.items.find(i => i.code === listCode);
+                    const btxFieldItem = btxField.items.find(
+                        i => i.code === listCode,
+                    );
                     if (btxFieldItem) {
                         return btxFieldItem.bitrixId;
                     }
@@ -204,7 +220,9 @@ export class BitrixListFlowService {
         resultBatchCommandsInput: BatchCommands = {},
     ): BatchCommands {
         // Clone to avoid modifying the input object directly, mimicking PHP's array copy-on-write (for top level)
-        const resultBatchCommands: BatchCommands = { ...resultBatchCommandsInput };
+        const resultBatchCommands: BatchCommands = {
+            ...resultBatchCommandsInput,
+        };
 
         try {
             const nowDate =
@@ -242,14 +260,26 @@ export class BitrixListFlowService {
 
             if (eventType === 'xo' || eventType === 'cold') {
                 evTypeName = 'Холодный звонок';
-            } else if (eventType === 'warm' || eventType === 'call' || eventType === 'supply') {
+            } else if (
+                eventType === 'warm' ||
+                eventType === 'call' ||
+                eventType === 'supply'
+            ) {
                 evTypeName = 'Звонок';
             } else if (eventType === 'presentation') {
                 evTypeName = 'Презентация';
                 eventActionName = 'Запланирована';
-            } else if (eventType === 'hot' || eventType === 'inProgress' || eventType === 'in_progress') {
+            } else if (
+                eventType === 'hot' ||
+                eventType === 'inProgress' ||
+                eventType === 'in_progress'
+            ) {
                 evTypeName = 'Звонок по решению';
-            } else if (eventType === 'money' || eventType === 'moneyAwait' || eventType === 'money_await') {
+            } else if (
+                eventType === 'money' ||
+                eventType === 'moneyAwait' ||
+                eventType === 'money_await'
+            ) {
                 evTypeName = 'Звонок по оплате';
             }
 
@@ -281,7 +311,10 @@ export class BitrixListFlowService {
             }
 
             if (mutableEventAction !== 'plan') {
-                if (workStatus?.code !== 'inJob' && workStatus?.code !== 'setAside') {
+                if (
+                    workStatus?.code !== 'inJob' &&
+                    workStatus?.code !== 'setAside'
+                ) {
                     nextCommunication = null;
                 }
             }
@@ -300,44 +333,64 @@ export class BitrixListFlowService {
                 value?: any;
                 list?: { code: string | null; name?: string };
             }> = [
-                    { code: 'event_date', name: 'Дата', value: nowDate },
-                    { code: 'event_title', name: 'Название', value: hotName },
-                    { code: 'plan_date', name: 'Дата Следующей коммуникации', value: nextCommunication },
-                    { code: 'author', name: 'Автор', value: created },
-                    { code: 'responsible', name: 'Ответственный', value: responsible },
-                    { code: 'su', name: 'Соисполнитель', value: suresponsible },
-                    { code: 'crm', name: 'crm', value: crmValue },
-                    { code: 'crm_company', name: 'crm_company', value: { n0: `CO_${companyId}` } },
-                    { code: 'manager_comment', name: 'Комментарий', value: comment },
-                    {
-                        code: 'event_type',
-                        name: 'Тип События',
-                        list: {
-                            code: BitrixListFlowService.getEventType(eventType),
-                            name: eventTypeName,
-                        },
+                { code: 'event_date', name: 'Дата', value: nowDate },
+                { code: 'event_title', name: 'Название', value: hotName },
+                {
+                    code: 'plan_date',
+                    name: 'Дата Следующей коммуникации',
+                    value: nextCommunication,
+                },
+                { code: 'author', name: 'Автор', value: created },
+                {
+                    code: 'responsible',
+                    name: 'Ответственный',
+                    value: responsible,
+                },
+                { code: 'su', name: 'Соисполнитель', value: suresponsible },
+                { code: 'crm', name: 'crm', value: crmValue },
+                {
+                    code: 'crm_company',
+                    name: 'crm_company',
+                    value: { n0: `CO_${companyId}` },
+                },
+                {
+                    code: 'manager_comment',
+                    name: 'Комментарий',
+                    value: comment,
+                },
+                {
+                    code: 'event_type',
+                    name: 'Тип События',
+                    list: {
+                        code: BitrixListFlowService.getEventType(eventType),
+                        name: eventTypeName,
                     },
-                    {
-                        code: 'event_action',
-                        name: 'Событие Действие',
-                        list: { code: mutableEventAction },
+                },
+                {
+                    code: 'event_action',
+                    name: 'Событие Действие',
+                    list: { code: mutableEventAction },
+                },
+                {
+                    code: 'op_work_status',
+                    name: 'Статус Работы',
+                    list: {
+                        code: BitrixListFlowService.getCurrentWorkStatusCode(
+                            workStatus,
+                            eventType,
+                        ),
                     },
-                    {
-                        code: 'op_work_status',
-                        name: 'Статус Работы',
-                        list: {
-                            code: BitrixListFlowService.getCurrentWorkStatusCode(
-                                workStatus,
-                                eventType,
-                            ),
-                        },
+                },
+                {
+                    code: 'op_result_status',
+                    name: 'Результативность',
+                    list: {
+                        code: BitrixListFlowService.getResultStatus(
+                            resultStatus,
+                        ),
                     },
-                    {
-                        code: 'op_result_status',
-                        name: 'Результативность',
-                        list: { code: BitrixListFlowService.getResultStatus(resultStatus) },
-                    },
-                ];
+                },
+            ];
 
             if (contactId) {
                 xoFields.push({
@@ -371,7 +424,9 @@ export class BitrixListFlowService {
                             code: 'op_prospects_type',
                             name: 'Перспективность',
                             list: {
-                                code: BitrixListFlowService.getPerspectStatus(failType.code),
+                                code: BitrixListFlowService.getPerspectStatus(
+                                    failType.code,
+                                ),
                             },
                         });
                         if (failType.code === 'failure') {
@@ -380,7 +435,9 @@ export class BitrixListFlowService {
                                     code: 'op_fail_reason',
                                     name: 'ОП Причина Отказа',
                                     list: {
-                                        code: BitrixListFlowService.getFailType(failReason.code),
+                                        code: BitrixListFlowService.getFailType(
+                                            failReason.code,
+                                        ),
                                     },
                                 });
                             }
@@ -399,33 +456,46 @@ export class BitrixListFlowService {
 
             for (const bitrixList of bitrixLists) {
                 if (
-                    (bitrixList.type === 'kpi' || bitrixList.type === 'history') &&
+                    (bitrixList.type === 'kpi' ||
+                        bitrixList.type === 'history') &&
                     bitrixList.group === 'sales'
                 ) {
                     const fieldsDataCurrent = { ...fieldsDataInitial };
 
                     for (const xoValue of xoFields) {
                         const fieldCode = `${bitrixList.group}_${bitrixList.type}_${xoValue.code}`;
-                        const btxId = BitrixListFlowService.getBtxListCurrentData(
-                            bitrixList,
-                            fieldCode,
-                            null,
-                        );
+                        const btxId =
+                            BitrixListFlowService.getBtxListCurrentData(
+                                bitrixList,
+                                fieldCode,
+                                null,
+                            );
 
                         if (btxId !== null) {
                             // Check explicitly for 'value' property existence before assigning
-                            if (xoValue.hasOwnProperty('value') && xoValue.value !== undefined && xoValue.value !== null) {
-                                fieldsDataCurrent[btxId as string] = xoValue.value;
+                            if (
+                                xoValue.hasOwnProperty('value') &&
+                                xoValue.value !== undefined &&
+                                xoValue.value !== null
+                            ) {
+                                fieldsDataCurrent[btxId as string] =
+                                    xoValue.value;
                             }
                             // Process 'list' property
-                            if (xoValue.list && xoValue.list.code !== undefined) { // Ensure list and list.code exist
-                                const btxItemId = BitrixListFlowService.getBtxListCurrentData(
-                                    bitrixList,
-                                    fieldCode,
-                                    xoValue.list.code,
-                                );
+                            if (
+                                xoValue.list &&
+                                xoValue.list.code !== undefined
+                            ) {
+                                // Ensure list and list.code exist
+                                const btxItemId =
+                                    BitrixListFlowService.getBtxListCurrentData(
+                                        bitrixList,
+                                        fieldCode,
+                                        xoValue.list.code,
+                                    );
                                 if (btxItemId !== null) {
-                                    fieldsDataCurrent[btxId as string] = btxItemId;
+                                    fieldsDataCurrent[btxId as string] =
+                                        btxItemId;
                                 }
                             }
                         }
@@ -435,12 +505,13 @@ export class BitrixListFlowService {
                     const listElementCode = uuidv4();
                     const fullCode = `${bitrixList.type}_${companyId}_${listElementCode}`;
 
-                    const command = BitrixListServiceStub.getBatchCommandSetItem(
-                        hook,
-                        bitrixList.bitrixId,
-                        fieldsDataCurrent,
-                        fullCode,
-                    );
+                    const command =
+                        BitrixListServiceStub.getBatchCommandSetItem(
+                            hook,
+                            bitrixList.bitrixId,
+                            fieldsDataCurrent,
+                            fullCode,
+                        );
                     resultBatchCommands[`set_list_item_${fullCode}`] = command;
                 }
             }
@@ -451,7 +522,9 @@ export class BitrixListFlowService {
                 (isUniqPresPlan || isUniqPresReport)
             ) {
                 // Find 'event_type' in xoFields and modify its list code
-                const eventTypeField = xoFields.find(f => f.code === 'event_type');
+                const eventTypeField = xoFields.find(
+                    f => f.code === 'event_type',
+                );
                 if (eventTypeField && eventTypeField.list) {
                     eventTypeField.list.code = 'presentation_uniq';
                 }
@@ -469,30 +542,57 @@ export class BitrixListFlowService {
 
                 if (codeForUniqPres) {
                     for (const bitrixList of bitrixLists) {
-                        if (bitrixList.type === 'kpi' && bitrixList.group === 'sales') {
+                        if (
+                            bitrixList.type === 'kpi' &&
+                            bitrixList.group === 'sales'
+                        ) {
                             const fieldsDataUniqPres = { ...fieldsDataInitial }; // Reset for each list
-                            for (const xoValue of xoFields) { // Iterate over (potentially modified) xoFields
+                            for (const xoValue of xoFields) {
+                                // Iterate over (potentially modified) xoFields
                                 const fieldCode = `${bitrixList.group}_${bitrixList.type}_${xoValue.code}`;
-                                const btxId = BitrixListFlowService.getBtxListCurrentData(bitrixList, fieldCode, null);
+                                const btxId =
+                                    BitrixListFlowService.getBtxListCurrentData(
+                                        bitrixList,
+                                        fieldCode,
+                                        null,
+                                    );
                                 if (btxId !== null) {
-                                    if (xoValue.hasOwnProperty('value') && xoValue.value !== undefined && xoValue.value !== null) {
-                                        fieldsDataUniqPres[btxId as string] = xoValue.value;
+                                    if (
+                                        xoValue.hasOwnProperty('value') &&
+                                        xoValue.value !== undefined &&
+                                        xoValue.value !== null
+                                    ) {
+                                        fieldsDataUniqPres[btxId as string] =
+                                            xoValue.value;
                                     }
-                                    if (xoValue.list && xoValue.list.code !== undefined) {
-                                        const btxItemId = BitrixListFlowService.getBtxListCurrentData(bitrixList, fieldCode, xoValue.list.code);
+                                    if (
+                                        xoValue.list &&
+                                        xoValue.list.code !== undefined
+                                    ) {
+                                        const btxItemId =
+                                            BitrixListFlowService.getBtxListCurrentData(
+                                                bitrixList,
+                                                fieldCode,
+                                                xoValue.list.code,
+                                            );
                                         if (btxItemId !== null) {
-                                            fieldsDataUniqPres[btxId as string] = btxItemId;
+                                            fieldsDataUniqPres[
+                                                btxId as string
+                                            ] = btxItemId;
                                         }
                                     }
                                 }
                             }
-                            const commandUniqPres = BitrixListServiceStub.getBatchCommandSetItem(
-                                hook,
-                                bitrixList.bitrixId,
-                                fieldsDataUniqPres,
-                                codeForUniqPres,
-                            );
-                            resultBatchCommands[`set_list_item_${codeForUniqPres}`] = commandUniqPres;
+                            const commandUniqPres =
+                                BitrixListServiceStub.getBatchCommandSetItem(
+                                    hook,
+                                    bitrixList.bitrixId,
+                                    fieldsDataUniqPres,
+                                    codeForUniqPres,
+                                );
+                            resultBatchCommands[
+                                `set_list_item_${codeForUniqPres}`
+                            ] = commandUniqPres;
                         }
                     }
                 }
@@ -505,10 +605,13 @@ export class BitrixListFlowService {
                 line: th.lineNumber || -1, // Get from stack if possible
                 trace: th.stack || 'no stack available',
             };
-            console.error('ERROR BitrixListFlowService.getBatchListFlow:', errorMessages);
+            console.error(
+                'ERROR BitrixListFlowService.getBatchListFlow:',
+                errorMessages,
+            );
             // In PHP, errors were logged, and function might return partially completed $resultBatchCommands or null.
             // Here, we return commands accumulated so far, or an empty object if error was early.
             return resultBatchCommands;
         }
     }
-} 
+}

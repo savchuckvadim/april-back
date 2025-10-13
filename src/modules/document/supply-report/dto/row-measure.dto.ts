@@ -1,18 +1,18 @@
 import { IsInt, IsString } from 'class-validator';
 
 export class RowMeasureDto {
-  @IsInt()
-  id: number;
+    @IsInt()
+    id: number;
 
-  @IsInt()
-  code: number;
+    @IsInt()
+    code: number;
 
-  @IsInt()
-  type: number;
+    @IsInt()
+    type: number;
 
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 
-  @IsInt()
-  contractNumber: number;
+    @IsInt()
+    contractNumber: number;
 }

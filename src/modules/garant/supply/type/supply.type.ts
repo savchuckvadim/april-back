@@ -18,4 +18,4 @@ export type SupplyUpdate = {
     lcontractName?: string | null;
     lcontractPropComment?: string | null;
     lcontractPropEmail?: string | null;
-}; 
+};

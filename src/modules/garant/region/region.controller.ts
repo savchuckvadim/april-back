@@ -7,16 +7,18 @@ import { CreateRegionDto } from './dto/create-region.dto';
 @ApiTags('Garant Region')
 @Controller('region')
 export class RegionController {
-    constructor(private readonly regionService: RegionService) { }
+    constructor(private readonly regionService: RegionService) {}
 
     @Post()
     @ApiOperation({ summary: 'Создать новый регион' })
     @ApiResponse({
         status: 201,
         description: 'Регион успешно создан',
-        type: RegionEntity
+        type: RegionEntity,
     })
-    async create(@Body() createRegionDto: CreateRegionDto): Promise<RegionEntity | null> {
+    async create(
+        @Body() createRegionDto: CreateRegionDto,
+    ): Promise<RegionEntity | null> {
         return this.regionService.create(createRegionDto);
     }
 
@@ -25,7 +27,7 @@ export class RegionController {
     @ApiResponse({
         status: 200,
         description: 'Список всех регионов',
-        type: [RegionEntity]
+        type: [RegionEntity],
     })
     async findAll(): Promise<RegionEntity[] | null> {
         return this.regionService.findAll();
@@ -36,11 +38,11 @@ export class RegionController {
     @ApiResponse({
         status: 200,
         description: 'Регион найден',
-        type: RegionEntity
+        type: RegionEntity,
     })
     @ApiResponse({
         status: 404,
-        description: 'Регион не найден'
+        description: 'Регион не найден',
     })
     async findOne(@Param('id') id: string): Promise<RegionEntity | null> {
         return this.regionService.findById(id);
@@ -51,15 +53,15 @@ export class RegionController {
     @ApiResponse({
         status: 200,
         description: 'Регион успешно обновлен',
-        type: RegionEntity
+        type: RegionEntity,
     })
     @ApiResponse({
         status: 404,
-        description: 'Регион не найден'
+        description: 'Регион не найден',
     })
     async update(
         @Param('id') id: string,
-        @Body() updateRegionDto: CreateRegionDto
+        @Body() updateRegionDto: CreateRegionDto,
     ): Promise<RegionEntity | null> {
         return this.regionService.update({ id, ...updateRegionDto });
     }
@@ -69,9 +71,9 @@ export class RegionController {
     @ApiResponse({
         status: 200,
         description: 'Регионы успешно обновлены',
-        type: [RegionEntity]
+        type: [RegionEntity],
     })
     async updateFromExcel(): Promise<RegionEntity[] | null> {
         return this.regionService.updateFromExcel();
     }
-} 
+}

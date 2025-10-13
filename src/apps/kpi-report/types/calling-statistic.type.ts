@@ -1,4 +1,4 @@
-import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 
 export const CALLING_TYPES = [
     {
@@ -27,10 +27,9 @@ export const CALLING_TYPES = [
     },
 ] as const;
 
-
-export type CallingDuration = typeof CALLING_TYPES[number]['id'];
+export type CallingDuration = (typeof CALLING_TYPES)[number]['id'];
 // "all" | 30 | 60 | 180 | 300 | 600
-export type CallingTypeAction = typeof CALLING_TYPES[number]['action'];
+export type CallingTypeAction = (typeof CALLING_TYPES)[number]['action'];
 // "Наборов номера" | "Звонки > 30 сек" | ...
 
 export type VoximplantFilter = {
@@ -50,5 +49,3 @@ export interface ICallingStatisticResult {
         duration: number;
     }[];
 }
-
-

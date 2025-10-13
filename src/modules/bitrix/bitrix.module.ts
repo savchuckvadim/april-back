@@ -14,36 +14,32 @@ import { BitrixServiceFactory } from './bitrix-service.factory';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\bitrix.module.ts
 @Module({
-  imports: [
-    TelegramModule,
-    ConfigModule,
-    HttpModule, // 👈 обязательно
-    RedisModule,
-    forwardRef(() => PortalModule),
-    BitrixCoreModule,
-    // BitrixDomainModule,
-    BitrixEndpointsModule
-  ],
-  controllers: [
-
-  ],
-  providers: [
-    RedisService,
-    BitrixService,
-    BitrixServiceFactory,
-    ServiceClonerFactory
-  ],
-  exports: [
-    BitrixCoreModule,
-    // BitrixDomainModule,
-    BitrixEndpointsModule,
-    BitrixService,
-    BitrixServiceFactory
-  ],
-
+    imports: [
+        TelegramModule,
+        ConfigModule,
+        HttpModule, // 👈 обязательно
+        RedisModule,
+        forwardRef(() => PortalModule),
+        BitrixCoreModule,
+        // BitrixDomainModule,
+        BitrixEndpointsModule,
+    ],
+    controllers: [],
+    providers: [
+        RedisService,
+        BitrixService,
+        BitrixServiceFactory,
+        ServiceClonerFactory,
+    ],
+    exports: [
+        BitrixCoreModule,
+        // BitrixDomainModule,
+        BitrixEndpointsModule,
+        BitrixService,
+        BitrixServiceFactory,
+    ],
 })
-export class BitrixModule { }
-
+export class BitrixModule {}
 
 // src/modules/bitrix/
 // ├── core/

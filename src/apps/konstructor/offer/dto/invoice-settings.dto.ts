@@ -1,9 +1,13 @@
-import { IsNumber } from "class-validator";
-import { IsString } from "class-validator";
-import { IsBoolean } from "class-validator";
-import { INVOICE_QUESTION, InvoiceSettings, Questions } from "../type/invoice-settings.type";
-import { ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
+import { IsNumber } from 'class-validator';
+import { IsString } from 'class-validator';
+import { IsBoolean } from 'class-validator';
+import {
+    INVOICE_QUESTION,
+    InvoiceSettings,
+    Questions,
+} from '../type/invoice-settings.type';
+import { ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 export class InvoiceQuestionDto {
     @IsNumber() id: number;
     @IsString() title: string;
@@ -26,5 +30,5 @@ export class InvoiceSettingsDto implements InvoiceSettings {
     // status: boolean,
     @ValidateNested()
     @Type(() => InvoiseQuestionsDto)
-    questions: InvoiseQuestionsDto
+    questions: InvoiseQuestionsDto;
 }

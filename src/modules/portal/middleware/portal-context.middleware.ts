@@ -9,7 +9,7 @@ export class PortalContextMiddleware implements NestMiddleware {
 
     constructor(
         private readonly portalService: PortalService,
-        private readonly portalContext: PortalContextService
+        private readonly portalContext: PortalContextService,
     ) {
         this.logger.log('PortalContextMiddleware initialized');
     }
@@ -19,16 +19,18 @@ export class PortalContextMiddleware implements NestMiddleware {
             path: req.path,
             method: req.method,
             // body: req.body,
-            query: req.query
+            query: req.query,
         });
         this.logger.log(`PortalContextMiddleware baseUrl: ${req.baseUrl}`);
         this.logger.log(`PortalContextMiddleware path: ${req.path}`);
-        const domain = req.body?.auth?.domain || req.query?.domain || req.body?.domain;
+        const domain =
+            req.body?.auth?.domain || req.query?.domain || req.body?.domain;
         this.logger.log(`PortalContextMiddleware Extracted domain: ${domain}`);
-        
+
         if (domain) {
             try {
-                const portal = await this.portalService.getPortalByDomain(domain);
+                const portal =
+                    await this.portalService.getPortalByDomain(domain);
                 // this.logger.log(`Portal found: ${portal.domain}`);
                 this.portalContext.setPortal(portal);
             } catch (error) {
@@ -39,4 +41,4 @@ export class PortalContextMiddleware implements NestMiddleware {
         }
         next();
     }
-} 
+}

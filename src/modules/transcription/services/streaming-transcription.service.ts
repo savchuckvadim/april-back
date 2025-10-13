@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { YandexAuthService } from 'src/clients/yandex/yandex-auth.service';
 
-
 @Injectable()
 export class StreamingTranscriptionService {
     private readonly logger = new Logger(StreamingTranscriptionService.name);
@@ -14,8 +13,10 @@ export class StreamingTranscriptionService {
         private readonly configService: ConfigService,
         private readonly yandexAuthService: YandexAuthService,
     ) {
-        this.apiUrl = 'https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize';
-        this.operationsUrl = 'https://operation.api.cloud.yandex.net/operations';
+        this.apiUrl =
+            'https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize';
+        this.operationsUrl =
+            'https://operation.api.cloud.yandex.net/operations';
         const folderId = this.configService.get<string>('YA_FOLDER_ID');
         if (!folderId) {
             throw new Error('YA_FOLDER_ID is not set');
@@ -30,7 +31,7 @@ export class StreamingTranscriptionService {
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${iamToken}`,
+                    Authorization: `Bearer ${iamToken}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -59,7 +60,9 @@ export class StreamingTranscriptionService {
                     statusText: response.statusText,
                     error: errorText,
                 });
-                throw new Error(`Failed to send audio for transcription: ${response.statusText}`);
+                throw new Error(
+                    `Failed to send audio for transcription: ${response.statusText}`,
+                );
             }
 
             const data = await response.json();
@@ -83,11 +86,14 @@ export class StreamingTranscriptionService {
             const delayMs = 2000;
 
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                const response = await fetch(`${this.operationsUrl}/${operationId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${iamToken}`,
+                const response = await fetch(
+                    `${this.operationsUrl}/${operationId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${iamToken}`,
+                        },
                     },
-                });
+                );
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -97,16 +103,27 @@ export class StreamingTranscriptionService {
                         error: errorText,
                         operationId,
                     });
-                    throw new Error(`Failed to get transcription result: ${response.statusText}`);
+                    throw new Error(
+                        `Failed to get transcription result: ${response.statusText}`,
+                    );
                 }
 
                 const data = await response.json();
                 this.logger.debug('Transcription result response:', data);
 
                 if (data.done) {
-                    if (!data.response || !data.response.chunks || data.response.chunks.length === 0) {
-                        this.logger.error('Invalid response format or empty transcription:', data);
-                        throw new Error('Invalid response format or empty transcription');
+                    if (
+                        !data.response ||
+                        !data.response.chunks ||
+                        data.response.chunks.length === 0
+                    ) {
+                        this.logger.error(
+                            'Invalid response format or empty transcription:',
+                            data,
+                        );
+                        throw new Error(
+                            'Invalid response format or empty transcription',
+                        );
                     }
 
                     const transcription = data.response.chunks
@@ -134,4 +151,4 @@ export class StreamingTranscriptionService {
             throw error;
         }
     }
-} 
+}

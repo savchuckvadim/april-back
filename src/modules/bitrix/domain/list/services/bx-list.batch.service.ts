@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
-import { BxListRepository } from "../repository/bx-list.repository";
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { EBxListCode } from "../interface/bx-list.interface";
+import { Injectable } from '@nestjs/common';
+import { BxListRepository } from '../repository/bx-list.repository';
+import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import { EBxListCode } from '../interface/bx-list.interface';
 
 @Injectable()
 export class BxListBatchService {
@@ -21,18 +21,11 @@ export class BxListBatchService {
         return this.repo.getListBtch(cmdCode, IBLOCK_CODE);
     }
 
-    getListField(
-        cmdCode: string,
-        code: EBxListCode,
-        ID: string | number
-    ) {
+    getListField(cmdCode: string, code: EBxListCode, ID: string | number) {
         return this.repo.getListFieldBtch(cmdCode, code, ID);
     }
 
-    getListFields(
-        cmdCode: string,
-        code: EBxListCode
-    ) {
+    getListFields(cmdCode: string, code: EBxListCode) {
         return this.repo.getListFieldsBtch(cmdCode, code);
     }
-} 
+}

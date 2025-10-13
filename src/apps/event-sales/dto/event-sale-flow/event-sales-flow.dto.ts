@@ -1,16 +1,21 @@
-import { Type } from "class-transformer";
-import { IsObject, IsOptional, IsString, ValidateNested, IsBoolean } from "class-validator";
-import { PlanDto } from "./plan.dto";
-import { ReportDto } from "./report.dto";
-import { EventTaskDto } from "./task.dto";
-import { PlacementDto } from "./placement.dto";
-import { ContactDto } from "./contact.dto";
-import { SaleDto } from "./sale.dto";
-import { DepartamentDto } from "./department.dto";
-import { FailDto } from "./fail.dto";
-import { LeadDto } from "./lead.dto";
-import { PresentationDto } from "./presentation.dto";
-
+import { Type } from 'class-transformer';
+import {
+    IsObject,
+    IsOptional,
+    IsString,
+    ValidateNested,
+    IsBoolean,
+} from 'class-validator';
+import { PlanDto } from './plan.dto';
+import { ReportDto } from './report.dto';
+import { EventTaskDto } from './task.dto';
+import { PlacementDto } from './placement.dto';
+import { ContactDto } from './contact.dto';
+import { SaleDto } from './sale.dto';
+import { DepartamentDto } from './department.dto';
+import { FailDto } from './fail.dto';
+import { LeadDto } from './lead.dto';
+import { PresentationDto } from './presentation.dto';
 
 export class EventSalesFlowDto {
     @IsString()
@@ -73,17 +78,7 @@ export class EventSalesFlowDto {
     @Type(() => LeadDto)
     lead?: LeadDto;
 
-
     @ValidateNested()
     @Type(() => PresentationDto)
     presentation: PresentationDto;
 }
-
-
-
-
-
-
-
-
-

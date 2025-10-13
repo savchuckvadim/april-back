@@ -4,9 +4,9 @@ export enum EBxNamespace {
     LISTS = 'lists',
     CRM_ITEM = 'crm.item',
     WITHOUT_NAMESPACE = 'without.namespace',
-    DISK='disk',
-    CATALOG='catalog',
-    RPA='rpa'
+    DISK = 'disk',
+    CATALOG = 'catalog',
+    RPA = 'rpa',
 }
 
 export enum EBxMethod {
@@ -24,6 +24,5 @@ export enum EBxMethod {
     CONTACT_ITEMS_GET = 'contact.items.get',
     FIELD_GET = 'field.get',
     FIELDS = 'fields',
-    GET_BY_ENTITY_TYPE_ID = 'getByEntityTypeId'
-    
+    GET_BY_ENTITY_TYPE_ID = 'getByEntityTypeId',
 }

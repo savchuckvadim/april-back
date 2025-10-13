@@ -1,8 +1,7 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNumber, IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNumber, IsString } from 'class-validator';
 
 export class UpdatePortalDto {
-
     @ApiProperty()
     @IsString()
     domain: string;
@@ -10,7 +9,6 @@ export class UpdatePortalDto {
     @ApiProperty()
     @IsNumber()
     number: number;
-    
 
     @ApiProperty()
     @IsString()

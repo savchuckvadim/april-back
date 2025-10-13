@@ -1,4 +1,4 @@
-import { TemplateBaseEntity } from "../template-base/template-base.entity";
+import { TemplateBaseEntity } from '../template-base/template-base.entity';
 
 export class FieldEntity {
     id: string;
@@ -37,4 +37,4 @@ export class FieldLightEntity {
     bitrixTemplateId: string | null;
     isActive: boolean;
     isPlural: boolean;
-} 
+}

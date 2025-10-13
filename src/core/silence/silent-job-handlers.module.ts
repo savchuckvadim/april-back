@@ -4,14 +4,14 @@ import { SilentJobHandlersRegistry } from './silent-job-handlers.registry';
 
 @Global()
 @Module({
-  providers: [SilentJobHandlersRegistry],
-  exports: [SilentJobHandlersRegistry],
+    providers: [SilentJobHandlersRegistry],
+    exports: [SilentJobHandlersRegistry],
 })
 export class SilentJobHandlersModule {
-  private readonly logger = new Logger(SilentJobHandlersModule.name);
+    private readonly logger = new Logger(SilentJobHandlersModule.name);
 
-  constructor(private readonly registry: SilentJobHandlersRegistry) {
-    this.logger.log('SilentJobHandlersModule initialized ✅');
-    this.logger.log(`Registry available: ${!!this.registry}`);
-  }
+    constructor(private readonly registry: SilentJobHandlersRegistry) {
+        this.logger.log('SilentJobHandlersModule initialized ✅');
+        this.logger.log(`Registry available: ${!!this.registry}`);
+    }
 }

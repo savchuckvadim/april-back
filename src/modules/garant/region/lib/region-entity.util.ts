@@ -1,7 +1,11 @@
-import { PrismaService } from "src/core/prisma";
-import { RegionEntity } from "../region.entity";
+import { PrismaService } from 'src/core/prisma';
+import { RegionEntity } from '../region.entity';
 
-export function createRegionEntityFromPrisma(data: NonNullable<Awaited<ReturnType<PrismaService['regions']['findUnique']>>>): RegionEntity {
+export function createRegionEntityFromPrisma(
+    data: NonNullable<
+        Awaited<ReturnType<PrismaService['regions']['findUnique']>>
+    >,
+): RegionEntity {
     const entity = new RegionEntity();
     entity.id = data.id.toString();
     entity.number = data.number;
@@ -14,4 +18,4 @@ export function createRegionEntityFromPrisma(data: NonNullable<Awaited<ReturnTyp
     entity.created_at = data.created_at || undefined;
     entity.updated_at = data.updated_at || undefined;
     return entity;
-} 
+}

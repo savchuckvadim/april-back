@@ -6,7 +6,7 @@ import { BxCatalogDomainModule } from './catalog/bx-catalog.module';
 import { UserFieldConfigModule } from './userfieldconfig';
 import { BxRpaItemDomainModule } from './rpa/item/bx-rpa-item-domain.module';
 import { BxFileDomainModule } from './file/bx-file.module';
-@Module({ 
+@Module({
     imports: [
         BitrixActivityDomainModule,
         BitrixDepartmentDomainModule,
@@ -14,7 +14,7 @@ import { BxFileDomainModule } from './file/bx-file.module';
         BxCatalogDomainModule,
         UserFieldConfigModule,
         BxRpaItemDomainModule,
-        BxFileDomainModule
+        BxFileDomainModule,
     ],
     exports: [
         BitrixActivityDomainModule,
@@ -23,7 +23,7 @@ import { BxFileDomainModule } from './file/bx-file.module';
         BxCatalogDomainModule,
         UserFieldConfigModule,
         BxRpaItemDomainModule,
-        BxFileDomainModule
-    ]
+        BxFileDomainModule,
+    ],
 })
-export class BitrixDomainModule { }
+export class BitrixDomainModule {}

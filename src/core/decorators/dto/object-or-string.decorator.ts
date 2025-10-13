@@ -1,4 +1,8 @@
-import { registerDecorator, ValidationArguments, ValidationOptions } from "class-validator";
+import {
+    registerDecorator,
+    ValidationArguments,
+    ValidationOptions,
+} from 'class-validator';
 
 // Кастомный валидатор для поля которое может быть объектом, строкой или null
 export function IsObjectOrStringOrNull(validationOptions?: ValidationOptions) {
@@ -13,12 +17,14 @@ export function IsObjectOrStringOrNull(validationOptions?: ValidationOptions) {
                     if (value === null || value === undefined) {
                         return true;
                     }
-                    return typeof value === 'string' || typeof value === 'object';
+                    return (
+                        typeof value === 'string' || typeof value === 'object'
+                    );
                 },
                 defaultMessage(args: ValidationArguments) {
                     return `${args.property} must be a string, object, or null`;
-                }
-            }
+                },
+            },
         });
     };
 }

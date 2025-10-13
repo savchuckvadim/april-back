@@ -1,37 +1,34 @@
-import { Injectable } from "@nestjs/common";
-import { ContractGenerateDto } from "../dto/contract-generate.dto";
-import { StorageService, StorageType } from "src/core/storage";
-import { FileLinkService } from "src/core/file-link/file-link.service";
-import { ConfigService } from "@nestjs/config";
+import { Injectable } from '@nestjs/common';
+import { ContractGenerateDto } from '../dto/contract-generate.dto';
+import { StorageService, StorageType } from 'src/core/storage';
+import { FileLinkService } from 'src/core/file-link/file-link.service';
+import { ConfigService } from '@nestjs/config';
 
-import fs from "fs";
-import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
-import dayjs from "dayjs";
+import fs from 'fs';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
-import localizedFormat from "dayjs/plugin/localizedFormat";
-import { ProviderService, RqEntity } from "../../../../../modules/portal-konstructor/provider";
-import { DocumentTotalRowService } from "../../../document-generate/product-rows/total-row.service";
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+import {
+    ProviderService,
+    RqEntity,
+} from '../../../../../modules/portal-konstructor/provider';
+import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
 
-import { ContractGenerateTemplateProps } from "../type/contract-generate.type";
-import { DocumentInfoblockService } from "../../../document-generate/infoblocks/infoblock.service";
-import { DocumentProductRowService } from "../../../document-generate/product-rows/product-row.service";
-import { ContractRqHeaderService } from "./contract-rq-header.service";
-import { ContractRqService } from "./contract-rq.service";
-import { ContractSpecificationService } from "./contract-specification.service";
-
+import { ContractGenerateTemplateProps } from '../type/contract-generate.type';
+import { DocumentInfoblockService } from '../../../document-generate/infoblocks/infoblock.service';
+import { DocumentProductRowService } from '../../../document-generate/product-rows/product-row.service';
+import { ContractRqHeaderService } from './contract-rq-header.service';
+import { ContractRqService } from './contract-rq.service';
+import { ContractSpecificationService } from './contract-specification.service';
 
 @Injectable()
 export class ContractGenerateService {
     private readonly baseUrl: string;
     private currentYear: string;
 
-
-
-
-
     constructor(
-
         private readonly storage: StorageService,
         private readonly fileLinkService: FileLinkService,
         private readonly configService: ConfigService,
@@ -43,57 +40,67 @@ export class ContractGenerateService {
         private readonly documentProductRowService: DocumentProductRowService,
         private readonly headerService: ContractRqHeaderService,
         private readonly rqService: ContractRqService,
-        private readonly specificationService: ContractSpecificationService
+        private readonly specificationService: ContractSpecificationService,
     ) {
         dayjs.extend(localizedFormat);
         dayjs.locale('ru');
         this.currentYear = dayjs().format('YYYY');
 
         this.baseUrl = this.configService.get('APP_URL') as string;
-
-
     }
 
-    async generateContract(dto: ContractGenerateDto):
-        Promise<{
-            link: string,
-            documentName: string,
-            data: ContractGenerateTemplateProps,
-            provider: RqEntity
-        }> {
+    async generateContract(dto: ContractGenerateDto): Promise<{
+        link: string;
+        documentName: string;
+        data: ContractGenerateTemplateProps;
+        provider: RqEntity;
+    }> {
         const provider = await this.providerService.findById(dto.providerId);
         if (!provider) {
             throw new Error('Provider not found');
         }
 
-
         const resultPath = this.getDocumentPath(dto.domain, dto.userId);
         const doc = this.getDoc();
 
-
-        const documentName = await this.getDocumentName(dto.total.shortName, dto.contractNumber, resultPath)
+        const documentName = await this.getDocumentName(
+            dto.total.shortName,
+            dto.contractNumber,
+            resultPath,
+        );
 
         const data = await this.prepareDocumentData(dto, provider);
 
-        const { rootLink } = await this.saveDoc(doc, dto, documentName, resultPath, data);
-
+        const { rootLink } = await this.saveDoc(
+            doc,
+            dto,
+            documentName,
+            resultPath,
+            data,
+        );
 
         const link = `${this.baseUrl}${rootLink}`;
-
 
         return {
             link,
             data,
             documentName,
-            provider
+            provider,
         };
     }
 
     private getDoc(): Docxtemplater {
-        const templatePath = this.storage.getFilePath(StorageType.APP, 'konstructor/templates/contract', 'template.docx');
+        const templatePath = this.storage.getFilePath(
+            StorageType.APP,
+            'konstructor/templates/contract',
+            'template.docx',
+        );
         const content = fs.readFileSync(templatePath, 'binary');
         const zip = new PizZip(content);
-        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        const doc = new Docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+        });
         return doc;
     }
     private async saveDoc(
@@ -101,7 +108,7 @@ export class ContractGenerateService {
         dto: ContractGenerateDto,
         documentName: string,
         resultPath: string,
-        data: ContractGenerateTemplateProps
+        data: ContractGenerateTemplateProps,
     ) {
         try {
             doc.render(data);
@@ -110,14 +117,30 @@ export class ContractGenerateService {
         }
 
         const buf = doc.toBuffer();
-        await this.storage.saveFile(buf, documentName, StorageType.PUBLIC, resultPath);
-        const rootLink = await this.fileLinkService.createPublicLink(dto.domain, dto.userId, 'konstructor', 'contract', this.currentYear, `${documentName}`);
+        await this.storage.saveFile(
+            buf,
+            documentName,
+            StorageType.PUBLIC,
+            resultPath,
+        );
+        const rootLink = await this.fileLinkService.createPublicLink(
+            dto.domain,
+            dto.userId,
+            'konstructor',
+            'contract',
+            this.currentYear,
+            `${documentName}`,
+        );
         return { rootLink };
     }
     private getDocumentPath(domain: string, userId: string | number) {
         return `konstructor/contract/${this.currentYear}/${domain}/${userId}`;
     }
-    private async getDocumentName(name: string, number: string | undefined, resultPath: string) {
+    private async getDocumentName(
+        name: string,
+        number: string | undefined,
+        resultPath: string,
+    ) {
         const { documentCount } = await this.getDocumentCount(resultPath);
         if (number) {
             return `Договор ${name}-${number}-${documentCount}.docx`;
@@ -131,39 +154,68 @@ export class ContractGenerateService {
         return formattedDate;
     }
 
-    private async getDocumentCount(resultPath: string): Promise<{ documentCount: number }> {
-        const filesCount = await this.storage.countFilesInDirectory(StorageType.PUBLIC, resultPath);
+    private async getDocumentCount(
+        resultPath: string,
+    ): Promise<{ documentCount: number }> {
+        const filesCount = await this.storage.countFilesInDirectory(
+            StorageType.PUBLIC,
+            resultPath,
+        );
         const documentCount = filesCount + 1;
         return { documentCount };
     }
 
-    private async prepareDocumentData(dto: ContractGenerateDto, provider: RqEntity): Promise<ContractGenerateTemplateProps> {
-
+    private async prepareDocumentData(
+        dto: ContractGenerateDto,
+        provider: RqEntity,
+    ): Promise<ContractGenerateTemplateProps> {
         // const recipientData = this.getRecipientData(dto.recipient);
         const contractData = this.getContractData(dto.contract);
         // const supplyData = this.getSupplyData(dto.supply);
         // const totalData = this.totalRowService.getContractData(dto.total, this.clientType);
 
-        const contractStart = dto.contractStart && this.formatDocumentDate(dto.contractStart) || "________________________________";
-        const contractEnd = dto.contractEnd && this.formatDocumentDate(dto.contractEnd) || "________________________________";
-        const contractNumber = dto.contractNumber || "________________________________";
-        const contractCreateDate = dto.contractCreateDate && this.formatDocumentDate(dto.contractCreateDate) || "________________________________";
+        const contractStart =
+            (dto.contractStart && this.formatDocumentDate(dto.contractStart)) ||
+            '________________________________';
+        const contractEnd =
+            (dto.contractEnd && this.formatDocumentDate(dto.contractEnd)) ||
+            '________________________________';
+        const contractNumber =
+            dto.contractNumber || '________________________________';
+        const contractCreateDate =
+            (dto.contractCreateDate &&
+                this.formatDocumentDate(dto.contractCreateDate)) ||
+            '________________________________';
 
-
-        const headerText = this.headerService.getContractHeaderText(dto.contractType, dto.clientType, dto.bxrq, provider as RqEntity);
+        const headerText = this.headerService.getContractHeaderText(
+            dto.contractType,
+            dto.clientType,
+            dto.bxrq,
+            provider as RqEntity,
+        );
         const rqs = this.rqService.getRqs(
             provider,
             dto.bxrq,
             dto.clientType,
-            dto.contractType
+            dto.contractType,
         );
 
-
-        const products = this.documentProductRowService.getProducts(dto.rows, contractData.contractName, dto.contractType !== 'service', dto.contract.prepayment, dto.clientType);
-        const specificationData = this.specificationService.getSpecification(dto.domain, dto.contractSpecificationState);
-        const { infoblocksLeft, infoblocksRight } = this.documentInfoblockService.getInfoblocks(dto.complect, dto.regions);
-
-
+        const products = this.documentProductRowService.getProducts(
+            dto.rows,
+            contractData.contractName,
+            dto.contractType !== 'service',
+            dto.contract.prepayment,
+            dto.clientType,
+        );
+        const specificationData = this.specificationService.getSpecification(
+            dto.domain,
+            dto.contractSpecificationState,
+        );
+        const { infoblocksLeft, infoblocksRight } =
+            this.documentInfoblockService.getInfoblocks(
+                dto.complect,
+                dto.regions,
+            );
 
         return {
             ...rqs,
@@ -186,10 +238,13 @@ export class ContractGenerateService {
             // client_direct_fio: dto.bxrq.fields.find(field => field.code === 'director')?.value,
             complect_name: specificationData.complect_name,
             specification_pk: specificationData.specification_pk,
-            specification_pk_comment: specificationData.specification_pk_comment,
+            specification_pk_comment:
+                specificationData.specification_pk_comment,
             specification_dway: specificationData.specification_dway,
-            specification_dway_comment: specificationData.specification_dway_comment,
-            specification_email_comment: specificationData.specification_email_comment,
+            specification_dway_comment:
+                specificationData.specification_dway_comment,
+            specification_email_comment:
+                specificationData.specification_email_comment,
             specification_complect_name: specificationData.complect_name,
             specification_complect_name_comment: dto.total.name,
             infoblocksLeft: infoblocksLeft,
@@ -197,7 +252,8 @@ export class ContractGenerateService {
             supply_contract: specificationData.supply_contract,
             supply_comment_1: specificationData.supply_comment_1,
             logins_quantity: specificationData.logins_quantity,
-            contract_pay_date: dto.firstPayDate || '________________________________',
+            contract_pay_date:
+                dto.firstPayDate || '________________________________',
             // productNumber: totalData.productNumber,
             // productName: totalData.productName,
             // productQuantity: totalData.productQuantity,
@@ -219,21 +275,6 @@ export class ContractGenerateService {
             // contractPeriod,
         } as ContractGenerateTemplateProps;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // private getRecipientData(recipient: any) {
     //     return {
@@ -286,9 +327,4 @@ export class ContractGenerateService {
     //     const contractEndFormatted = contractEnd ? dayjs(contractEnd).format('D MMMM YYYY [г.]') : '___________________________________';
     //     return `c ${contractStartFormatted} по ${contractEndFormatted}`;
     // }
-
-
-
-
 }
-

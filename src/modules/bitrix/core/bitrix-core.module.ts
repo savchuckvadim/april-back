@@ -7,32 +7,19 @@ import { RedisModule } from 'src/core/redis/redis.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
 import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
-
+import { BitrixSetupModule } from 'src/modules/bitrix-setup/bitrix-setup.module';
+import { BitrixAuthService } from './auth/bitrix-auth.service';
 
 @Module({
-  imports: [
-    PortalModule, 
-    RedisModule, 
-    TelegramModule, 
-    HttpModule
-  ],
-  providers: [
-
-    BitrixRequestApiService,     // для HTTP
-    BitrixApiFactoryService,   // для очередей
-
-
-
-  ],
-  exports: [
-    BitrixRequestApiService,
-    BitrixApiFactoryService,
-
-
-
-  ],
+    imports: [PortalModule, RedisModule, TelegramModule, HttpModule, BitrixSetupModule],
+    providers: [
+        BitrixRequestApiService, // для HTTP
+        BitrixApiFactoryService, // для очередей
+        BitrixAuthService, // для auth по токену
+    ],
+    exports: [BitrixRequestApiService, BitrixApiFactoryService],
 })
-export class BitrixCoreModule { }
+export class BitrixCoreModule {}
 
 // В HTTP В любом Controller или Service просто инжектируешь bitrixApi: BitrixApiService — он уже готов.
-// В очередях BitrixContext 
+// В очередях BitrixContext

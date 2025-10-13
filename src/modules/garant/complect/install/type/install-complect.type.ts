@@ -10,7 +10,7 @@ export enum ProfComplectCode {
     COMPANY = 'company',
     COMPANY_PRO = 'companyPro',
     EXBUILD = 'exbuild',
-    EXJOBSEC = 'exjobsec'
+    EXJOBSEC = 'exjobsec',
 }
 
 export enum ProfComplectNumber {
@@ -25,7 +25,7 @@ export enum ProfComplectNumber {
     COMPANY = 7,
     COMPANY_PRO = 8,
     EXBUILD = 19,
-    EXJOBSEC = 20
+    EXJOBSEC = 20,
 }
 
 export enum ProfComplectName {
@@ -40,7 +40,7 @@ export enum ProfComplectName {
     COMPANY = 'Предприятие',
     COMPANY_PRO = 'Предприятие PRO',
     EXBUILD = 'Стройэксперт',
-    EXJOBSEC = 'Эксперт по охране труда'
+    EXJOBSEC = 'Эксперт по охране труда',
 }
 
 export enum UniversalComplectCode {
@@ -52,7 +52,7 @@ export enum UniversalComplectCode {
     MASTER = 'master',
     ANALITIK = 'analitik',
     ANALITIK_PLUS = 'analitikPlus',
-    MAXIMUM = 'maximum'
+    MAXIMUM = 'maximum',
 }
 
 export enum UniversalComplectNumber {
@@ -64,7 +64,7 @@ export enum UniversalComplectNumber {
     MASTER = 14,
     ANALITIK = 15,
     ANALITIK_PLUS = 16,
-    MAXIMUM = 17
+    MAXIMUM = 17,
 }
 
 export enum UniversalComplectName {
@@ -76,7 +76,7 @@ export enum UniversalComplectName {
     MASTER = 'Мастер',
     ANALITIK = 'Аналитик',
     ANALITIK_PLUS = 'Аналитик+',
-    MAXIMUM = 'Максимум'
+    MAXIMUM = 'Максимум',
 }
 
 export interface IInstallComplectBase {

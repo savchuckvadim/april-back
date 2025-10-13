@@ -1,5 +1,4 @@
-import { IBXSmartType } from "../interface/smart-type.interface";
-
+import { IBXSmartType } from '../interface/smart-type.interface';
 
 export class SmartTypeGetRequestDto {
     id: number | string;
@@ -12,8 +11,8 @@ export class SmartTypeListRequestDto {
     select?: string[];
     start: -1 | number;
     order: {
-        [key in keyof IBXSmartType]?: 'asc' | 'desc' | 'ASC' | 'DESC'
-    }
+        [key in keyof IBXSmartType]?: 'asc' | 'desc' | 'ASC' | 'DESC';
+    };
 }
 
 export class SmartTypeGetResponseDto {
@@ -24,6 +23,4 @@ export class SmartTypeListResponseDto {
     types: IBXSmartType[];
 }
 
-export class SmartTypeAddDto {
-
-}
+export class SmartTypeAddDto {}

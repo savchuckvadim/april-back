@@ -38,80 +38,79 @@ import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventServiceAppModule } from './apps/event-service/event-service-app.module';
-
+import { OfferTemplateModule } from './modules/offer-template/offer-template.module';
+import { KpiReportOrkModule } from './apps/kpi-report-ork/kpi-report-ork.module';
+import { BitrixSetupModule } from './modules/bitrix-setup/bitrix-setup.module';
+import { BitrixAppClientModule } from './apps/bitrix-app-client/bitrix-app-client.module';
 
 @Module({
-  imports: [
+    imports: [
+        // DevtoolsModule.register({
+        //   http: process.env.NODE_ENV !== 'production'
+        // }),
 
-    // DevtoolsModule.register({
-    //   http: process.env.NODE_ENV !== 'production'
-    // }),
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: '.env',
+            ignoreEnvFile: false,
+            load: [
+                () => ({
+                    REDIS_HOST: process.env.REDIS_HOST,
+                    REDIS_PORT: process.env.REDIS_PORT,
+                }),
+            ],
+        }),
+        ScheduleModule.forRoot(),
+        PrismaModule,
+        MetricsModule,
+        WsModule,
+        QueueModule,
 
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-      ignoreEnvFile: false,
-      load: [() => ({
-        REDIS_HOST: process.env.REDIS_HOST,
-        REDIS_PORT: process.env.REDIS_PORT,
-      })],
-    }),
-    ScheduleModule.forRoot(),
-    PrismaModule,
-    MetricsModule,
-    WsModule,
-    QueueModule,
+        //apps
+        EventServiceAppModule,
+        // HooksModule,
+        AlfaActivityModule,
+        BitrixModule,
+        PortalModule,
+        PBXModule,
+        PBXInstallModule,
+        PbxDomainModule,
+        TelegramModule,
+        RedisModule,
+        SilentJobHandlersModule,
+        KpiReportModule,
+        EventSalesModule,
 
-    //apps
-    EventServiceAppModule,
-    // HooksModule,
-    AlfaActivityModule,
-    BitrixModule,
-    PortalModule,
-    PBXModule,
-    PBXInstallModule,
-    PbxDomainModule,
-    TelegramModule,
-    RedisModule,
-    SilentJobHandlersModule,
-    KpiReportModule,
-    EventSalesModule,
+        KpiReportOrkModule,
 
+        QueuePingModule,
+        KonstructorModule,
+        AlfaModule,
+        // EventServiceModule
 
-    QueuePingModule,
-    KonstructorModule,
-    AlfaModule,
-    // EventServiceModule
+        TranscriptionModule,
 
-    TranscriptionModule,
+        //commands
+        // GarantPricesModule,
+        // GsrModule,
+        // FieldsModule,
+        // CategoryModule,
+        // ChangeDealCategoryModule,
 
+        StorageModule,
+        FileLinkModule,
+        GarantModule,
+        PortalKonstructorModule,
+        OfferTemplateModule,
 
-    //commands
-    // GarantPricesModule,
-    // GsrModule,
-    // FieldsModule,
-    // CategoryModule,
-    // ChangeDealCategoryModule,
+        BxDepartmentModule,
 
-    StorageModule,
-    FileLinkModule,
-    GarantModule,
-    PortalKonstructorModule,
+        HelperModule,
 
-
-    BxDepartmentModule,
-
-
-
-    HelperModule
-  ],
-  controllers: [
-    AppController,
-    HealthController
-  ],
-  providers: [
-    AppService,
-    GlobalExceptionFilter,
-  ],
+        BitrixSetupModule,
+        BitrixAppClientModule,
+    ],
+    controllers: [AppController, HealthController],
+    providers: [AppService, GlobalExceptionFilter],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,15 +1,13 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/core/prisma";
-import { SupplyRepository } from "./supply.repository";
-import { SupplyEntity } from "./supply.entity";
-import { SupplyUpdate } from "./type/supply.type";
-import { createSupplyEntityFromPrisma } from "./lib/supply-entity.util";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/core/prisma';
+import { SupplyRepository } from './supply.repository';
+import { SupplyEntity } from './supply.entity';
+import { SupplyUpdate } from './type/supply.type';
+import { createSupplyEntityFromPrisma } from './lib/supply-entity.util';
 
 @Injectable()
 export class SupplyPrismaRepository implements SupplyRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(supply: Partial<SupplyEntity>): Promise<SupplyEntity | null> {
         try {
@@ -30,10 +28,11 @@ export class SupplyPrismaRepository implements SupplyRepository {
                     contractName: supply.contractName,
                     contractPropComment: supply.contractPropComment,
                     contractPropEmail: supply.contractPropEmail,
-                    contractPropLoginsQuantity: supply.contractPropLoginsQuantity,
+                    contractPropLoginsQuantity:
+                        supply.contractPropLoginsQuantity,
                     lcontractName: supply.lcontractName,
                     lcontractPropComment: supply.lcontractPropComment,
-                    lcontractPropEmail: supply.lcontractPropEmail
+                    lcontractPropEmail: supply.lcontractPropEmail,
                 },
             });
             return createSupplyEntityFromPrisma(result);
@@ -48,7 +47,7 @@ export class SupplyPrismaRepository implements SupplyRepository {
             const { id, ...data } = supply;
             const result = await this.prisma.supplies.update({
                 where: { id: BigInt(id!) },
-                data
+                data,
             });
             return createSupplyEntityFromPrisma(result);
         } catch (error) {
@@ -60,7 +59,7 @@ export class SupplyPrismaRepository implements SupplyRepository {
     async findById(id: string): Promise<SupplyEntity | null> {
         try {
             const result = await this.prisma.supplies.findUnique({
-                where: { id: BigInt(id) }
+                where: { id: BigInt(id) },
             });
             if (!result) return null;
             return createSupplyEntityFromPrisma(result);
@@ -83,11 +82,11 @@ export class SupplyPrismaRepository implements SupplyRepository {
 
     async updateAll(supplies: SupplyUpdate[]): Promise<SupplyEntity[] | null> {
         try {
-            await this.prisma.$transaction(async (prisma) => {
+            await this.prisma.$transaction(async prisma => {
                 for (const supply of supplies) {
                     await prisma.supplies.updateMany({
                         where: { code: supply.code },
-                        data: supply
+                        data: supply,
                     });
                 }
             });
@@ -95,15 +94,17 @@ export class SupplyPrismaRepository implements SupplyRepository {
             const updatedSupplies = await this.prisma.supplies.findMany({
                 where: {
                     code: {
-                        in: supplies.map(s => s.code)
-                    }
-                }
+                        in: supplies.map(s => s.code),
+                    },
+                },
             });
 
-            return updatedSupplies.map(supply => createSupplyEntityFromPrisma(supply));
+            return updatedSupplies.map(supply =>
+                createSupplyEntityFromPrisma(supply),
+            );
         } catch (error) {
             console.error('Error updating supplies:', error);
             return null;
         }
     }
-} 
+}

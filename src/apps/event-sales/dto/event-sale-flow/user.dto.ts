@@ -1,4 +1,12 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, IsArray, IsObject, ValidateNested } from 'class-validator';
+import {
+    IsBoolean,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsArray,
+    IsObject,
+    ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 
@@ -76,4 +84,4 @@ export class FullUserDto implements IBXUser {
     UF_DEPARTMENT: number[];
 }
 
-export type UserDto = MinimalUserDto | FullUserDto; 
+export type UserDto = MinimalUserDto | FullUserDto;

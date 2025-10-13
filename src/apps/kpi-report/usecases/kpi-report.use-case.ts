@@ -1,13 +1,18 @@
 // report-kpi.service.ts
 import { Injectable } from '@nestjs/common';
-import { IField, IPBXList, IPortal, IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
+import {
+    IField,
+    IPBXList,
+    IPortal,
+    IFieldItem,
+} from 'src/modules/portal/interfaces/portal.interface';
 
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
 import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
-import { IBitrixBatchResponseResult } from 'src/modules/bitrix/core/interface/bitrix-api.intterface';
+import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
 import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 
@@ -22,21 +27,15 @@ export class ReportKpiUseCase {
     // private bitrixApi: BitrixApiService;
 
     constructor(
-
         private readonly portalContext: PortalContextService,
         private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
         // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
-    ) {
-
-
-
-    }
+    ) { }
 
     async init(domain: string) {
         // this.domain = domain;
         this.portalModel = this.portalContext.getModel();
         const portal = this.portalModel.getPortal();
-
 
         //for queue
         // this.portalModel = await this.portalProvider.getModelByDomain(domain);
@@ -47,14 +46,12 @@ export class ReportKpiUseCase {
         // //for queue
         // this.bitrixApi = await this.bxFactory.create(portal)
 
-
         this.portal = portal;
         this.hook = this.portalModel.getHook();
 
         this.portalKPIList = this.portalModel.getListByCode('sales_kpi');
-        this.portalHistoryList = this.portalModel.getListByCode('sales_history');
-
-
+        this.portalHistoryList =
+            this.portalModel.getListByCode('sales_history');
     }
 
     async generateKpiReport(dto: ReportGetFiltersDto): Promise<ReportData[]> {
@@ -75,11 +72,12 @@ export class ReportKpiUseCase {
             // eventDateId,
             dateFieldForHookFrom,
             dateFieldForHookTo,
-        } = this.getPbxFiledsData().fields
+        } = this.getPbxFiledsData().fields;
 
-
-        const currentActionsData = this.getActionsData(eventAction.items, eventActionType.items) as Filter[];
-
+        const currentActionsData = this.getActionsData(
+            eventAction.items,
+            eventActionType.items,
+        ) as Filter[];
 
         this.generateBatchCommands(
             departament,
@@ -91,36 +89,35 @@ export class ReportKpiUseCase {
             dateFieldForHookTo,
             dateFrom,
             dateTo,
-            listId as string
-        )
+            listId as string,
+        );
         // const commandsResult = bitrixApi.getCmdBatch();
         const results = await this.bitrixApi.callBatchWithConcurrency(3);
-        const report = this.getCalculateResults(results, departament, currentActionsData)
-
-
+        const report = this.getCalculateResults(
+            results,
+            departament,
+            currentActionsData,
+        );
 
         return report;
     }
 
     private getPbxFiledsData = (): {
         fields: {
-            eventAction: IField
-            eventActionType: IField
-            actionId: string
-            actionTypeId: string
-            eventResponsibleId: string
+            eventAction: IField;
+            eventActionType: IField;
+            actionId: string;
+            actionTypeId: string;
+            eventResponsibleId: string;
             // eventDateId: string
-            dateFieldForHookFrom: string
-            dateFieldForHookTo: string
-        }
+            dateFieldForHookFrom: string;
+            dateFieldForHookTo: string;
+        };
     } => {
-
-
         const listFields = this.portalKPIList?.bitrixfields;
 
         let eventActionField = null as IField | null;
         let eventActionTypeField = null as IField | null;
-
 
         let actionFieldId: string | undefined;
         let actionTypeFieldId: string | undefined;
@@ -167,35 +164,31 @@ export class ReportKpiUseCase {
                 // eventDateId: eventDateFieldId as string,
                 dateFieldForHookFrom: dateFieldForHookFrom as string,
                 dateFieldForHookTo: dateFieldForHookTo as string,
-            }
-        }
-    }
+            },
+        };
+    };
     private getActionsData = (
-
         actionItems: IFieldItem[],
-        actionTypeItems: IFieldItem[]
-
+        actionTypeItems: IFieldItem[],
     ): Filter[] => {
         const currentActionsData = [] as Filter[];
         const actionService = new ActionService();
         if (actionTypeItems.length && actionItems.length) {
             for (const actionType of actionTypeItems) {
                 for (const action of actionItems) {
-                    const actionData = actionService.getActionWithTypeData(actionType, action);
-                    if (
-                        actionData?.actionTypeItem &&
-                        actionData?.actionItem
-                    ) {
+                    const actionData = actionService.getActionWithTypeData(
+                        actionType,
+                        action,
+                    );
+                    if (actionData?.actionTypeItem && actionData?.actionItem) {
                         currentActionsData.push(actionData);
-
                     }
                 }
             }
         }
 
         return currentActionsData.sort((a, b) => a.order - b.order);
-
-    }
+    };
 
     private generateBatchCommands = (
         departament: BXUserDto[],
@@ -209,28 +202,24 @@ export class ReportKpiUseCase {
         dateFrom: string,
         dateTo: string,
         listId: string,
-
     ): void => {
-
-
-
         for (const user of departament) {
-
-            const userId = user.ID
-
-
+            const userId = user.ID;
 
             for (const action of currentActionsData) {
                 const innerCode = action.innerCode;
 
                 // если это обычный звонок, не результативный и не нерезультативный
-                const isCommunicationResult = innerCode.includes('result_communication');
+                const isCommunicationResult = innerCode.includes(
+                    'result_communication',
+                );
                 const isNoResult = innerCode.includes('noresult_communication');
                 const isCall = innerCode.includes('call');
 
                 if (!isCommunicationResult && !isNoResult && isCall) {
                     const actionValuebitrixId = action.actionItem.bitrixId;
-                    const actionTypeValuebitrixId = action.actionTypeItem.bitrixId;
+                    const actionTypeValuebitrixId =
+                        action.actionTypeItem.bitrixId;
                     const cmdKey = `user_${userId}_action_${action.code}`;
                     if (action.code == 'call_plan') {
                         const getListData = {
@@ -239,25 +228,37 @@ export class ReportKpiUseCase {
                             filter: {
                                 [`${eventResponsibleFieldId}`]: userId,
                                 [`${actionFieldId}`]: actionValuebitrixId,
-                                [`${actionTypeFieldId}`]: [actionTypeValuebitrixId] as string[] | number[],
+                                [`${actionTypeFieldId}`]: [
+                                    actionTypeValuebitrixId,
+                                ] as string[] | number[],
                                 [`${dateFieldForHookFrom}`]: dateFrom,
                                 [`${dateFieldForHookTo}`]: dateTo,
                             },
-                            select: ['ID']
+                            select: ['ID'],
                         };
 
                         for (const callPlanAction of currentActionsData) {
-
-                            if (callPlanAction.code == 'xo_plan' ||
+                            if (
+                                callPlanAction.code == 'xo_plan' ||
                                 callPlanAction.code == 'call_in_money_plan' ||
                                 callPlanAction.code == 'call_in_progress_plan'
                             ) {
-                                const actionTypeArray = getListData.filter[`${actionTypeFieldId}`] as (string | number)[];
-                                actionTypeArray.push(callPlanAction.actionTypeItem.bitrixId as string | number);
+                                const actionTypeArray = getListData.filter[
+                                    `${actionTypeFieldId}`
+                                ] as (string | number)[];
+                                actionTypeArray.push(
+                                    callPlanAction.actionTypeItem.bitrixId as
+                                    | string
+                                    | number,
+                                );
                             }
                         }
 
-                        this.bitrixApi.addCmdBatch(cmdKey, 'lists.element.get', getListData);
+                        this.bitrixApi.addCmdBatch(
+                            cmdKey,
+                            'lists.element.get',
+                            getListData,
+                        );
                     }
 
                     if (action.code == 'call_done') {
@@ -267,32 +268,39 @@ export class ReportKpiUseCase {
                             filter: {
                                 [`${eventResponsibleFieldId}`]: userId,
                                 [`${actionFieldId}`]: actionValuebitrixId,
-                                [`${actionTypeFieldId}`]: [actionTypeValuebitrixId] as string[] | number[],
+                                [`${actionTypeFieldId}`]: [
+                                    actionTypeValuebitrixId,
+                                ] as string[] | number[],
                                 [`${dateFieldForHookFrom}`]: dateFrom,
                                 [`${dateFieldForHookTo}`]: dateTo,
                             },
-                            select: ['ID']
+                            select: ['ID'],
                         };
 
                         for (const callDoneAction of currentActionsData) {
-
-                            if (callDoneAction.code == 'xo_done' ||
+                            if (
+                                callDoneAction.code == 'xo_done' ||
                                 callDoneAction.code == 'call_in_money_done' ||
                                 callDoneAction.code == 'call_in_progress_done'
                             ) {
-                                const actionTypeArray = getListData.filter[`${actionTypeFieldId}`] as (string | number)[];
-                                actionTypeArray.push(callDoneAction.actionTypeItem.bitrixId as string | number);
+                                const actionTypeArray = getListData.filter[
+                                    `${actionTypeFieldId}`
+                                ] as (string | number)[];
+                                actionTypeArray.push(
+                                    callDoneAction.actionTypeItem.bitrixId as
+                                    | string
+                                    | number,
+                                );
                             }
                         }
 
-                        this.bitrixApi.addCmdBatch(cmdKey, 'lists.element.get', getListData);
+                        this.bitrixApi.addCmdBatch(
+                            cmdKey,
+                            'lists.element.get',
+                            getListData,
+                        );
                     }
-
                 }
-
-
-
-
             }
 
             for (const action of currentActionsData) {
@@ -300,11 +308,11 @@ export class ReportKpiUseCase {
                 // исключаем звонки
                 if (!innerCode.includes('call')) {
                     const actionValuebitrixId = action.actionItem.bitrixId;
-                    const actionTypeValuebitrixId = action.actionTypeItem.bitrixId;
+                    const actionTypeValuebitrixId =
+                        action.actionTypeItem.bitrixId;
 
                     // Формируем ключ команды, используя ID пользователя и ID действия для уникальности
                     const cmdKey = `user_${userId}_action_${action.code}`;
-
 
                     const getListData = {
                         IBLOCK_TYPE_ID: 'lists',
@@ -316,27 +324,30 @@ export class ReportKpiUseCase {
                             [`${dateFieldForHookFrom}`]: dateFrom,
                             [`${dateFieldForHookTo}`]: dateTo,
                         },
-                        select: ['ID']
+                        select: ['ID'],
                     };
 
-
-                    this.bitrixApi.addCmdBatch(cmdKey, 'lists.element.get', getListData);
+                    this.bitrixApi.addCmdBatch(
+                        cmdKey,
+                        'lists.element.get',
+                        getListData,
+                    );
                 }
-
             }
-
-
-
         }
+    };
 
-    }
-
-
-    private proccesResultCommunications = (reportData: ReportData): ReportData => {
-
-
-        const targetKpiItemResultPlan = { id: 'result_communication_plan' as string, count: 0 } as KPI;
-        const targetKpiItemResultDone = { id: 'result_communication_done' as string, count: 0 } as KPI;
+    private proccesResultCommunications = (
+        reportData: ReportData,
+    ): ReportData => {
+        const targetKpiItemResultPlan = {
+            id: 'result_communication_plan' as string,
+            count: 0,
+        } as KPI;
+        const targetKpiItemResultDone = {
+            id: 'result_communication_done' as string,
+            count: 0,
+        } as KPI;
         // const resultKpiPlan = {
 
         //     action: {
@@ -359,9 +370,12 @@ export class ReportKpiUseCase {
         //     },
         // } as KPI;
         reportData.kpi.forEach(kpi => {
-
-            const isOriginalPlan = kpi.action.innerCode === 'call_plan' || kpi.action.innerCode === 'presentation_plan';
-            const isOriginalDone = kpi.action.innerCode === 'call_done' || kpi.action.innerCode === 'presentation_done';
+            const isOriginalPlan =
+                kpi.action.innerCode === 'call_plan' ||
+                kpi.action.innerCode === 'presentation_plan';
+            const isOriginalDone =
+                kpi.action.innerCode === 'call_done' ||
+                kpi.action.innerCode === 'presentation_done';
 
             if (isOriginalPlan) {
                 targetKpiItemResultPlan.count += kpi.count;
@@ -371,72 +385,65 @@ export class ReportKpiUseCase {
             }
             if (kpi.action.innerCode === 'call_plan') {
                 targetKpiItemResultPlan.action = { ...kpi.action };
-                targetKpiItemResultPlan.action.name = 'План'
+                targetKpiItemResultPlan.action.name = 'План';
 
-                targetKpiItemResultPlan.action.innerCode = 'result_communication_plan'
+                targetKpiItemResultPlan.action.innerCode =
+                    'result_communication_plan';
             }
             if (kpi.action.innerCode === 'call_done') {
                 targetKpiItemResultDone.action = { ...kpi.action };
-                targetKpiItemResultDone.action.name = 'Результативные'
-                targetKpiItemResultDone.action.innerCode = 'result_communication_done'
+                targetKpiItemResultDone.action.name = 'Результативные';
+                targetKpiItemResultDone.action.innerCode =
+                    'result_communication_done';
             }
-
-
-
-
         });
-        reportData.kpi.unshift(targetKpiItemResultPlan, targetKpiItemResultDone);
-
+        reportData.kpi.unshift(
+            targetKpiItemResultPlan,
+            targetKpiItemResultDone,
+        );
 
         return reportData;
-    }
+    };
 
     private getCalculateResults = (
         results: IBitrixBatchResponseResult[],
         departament: BXUserDto[],
-        currentActionsData: Filter[]
+        currentActionsData: Filter[],
     ): ReportData[] => {
         const report = [] as ReportData[];
 
         for (const user of departament) {
-
-            const userId = user.ID
-            const userName = user.NAME + ' ' + user.LAST_NAME
+            const userId = user.ID;
+            const userName = user.NAME + ' ' + user.LAST_NAME;
 
             let userReport = {
                 user: user,
                 userName: userName,
-                kpi: [] as KPI[]
-            } as ReportData
+                kpi: [] as KPI[],
+            } as ReportData;
             for (const action of currentActionsData) {
-
                 const cmdKey = `user_${userId}_action_${action.code}`;
                 const kpi = {
                     id: action.innerCode,
                     action: action,
                     count: 0,
-
-                } as KPI
+                } as KPI;
                 for (const result of results) {
                     for (const resultKey in result.result) {
                         if (resultKey === cmdKey) {
+                            kpi.count =
+                                Number(result.result_total[resultKey]) || 0;
 
-
-                            kpi.count = Number(result.result_total[resultKey]) || 0
-
-                            userReport.kpi.push(kpi)
-
+                            userReport.kpi.push(kpi);
                         }
                     }
-
-
                 }
             }
-            userReport = this.proccesResultCommunications(userReport) as ReportData
-            report.push(userReport)
+            userReport = this.proccesResultCommunications(
+                userReport,
+            ) as ReportData;
+            report.push(userReport);
         }
         return report;
-    }
-
-
+    };
 }

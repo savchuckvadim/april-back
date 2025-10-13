@@ -1,4 +1,4 @@
-import { IBXLead } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
+import { IBXLead } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 
 export class LeadDto implements IBXLead {
     ID: number;

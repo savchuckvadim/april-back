@@ -19,10 +19,15 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
         BullModule.forRootAsync({
             useFactory: (configService: ConfigService) => {
                 const host = configService.get('REDIS_HOST') ?? 'redis';
-                const port = parseInt(configService.get('REDIS_PORT') ?? '6379', 10);
+                const port = parseInt(
+                    configService.get('REDIS_PORT') ?? '6379',
+                    10,
+                );
 
                 const logger = new Logger('BullModule');
-                logger.log(`BullModule Redis config: host=${host}, port=${port}`);
+                logger.log(
+                    `BullModule Redis config: host=${host}, port=${port}`,
+                );
 
                 return {
                     redis: {
@@ -34,7 +39,7 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
             inject: [ConfigService],
         }),
         BullModule.registerQueue(
-            ...Object.values(QueueNames).map((name) => ({ name }))
+            ...Object.values(QueueNames).map(name => ({ name })),
         ),
         BitrixModule,
         RedisModule,
@@ -55,7 +60,6 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
         QueueDispatcherService,
         BullModule,
         SilentJobHandlersModule,
-        
     ],
 })
 export class QueueModule {
@@ -65,4 +69,4 @@ export class QueueModule {
         this.logger.log('QueueModule initialized');
         this.logger.log('Registered queues:', Object.values(QueueNames));
     }
-} 
+}

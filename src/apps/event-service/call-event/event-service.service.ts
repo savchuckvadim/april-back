@@ -83,7 +83,6 @@
 //         return { factCountIshodCommun, eduCount, presCount };
 //     }
 
-
 //     // заглушки для следующих методов — реализуем позже
 //     private async callingCurrentTask(
 //         callingEvent: CallingEventDto,
@@ -164,7 +163,6 @@
 //             initFields[(fieldName as IField).bitrixCamelId] = typeTitle;
 //         }
 
-
 //         const fieldCompany = this.portalModel.getIdByCodeFieldList(orkHistoryList, 'ork_crm_company');
 //         if (fieldCompany) {
 //             initFields[fieldCompany.bitrixCamelId] = currentTask.ufCrmTask;
@@ -220,8 +218,6 @@
 //                     initFields[fieldCommunication.bitrixCamelId] = value.bitrixId;
 //                 }
 
-
-
 //             } catch (e) {
 //                 this.telegramBot.sendMessageAdminError(
 //                     `record_completed_current_task:\nERROR: \n${callingEvent.report.communication.type} - не найдено \n\ndomain: ${this.domain}`
@@ -230,7 +226,6 @@
 
 //             const fieldInitiative = this.portalModel.getIdByCodeFieldList(orkHistoryList, 'ork_event_initiative');
 //             if (fieldInitiative) {
-
 
 //                 try {
 //                     const initiativeCode = callingEvent.report.communication?.initiative?.code || 'outgoing';
@@ -468,7 +463,6 @@
 //         void this.recordPlannedTask(callingEvent);
 //     }
 
-
 //     async recordPlannedTask(callingEvent: CallingEventDto): Promise<any> {
 //         /** Запись планирования задачи */
 //         this.factCountIshodCommun++;
@@ -560,7 +554,6 @@
 //         })
 //         return bxList;
 //     }
-
 
 //     async recordResultPlanned(callingEvent: CallingEventDto): Promise<void> {
 //         /** Запись планирования задачи */
@@ -689,7 +682,6 @@
 //         await this.bxApi.callBatch();
 //     }
 
-
 //     async updateFieldCompany(callingEvent: CallingEventDto): Promise<[number, number, number]> {
 //         /** Обновить поля компании */
 //         // const bxCompany = new BXCompany(callingEvent.domain, this.portal.access_key);
@@ -710,7 +702,6 @@
 //         // ОРК Тема следующего звонка
 //         const nextCallNameField = this.portalModel.getCompanyFieldByCode('ork_next_call_name') as IField;
 //         // const bxTask = new BXTask(callingEvent.domain, this.portal.access_key);
-
 
 //         // const currentTasks = await bxTask.getTaskByCompanyId(company.ID);
 
@@ -829,7 +820,6 @@
 //         await this.bxApi.callBatch();
 //         return [this.factCountIshodCommun, eduCount, presCount];
 //     }
-
 
 //     async processSmartReport(callingEvent: CallingEventDto) {
 //         // Аналог EventSmartReportNew().new_event(...)

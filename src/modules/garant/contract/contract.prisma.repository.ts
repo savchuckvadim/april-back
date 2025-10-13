@@ -1,14 +1,14 @@
-import { PrismaService } from "src/core/prisma";
-import { ContractRepository } from "./contract.repository";
-import { ContractEntity } from "./contract.entity";
-import { PortalContractEntity } from "./portal-contract.entity";
+import { PrismaService } from 'src/core/prisma';
+import { ContractRepository } from './contract.repository';
+import { ContractEntity } from './contract.entity';
+import { PortalContractEntity } from './portal-contract.entity';
 
 export class ContractPrismaRepository implements ContractRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) {}
 
-    async create(contract: Partial<ContractEntity>): Promise<ContractEntity | null> {
+    async create(
+        contract: Partial<ContractEntity>,
+    ): Promise<ContractEntity | null> {
         const result = await this.prisma.contracts.create({
             data: {
                 name: contract.name!,
@@ -28,22 +28,24 @@ export class ContractPrismaRepository implements ContractRepository {
                 comment: contract.comment,
                 comment1: contract.comment1,
                 comment2: contract.comment2,
-                withPrepayment: contract.withPrepayment!
+                withPrepayment: contract.withPrepayment!,
             },
         });
         return result;
     }
 
-    async update(contract: Partial<ContractEntity>): Promise<ContractEntity | null> {
+    async update(
+        contract: Partial<ContractEntity>,
+    ): Promise<ContractEntity | null> {
         return await this.prisma.contracts.update({
             where: { id: contract.id },
-            data: contract
+            data: contract,
         });
     }
 
     async findById(id: number): Promise<ContractEntity | null> {
         return await this.prisma.contracts.findUnique({
-            where: { id }
+            where: { id },
         });
     }
 
@@ -51,17 +53,19 @@ export class ContractPrismaRepository implements ContractRepository {
         return await this.prisma.contracts.findMany();
     }
 
-    async findByPortalId(portalId: number): Promise<PortalContractEntity[] | null> {
+    async findByPortalId(
+        portalId: number,
+    ): Promise<PortalContractEntity[] | null> {
         return await this.prisma.portal_contracts.findMany({
             where: { portal_id: portalId },
             include: {
                 contracts: true,
                 portal_measure: {
                     include: {
-                        measures: true
-                    }
-                }
-            }
+                        measures: true,
+                    },
+                },
+            },
         });
     }
-} 
+}

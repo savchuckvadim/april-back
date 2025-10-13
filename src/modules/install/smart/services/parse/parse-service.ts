@@ -1,26 +1,29 @@
-import { StorageService, StorageType } from "@/core/storage";
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { StorageService, StorageType } from '@/core/storage';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { Category, Field, ListItem, Smart, Stage } from "../../type/parse.type";
-import { SmartNameEnum } from "../../dto/install-smart.dto";
-import { EUserFieldType } from "@/modules/bitrix";
-
-
+import { Category, Field, ListItem, Smart, Stage } from '../../type/parse.type';
+import { SmartNameEnum } from '../../dto/install-smart.dto';
+import { EUserFieldType } from '@/modules/bitrix';
 
 @Injectable()
 export class ParseSmartService {
     private readonly logger = new Logger(ParseSmartService.name);
     private readonly installPath = 'install/service/smart';
-    constructor(
-
-        private readonly storageService: StorageService
-    ) { }
+    constructor(private readonly storageService: StorageService) {}
 
     async getParsedData(smartName: SmartNameEnum): Promise<Smart[]> {
-        const fullPath = `${this.installPath}/${smartName}`
-        const fileName = 'data.xlsx'
-        const path = this.storageService.getFilePath(StorageType.APP, fullPath, fileName)
-        const exists = await this.storageService.fileExistsByType(StorageType.APP, fullPath, fileName)
+        const fullPath = `${this.installPath}/${smartName}`;
+        const fileName = 'data.xlsx';
+        const path = this.storageService.getFilePath(
+            StorageType.APP,
+            fullPath,
+            fileName,
+        );
+        const exists = await this.storageService.fileExistsByType(
+            StorageType.APP,
+            fullPath,
+            fileName,
+        );
         if (!exists) {
             throw new NotFoundException('File not found');
         }
@@ -38,26 +41,38 @@ export class ParseSmartService {
         const categoriesSheet = workbook.worksheets[4];
         const stagesSheet = workbook.worksheets[5];
 
-        const data = this.createSmarts(smartsSheet, categoriesSheet, stagesSheet, fieldsSheet, fieldItemsSheet);
-        
+        const data = this.createSmarts(
+            smartsSheet,
+            categoriesSheet,
+            stagesSheet,
+            fieldsSheet,
+            fieldItemsSheet,
+        );
+
         return data;
     }
 
     private createSmarts(
-        smartsSheet: ExcelJS.Worksheet, 
-        categoriesSheet: ExcelJS.Worksheet, 
+        smartsSheet: ExcelJS.Worksheet,
+        categoriesSheet: ExcelJS.Worksheet,
         stagesSheet: ExcelJS.Worksheet,
         fieldsSheet: ExcelJS.Worksheet,
-        fieldItemsSheet: ExcelJS.Worksheet
+        fieldItemsSheet: ExcelJS.Worksheet,
     ): Smart[] {
-
         const resultSmarts: Smart[] = [];
         const baseSmartsData = this.getBaseSmartData(smartsSheet);
-      
-        baseSmartsData.forEach((smart) => {
-            const categories = this.getCategoriesData(categoriesSheet, smart.entityTypeId);
-            categories.forEach((category) => {
-                const stages = this.getStagesData(stagesSheet, category.id, category.entityTypeId);
+
+        baseSmartsData.forEach(smart => {
+            const categories = this.getCategoriesData(
+                categoriesSheet,
+                smart.entityTypeId,
+            );
+            categories.forEach(category => {
+                const stages = this.getStagesData(
+                    stagesSheet,
+                    category.id,
+                    category.entityTypeId,
+                );
                 category.stages = stages;
             });
 
@@ -77,10 +92,31 @@ export class ParseSmartService {
             if (index === 1) return;
             const rawValues = row.values as any[];
             // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-            const values = rawValues.slice(1).map(v => (v && typeof v === 'object' && 'result' in v) ? v.result : v);
+            const values = rawValues
+                .slice(1)
+                .map(v =>
+                    v && typeof v === 'object' && 'result' in v ? v.result : v,
+                );
 
             const [
-                smartId, title, name, smartEntityTypeId, code, type, group, bitrixId, entityTypeId, forStageId, forFilterId, crmId, forStage, forFilter, crm, isActive, smartOrder, smartIsDefault
+                smartId,
+                title,
+                name,
+                smartEntityTypeId,
+                code,
+                type,
+                group,
+                bitrixId,
+                entityTypeId,
+                forStageId,
+                forFilterId,
+                crmId,
+                forStage,
+                forFilter,
+                crm,
+                isActive,
+                smartOrder,
+                smartIsDefault,
             ] = values as any[];
 
             const smart: Smart = {
@@ -102,7 +138,7 @@ export class ParseSmartService {
                 isNeedUpdate: true,
                 order: smartOrder,
                 categories: [],
-                fields: []
+                fields: [],
             };
 
             resultSmarts.push(smart);
@@ -111,7 +147,10 @@ export class ParseSmartService {
         return resultSmarts;
     }
 
-    private getCategoriesData(categoriesSheet: ExcelJS.Worksheet, entityTypeId: string): Category[] {
+    private getCategoriesData(
+        categoriesSheet: ExcelJS.Worksheet,
+        entityTypeId: string,
+    ): Category[] {
         const categoriesData: any[][] = [];
         categoriesSheet.eachRow((row, index) => {
             const values = row.values as any[];
@@ -119,10 +158,22 @@ export class ParseSmartService {
             categoriesData.push(values);
         });
         const categories: Category[] = [];
-        categoriesData.forEach((categoryValues) => {
+        categoriesData.forEach(categoryValues => {
             const [
-                categoryId, categoryEntityTypeId, categoryEntityType, categoryType, categoryGroup, categoryName, categoryTitle, categoryBitrixId,
-                categoryBitrixCamelId, categoryCode, categoryIsActive, categoryIsNeedUpdate, categoryOrder, cIsDefault
+                categoryId,
+                categoryEntityTypeId,
+                categoryEntityType,
+                categoryType,
+                categoryGroup,
+                categoryName,
+                categoryTitle,
+                categoryBitrixId,
+                categoryBitrixCamelId,
+                categoryCode,
+                categoryIsActive,
+                categoryIsNeedUpdate,
+                categoryOrder,
+                cIsDefault,
             ] = categoryValues;
 
             if (categoryIsNeedUpdate) {
@@ -142,7 +193,7 @@ export class ParseSmartService {
                         isNeedUpdate: categoryIsNeedUpdate,
                         order: categoryOrder,
                         isDefault: cIsDefault,
-                        stages: []
+                        stages: [],
                     };
 
                     categories.push(category);
@@ -152,7 +203,11 @@ export class ParseSmartService {
         return categories;
     }
 
-    private getStagesData(stagesSheet: ExcelJS.Worksheet, categoryId: string, categoryEntityTypeId: string): Stage[] {
+    private getStagesData(
+        stagesSheet: ExcelJS.Worksheet,
+        categoryId: string,
+        categoryEntityTypeId: string,
+    ): Stage[] {
         const stagesData: any[][] = [];
         const stages: Stage[] = [];
         stagesSheet.eachRow((row, index) => {
@@ -161,10 +216,24 @@ export class ParseSmartService {
             stagesData.push(values);
         });
 
-        stagesData.forEach((stageValues) => {
+        stagesData.forEach(stageValues => {
             const [
-                stageId, stageName, stageTitle, stageType, stageGroup, stageBitrixId, stageColor, stageCode, stageEntityType, stageParentType, stageIsActive, stageSmartBitrixId, stageCategoryId, stageBitrixEnitiyId, stageIsNeedUpdate,
-                stageOrder
+                stageId,
+                stageName,
+                stageTitle,
+                stageType,
+                stageGroup,
+                stageBitrixId,
+                stageColor,
+                stageCode,
+                stageEntityType,
+                stageParentType,
+                stageIsActive,
+                stageSmartBitrixId,
+                stageCategoryId,
+                stageBitrixEnitiyId,
+                stageIsNeedUpdate,
+                stageOrder,
             ] = stageValues;
 
             if (stageIsNeedUpdate) {
@@ -196,22 +265,37 @@ export class ParseSmartService {
         return stages;
     }
 
-    private getFieldsData(fieldsSheet: ExcelJS.Worksheet, fieldItemsSheet: ExcelJS.Worksheet): Field[] {
+    private getFieldsData(
+        fieldsSheet: ExcelJS.Worksheet,
+        fieldItemsSheet: ExcelJS.Worksheet,
+    ): Field[] {
         const fieldsData: any[][] = [];
         fieldsSheet.eachRow((row, index) => {
-          
             if (index === 1) return; // Пропускаем заголовок (первая строка)
             const rawValues = row.values as any[];
             // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-            const values = rawValues.slice(1).map(v => (v && typeof v === 'object' && 'result' in v) ? v.result : v);
+            const values = rawValues
+                .slice(1)
+                .map(v =>
+                    v && typeof v === 'object' && 'result' in v ? v.result : v,
+                );
             fieldsData.push(values);
         });
 
         const fields: Field[] = [];
 
-        fieldsData.forEach((fieldValues) => {
+        fieldsData.forEach(fieldValues => {
             const [
-                name, appType, shortType, type, list, code, smart, order, isNeedUpdate, multiple,
+                name,
+                appType,
+                shortType,
+                type,
+                list,
+                code,
+                smart,
+                order,
+                isNeedUpdate,
+                multiple,
             ] = fieldValues;
 
             let listArray: ListItem[] = [];
@@ -228,7 +312,7 @@ export class ParseSmartService {
                 smart,
                 order,
                 isNeedUpdate,
-                isMultiple: multiple
+                isMultiple: multiple,
             };
 
             fields.push(field);
@@ -237,28 +321,42 @@ export class ParseSmartService {
         return fields;
     }
 
-    private getListItems(fieldItemsSheet: ExcelJS.Worksheet, code: string): ListItem[] {
+    private getListItems(
+        fieldItemsSheet: ExcelJS.Worksheet,
+        code: string,
+    ): ListItem[] {
         const listArray: ListItem[] = [];
         const itemsData: any[][] = [];
-        
+
         fieldItemsSheet.eachRow((row, index) => {
-         
             if (index === 1) return; // Пропускаем заголовок (первая строка)
             const rawValues = row.values as any[];
             // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-            const values = rawValues.slice(1).map(v => (v && typeof v === 'object' && 'result' in v) ? v.result : v);
+            const values = rawValues
+                .slice(1)
+                .map(v =>
+                    v && typeof v === 'object' && 'result' in v ? v.result : v,
+                );
             itemsData.push(values);
         });
 
-        itemsData.forEach((itemValues) => {
+        itemsData.forEach(itemValues => {
             const [
-                field_name, field_code, item_name, item_code, field_app, item_order, item_del, item_isActive, item_isNeedUpdate,
+                field_name,
+                field_code,
+                item_name,
+                item_code,
+                field_app,
+                item_order,
+                item_del,
+                item_isActive,
+                item_isNeedUpdate,
             ] = itemValues;
 
             if (field_code == code) {
                 if (item_isNeedUpdate && item_isActive) {
                     listArray.push(
-                        this.getListItem(item_name, item_code, item_order)
+                        this.getListItem(item_name, item_code, item_order),
                     );
                 }
             }
@@ -273,9 +371,7 @@ export class ParseSmartService {
             DEL: 'N',
             XML_ID: code,
             CODE: code,
-            SORT: order
+            SORT: order,
         };
     }
-
- 
 }

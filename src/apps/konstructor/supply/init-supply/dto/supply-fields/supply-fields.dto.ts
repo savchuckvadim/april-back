@@ -1,8 +1,6 @@
-import { IsString } from "class-validator";
-import { FormFieldDto } from "@/apps/konstructor/document-generate/dto/form-field/form-field.dto";
-import { RqItem } from "@/apps/konstructor/document-generate/type/bx-rq.type";
-
-
+import { IsString } from 'class-validator';
+import { FormFieldDto } from '@/apps/konstructor/document-generate/dto/form-field/form-field.dto';
+import { RqItem } from '@/apps/konstructor/document-generate/type/bx-rq.type';
 
 export enum SupplyReportCodeEnum {
     situation_comments = 'situation_comments',
@@ -19,17 +17,11 @@ export enum SupplyReportCodeEnum {
     is_invoice_done = 'is_invoice_done',
     invoice_result = 'invoice_result',
     current_invoice = 'current_invoice',
-
-
-
-   
 }
-export class SupplyReportDto extends FormFieldDto implements RqItem<SupplyReportCodeEnum> {
-
+export class SupplyReportDto
+    extends FormFieldDto
+    implements RqItem<SupplyReportCodeEnum>
+{
     @IsString()
     code: SupplyReportCodeEnum;
-
- 
-
 }
-

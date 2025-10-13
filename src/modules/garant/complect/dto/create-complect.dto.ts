@@ -1,24 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsBoolean, IsOptional, IsArray } from 'class-validator';
+import {
+    IsString,
+    IsNumber,
+    IsBoolean,
+    IsOptional,
+    IsArray,
+} from 'class-validator';
 
 export class CreateComplectDto {
     @ApiProperty({
         description: 'Название комплекта',
-        example: 'Гарант Бухгалтер'
+        example: 'Гарант Бухгалтер',
     })
     @IsString()
     name: string;
 
     @ApiProperty({
         description: 'Полное название комплекта',
-        example: 'Гарант Бухгалтер'
+        example: 'Гарант Бухгалтер',
     })
     @IsString()
     fullName: string;
 
     @ApiProperty({
         description: 'Короткое название комплекта',
-        example: 'Бухгалтер'
+        example: 'Бухгалтер',
     })
     @IsString()
     shortName: string;
@@ -26,7 +32,7 @@ export class CreateComplectDto {
     @ApiProperty({
         description: 'Описание комплекта',
         required: false,
-        example: 'для Бухгалтера'
+        example: 'для Бухгалтера',
     })
     @IsString()
     @IsOptional()
@@ -34,7 +40,7 @@ export class CreateComplectDto {
 
     @ApiProperty({
         description: 'Код комплекта',
-        example: 'buh'
+        example: 'buh',
     })
     @IsString()
     code: string;
@@ -42,7 +48,7 @@ export class CreateComplectDto {
     @ApiProperty({
         description: 'Тип комплекта',
         example: 'prof',
-        enum: ['prof', 'universal',]
+        enum: ['prof', 'universal'],
     })
     @IsString()
     type: string;
@@ -50,7 +56,7 @@ export class CreateComplectDto {
     @ApiProperty({
         description: 'Цвет комплекта',
         required: false,
-        example: '#FF0000'
+        example: '#FF0000',
     })
     @IsString()
     @IsOptional()
@@ -58,7 +64,7 @@ export class CreateComplectDto {
 
     @ApiProperty({
         description: 'Вес комплекта',
-        example: 3.5
+        example: 3.5,
     })
     @IsNumber()
     weight: number;
@@ -66,7 +72,7 @@ export class CreateComplectDto {
     @ApiProperty({
         description: 'ABS комплекта',
         example: '1.5',
-        required: false
+        required: false,
     })
     @IsString()
     @IsOptional()
@@ -74,7 +80,7 @@ export class CreateComplectDto {
 
     @ApiProperty({
         description: 'Номер комплекта',
-        example: 1
+        example: 1,
     })
     @IsNumber()
     number: number;
@@ -82,49 +88,49 @@ export class CreateComplectDto {
     @ApiProperty({
         description: 'Тип продукта',
         example: 'garant',
-        enum: ['garant', 'lt', 'star', 'consalting']
+        enum: ['garant', 'lt', 'star', 'consalting'],
     })
     @IsString()
     productType: string;
 
     @ApiProperty({
         description: 'Наличие ABS',
-        example: false
+        example: false,
     })
     @IsBoolean()
     withABS: boolean;
 
     @ApiProperty({
         description: 'Наличие консалтинга',
-        example: false
+        example: false,
     })
     @IsBoolean()
     withConsalting: boolean;
 
     @ApiProperty({
         description: 'Наличие сервисов',
-        example: true
+        example: true,
     })
     @IsBoolean()
     withServices: boolean;
 
     @ApiProperty({
         description: 'Наличие LT',
-        example: false
+        example: false,
     })
     @IsBoolean()
     withLt: boolean;
 
     @ApiProperty({
         description: 'Изменяемый комплект',
-        example: true
+        example: true,
     })
     @IsBoolean()
     isChanging: boolean;
 
     @ApiProperty({
         description: 'Есть ли наполнение по умолчанию',
-        example: false
+        example: false,
     })
     @IsBoolean()
     withDefault: boolean;
@@ -132,10 +138,9 @@ export class CreateComplectDto {
     @ApiProperty({
         description: 'Список ID инфоблоков, входящих в комплект',
         type: [String],
-        isArray: true,
-        example: ['1', '2', '3']
+        example: ['1', '2', '3'],
     })
     @IsArray()
     @IsString({ each: true })
     infoblockIds: string[];
-} 
+}

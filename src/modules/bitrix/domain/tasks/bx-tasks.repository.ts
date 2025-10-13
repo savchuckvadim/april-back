@@ -1,11 +1,13 @@
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { EBxMethod, EBxNamespace } from "../../core/domain/consts/bitrix-api.enum";
-import { EBXEntity } from "../../core/domain/consts/bitrix-entities.enum";
-import { IBXTask } from "../interfaces/bitrix.interface";
-import { BXTaskRequest, BXTaskRequestFields } from "./bx-tasks.interface";
-import { TBXResponse } from "../../core";
-import { IBitrixResponse } from "../../core/interface/bitrix-api.intterface";
-
+import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import {
+    EBxMethod,
+    EBxNamespace,
+} from '../../core/domain/consts/bitrix-api.enum';
+import { EBXEntity } from '../../core/domain/consts/bitrix-entities.enum';
+import { IBXTask } from '../interfaces/bitrix.interface';
+import { BXTaskRequest, BXTaskRequestFields } from './bx-tasks.interface';
+import { TBXResponse } from '../../core';
+import { IBitrixResponse } from '../../core/interface/bitrix-api-http.intterface';
 
 export class BxTasksRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) { }
@@ -15,7 +17,7 @@ export class BxTasksRepository {
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.GET,
-            { id: taskId }
+            { id: taskId },
         );
     }
 
@@ -25,74 +27,86 @@ export class BxTasksRepository {
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.GET,
-            { id: taskId, }
+            { id: taskId },
         );
     }
 
-    async getList(filter: Partial<BXTaskRequestFields>, select?: string[]): Promise<IBitrixResponse<TBXResponse<EBxNamespace.TASKS, EBXEntity.TASK, EBxMethod.LIST>>> {
+    async getList(
+        filter: Partial<BXTaskRequestFields>,
+        select?: string[],
+    ): Promise<
+        IBitrixResponse<
+            TBXResponse<EBxNamespace.TASKS, EBXEntity.TASK, EBxMethod.LIST>
+        >
+    > {
         return await this.bitrixService.callType(
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.LIST,
-            { select, filter }
+            { select, filter },
         );
     }
 
- 
-
-    async getListBtch(cmdCode: string, filter: Partial<BXTaskRequestFields>, select?: string[]) {
+    async getListBtch(
+        cmdCode: string,
+        filter: Partial<BXTaskRequestFields>,
+        select?: string[],
+    ) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.LIST,
-            { select, filter }
+            { select, filter },
         );
     }
 
-    async getAll(filter: Partial<BXTaskRequestFields>, select?: string[]): Promise<{
-        tasks: IBXTask[],
-        total: number
+    async getAll(
+        filter: Partial<BXTaskRequestFields>,
+        select?: string[],
+    ): Promise<{
+        tasks: IBXTask[];
+        total: number;
     }> {
-        let condition = true
-        const results = [] as IBXTask[]
-        let lastId = undefined as undefined | number | string
+        let condition = true;
+        const results = [] as IBXTask[];
+        let lastId = undefined as undefined | number | string;
         while (condition) {
             const result = await this.bitrixService.callType(
                 EBxNamespace.TASKS,
                 EBXEntity.TASK,
                 EBxMethod.LIST,
                 {
-                    select, filter: {
+                    select,
+                    filter: {
                         ...filter,
-                        '>ID': lastId
-
-                    }, order: { 'ID': 'asc' }
-                }
+                        '>ID': lastId,
+                    },
+                    order: { ID: 'asc' },
+                },
             );
             if (result && result.result && result.result.tasks) {
                 result.result.tasks.map(t => {
-                    lastId = t.id
-                    results.push(t)
-                })
+                    lastId = t.id;
+                    results.push(t);
+                });
             }
             if (!result.total) {
-                condition = false
+                condition = false;
             }
         }
         return {
             tasks: results,
-            total: results.length
-        }
+            total: results.length,
+        };
     }
-
 
     async delete(taskId: number) {
         return this.bitrixService.callType(
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.DELETE,
-            { id: taskId }
+            { id: taskId },
         );
     }
 
@@ -102,7 +116,7 @@ export class BxTasksRepository {
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.DELETE,
-            { id: taskId, }
+            { id: taskId },
         );
     }
     //     field_n — название поля, по которому будет отфильтрована выборка элементов
@@ -138,23 +152,26 @@ export class BxTasksRepository {
     //     );
     // }
 
-
     async update(taskId: number | string, data: { [key: string]: any }) {
         return this.bitrixService.callType(
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.UPDATE,
-            { taskId, fields: data }
+            { taskId, fields: data },
         );
     }
 
-    async updateBtch(cmdCode: string, taskId: number | string, data: { [key: string]: any }) {
+    async updateBtch(
+        cmdCode: string,
+        taskId: number | string,
+        data: { [key: string]: any },
+    ) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.UPDATE,
-            { taskId, fields: data }
+            { taskId, fields: data },
         );
     }
 }

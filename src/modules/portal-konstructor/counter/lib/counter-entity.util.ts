@@ -1,5 +1,9 @@
-import { CounterEntity, CounterLightEntity, TemplateCounterEntity } from "../counter.entity";
-import { createTemplateBaseEntityFromPrisma } from "../../template-base/lib/template-base-entity.util";
+import {
+    CounterEntity,
+    CounterLightEntity,
+    TemplateCounterEntity,
+} from '../counter.entity';
+import { createTemplateBaseEntityFromPrisma } from '../../template-base/lib/template-base-entity.util';
 
 export function createCounterEntityFromPrisma(data: any): CounterEntity {
     const entity = new CounterEntity();
@@ -24,7 +28,9 @@ export function createCounterEntityFromPrisma(data: any): CounterEntity {
             templateCounter.size = tc.size;
 
             if (tc.templates) {
-                templateCounter.template = createTemplateBaseEntityFromPrisma(tc.templates);
+                templateCounter.template = createTemplateBaseEntityFromPrisma(
+                    tc.templates,
+                );
             }
 
             return templateCounter;
@@ -34,11 +40,13 @@ export function createCounterEntityFromPrisma(data: any): CounterEntity {
     return entity;
 }
 
-export function createCounterLightEntityFromEntity(entity: CounterEntity): CounterLightEntity {
+export function createCounterLightEntityFromEntity(
+    entity: CounterEntity,
+): CounterLightEntity {
     const light = new CounterLightEntity();
     light.id = entity.id;
     light.name = entity.name;
     light.code = entity.code;
     light.description = entity.description;
     return light;
-} 
+}

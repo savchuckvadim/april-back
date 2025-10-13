@@ -26,21 +26,21 @@ interface TranscribeAudioJobData {
 export class TranscribeAudioProcessor {
     private readonly logger = new Logger(TranscribeAudioProcessor.name);
 
-    constructor(
-        private readonly transcriptionService: TranscriptionService
-    ) { }
+    constructor(private readonly transcriptionService: TranscriptionService) {}
 
     @Process(TranscribeJobHandlerId.TRANSCRIBE)
     async handleTranscription(job: Job<TranscribeAudioJobData>) {
         try {
-            this.logger.debug(`Processing transcription job for taskId: ${job.data.taskId}`);
+            this.logger.debug(
+                `Processing transcription job for taskId: ${job.data.taskId}`,
+            );
 
-            const { 
-                fileUrl, 
-                fileName, 
-                taskId, 
-                domain, 
-                userId, 
+            const {
+                fileUrl,
+                fileName,
+                taskId,
+                domain,
+                userId,
                 userName,
                 appName,
                 activityId,
@@ -49,8 +49,8 @@ export class TranscribeAudioProcessor {
                 department,
                 entityType,
                 entityId,
-                entityName
-             } = job.data;
+                entityName,
+            } = job.data;
 
             await this.transcriptionService.transcribe(
                 fileUrl,
@@ -66,13 +66,18 @@ export class TranscribeAudioProcessor {
                 department,
                 entityType,
                 entityId,
-                entityName
+                entityName,
             );
 
-            this.logger.debug(`Completed transcription job for taskId: ${job.data.taskId}`);
+            this.logger.debug(
+                `Completed transcription job for taskId: ${job.data.taskId}`,
+            );
         } catch (error) {
-            this.logger.error(`Error processing transcription job: ${error.message}`, error.stack);
+            this.logger.error(
+                `Error processing transcription job: ${error.message}`,
+                error.stack,
+            );
             throw error;
         }
     }
-} 
+}

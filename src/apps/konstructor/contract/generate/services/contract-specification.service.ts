@@ -1,23 +1,21 @@
-import { Injectable } from "@nestjs/common";
-import { ContractSpecificationDto } from "@/apps/konstructor/document-generate/dto/specification/specification.dto";
+import { Injectable } from '@nestjs/common';
+import { ContractSpecificationDto } from '@/apps/konstructor/document-generate/dto/specification/specification.dto';
 
 @Injectable()
 export class ContractSpecificationService {
+    constructor() {}
 
-    constructor(
-
-    ) {}
-
-
-  
-
-    public getSpecification(domain: string, specification: ContractSpecificationDto) {
+    public getSpecification(
+        domain: string,
+        specification: ContractSpecificationDto,
+    ) {
         let infoblocks = '';
         let lt = '';
         let supplyContract = '';
         let licLong = '';
         let loginsQuantity = '';
-        let contractInternetEmail = '_____________________________________________________';
+        let contractInternetEmail =
+            '_____________________________________________________';
         let supplyComment = '';
         let specification_pk = '';
         let specification_pk_comment1 = '';
@@ -32,7 +30,10 @@ export class ContractSpecificationService {
 
         for (const value of specification.items) {
             if (domain === 'april-garant.bitrix24.ru') {
-                if (value.code === 'specification_ibig' || value.code === 'specification_ismall') {
+                if (
+                    value.code === 'specification_ibig' ||
+                    value.code === 'specification_ismall'
+                ) {
                     infoblocks += value.value + '\n';
                 }
             } else {
@@ -42,10 +43,20 @@ export class ContractSpecificationService {
             }
 
             if (value.code === 'complect_name') {
-                complect_name = domain !== 'gsr.bitrix24.ru' ? `\n${value.value}\n` : value.value as string;
+                complect_name =
+                    domain !== 'gsr.bitrix24.ru'
+                        ? `\n${value.value}\n`
+                        : (value.value as string);
             }
 
-            if (['specification_ers', 'specification_ers_packets', 'specification_ers_in_packets', 'specification_ifree'].includes(value.code)) {
+            if (
+                [
+                    'specification_ers',
+                    'specification_ers_packets',
+                    'specification_ers_in_packets',
+                    'specification_ifree',
+                ].includes(value.code)
+            ) {
                 infoblocks += value.value + '\n';
             }
 
@@ -53,7 +64,14 @@ export class ContractSpecificationService {
                 specification_services += value.value + '\n';
             }
 
-            if (['specification_lt_free', 'specification_lt_free_services', 'specification_lt_packet', 'specification_lt_services'].includes(value.code)) {
+            if (
+                [
+                    'specification_lt_free',
+                    'specification_lt_free_services',
+                    'specification_lt_packet',
+                    'specification_lt_services',
+                ].includes(value.code)
+            ) {
                 lt += `\n${value.value}\n`;
             }
 
@@ -130,7 +148,4 @@ export class ContractSpecificationService {
             specification_dway_comment,
         };
     }
-
-
 }
-

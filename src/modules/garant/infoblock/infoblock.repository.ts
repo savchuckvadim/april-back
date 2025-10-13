@@ -1,5 +1,4 @@
-import { InfoblockEntity } from "./infoblock.entity";
-
+import { InfoblockEntity } from './infoblock.entity';
 
 export abstract class InfoblockRepository {
     // abstract create(infoblock: Partial<InfoblockEntity>): Promise<InfoblockEntity | null>;

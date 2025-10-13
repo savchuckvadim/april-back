@@ -5,10 +5,8 @@ import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { FieldsFactoryService } from './factory/fields-factory.service';
 
 @Module({
-  imports: [
-    PBXModule
-  ],
-  controllers: [FieldsController],
-  providers: [FieldsFactoryService],
+    imports: [PBXModule],
+    controllers: [FieldsController],
+    providers: [FieldsFactoryService],
 })
 export class FieldsModule {}

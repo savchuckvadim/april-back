@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { LibreOfficeService } from './libre-office.service';
 
 @Module({
-  providers: [LibreOfficeService],
-  exports: [LibreOfficeService],
+    providers: [LibreOfficeService],
+    exports: [LibreOfficeService],
 })
 export class LibreOfficeModule {}

@@ -1,6 +1,5 @@
-import { ProviderEntity } from "../provider/provider.entity";
-import { TemplateBaseEntity } from "../template-base";
-
+import { ProviderEntity } from '../provider/provider.entity';
+import { TemplateBaseEntity } from '../template-base';
 
 export class PortalEntity {
     constructor(
@@ -15,5 +14,5 @@ export class PortalEntity {
         public readonly number: number,
         public readonly providers: ProviderEntity[] | null,
         public readonly templates: TemplateBaseEntity[] | null,
-    ) { }
-} 
+    ) {}
+}

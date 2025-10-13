@@ -1,8 +1,15 @@
-import { PrismaService } from "src/core/prisma";
-import { ProviderEntity, ProviderEntityWithRq, RqEntity } from "../provider.entity";
+import { PrismaService } from 'src/core/prisma';
+import {
+    ProviderEntity,
+    ProviderEntityWithRq,
+    RqEntity,
+} from '../provider.entity';
 
-
-export function createProviderEntityFromPrisma(provider: NonNullable<Awaited<ReturnType<PrismaService['agents']['findUnique']>>>): ProviderEntity {
+export function createProviderEntityFromPrisma(
+    provider: NonNullable<
+        Awaited<ReturnType<PrismaService['agents']['findUnique']>>
+    >,
+): ProviderEntity {
     const entity = new ProviderEntity();
 
     entity.id = provider.id.toString();
@@ -13,8 +20,9 @@ export function createProviderEntityFromPrisma(provider: NonNullable<Awaited<Ret
 
     return entity;
 }
-export function createRqEntity(rq: NonNullable<Awaited<ReturnType<PrismaService['rqs']['findUnique']>>>): RqEntity {
-
+export function createRqEntity(
+    rq: NonNullable<Awaited<ReturnType<PrismaService['rqs']['findUnique']>>>,
+): RqEntity {
     const rqEntity = new RqEntity();
     if (rq) {
         rqEntity.id = Number(rq.id || 0);
@@ -54,13 +62,17 @@ export function createRqEntity(rq: NonNullable<Awaited<ReturnType<PrismaService[
     return rqEntity;
 }
 
-
 export function createProviderEntityWithRqFromPrisma(
-    providers: NonNullable<Awaited<ReturnType<PrismaService['agents']['findUnique']>>>[],
-    rq: NonNullable<Awaited<ReturnType<PrismaService['rqs']['findUnique']>>>
+    providers: NonNullable<
+        Awaited<ReturnType<PrismaService['agents']['findUnique']>>
+    >[],
+    rq: NonNullable<Awaited<ReturnType<PrismaService['rqs']['findUnique']>>>,
 ): ProviderEntityWithRq {
     const provider = providers.find(provider => provider.id == rq.agentId);
-    if (!provider) throw new Error('Provider not found createProviderEntityWithRqFromPrisma');
+    if (!provider)
+        throw new Error(
+            'Provider not found createProviderEntityWithRqFromPrisma',
+        );
     const entity = new ProviderEntityWithRq();
     const providerEntity = createProviderEntityFromPrisma(provider);
     entity.id = providerEntity.id;

@@ -1,28 +1,31 @@
 import { Logger } from '@nestjs/common';
-
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as https from 'https';
 import * as http from 'http';
 import { TelegramService } from '../../../telegram/telegram.service';
 import { AxiosResponse } from 'axios';
-import { IBitrixBatchResponse, IBitrixBatchResponseResult, IBitrixResponse } from '../interface/bitrix-api.intterface';
+import {
+    IBitrixBatchResponse,
+    IBitrixBatchResponseResult,
+    IBitrixResponse,
+} from '../interface/bitrix-api-http.intterface';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
 import { BXApiSchema, EBxNamespace, TBXRequest, TBXResponse } from '../domain';
 
-
 export class BitrixBaseApi {
-    private readonly logger = new Logger(BitrixBaseApi.name);
+    protected readonly logger = new Logger(BitrixBaseApi.name);
     public domain: string;
-    private apiKey: string;
-    private cmdBatch: Record<string, string> = {};
-    private semaphore: Semaphore;
-    private axiosOptions: any;
+    protected apiKey: string;
+    protected cmdBatch: Record<string, string> = {};
+    protected semaphore: Semaphore;
+    protected axiosOptions: any;
 
     constructor(
-        private readonly telegramBot: TelegramService,
-        private readonly httpService: HttpService,
+        protected readonly telegramBot: TelegramService,
+        protected readonly httpService: HttpService,
     ) {
+
         this.logger.log('BitrixBaseApi initialized');
         this.domain = '';
         this.apiKey = '';
@@ -32,13 +35,9 @@ export class BitrixBaseApi {
             httpAgent: new http.Agent({ keepAlive: true }),
             httpsAgent: new https.Agent({ keepAlive: true }),
         };
-
-
-
     }
 
-
-    initFromPortal(portal: IPortal) {
+    init(portal: IPortal): void {
         this.logger.log(`Initializing BitrixApi from portal: ${portal.domain}`);
         this.domain = portal.domain;
 
@@ -46,9 +45,10 @@ export class BitrixBaseApi {
         this.cmdBatch = {};
     }
 
-
-
-    private dictToQueryString(method: string, data: Record<string, any>): string {
+    protected dictToQueryString(
+        method: string,
+        data: Record<string, any>,
+    ): string {
         // this.logger.log(`Converting data to query string for method: ${method}`);
         const queryParts: string[] = [];
 
@@ -62,7 +62,10 @@ export class BitrixBaseApi {
                 value.forEach((item, index) => {
                     if (typeof item === 'object') {
                         for (const [subKey, subValue] of Object.entries(item)) {
-                            processItem(`${key}[${index}][${subKey.trim()}]`, subValue);
+                            processItem(
+                                `${key}[${index}][${subKey.trim()}]`,
+                                subValue,
+                            );
                         }
                     } else {
                         queryParts.push(`${key}[]=${item}`);
@@ -93,23 +96,21 @@ export class BitrixBaseApi {
         }
     }
 
-
     addCmdBatchType<
         NAMESPACE extends keyof BXApiSchema,
         ENTITY extends keyof BXApiSchema[NAMESPACE],
-        METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY]
+        METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY],
     >(
         cmd: string,
         namespace: NAMESPACE,
         entity: ENTITY,
         method: METHOD,
-        data: TBXRequest<NAMESPACE, ENTITY, METHOD>
+        data: TBXRequest<NAMESPACE, ENTITY, METHOD>,
     ) {
-        let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+        let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`;
         if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
-            resultMethod = `${String(entity)}.${String(method)}`
+            resultMethod = `${String(entity)}.${String(method)}`;
         }
-
 
         // Transform data to a plain object if necessary
         const plainData = { ...data } as Record<string, any>;
@@ -119,8 +120,6 @@ export class BitrixBaseApi {
             this.cmdBatch[cmd] = url;
         }
     }
-
-
 
     getCmdBatch(): Record<string, string> {
         return this.cmdBatch;
@@ -134,11 +133,15 @@ export class BitrixBaseApi {
             const response = await firstValueFrom(
                 this.httpService.post(url, data, this.axiosOptions),
             );
-            this.logger.log(`API call successful: ${JSON.stringify(response.data)}`);
+            this.logger.log(
+                `API call successful: ${JSON.stringify(response.data)}`,
+            );
             return response.data;
         } catch (error) {
             this.logger.error(`API call failed: ${error.message}`);
-            await this.telegramBot.sendMessageAdminError(`Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`);
+            await this.telegramBot.sendMessageAdminError(
+                `Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`,
+            );
             throw error;
         }
     }
@@ -162,7 +165,6 @@ export class BitrixBaseApi {
 
     //     const url = `https://${this.domain}/${this.apiKey}/${resultMethod}`;
 
-
     //     try {
     //         const response = await firstValueFrom(
     //             this.httpService.post(url, data, this.axiosOptions),
@@ -179,34 +181,38 @@ export class BitrixBaseApi {
     async callType<
         NAMESPACE extends keyof BXApiSchema,
         ENTITY extends keyof BXApiSchema[NAMESPACE],
-        METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY]
+        METHOD extends keyof BXApiSchema[NAMESPACE][ENTITY],
     >(
         namespace: NAMESPACE,
         entity: ENTITY,
         method: METHOD,
-        data: TBXRequest<NAMESPACE, ENTITY, METHOD>
+        data: TBXRequest<NAMESPACE, ENTITY, METHOD>,
     ): Promise<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>> {
         this.logger.log(`Making API call to method: ${String(method)}`);
-      
-        let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`
+
+        let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`;
         if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
-            resultMethod = `${String(entity)}.${String(method)}`
+            resultMethod = `${String(entity)}.${String(method)}`;
         }
 
         const url = `https://${this.domain}/${this.apiKey}/${resultMethod}`;
 
-
         try {
-            const response = await firstValueFrom(
+            const response = (await firstValueFrom(
                 this.httpService.post(url, data, this.axiosOptions),
-            ) as AxiosResponse<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>>;
-            this.logger.log(`API call successful: ${JSON.stringify(resultMethod)}`);
-           
-           
+            )) as AxiosResponse<
+                IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>
+            >;
+            this.logger.log(
+                `API call successful: ${JSON.stringify(resultMethod)}`,
+            );
+
             return response.data;
         } catch (error) {
             this.logger.error(`API call failed: ${error.message}`);
-            await this.telegramBot.sendMessageAdminError(`Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`);
+            await this.telegramBot.sendMessageAdminError(
+                `Bitrix call error: ${JSON.stringify(error?.response?.data || error)}`,
+            );
             throw error;
         }
     }
@@ -237,7 +243,6 @@ export class BitrixBaseApi {
           callBatch
           Domain or API key is not set
           `);
-
             }
             const url = `https://${this.domain}/${this.apiKey}/batch`;
             try {
@@ -253,7 +258,7 @@ export class BitrixBaseApi {
                 await this.telegramBot.sendMessageAdminError(`Batch error:
           callBatch
           ${this.domain}
-        
+
           ${JSON.stringify(error?.message)}`);
                 results.push(error);
             }
@@ -281,7 +286,9 @@ export class BitrixBaseApi {
         this.cmdBatch = {};
         return results;
     }
-    async callBatchWithConcurrency(limit = 3): Promise<IBitrixBatchResponseResult[]> {
+    async callBatchWithConcurrency(
+        limit = 3,
+    ): Promise<IBitrixBatchResponseResult[]> {
         this.logger.log('Calling batch async with concurrency limit:', limit);
 
         const commands = Object.entries(this.cmdBatch);
@@ -296,7 +303,11 @@ export class BitrixBaseApi {
                 const batch = commands.slice(start, index);
                 const result = await this.executeBatch(batch);
 
-                if (result && typeof result === 'object' && 'result' in result) {
+                if (
+                    result &&
+                    typeof result === 'object' &&
+                    'result' in result
+                ) {
                     results.push(result);
                 } else {
                     this.logger.warn(`Skipping failed batch at index ${start}`);
@@ -307,13 +318,17 @@ export class BitrixBaseApi {
         };
 
         // Запускаем до `limit` параллельных воркеров
-        await Promise.all(Array(limit).fill(0).map(() => runBatch()));
+        await Promise.all(
+            Array(limit)
+                .fill(0)
+                .map(() => runBatch()),
+        );
 
         this.cmdBatch = {};
         return results;
     }
 
-    private async executeBatch(batch: [string, string][]) {
+    protected async executeBatch(batch: [string, string][]) {
         // this.logger.log(`Executing batch of ${batch.length} commands`);
         const cmd: Record<string, string> = {};
         for (const [key, val] of batch) {
@@ -325,9 +340,9 @@ export class BitrixBaseApi {
 
         try {
             this.logger.log(`Making batch request to: ${url}`);
-            const response = await firstValueFrom(
+            const response = (await firstValueFrom(
                 this.httpService.post(url, payload, this.axiosOptions),
-            ) as AxiosResponse<IBitrixBatchResponse>;
+            )) as AxiosResponse<IBitrixBatchResponse>;
 
             const result = response.data.result as IBitrixBatchResponseResult;
             // this.logger.log(`Batch request successful: ${JSON.stringify(result)}`);
@@ -340,49 +355,47 @@ export class BitrixBaseApi {
             const msg = error?.response?.data || error;
             // this.logger.error(`Execute batch failed: ${JSON.stringify(msg)}`);
             await this.telegramBot.sendMessageAdminError(
-                `Execute batch failed: ${JSON.stringify(error)}`
+                `Execute batch failed: ${JSON.stringify(error)}`,
             );
             return error;
         }
     }
     clearResult(result: IBitrixBatchResponseResult[]) {
-        const results = [] as any[]
+        const results = [] as any[];
         result.map(res => {
             if (Object.keys(res.result).length > 0) {
                 for (const key in res.result) {
-                    results.push(res.result[key])
+                    results.push(res.result[key]);
                 }
             }
-
-        })
-        return results
+        });
+        return results;
     }
-    private async handleBatchErrors(result: IBitrixBatchResponseResult, context = 'Batch error'): Promise<void> {
+    protected async handleBatchErrors(
+        result: IBitrixBatchResponseResult,
+        context = 'Batch error',
+    ): Promise<void> {
         if (!result?.result_error) return;
         this.logger.log(`
       success
-      Domain: 
+      Domain:
       ${this.domain}
       `);
-
-
 
         const errorEntries = Object.entries(result.result_error);
         for (const [key, error] of errorEntries) {
             const message = `[${context}] Ошибка в ${key}: ${JSON.stringify(error)}
-      
+
       Domain: ${this.domain}
       `;
             this.logger.log(`result_error: ${message}`);
             await this.telegramBot.sendMessageAdminError(message);
-
         }
     }
 
-    private async sleep(ms: number): Promise<void> {
+    protected async sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-
 }
 
 // Вспомогательный семафор
@@ -398,7 +411,7 @@ class Semaphore {
         if (this.semaphore > 0) {
             this.semaphore -= 1;
         } else {
-            await new Promise<void>((resolve) => this.waiting.push(resolve));
+            await new Promise<void>(resolve => this.waiting.push(resolve));
         }
     }
 

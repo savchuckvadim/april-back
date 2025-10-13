@@ -1,5 +1,4 @@
-import { ProviderEntityWithRq, RqEntity } from "./provider.entity";
-
+import { ProviderEntityWithRq, RqEntity } from './provider.entity';
 
 export abstract class ProviderRepository {
     // abstract create(infoblock: Partial<InfoblockEntity>): Promise<InfoblockEntity | null>;

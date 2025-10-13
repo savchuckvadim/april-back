@@ -1,20 +1,25 @@
-import { IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+    IsNumber,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class DepartamentModeDto {
-  @IsNumber()
-  id: number;
+    @IsNumber()
+    id: number;
 
-  @IsString()
-  code: 'sales' | 'tmc'; // можешь добавить другие значения, если они есть
+    @IsString()
+    code: 'sales' | 'tmc'; // можешь добавить другие значения, если они есть
 
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 }
 
 export class DepartamentDto {
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => DepartamentModeDto)
-  mode?: DepartamentModeDto;
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => DepartamentModeDto)
+    mode?: DepartamentModeDto;
 }

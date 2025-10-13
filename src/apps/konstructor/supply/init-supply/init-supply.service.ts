@@ -1,4 +1,4 @@
-import { Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Request } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,80 +10,85 @@ import { InitSupplyRpaFieldsService } from './services/rpa-fields/init-supply-rp
 
 @Injectable()
 export class InitSupplyService {
-
     constructor(
         private readonly pbx: PBXService,
-        private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService
-    ) { }
-
+        private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,
+    ) {}
 
     async initSupply(dto: InitSupplyDto) {
-        const { bitrix, PortalModel } = await this.pbx.init(dto.domain)
-        const rpaType = PortalModel.getRpaByCode('supply')
-        const rpaTypeId = rpaType?.bitrixId
+        const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
+        const rpaType = PortalModel.getRpaByCode('supply');
+        const rpaTypeId = rpaType?.bitrixId;
         if (!rpaTypeId) {
-            throw new Error('Rpa type id not found')
+            throw new Error('Rpa type id not found');
         }
 
-        let rpaResponse: IBxRpaItem | null = null
+        let rpaResponse: IBxRpaItem | null = null;
         if (dto.rpa_id && rpaTypeId) {
-            rpaResponse = await bitrix.rpaItem.get({
-                id: dto.rpa_id,
-                typeId: Number(rpaTypeId)
-            }).then(res => res.result.item)
-
-
+            rpaResponse = await bitrix.rpaItem
+                .get({
+                    id: dto.rpa_id,
+                    typeId: Number(rpaTypeId),
+                })
+                .then(res => res.result.item);
         }
-  
-        const rpaFields = await this.initSupplyRpaFieldsService.getRpaFields(dto, PortalModel)
+
+        const rpaFields = await this.initSupplyRpaFieldsService.getRpaFields(
+            dto,
+            PortalModel,
+        );
         if (!dto.rpa_id) {
-
-
-
-            rpaResponse = await bitrix.rpaItem.add({
-                typeId: Number(rpaTypeId),
-                fields: rpaFields
-            }).then(res => res.result.item)
+            rpaResponse = await bitrix.rpaItem
+                .add({
+                    typeId: Number(rpaTypeId),
+                    fields: rpaFields,
+                })
+                .then(res => res.result.item);
         }
-
-
-
 
         return {
             rpaDb: rpaType,
             rpaTypeId,
             rpaResponse,
-        
+
             rpaFields,
-    
         };
     }
 
-    
     async initDeal(request: Request): Promise<any> {
         const body = await request.body;
         const data = this.parseDataRobot(body);
         const portal = await this.getPortal(data.auth.domain);
 
-        if (data.document_id["0"] === "rpa") {
-            const ids = data.document_id["2"].split(":");
+        if (data.document_id['0'] === 'rpa') {
+            const ids = data.document_id['2'].split(':');
             data.document_id = { rpa_id: ids[1], type_id: ids[0] };
         }
 
         const bxDeal = this.getBxDeal(data.auth.domain, portal.accessKey);
         const bxRpa = this.getBxRpa(data.auth.domain, portal.accessKey);
 
-        const rpa = await bxRpa.getRpa(data.document_id.type_id, data.document_id.rpa_id);
+        const rpa = await bxRpa.getRpa(
+            data.document_id.type_id,
+            data.document_id.rpa_id,
+        );
         const pRpaSupple = this.getRpaByCode(portal, 'supply');
 
         const dealFields = this.collectDealFields(pRpaSupple, rpa);
-        const initDealFields = this.transformRpaFieldsToDealFields(portal, dealFields);
+        const initDealFields = this.transformRpaFieldsToDealFields(
+            portal,
+            dealFields,
+        );
 
-        const dealCategoryId = this.getDealCategoryByCode(portal, 'service_base');
+        const dealCategoryId = this.getDealCategoryByCode(
+            portal,
+            'service_base',
+        );
         const rpaCrmBaseDeal = initDealFields[`UF_CRM_RPA_CRM_BASE_DEAL`];
 
         const fieldFile = await this.prepareFieldFile(rpa);
-        const baseDealFieldsValue = await bxDeal.getDealFieldsValue(rpaCrmBaseDeal);
+        const baseDealFieldsValue =
+            await bxDeal.getDealFieldsValue(rpaCrmBaseDeal);
 
         Object.assign(initDealFields, {
             COMPANY_ID: rpa.RPA_CRM_COMPANY,
@@ -92,15 +97,19 @@ export class InitSupplyService {
             UF_CRM_RPA_ARM_CLIENT_ID: rpa.RPA_ARM_CLIENT_ID,
             ASSIGNED_BY_ID: rpa.MANAGER_OS,
             UF_CRM_MANAGER_EDU: rpa.MANAGER_EDU,
-            ...baseDealFieldsValue
+            ...baseDealFieldsValue,
         });
 
         const stageCode = this.calculateStageCode(rpa.CONTRACT_END);
-        initDealFields["UF_CRM_CURRENT_CONTRACT"] = "";
-        initDealFields["UF_CRM_CURRENT_INVOICE"] = "";
-        initDealFields["UF_CRM_CURRENT_SUPPLY"] = "";
+        initDealFields['UF_CRM_CURRENT_CONTRACT'] = '';
+        initDealFields['UF_CRM_CURRENT_INVOICE'] = '';
+        initDealFields['UF_CRM_CURRENT_SUPPLY'] = '';
 
-        const deal = await bxDeal.initNewElement(initDealFields, dealCategoryId.bitrixId, stageCode);
+        const deal = await bxDeal.initNewElement(
+            initDealFields,
+            dealCategoryId.bitrixId,
+            stageCode,
+        );
         const dealId = deal.result[0];
 
         await bxDeal.updateDeal(dealId, initDealFields);
@@ -109,7 +118,13 @@ export class InitSupplyService {
         this.copyProductRowsFromBaseDeal(rpa.RPA_CRM_BASE_DEAL, bxDeal, dealId);
         this.updateCompanyAndContacts(portal, rpa, data.auth.domain);
 
-        await this.addTimelineToDealAndRpa(bxDeal, bxRpa, data, dealId, pRpaSupple);
+        await this.addTimelineToDealAndRpa(
+            bxDeal,
+            bxRpa,
+            data,
+            dealId,
+            pRpaSupple,
+        );
         await this.initOrkTasks(portal, data.auth.domain, rpa, dealId);
 
         await this.notifyDealCreation(dealId, data.auth.domain);
@@ -117,30 +132,37 @@ export class InitSupplyService {
         return portal;
     }
 
-    private async updateFileRpa(document: string, idRpa: number, bxRpa: any, rpa: any, currentContract: any, currentInvoice: any): Promise<void> {
+    private async updateFileRpa(
+        document: string,
+        idRpa: number,
+        bxRpa: any,
+        rpa: any,
+        currentContract: any,
+        currentInvoice: any,
+    ): Promise<void> {
         const decodedUrl = decodeURIComponent(document);
-        const fileName = decodedUrl.split("/").pop();
+        const fileName = decodedUrl.split('/').pop();
         const response = await axios.get(document);
         const dataJson = response.data;
 
         const bxFields = {
             [`UF_RPA_${rpa.bitrixId}_CURRENT_SUPPLY`]: {
                 n0: dataJson.filename,
-                n1: dataJson.file_base64
-            }
+                n1: dataJson.file_base64,
+            },
         };
 
         if (currentContract) {
             bxFields[`UF_RPA_${rpa.bitrixId}_CURRENT_CONTRACT`] = {
                 n0: currentContract.filename,
-                n1: currentContract.file_base64
+                n1: currentContract.file_base64,
             };
         }
 
         if (currentInvoice) {
             bxFields[`UF_RPA_${rpa.bitrixId}_CURRENT_INVOICE`] = {
                 n0: currentInvoice.filename,
-                n1: currentInvoice.file_base64
+                n1: currentInvoice.file_base64,
             };
         }
 
@@ -161,15 +183,24 @@ export class InitSupplyService {
     private getBxCompany(domain: string, accessKey: string): any {
         // Simulate BxCompany service
         return {
-            getCompanyByFieldValue: async (field: string, value: any) => ({})
+            getCompanyByFieldValue: async (field: string, value: any) => ({}),
         };
     }
 
     private getBxDeal(domain: string, accessKey: string): any {
         // Simulate BxDeal service
         return {
-            getDeal: async (dealId: any) => ({ UF_CRM_MANAGER_OP: null, UF_CRM_MANAGER_TMC: null }),
-            addTimeline: async (title: string, dealId: any, idRpa: number, domain: string, bitrixId: string) => { }
+            getDeal: async (dealId: any) => ({
+                UF_CRM_MANAGER_OP: null,
+                UF_CRM_MANAGER_TMC: null,
+            }),
+            addTimeline: async (
+                title: string,
+                dealId: any,
+                idRpa: number,
+                domain: string,
+                bitrixId: string,
+            ) => {},
         };
     }
 
@@ -188,15 +219,23 @@ export class InitSupplyService {
         return { user_id: null, field: { type: '', title: '' } };
     }
 
-    private async downloadFile(domain: string, downloadUrl: string): Promise<any> {
+    private async downloadFile(
+        domain: string,
+        downloadUrl: string,
+    ): Promise<any> {
         try {
             const url = `https://${domain}${downloadUrl}`;
-            const response = await axios.post(url, {}, { responseType: 'arraybuffer' });
+            const response = await axios.post(
+                url,
+                {},
+                { responseType: 'arraybuffer' },
+            );
             const contentDisposition = response.headers['content-disposition'];
             let filename = 'downloaded_file';
 
             if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+                const filenameMatch =
+                    contentDisposition.match(/filename="(.+?)"/);
                 if (filenameMatch) {
                     filename = filenameMatch[1];
                 }
@@ -230,8 +269,10 @@ export class InitSupplyService {
     private getBxRpa(accessKey: string, domain: string): any {
         // Simulate BxRpa service
         return {
-            updateSupplyRpa: async (bxFields: any, rpa: any, id: number) => { },
-            createSupplyRpa: async (bxFields: any, rpa: any) => [{ result: [{ item: { id: 1 } }] }]
+            updateSupplyRpa: async (bxFields: any, rpa: any, id: number) => {},
+            createSupplyRpa: async (bxFields: any, rpa: any) => [
+                { result: [{ item: { id: 1 } }] },
+            ],
         };
     }
 
@@ -248,7 +289,7 @@ export class InitSupplyService {
     private getBxLead(domain: string, accessKey: string): any {
         // Simulate BxLead service
         return {
-            getLeadsByCompanyId: async (companyId: any) => []
+            getLeadsByCompanyId: async (companyId: any) => [],
         };
     }
 
@@ -282,7 +323,11 @@ export class InitSupplyService {
         return {};
     }
 
-    private async copyProductRowsFromBaseDeal(baseDealId: number, bxDeal: any, dealServiceId: number): Promise<void> {
+    private async copyProductRowsFromBaseDeal(
+        baseDealId: number,
+        bxDeal: any,
+        dealServiceId: number,
+    ): Promise<void> {
         const productRows = await bxDeal.getProductRows(baseDealId);
         productRows.forEach(row => {
             row.OWNER_ID = dealServiceId;
@@ -290,19 +335,37 @@ export class InitSupplyService {
         await bxDeal.setProductRows(dealServiceId, productRows);
     }
 
-    private async updateCompanyAndContacts(portal: any, rpa: any, domain: string): Promise<void> {
+    private async updateCompanyAndContacts(
+        portal: any,
+        rpa: any,
+        domain: string,
+    ): Promise<void> {
         // Simulate updating company and contacts
     }
 
-    private async addTimelineToDealAndRpa(bxDeal: any, bxRpa: any, data: any, dealId: number, pRpaSupple: any): Promise<void> {
+    private async addTimelineToDealAndRpa(
+        bxDeal: any,
+        bxRpa: any,
+        data: any,
+        dealId: number,
+        pRpaSupple: any,
+    ): Promise<void> {
         // Simulate adding timeline to deal and RPA
     }
 
-    private async initOrkTasks(portal: any, domain: string, rpa: any, dealServiceId: number): Promise<void> {
+    private async initOrkTasks(
+        portal: any,
+        domain: string,
+        rpa: any,
+        dealServiceId: number,
+    ): Promise<void> {
         // Simulate initializing ORK tasks
     }
 
-    private async notifyDealCreation(dealId: number, domain: string): Promise<void> {
+    private async notifyDealCreation(
+        dealId: number,
+        domain: string,
+    ): Promise<void> {
         // Simulate notifying deal creation
         console.log(`Created Deal: ${dealId}`);
     }
@@ -313,10 +376,13 @@ export class InitSupplyService {
         const portal = await this.getPortal(data.auth.domain);
         const bxRpa = this.getBxRpa(data.auth.domain, portal.accessKey);
 
-        const rpa = await bxRpa.getRpa(data.document_id.type_id, data.document_id.rpa_id);
+        const rpa = await bxRpa.getRpa(
+            data.document_id.type_id,
+            data.document_id.rpa_id,
+        );
         const bxTask = this.getBxTask(data.auth.domain, portal.accessKey);
 
-        const dateFormat = "%Y-%m-%dT%H:%M:%S%z";
+        const dateFormat = '%Y-%m-%dT%H:%M:%S%z';
 
         rpa.CONTRACT_START = this.formatDate(rpa.CONTRACT_START, dateFormat);
         const firstPayDay = this.formatDate(rpa.FIRST_PAY_DATE, dateFormat);
@@ -328,20 +394,27 @@ export class InitSupplyService {
             TITLE: rpa.NAME,
             DESCRIPTION: `Действие договора с ${rpa.CONTRACT_START} до ${rpa.CONTRACT_END}\nДата поставки: ${supplyDate}\nДата первой оплаты: ${firstPayDay}\n\nссылка на RPA: <a href="https://${data.auth.domain}/rpa/item/${data.document_id.type_id}/${data.document_id.rpa_id}/">Заявка на поставку</a>`,
             DEADLINE: rpa.SUPPLY_DATE,
-            UF_CRM_TASK: [
-                `CO_${rpa.RPA_CRM_COMPANY}`
-            ],
-            RESPONSIBLE_ID: this.findResponsibleId(rpa)
+            UF_CRM_TASK: [`CO_${rpa.RPA_CRM_COMPANY}`],
+            RESPONSIBLE_ID: this.findResponsibleId(rpa),
         };
 
         const task = await bxTask.create(field);
         const textTimelineRpa = `<a href='https://${data.auth.domain}/company/personal/user/${task.responsibleId}/tasks/task/view/${task.id}/'>Задача для бухгалтера</a>`;
-        await bxRpa.addTimeline(textTimelineRpa, data.document_id.type_id, data.document_id.rpa_id);
+        await bxRpa.addTimeline(
+            textTimelineRpa,
+            data.document_id.type_id,
+            data.document_id.rpa_id,
+        );
 
         return task.id;
     }
 
-    async initTaskManagerOrkFirstEducation(portal: any, domain: string, rpa: any, dealServiceId: number): Promise<number> {
+    async initTaskManagerOrkFirstEducation(
+        portal: any,
+        domain: string,
+        rpa: any,
+        dealServiceId: number,
+    ): Promise<number> {
         const bxTask = this.getBxTask(domain, portal.accessKey);
 
         rpa.SUPPLY_DATE = this.adjustSupplyDate(rpa.SUPPLY_DATE);
@@ -350,18 +423,20 @@ export class InitSupplyService {
             TITLE: `Первичное обучение: ${rpa.name}`,
             DESCRIPTION: `Описание ситуации: ${rpa.SITUATION_COMMENTS}\n\nКомментарий к заявке Руководитель: \n${rpa.RPA_OWNER_COMMENT.join('\n')}\n\nКомментарий к заявке РОП: \n${rpa.RPA_TMC_COMMENT.join('\n')}\n\n`,
             DEADLINE: rpa.CLIENT_CALL_DATE,
-            UF_CRM_TASK: [
-                `CO_${rpa.RPA_CRM_COMPANY}`,
-                `D_${dealServiceId}`
-            ],
-            RESPONSIBLE_ID: rpa.MANAGER_OS
+            UF_CRM_TASK: [`CO_${rpa.RPA_CRM_COMPANY}`, `D_${dealServiceId}`],
+            RESPONSIBLE_ID: rpa.MANAGER_OS,
         };
 
         const task = await bxTask.create(field);
         return task.id;
     }
 
-    async initTaskManagerOrkSupply(portal: any, domain: string, rpa: any, dealServiceId: number): Promise<number> {
+    async initTaskManagerOrkSupply(
+        portal: any,
+        domain: string,
+        rpa: any,
+        dealServiceId: number,
+    ): Promise<number> {
         const bxTask = this.getBxTask(domain, portal.accessKey);
 
         rpa.SUPPLY_DATE = this.adjustSupplyDate(rpa.SUPPLY_DATE);
@@ -370,11 +445,8 @@ export class InitSupplyService {
             TITLE: rpa.name,
             DESCRIPTION: `Описание ситуации: ${rpa.SITUATION_COMMENTS}\n\nКомментарий к заявке Руководитель: \n${rpa.RPA_OWNER_COMMENT.join('\n')}\n\nКомментарий к заявке РОП: \n${rpa.RPA_TMC_COMMENT.join('\n')}\n\n`,
             DEADLINE: rpa.SUPPLY_DATE,
-            UF_CRM_TASK: [
-                `CO_${rpa.RPA_CRM_COMPANY}`,
-                `D_${dealServiceId}`
-            ],
-            RESPONSIBLE_ID: rpa.MANAGER_OS
+            UF_CRM_TASK: [`CO_${rpa.RPA_CRM_COMPANY}`, `D_${dealServiceId}`],
+            RESPONSIBLE_ID: rpa.MANAGER_OS,
         };
 
         const task = await bxTask.create(field);
@@ -382,7 +454,11 @@ export class InitSupplyService {
     }
 
     // Helper methods
-    private formatDate(dateStr: string, format: string, adjustTime: boolean = false): string {
+    private formatDate(
+        dateStr: string,
+        format: string,
+        adjustTime: boolean = false,
+    ): string {
         const dateObj = new Date(dateStr);
         if (adjustTime) {
             dateObj.setHours(8, 0, 0, 0);
@@ -400,7 +476,10 @@ export class InitSupplyService {
 
     private findResponsibleId(rpa: any): number {
         for (const user of rpa.users) {
-            if (user.workPosition && user.workPosition.toLowerCase().includes('бухгалтер')) {
+            if (
+                user.workPosition &&
+                user.workPosition.toLowerCase().includes('бухгалтер')
+            ) {
                 return user.id;
             }
         }
@@ -410,7 +489,10 @@ export class InitSupplyService {
     private getBxTask(domain: string, accessKey: string): any {
         // Simulate BxTask service
         return {
-            create: async (field: any) => ({ id: 1, responsibleId: field.RESPONSIBLE_ID })
+            create: async (field: any) => ({
+                id: 1,
+                responsibleId: field.RESPONSIBLE_ID,
+            }),
         };
     }
 
@@ -420,7 +502,9 @@ export class InitSupplyService {
         let filename = 'downloaded_file';
 
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename\*=(.+?)(;|$)/);
+            const filenameMatch = contentDisposition.match(
+                /filename\*=(.+?)(;|$)/,
+            );
             if (filenameMatch) {
                 const encodedString = filenameMatch[1].split("''")[1];
                 filename = decodeURIComponent(encodedString);
@@ -430,4 +514,4 @@ export class InitSupplyService {
         const fileBase64 = Buffer.from(response.data).toString('base64');
         return [filename, fileBase64];
     }
-} 
+}

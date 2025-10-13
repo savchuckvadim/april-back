@@ -1,4 +1,3 @@
-
 // import { Injectable, Logger } from '@nestjs/common';
 // import { BitrixActivityCreateService } from '../bitrix/domain/activity/services/activity-create.service';
 
@@ -6,7 +5,7 @@
 // export class HooksService {
 //   constructor(
 //     private readonly bitrixActivityCreateService: BitrixActivityCreateService
-//   ) { 
+//   ) {
 //     Logger.log('HooksService constructor ✅')
 //     // Logger.log(this.bitrixActivityCreateService)
 //   }
@@ -14,6 +13,5 @@
 //     this.bitrixActivityCreateService.createActivities(domain, rawActivities)
 //     return 'This action adds a new hook';
 //   }
-
 
 // }

@@ -2,34 +2,32 @@ export enum DocumentFieldDescriptionMode {
     NO = 'no',
     SMALL = 'small',
     MEDIUM = 'medium',
-    BIG = 'big'
+    BIG = 'big',
 }
 
 export enum DocumentFieldViewMode {
     LIST = 'list',
     TABLE = 'table',
-    TABLE_WITH_GROUP = 'tableWithGroup'
+    TABLE_WITH_GROUP = 'tableWithGroup',
 }
 export enum DocumentFieldDescriptionNames {
     NO = 'Нет',
     SMALL = 'Мало',
     MEDIUM = 'Средне',
-    BIG = 'Много'
+    BIG = 'Много',
 }
 export enum DocumentFieldBooleanSelect {
     NO = 'no',
     YES = 'yes',
-
 }
 export enum DocumentFieldBooleanSelectNames {
     NO = 'Нет',
     YES = 'Да',
-
 }
 export enum DocumentFieldViewNames {
     LIST = 'Список',
     TABLE = 'Таблица',
-    TABLE_WITH_GROUP = 'Таблица с разделами'
+    TABLE_WITH_GROUP = 'Таблица с разделами',
 }
 
 export enum DocumentInfoblocksItems {
@@ -37,7 +35,7 @@ export enum DocumentInfoblocksItems {
     DESCRIPTION = 'description',
     WITH_STAMP = 'withStamps',
     WITH_MANAGER = 'withManager',
-    IS_PRICE_FIRST = 'isPriceFirst'
+    IS_PRICE_FIRST = 'isPriceFirst',
     // SALE_PHRASE = 'salePhrase'
 }
 export enum DocumentInfoblocksItemsNames {
@@ -49,34 +47,32 @@ export enum DocumentInfoblocksItemsNames {
 }
 
 export type DocumentInfoblocksOptionItem = {
-    id: number
-    value: DocumentFieldViewNames | DocumentFieldDescriptionNames
-    code: DocumentFieldViewMode | DocumentFieldDescriptionMode
-}
+    id: number;
+    value: DocumentFieldViewNames | DocumentFieldDescriptionNames;
+    code: DocumentFieldViewMode | DocumentFieldDescriptionMode;
+};
 
 export type DocumentInfoblocksOptionSelectItem = {
-    id: number
-    value: DocumentFieldBooleanSelectNames
-    code: DocumentFieldBooleanSelect
-}
-
+    id: number;
+    value: DocumentFieldBooleanSelectNames;
+    code: DocumentFieldBooleanSelect;
+};
 
 export type DocumentInfoblocksOption = {
-    name: DocumentInfoblocksItemsNames
-    isRemembed: boolean
-    type: DocumentInfoblocksItems
-    items: Array<DocumentInfoblocksOptionItem>
-    current: DocumentInfoblocksOptionItem
-}
+    name: DocumentInfoblocksItemsNames;
+    isRemembed: boolean;
+    type: DocumentInfoblocksItems;
+    items: Array<DocumentInfoblocksOptionItem>;
+    current: DocumentInfoblocksOptionItem;
+};
 
 export type DocumentInfoblocksOptionSelect = {
-    name: DocumentInfoblocksItemsNames
-    isRemembed: boolean
-    type: DocumentInfoblocksItems
-    items: Array<DocumentInfoblocksOptionSelectItem>
-    current: DocumentInfoblocksOptionSelectItem
-}
-
+    name: DocumentInfoblocksItemsNames;
+    isRemembed: boolean;
+    type: DocumentInfoblocksItems;
+    items: Array<DocumentInfoblocksOptionSelectItem>;
+    current: DocumentInfoblocksOptionSelectItem;
+};
 
 // export type DocumentInfoblocksItemsState = {
 //     [DocumentInfoblocksItems.STYLE]: DocumentInfoblocksOption
@@ -87,65 +83,61 @@ export type DocumentInfoblocksOptionSelect = {
 //     // [DocumentInfoblocksItems.SALE_PHRASE]: InfoblockSalePhraseOption
 // }
 
-export interface OfferSettings  {
+export interface OfferSettings {
     [SETTING_ITEM.STYLE]: {
-        name: DocumentInfoblocksItemsNames
-        isRemembed: boolean
-        isChanged: boolean
-        items: Array<DocumentInfoblocksOptionItem>
-        current: DocumentInfoblocksOptionItem
-        type: DocumentInfoblocksItems.STYLE
+        name: DocumentInfoblocksItemsNames;
+        isRemembed: boolean;
+        isChanged: boolean;
+        items: Array<DocumentInfoblocksOptionItem>;
+        current: DocumentInfoblocksOptionItem;
+        type: DocumentInfoblocksItems.STYLE;
         // previous: null | DocumentInfoblocksOptionItem
-    },
+    };
     [SETTING_ITEM.DESCRIPTION]: {
-        name: DocumentInfoblocksItemsNames
-        isRemembed: boolean
-        isChanged: boolean
-        items: Array<DocumentInfoblocksOptionItem>
-        current: DocumentInfoblocksOptionItem
-        type: DocumentInfoblocksItems.DESCRIPTION
+        name: DocumentInfoblocksItemsNames;
+        isRemembed: boolean;
+        isChanged: boolean;
+        items: Array<DocumentInfoblocksOptionItem>;
+        current: DocumentInfoblocksOptionItem;
+        type: DocumentInfoblocksItems.DESCRIPTION;
         // previous: null | DocumentInfoblocksOptionItem
-    },
+    };
     [SETTING_ITEM.SALE_PHRASE]: {
-        isRemembed: boolean
-        isChanged: boolean
-        value: string | null
+        isRemembed: boolean;
+        isChanged: boolean;
+        value: string | null;
         // error: boolean
         // previous: null
-
-    },
+    };
     [SETTING_ITEM.WITH_STAMP]: {
-        name: DocumentInfoblocksItemsNames
-        isRemembed: boolean
-        isChanged: boolean
-        items: Array<DocumentInfoblocksOptionSelectItem>
-        current: DocumentInfoblocksOptionSelectItem
-        type: DocumentInfoblocksItems.WITH_STAMP
+        name: DocumentInfoblocksItemsNames;
+        isRemembed: boolean;
+        isChanged: boolean;
+        items: Array<DocumentInfoblocksOptionSelectItem>;
+        current: DocumentInfoblocksOptionSelectItem;
+        type: DocumentInfoblocksItems.WITH_STAMP;
         // previous: null | DocumentInfoblocksOptionSelectItem
-
-    },
+    };
     [SETTING_ITEM.WITH_MANAGER]: {
-        name: DocumentInfoblocksItemsNames
-        isRemembed: boolean
-        isChanged: boolean
-        items: Array<DocumentInfoblocksOptionSelectItem>
-        current: DocumentInfoblocksOptionSelectItem
-        type: DocumentInfoblocksItems.WITH_MANAGER
+        name: DocumentInfoblocksItemsNames;
+        isRemembed: boolean;
+        isChanged: boolean;
+        items: Array<DocumentInfoblocksOptionSelectItem>;
+        current: DocumentInfoblocksOptionSelectItem;
+        type: DocumentInfoblocksItems.WITH_MANAGER;
         // previous: null | DocumentInfoblocksOptionSelectItem
         // error: boolean
-
-    },
+    };
     [SETTING_ITEM.IS_PRICE_FIRST]: {
-        name: DocumentInfoblocksItemsNames
-        isRemembed: boolean
-        isChanged: boolean
-        items: Array<DocumentInfoblocksOptionSelectItem>
-        current: DocumentInfoblocksOptionSelectItem
-        type: DocumentInfoblocksItems.IS_PRICE_FIRST
+        name: DocumentInfoblocksItemsNames;
+        isRemembed: boolean;
+        isChanged: boolean;
+        items: Array<DocumentInfoblocksOptionSelectItem>;
+        current: DocumentInfoblocksOptionSelectItem;
+        type: DocumentInfoblocksItems.IS_PRICE_FIRST;
         // previous: null | DocumentInfoblocksOptionSelectItem
         // error: boolean
-
-    },
+    };
     // settings: {
     //     status: boolean
     // }
@@ -157,5 +149,5 @@ export enum SETTING_ITEM {
     SALE_PHRASE = 'salePhrase',
     WITH_STAMP = 'withStamps',
     WITH_MANAGER = 'withManager',
-    IS_PRICE_FIRST = 'isPriceFirst'
+    IS_PRICE_FIRST = 'isPriceFirst',
 }

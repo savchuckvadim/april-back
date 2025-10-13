@@ -1,10 +1,9 @@
-import { BxContactRepository } from "../repository/bx-contact.repository";
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { IBXContact } from "../interface/bx-contact.interface";
-
+import { BxContactRepository } from '../repository/bx-contact.repository';
+import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import { IBXContact } from '../interface/bx-contact.interface';
 
 export class BxContactBatchService {
-    private repo: BxContactRepository
+    private repo: BxContactRepository;
 
     clone(api: BitrixBaseApi): BxContactBatchService {
         const instance = new BxContactBatchService();
@@ -24,15 +23,19 @@ export class BxContactBatchService {
         return this.repo.getListBtch(cmdCode, filter, select);
     }
 
-    set(cmdCode: string, data: Partial<IBXContact>  ) {
+    set(cmdCode: string, data: Partial<IBXContact>) {
         return this.repo.setBtch(cmdCode, data);
     }
 
-    update(cmdCode: string, contactId: number | string, data: Partial<IBXContact>) {
+    update(
+        cmdCode: string,
+        contactId: number | string,
+        data: Partial<IBXContact>,
+    ) {
         return this.repo.updateBtch(cmdCode, contactId, data);
     }
 
     getField(cmdCode: string, id: number | string) {
         return this.repo.getFieldBtch(cmdCode, id);
     }
-} 
+}

@@ -1,17 +1,14 @@
-import { Injectable } from "@nestjs/common";
-import { RegionRepository } from "./region.repository";
-import { RegionEntity } from "./region.entity";
-import { RegionExcelService } from "./services/region-excel.service";
-
-
+import { Injectable } from '@nestjs/common';
+import { RegionRepository } from './region.repository';
+import { RegionEntity } from './region.entity';
+import { RegionExcelService } from './services/region-excel.service';
 
 @Injectable()
 export class RegionService {
     constructor(
         private readonly regionRepository: RegionRepository,
         private readonly regionExcelService: RegionExcelService,
-
-    ) { }
+    ) {}
 
     async create(region: Partial<RegionEntity>): Promise<RegionEntity | null> {
         return this.regionRepository.create(region);
@@ -54,7 +51,7 @@ export class RegionService {
                 // Обновляем существующий регион
                 const updated = await this.update({
                     id: existingRegion.id,
-                    ...region
+                    ...region,
                 });
                 if (updated) {
                     updatedRegions.push(updated);
@@ -70,4 +67,4 @@ export class RegionService {
 
         return updatedRegions;
     }
-} 
+}

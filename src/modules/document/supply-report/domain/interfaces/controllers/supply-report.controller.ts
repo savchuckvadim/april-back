@@ -6,28 +6,27 @@ import { GenerateSupplyReportUseCase } from '../../../use-cases/generate-supply-
 
 @Controller('supply-report')
 export class SupplyReportController {
-  constructor(
-    private readonly generateUseCase: GenerateSupplyReportUseCase,
-  ) { }
+    constructor(
+        private readonly generateUseCase: GenerateSupplyReportUseCase,
+    ) {}
 
-  @Post()
-  async generate(@Body() dto: GenerateSupplyReportDto) {
-    try {
-      console.log(dto)
-      console.log(this.generateUseCase)
-      return this.generateUseCase.execute(dto);
-    } catch (error) {
-      console.log(error)
+    @Post()
+    async generate(@Body() dto: GenerateSupplyReportDto) {
+        try {
+            console.log(dto);
+            console.log(this.generateUseCase);
+            return this.generateUseCase.execute(dto);
+        } catch (error) {
+            console.log(error);
+        }
     }
 
-  }
+    @Get('ping')
+    ping(path) {
+        const r = 134636346346346;
 
-  @Get('ping')
-  ping(path) {
-    const r = 134636346346346
-
-    console.log(path)
-    debugger
-    return { status: 'ok' };
-  }
+        console.log(path);
+        debugger;
+        return { status: 'ok' };
+    }
 }

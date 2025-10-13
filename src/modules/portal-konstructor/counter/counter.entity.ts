@@ -1,4 +1,4 @@
-import { TemplateBaseEntity } from "../template-base/template-base.entity";
+import { TemplateBaseEntity } from '../template-base/template-base.entity';
 
 export class CounterEntity {
     id: string;
@@ -33,4 +33,4 @@ export class TemplateCounterEntity {
     // Relations
     counter?: CounterEntity;
     template?: TemplateBaseEntity;
-} 
+}

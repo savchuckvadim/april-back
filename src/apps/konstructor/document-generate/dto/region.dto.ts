@@ -1,11 +1,11 @@
-import { Type } from "class-transformer";
+import { Type } from 'class-transformer';
 import {
     IsArray,
     ValidateNested,
     IsNumber,
     IsString,
     IsOptional,
-} from "class-validator";
+} from 'class-validator';
 
 export class RegionDto {
     @IsNumber() number: number;
@@ -17,7 +17,16 @@ export class RegionDto {
 }
 
 export class RegionsDto {
-    @IsArray() @ValidateNested({ each: true }) @Type(() => RegionDto) inComplect: RegionDto[];
-    @IsArray() @ValidateNested({ each: true }) @Type(() => RegionDto) favorite: RegionDto[];
-    @IsArray() @ValidateNested({ each: true }) @Type(() => RegionDto) noWidth: RegionDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => RegionDto)
+    inComplect: RegionDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => RegionDto)
+    favorite: RegionDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => RegionDto)
+    noWidth: RegionDto[];
 }

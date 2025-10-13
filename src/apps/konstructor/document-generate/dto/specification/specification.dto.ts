@@ -1,9 +1,8 @@
-import { IsArray, IsString } from "class-validator";
-import { RqItem } from "../../type/bx-rq.type";
-import { FormFieldDto } from "../form-field/form-field.dto";
-import { Type } from "class-transformer";
-import { ValidateNested } from "class-validator";
-
+import { IsArray, IsString } from 'class-validator';
+import { RqItem } from '../../type/bx-rq.type';
+import { FormFieldDto } from '../form-field/form-field.dto';
+import { Type } from 'class-transformer';
+import { ValidateNested } from 'class-validator';
 
 export enum ContractSpecificationCodeEnum {
     IBIG = 'specification_ibig',
@@ -35,16 +34,13 @@ export enum ContractSpecificationCodeEnum {
     PK_COMMENT1 = 'specification_pk_comment1',
     PK_COMMENT = 'specification_pk_comment',
     COMPLECT_NAME = 'complect_name',
-    
-
-
-   
 }
-export class ContractSpecificationItemDto extends FormFieldDto implements RqItem<ContractSpecificationCodeEnum> {
-
+export class ContractSpecificationItemDto
+    extends FormFieldDto
+    implements RqItem<ContractSpecificationCodeEnum>
+{
     @IsString()
     code: ContractSpecificationCodeEnum;
-
 }
 
 export class ContractSpecificationDto {
@@ -52,4 +48,4 @@ export class ContractSpecificationDto {
     @ValidateNested({ each: true })
     @Type(() => ContractSpecificationItemDto)
     items: ContractSpecificationItemDto[];
-} 
+}

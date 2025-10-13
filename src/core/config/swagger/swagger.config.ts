@@ -1,9 +1,11 @@
-import { INestApplication } from "@nestjs/common";
-import { DocumentBuilder, SwaggerDocumentOptions, SwaggerModule } from "@nestjs/swagger";
-
+import { INestApplication } from '@nestjs/common';
+import {
+    DocumentBuilder,
+    SwaggerDocumentOptions,
+    SwaggerModule,
+} from '@nestjs/swagger';
 
 export const getSwaggerConfig = (app: INestApplication) => {
-
     const config = new DocumentBuilder()
         .setTitle('April backend')
         .setDescription('API for april-bitrix  hooks and  frontends')
@@ -12,11 +14,12 @@ export const getSwaggerConfig = (app: INestApplication) => {
         .build();
 
     const options: SwaggerDocumentOptions = {
-        operationIdFactory: (
-            controllerKey: string,
-            methodKey: string
-        ) => methodKey
+        operationIdFactory: (controllerKey: string, methodKey: string) =>
+            `${controllerKey}_${methodKey}`,
     };
-    const documentFactory = () => SwaggerModule.createDocument(app, config, options);
+    const documentFactory = () =>
+        SwaggerModule.createDocument(app, config, options);
+
+
     SwaggerModule.setup('docs/api', app, documentFactory);
-}
+};

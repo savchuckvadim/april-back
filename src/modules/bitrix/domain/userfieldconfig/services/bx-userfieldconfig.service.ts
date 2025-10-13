@@ -1,11 +1,15 @@
-import { BitrixBaseApi } from "@/modules/bitrix/core";
-import { UserFieldConfigRepository } from "../repository/userfieldconfig.repository";
-import { UserFieldConfigAddDto, UserFieldConfigDeleteDto, UserFieldConfigGetDto, UserFieldConfigListDto, UserFieldConfigUpdateDto } from "../dto/userfieldconfig.dto";
-
+import { BitrixBaseApi } from '@/modules/bitrix/core';
+import { UserFieldConfigRepository } from '../repository/userfieldconfig.repository';
+import {
+    UserFieldConfigAddDto,
+    UserFieldConfigDeleteDto,
+    UserFieldConfigGetDto,
+    UserFieldConfigListDto,
+    UserFieldConfigUpdateDto,
+} from '../dto/userfieldconfig.dto';
 
 export class BxUserFieldConfigService {
-
-    private repo: UserFieldConfigRepository
+    private repo: UserFieldConfigRepository;
 
     clone(api: BitrixBaseApi): BxUserFieldConfigService {
         const instance = new BxUserFieldConfigService();
@@ -36,5 +40,4 @@ export class BxUserFieldConfigService {
     async list(dto: UserFieldConfigListDto) {
         return await this.repo.list(dto);
     }
-
 }

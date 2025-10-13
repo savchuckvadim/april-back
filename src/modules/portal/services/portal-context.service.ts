@@ -9,14 +9,10 @@ export class PortalContextService {
     // private static instance: PortalContextService;
     private portal: IPortal;
 
- 
-    constructor(
-        private readonly modelFactory: PortalModelFactory,
-    ) {
-       
+    constructor(private readonly modelFactory: PortalModelFactory) {
         this.logger.log('PortalContextService initialized');
-      }
-      
+    }
+
     setPortal(portal: IPortal) {
         this.logger.log(`Setting portal context for domain: ${portal.domain}`);
         this.portal = portal;
@@ -35,5 +31,5 @@ export class PortalContextService {
     getModel(): PortalModel {
         const portal = this.getPortal();
         return this.modelFactory.create(portal);
-      }
-} 
+    }
+}

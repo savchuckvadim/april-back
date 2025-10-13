@@ -1,9 +1,7 @@
-import { EBxMethod } from "src/modules/bitrix/core";
-import { IBXTask } from "../interfaces/bitrix.interface";
-import { CrmListRequestType } from "../crm/type/crm-request.type";
-import { BXTaskRequestFields } from "./bx-tasks.interface";
-
-
+import { EBxMethod } from 'src/modules/bitrix/core';
+import { IBXTask } from '../interfaces/bitrix.interface';
+import { CrmListRequestType } from '../crm/type/crm-request.type';
+import { BXTaskRequestFields } from './bx-tasks.interface';
 
 export type TasksSchema = {
     [EBxMethod.GET]: {
@@ -16,8 +14,8 @@ export type TasksSchema = {
     };
     [EBxMethod.UPDATE]: {
         request: {
-            taskId: number | string
-            fields: Partial<IBXTask>
+            taskId: number | string;
+            fields: Partial<IBXTask>;
         };
         response: { tasks: IBXTask[] };
     };

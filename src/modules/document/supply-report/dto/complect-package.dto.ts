@@ -1,30 +1,30 @@
 import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class ComplectPackageDto {
-  @IsInt()
-  number: number;
+    @IsInt()
+    number: number;
 
-  @IsOptional()
-  @IsInt()
-  regions?: number;
+    @IsOptional()
+    @IsInt()
+    regions?: number;
 
-  @IsOptional()
-  @IsInt()
-  msk?: number;
+    @IsOptional()
+    @IsInt()
+    msk?: number;
 
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 
-  @IsString()
-  fullName: string;
+    @IsString()
+    fullName: string;
 
-  @IsOptional()
-  @IsString()
-  description?: string;
+    @IsOptional()
+    @IsString()
+    description?: string;
 
-  @IsInt()
-  weight: number;
+    @IsInt()
+    weight: number;
 
-  @IsString()
-  type: string;
+    @IsString()
+    type: string;
 }

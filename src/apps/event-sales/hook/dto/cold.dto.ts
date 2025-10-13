@@ -1,34 +1,57 @@
-import { Type } from "class-transformer"
-import { IsString, ValidateNested } from "class-validator"
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsEnum, IsString, ValidateNested } from 'class-validator';
 
+export enum EnumColdCallEntityType {
+    COMPANY = 'company',
+    CONTACT = 'contact',
+    DEAL = 'deal',
+    LEAD = 'lead',
+}
+export enum EnumColdCallIsTmc {
+    Y = 'Y',
+    N = 'N',
+
+}
 export class ColdCallQueryDto {
 
+    @ApiProperty({ example: 'company', enum: EnumColdCallEntityType })
+    @IsEnum(EnumColdCallEntityType)
+    entityType: EnumColdCallEntityType;
+
+    @ApiProperty({ example: 'some entity id' })
     @IsString()
-    entityType: string
+    entityId: string;
+
+    @ApiProperty({ example: 'user_123' })
     @IsString()
-    entityId: string
+    responsible: string;
+
+    @ApiProperty({ example: 'user_123' })
     @IsString()
-    responsible: string
+    created: string;
+
+    @ApiProperty({ example: '2021-01-01' })
     @IsString()
-    created: string
+    deadline: string;
+
+
+    @ApiProperty({ example: 'some name' })
     @IsString()
-    deadline: string
-    @IsString()
-    name: string
-    isTmc: "Y" | "N"
+    name: string;
+
+    @ApiProperty({ example: EnumColdCallIsTmc.Y, enum: EnumColdCallIsTmc })
+    @IsEnum(EnumColdCallIsTmc)
+    isTmc: EnumColdCallIsTmc;
 }
 
 export class ColdCallBodyDto {
-
     @ValidateNested()
     @Type(() => ColdCallAuthDto)
-    auth: ColdCallAuthDto
-
+    auth: ColdCallAuthDto;
 }
 
 export class ColdCallAuthDto {
-
     @IsString()
-    domain: string
-
+    domain: string;
 }

@@ -50,10 +50,11 @@ export interface IField {
     items: IFieldItem[];
 }
 export type IFieldCode =
-    'ork_current_contract_fin_date' |
-    'supply_date' |
-    'sales_kpi_event_date' |
-    'sales_kpi_event_type' | string
+    | 'ork_current_contract_fin_date'
+    | 'supply_date'
+    | 'sales_kpi_event_date'
+    | 'sales_kpi_event_type'
+    | string;
 export interface ICategory {
     id: number;
     type: string;
@@ -150,7 +151,7 @@ export interface IDepartment {
 export enum EDepartamentGroup {
     sales = 'sales',
     service = 'service',
-    tmc = 'tmc'
+    tmc = 'tmc',
 }
 export interface IDeal {
     id: number;
@@ -191,8 +192,6 @@ export interface IPBXList {
     bitrixfields?: IField[];
 }
 
-
-
 export interface IPortalResponse {
     success: boolean;
     data?: IPortal;
@@ -200,12 +199,11 @@ export interface IPortalResponse {
 }
 
 export interface IPDepartment {
-    id: number
-    group: string
-    type: string
-    bitrixId: number
+    id: number;
+    group: string;
+    type: string;
+    bitrixId: number;
 }
-
 
 export interface IPMeasure {
     id: number;

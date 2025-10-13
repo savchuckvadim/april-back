@@ -4,7 +4,7 @@ import { IsString, IsNumber, IsNotEmpty } from 'class-validator';
 export class BxActivityDto {
     @ApiProperty({
         description: 'Domain of the Bitrix24 portal',
-        example: 'example.bitrix24.ru'
+        example: 'example.bitrix24.ru',
     })
     @IsString()
     @IsNotEmpty()
@@ -12,7 +12,7 @@ export class BxActivityDto {
 
     @ApiProperty({
         description: 'ID of the lead in Bitrix24',
-        example: 12345
+        example: 12345,
     })
     @IsNumber()
     @IsNotEmpty()

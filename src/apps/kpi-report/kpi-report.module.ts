@@ -9,20 +9,15 @@ import { QueueModule } from 'src/modules/queue/queue.module';
 import { SalesKpiReportQueueProcessor } from './queue/kpi-report.processor';
 import { KpiReportDownloadController } from './kpi-report-download.controller';
 @Module({
-  imports: [
+    imports: [PBXModule, QueueModule],
+    controllers: [KpiReportController, KpiReportDownloadController],
+    providers: [
+        ExcelReportService,
+        ReportKpiUseCase,
+        CallingStatisticUseCase,
 
-    PBXModule,
-    QueueModule,
- 
-  ],
-  controllers: [KpiReportController, KpiReportDownloadController],
-  providers: [
-    ExcelReportService,
-    ReportKpiUseCase,
-    CallingStatisticUseCase,
-
-    SalesKpiReportQueueProcessor
-  ],
-  exports: [ReportKpiUseCase]
+        SalesKpiReportQueueProcessor,
+    ],
+    exports: [ReportKpiUseCase],
 })
-export class KpiReportModule { }
+export class KpiReportModule {}

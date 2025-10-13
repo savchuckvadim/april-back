@@ -1,12 +1,9 @@
-import { PriceRepository } from "./price.repository";
+import { PriceRepository } from './price.repository';
 
 export class PriceService {
-    constructor(
-
-        private readonly repo: PriceRepository
-    ) { }
+    constructor(private readonly repo: PriceRepository) {}
 
     async getAll() {
-        return await this.repo.findMany()
+        return await this.repo.findMany();
     }
 }

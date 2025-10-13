@@ -1,7 +1,11 @@
-import { PrismaService } from "src/core/prisma";
-import { InfoblockEntity, InfoblockLightEntity } from "../infoblock.entity";
+import { PrismaService } from 'src/core/prisma';
+import { InfoblockEntity, InfoblockLightEntity } from '../infoblock.entity';
 
-export function createInfoblockEntityFromPrisma(data: NonNullable<Awaited<ReturnType<PrismaService['infoblocks']['findUnique']>>>): InfoblockEntity {
+export function createInfoblockEntityFromPrisma(
+    data: NonNullable<
+        Awaited<ReturnType<PrismaService['infoblocks']['findUnique']>>
+    >,
+): InfoblockEntity {
     const entity = new InfoblockEntity();
     entity.id = data.id.toString();
     entity.number = data.number;
@@ -27,11 +31,13 @@ export function createInfoblockEntityFromPrisma(data: NonNullable<Awaited<Return
     entity.excluded_id = data.excluded_id?.toString() ?? null;
     entity.created_at = data.created_at;
     entity.updated_at = data.updated_at;
-    
+
     return entity;
 }
 
-export const getLightFromEntity = (entity: InfoblockEntity): InfoblockLightEntity => {
+export const getLightFromEntity = (
+    entity: InfoblockEntity,
+): InfoblockLightEntity => {
     const light = new InfoblockLightEntity();
     light.id = entity.id;
     light.number = entity.number;
@@ -49,4 +55,4 @@ export const getLightFromEntity = (entity: InfoblockEntity): InfoblockLightEntit
     light.tag = entity.tag;
     light.group = entity.group?.code ?? null;
     return light;
-}
+};

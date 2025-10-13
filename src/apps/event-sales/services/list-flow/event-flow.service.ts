@@ -22,7 +22,8 @@ interface Reason {
 
 type BatchCommands = Record<string, any>;
 
-interface CurrentTask { // Derived from usage in PHP
+interface CurrentTask {
+    // Derived from usage in PHP
     id?: string | number;
     eventType?: string;
     // ... other properties from currentTask if used by getListBatchFlow
@@ -79,21 +80,41 @@ export class EventReportListFlowService {
 
     // Helper to parse DD.MM.YYYY HH:MI:SS from Bitrix
     private parseBtxDateTime(dateStr: string): Date {
-        const parts = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})/);
+        const parts = dateStr.match(
+            /(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})/,
+        );
         if (parts) {
-            return new Date(+parts[3], +parts[2] - 1, +parts[1], +parts[4], +parts[5], +parts[6]);
+            return new Date(
+                +parts[3],
+                +parts[2] - 1,
+                +parts[1],
+                +parts[4],
+                +parts[5],
+                +parts[6],
+            );
         }
-        this.logger.warn(`Could not parse date string: ${dateStr}, returning current date.`);
+        this.logger.warn(
+            `Could not parse date string: ${dateStr}, returning current date.`,
+        );
         return new Date(); // Fallback
     }
 
     // Helper to format Date object to DD.MM.YYYY HH:MI:SS for Bitrix
-    private formatBtxDateTime(dateObj: Date, timeZone: string = 'Europe/Moscow'): string {
-        return dateObj.toLocaleString('ru-RU', {
-            timeZone: timeZone,
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-        }).replace(',', '');
+    private formatBtxDateTime(
+        dateObj: Date,
+        timeZone: string = 'Europe/Moscow',
+    ): string {
+        return dateObj
+            .toLocaleString('ru-RU', {
+                timeZone: timeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            })
+            .replace(',', '');
     }
 
     // Helper to simulate PHP's removeEmojisIntl. For now, a simple pass-through.
@@ -114,7 +135,9 @@ export class EventReportListFlowService {
             currentPlanEventType: 'presentation',
             currentPlanEventName: 'Презентация (План)',
             resultStatus: 'result',
-            planDeadline: new Date(initialNow.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+            planDeadline: new Date(
+                initialNow.getTime() + 24 * 60 * 60 * 1000,
+            ).toISOString(),
             planCreatedId: 'user1',
             planResponsibleId: 'user2',
             planTmcId: 'user_tmc',
@@ -126,7 +149,10 @@ export class EventReportListFlowService {
             failType: { current: null },
             currentBtxDeals: [{ ID: 'D1' }, { ID: 'D2' }],
             currentBaseDeal: { ID: 'BD1' },
-            currentTMCDealFromCurrentPres: { ID: 'TMC_D1', ASSIGNED_BY_ID: 'user_tmc_assigned' },
+            currentTMCDealFromCurrentPres: {
+                ID: 'TMC_D1',
+                ASSIGNED_BY_ID: 'user_tmc_assigned',
+            },
             planContactId: 'contact1',
             reportContactId: 'contactRep1', // Example value
             currentTask: { id: 'task1', eventType: 'xo' },
@@ -154,14 +180,21 @@ export class EventReportListFlowService {
         let nowDateForCall: string; // Will store formatted date string for calls
 
         try {
-            if (!props.withLists || !props.bitrixLists || props.bitrixLists.length === 0) {
+            if (
+                !props.withLists ||
+                !props.bitrixLists ||
+                props.bitrixLists.length === 0
+            ) {
                 this.logger.warn('No lists to process or withLists is false.');
                 return resultBatchCommands;
             }
 
             // PHP: $currentDealIds = []; $currentBaseDealId = null;
-            const currentDealIds: (string | number)[] = (props.currentBtxDeals || []).map(d => d.ID);
-            const currentBaseDealId: string | number | null = props.currentBaseDeal?.ID || null;
+            const currentDealIds: (string | number)[] = (
+                props.currentBtxDeals || []
+            ).map(d => d.ID);
+            const currentBaseDealId: string | number | null =
+                props.currentBaseDeal?.ID || null;
 
             // PHP: $planDeadline = $this->planDeadline;
             let planDeadlineForLogic = props.planDeadline; // Format: DD.MM.YYYY HH:MI:SS
@@ -169,7 +202,8 @@ export class EventReportListFlowService {
             // PHP: Timezone conversion for planDeadline
             if (planDeadlineForLogic) {
                 if (props.domain === 'alfacentr.bitrix24.ru') {
-                    const tmpDeadline = this.parseBtxDateTime(planDeadlineForLogic); // Parses assuming it's 'Asia/Novosibirsk'
+                    const tmpDeadline =
+                        this.parseBtxDateTime(planDeadlineForLogic); // Parses assuming it's 'Asia/Novosibirsk'
                     // To correctly simulate, we'd need to know the original timezone of planDeadline string
                     // For now, let's assume it's passed in Moscow time or UTC and adjust if this is a critical discrepancy
                     // PHP: $tmpDeadline = Carbon::createFromFormat('d.m.Y H:i:s', $planDeadline, 'Asia/Novosibirsk');
@@ -179,20 +213,23 @@ export class EventReportListFlowService {
                     // If props.planDeadline is already in 'Europe/Moscow', no change needed.
                     // If it's from 'Asia/Novosibirsk', we'd parse it as such then format to 'Y-m-d H:i:s' in Moscow.
                     // For simplicity, assuming planDeadlineForLogic is already 'Europe/Moscow' or interpretation is handled by BitrixListFlowService
-                    this.logger.debug(`planDeadline for ${props.domain}: ${planDeadlineForLogic} (no specific conversion applied in TS yet)`);
-
+                    this.logger.debug(
+                        `planDeadline for ${props.domain}: ${planDeadlineForLogic} (no specific conversion applied in TS yet)`,
+                    );
                 } else if (props.domain === 'gsirk.bitrix24.ru') {
                     // Similar logic for 'Asia/Irkutsk'
-                    this.logger.debug(`planDeadline for ${props.domain}: ${planDeadlineForLogic} (no specific conversion applied in TS yet)`);
+                    this.logger.debug(
+                        `planDeadline for ${props.domain}: ${planDeadlineForLogic} (no specific conversion applied in TS yet)`,
+                    );
                 }
             }
 
-
             const reportEventTypeFromProps = props.currentReportEventType;
             const reportEventTypeNameFromProps = props.currentReportEventName;
-            let planEventTypeNameForLogic = this.removeEmojisIntl(props.currentPlanEventName);
+            let planEventTypeNameForLogic = this.removeEmojisIntl(
+                props.currentPlanEventName,
+            );
             let planEventTypeForLogic = props.currentPlanEventType;
-
 
             // PHP: $eventAction = 'expired'; $planComment = 'Перенесен';
             let eventAction = 'expired';
@@ -219,7 +256,6 @@ export class EventReportListFlowService {
                 planComment = `${planComment} ${props.comment}`;
             }
 
-
             // --- Start of calls to BitrixListFlowService.getBatchListFlow ---
 
             // PHP: if (!$this->isNew) { ... }
@@ -228,46 +264,61 @@ export class EventReportListFlowService {
                 if (!props.isExpired) {
                     let reportAction = 'done';
                     // PHP: if ($this->resultStatus !== 'result') { $reportAction = 'nodone'; }
-                    if (props.resultStatus !== 'result') { // Assuming 'new' is not 'result'
+                    if (props.resultStatus !== 'result') {
+                        // Assuming 'new' is not 'result'
                         reportAction = 'nodone';
                     }
 
                     // PHP: if ($reportEventType !== 'presentation' || ($reportEventType == 'presentation' && !empty($this->isNoCall)))
-                    if (reportEventTypeFromProps !== 'presentation' || (reportEventTypeFromProps === 'presentation' && props.isNoCall)) {
+                    if (
+                        reportEventTypeFromProps !== 'presentation' ||
+                        (reportEventTypeFromProps === 'presentation' &&
+                            props.isNoCall)
+                    ) {
                         let deadlineForThisCall = planDeadlineForLogic; // Uses the potentially timezone-adjusted planDeadline
                         // PHP: if (!$this->isPlanned) { $deadline = null; }
                         if (!props.isPlanned) {
                             deadlineForThisCall = null;
                         }
 
-                        currentBtxDateTime = new Date(currentBtxDateTime.getTime() + 1000); // +1 second
-                        nowDateForCall = this.formatBtxDateTime(currentBtxDateTime);
+                        currentBtxDateTime = new Date(
+                            currentBtxDateTime.getTime() + 1000,
+                        ); // +1 second
+                        nowDateForCall =
+                            this.formatBtxDateTime(currentBtxDateTime);
 
-                        this.logger.log(`Calling BitrixListFlowService.getBatchListFlow (Report Current Event) at ${nowDateForCall}`);
-                        resultBatchCommands = BitrixListFlowService.getBatchListFlow(
-                            props.hook,
-                            props.bitrixLists,
-                            reportEventTypeFromProps,
-                            reportEventTypeNameFromProps,
-                            reportAction,
-                            deadlineForThisCall,
-                            String(props.planCreatedId ?? ''),
-                            String(props.planResponsibleId ?? ''),
-                            String(props.planResponsibleId ?? ''),
-                            String(props.entityId),
-                            props.comment,
-                            props.workStatus?.current || null,
-                            props.resultStatus,
-                            props.noresultReason?.current || null,
-                            props.failReason?.current || null,
-                            props.failType?.current || null,
-                            currentDealIds.map(id => String(id)),
-                            currentBaseDealId ? String(currentBaseDealId) : null,
-                            nowDateForCall,
-                            reportEventTypeNameFromProps,
-                            props.reportContactId ? String(props.reportContactId) : null,
-                            resultBatchCommands
+                        this.logger.log(
+                            `Calling BitrixListFlowService.getBatchListFlow (Report Current Event) at ${nowDateForCall}`,
                         );
+                        resultBatchCommands =
+                            BitrixListFlowService.getBatchListFlow(
+                                props.hook,
+                                props.bitrixLists,
+                                reportEventTypeFromProps,
+                                reportEventTypeNameFromProps,
+                                reportAction,
+                                deadlineForThisCall,
+                                String(props.planCreatedId ?? ''),
+                                String(props.planResponsibleId ?? ''),
+                                String(props.planResponsibleId ?? ''),
+                                String(props.entityId),
+                                props.comment,
+                                props.workStatus?.current || null,
+                                props.resultStatus,
+                                props.noresultReason?.current || null,
+                                props.failReason?.current || null,
+                                props.failType?.current || null,
+                                currentDealIds.map(id => String(id)),
+                                currentBaseDealId
+                                    ? String(currentBaseDealId)
+                                    : null,
+                                nowDateForCall,
+                                reportEventTypeNameFromProps,
+                                props.reportContactId
+                                    ? String(props.reportContactId)
+                                    : null,
+                                resultBatchCommands,
+                            );
                     }
                 }
             }
@@ -275,35 +326,45 @@ export class EventReportListFlowService {
             // PHP: if ($this->isPresentationDone == true && !$this->isExpired)
             if (props.isPresentationDone && !props.isExpired) {
                 // PHP: if ($reportEventType !== 'presentation')
-                if (reportEventTypeFromProps !== 'presentation') { // Unplanned presentation
-                    currentBtxDateTime = new Date(currentBtxDateTime.getTime() + 1000); // PHP: +2 seconds from last modification
+                if (reportEventTypeFromProps !== 'presentation') {
+                    // Unplanned presentation
+                    currentBtxDateTime = new Date(
+                        currentBtxDateTime.getTime() + 1000,
+                    ); // PHP: +2 seconds from last modification
                     nowDateForCall = this.formatBtxDateTime(currentBtxDateTime);
 
-                    this.logger.log(`Calling BitrixListFlowService.getBatchListFlow (Log Unplanned Presentation) at ${nowDateForCall}`);
-                    resultBatchCommands = BitrixListFlowService.getBatchListFlow(
-                        props.hook,
-                        props.bitrixLists,
-                        'presentation',
-                        'Презентация',
-                        'plan', // action
-                        nowDateForCall, // deadline is current time for unplanned
-                        String(props.planResponsibleId ?? ''), // PHP uses planResponsibleId for all three user ID fields here
-                        String(props.planResponsibleId ?? ''),
-                        String(props.planResponsibleId ?? ''),
-                        String(props.entityId),
-                        'незапланированая презентация', // comment
-                        { code: 'inJob' }, // workStatus
-                        'result', // resultStatus
-                        props.noresultReason?.current || null,
-                        props.failReason?.current || null,
-                        props.failType?.current || null,
-                        currentDealIds.map(id => String(id)),
-                        currentBaseDealId ? String(currentBaseDealId) : null,
-                        nowDateForCall, // eventDate
-                        'Презентация', // hotName - PHP: null
-                        props.reportContactId ? String(props.reportContactId) : null,
-                        resultBatchCommands
+                    this.logger.log(
+                        `Calling BitrixListFlowService.getBatchListFlow (Log Unplanned Presentation) at ${nowDateForCall}`,
                     );
+                    resultBatchCommands =
+                        BitrixListFlowService.getBatchListFlow(
+                            props.hook,
+                            props.bitrixLists,
+                            'presentation',
+                            'Презентация',
+                            'plan', // action
+                            nowDateForCall, // deadline is current time for unplanned
+                            String(props.planResponsibleId ?? ''), // PHP uses planResponsibleId for all three user ID fields here
+                            String(props.planResponsibleId ?? ''),
+                            String(props.planResponsibleId ?? ''),
+                            String(props.entityId),
+                            'незапланированая презентация', // comment
+                            { code: 'inJob' }, // workStatus
+                            'result', // resultStatus
+                            props.noresultReason?.current || null,
+                            props.failReason?.current || null,
+                            props.failType?.current || null,
+                            currentDealIds.map(id => String(id)),
+                            currentBaseDealId
+                                ? String(currentBaseDealId)
+                                : null,
+                            nowDateForCall, // eventDate
+                            'Презентация', // hotName - PHP: null
+                            props.reportContactId
+                                ? String(props.reportContactId)
+                                : null,
+                            resultBatchCommands,
+                        );
                 }
 
                 // This is the "report" for the presentation that was done.
@@ -313,10 +374,14 @@ export class EventReportListFlowService {
                     deadlineForPresDoneCall = null;
                 }
 
-                currentBtxDateTime = new Date(currentBtxDateTime.getTime() + 1000); // PHP: +3 seconds from previous modification
+                currentBtxDateTime = new Date(
+                    currentBtxDateTime.getTime() + 1000,
+                ); // PHP: +3 seconds from previous modification
                 nowDateForCall = this.formatBtxDateTime(currentBtxDateTime);
 
-                this.logger.log(`Calling BitrixListFlowService.getBatchListFlow (Report Presentation Done) at ${nowDateForCall}`);
+                this.logger.log(
+                    `Calling BitrixListFlowService.getBatchListFlow (Report Presentation Done) at ${nowDateForCall}`,
+                );
                 resultBatchCommands = BitrixListFlowService.getBatchListFlow(
                     props.hook,
                     props.bitrixLists,
@@ -338,44 +403,57 @@ export class EventReportListFlowService {
                     currentBaseDealId ? String(currentBaseDealId) : null,
                     nowDateForCall, // eventDate
                     'Презентация', // hotName - PHP: null
-                    props.reportContactId ? String(props.reportContactId) : null,
-                    resultBatchCommands
+                    props.reportContactId
+                        ? String(props.reportContactId)
+                        : null,
+                    resultBatchCommands,
                 );
 
                 // PHP: if (!empty($this->currentTMCDealFromCurrentPres))
                 const curTMCDeal = props.currentTMCDealFromCurrentPres;
-                if (curTMCDeal && curTMCDeal.ID) { // Check if curTMCDeal and its ID exist
+                if (curTMCDeal && curTMCDeal.ID) {
+                    // Check if curTMCDeal and its ID exist
                     // PHP: if (!empty($curTMCDeal['ASSIGNED_BY_ID']))
                     const tmcUserId = curTMCDeal.ASSIGNED_BY_ID;
                     if (tmcUserId) {
-                        currentBtxDateTime = new Date(currentBtxDateTime.getTime() + 1000); // PHP: +4 seconds
-                        nowDateForCall = this.formatBtxDateTime(currentBtxDateTime);
+                        currentBtxDateTime = new Date(
+                            currentBtxDateTime.getTime() + 1000,
+                        ); // PHP: +4 seconds
+                        nowDateForCall =
+                            this.formatBtxDateTime(currentBtxDateTime);
 
-                        this.logger.log(`Calling BitrixListFlowService.getBatchListFlow (Report Presentation Done for TMC) at ${nowDateForCall}`);
-                        resultBatchCommands = BitrixListFlowService.getBatchListFlow(
-                            props.hook,
-                            props.bitrixLists,
-                            'presentation',
-                            'Презентация',
-                            'done', // action
-                            planDeadlineForLogic, // PHP uses $planDeadline directly here
-                            String(tmcUserId), // PHP: $tmcUserId for eventUserGroupId
-                            String(tmcUserId), // PHP: $tmcUserId for itemUserGroupId
-                            String(props.planResponsibleId ?? ''), // PHP: $this->planResponsibleId for responsibleId
-                            String(props.entityId),
-                            `Презентация по заявке ТМЦ ${props.comment}`, // comment
-                            props.workStatus?.current || null,
-                            props.resultStatus,
-                            props.noresultReason?.current || null,
-                            props.failReason?.current || null,
-                            props.failType?.current || null,
-                            currentDealIds.map(id => String(id)),
-                            currentBaseDealId ? String(currentBaseDealId) : null,
-                            nowDateForCall, // eventDate
-                            'Презентация', // hotName - PHP: null
-                            props.reportContactId ? String(props.reportContactId) : null,
-                            resultBatchCommands
+                        this.logger.log(
+                            `Calling BitrixListFlowService.getBatchListFlow (Report Presentation Done for TMC) at ${nowDateForCall}`,
                         );
+                        resultBatchCommands =
+                            BitrixListFlowService.getBatchListFlow(
+                                props.hook,
+                                props.bitrixLists,
+                                'presentation',
+                                'Презентация',
+                                'done', // action
+                                planDeadlineForLogic, // PHP uses $planDeadline directly here
+                                String(tmcUserId), // PHP: $tmcUserId for eventUserGroupId
+                                String(tmcUserId), // PHP: $tmcUserId for itemUserGroupId
+                                String(props.planResponsibleId ?? ''), // PHP: $this->planResponsibleId for responsibleId
+                                String(props.entityId),
+                                `Презентация по заявке ТМЦ ${props.comment}`, // comment
+                                props.workStatus?.current || null,
+                                props.resultStatus,
+                                props.noresultReason?.current || null,
+                                props.failReason?.current || null,
+                                props.failType?.current || null,
+                                currentDealIds.map(id => String(id)),
+                                currentBaseDealId
+                                    ? String(currentBaseDealId)
+                                    : null,
+                                nowDateForCall, // eventDate
+                                'Презентация', // hotName - PHP: null
+                                props.reportContactId
+                                    ? String(props.reportContactId)
+                                    : null,
+                                resultBatchCommands,
+                            );
                     }
                 }
             }
@@ -385,14 +463,18 @@ export class EventReportListFlowService {
             if (props.isPlanned && planEventTypeForLogic) {
                 let deadlineForPlanCall = planDeadlineForLogic;
 
-                // finalPlanEventType, finalPlanEventTypeName, finalPlanComment are derived from earlier logic 
+                // finalPlanEventType, finalPlanEventTypeName, finalPlanComment are derived from earlier logic
                 // based on isExpired, currentReportEvent, and currentPlanEvent.
                 // eventAction is also set based on isExpired.
 
-                currentBtxDateTime = new Date(currentBtxDateTime.getTime() + 1000); // Further increment
+                currentBtxDateTime = new Date(
+                    currentBtxDateTime.getTime() + 1000,
+                ); // Further increment
                 nowDateForCall = this.formatBtxDateTime(currentBtxDateTime);
 
-                this.logger.log(`Calling BitrixListFlowService.getBatchListFlow (Plan Next/Expired Event) at ${nowDateForCall}`);
+                this.logger.log(
+                    `Calling BitrixListFlowService.getBatchListFlow (Plan Next/Expired Event) at ${nowDateForCall}`,
+                );
                 resultBatchCommands = BitrixListFlowService.getBatchListFlow(
                     props.hook,
                     props.bitrixLists,
@@ -415,18 +497,23 @@ export class EventReportListFlowService {
                     nowDateForCall,
                     planEventTypeNameForLogic, // hotName should be the name of the event being planned
                     props.planContactId ? String(props.planContactId) : null,
-                    resultBatchCommands
+                    resultBatchCommands,
                 );
             }
 
-            this.logger.log('getListBatchFlow processing completed:', resultBatchCommands);
+            this.logger.log(
+                'getListBatchFlow processing completed:',
+                resultBatchCommands,
+            );
             return resultBatchCommands;
-
         } catch (error: any) {
-            this.logger.error(`Error in EventReportListFlowService.getListBatchFlow: ${error.message}`, error.stack);
-            // It's important to return resultBatchCommands even in case of an error, 
+            this.logger.error(
+                `Error in EventReportListFlowService.getListBatchFlow: ${error.message}`,
+                error.stack,
+            );
+            // It's important to return resultBatchCommands even in case of an error,
             // as the PHP version accumulates commands and doesn't necessarily stop on one failing BitrixListFlowService call.
             return resultBatchCommands;
         }
     }
-} 
+}

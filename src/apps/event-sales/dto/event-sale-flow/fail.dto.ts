@@ -1,3 +1,3 @@
 export class FailDto {
-    postFailDate: string
+    postFailDate: string;
 }

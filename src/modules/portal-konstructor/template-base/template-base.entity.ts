@@ -1,5 +1,8 @@
-import { CounterEntity, TemplateCounterEntity } from "../counter/counter.entity";
-import { FieldEntity, FieldLightEntity } from "../field/field.entity";
+import {
+    CounterEntity,
+    TemplateCounterEntity,
+} from '../counter/counter.entity';
+import { FieldEntity, FieldLightEntity } from '../field/field.entity';
 
 export class TemplateBaseEntity {
     id: string;
@@ -21,7 +24,7 @@ export class TemplateBaseLightEntity {
     code: string;
     description: string | null;
     isActive: boolean;
-} 
+}
 
 export class TemplateBasePortalEntity {
     id: string;
@@ -29,4 +32,4 @@ export class TemplateBasePortalEntity {
     code: string;
     isActive: boolean;
     fields: FieldLightEntity[];
-} 
+}

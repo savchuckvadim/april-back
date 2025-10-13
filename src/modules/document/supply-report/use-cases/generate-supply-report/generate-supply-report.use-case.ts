@@ -7,22 +7,20 @@ import { GenerateSupplyReportDto } from '../../dto/generate-supply-report.dto';
 
 @Injectable()
 export class GenerateSupplyReportUseCase {
-  constructor(
-    // private readonly docxService: DocxTemplateService,
-    // private readonly libreOfficeService: LibreOfficeService,
+    constructor() // private readonly libreOfficeService: LibreOfficeService, // private readonly docxService: DocxTemplateService,
     // private readonly bitrixGateway: BitrixGateway,
-  ) { }
+    {}
 
-  async execute(dto: GenerateSupplyReportDto) {
-    const d = dto
-    const v = dto.bxCompanyItems.find(item => item.id == 2)
-    debugger
-    console.log(v)
+    async execute(dto: GenerateSupplyReportDto) {
+        const d = dto;
+        const v = dto.bxCompanyItems.find(item => item.id == 2);
+        debugger;
+        console.log(v);
 
-    return v
-    // const docxPath = await this.docxService.generate(dto);
-    // const pdfPath = await this.libreOfficeService.convertToPdf(docxPath);
-    // await this.bitrixGateway.sendTimelineComment(dto.domain, dto.dealId, pdfPath);
-    // return { link: this.docxService.getDownloadLink(pdfPath) };
-  }
+        return v;
+        // const docxPath = await this.docxService.generate(dto);
+        // const pdfPath = await this.libreOfficeService.convertToPdf(docxPath);
+        // await this.bitrixGateway.sendTimelineComment(dto.domain, dto.dealId, pdfPath);
+        // return { link: this.docxService.getDownloadLink(pdfPath) };
+    }
 }

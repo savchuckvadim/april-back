@@ -1,5 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsObject, IsString } from "class-validator";
+import { BxAuthType } from '@/modules/bitrix/bitrix-service.factory';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class BitrixMethodDto {
     @ApiProperty({ description: 'Domain of the portal' })
@@ -13,4 +14,9 @@ export class BitrixMethodDto {
     @ApiProperty({ description: 'Params of the bitrix' })
     @IsObject()
     bxData: any;
+
+    @ApiProperty({ description: 'Auth type of the bitrix', required: false, enum: BxAuthType })
+    @IsOptional()
+    @IsEnum(BxAuthType)
+    authType: BxAuthType;
 }

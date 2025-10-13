@@ -1,9 +1,9 @@
 import { IsInt, IsString } from 'class-validator';
 
 export class RowComplectDto {
-  @IsString()
-  type: string;
+    @IsString()
+    type: string;
 
-  @IsInt()
-  number: number;
+    @IsInt()
+    number: number;
 }

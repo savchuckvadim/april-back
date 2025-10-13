@@ -1,34 +1,31 @@
-
 export type Product = {
-    name: string,
-    quantity: number,
-    monthSum: string,
-    armId: string,
-}
+    name: string;
+    quantity: number;
+    monthSum: string;
+    armId: string;
+};
 
 export type Contact = {
-    name: string, 
-    position: string, 
-    communicationsRate: 
-    string, phone: string, 
-    email: string,
-    contactFirstEdu: string,
-    contactFirstEduComment: string,
-    contactEdu: string,
-    contactEduComment: string,
-    contactExamination: string,
-    contactQualification: string,
-    contactSkap: string,
-    conmtactGl: string,
-    contactGarantClub: string,
-
-
-}
+    name: string;
+    position: string;
+    communicationsRate: string;
+    phone: string;
+    email: string;
+    contactFirstEdu: string;
+    contactFirstEduComment: string;
+    contactEdu: string;
+    contactEduComment: string;
+    contactExamination: string;
+    contactQualification: string;
+    contactSkap: string;
+    conmtactGl: string;
+    contactGarantClub: string;
+};
 export type Contract = {
-    contractEndDate: string,
-    contractType: string,
-    contractPrepayment: string
-}
+    contractEndDate: string;
+    contractType: string;
+    contractPrepayment: string;
+};
 export class MigrateToBxDto {
     id: string;
     company: string;
@@ -42,4 +39,3 @@ export class MigrateToBxDto {
     concurent: string;
     supplyDate: string;
 }
-

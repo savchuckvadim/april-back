@@ -1,9 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import { IFieldItem } from "src/modules/portal/interfaces/portal.interface";
-import { Filter, FilterCode, FilterInnerCode } from "../../dto/kpi.dto";
-
-
-
+import { Injectable } from '@nestjs/common';
+import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
+import { Filter, FilterCode, FilterInnerCode } from '../../dto/kpi.dto';
 
 @Injectable()
 export class ActionService {
@@ -17,15 +14,27 @@ export class ActionService {
             case 'plan':
             case 'done': {
                 const { actionName } = this.getFeminineActionForm(acCode);
-                if (['xo', 'call', 'call_in_progress', 'call_in_money'].includes(atCode)) {
+                if (
+                    [
+                        'xo',
+                        'call',
+                        'call_in_progress',
+                        'call_in_money',
+                    ].includes(atCode)
+                ) {
                     result.innerCode = `call_${acCode}`;
                     result.name = `Звонок`;
-
-                } else if (['presentation', 'presentation_uniq', 'presentation_contact_uniq'].includes(atCode)) {
+                } else if (
+                    [
+                        'presentation',
+                        'presentation_uniq',
+                        'presentation_contact_uniq',
+                    ].includes(atCode)
+                ) {
                     result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;
-                    const { actionTypeName } = this.getFeminineActionTypeForm(atCode);
+                    const { actionTypeName } =
+                        this.getFeminineActionTypeForm(atCode);
                     result.name = ` ${actionTypeName}`;
-
                 } else if (
                     ['ev_success', 'ev_fail'].includes(atCode) &&
                     acCode !== 'plan'
@@ -51,7 +60,7 @@ export class ActionService {
                         'ev_offer_pres',
                         'ev_invoice',
                         'ev_invoice_pres',
-                        'ev_contract'
+                        'ev_contract',
                     ].includes(atCode)
                 ) {
                     result.code = `${atCode}_${acCode}` as FilterCode;
@@ -80,32 +89,34 @@ export class ActionService {
     }
 
     // 🔤 Аналог функции для женского рода
-    private getFeminineActionForm(actionCode: string,): { actionName: string, } {
+    private getFeminineActionForm(actionCode: string): { actionName: string } {
         // TODO: адаптируй под свою логику
         // Пример: если value = "проведён", вернуть "проведена"
         // Тут можно подключить отдельный словарь или API
-        let actionName = ''
+        let actionName = '';
 
         if (actionCode === 'plan') {
-            actionName = 'План'
+            actionName = 'План';
         }
 
         return { actionName };
     }
 
-    private getFeminineActionTypeForm(actionTypeCode: string): { actionTypeName: string } {
+    private getFeminineActionTypeForm(actionTypeCode: string): {
+        actionTypeName: string;
+    } {
         // TODO: адаптируй под свою логику
         // Пример: если value = "проведён", вернуть "проведена"
         // Тут можно подключить отдельный словарь или API
 
-        let actionTypeName = ''
+        let actionTypeName = '';
 
         if (actionTypeCode === 'presentation') {
-            actionTypeName = 'Презентация'
+            actionTypeName = 'Презентация';
         } else if (actionTypeCode === 'presentation_uniq') {
-            actionTypeName = 'През. уникальная'
+            actionTypeName = 'През. уникальная';
         } else if (actionTypeCode === 'presentation_contact_uniq') {
-            actionTypeName = 'През. по контакту'
+            actionTypeName = 'През. по контакту';
         }
 
         return { actionTypeName };

@@ -142,4 +142,4 @@ export class ContactResponseDto {
 
     @ApiProperty({ type: [ContactFieldDto] })
     fields: ContactFieldDto[];
-} 
+}

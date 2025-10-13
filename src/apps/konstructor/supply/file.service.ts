@@ -5,16 +5,20 @@ import * as path from 'path';
 
 @Injectable()
 export class FileService {
-
     async downloadFile(domain: string, downloadUrl: string): Promise<any> {
         try {
             const url = `https://${domain}${downloadUrl}`;
-            const response = await axios.post(url, {}, { responseType: 'arraybuffer' });
+            const response = await axios.post(
+                url,
+                {},
+                { responseType: 'arraybuffer' },
+            );
             const contentDisposition = response.headers['content-disposition'];
             let filename = 'downloaded_file';
 
             if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+                const filenameMatch =
+                    contentDisposition.match(/filename="(.+?)"/);
                 if (filenameMatch) {
                     filename = filenameMatch[1];
                 }
@@ -50,7 +54,9 @@ export class FileService {
         let filename = 'downloaded_file';
 
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename\*=(.+?)(;|$)/);
+            const filenameMatch = contentDisposition.match(
+                /filename\*=(.+?)(;|$)/,
+            );
             if (filenameMatch) {
                 const encodedString = filenameMatch[1].split("''")[1];
                 filename = decodeURIComponent(encodedString);
@@ -60,4 +66,4 @@ export class FileService {
         const fileBase64 = Buffer.from(response.data).toString('base64');
         return [filename, fileBase64];
     }
-} 
+}

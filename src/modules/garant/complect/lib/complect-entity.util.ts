@@ -1,8 +1,10 @@
-import { PrismaService } from "src/core/prisma";
-import { ComplectEntity } from "../complect.entity";
+import { PrismaService } from 'src/core/prisma';
+import { ComplectEntity } from '../complect.entity';
 
 export function createComplectEntityFromPrisma(
-    data: NonNullable<Awaited<ReturnType<PrismaService['complects']['findUnique']>>>
+    data: NonNullable<
+        Awaited<ReturnType<PrismaService['complects']['findUnique']>>
+    >,
 ): ComplectEntity {
     const entity = new ComplectEntity();
     entity.id = data.id.toString();

@@ -1,10 +1,9 @@
-import { BitrixBaseApi } from "@/modules/bitrix/core/base/bitrix-base-api";
-import { BxProductRepository } from "../repository/bx-product.repository";
-import { IBXProduct } from "../interface/bx-product.interface";
-
+import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
+import { BxProductRepository } from '../repository/bx-product.repository';
+import { IBXProduct } from '../interface/bx-product.interface';
 
 export class BxProductService {
-    private repo: BxProductRepository
+    private repo: BxProductRepository;
 
     clone(api: BitrixBaseApi): BxProductService {
         const instance = new BxProductService();

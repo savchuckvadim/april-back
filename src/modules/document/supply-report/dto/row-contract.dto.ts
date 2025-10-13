@@ -1,9 +1,9 @@
 import { IsInt, IsString } from 'class-validator';
 
 export class RowContractDto {
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 
-  @IsInt()
-  number: number;
+    @IsInt()
+    number: number;
 }

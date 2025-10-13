@@ -12,10 +12,10 @@ export interface IBXField {
     EDIT_IN_LIST: 'Y' | 'N';
     IS_SEARCHABLE: 'Y' | 'N';
     SETTINGS: {
-      DISPLAY: string;
-      LIST_HEIGHT: number;
-      CAPTION_NO_VALUE: string;
-      SHOW_NO_VALUE: 'Y' | 'N';
+        DISPLAY: string;
+        LIST_HEIGHT: number;
+        CAPTION_NO_VALUE: string;
+        SHOW_NO_VALUE: 'Y' | 'N';
     };
     EDIT_FORM_LABEL: BitrixLangMap;
     LIST_COLUMN_LABEL: BitrixLangMap;
@@ -23,19 +23,19 @@ export interface IBXField {
     ERROR_MESSAGE: BitrixLangMapNullable;
     HELP_MESSAGE: BitrixLangMapNullable;
     LIST?: BitrixEnumerationOption[];
-  }
-  
-  export interface BitrixLangMap {
+}
+
+export interface BitrixLangMap {
     [lang: string]: string;
-  }
-  
-  export interface BitrixLangMapNullable {
+}
+
+export interface BitrixLangMapNullable {
     [lang: string]: string | null;
-  }
-  
-  export interface BitrixEnumerationOption {
+}
+
+export interface BitrixEnumerationOption {
     ID: string;
     SORT: string;
     VALUE: string;
     DEF: 'Y' | 'N';
-  }
+}

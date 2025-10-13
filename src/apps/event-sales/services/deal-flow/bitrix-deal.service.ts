@@ -40,8 +40,7 @@ interface EventOrder {
 
 @Injectable()
 export class BitrixDealService {
-    constructor(
-        private readonly bitrixGeneralService: BitrixGeneralService) { }
+    constructor(private readonly bitrixGeneralService: BitrixGeneralService) {}
 
     async getDealId(
         hook: string,
@@ -49,7 +48,7 @@ export class BitrixDealService {
         companyId: number | null,
         userId: number,
         portalDeal: PortalDeal,
-        currentCategoryData: DealCategory
+        currentCategoryData: DealCategory,
     ): Promise<Deal | null> {
         let currentDeal: Deal | null = null;
 
@@ -64,27 +63,30 @@ export class BitrixDealService {
                 data = {
                     filter: {
                         '=CATEGORY_ID': currentCategoryBtxId,
-                        'COMPANY_ID': companyId,
-                        'ASSIGNED_BY_ID': userId,
-                        '!=STAGE_ID': [`C${currentCategoryBtxId}:WON`]
+                        COMPANY_ID: companyId,
+                        ASSIGNED_BY_ID: userId,
+                        '!=STAGE_ID': [`C${currentCategoryBtxId}:WON`],
                     },
-                    select: ['ID', 'CATEGORY_ID', 'STAGE_ID']
+                    select: ['ID', 'CATEGORY_ID', 'STAGE_ID'],
                 };
             }
 
             if (leadId) {
                 data = {
                     filter: {
-                        'ASSIGNED_BY_ID': userId,
-                        'LEAD_ID': leadId,
-                        'CATEGORY_ID': currentCategoryBtxId,
-                        '!=STAGE_ID': [`C${currentCategoryBtxId}:WON`]
+                        ASSIGNED_BY_ID: userId,
+                        LEAD_ID: leadId,
+                        CATEGORY_ID: currentCategoryBtxId,
+                        '!=STAGE_ID': [`C${currentCategoryBtxId}:WON`],
                     },
-                    select: ['ID', 'CATEGORY_ID', 'STAGE_ID']
+                    select: ['ID', 'CATEGORY_ID', 'STAGE_ID'],
                 };
             }
 
-            const response = await this.bitrixGeneralService.makeRequest(url, data);
+            const response = await this.bitrixGeneralService.makeRequest(
+                url,
+                data,
+            );
             currentDeal = response?.items?.[0] || null;
 
             if (Array.isArray(currentDeal)) {
@@ -102,14 +104,15 @@ export class BitrixDealService {
         portalDealData: PortalDeal,
         currentDepartamentType: string,
         eventType: string,
-        eventAction: string
+        eventAction: string,
     ): DealCategory[] {
         const resultCategoryDatas: DealCategory[] = [];
         const categoryPrephicks: string[] = [];
 
         if (currentDepartamentType === 'sales') {
             if (
-                (eventType === 'document' || eventType === 'supply') ||
+                eventType === 'document' ||
+                eventType === 'supply' ||
                 eventAction === 'plan' ||
                 (eventAction === 'done' && eventType === 'presentation') ||
                 eventAction === 'fail' ||
@@ -121,7 +124,9 @@ export class BitrixDealService {
             if (eventType === 'xo') {
                 categoryPrephicks.push(`${currentDepartamentType}_xo`);
             } else if (eventType === 'presentation') {
-                categoryPrephicks.push(`${currentDepartamentType}_presentation`);
+                categoryPrephicks.push(
+                    `${currentDepartamentType}_presentation`,
+                );
             }
         } else if (currentDepartamentType === 'tmc') {
             categoryPrephicks.push(`${currentDepartamentType}_base`);
@@ -147,7 +152,7 @@ export class BitrixDealService {
         group: string,
         eventType: string,
         eventAction: string,
-        isResult: boolean
+        isResult: boolean,
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
@@ -235,7 +240,9 @@ export class BitrixDealService {
         try {
             const method = '/crm.deal.get.json';
             const url = hook + method;
-            const response = await this.bitrixGeneralService.makeRequest(url, { id: params.id });
+            const response = await this.bitrixGeneralService.makeRequest(url, {
+                id: params.id,
+            });
             return response?.result || null;
         } catch (error) {
             console.error('Error in getDeal:', error);
@@ -243,15 +250,22 @@ export class BitrixDealService {
         }
     }
 
-    async updateDeal(hook: string, dealId: number, fields: Partial<Deal>): Promise<any> {
+    async updateDeal(
+        hook: string,
+        dealId: number,
+        fields: Partial<Deal>,
+    ): Promise<any> {
         try {
             const method = '/crm.deal.update.json';
             const url = hook + method;
             const data = {
                 id: dealId,
-                fields: fields
+                fields: fields,
             };
-            const response = await this.bitrixGeneralService.makeRequest(url, data);
+            const response = await this.bitrixGeneralService.makeRequest(
+                url,
+                data,
+            );
             return response?.result || null;
         } catch (error) {
             console.error('Error in updateDeal:', error);
@@ -259,23 +273,29 @@ export class BitrixDealService {
         }
     }
 
-    async setDeal(hook: string, fields: Partial<Deal>, category?: DealCategory): Promise<string | null> {
+    async setDeal(
+        hook: string,
+        fields: Partial<Deal>,
+        category?: DealCategory,
+    ): Promise<string | null> {
         try {
             const method = '/crm.deal.add.json';
             const url = hook + method;
             const data = {
                 fields: {
                     ...fields,
-                   
-                }
+                },
             };
             if (category) {
                 data.fields = {
                     ...fields,
-                    CATEGORY_ID: category.bitrixId.toString()
-                }
+                    CATEGORY_ID: category.bitrixId.toString(),
+                };
             }
-            const response = await this.bitrixGeneralService.makeRequest(url, data);
+            const response = await this.bitrixGeneralService.makeRequest(
+                url,
+                data,
+            );
             return response?.result || null;
         } catch (error) {
             console.error('Error in setDeal:', error);
@@ -285,7 +305,7 @@ export class BitrixDealService {
 
     getBaseDealFromCurrentBtxDeals(
         portalDealData: PortalDeal,
-        currentBtxDeals: Deal[]
+        currentBtxDeals: Deal[],
     ): Deal[] {
         const result: Deal[] = [];
         let currentBtxDeal: Deal | null = null;
@@ -293,7 +313,10 @@ export class BitrixDealService {
         for (const btxDeal of currentBtxDeals) {
             if (portalDealData.categories) {
                 for (const category of portalDealData.categories) {
-                    if (category.code === 'sales_base' && Number(btxDeal.CATEGORY_ID) === category.bitrixId) {
+                    if (
+                        category.code === 'sales_base' &&
+                        Number(btxDeal.CATEGORY_ID) === category.bitrixId
+                    ) {
                         currentBtxDeal = btxDeal;
                         result.push(currentBtxDeal);
                     }
@@ -314,7 +337,7 @@ export class BitrixDealService {
         isResult: boolean,
         isUnplanned: boolean,
         isSuccess: boolean,
-        isFail: boolean
+        isFail: boolean,
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
@@ -324,38 +347,38 @@ export class BitrixDealService {
             {
                 code: 'xo',
                 order: 0,
-                suphicks: 'cold'
+                suphicks: 'cold',
             },
             {
                 code: 'warm',
                 order: 1,
-                suphicks: 'warm'
+                suphicks: 'warm',
             },
             {
                 code: 'presentation',
                 order: 2,
-                suphicks: 'pres'
+                suphicks: 'pres',
             },
             {
                 code: 'document',
                 order: 3,
-                suphicks: 'offer_create'
+                suphicks: 'offer_create',
             },
             {
                 code: 'hot',
                 order: 4,
-                suphicks: 'in_progress'
+                suphicks: 'in_progress',
             },
             {
                 code: 'moneyAwait',
                 order: 5,
-                suphicks: 'money_await'
+                suphicks: 'money_await',
             },
             {
                 code: 'supply',
                 order: 6,
-                suphicks: 'supply'
-            }
+                suphicks: 'supply',
+            },
         ];
 
         let planOrder = 0;
@@ -376,10 +399,13 @@ export class BitrixDealService {
             codesToFilter.push('presentation');
         }
 
-        const filtered = eventOrders.filter(item => codesToFilter.includes(item.code));
-        const currentOrderData = filtered.reduce((carry, item) =>
-            (carry === null || item.order > carry.order) ? item : carry,
-            null as EventOrder | null
+        const filtered = eventOrders.filter(item =>
+            codesToFilter.includes(item.code),
+        );
+        const currentOrderData = filtered.reduce(
+            (carry, item) =>
+                carry === null || item.order > carry.order ? item : carry,
+            null as EventOrder | null,
         );
 
         if (currentOrderData) {
@@ -408,7 +434,7 @@ export class BitrixDealService {
 
     getEventOrderFromCurrentBaseDeal(
         currentBtxDeal: Deal | null,
-        currentCategoryData: DealCategory
+        currentCategoryData: DealCategory,
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
@@ -418,47 +444,53 @@ export class BitrixDealService {
             {
                 code: 'xo',
                 order: 0,
-                suphicks: 'cold'
+                suphicks: 'cold',
             },
             {
                 code: 'warm',
                 order: 1,
-                suphicks: 'warm'
+                suphicks: 'warm',
             },
             {
                 code: 'presentation',
                 order: 2,
-                suphicks: 'pres'
+                suphicks: 'pres',
             },
             {
                 code: 'document',
                 order: 3,
-                suphicks: 'offer_create'
+                suphicks: 'offer_create',
             },
             {
                 code: 'hot',
                 order: 4,
-                suphicks: 'in_progress'
+                suphicks: 'in_progress',
             },
             {
                 code: 'moneyAwait',
                 order: 5,
-                suphicks: 'money_await'
+                suphicks: 'money_await',
             },
             {
                 code: 'supply',
                 order: 6,
-                suphicks: 'supply'
-            }
+                suphicks: 'supply',
+            },
         ];
 
         let currentEventOrder: string | null = null;
 
         if (currentBtxDeal && currentBtxDeal.STAGE_ID) {
             for (const stage of currentCategoryData.stages) {
-                if (`C${currentCategoryData.bitrixId}:${stage.bitrixId}` === currentBtxDeal.STAGE_ID) {
+                if (
+                    `C${currentCategoryData.bitrixId}:${stage.bitrixId}` ===
+                    currentBtxDeal.STAGE_ID
+                ) {
                     for (const eventOrder of eventOrders) {
-                        if (`${stagePrephicks}_${eventOrder.suphicks}` === stage.code) {
+                        if (
+                            `${stagePrephicks}_${eventOrder.suphicks}` ===
+                            stage.code
+                        ) {
                             currentEventOrder = eventOrder.code;
                         }
                     }
@@ -477,7 +509,7 @@ export class BitrixDealService {
         isResult: boolean,
         isSuccess: boolean,
         isFail: boolean,
-        isExpired: boolean
+        isExpired: boolean,
     ): string | null {
         let stageSuphicks = 'plan';
         let stagePrephicks = 'sales_tmc';
@@ -487,51 +519,51 @@ export class BitrixDealService {
             {
                 code: 'warm',
                 order: 1,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'document',
                 order: 3,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'hot',
                 order: 4,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'moneyAwait',
                 order: 6,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'presentation',
                 order: 8,
-                suphicks: 'pres_in_progress'
+                suphicks: 'pres_in_progress',
             },
             {
                 code: 'success',
                 order: 9,
-                suphicks: 'success'
+                suphicks: 'success',
             },
             {
                 code: 'fail',
                 order: 10,
-                suphicks: 'fail'
-            }
+                suphicks: 'fail',
+            },
         ];
 
         if (isExpired) {
             eventOrders.push({
                 code: 'pending',
                 order: 7,
-                suphicks: 'pending'
+                suphicks: 'pending',
             });
         } else {
             eventOrders.push({
                 code: 'pending',
                 order: 0,
-                suphicks: 'pending'
+                suphicks: 'pending',
             });
         }
 
@@ -550,10 +582,13 @@ export class BitrixDealService {
             codesToFilter.push('pending');
         }
 
-        const filtered = eventOrders.filter(item => codesToFilter.includes(item.code));
-        const currentOrderData = filtered.reduce((carry, item) =>
-            (carry === null || item.order > carry.order) ? item : carry,
-            null as EventOrder | null
+        const filtered = eventOrders.filter(item =>
+            codesToFilter.includes(item.code),
+        );
+        const currentOrderData = filtered.reduce(
+            (carry, item) =>
+                carry === null || item.order > carry.order ? item : carry,
+            null as EventOrder | null,
         );
 
         if (currentOrderData) {
@@ -584,7 +619,7 @@ export class BitrixDealService {
 
     getEventOrderFromCurrentTMCDeal(
         currentBtxDeal: Deal | null,
-        currentCategoryData: DealCategory
+        currentCategoryData: DealCategory,
     ): string | null {
         let stageSuphicks = 'plan';
         let stagePrephicks = 'sales_tmc';
@@ -594,50 +629,56 @@ export class BitrixDealService {
             {
                 code: 'warm',
                 order: 1,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'document',
                 order: 3,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'hot',
                 order: 4,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'moneyAwait',
                 order: 6,
-                suphicks: 'plan'
+                suphicks: 'plan',
             },
             {
                 code: 'pending',
                 order: 7,
-                suphicks: 'pending'
+                suphicks: 'pending',
             },
             {
                 code: 'presentation',
                 order: 8,
-                suphicks: 'pres_in_progress'
+                suphicks: 'pres_in_progress',
             },
             {
                 code: 'success',
                 order: 9,
-                suphicks: 'success'
+                suphicks: 'success',
             },
             {
                 code: 'fail',
                 order: 10,
-                suphicks: 'fail'
-            }
+                suphicks: 'fail',
+            },
         ];
 
         if (currentBtxDeal && currentBtxDeal.STAGE_ID) {
             for (const stage of currentCategoryData.stages) {
-                if (`C${currentCategoryData.bitrixId}:${stage.bitrixId}` === currentBtxDeal.STAGE_ID) {
+                if (
+                    `C${currentCategoryData.bitrixId}:${stage.bitrixId}` ===
+                    currentBtxDeal.STAGE_ID
+                ) {
                     for (const eventOrder of eventOrders) {
-                        if (`${stagePrephicks}_${eventOrder.suphicks}` === stage.code) {
+                        if (
+                            `${stagePrephicks}_${eventOrder.suphicks}` ===
+                            stage.code
+                        ) {
                             currentEventOrder = eventOrder.code;
                         }
                     }
@@ -654,7 +695,7 @@ export class BitrixDealService {
         isExpired: boolean,
         isResult: boolean,
         isSuccess: boolean,
-        isFail: boolean
+        isFail: boolean,
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = '';
@@ -693,7 +734,7 @@ export class BitrixDealService {
     getTargetStagePresentation(
         currentCategoryData: DealCategory,
         eventAction: string,
-        isResult: boolean
+        isResult: boolean,
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
@@ -724,7 +765,7 @@ export class BitrixDealService {
     getIsCanDealStageUpdate(
         currentDeal: Deal | null,
         targetStageBtxId: string | null,
-        currentCategoryData: DealCategory
+        currentCategoryData: DealCategory,
     ): boolean {
         let result = false;
 
@@ -738,7 +779,10 @@ export class BitrixDealService {
                             result = isCurrentSearched && true;
                         }
 
-                        if (`C${currentCategoryData.bitrixId}:${stage.bitrixId}` === currentDeal.STAGE_ID) {
+                        if (
+                            `C${currentCategoryData.bitrixId}:${stage.bitrixId}` ===
+                            currentDeal.STAGE_ID
+                        ) {
                             isCurrentSearched = true;
                         }
                     }

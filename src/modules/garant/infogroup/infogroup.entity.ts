@@ -1,4 +1,4 @@
-import { InfoblockEntity } from "../infoblock/infoblock.entity";
+import { InfoblockEntity } from '../infoblock/infoblock.entity';
 
 export enum InfogroupType {
     INFOBLOCKS = 'infoblocks',
@@ -28,4 +28,4 @@ export class InfogroupEntity {
 
     // Relations
     infoblocks?: InfoblockEntity[];
-} 
+}

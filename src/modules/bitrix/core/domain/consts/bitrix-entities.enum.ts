@@ -1,4 +1,3 @@
-
 export enum EBXEntity {
     DEAL = 'deal',
     COMPANY = 'company',
@@ -14,10 +13,9 @@ export enum EBXEntity {
     USER_FIELD_ENUMERATION = 'userfield.enumeration',
     LISTS = 'lists',
     ACTIVITY = 'activity',
-    FILE='file',
-    CATEGORY='category',
-    STATUS='status',
-    PRODUCT='product',
-    RPA='rpa',
-
-};
+    FILE = 'file',
+    CATEGORY = 'category',
+    STATUS = 'status',
+    PRODUCT = 'product',
+    RPA = 'rpa',
+}

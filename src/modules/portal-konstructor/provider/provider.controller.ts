@@ -1,14 +1,12 @@
-import { Controller, Get, Param } from "@nestjs/common";
-import { ProviderService } from "./provider.service";
-import { ApiTags } from "@nestjs/swagger";
-import { ProviderEntityWithRq, RqEntity } from "./provider.entity";
+import { Controller, Get, Param } from '@nestjs/common';
+import { ProviderService } from './provider.service';
+import { ApiTags } from '@nestjs/swagger';
+import { ProviderEntityWithRq, RqEntity } from './provider.entity';
 
 @ApiTags('Portal Konstructor')
 @Controller('provider')
 export class ProviderController {
-    constructor(
-        private readonly service: ProviderService,
-    ) { }
+    constructor(private readonly service: ProviderService) {}
 
     @Get(':id')
     async getProvider(@Param('id') id: number): Promise<RqEntity | null> {
@@ -16,8 +14,9 @@ export class ProviderController {
     }
 
     @Get('domain/:domain')
-    async getProviderByDomain(@Param('domain') domain: string): Promise<ProviderEntityWithRq[] | null> {
+    async getProviderByDomain(
+        @Param('domain') domain: string,
+    ): Promise<ProviderEntityWithRq[] | null> {
         return await this.service.findByDomain(domain);
     }
-
 }

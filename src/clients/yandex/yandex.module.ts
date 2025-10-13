@@ -9,4 +9,4 @@ import { YandexAuthService } from './yandex-auth.service';
     providers: [YandexAuthService, YandexStorageService],
     exports: [YandexAuthService, YandexStorageService],
 })
-export class YandexModule { } 
+export class YandexModule {}

@@ -1,5 +1,12 @@
-import { IsArray, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString } from "class-validator";
-import { IBxRpaItem } from "../interface/bx-rpa-item.interface";
+import {
+    IsArray,
+    IsNotEmpty,
+    IsNumber,
+    IsObject,
+    IsOptional,
+    IsString,
+} from 'class-validator';
+import { IBxRpaItem } from '../interface/bx-rpa-item.interface';
 
 export class GetRpaItemDto {
     @IsNumber()
@@ -9,18 +16,16 @@ export class GetRpaItemDto {
     @IsString()
     @IsNotEmpty()
     typeId: number;
-}   
+}
 
 export class AddRpaItemDto {
-
     @IsString()
     @IsNotEmpty()
     typeId: number;
 
     @IsObject()
     fields: Partial<IBxRpaItem>;
-}   
-
+}
 
 export class UpdateRpaItemDto {
     @IsNumber()
@@ -33,7 +38,7 @@ export class UpdateRpaItemDto {
 
     @IsObject()
     fields: Partial<IBxRpaItem>;
-}   
+}
 
 export class ListRpaItemDto {
     @IsNumber()
@@ -50,6 +55,4 @@ export class ListRpaItemDto {
     @IsOptional()
     @IsArray()
     order: string[];
-
- 
 }

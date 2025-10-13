@@ -1,4 +1,4 @@
-import { Product } from "../../../document-generate/product-rows/product-row.service"
+import { Product } from '../../../document-generate/product-rows/product-row.service';
 
 export type ContractGenerateTemplateProps = {
     contract_number: string;
@@ -43,8 +43,4 @@ export type ContractGenerateTemplateProps = {
     total_quantity: string;
     total_measure: string;
     total_prepayment_sum: string;
-
-
-
-
-}
+};

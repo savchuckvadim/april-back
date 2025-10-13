@@ -20,12 +20,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.9.0
- * Query Engine version: 81e4af48011447c3cc503a190e86995b66d2a28e
+ * Prisma Client JS version: 6.16.3
+ * Query Engine version: bb420e667c1820a8c05a38023385f6cc7ef8e83a
  */
 Prisma.prismaVersion = {
-  client: "6.9.0",
-  engine: "81e4af48011447c3cc503a190e86995b66d2a28e"
+  client: "6.16.3",
+  engine: "bb420e667c1820a8c05a38023385f6cc7ef8e83a"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -130,7 +130,8 @@ exports.Prisma.AgentsScalarFieldEnum = {
   name: 'name',
   code: 'code',
   number: 'number',
-  withTax: 'withTax'
+  withTax: 'withTax',
+  portalsId: 'portalsId'
 };
 
 exports.Prisma.Bitrixfield_itemsScalarFieldEnum = {
@@ -730,9 +731,7 @@ exports.Prisma.Template_fieldScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   template_id: 'template_id',
-  field_id: 'field_id',
-  fieldsId: 'fieldsId',
-  templatesId: 'templatesId'
+  field_id: 'field_id'
 };
 
 exports.Prisma.TemplatesScalarFieldEnum = {
@@ -1044,7 +1043,7 @@ exports.Prisma.Infoblock_packageScalarFieldEnum = {
   updated_at: 'updated_at'
 };
 
-exports.Prisma.Offer_template_portalScalarFieldEnum = {
+exports.Prisma.OfferTemplatePortalScalarFieldEnum = {
   id: 'id',
   offer_template_id: 'offer_template_id',
   portal_id: 'portal_id',
@@ -1054,7 +1053,7 @@ exports.Prisma.Offer_template_portalScalarFieldEnum = {
   updated_at: 'updated_at'
 };
 
-exports.Prisma.Offer_templatesScalarFieldEnum = {
+exports.Prisma.OfferTemplateScalarFieldEnum = {
   id: 'id',
   name: 'name',
   visibility: 'visibility',
@@ -1211,7 +1210,7 @@ exports.Prisma.TranscriptionsScalarFieldEnum = {
   portal_id: 'portal_id'
 };
 
-exports.Prisma.User_selected_templatesScalarFieldEnum = {
+exports.Prisma.UserSelectedTemplateScalarFieldEnum = {
   id: 'id',
   bitrix_user_id: 'bitrix_user_id',
   portal_id: 'portal_id',
@@ -1250,6 +1249,93 @@ exports.Prisma.RegionsScalarFieldEnum = {
   abs: 'abs',
   tax: 'tax',
   tax_abs: 'tax_abs'
+};
+
+exports.Prisma.OfferTemplateFontScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  offer_template_id: 'offer_template_id',
+  name: 'name',
+  code: 'code',
+  data: 'data',
+  items: 'items',
+  current: 'current',
+  settings: 'settings'
+};
+
+exports.Prisma.OfferTemplateImageScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  path: 'path',
+  storage_type: 'storage_type',
+  original_name: 'original_name',
+  mime: 'mime',
+  size: 'size',
+  height: 'height',
+  width: 'width',
+  position: 'position',
+  style: 'style',
+  settings: 'settings',
+  is_public: 'is_public',
+  parent: 'parent',
+  bitrix_user_id: 'bitrix_user_id',
+  domain: 'domain',
+  portal_id: 'portal_id'
+};
+
+exports.Prisma.OfferTemplatePageBlockScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  offer_template_page_id: 'offer_template_page_id',
+  order: 'order',
+  name: 'name',
+  code: 'code',
+  type: 'type',
+  content: 'content',
+  settings: 'settings',
+  stickers: 'stickers',
+  background: 'background',
+  colors: 'colors',
+  image_id: 'image_id'
+};
+
+exports.Prisma.OfferTemplatePageStickerScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  offer_template_page_id: 'offer_template_page_id',
+  order: 'order',
+  name: 'name',
+  code: 'code',
+  size: 'size',
+  height: 'height',
+  width: 'width',
+  position: 'position',
+  style: 'style',
+  settings: 'settings',
+  background: 'background',
+  colors: 'colors',
+  image_id: 'image_id'
+};
+
+exports.Prisma.OfferTemplatePageScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  offer_template_id: 'offer_template_id',
+  order: 'order',
+  name: 'name',
+  code: 'code',
+  type: 'type',
+  is_active: 'is_active',
+  settings: 'settings',
+  stickers: 'stickers',
+  background: 'background',
+  colors: 'colors',
+  fonts: 'fonts'
 };
 
 exports.Prisma.SortOrder = {
@@ -1824,7 +1910,7 @@ exports.Prisma.google_tokensOrderByRelevanceFieldEnum = {
   refresh_token: 'refresh_token'
 };
 
-exports.Prisma.offer_templatesOrderByRelevanceFieldEnum = {
+exports.Prisma.OfferTemplateOrderByRelevanceFieldEnum = {
   name: 'name',
   file_path: 'file_path',
   demo_path: 'demo_path',
@@ -1938,7 +2024,7 @@ exports.Prisma.transcriptionsOrderByRelevanceFieldEnum = {
   portal_id: 'portal_id'
 };
 
-exports.Prisma.user_selected_templatesOrderByRelevanceFieldEnum = {
+exports.Prisma.UserSelectedTemplateOrderByRelevanceFieldEnum = {
   price_settings: 'price_settings',
   infoblock_settings: 'infoblock_settings',
   letter_text: 'letter_text',
@@ -1954,10 +2040,114 @@ exports.Prisma.regionsOrderByRelevanceFieldEnum = {
   code: 'code',
   infoblock: 'infoblock'
 };
+
+exports.Prisma.OfferTemplateFontOrderByRelevanceFieldEnum = {
+  name: 'name',
+  code: 'code',
+  data: 'data',
+  items: 'items',
+  current: 'current',
+  settings: 'settings'
+};
+
+exports.Prisma.OfferTemplateImageOrderByRelevanceFieldEnum = {
+  path: 'path',
+  original_name: 'original_name',
+  mime: 'mime',
+  size: 'size',
+  height: 'height',
+  width: 'width',
+  position: 'position',
+  style: 'style',
+  settings: 'settings',
+  bitrix_user_id: 'bitrix_user_id',
+  domain: 'domain'
+};
+
+exports.Prisma.OfferTemplatePageBlockOrderByRelevanceFieldEnum = {
+  name: 'name',
+  code: 'code',
+  content: 'content',
+  settings: 'settings',
+  stickers: 'stickers',
+  background: 'background',
+  colors: 'colors'
+};
+
+exports.Prisma.OfferTemplatePageStickerOrderByRelevanceFieldEnum = {
+  name: 'name',
+  code: 'code',
+  size: 'size',
+  height: 'height',
+  width: 'width',
+  position: 'position',
+  style: 'style',
+  settings: 'settings',
+  background: 'background',
+  colors: 'colors'
+};
+
+exports.Prisma.OfferTemplatePageOrderByRelevanceFieldEnum = {
+  name: 'name',
+  code: 'code',
+  settings: 'settings',
+  stickers: 'stickers',
+  background: 'background',
+  colors: 'colors',
+  fonts: 'fonts'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
   user: 'user'
+};
+
+exports.offer_template_images_storage_type = exports.$Enums.offer_template_images_storage_type = {
+  app: 'app',
+  public: 'public',
+  private: 'private'
+};
+
+exports.offer_template_images_parent = exports.$Enums.offer_template_images_parent = {
+  template: 'template',
+  page: 'page',
+  block: 'block',
+  sticker: 'sticker',
+  other: 'other'
+};
+
+exports.offer_template_page_blocks_type = exports.$Enums.offer_template_page_blocks_type = {
+  background: 'background',
+  about: 'about',
+  hero: 'hero',
+  letter: 'letter',
+  documentNumber: 'documentNumber',
+  manager: 'manager',
+  logo: 'logo',
+  stamp: 'stamp',
+  header: 'header',
+  footer: 'footer',
+  infoblocks: 'infoblocks',
+  price: 'price',
+  slogan: 'slogan',
+  infoblocksDescription: 'infoblocksDescription',
+  lt: 'lt',
+  otherComplects: 'otherComplects',
+  comparison: 'comparison',
+  comparisonComplects: 'comparisonComplects',
+  comparisonIblocks: 'comparisonIblocks',
+  user: 'user',
+  default: 'default'
+};
+
+exports.offer_template_pages_type = exports.$Enums.offer_template_pages_type = {
+  letter: 'letter',
+  description: 'description',
+  infoblocks: 'infoblocks',
+  price: 'price',
+  lt: 'lt',
+  other: 'other',
+  default: 'default'
 };
 
 exports.Prisma.ModelName = {
@@ -2024,16 +2214,21 @@ exports.Prisma.ModelName = {
   google_tokens: 'google_tokens',
   infoblock_info_group: 'infoblock_info_group',
   infoblock_package: 'infoblock_package',
-  offer_template_portal: 'offer_template_portal',
-  offer_templates: 'offer_templates',
+  OfferTemplatePortal: 'OfferTemplatePortal',
+  OfferTemplate: 'OfferTemplate',
   offer_zakupki_settings: 'offer_zakupki_settings',
   provider_currents: 'provider_currents',
   report_settings: 'report_settings',
   supplies: 'supplies',
   transcriptions: 'transcriptions',
-  user_selected_templates: 'user_selected_templates',
+  UserSelectedTemplate: 'UserSelectedTemplate',
   portal_region: 'portal_region',
-  regions: 'regions'
+  regions: 'regions',
+  OfferTemplateFont: 'OfferTemplateFont',
+  OfferTemplateImage: 'OfferTemplateImage',
+  OfferTemplatePageBlock: 'OfferTemplatePageBlock',
+  OfferTemplatePageSticker: 'OfferTemplatePageSticker',
+  OfferTemplatePage: 'OfferTemplatePage'
 };
 
 /**

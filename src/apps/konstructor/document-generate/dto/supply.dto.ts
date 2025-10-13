@@ -1,69 +1,73 @@
-import { IsNumber } from "class-validator";
-import { IsString } from "class-validator";
-import { IsOptional } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
+import { IsNumber } from 'class-validator';
+import { IsString } from 'class-validator';
+import { IsOptional } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class SupplyDto {
-    
     @ApiProperty({ description: 'Contract prop supplies quantity' })
-    @IsNumber() 
+    @IsNumber()
     contractPropSuppliesQuantity: number;
-   
+
     @ApiProperty({ description: 'Contract prop 2' })
-    @IsOptional() @IsString() 
+    @IsOptional()
+    @IsString()
     lcontractProp2: string;
-    
+
     @ApiProperty({ description: 'Contract name' })
-    @IsString() 
+    @IsString()
     lcontractName: string;
-    
+
     @ApiProperty({ description: 'Contract prop email' })
-    @IsString() 
+    @IsString()
     lcontractPropEmail: string;
     @ApiProperty({ description: 'Type' })
-    @IsString() type: string;
-    
+    @IsString()
+    type: string;
+
     @ApiProperty({ description: 'Contract prop logins quantity' })
-    @IsString() 
+    @IsString()
     contractPropLoginsQuantity: string;
-    
+
     @ApiProperty({ description: 'Number' })
-    @IsNumber() 
+    @IsNumber()
     number: number;
-    
+
     @ApiProperty({ description: 'Acontract name' })
-    @IsString() 
+    @IsString()
     acontractName: string;
-    
+
     @ApiProperty({ description: 'Contract prop comment' })
-    @IsString() 
+    @IsString()
     contractPropComment: string;
-    
+
     @ApiProperty({ description: 'Contract prop email' })
-    @IsString() 
+    @IsString()
     contractPropEmail: string;
-    
+
     @ApiProperty({ description: 'Quantity for KP' })
-    @IsString() 
+    @IsString()
     quantityForKp: string;
-    
+
     @ApiProperty({ description: 'Name' })
-    @IsString() 
+    @IsString()
     name: string;
     @ApiProperty({ description: 'Coefficient' })
-    @IsNumber() coefficient: number;
-    
+    @IsNumber()
+    coefficient: number;
+
     @ApiProperty({ description: 'Acontract prop comment' })
-    @IsString() 
+    @IsString()
     acontractPropComment: string;
-    
+
     @ApiProperty({ description: 'Contract name' })
-    @IsString() 
+    @IsString()
     contractName: string;
-    
+
     @ApiProperty({ description: 'Contract prop comment' })
-    @IsString() 
+    @IsString()
     lcontractPropComment: string;
     @ApiProperty({ description: 'Contract prop 1' })
-    @IsOptional() @IsString() contractProp1: string;
+    @IsOptional()
+    @IsString()
+    contractProp1: string;
 }

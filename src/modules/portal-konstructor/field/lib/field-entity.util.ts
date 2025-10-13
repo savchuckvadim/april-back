@@ -1,8 +1,10 @@
-import { FieldEntity, FieldLightEntity } from "../field.entity";
-import { createTemplateBaseEntityFromPrisma } from "../../template-base/lib/template-base-entity.util";
-import { PrismaService } from "src/core/prisma";
+import { FieldEntity, FieldLightEntity } from '../field.entity';
+import { createTemplateBaseEntityFromPrisma } from '../../template-base/lib/template-base-entity.util';
+import { PrismaService } from 'src/core/prisma';
 
-type Template = NonNullable<Awaited<ReturnType<PrismaService['templates']['findUnique']>>>;
+type Template = NonNullable<
+    Awaited<ReturnType<PrismaService['templates']['findUnique']>>
+>;
 
 export function createFieldEntityFromPrisma(data: any): FieldEntity {
     const entity = new FieldEntity();
@@ -27,13 +29,17 @@ export function createFieldEntityFromPrisma(data: any): FieldEntity {
         entity.templates = data.template_field
             .map(tf => tf.templates)
             .filter(Boolean)
-            .map((template: Template) => createTemplateBaseEntityFromPrisma(template));
+            .map((template: Template) =>
+                createTemplateBaseEntityFromPrisma(template),
+            );
     }
 
     return entity;
 }
 
-export function createFieldLightEntityFromEntity(entity: FieldEntity): FieldLightEntity {
+export function createFieldLightEntityFromEntity(
+    entity: FieldEntity,
+): FieldLightEntity {
     const light = new FieldLightEntity();
     light.id = entity.id;
     light.number = entity.number;
@@ -50,4 +56,4 @@ export function createFieldLightEntityFromEntity(entity: FieldEntity): FieldLigh
     light.isActive = entity.isActive;
     light.isPlural = entity.isPlural;
     return light;
-} 
+}

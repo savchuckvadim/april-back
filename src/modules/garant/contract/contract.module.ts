@@ -1,9 +1,9 @@
-import { Module } from "@nestjs/common";
-import { ContractController } from "./contract.controller";
-import { ContractService } from "./contract.service";
-import { ContractRepository } from "./contract.repository";
-import { ContractPrismaRepository } from "./contract.prisma.repository";
-import { PrismaService } from "src/core/prisma";
+import { Module } from '@nestjs/common';
+import { ContractController } from './contract.controller';
+import { ContractService } from './contract.service';
+import { ContractRepository } from './contract.repository';
+import { ContractPrismaRepository } from './contract.prisma.repository';
+import { PrismaService } from 'src/core/prisma';
 
 @Module({
     controllers: [ContractController],
@@ -11,10 +11,10 @@ import { PrismaService } from "src/core/prisma";
         ContractService,
         {
             provide: ContractRepository,
-            useClass: ContractPrismaRepository
+            useClass: ContractPrismaRepository,
         },
-        PrismaService
+        PrismaService,
     ],
-    exports: [ContractService]
+    exports: [ContractService],
 })
-export class ContractModule { } 
+export class ContractModule {}

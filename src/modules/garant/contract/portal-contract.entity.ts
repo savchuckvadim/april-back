@@ -1,5 +1,5 @@
-import { ContractEntity } from "./contract.entity";
-import { PortalMeasureEntity } from "./portal-measure.entity";
+import { ContractEntity } from './contract.entity';
+import { PortalMeasureEntity } from './portal-measure.entity';
 
 export class PortalContractEntity {
     id: bigint;
@@ -18,4 +18,4 @@ export class PortalContractEntity {
     // Relations
     contract?: ContractEntity;
     portal_measure?: PortalMeasureEntity;
-} 
+}

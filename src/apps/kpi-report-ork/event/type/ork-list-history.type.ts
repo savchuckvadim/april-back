@@ -2,6 +2,10 @@
 // Название	calling	string	event_title
 // Компания	calling	crm	ork_crm_company
 // Дата	calling	datetime	ork_event_date
+
+import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFailReason, EnumOrkFieldCode, EnumOrkForecast, EnumOrkResultStatus, EnumOrkWorkStatus } from "./ork-list-history.enum";
+
+
 // Тип События	calling	enumeration	ork_event_type
 // Событие	calling	enumeration	ork_event_action
 // Тип коммуникации	calling	enumeration	event_communication
@@ -21,7 +25,6 @@
 // CRM	calling	crm	crm
 // Контакт	calling	crm	ork_crm_contact
 // Тэг	calling	string	ork_evemt_tag
-
 
 // enumeration items
 // item_name	field_code	item_code
@@ -56,6 +59,9 @@
 // Акт	ork_event_type	et_ork_doc_akt
 // Отказ	ork_event_type	et_ork_fail
 // Возврат	ork_event_type	et_ork_return
+
+
+
 // Создан	ork_event_action	ea_ork_act_create
 // Запланирован	ork_event_action	ea_ork_plan
 // Просрочен	ork_event_action	ea_ork_expired
@@ -68,13 +74,19 @@
 // Подписан	ork_event_action	ea_ork_act_sign
 // Сдан	ork_event_action	ea_ork_act_in_office
 // Оплачен	ork_event_action	ea_ork_act_pay
+
+
 // Звонок	event_communication	ec_ork_call
 // Выезд	event_communication	ec_ork_face
 // Письмо	event_communication	ec_ork_mail
 // ЭДО	event_communication	ec_ork_edo
 // СС	event_communication	ec_ork_signal
+
+
 // Входящий	ork_event_initiative	ei_ork_incoming
 // Исходящий	ork_event_initiative	ei_ork_outgoing
+
+
 // Новый	ork_work_status	ork_work_status_new
 // Поставка	ork_work_status	ork_work_status_supply
 // Первичное обучение	ork_work_status	ork_work_status_first_edu
@@ -125,513 +137,514 @@
 // По телефону отвечает не та организация	ork_noresult_reason	wrong
 // Автоответчик	ork_noresult_reason	auto
 
+
 export const OrkFields = {
     ork_event_type: {
         name: 'Тип События',
-        code: 'ork_event_type',
+        code: EnumOrkFieldCode.ork_event_type,
         items: {
             et_ork_signal: {
                 name: 'Сервисный сигнал',
-                code: 'et_ork_signal'
+                code: EnumOrkEventType.et_ork_signal,
             },
             et_ork_info: {
                 name: 'Информация',
-                code: 'et_ork_info'
+                code: EnumOrkEventType.et_ork_info,
             },
             et_ork_call_doc: {
                 name: 'Звонок по документам',
-                code: 'et_ork_call_doc'
+                code: EnumOrkEventType.et_ork_call_doc,
             },
             et_ork_call_money: {
                 name: 'Звонок по оплате',
-                code: 'et_ork_call_money'
+                code: EnumOrkEventType.et_ork_call_money,
             },
             et_ork_call_collect: {
                 name: 'Звонок по задолженности',
-                code: 'et_ork_call_collect'
+                code: EnumOrkEventType.et_ork_call_collect,
             },
             et_ork_info_garant: {
                 name: 'Инфоповод Гарант',
-                code: 'et_ork_info_garant'
+                code: EnumOrkEventType.et_ork_info_garant,
             },
             et_ork_presentation: {
                 name: 'Презентация',
-                code: 'et_ork_presentation'
+                code: EnumOrkEventType.et_ork_presentation,
             },
             et_ork_presentation_uniq: {
                 name: 'Презентация(уникальная)',
-                code: 'et_ork_presentation_uniq'
+                code: EnumOrkEventType.et_ork_presentation_uniq,
             },
             et_ork_edu_first: {
                 name: 'Обучение первичное',
-                code: 'et_ork_edu_first'
+                code: EnumOrkEventType.et_ork_edu_first,
             },
             et_ork_edu: {
                 name: 'Обучение',
-                code: 'et_ork_edu'
+                code: EnumOrkEventType.et_ork_edu,
             },
             et_ork_edu_uniq: {
                 name: 'Обучение(уникальное)',
-                code: 'et_ork_edu_uniq'
+                code: EnumOrkEventType.et_ork_edu_uniq,
             },
             et_ork_seminar: {
                 name: 'Семинар',
-                code: 'et_ork_seminar'
+                code: EnumOrkEventType.et_ork_seminar,
             },
             et_ork_complect_up_work: {
                 name: 'Работа по перезаключению',
-                code: 'et_ork_complect_up_work'
+                code: EnumOrkEventType.et_ork_complect_up_work,
             },
             et_ork_pere_contract: {
                 name: 'Перезаключение',
-                code: 'et_ork_pere_contract'
+                code: EnumOrkEventType.et_ork_pere_contract,
             },
             et_ork_complect_up: {
                 name: 'Увеличение комплекта',
-                code: 'et_ork_complect_up'
+                code: EnumOrkEventType.et_ork_complect_up,
             },
             et_ork_complect_down: {
                 name: 'Уменьшение комплекта / понижение ОД',
-                code: 'et_ork_complect_down'
+                code: EnumOrkEventType.et_ork_complect_down,
             },
             et_ork_fail_prevention: {
                 name: 'Профилактика отказа',
-                code: 'et_ork_fail_prevention'
+                code: EnumOrkEventType.et_ork_fail_prevention,
             },
             et_ork_fail_work: {
                 name: 'Работа по устранению угрозы отказа',
-                code: 'et_ork_fail_work'
+                code: EnumOrkEventType.et_ork_fail_work,
             },
             et_ork_threat: {
                 name: 'Возникновение угрозы отказа',
-                code: 'et_ork_threat'
+                code: EnumOrkEventType.et_ork_threat,
             },
             et_ork_fail_work_success: {
                 name: 'Устранение угрозы отказа',
-                code: 'et_ork_fail_work_success'
+                code: EnumOrkEventType.et_ork_fail_work_success,
             },
             et_ork_site: {
                 name: 'Заявка с сайта',
-                code: 'et_ork_site'
+                code: EnumOrkEventType.et_ork_site,
             },
             et_ork_offer: {
                 name: 'Коммерческое Предложение',
-                code: 'et_ork_offer'
+                code: EnumOrkEventType.et_ork_offer,
             },
             et_ork_invoice: {
                 name: 'Счет',
-                code: 'et_ork_invoice'
+                code: EnumOrkEventType.et_ork_invoice,
             },
             et_ork_contract: {
                 name: 'Договор',
-                code: 'et_ork_contract'
+                code: EnumOrkEventType.et_ork_contract,
             },
             et_ork_supply: {
                 name: 'Поставка',
-                code: 'et_ork_supply'
+                code: EnumOrkEventType.et_ork_supply,
             },
             et_ork_halfsale: {
                 name: 'Допродажа',
-                code: 'et_ork_halfsale'
+                code: EnumOrkEventType.et_ork_halfsale,
             },
             ev_success: {
                 name: 'Продажа',
-                code: 'ev_success'
+                code: EnumOrkEventType.ev_success,
             },
             et_ork_doc_akt: {
                 name: 'Акт',
-                code: 'et_ork_doc_akt'
+                code: EnumOrkEventType.et_ork_doc_akt,
             },
             et_ork_fail: {
                 name: 'Отказ',
-                code: 'et_ork_fail'
+                code: EnumOrkEventType.et_ork_fail,
             },
             et_ork_return: {
                 name: 'Возврат',
-                code: 'et_ork_return'
-            }
-        }
+                code: EnumOrkEventType.et_ork_return,
+            },
+        },
     },
     ork_event_action: {
         name: 'Событие',
-        code: 'ork_event_action',
+        code: EnumOrkFieldCode.ork_event_action,
         items: {
             ea_ork_act_create: {
                 name: 'Создан',
-                code: 'ea_ork_act_create'
+                code: EnumOrkEventAction.ea_ork_act_create,
             },
             ea_ork_plan: {
                 name: 'Запланирован',
-                code: 'ea_ork_plan'
+                code: EnumOrkEventAction.ea_ork_plan,
             },
             ea_ork_expired: {
                 name: 'Просрочен',
-                code: 'ea_ork_expired'
+                code: EnumOrkEventAction.ea_ork_expired,
             },
             ea_ork_done: {
                 name: 'Состоялся',
-                code: 'ea_ork_done'
+                code: EnumOrkEventAction.ea_ork_done,
             },
             ea_ork_pound: {
                 name: 'Перенос',
-                code: 'ea_ork_pound'
+                code: EnumOrkEventAction.ea_ork_pound,
             },
             ea_ork_act_noresult_fail: {
                 name: 'Не состоялся',
-                code: 'ea_ork_act_noresult_fail'
+                code: EnumOrkEventAction.ea_ork_act_noresult_fail,
             },
             ea_ork_act_init_send: {
                 name: 'Заявка отправлена',
-                code: 'ea_ork_act_init_send'
+                code: EnumOrkEventAction.ea_ork_act_init_send,
             },
             ea_ork_act_init_done: {
                 name: 'Заявка принята',
-                code: 'ea_ork_act_init_done'
+                code: EnumOrkEventAction.ea_ork_act_init_done,
             },
             ea_ork_act_send: {
                 name: 'Отправлен',
-                code: 'ea_ork_act_send'
+                code: EnumOrkEventAction.ea_ork_act_send,
             },
             ea_ork_act_sign: {
                 name: 'Подписан',
-                code: 'ea_ork_act_sign'
+                code: EnumOrkEventAction.ea_ork_act_sign,
             },
             ea_ork_act_in_office: {
                 name: 'Сдан',
-                code: 'ea_ork_act_in_office'
+                code: EnumOrkEventAction.ea_ork_act_in_office,
             },
             ea_ork_act_pay: {
                 name: 'Оплачен',
-                code: 'ea_ork_act_pay'
-            }
-        }
+                code: EnumOrkEventAction.ea_ork_act_pay,
+            },
+        },
     },
     event_communication: {
         name: 'Тип коммуникации',
-        code: 'event_communication',
+        code: EnumOrkFieldCode.event_communication,
         items: {
             ec_ork_call: {
                 name: 'Звонок',
-                code: 'ec_ork_call'
+                code: EnumOrkEventCommunication.ec_ork_call,
             },
             ec_ork_face: {
                 name: 'Выезд',
-                code: 'ec_ork_face'
+                code: EnumOrkEventCommunication.ec_ork_face,
             },
             ec_ork_mail: {
                 name: 'Письмо',
-                code: 'ec_ork_mail'
+                code: EnumOrkEventCommunication.ec_ork_mail,
             },
             ec_ork_edo: {
                 name: 'ЭДО',
-                code: 'ec_ork_edo'
+                code: EnumOrkEventCommunication.ec_ork_edo,
             },
             ec_ork_signal: {
                 name: 'СС',
-                code: 'ec_ork_signal'
-            }
-        }
+                code: EnumOrkEventCommunication.ec_ork_signal,
+            },
+        },
     },
     ork_event_initiative: {
         name: 'Инициатива',
-        code: 'ork_event_initiative',
+        code: EnumOrkFieldCode.ork_event_initiative,
         items: {
             ei_ork_incoming: {
                 name: 'Входящий',
-                code: 'ei_ork_incoming'
+                code: EnumOrkEventInitiative.ei_ork_incoming,
             },
             ei_ork_outgoing: {
                 name: 'Исходящий',
-                code: 'ei_ork_outgoing'
-            }
-        }
+                code: EnumOrkEventInitiative.ei_ork_outgoing,
+            },
+        },
     },
     ork_work_status: {
         name: 'ОРК Статус работы в компании',
-        code: 'ork_work_status',
+        code: EnumOrkFieldCode.ork_work_status,
         items: {
             ork_work_status_new: {
                 name: 'Новый',
-                code: 'ork_work_status_new'
+                code: EnumOrkWorkStatus.ork_work_status_new,
             },
             ork_work_status_supply: {
                 name: 'Поставка',
-                code: 'ork_work_status_supply'
+                code: EnumOrkWorkStatus.ork_work_status_supply,
             },
             ork_work_status_first_edu: {
                 name: 'Первичное обучение',
-                code: 'ork_work_status_first_edu'
+                code: EnumOrkWorkStatus.ork_work_status_first_edu,
             },
             ork_work_status_edu: {
                 name: 'Обучение',
-                code: 'ork_work_status_edu'
+                code: EnumOrkWorkStatus.ork_work_status_edu,
             },
             ork_work_status_in_work: {
                 name: 'В работе',
-                code: 'ork_work_status_in_work'
+                code: EnumOrkWorkStatus.ork_work_status_in_work,
             },
             ork_work_status_signal: {
                 name: 'Отработка сигнала',
-                code: 'ork_work_status_signal'
+                code: EnumOrkWorkStatus.ork_work_status_signal,
             },
             ork_work_status_pere_soon: {
                 name: 'Скоро перезаключение',
-                code: 'ork_work_status_pere_soon'
+                code: EnumOrkWorkStatus.ork_work_status_pere_soon,
             },
             ork_work_status_pere: {
                 name: 'Перезаключение',
-                code: 'ork_work_status_pere'
+                code: EnumOrkWorkStatus.ork_work_status_pere,
             },
             ork_work_status_complect_up: {
                 name: 'Увеличение комплекта',
-                code: 'ork_work_status_complect_up'
+                code: EnumOrkWorkStatus.ork_work_status_complect_up,
             },
             ork_work_status_complect_down: {
                 name: 'Уменьшение комплекта',
-                code: 'ork_work_status_complect_down'
+                code: EnumOrkWorkStatus.ork_work_status_complect_down,
             },
             ork_work_status_threat: {
                 name: 'Угроза отказа',
-                code: 'ork_work_status_threat'
+                code: EnumOrkWorkStatus.ork_work_status_threat,
             },
             ork_work_status_fail_in_process: {
                 name: 'В процессе отказа',
-                code: 'ork_work_status_fail_in_process'
+                code: EnumOrkWorkStatus.ork_work_status_fail_in_process,
             },
             ork_work_status_fail: {
                 name: 'Отказ',
-                code: 'ork_work_status_fail'
-            }
-        }
+                code: EnumOrkWorkStatus.ork_work_status_fail,
+            },
+        },
     },
     ork_forecast: {
         name: 'ОРК Прогноз',
-        code: 'ork_forecast',
+        code: EnumOrkFieldCode.ork_forecast,
         items: {
             ork_forecast_client: {
                 name: 'Продолжение сотрудничества',
-                code: 'ork_forecast_client'
+                code: EnumOrkForecast.ork_forecast_client,
             },
             ork_forecast_complect_up: {
                 name: 'Увеличение комплекта',
-                code: 'ork_forecast_complect_up'
+                code: EnumOrkForecast.ork_forecast_complect_up,
             },
             ork_forecast_complect_down: {
                 name: 'Уменьшение комплекта',
-                code: 'ork_forecast_complect_down'
+                code: EnumOrkForecast.ork_forecast_complect_down,
             },
             ork_forecast_maybefail: {
                 name: 'Угроза отказа',
-                code: 'ork_forecast_maybefail'
+                code: EnumOrkForecast.ork_forecast_maybefail,
             },
             ork_forecast_fail: {
                 name: 'Отказ',
-                code: 'ork_forecast_fail'
-            }
-        }
+                code: EnumOrkForecast.ork_forecast_fail,
+            },
+        },
     },
     ork_fail_reason: {
         name: 'ОРК Причина Отказа',
-        code: 'ork_fail_reason',
+        code: EnumOrkFieldCode.ork_fail_reason,
         items: {
             ork_fr_lpr_changed: {
                 name: 'Смена ЛПР',
-                code: 'ork_fr_lpr_changed'
+                code: EnumOrkFailReason.ork_fr_lpr_changed,
             },
             ork_fr_nomoney_plan: {
                 name: 'Изменение бюджета',
-                code: 'ork_fr_nomoney_plan'
+                code: EnumOrkFailReason.ork_fr_nomoney_plan,
             },
             ork_fr_concurent_money: {
                 name: 'Конкуренты - оплачено',
-                code: 'ork_fr_concurent_money'
+                code: EnumOrkFailReason.ork_fr_concurent_money,
             },
             ork_fr_lpr_concurent_money: {
                 name: 'Конкуренты - цена',
-                code: 'ork_fr_lpr_concurent_money'
+                code: EnumOrkFailReason.ork_fr_lpr_concurent_money,
             },
             ork_fr_nomoney: {
                 name: 'Нет денег',
-                code: 'ork_fr_nomoney'
+                code: EnumOrkFailReason.ork_fr_nomoney,
             },
             ork_fr_lpr_noneeds: {
                 name: 'Не видят надобности',
-                code: 'ork_fr_lpr_noneeds'
+                code: EnumOrkFailReason.ork_fr_lpr_noneeds,
             },
             ork_fr_lpr: {
                 name: 'ЛПР против',
-                code: 'ork_fr_lpr'
+                code: EnumOrkFailReason.ork_fr_lpr,
             },
             ork_fr_emploee_noneed: {
                 name: 'Ключевой сотрудник против',
-                code: 'ork_fr_emploee_noneed'
+                code: EnumOrkFailReason.ork_fr_emploee_noneed,
             },
             ork_fr_nocommunication: {
                 name: 'Не хотят общаться',
-                code: 'ork_fr_nocommunication'
+                code: EnumOrkFailReason.ork_fr_nocommunication,
             },
             ork_fr_company_changed: {
                 name: 'Реорганизация',
-                code: 'ork_fr_company_changed'
+                code: EnumOrkFailReason.ork_fr_company_changed,
             },
             ork_fr_company_bankrot: {
                 name: 'Компания не существует',
-                code: 'ork_fr_company_bankrot'
-            }
-        }
+                code: EnumOrkFailReason.ork_fr_company_bankrot,
+            },
+        },
     },
     ork_result_status: {
         name: 'Результативность',
-        code: 'ork_result_status',
+        code: EnumOrkFieldCode.ork_result_status,
         items: {
             ork_call_result_yes: {
                 name: 'Да',
-                code: 'ork_call_result_yes'
+                code: EnumOrkResultStatus.ork_call_result_yes,
             },
             ork_call_result_no: {
                 name: 'Нет',
-                code: 'ork_call_result_no'
-            }
-        }
+                code: EnumOrkResultStatus.ork_call_result_no,
+            },
+        },
     },
     ork_event_goal: {
         name: 'Цель коммуникации',
-        code: 'ork_event_goal',
+        code: EnumOrkFieldCode.ork_event_goal,
         items: {
             eg_ork_signal: {
                 name: 'Отработка сигнала',
-                code: 'eg_ork_signal'
+                code: 'eg_ork_signal',
             },
             eg_ork_edu: {
                 name: 'Обучение',
-                code: 'eg_ork_edu'
+                code: 'eg_ork_edu',
             },
             eg_ork_pres: {
                 name: 'Презентация',
-                code: 'eg_ork_pres'
+                code: 'eg_ork_pres',
             },
             eg_ork_soon: {
                 name: 'Перезаключение',
-                code: 'eg_ork_soon'
+                code: 'eg_ork_soon',
             },
             eg_ork_save: {
                 name: 'Сохранение',
-                code: 'eg_ork_save'
+                code: 'eg_ork_save',
             },
             eg_ork_claim: {
                 name: 'Отработка рекламации',
-                code: 'eg_ork_claim'
-            }
-        }
+                code: 'eg_ork_claim',
+            },
+        },
     },
     ork_event_is_goal: {
         name: 'Цель достигнута',
-        code: 'ork_event_is_goal',
+        code: EnumOrkFieldCode.ork_event_is_goal,
         items: {
             ork_event_is_goal_yes: {
                 name: 'Да',
-                code: 'ork_event_is_goal_yes'
+                code: 'ork_event_is_goal_yes',
             },
             ork_event_is_goal_no: {
                 name: 'Нет',
-                code: 'ork_event_is_goal_no'
-            }
-        }
+                code: 'ork_event_is_goal_no',
+            },
+        },
     },
     ork_noresult_reason: {
         name: 'Тип Нерезультативности',
-        code: 'ork_noresult_reason',
+        code: EnumOrkFieldCode.ork_noresult_reason,
         items: {
             secretar: {
                 name: 'Секретарь',
-                code: 'secretar'
+                code: 'secretar',
             },
             nopickup: {
                 name: 'Недозвон - трубку не берут',
-                code: 'nopickup'
+                code: 'nopickup',
             },
             nonumber: {
                 name: 'Недозвон - номер не существует',
-                code: 'nonumber'
+                code: 'nonumber',
             },
             busy: {
                 name: 'Занято',
-                code: 'busy'
+                code: 'busy',
             },
             noresult_notime: {
                 name: 'Перенос - не было времени',
-                code: 'noresult_notime'
+                code: 'noresult_notime',
             },
             nocontact: {
                 name: 'Контактера нет на месте',
-                code: 'nocontact'
+                code: 'nocontact',
             },
             giveup: {
                 name: 'Просят оставить свой номер',
-                code: 'giveup'
+                code: 'giveup',
             },
             bay: {
                 name: 'Не интересует, до свидания',
-                code: 'bay'
+                code: 'bay',
             },
             wrong: {
                 name: 'По телефону отвечает не та организация',
-                code: 'wrong'
+                code: 'wrong',
             },
             auto: {
                 name: 'Автоответчик',
-                code: 'auto'
-            }
-        }
+                code: 'auto',
+            },
+        },
     },
     // Поля типа string
     event_title: {
         name: 'Название',
-        code: 'event_title'
+        code: EnumOrkFieldCode.event_title,
     },
     manager_comment: {
         name: 'Комментарий',
-        code: 'manager_comment'
+        code: EnumOrkFieldCode.manager_comment,
     },
     ork_evemt_tag: {
         name: 'Тэг',
-        code: 'ork_evemt_tag'
+        code: EnumOrkFieldCode.ork_evemt_tag,
     },
     // Поля типа datetime
     ork_event_date: {
         name: 'Дата',
-        code: 'ork_event_date'
+        code: EnumOrkFieldCode.ork_event_date,
     },
     ork_plan_date: {
         name: 'Дата следующей коммуникации',
-        code: 'ork_plan_date'
+        code: EnumOrkFieldCode.ork_plan_date,
     },
     // Поля типа employee
     responsible: {
         name: 'Ответственный',
-        code: 'responsible'
+        code: EnumOrkFieldCode.responsible,
     },
     author: {
         name: 'Автор',
-        code: 'author'
+        code: EnumOrkFieldCode.author,
     },
     su: {
         name: 'Соисполнитель',
-        code: 'su'
+        code: EnumOrkFieldCode.su,
     },
     // Поля типа crm
     ork_crm_company: {
         name: 'Компания',
-        code: 'ork_crm_company'
+        code: EnumOrkFieldCode.ork_crm_company,
     },
     crm: {
         name: 'CRM',
-        code: 'crm'
+        code: EnumOrkFieldCode.crm,
     },
     ork_crm_contact: {
         name: 'Контакт',
-        code: 'ork_crm_contact'
-    }
+        code: EnumOrkFieldCode.ork_crm_contact,
+    },
 } as const;
 
 type OrkFieldItem = {
@@ -646,14 +659,20 @@ type OrkField = {
 };
 
 export type OrkFieldCode = keyof typeof OrkFields;
-export type OrkItemCode<T extends OrkFieldCode> = T extends keyof typeof OrkFields
-    ? typeof OrkFields[T] extends { items: Record<string, OrkFieldItem> }
-    ? keyof typeof OrkFields[T]['items']
+export type OrkItemCode<T extends OrkFieldCode> =
+    T extends keyof typeof OrkFields
+    ? (typeof OrkFields)[T] extends { items: Record<string, OrkFieldItem> }
+    ? keyof (typeof OrkFields)[T]['items']
     : never
     : never;
 
 // Helper types for field metadata
-export type OrkFieldType = 'string' | 'datetime' | 'enumeration' | 'employee' | 'crm';
+export type OrkFieldType =
+    | 'string'
+    | 'datetime'
+    | 'enumeration'
+    | 'employee'
+    | 'crm';
 
 export interface OrkFieldMetadata {
     name: string;
@@ -667,132 +686,177 @@ export const OrkFieldsMetadata: Record<string, OrkFieldMetadata> = {
         name: 'Название',
         appType: 'calling',
         type: 'string',
-        field_code: 'event_title'
+        field_code: 'event_title',
     },
     ork_crm_company: {
         name: 'Компания',
         appType: 'calling',
         type: 'crm',
-        field_code: 'ork_crm_company'
+        field_code: 'ork_crm_company',
     },
     ork_event_date: {
         name: 'Дата',
         appType: 'calling',
         type: 'datetime',
-        field_code: 'ork_event_date'
+        field_code: 'ork_event_date',
     },
     ork_event_type: {
         name: 'Тип События',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_event_type'
+        field_code: 'ork_event_type',
     },
     ork_event_action: {
         name: 'Событие',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_event_action'
+        field_code: 'ork_event_action',
     },
     event_communication: {
         name: 'Тип коммуникации',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'event_communication'
+        field_code: 'event_communication',
     },
     ork_event_initiative: {
         name: 'Инициатива',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_event_initiative'
+        field_code: 'ork_event_initiative',
     },
     responsible: {
         name: 'Ответственный',
         appType: 'calling',
         type: 'employee',
-        field_code: 'responsible'
+        field_code: 'responsible',
     },
     ork_event_goal: {
         name: 'Цель коммуникации',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_event_goal'
+        field_code: 'ork_event_goal',
     },
     ork_event_is_goal: {
         name: 'Цель достигнута',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_event_is_goal'
+        field_code: 'ork_event_is_goal',
     },
     ork_plan_date: {
         name: 'Дата следующей коммуникации',
         appType: 'calling',
         type: 'datetime',
-        field_code: 'ork_plan_date'
+        field_code: 'ork_plan_date',
     },
     manager_comment: {
         name: 'Комментарий',
         appType: 'calling',
         type: 'string',
-        field_code: 'manager_comment'
+        field_code: 'manager_comment',
     },
     ork_result_status: {
         name: 'Результативность',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_result_status'
+        field_code: 'ork_result_status',
     },
     ork_noresult_reason: {
         name: 'Тип Нерезультативности',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_noresult_reason'
+        field_code: 'ork_noresult_reason',
     },
     ork_work_status: {
         name: 'ОРК Статус работы в компании',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_work_status'
+        field_code: 'ork_work_status',
     },
     ork_forecast: {
         name: 'ОРК Прогноз',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_forecast'
+        field_code: 'ork_forecast',
     },
     ork_fail_reason: {
         name: 'ОРК Причина Отказа',
         appType: 'calling',
         type: 'enumeration',
-        field_code: 'ork_fail_reason'
+        field_code: 'ork_fail_reason',
     },
     author: {
         name: 'Автор',
         appType: 'calling',
         type: 'employee',
-        field_code: 'author'
+        field_code: 'author',
     },
     su: {
         name: 'Соисполнитель',
         appType: 'calling',
         type: 'employee',
-        field_code: 'su'
+        field_code: 'su',
     },
     crm: {
         name: 'CRM',
         appType: 'calling',
         type: 'crm',
-        field_code: 'crm'
+        field_code: 'crm',
     },
     ork_crm_contact: {
         name: 'Контакт',
         appType: 'calling',
         type: 'crm',
-        field_code: 'ork_crm_contact'
+        field_code: 'ork_crm_contact',
     },
     ork_evemt_tag: {
         name: 'Тэг',
         appType: 'calling',
         type: 'string',
-        field_code: 'ork_evemt_tag'
+        field_code: 'ork_evemt_tag',
+    },
+} as const;
+
+
+export const OrkReport = {
+    [OrkFields.ork_event_action.items.ea_ork_plan.code]: {
+        types: [
+            OrkFields.ork_event_type.items.et_ork_signal.code,
+            OrkFields.ork_event_type.items.et_ork_info.code,
+            OrkFields.ork_event_type.items.et_ork_call_doc.code,
+            OrkFields.ork_event_type.items.et_ork_call_money.code,
+            OrkFields.ork_event_type.items.et_ork_call_collect.code,
+            OrkFields.ork_event_type.items.et_ork_info_garant.code,
+            OrkFields.ork_event_type.items.et_ork_presentation.code,
+        ]
+    },
+    [OrkFields.ork_event_action.items.ea_ork_done.code]: {
+        types: [
+            OrkFields.ork_event_type.items.et_ork_signal.code,
+            OrkFields.ork_event_type.items.et_ork_info.code,
+            OrkFields.ork_event_type.items.et_ork_call_doc.code,
+            OrkFields.ork_event_type.items.et_ork_call_money.code,
+            OrkFields.ork_event_type.items.et_ork_call_collect.code,
+            OrkFields.ork_event_type.items.et_ork_info_garant.code,
+            OrkFields.ork_event_type.items.et_ork_presentation.code,
+        ]
     }
 } as const;
+
+
+export const OrkCallingTypes = [
+    OrkFields.ork_event_type.items.et_ork_signal.code,
+    OrkFields.ork_event_type.items.et_ork_info.code,
+    OrkFields.ork_event_type.items.et_ork_call_doc.code,
+    OrkFields.ork_event_type.items.et_ork_call_money.code,
+    OrkFields.ork_event_type.items.et_ork_call_collect.code,
+    OrkFields.ork_event_type.items.et_ork_info_garant.code,
+    OrkFields.ork_event_type.items.et_ork_presentation.code,
+    OrkFields.ork_event_type.items.et_ork_presentation_uniq.code,
+    OrkFields.ork_event_type.items.et_ork_edu_first.code,
+    OrkFields.ork_event_type.items.et_ork_edu.code,
+    OrkFields.ork_event_type.items.et_ork_edu_uniq.code,
+    OrkFields.ork_event_type.items.et_ork_seminar.code,
+    OrkFields.ork_event_type.items.et_ork_complect_up_work.code,
+    OrkFields.ork_event_type.items.et_ork_pere_contract.code,
+]
+

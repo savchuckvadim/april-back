@@ -1,8 +1,8 @@
-import { Module } from "@nestjs/common";
-import { InfogroupController } from "./infogroup.controller";
-import { InfogroupService } from "./infogroup.service";
-import { InfogroupRepository } from "./infogroup.repository";
-import { InfogroupPrismaRepository } from "./infogroup.prisma.repository";
+import { Module } from '@nestjs/common';
+import { InfogroupController } from './infogroup.controller';
+import { InfogroupService } from './infogroup.service';
+import { InfogroupRepository } from './infogroup.repository';
+import { InfogroupPrismaRepository } from './infogroup.prisma.repository';
 
 @Module({
     controllers: [InfogroupController],
@@ -10,9 +10,9 @@ import { InfogroupPrismaRepository } from "./infogroup.prisma.repository";
         InfogroupService,
         {
             provide: InfogroupRepository,
-            useClass: InfogroupPrismaRepository
-        }
+            useClass: InfogroupPrismaRepository,
+        },
     ],
-    exports: [InfogroupService]
+    exports: [InfogroupService],
 })
-export class InfogroupModule { } 
+export class InfogroupModule {}

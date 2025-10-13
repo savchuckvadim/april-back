@@ -1,7 +1,6 @@
-import { Module } from "@nestjs/common";
-import { FieldPrismaRepository } from "./field.prisma.repository";
-import { FieldRepository } from "./field.repository";
-
+import { Module } from '@nestjs/common';
+import { FieldPrismaRepository } from './field.prisma.repository';
+import { FieldRepository } from './field.repository';
 
 @Module({
     providers: [
@@ -10,6 +9,5 @@ import { FieldRepository } from "./field.repository";
             useClass: FieldPrismaRepository,
         },
     ],
-  
 })
-export class FieldModule { } 
+export class FieldModule {}

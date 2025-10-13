@@ -1,7 +1,6 @@
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { BxActivityRepository } from "../bx-activity.repository";
-import { IBXActivity } from "../interfaces/bx-activity.interface";
-
+import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import { BxActivityRepository } from '../bx-activity.repository';
+import { IBXActivity } from '../interfaces/bx-activity.interface';
 
 export class BxActivityBatchService {
     private repo: BxActivityRepository;
@@ -18,16 +17,17 @@ export class BxActivityBatchService {
     async get(cmdCode: string, activityId: number | string) {
         return this.repo.getBtch(cmdCode, activityId);
     }
-    async create(cmdCode: string, data:  Partial<IBXActivity>) {
+    async create(cmdCode: string, data: Partial<IBXActivity>) {
         return this.repo.createBtch(cmdCode, data);
     }
-    async update(cmdCode: string, activityId: number | string, data:  Partial<IBXActivity>) {
+    async update(
+        cmdCode: string,
+        activityId: number | string,
+        data: Partial<IBXActivity>,
+    ) {
         return this.repo.updateBtch(cmdCode, activityId, data);
     }
     async delete(cmdCode: string, activityId: number | string) {
         return this.repo.deleteBtch(cmdCode, activityId);
     }
-    
-    
 }
-

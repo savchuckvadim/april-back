@@ -1,7 +1,11 @@
-import { PrismaService } from "src/core/prisma";
-import { SupplyEntity } from "../supply.entity";
+import { PrismaService } from 'src/core/prisma';
+import { SupplyEntity } from '../supply.entity';
 
-export function createSupplyEntityFromPrisma(data: NonNullable<Awaited<ReturnType<PrismaService['supplies']['findUnique']>>>): SupplyEntity {
+export function createSupplyEntityFromPrisma(
+    data: NonNullable<
+        Awaited<ReturnType<PrismaService['supplies']['findUnique']>>
+    >,
+): SupplyEntity {
     const entity = new SupplyEntity();
     entity.id = data.id;
     entity.name = data.name;
@@ -26,4 +30,4 @@ export function createSupplyEntityFromPrisma(data: NonNullable<Awaited<ReturnTyp
     entity.created_at = data.created_at;
     entity.updated_at = data.updated_at;
     return entity;
-} 
+}

@@ -15,7 +15,7 @@ export class PortalService {
     constructor(
         private readonly redisService: RedisService,
         private readonly apiOnlineClient: APIOnlineClient,
-        private readonly modelFactory: PortalModelFactory
+        private readonly modelFactory: PortalModelFactory,
     ) {
         this.logger.log('PortalService initialized');
         this.redis = this.redisService.getClient();
@@ -26,24 +26,37 @@ export class PortalService {
         const cacheKey = `portal_${domain}`;
         const cached = await this.redis.get(cacheKey);
 
-
         if (cached) {
             this.logger.log('Returning cached portal');
             const portal = JSON.parse(cached);
             this.logger.log(`Cached portal domain: ${portal?.domain}`);
-            this.logger.log(`Cached portal webhook: ${portal?.C_REST_WEB_HOOK_URL}`);
+            this.logger.log(
+                `Cached portal webhook: ${portal?.C_REST_WEB_HOOK_URL}`,
+            );
             return portal;
         }
 
         this.logger.log('Portal not found in cache, requesting from API');
-        const response = await this.apiOnlineClient.request('post', 'getportal', { domain }, 'portal');
+        const response = await this.apiOnlineClient.request(
+            'post',
+            'getportal',
+            { domain },
+            'portal',
+        );
         this.logger.log(`API response code: ${response.resultCode}`);
         if (response.resultCode === 0) {
             const portal = response.data;
             this.logger.log(`Portal from API domain: ${portal?.domain}`);
-            this.logger.log(`Portal from API webhook: ${portal?.C_REST_WEB_HOOK_URL}`);
+            this.logger.log(
+                `Portal from API webhook: ${portal?.C_REST_WEB_HOOK_URL}`,
+            );
             this.logger.log(`Caching portal for domain: ${domain}`);
-            await this.redis.set(cacheKey, JSON.stringify(portal), 'EX', this.CACHE_TTL);
+            await this.redis.set(
+                cacheKey,
+                JSON.stringify(portal),
+                'EX',
+                this.CACHE_TTL,
+            );
             return portal;
         }
         this.logger.error(`Error getting portal: ${response.message}`);
@@ -70,13 +83,13 @@ export class PortalService {
             this.logger.log('Portal data retrieved successfully');
             return {
                 success: true,
-                data: portal as IPortal
+                data: portal as IPortal,
             };
         } catch (error) {
             this.logger.error(`Error getting portal data: ${error.message}`);
             return {
                 success: false,
-                error: error.message
+                error: error.message,
             };
         }
     }
@@ -90,4 +103,4 @@ export class PortalService {
     //         data: data as IPortal
     //     };
     // }
-} 
+}

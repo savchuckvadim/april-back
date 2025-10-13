@@ -1,4 +1,4 @@
-import { MeasureEntity } from "./measure.entity";
+import { MeasureEntity } from './measure.entity';
 
 export class PortalMeasureEntity {
     id: bigint;
@@ -13,4 +13,4 @@ export class PortalMeasureEntity {
 
     // Relations
     measure?: MeasureEntity;
-} 
+}

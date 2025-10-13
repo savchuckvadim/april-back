@@ -1,20 +1,24 @@
-import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
-import { InfogroupEntity } from "./infogroup.entity";
-import { InfogroupService } from "./infogroup.service";
-import { ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { InfogroupEntity } from './infogroup.entity';
+import { InfogroupService } from './infogroup.service';
+import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Garant')
 @Controller('infogroup')
 export class InfogroupController {
-    constructor(private readonly infogroupService: InfogroupService) { }
+    constructor(private readonly infogroupService: InfogroupService) {}
 
     @Post()
-    async create(@Body() infogroup: Partial<InfogroupEntity>): Promise<InfogroupEntity | null> {
+    async create(
+        @Body() infogroup: Partial<InfogroupEntity>,
+    ): Promise<InfogroupEntity | null> {
         return this.infogroupService.create(infogroup);
     }
 
     @Put()
-    async update(@Body() infogroup: Partial<InfogroupEntity>): Promise<InfogroupEntity | null> {
+    async update(
+        @Body() infogroup: Partial<InfogroupEntity>,
+    ): Promise<InfogroupEntity | null> {
         return this.infogroupService.update(infogroup);
     }
 
@@ -27,4 +31,4 @@ export class InfogroupController {
     async findMany(): Promise<InfogroupEntity[] | null> {
         return this.infogroupService.findMany();
     }
-} 
+}

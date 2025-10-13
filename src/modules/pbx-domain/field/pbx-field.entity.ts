@@ -1,10 +1,16 @@
-import { BitrixFieldType } from "@/apps/konstructor/document-generate/dto/pbx-items.dto";
-import { PrismaService } from "@/core/prisma";
-import { EUserFieldType } from "@/modules/bitrix";
+import { BitrixFieldType } from '@/apps/konstructor/document-generate/dto/pbx-items.dto';
+import { PrismaService } from '@/core/prisma';
+import { EUserFieldType } from '@/modules/bitrix';
 
-export type PbxField = NonNullable<Awaited<ReturnType<PrismaService['bitrixfields']['findUnique']>>>;
-export type PbxFieldItem = NonNullable<Awaited<ReturnType<PrismaService['bitrixfield_items']['findUnique']>>>;
-export type PbxFieldWithItems = NonNullable<Awaited<ReturnType<PrismaService['bitrixfields']['findUnique']>>> & {
+export type PbxField = NonNullable<
+    Awaited<ReturnType<PrismaService['bitrixfields']['findUnique']>>
+>;
+export type PbxFieldItem = NonNullable<
+    Awaited<ReturnType<PrismaService['bitrixfield_items']['findUnique']>>
+>;
+export type PbxFieldWithItems = NonNullable<
+    Awaited<ReturnType<PrismaService['bitrixfields']['findUnique']>>
+> & {
     bitrixfield_items: PbxFieldItem[];
 };
 
@@ -22,7 +28,7 @@ export class PbxFieldEntity {
     title: string;
     code: string;
     type: BitrixFieldType | EUserFieldType | 'multiple';
-  
+
     isPlural: boolean;
     // created_at: string;
     // updated_at: string;

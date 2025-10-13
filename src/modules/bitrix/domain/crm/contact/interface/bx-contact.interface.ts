@@ -6,21 +6,21 @@ export interface IBXContact {
     LAST_NAME?: string;
     SECOND_NAME?: string;
     PHONE?: {
-        VALUE: string,
-        TYPE: string
-    }[]
+        VALUE: string;
+        TYPE: string;
+    }[];
     EMAIL?: {
-        VALUE: string,
-        TYPE: string
-    }[]
-    POST?: string
-    COMMENTS?: string
+        VALUE: string;
+        TYPE: string;
+    }[];
+    POST?: string;
+    COMMENTS?: string;
 
     TYPE_ID?: string;
     SOURCE_ID?: string;
     SOURCE_DESCRIPTION?: string;
     BIRTHDATE?: string;
- 
+
     ADDRESS?: string;
     ADDRESS_2?: string;
     ADDRESS_CITY?: string;
@@ -33,7 +33,7 @@ export interface IBXContact {
     UTM_CAMPAIGN?: string;
     UTM_CONTENT?: string;
     UTM_TERM?: string;
-} 
+}
 
 // export interface IBXContact {
 //     ASSIGNED_BY_ID?: string | number

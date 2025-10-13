@@ -1,28 +1,34 @@
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+    IsBoolean,
+    IsInt,
+    IsNumber,
+    IsOptional,
+    IsString,
+} from 'class-validator';
 
 export class ComplectValueDto {
-  @IsOptional()
-  @IsInt()
-  number?: number;
+    @IsOptional()
+    @IsInt()
+    number?: number;
 
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 
-  @IsString()
-  code: string;
+    @IsString()
+    code: string;
 
-  @IsBoolean()
-  checked: boolean;
+    @IsBoolean()
+    checked: boolean;
 
-  @IsOptional()
-  @IsNumber()
-  weight?: number;
+    @IsOptional()
+    @IsNumber()
+    weight?: number;
 
-  @IsOptional()
-  @IsString()
-  description?: string;
+    @IsOptional()
+    @IsString()
+    description?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  isLa?: boolean;
+    @IsOptional()
+    @IsBoolean()
+    isLa?: boolean;
 }

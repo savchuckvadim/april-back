@@ -1,4 +1,4 @@
 export enum SilentJobHandlerId {
-  CREATE_ACTIVITY = 'create-activity',
-  // добавляй остальные по мере роста
+    CREATE_ACTIVITY = 'create-activity',
+    // добавляй остальные по мере роста
 }

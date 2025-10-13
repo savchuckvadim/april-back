@@ -2,15 +2,15 @@
 import { IsString, IsDateString, IsNumber } from 'class-validator';
 
 export class CreateBitrixActivityDto {
-  @IsNumber()
-  companyId: number;
+    @IsNumber()
+    companyId: number;
 
-  @IsString()
-  title: string;
+    @IsString()
+    title: string;
 
-  @IsDateString()
-  date: string;
+    @IsDateString()
+    date: string;
 
-  @IsString()
-  responsible: string;
+    @IsString()
+    responsible: string;
 }

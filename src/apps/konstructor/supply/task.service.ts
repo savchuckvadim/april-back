@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TaskService {
-
     async initTaskAccountant(data: any, portal: any): Promise<number> {
         const bxRpa = this.getBxRpa(data.auth.domain, portal.accessKey);
-        const rpa = await bxRpa.getRpa(data.document_id.type_id, data.document_id.rpa_id);
+        const rpa = await bxRpa.getRpa(
+            data.document_id.type_id,
+            data.document_id.rpa_id,
+        );
         const bxTask = this.getBxTask(data.auth.domain, portal.accessKey);
 
-        const dateFormat = "%Y-%m-%dT%H:%M:%S%z";
+        const dateFormat = '%Y-%m-%dT%H:%M:%S%z';
 
         rpa.CONTRACT_START = this.formatDate(rpa.CONTRACT_START, dateFormat);
         const firstPayDay = this.formatDate(rpa.FIRST_PAY_DATE, dateFormat);
@@ -20,20 +22,27 @@ export class TaskService {
             TITLE: rpa.NAME,
             DESCRIPTION: `Действие договора с ${rpa.CONTRACT_START} до ${rpa.CONTRACT_END}\nДата поставки: ${supplyDate}\nДата первой оплаты: ${firstPayDay}\n\nссылка на RPA: <a href="https://${data.auth.domain}/rpa/item/${data.document_id.type_id}/${data.document_id.rpa_id}/">Заявка на поставку</a>`,
             DEADLINE: rpa.SUPPLY_DATE,
-            UF_CRM_TASK: [
-                `CO_${rpa.RPA_CRM_COMPANY}`
-            ],
-            RESPONSIBLE_ID: this.findResponsibleId(rpa)
+            UF_CRM_TASK: [`CO_${rpa.RPA_CRM_COMPANY}`],
+            RESPONSIBLE_ID: this.findResponsibleId(rpa),
         };
 
         const task = await bxTask.create(field);
         const textTimelineRpa = `<a href='https://${data.auth.domain}/company/personal/user/${task.responsibleId}/tasks/task/view/${task.id}/'>Задача для бухгалтера</a>`;
-        await bxRpa.addTimeline(textTimelineRpa, data.document_id.type_id, data.document_id.rpa_id);
+        await bxRpa.addTimeline(
+            textTimelineRpa,
+            data.document_id.type_id,
+            data.document_id.rpa_id,
+        );
 
         return task.id;
     }
 
-    async initTaskManagerOrkFirstEducation(portal: any, domain: string, rpa: any, dealServiceId: number): Promise<number> {
+    async initTaskManagerOrkFirstEducation(
+        portal: any,
+        domain: string,
+        rpa: any,
+        dealServiceId: number,
+    ): Promise<number> {
         const bxTask = this.getBxTask(domain, portal.accessKey);
 
         rpa.SUPPLY_DATE = this.adjustSupplyDate(rpa.SUPPLY_DATE);
@@ -42,18 +51,20 @@ export class TaskService {
             TITLE: `Первичное обучение: ${rpa.name}`,
             DESCRIPTION: `Описание ситуации: ${rpa.SITUATION_COMMENTS}\n\nКомментарий к заявке Руководитель: \n${rpa.RPA_OWNER_COMMENT.join('\n')}\n\nКомментарий к заявке РОП: \n${rpa.RPA_TMC_COMMENT.join('\n')}\n\n`,
             DEADLINE: rpa.CLIENT_CALL_DATE,
-            UF_CRM_TASK: [
-                `CO_${rpa.RPA_CRM_COMPANY}`,
-                `D_${dealServiceId}`
-            ],
-            RESPONSIBLE_ID: rpa.MANAGER_OS
+            UF_CRM_TASK: [`CO_${rpa.RPA_CRM_COMPANY}`, `D_${dealServiceId}`],
+            RESPONSIBLE_ID: rpa.MANAGER_OS,
         };
 
         const task = await bxTask.create(field);
         return task.id;
     }
 
-    async initTaskManagerOrkSupply(portal: any, domain: string, rpa: any, dealServiceId: number): Promise<number> {
+    async initTaskManagerOrkSupply(
+        portal: any,
+        domain: string,
+        rpa: any,
+        dealServiceId: number,
+    ): Promise<number> {
         const bxTask = this.getBxTask(domain, portal.accessKey);
 
         rpa.SUPPLY_DATE = this.adjustSupplyDate(rpa.SUPPLY_DATE);
@@ -62,18 +73,19 @@ export class TaskService {
             TITLE: rpa.name,
             DESCRIPTION: `Описание ситуации: ${rpa.SITUATION_COMMENTS}\n\nКомментарий к заявке Руководитель: \n${rpa.RPA_OWNER_COMMENT.join('\n')}\n\nКомментарий к заявке РОП: \n${rpa.RPA_TMC_COMMENT.join('\n')}\n\n`,
             DEADLINE: rpa.SUPPLY_DATE,
-            UF_CRM_TASK: [
-                `CO_${rpa.RPA_CRM_COMPANY}`,
-                `D_${dealServiceId}`
-            ],
-            RESPONSIBLE_ID: rpa.MANAGER_OS
+            UF_CRM_TASK: [`CO_${rpa.RPA_CRM_COMPANY}`, `D_${dealServiceId}`],
+            RESPONSIBLE_ID: rpa.MANAGER_OS,
         };
 
         const task = await bxTask.create(field);
         return task.id;
     }
 
-    private formatDate(dateStr: string, format: string, adjustTime: boolean = false): string {
+    private formatDate(
+        dateStr: string,
+        format: string,
+        adjustTime: boolean = false,
+    ): string {
         const dateObj = new Date(dateStr);
         if (adjustTime) {
             dateObj.setHours(8, 0, 0, 0);
@@ -91,7 +103,10 @@ export class TaskService {
 
     private findResponsibleId(rpa: any): number {
         for (const user of rpa.users) {
-            if (user.workPosition && user.workPosition.toLowerCase().includes('бухгалтер')) {
+            if (
+                user.workPosition &&
+                user.workPosition.toLowerCase().includes('бухгалтер')
+            ) {
                 return user.id;
             }
         }
@@ -101,7 +116,10 @@ export class TaskService {
     private getBxTask(domain: string, accessKey: string): any {
         // Simulate BxTask service
         return {
-            create: async (field: any) => ({ id: 1, responsibleId: field.RESPONSIBLE_ID })
+            create: async (field: any) => ({
+                id: 1,
+                responsibleId: field.RESPONSIBLE_ID,
+            }),
         };
     }
 
@@ -109,7 +127,11 @@ export class TaskService {
         // Simulate BxRpa service
         return {
             getRpa: async (typeId: number, rpaId: number) => ({}),
-            addTimeline: async (text: string, typeId: number, itemId: number) => { }
+            addTimeline: async (
+                text: string,
+                typeId: number,
+                itemId: number,
+            ) => {},
         };
     }
-} 
+}

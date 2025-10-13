@@ -7,8 +7,8 @@ export const formatRuble = (value: number): string => {
     //     currency: 'RUB',
     //     minimumFractionDigits: 0,
     // }).format(value);
-    return rubles(value)
-}
+    return rubles(value);
+};
 
 // Использование без опций
 // convertNumberToWordsRu('104')

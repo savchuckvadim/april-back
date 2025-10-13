@@ -4,7 +4,6 @@ export class ProviderEntity {
     rqId: string;
     domain: string;
     withTax: boolean;
-
 }
 
 export class RqEntity {

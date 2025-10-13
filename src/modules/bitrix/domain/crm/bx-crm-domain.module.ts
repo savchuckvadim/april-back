@@ -1,14 +1,14 @@
-import { Module } from "@nestjs/common";
-import { BxFieldService } from "./fields/bx-field.service";
-import { BitrixDealDomainModule } from "./deal/bx-deal.module";
-import { BitrixCompanyDomainModule } from "./company/bx-company.module";
-import { BitrixProductRowDomainModule } from "./product-row/bx-product-row.module";
-import { BitrixContactDomainModule } from "./contact/bx-contact.module";
-import { BitrixCategoryDomainModule } from "./category/bx-category.module";
-import { BitrixStatusDomainModule } from "./status/bx-status.module";
-import { BitrixItemDomainModule } from "./item/bx-item.module";
-import { BxTimelineModule } from "./timeline/bx-timeline.module";
-import { BitrixSmartTypeDomainModule } from "./smart-type/bx-smart-type-domain.module";
+import { Module } from '@nestjs/common';
+import { BxFieldService } from './fields/bx-field.service';
+import { BitrixDealDomainModule } from './deal/bx-deal.module';
+import { BitrixCompanyDomainModule } from './company/bx-company.module';
+import { BitrixProductRowDomainModule } from './product-row/bx-product-row.module';
+import { BitrixContactDomainModule } from './contact/bx-contact.module';
+import { BitrixCategoryDomainModule } from './category/bx-category.module';
+import { BitrixStatusDomainModule } from './status/bx-status.module';
+import { BitrixItemDomainModule } from './item/bx-item.module';
+import { BxTimelineModule } from './timeline/bx-timeline.module';
+import { BitrixSmartTypeDomainModule } from './smart-type/bx-smart-type-domain.module';
 @Module({
     imports: [
         BitrixDealDomainModule,
@@ -19,12 +19,9 @@ import { BitrixSmartTypeDomainModule } from "./smart-type/bx-smart-type-domain.m
         BitrixStatusDomainModule,
         BitrixItemDomainModule,
         BxTimelineModule,
-        BitrixSmartTypeDomainModule
+        BitrixSmartTypeDomainModule,
     ],
-    providers: [
-
-        BxFieldService
-    ],
+    providers: [BxFieldService],
     exports: [
         BitrixDealDomainModule,
         BitrixCompanyDomainModule,
@@ -35,7 +32,7 @@ import { BitrixSmartTypeDomainModule } from "./smart-type/bx-smart-type-domain.m
         BitrixItemDomainModule,
         BxTimelineModule,
         BxFieldService,
-        BitrixSmartTypeDomainModule
-    ]
+        BitrixSmartTypeDomainModule,
+    ],
 })
-export class BxCrmDomainModule { }
+export class BxCrmDomainModule {}

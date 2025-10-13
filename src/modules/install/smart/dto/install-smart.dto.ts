@@ -9,7 +9,6 @@ export enum SmartNameEnum {
 export enum SmartGroupEnum {
     SERVICE = 'service',
     SALES = 'sales',
-
 }
 
 export class InstallSmartDto {

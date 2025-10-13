@@ -1,7 +1,6 @@
-import { EntityFormFieldDto } from "@/apps/konstructor/document-generate/dto/entity-form-field/entity-form-field.dto";
-import { Type } from "class-transformer";
-import { ValidateNested } from "class-validator";
-
+import { EntityFormFieldDto } from '@/apps/konstructor/document-generate/dto/entity-form-field/entity-form-field.dto';
+import { Type } from 'class-transformer';
+import { ValidateNested } from 'class-validator';
 
 /**
  * contract_end
@@ -11,22 +10,22 @@ import { ValidateNested } from "class-validator";
  * supply_date
  */
 
-export enum PbxDealEnum{
+export enum PbxDealEnum {
     // contract_create_date = 'contract_create_date',
-    first_pay_date = "first_pay_date", //Дата первой оплаты
-    supply_date = "supply_date",
-    contract_start = "contract_start", //Дейстивие договора с
-    contract_end = "contract_end", //Действие договора до
+    first_pay_date = 'first_pay_date', //Дата первой оплаты
+    supply_date = 'supply_date',
+    contract_start = 'contract_start', //Дейстивие договора с
+    contract_end = 'contract_end', //Действие договора до
     garant_client_assigned_name = 'garant_client_assigned_name', //Ответственный за получ справочника
     garant_client_assigned_phone = 'garant_client_assigned_phone',
     // garant_client_assigned_email = 'garant_client_assigned_email',
-  
+
     // contract_present_start = 'contract_present_start',
     // contract_present_end = 'contract_present_end',
-  
+
     garant_client_email = 'garant_client_email',
     // supply_comment = 'supply_comment',
-  
+
     //supply
     // supply_is_contract_done = 'is_contract_done',
     // supply_contract_number = 'contract_number',
@@ -43,7 +42,6 @@ export enum PbxDealEnum{
 }
 
 export class PbxDealDto {
-
     // @ValidateNested()
     // @Type(() => EntityFormFieldDto)
     // [PbxDealEnum.contract_create_date]: EntityFormFieldDto;
@@ -128,4 +126,3 @@ export class PbxDealDto {
     // @Type(() => EntityFormFieldDto)
     // [PbxDealEnum.supply_situation_comments]: EntityFormFieldDto;
 }
-

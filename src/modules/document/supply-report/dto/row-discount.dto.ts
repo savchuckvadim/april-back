@@ -1,12 +1,12 @@
 import { IsNumber, IsString } from 'class-validator';
 
 export class RowDiscountDto {
-  @IsNumber()
-  precent: number;
+    @IsNumber()
+    precent: number;
 
-  @IsNumber()
-  amount: number;
+    @IsNumber()
+    amount: number;
 
-  @IsString()
-  current: string;
+    @IsString()
+    current: string;
 }

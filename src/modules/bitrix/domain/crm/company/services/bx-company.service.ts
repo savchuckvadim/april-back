@@ -1,12 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { BxCompanyRepository } from "../repository/bx-company.repository";
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { IBXCompany } from "../interface/bx-company.interface";
-import { IBXField } from "../../fields/bx-field.interface";
-
+import { Injectable } from '@nestjs/common';
+import { BxCompanyRepository } from '../repository/bx-company.repository';
+import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import { IBXCompany } from '../interface/bx-company.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxCompanyService {
-    private repo: BxCompanyRepository
+    private repo: BxCompanyRepository;
 
     clone(api: BitrixBaseApi): BxCompanyService {
         const instance = new BxCompanyService();

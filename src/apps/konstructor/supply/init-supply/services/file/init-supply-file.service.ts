@@ -1,12 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import axios from "axios";
-
-
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 
 @Injectable()
 export class InitSupplyFileService {
-
-    public async downloadFileAndConvertToBase64(url: string, name?: string): Promise<[string, string]> {
+    public async downloadFileAndConvertToBase64(
+        url: string,
+        name?: string,
+    ): Promise<[string, string]> {
         const response = await axios.get(url, {
             responseType: 'arraybuffer', // получить как бинарный буфер
         });
@@ -15,22 +15,27 @@ export class InitSupplyFileService {
 
         // Получаем имя файла из URL
         const urlParts = url.split('/');
-        const filename = name || decodeURIComponent(urlParts[urlParts.length - 1]);
+        const filename =
+            name || decodeURIComponent(urlParts[urlParts.length - 1]);
 
         const base64 = fileBuffer.toString('base64');
 
         return [filename, base64];
     }
 
-    public async downloadBitrixFileAndConvertToBase64(url: string, name?: string): Promise<[string, string]> {
+    public async downloadBitrixFileAndConvertToBase64(
+        url: string,
+        name?: string,
+    ): Promise<[string, string]> {
         const response = await axios.get(url, {
-            responseType: 'arraybuffer' // 👈 обязательно!
+            responseType: 'arraybuffer', // 👈 обязательно!
         });
         const contentDisposition = response.headers['content-disposition'];
-        const filename = this.getFilenameFromDisposition(contentDisposition) || `${name}.docx`;
+        const filename =
+            this.getFilenameFromDisposition(contentDisposition) ||
+            `${name}.docx`;
 
         const fileBuffer = Buffer.from(response.data);
-
 
         const base64 = fileBuffer.toString('base64');
 
@@ -52,7 +57,4 @@ export class InitSupplyFileService {
 
         return undefined;
     }
-
-
-
 }

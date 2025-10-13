@@ -4,10 +4,8 @@ import { CategoryController } from './category.controller';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 
 @Module({
-  imports: [
-    PBXModule
-  ],
-  controllers: [CategoryController],
-  providers: [CategoryService],
+    imports: [PBXModule],
+    controllers: [CategoryController],
+    providers: [CategoryService],
 })
 export class CategoryModule {}

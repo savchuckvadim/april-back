@@ -38,4 +38,4 @@ export class BigIntUtil {
 
         return obj;
     }
-} 
+}

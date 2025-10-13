@@ -4,26 +4,26 @@ import { RowMeasureDto } from './row-measure.dto';
 import { RowDiscountDto } from './row-discount.dto';
 
 export class RowPriceDto {
-  @IsNumber()
-  default: number;
+    @IsNumber()
+    default: number;
 
-  @IsNumber()
-  current: number;
+    @IsNumber()
+    current: number;
 
-  @ValidateNested()
-  @Type(() => RowMeasureDto)
-  measure: RowMeasureDto;
+    @ValidateNested()
+    @Type(() => RowMeasureDto)
+    measure: RowMeasureDto;
 
-  @IsNumber()
-  month: number;
+    @IsNumber()
+    month: number;
 
-  @IsInt()
-  quantity: number;
+    @IsInt()
+    quantity: number;
 
-  @ValidateNested()
-  @Type(() => RowDiscountDto)
-  discount: RowDiscountDto;
+    @ValidateNested()
+    @Type(() => RowDiscountDto)
+    discount: RowDiscountDto;
 
-  @IsNumber()
-  sum: number;
+    @IsNumber()
+    sum: number;
 }

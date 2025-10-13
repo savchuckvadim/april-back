@@ -1,7 +1,16 @@
-import { Transform, Type } from "class-transformer";
-import { IsArray, IsEnum, IsString, ValidateNested, IsNumber, IsOptional, IsBoolean, IsDate } from "class-validator";
-import { IBXUser } from "src/modules/bitrix/domain/interfaces/bitrix.interface";
-import { IFieldItem } from "src/modules/portal/interfaces/portal.interface";
+import { Transform, Type } from 'class-transformer';
+import {
+    IsArray,
+    IsEnum,
+    IsString,
+    ValidateNested,
+    IsNumber,
+    IsOptional,
+    IsBoolean,
+    IsDate,
+} from 'class-validator';
+import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 
 // Wrapper classes for external interfaces
 export class BitrixUser implements IBXUser {
@@ -19,7 +28,9 @@ export class BitrixUser implements IBXUser {
 
     @IsNumber()
     @IsOptional()
-    @Transform(({ value }) => typeof value === 'string' ? Number(value) : value)
+    @Transform(({ value }) =>
+        typeof value === 'string' ? Number(value) : value,
+    )
     ID?: number | string;
 
     @IsString()
@@ -156,27 +167,19 @@ export class ReportData {
     kpi: KPI[];
 }
 
-
 export class KpiReportDto {
-
     @IsEnum(EDownloadType)
     type: EDownloadType;
 
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ReportData)
-    report: ReportData[]
-
+    report: ReportData[];
 
     @Type(() => DateRangeDto)
     @ValidateNested()
     date: DateRangeDto;
-
-
 }
-
-
-
 
 export class KPIAction {
     @IsNumber()
@@ -185,8 +188,6 @@ export class KPIAction {
     @IsString()
     name: string;
 }
-
-
 
 // export class KPIListItem {
 //     @IsNumber()
@@ -234,27 +235,72 @@ export class Filter {
     code: FilterCode;
 }
 
-export type FilterInnerCode = 'result_communication_done' |
-    'result_communication_plan' | 'call_plan' | 'call_expired' | 'call_done' | 'call_pound' | 'call_act_noresult_fail' |
-    'presentation_plan' | 'presentation_expired' | 'presentation_done' | 'presentation_pound' | 'presentation_act_noresult_fail' |
-    'presentation_uniq_plan' | 'presentation_uniq_expired' | 'presentation_uniq_done' | 'presentation_uniq_pound' | 'presentation_uniq_act_noresult_fail' |
-    'presentation_contact_uniq_plan' | 'presentation_contact_uniq_done' |
-    'ev_offer_act_send' | 'ev_offer_pres_act_send' | 'ev_invoice_act_send' | 'ev_invoice_pres_act_send' | 'ev_contract_act_send' | 'ev_success_done' |
-    'ev_fail_done'
+export type FilterInnerCode =
+    | 'result_communication_done'
+    | 'result_communication_plan'
+    | 'call_plan'
+    | 'call_expired'
+    | 'call_done'
+    | 'call_pound'
+    | 'call_act_noresult_fail'
+    | 'presentation_plan'
+    | 'presentation_expired'
+    | 'presentation_done'
+    | 'presentation_pound'
+    | 'presentation_act_noresult_fail'
+    | 'presentation_uniq_plan'
+    | 'presentation_uniq_expired'
+    | 'presentation_uniq_done'
+    | 'presentation_uniq_pound'
+    | 'presentation_uniq_act_noresult_fail'
+    | 'presentation_contact_uniq_plan'
+    | 'presentation_contact_uniq_done'
+    | 'ev_offer_act_send'
+    | 'ev_offer_pres_act_send'
+    | 'ev_invoice_act_send'
+    | 'ev_invoice_pres_act_send'
+    | 'ev_contract_act_send'
+    | 'ev_success_done'
+    | 'ev_fail_done';
 
-export type FilterCode = 'xo_plan' | //тип события презентация, звонок
-    'xo_expired' | // событие запланирован, совершен
-    'xo_done' | // дата события
-    'xo_pound' |
-    'xo_act_noresult_fail' |
-    'call_plan' | 'call_expired' | 'call_done' | 'call_pound' | 'call_act_noresult_fail' |
-    'call_in_progress_plan' | 'call_in_progress_expired' | 'call_in_progress_done' | 'call_in_progress_pound' | 'call_in_progress_act_noresult_fail' |
-    'call_in_money_plan' | 'call_in_money_expired' | 'call_in_money_done' | 'call_in_money_pound' | 'call_in_money_act_noresult_fail' |
-
-    'presentation_plan' | 'presentation_expired' | 'presentation_done' | 'presentation_pound' | 'presentation_act_noresult_fail' |
-    'presentation_uniq_plan' | 'presentation_uniq_expired' | 'presentation_uniq_done' | 'presentation_uniq_pound' | 'presentation_uniq_act_noresult_fail' |
-    'ev_offer_act_send' | 'ev_offer_pres_act_send' | 'ev_invoice_act_send' | 'ev_invoice_pres_act_send' | 'ev_contract_act_send' | 'ev_success_done' |
-    'ev_fail_done'
+export type FilterCode =
+    | 'xo_plan' //тип события презентация, звонок
+    | 'xo_expired' // событие запланирован, совершен
+    | 'xo_done' // дата события
+    | 'xo_pound'
+    | 'xo_act_noresult_fail'
+    | 'call_plan'
+    | 'call_expired'
+    | 'call_done'
+    | 'call_pound'
+    | 'call_act_noresult_fail'
+    | 'call_in_progress_plan'
+    | 'call_in_progress_expired'
+    | 'call_in_progress_done'
+    | 'call_in_progress_pound'
+    | 'call_in_progress_act_noresult_fail'
+    | 'call_in_money_plan'
+    | 'call_in_money_expired'
+    | 'call_in_money_done'
+    | 'call_in_money_pound'
+    | 'call_in_money_act_noresult_fail'
+    | 'presentation_plan'
+    | 'presentation_expired'
+    | 'presentation_done'
+    | 'presentation_pound'
+    | 'presentation_act_noresult_fail'
+    | 'presentation_uniq_plan'
+    | 'presentation_uniq_expired'
+    | 'presentation_uniq_done'
+    | 'presentation_uniq_pound'
+    | 'presentation_uniq_act_noresult_fail'
+    | 'ev_offer_act_send'
+    | 'ev_offer_pres_act_send'
+    | 'ev_invoice_act_send'
+    | 'ev_invoice_pres_act_send'
+    | 'ev_contract_act_send'
+    | 'ev_success_done'
+    | 'ev_fail_done';
 
 export class KPI {
     @IsString()

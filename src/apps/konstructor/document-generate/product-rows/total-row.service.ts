@@ -1,21 +1,27 @@
-import { ProductRowDto } from "../dto/product-row/product-row.dto";
-import { Injectable } from "@nestjs/common";
-import { ClientTypeEnum } from "../type/client.type";
-import { formatRuble } from "../lib/rubles.util";
+import { ProductRowDto } from '../dto/product-row/product-row.dto';
+import { Injectable } from '@nestjs/common';
+import { ClientTypeEnum } from '../type/client.type';
+import { formatRuble } from '../lib/rubles.util';
 @Injectable()
 export class DocumentTotalRowService {
-
     getZofferData(total: ProductRowDto) {
         const totalPrice = total.price;
 
-
-        const totalProductName = total.name
-        const supplyShortName = total.currentSupply.name
-        const supplyFullName = total.currentSupply.quantityForKp
-        const totalSumMonth = Number((totalPrice.month / total.product.contractCoefficient).toFixed(2))
-        const totalSum = Number((totalPrice.sum / total.product.contractCoefficient).toFixed(2))
-        const totalQuantity = Number((totalPrice.quantity * total.product.contractCoefficient).toFixed(2))
-        const totalMeasure = 'мес.' // totalPrice.measure.name
+        const totalProductName = total.name;
+        const supplyShortName = total.currentSupply.name;
+        const supplyFullName = total.currentSupply.quantityForKp;
+        const totalSumMonth = Number(
+            (totalPrice.month / total.product.contractCoefficient).toFixed(2),
+        );
+        const totalSum = Number(
+            (totalPrice.sum / total.product.contractCoefficient).toFixed(2),
+        );
+        const totalQuantity = Number(
+            (totalPrice.quantity * total.product.contractCoefficient).toFixed(
+                2,
+            ),
+        );
+        const totalMeasure = 'мес.'; // totalPrice.measure.name
 
         return {
             totalProductName,
@@ -24,8 +30,8 @@ export class DocumentTotalRowService {
             totalSumMonth,
             totalSum,
             totalQuantity,
-            totalMeasure
-        }
+            totalMeasure,
+        };
     }
 
     getContractData(total: ProductRowDto, clientType: ClientTypeEnum) {
@@ -78,7 +84,6 @@ export class DocumentTotalRowService {
         return result;
     }
 
-
     getSupplyReportData(total: any, clientType: string) {
         const productQuantity = total.price.quantity;
         const productContractCoefficient = total.product.contractCoefficient;
@@ -86,7 +91,9 @@ export class DocumentTotalRowService {
 
         const contractSum = Number(total.price.sum).toFixed(2);
         const totalSumCurrent = total.price.current;
-        const totalSumMonth = Number((totalSumCurrent / productContractCoefficient).toFixed(2));
+        const totalSumMonth = Number(
+            (totalSumCurrent / productContractCoefficient).toFixed(2),
+        );
 
         const totalQuantityMonth = this.getMonthTitleAccusative(totalQuantity);
         const totalQuantityString = totalQuantityMonth;
@@ -115,9 +122,4 @@ export class DocumentTotalRowService {
         // TODO: Implement month title logic
         return `${quantity} месяцев`;
     }
-
- 
-
-
-
 }

@@ -27,7 +27,7 @@ export interface IBXListFieldItem {
     VALUE: string;
     SORT?: number;
     ACTIVE?: 'Y' | 'N';
-} 
+}
 
 export enum EBxListCode {
     SALES_KPI = 'sales_kpi',
@@ -35,5 +35,5 @@ export enum EBxListCode {
     SALES_HISTORY = 'sales_history',
     HISTORY = 'history',
     PRESENTATION = 'presentation',
-    SERVICE_HISTORY = 'service_history'
+    SERVICE_HISTORY = 'service_history',
 }

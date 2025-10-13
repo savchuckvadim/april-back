@@ -11,12 +11,12 @@ import { AlfaActivityData } from '../types/alfa-activity-data.interface';
 
 @Injectable()
 export class AlfaActivityService {
-    constructor(private readonly bitrixService: BitrixActivityCreateService) { }
+    constructor(private readonly bitrixService: BitrixActivityCreateService) {}
 
     async processActivities(
-        domain: string, 
-        activities: Record<string, AlfaActivityData>
+        domain: string,
+        activities: Record<string, AlfaActivityData>,
     ) {
         await this.bitrixService.createActivities(domain, activities);
     }
-} 
+}

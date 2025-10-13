@@ -6,17 +6,17 @@ import { SupplyReportModule } from './supply-report/supply-report.module';
 // import { GeneralModule } from './general/general.module';
 
 @Module({
-  imports: [
-    // ContractModule, 
-    SupplyReportModule,
-    // OfferModule,
-    // GeneralModule,
-  ],
-  exports: [
-    // ContractModule,
-    SupplyReportModule,
-    // OfferModule,
-    // GeneralModule,
-  ],
+    imports: [
+        // ContractModule,
+        SupplyReportModule,
+        // OfferModule,
+        // GeneralModule,
+    ],
+    exports: [
+        // ContractModule,
+        SupplyReportModule,
+        // OfferModule,
+        // GeneralModule,
+    ],
 })
 export class DocumentModule {}

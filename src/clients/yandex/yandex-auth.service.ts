@@ -54,7 +54,9 @@ export class YandexAuthService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to get IAM token: ${response.statusText}`);
+                throw new Error(
+                    `Failed to get IAM token: ${response.statusText}`,
+                );
             }
 
             const data = await response.json();
@@ -77,9 +79,16 @@ export class YandexAuthService {
             const privateKey = this.keyData.private_key;
 
             // Extract private key between markers
-            const startPrivateKey = privateKey.indexOf('-----BEGIN PRIVATE KEY-----');
-            const endPrivateKey = privateKey.indexOf('-----END PRIVATE KEY-----') + '-----END PRIVATE KEY-----'.length;
-            const privateKeyPEM = privateKey.substring(startPrivateKey, endPrivateKey);
+            const startPrivateKey = privateKey.indexOf(
+                '-----BEGIN PRIVATE KEY-----',
+            );
+            const endPrivateKey =
+                privateKey.indexOf('-----END PRIVATE KEY-----') +
+                '-----END PRIVATE KEY-----'.length;
+            const privateKeyPEM = privateKey.substring(
+                startPrivateKey,
+                endPrivateKey,
+            );
 
             this.logger.log('Extracted private key');
 
@@ -99,4 +108,4 @@ export class YandexAuthService {
             throw error;
         }
     }
-} 
+}

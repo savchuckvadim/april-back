@@ -1,5 +1,5 @@
-import { IBXDeal } from "src/modules/bitrix";
+import { IBXDeal } from 'src/modules/bitrix';
 
 export class SaleDto {
-    relationSalePresDeal?: IBXDeal  | null 
+    relationSalePresDeal?: IBXDeal | null;
 }

@@ -11,23 +11,23 @@ import { PBXModule } from '@/modules/pbx';
 import { InitSupplyModule } from './supply/init-supply/init-supply.module';
 import { SupplyInitDealModule } from './supply/init-deal/supply-init-deal.module';
 @Module({
-  imports: [
-    ZakupkiOfferModule,
-    ContractGenerateModule,
-    OfferModule,
-    GarantModule,
-    KonstructorInitModule,
-    PBXModule,
-    InitSupplyModule,
-    SupplyInitDealModule
-  ],
+    imports: [
+        ZakupkiOfferModule,
+        ContractGenerateModule,
+        OfferModule,
+        GarantModule,
+        KonstructorInitModule,
+        PBXModule,
+        InitSupplyModule,
+        SupplyInitDealModule,
+    ],
 
-  exports: [
-    ZakupkiOfferModule,
-    ContractGenerateModule,
-    OfferModule,
-    KonstructorInitModule,
-    SupplyInitDealModule
-  ]
+    exports: [
+        ZakupkiOfferModule,
+        ContractGenerateModule,
+        OfferModule,
+        KonstructorInitModule,
+        SupplyInitDealModule,
+    ],
 })
-export class KonstructorModule { }
+export class KonstructorModule {}

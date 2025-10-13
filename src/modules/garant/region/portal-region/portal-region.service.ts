@@ -1,36 +1,51 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { RegionRepository } from "../region.repository";
-import { RegionEntity } from "../region.entity";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { RegionRepository } from '../region.repository';
+import { RegionEntity } from '../region.entity';
 
-import { CreatePortalRegionDto, DeletePortalRegionDto, UpdatePortalRegionDto } from "./dto/portal-region.dto";
-import { PortalService } from "@/modules/portal-konstructor/portal/portal.service";
+import {
+    CreatePortalRegionDto,
+    DeletePortalRegionDto,
+    UpdatePortalRegionDto,
+} from './dto/portal-region.dto';
+import { PortalService } from '@/modules/portal-konstructor/portal/portal.service';
 
 @Injectable()
 export class PortalRegionService {
     constructor(
         private readonly repo: RegionRepository,
         private readonly portalService: PortalService,
-    ) { }
+    ) {}
 
     async getPortalRegions(domain: string): Promise<RegionEntity[] | null> {
         const portalId = await this.getPortalId(domain);
         return await this.repo.findByPortalId(portalId);
     }
 
-    async createPortalRegion(dto: CreatePortalRegionDto): Promise<RegionEntity[] | null> {
-
+    async createPortalRegion(
+        dto: CreatePortalRegionDto,
+    ): Promise<RegionEntity[] | null> {
         const portalId = await this.getPortalId(dto.domain);
         const regionId = await this.getRegionId(dto.regionCode);
         return await this.repo.createPortalRegion(portalId, regionId);
     }
 
-    async updatePortalRegion(dto: UpdatePortalRegionDto): Promise<RegionEntity[] | null> {
+    async updatePortalRegion(
+        dto: UpdatePortalRegionDto,
+    ): Promise<RegionEntity[] | null> {
         const portalId = await this.getPortalId(dto.domain);
         const regionId = await this.getRegionId(dto.regionCode);
-        return await this.repo.updatePortalRegion(portalId, regionId, dto.own_abs, dto.own_tax, dto.own_tax_abs);
+        return await this.repo.updatePortalRegion(
+            portalId,
+            regionId,
+            dto.own_abs,
+            dto.own_tax,
+            dto.own_tax_abs,
+        );
     }
 
-    async deletePortalRegion(dto: DeletePortalRegionDto): Promise<RegionEntity[] | null> {
+    async deletePortalRegion(
+        dto: DeletePortalRegionDto,
+    ): Promise<RegionEntity[] | null> {
         return await this.repo.deletePortalRegion(dto.portalId, dto.regionId);
     }
 

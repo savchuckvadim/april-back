@@ -14,31 +14,27 @@ import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { AlfaBxActivityCreateService } from './services/activity-create.service';
 
 @Module({
-  imports: [
-    QueueModule,
-    SilenceModule,
-    SilentJobHandlersModule,
-    // BitrixModule,
-    // PortalModule,
-    PBXModule,
-    TelegramModule,
-    HttpModule,
-    // RedisModule
-  ],
-  controllers: [AlfaHookController],
-  providers: [
-    AlfaActivityHookService,
-    AlfaBxActivityCreateService,
-
-  ],
-  exports: [AlfaActivityHookService]
+    imports: [
+        QueueModule,
+        SilenceModule,
+        SilentJobHandlersModule,
+        // BitrixModule,
+        // PortalModule,
+        PBXModule,
+        TelegramModule,
+        HttpModule,
+        // RedisModule
+    ],
+    controllers: [AlfaHookController],
+    providers: [AlfaActivityHookService, AlfaBxActivityCreateService],
+    exports: [AlfaActivityHookService],
 })
 export class AlfaActivityModule {
-  private readonly logger = new Logger(AlfaActivityModule.name);
+    private readonly logger = new Logger(AlfaActivityModule.name);
 
-  constructor() {
-    this.logger.log('AlfaActivityModule initialized  ✅  ✅  ✅');
-  }
+    constructor() {
+        this.logger.log('AlfaActivityModule initialized  ✅  ✅  ✅');
+    }
 }
 // export class AlfaActivityModule {
 //   private readonly logger = new Logger(AlfaActivityModule.name);

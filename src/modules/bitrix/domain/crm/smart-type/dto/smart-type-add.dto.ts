@@ -1,5 +1,5 @@
-import { BitrixOwnerTypeId } from "src/modules/bitrix/domain/enums/bitrix-constants.enum";
-import { IBXSmartType } from "../interface/smart-type.interface";
+import { BitrixOwnerTypeId } from 'src/modules/bitrix/domain/enums/bitrix-constants.enum';
+import { IBXSmartType } from '../interface/smart-type.interface';
 
 // Интерфейс для одной связи relation
 export interface IBXSmartTypeRelation {
@@ -22,30 +22,30 @@ export interface IBXSmartTypeLinkedUserFields {
 export interface IBXSmartTypeFields {
     // Обязательные поля
     title: string; // Название смарт-процесса *
-    
+
     // Опциональные поля
     entityTypeId?: number; // Идентификатор создаваемого смарт-процесса
     relations?: IBXSmartTypeRelations; // Объект, содержащий связи к другим сущностям CRM
-    
+
     // Флаги включения функций (используют "Y" | "N" как в API)
-    isUseInUserfieldEnabled?: "Y" | "N"; // Включено ли использование смарт-процесса в пользовательском поле
+    isUseInUserfieldEnabled?: 'Y' | 'N'; // Включено ли использование смарт-процесса в пользовательском поле
     linkedUserFields?: IBXSmartTypeLinkedUserFields; // Набор пользовательских полей
-    isAutomationEnabled?: "Y" | "N"; // Включены ли роботы и триггеры
-    isBeginCloseDatesEnabled?: "Y" | "N"; // Включены ли поля Дата начала и Дата завершения
-    isBizProcEnabled?: "Y" | "N"; // Включено ли использование дизайнера бизнес процессов
-    isCategoriesEnabled?: "Y" | "N"; // Включены ли свои воронки и туннели продаж
-    isClientEnabled?: "Y" | "N"; // Включено ли поле Клиент
-    isDocumentsEnabled?: "Y" | "N"; // Включена ли печать документов
-    isLinkWithProductsEnabled?: "Y" | "N"; // Включена ли привязка товаров каталога
-    isMycompanyEnabled?: "Y" | "N"; // Включено ли поле Реквизиты вашей компании
-    isObserversEnabled?: "Y" | "N"; // Включено ли поле Наблюдатели
-    isRecyclebinEnabled?: "Y" | "N"; // Включено ли использование корзины
-    isSetOpenPermissions?: "Y" | "N"; // Делать ли новые воронки доступными для всех
-    isSourceEnabled?: "Y" | "N"; // Включены ли поля Источник и Дополнительно об источнике
-    isStagesEnabled?: "Y" | "N"; // Включено ли использование своих стадий и канбана
-    
+    isAutomationEnabled?: 'Y' | 'N'; // Включены ли роботы и триггеры
+    isBeginCloseDatesEnabled?: 'Y' | 'N'; // Включены ли поля Дата начала и Дата завершения
+    isBizProcEnabled?: 'Y' | 'N'; // Включено ли использование дизайнера бизнес процессов
+    isCategoriesEnabled?: 'Y' | 'N'; // Включены ли свои воронки и туннели продаж
+    isClientEnabled?: 'Y' | 'N'; // Включено ли поле Клиент
+    isDocumentsEnabled?: 'Y' | 'N'; // Включена ли печать документов
+    isLinkWithProductsEnabled?: 'Y' | 'N'; // Включена ли привязка товаров каталога
+    isMycompanyEnabled?: 'Y' | 'N'; // Включено ли поле Реквизиты вашей компании
+    isObserversEnabled?: 'Y' | 'N'; // Включено ли поле Наблюдатели
+    isRecyclebinEnabled?: 'Y' | 'N'; // Включено ли использование корзины
+    isSetOpenPermissions?: 'Y' | 'N'; // Делать ли новые воронки доступными для всех
+    isSourceEnabled?: 'Y' | 'N'; // Включены ли поля Источник и Дополнительно об источнике
+    isStagesEnabled?: 'Y' | 'N'; // Включено ли использование своих стадий и канбана
+
     // Устаревшие поля (для обратной совместимости)
-    isExternal?: "Y" | "N"; // Является ли смарт-процесс вынесенным из CRM
+    isExternal?: 'Y' | 'N'; // Является ли смарт-процесс вынесенным из CRM
     customSectionId?: number; // Идентификатор цифрового рабочего места
     customSections?: any[]; // Массив цифровых рабочих мест
 }
@@ -63,8 +63,4 @@ export class SmartTypeListResponseDto {
 }
 export class SmartTypeUpdateRequestDto extends SmartTypeAddRequestDto {
     id: number;
- 
 }
-
-
-

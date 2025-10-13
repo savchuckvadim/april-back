@@ -1,6 +1,12 @@
 import { Global, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createWriteStream, createReadStream, existsSync, mkdirSync, unlinkSync } from 'fs';
+import {
+    createWriteStream,
+    createReadStream,
+    existsSync,
+    mkdirSync,
+    unlinkSync,
+} from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 import { pipeline } from 'stream';
@@ -12,7 +18,7 @@ const pipelineAsync = promisify(pipeline);
 export enum StorageType {
     APP = 'app',
     PUBLIC = 'public',
-    PRIVATE = 'private'
+    PRIVATE = 'private',
 }
 
 @Global()
@@ -22,7 +28,8 @@ export class StorageService {
     private readonly storagePath: string;
 
     constructor(private readonly configService: ConfigService) {
-        this.storagePath = this.configService.get<string>('STORAGE_PATH') || 'storage';
+        this.storagePath =
+            this.configService.get<string>('STORAGE_PATH') || 'storage';
     }
 
     private initializeStorage() {
@@ -48,7 +55,12 @@ export class StorageService {
         }
     }
 
-    async saveFile(content: Buffer, fileName: string, type: StorageType, subPath: string): Promise<string> {
+    async saveFile(
+        content: Buffer,
+        fileName: string,
+        type: StorageType,
+        subPath: string,
+    ): Promise<string> {
         try {
             const fullPath = this.getFilePath(type, subPath, fileName);
             const dirPath = path.dirname(fullPath);
@@ -84,11 +96,19 @@ export class StorageService {
         }
     }
 
-    async fileExistsByType(type: StorageType, subPath: string, fileName: string): Promise<boolean> {
+    async fileExistsByType(
+        type: StorageType,
+        subPath: string,
+        fileName: string,
+    ): Promise<boolean> {
         const filePath = this.getFilePath(type, subPath, fileName);
         return this.fileExists(filePath);
     }
-    async readFileByType(type: StorageType, filePath: string, fileName: string): Promise<Buffer> {
+    async readFileByType(
+        type: StorageType,
+        filePath: string,
+        fileName: string,
+    ): Promise<Buffer> {
         try {
             const path = join(this.storagePath, type, filePath, fileName);
             return await fs.readFile(path);
@@ -98,14 +118,20 @@ export class StorageService {
         }
     }
 
-    async countFilesInDirectory(type: StorageType, subPath: string): Promise<number> {
+    async countFilesInDirectory(
+        type: StorageType,
+        subPath: string,
+    ): Promise<number> {
         try {
-          const dirPath = this.getFilePath(type, subPath, ''); // получаем путь к папке
-          const files = await fs.readdir(dirPath);
-          return files.length;
+            const dirPath = this.getFilePath(type, subPath, ''); // получаем путь к папке
+            const files = await fs.readdir(dirPath);
+            return files.length;
         } catch (err) {
-          this.logger.error(`Ошибка при подсчёте файлов в папке ${type}/${subPath}:`, err);
-          return 1;
+            this.logger.error(
+                `Ошибка при подсчёте файлов в папке ${type}/${subPath}:`,
+                err,
+            );
+            return 1;
         }
-      }
-} 
+    }
+}

@@ -4,7 +4,6 @@
 // import { BitrixActivityCreateService } from '../bitrix/infrastructure/services/activity/activity-create.service';
 // import { RedisService } from 'src/core/redis/redis.service';
 
-
 // @Processor('activity')
 // @Injectable()
 // export class QueueProcessor {
@@ -31,7 +30,6 @@
 //     // @Process('createActivity')
 //     // async handleCreateActivity(job: Job) {
 
-
 //     //     // console.log('Processing queue job...');
 //     //     // console.log('Processing queue data:');
 //     //     // console.log(job.data);
@@ -39,4 +37,4 @@
 
 //     //     await this.bitrixService.createActivities(domain);
 //     // }
-// } 
+// }

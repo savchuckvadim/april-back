@@ -10,24 +10,18 @@ import { BitrixModule } from 'src/modules/bitrix/bitrix.module';
 import { PortalService } from 'src/modules/portal/portal.service';
 
 @Module({
-  imports: [
-
-    PortalModule,
-    BitrixModule,
-    // PBXModule,
-    QueueModule,
-
-  ],
-  controllers: [QueuePingController],
-  providers: [
-
-    QueuePingQueueProcessor,
-    QueuePingUseCase,
-    QueuePingDispatchService,
-
-  ],
-  exports: [
-   
-  ]
+    imports: [
+        PortalModule,
+        BitrixModule,
+        // PBXModule,
+        QueueModule,
+    ],
+    controllers: [QueuePingController],
+    providers: [
+        QueuePingQueueProcessor,
+        QueuePingUseCase,
+        QueuePingDispatchService,
+    ],
+    exports: [],
 })
-export class QueuePingModule { }
+export class QueuePingModule {}

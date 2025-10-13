@@ -30,8 +30,6 @@ export interface IBxRpaItem {
             workPosition: string | null;
             fullName: string;
             link: string;
-        }
-    }
-
+        };
+    };
 }
-

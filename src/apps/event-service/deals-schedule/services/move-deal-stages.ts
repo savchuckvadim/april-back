@@ -1,27 +1,27 @@
-import { PBXService } from "@/modules/pbx/";
-import { TelegramService } from "@/modules/telegram/telegram.service";
-import { Injectable } from "@nestjs/common";
-
+import { PBXService } from '@/modules/pbx/';
+import { TelegramService } from '@/modules/telegram/telegram.service';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class MoveDealStagesService {
-
     constructor(
         private readonly telegramService: TelegramService,
-        private readonly pbx: PBXService
-    ) {
-
-    }
+        private readonly pbx: PBXService,
+    ) {}
 
     async moveDealStages() {
-        const now = new Date()
-        const timezone = 'Europe/Moscow'
-        const date = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-        const hours = date.getHours()
-        const minutes = date.getMinutes()
-        const seconds = date.getSeconds()
-        await this.telegramService.sendMessage(`⏰ SCHEDLER MoveDealStagesService start ${hours}:${minutes}:${seconds} ${timezone}`);
-        const domain = 'gsr.bitrix24.ru'
+        const now = new Date();
+        const timezone = 'Europe/Moscow';
+        const date = new Date(
+            now.toLocaleString('en-US', { timeZone: timezone }),
+        );
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const seconds = date.getSeconds();
+        await this.telegramService.sendMessage(
+            `⏰ SCHEDLER MoveDealStagesService start ${hours}:${minutes}:${seconds} ${timezone}`,
+        );
+        const domain = 'gsr.bitrix24.ru';
         // const portals = process.env.PORTALS;
         // if (portals) {
         //     const portalList = portals.split(",").map(domain => domain.trim());
@@ -31,17 +31,23 @@ export class MoveDealStagesService {
 
         const dealService = PortalModel.getDealCategoryByCode('service_base');
         if (!dealService) {
-            await this.telegramService.sendMessage(`Not service_base for domain: ${domain}`);
+            await this.telegramService.sendMessage(
+                `Not service_base for domain: ${domain}`,
+            );
             return;
         }
-        const results: { dealId: number, oldStage: string, targetStage: string }[] = [];
+        const results: {
+            dealId: number;
+            oldStage: string;
+            targetStage: string;
+        }[] = [];
         const stages = [
-            "NEW",
-            "WARM",
-            "PRESENTATION",
-            "DOCUMENT_SEND",
-            "IN_PROSRESS",
-            "MONEY_AWAIT",
+            'NEW',
+            'WARM',
+            'PRESENTATION',
+            'DOCUMENT_SEND',
+            'IN_PROSRESS',
+            'MONEY_AWAIT',
         ];
 
         const bxStages: string[] = [];
@@ -51,18 +57,17 @@ export class MoveDealStagesService {
 
         const filter: any = {
             STAGE_ID: bxStages,
-            CATEGORY_ID: dealService.bitrixId
+            CATEGORY_ID: dealService.bitrixId,
         };
 
-        const deals = await bitrix.deal.all(
-            filter,
-            ["UF_CRM_CONTRACT_END", "STAGE_ID"]
-        );
+        const deals = await bitrix.deal.all(filter, [
+            'UF_CRM_CONTRACT_END',
+            'STAGE_ID',
+        ]);
 
         await this.telegramService.sendMessage(`deals: ${deals.length}`);
 
-
-        let dealsIds = "";
+        let dealsIds = '';
 
         for (const deal of deals) {
             const contractEnd = deal.UF_CRM_CONTRACT_END as string;
@@ -70,36 +75,44 @@ export class MoveDealStagesService {
                 continue;
             }
 
-            const stageCode = this.daysStageDeal(this.daysUntilRenewal(contractEnd));
+            const stageCode = this.daysStageDeal(
+                this.daysUntilRenewal(contractEnd),
+            );
             const targetStage = PortalModel.getStageByCode(stageCode);
 
             if (targetStage && !deal.STAGE_ID.includes(targetStage)) {
                 dealsIds += `, ${deal.ID}`;
 
-
                 results.push({
                     dealId: deal.ID,
                     oldStage: deal.STAGE_ID,
-                    targetStage: targetStage
+                    targetStage: targetStage,
                 });
                 // Move deal to new stage
                 // await bitrix.deal.update(deal.ID, {
                 //     STAGE_ID: `C${dealService.bitrixId}:${targetStage}`
                 // });
                 bitrix.batch.deal.update(deal.ID.toString(), deal.ID, {
-                    STAGE_ID: `C${dealService.bitrixId}:${targetStage}`
+                    STAGE_ID: `C${dealService.bitrixId}:${targetStage}`,
                 });
-
             }
         }
         const batch = await bitrix.api.callBatch();
- 
+
         if (dealsIds) {
-            await this.telegramService.sendMessage(`nest moves deals: ${dealsIds}`);
+            await this.telegramService.sendMessage(
+                `nest moves deals: ${dealsIds}`,
+            );
         }
         //     }
         // }
-        return { dealsIds, count: deals.length, results, resultsCount: results.length, batch };
+        return {
+            dealsIds,
+            count: deals.length,
+            results,
+            resultsCount: results.length,
+            batch,
+        };
     }
 
     // async crmDealAdd(data: any) {
@@ -140,15 +153,15 @@ export class MoveDealStagesService {
     // Функция для определения стадии
     private daysStageDeal(days: number): string {
         if (days < 14) {
-            return "service_reg_two_weeks";
+            return 'service_reg_two_weeks';
         } else if (days < 30) {
-            return "service_reg_one";
+            return 'service_reg_one';
         } else if (days < 91) {
-            return "service_reg_three";
+            return 'service_reg_three';
         } else if (days < 182) {
-            return "service_reg_six";
+            return 'service_reg_six';
         } else {
-            return "service_in_work";
+            return 'service_in_work';
         }
     }
 }

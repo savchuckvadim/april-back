@@ -1,6 +1,14 @@
-import { EBxMethod } from "src/modules/bitrix/core";
-import { IUserFieldConfig } from "../interface/userfieldconfig.interface";
-import { UserFieldConfigAddDto, UserFieldConfigDeleteDto, UserFieldConfigGetDto, UserFieldConfigListDto, UserFieldConfigResponseFieldDto, UserFieldConfigResponseFieldsDto, UserFieldConfigUpdateDto } from "../dto/userfieldconfig.dto";
+import { EBxMethod } from 'src/modules/bitrix/core';
+import { IUserFieldConfig } from '../interface/userfieldconfig.interface';
+import {
+    UserFieldConfigAddDto,
+    UserFieldConfigDeleteDto,
+    UserFieldConfigGetDto,
+    UserFieldConfigListDto,
+    UserFieldConfigResponseFieldDto,
+    UserFieldConfigResponseFieldsDto,
+    UserFieldConfigUpdateDto,
+} from '../dto/userfieldconfig.dto';
 
 export type UserFieldConfigSchema = {
     [EBxMethod.GET]: {
@@ -24,4 +32,4 @@ export type UserFieldConfigSchema = {
         request: UserFieldConfigDeleteDto;
         response: { field: IUserFieldConfig };
     };
-};  
+};

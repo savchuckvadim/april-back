@@ -1,10 +1,10 @@
-import { IsBoolean } from "class-validator";
-import { Type } from "class-transformer";
-import { IsArray } from "class-validator";
-import { ValidateNested } from "class-validator";
-import { IsOptional } from "class-validator";
-import { IsNumber } from "class-validator";
-import { IsString } from "class-validator";
+import { IsBoolean } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray } from 'class-validator';
+import { ValidateNested } from 'class-validator';
+import { IsOptional } from 'class-validator';
+import { IsNumber } from 'class-validator';
+import { IsString } from 'class-validator';
 
 class LogoDto {
     @IsString() name: string;
@@ -49,9 +49,18 @@ class RqDto {
     @IsString() ks: string;
     @IsString() bankAdress: string;
     @IsOptional() @IsString() bankOther: string;
-    @IsArray() @ValidateNested({ each: true }) @Type(() => LogoDto) logos: LogoDto[];
-    @IsArray() @ValidateNested({ each: true }) @Type(() => LogoDto) stamps: LogoDto[];
-    @IsArray() @ValidateNested({ each: true }) @Type(() => LogoDto) signatures: LogoDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => LogoDto)
+    logos: LogoDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => LogoDto)
+    stamps: LogoDto[];
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => LogoDto)
+    signatures: LogoDto[];
     @IsArray() qrs: any[];
     @IsString() domain: string;
 }

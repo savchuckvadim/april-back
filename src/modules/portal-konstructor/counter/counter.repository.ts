@@ -1,4 +1,4 @@
-import { CounterEntity } from "./counter.entity";
+import { CounterEntity } from './counter.entity';
 
 export abstract class CounterRepository {
     abstract findById(id: number): Promise<CounterEntity | null>;

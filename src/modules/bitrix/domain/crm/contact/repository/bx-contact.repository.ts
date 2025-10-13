@@ -1,19 +1,20 @@
-import { BitrixBaseApi } from "src/modules/bitrix/core";
-import { EBxMethod, EBxNamespace } from "../../../../core/domain/consts/bitrix-api.enum";
-import { EBXEntity } from "../../../../core/domain/consts/bitrix-entities.enum";
-import { IBXContact } from "../interface/bx-contact.interface";
+import { BitrixBaseApi } from 'src/modules/bitrix/core';
+import {
+    EBxMethod,
+    EBxNamespace,
+} from '../../../../core/domain/consts/bitrix-api.enum';
+import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
+import { IBXContact } from '../interface/bx-contact.interface';
 
 export class BxContactRepository {
-    constructor(
-        private readonly bxApi: BitrixBaseApi
-    ) { }
+    constructor(private readonly bxApi: BitrixBaseApi) {}
 
     async get(contactId: number) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: contactId }
+            { ID: contactId },
         );
     }
 
@@ -23,7 +24,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: contactId }
+            { ID: contactId },
         );
     }
 
@@ -32,17 +33,21 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: filter.ID || 0 }
+            { ID: filter.ID || 0 },
         );
     }
 
-    async getListBtch(cmdCode: string, filter: Partial<IBXContact>, select?: string[]) {
+    async getListBtch(
+        cmdCode: string,
+        filter: Partial<IBXContact>,
+        select?: string[],
+    ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: filter.ID || 0 }
+            { ID: filter.ID || 0 },
         );
     }
 
@@ -51,7 +56,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.ADD,
-            { fields: data }
+            { fields: data },
         );
     }
 
@@ -61,7 +66,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.ADD,
-            { fields: data }
+            { fields: data },
         );
     }
 
@@ -70,17 +75,21 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.UPDATE,
-            { id: id, fields: data }
+            { id: id, fields: data },
         );
     }
 
-    async updateBtch(cmdCode: string, id: number | string, data: Partial<IBXContact>) {
+    async updateBtch(
+        cmdCode: string,
+        id: number | string,
+        data: Partial<IBXContact>,
+    ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.UPDATE,
-            { id, fields: data }
+            { id, fields: data },
         );
     }
 
@@ -89,7 +98,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: filter.ID || 0 }
+            { ID: filter.ID || 0 },
         );
     }
 
@@ -98,7 +107,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: id }
+            { ID: id },
         );
     }
 
@@ -108,7 +117,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: id }
+            { ID: id },
         );
     }
-} 
+}

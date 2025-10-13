@@ -10,7 +10,7 @@ import { APIOnlineClient } from '../../clients/online/client/api-online.client';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { KpiReportController } from 'src/apps/kpi-report/kpi-report.controller';
-import { DepartmentController } from '../bitrix/endpoints/department/department.controller';
+import { DepartmentEndpointController } from '../bitrix/endpoints/department/department.controller';
 import { OnlineClientModule } from '../../clients/online';
 
 // C:\Projects\April-KP\april-next\back\src\modules\portal\portal.module.ts
@@ -20,43 +20,41 @@ import { OnlineClientModule } from '../../clients/online';
         RedisModule,
         // ClientsModule,
         TelegramModule,
-        OnlineClientModule
+        OnlineClientModule,
     ],
     providers: [
-        PortalService,  //for standalone queue etc
+        PortalService, //for standalone queue etc
         PortalContextService, //from request
 
         PortalModelFactory,
-        APIOnlineClient
+        APIOnlineClient,
     ],
     exports: [
         PortalService, //for standalone queue etc
         PortalContextService, //from request
 
-        PortalModelFactory
-    ]
+        PortalModelFactory,
+    ],
 })
 export class PortalModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
             .apply(PortalContextMiddleware)
             .exclude({ path: '/queue/ping', method: RequestMethod.ALL })
-            .exclude('/hooks/*path')  // не кладём portal
-            .exclude('/kpi-report/download')  // не кладём portal
-            .exclude('api/queue/ping')  // не кладём portal
+            .exclude('/hooks/*path') // не кладём portal
+            .exclude('/kpi-report/download') // не кладём portal
+            .exclude('api/queue/ping') // не кладём portal
             .forRoutes(
                 KpiReportController,
-                DepartmentController,
+                DepartmentEndpointController,
                 // AlfaController,
                 // ListController
-            )
+            );
         // .forRoutes({ path: '*', method: RequestMethod.ALL });
 
         // .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
     }
 }
-
-
 
 // PortalService	Получает портал (с кэшем в Redis)
 // PortalModelFactory + PortalModel	Доступ к методам портала

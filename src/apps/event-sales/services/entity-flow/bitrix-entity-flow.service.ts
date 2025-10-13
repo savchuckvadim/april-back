@@ -2,15 +2,28 @@ import { Injectable, Logger } from '@nestjs/common';
 
 // TODO: Create proper BitrixGeneralService implementation
 class BitrixGeneralService {
-    static async updateEntity(hook: any, entityType: string, entityId: number, fields: any): Promise<void> {
+    static async updateEntity(
+        hook: any,
+        entityType: string,
+        entityId: number,
+        fields: any,
+    ): Promise<void> {
         // Implementation will be added later
     }
 
-    static async updateCompany(hook: any, companyId: number, fields: any): Promise<any> {
+    static async updateCompany(
+        hook: any,
+        companyId: number,
+        fields: any,
+    ): Promise<any> {
         // Implementation will be added later
     }
 
-    static async updateLead(hook: any, leadId: number, fields: any): Promise<any> {
+    static async updateLead(
+        hook: any,
+        leadId: number,
+        fields: any,
+    ): Promise<any> {
         // Implementation will be added later
     }
 }
@@ -50,18 +63,38 @@ const failtypeItems: Array<{
     name: string;
     isActive: boolean;
 }> = [
-        { id: 0, code: "op_prospects_good", name: "Перспективная", isActive: false },
-        { id: 1, code: "op_prospects_good", name: "Нет перспектив", isActive: false },
-        { id: 2, code: "garant", name: "Гарант/Запрет", isActive: true },
-        { id: 3, code: "go", name: "Покупает ГО", isActive: true },
-        { id: 4, code: "territory", name: "Чужая территория", isActive: true },
-        { id: 5, code: "accountant", name: "Бухприх", isActive: true },
-        { id: 6, code: "autsorc", name: "Аутсорсинг", isActive: true },
-        { id: 7, code: "depend", name: "Несамостоятельная организация", isActive: true },
-        { id: 8, code: "op_prospects_nophone", name: "Недозвон", isActive: true },
-        { id: 9, code: "op_prospects_company", name: "Компания не существует", isActive: true },
-        { id: 10, code: "failure", name: "Отказ", isActive: true }
-    ];
+    {
+        id: 0,
+        code: 'op_prospects_good',
+        name: 'Перспективная',
+        isActive: false,
+    },
+    {
+        id: 1,
+        code: 'op_prospects_good',
+        name: 'Нет перспектив',
+        isActive: false,
+    },
+    { id: 2, code: 'garant', name: 'Гарант/Запрет', isActive: true },
+    { id: 3, code: 'go', name: 'Покупает ГО', isActive: true },
+    { id: 4, code: 'territory', name: 'Чужая территория', isActive: true },
+    { id: 5, code: 'accountant', name: 'Бухприх', isActive: true },
+    { id: 6, code: 'autsorc', name: 'Аутсорсинг', isActive: true },
+    {
+        id: 7,
+        code: 'depend',
+        name: 'Несамостоятельная организация',
+        isActive: true,
+    },
+    { id: 8, code: 'op_prospects_nophone', name: 'Недозвон', isActive: true },
+    {
+        id: 9,
+        code: 'op_prospects_company',
+        name: 'Компания не существует',
+        isActive: true,
+    },
+    { id: 10, code: 'failure', name: 'Отказ', isActive: true },
+];
 
 interface PortalFieldItem {
     id: number;
@@ -116,7 +149,7 @@ interface UpdatedFields {
 export class BitrixEntityFlowService {
     private static readonly logger = new Logger(BitrixEntityFlowService.name);
 
-    constructor() { }
+    constructor() {}
 
     getWorkstatusFieldItemValue(
         portalField: PortalField,
@@ -148,7 +181,7 @@ export class BitrixEntityFlowService {
 
         if (portalField?.items) {
             const item = portalField.items.find(
-                (pitem) => pitem.code === resultCode,
+                pitem => pitem.code === resultCode,
             );
             if (item) {
                 resultItemBtxId = item.bitrixId;
@@ -161,12 +194,16 @@ export class BitrixEntityFlowService {
     private getProspectsFieldItemValue(
         portalField: PortalField,
         workStatus: string,
-        failType: FailType | null
+        failType: FailType | null,
     ): number | null {
         let resultItemBtxId: number | null = null;
         let resultCode: ResultCode = 'op_prospects_good';
 
-        if (workStatus !== 'inJob' && workStatus !== 'success' && workStatus !== 'setAside') {
+        if (
+            workStatus !== 'inJob' &&
+            workStatus !== 'success' &&
+            workStatus !== 'setAside'
+        ) {
             if (failType?.code) {
                 const failCode = failType.code;
                 switch (failCode) {
@@ -208,7 +245,7 @@ export class BitrixEntityFlowService {
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === resultCode
+                item => item.code === resultCode,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -221,7 +258,7 @@ export class BitrixEntityFlowService {
     public getNoresultReson(
         portalField: PortalField,
         noresultReason: NoresultReason,
-        isResult: boolean
+        isResult: boolean,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
@@ -231,7 +268,7 @@ export class BitrixEntityFlowService {
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === noresultReason.code
+                item => item.code === noresultReason.code,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -244,13 +281,13 @@ export class BitrixEntityFlowService {
     public getFailReason(
         portalField: PortalField,
         failReason: FailReason,
-        failType: FailType
+        failType: FailType,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === failReason.code
+                item => item.code === failReason.code,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -267,7 +304,7 @@ export class BitrixEntityFlowService {
         entityId: number,
         eventType: string,
         eventAction: string,
-        entityFieldsUpdatingContent: EntityFieldsUpdatingContent
+        entityFieldsUpdatingContent: EntityFieldsUpdatingContent,
     ): Promise<SuccessResponse | ErrorResponse> {
         const randomNumber = Math.floor(Math.random() * 3) + 1;
 
@@ -276,15 +313,24 @@ export class BitrixEntityFlowService {
 
         try {
             if (entityType === 'company') {
-                await BitrixEntityFlowService.updateCompanyCold(hook, entityId, entityFieldsUpdatingContent);
+                await BitrixEntityFlowService.updateCompanyCold(
+                    hook,
+                    entityId,
+                    entityFieldsUpdatingContent,
+                );
             } else if (entityType === 'lead') {
-                await BitrixEntityFlowService.updateLeadCold(hook, entityId, entityFieldsUpdatingContent);
-            } else { // deal
+                await BitrixEntityFlowService.updateLeadCold(
+                    hook,
+                    entityId,
+                    entityFieldsUpdatingContent,
+                );
+            } else {
+                // deal
                 await BitrixGeneralService.updateEntity(
                     hook,
                     entityType,
                     entityId,
-                    entityFieldsUpdatingContent
+                    entityFieldsUpdatingContent,
                 );
             }
 
@@ -294,11 +340,16 @@ export class BitrixEntityFlowService {
                 message: error.message,
                 file: error.file,
                 line: error.line,
-                trace: error.stack
+                trace: error.stack,
             };
 
-            BitrixEntityFlowService.logger.error('ERROR COLD: Exception caught', errorMessages);
-            BitrixEntityFlowService.logger.log('error COLD', { error: error.message });
+            BitrixEntityFlowService.logger.error(
+                'ERROR COLD: Exception caught',
+                errorMessages,
+            );
+            BitrixEntityFlowService.logger.log('error COLD', {
+                error: error.message,
+            });
 
             return errorMessages;
         }
@@ -328,7 +379,7 @@ export class BitrixEntityFlowService {
         currentReportEventName: string,
         currentPlanEventName: string,
         comment: string,
-        currentFieldsForUpdate: EntityFieldsUpdatingContent
+        currentFieldsForUpdate: EntityFieldsUpdatingContent,
     ): Promise<SuccessResponse | ErrorResponse> {
         // Random delay between 0.1 and 0.5 seconds
         const randomDelay = Math.floor(Math.random() * 400000) + 100000;
@@ -359,14 +410,14 @@ export class BitrixEntityFlowService {
                     currentReportEventName,
                     currentPlanEventName,
                     comment,
-                    entityType
+                    entityType,
                 );
 
                 await BitrixGeneralService.updateEntity(
                     hook,
                     entityType,
                     entityId,
-                    updatedFields
+                    updatedFields,
                 );
             }
 
@@ -376,11 +427,16 @@ export class BitrixEntityFlowService {
                 message: error.message,
                 file: error.file,
                 line: error.line,
-                trace: error.stack
+                trace: error.stack,
             };
 
-            BitrixEntityFlowService.logger.error('ERROR FLOW: Exception caught', errorMessages);
-            BitrixEntityFlowService.logger.log('error FLOW', { error: error.message });
+            BitrixEntityFlowService.logger.error(
+                'ERROR FLOW: Exception caught',
+                errorMessages,
+            );
+            BitrixEntityFlowService.logger.log('error FLOW', {
+                error: error.message,
+            });
 
             return errorMessages;
         }
@@ -395,7 +451,7 @@ export class BitrixEntityFlowService {
         responsibleId: number,
         workStatus: string,
         resultStatus: string,
-        currentFieldsForUpdate: EntityFieldsUpdatingContent
+        currentFieldsForUpdate: EntityFieldsUpdatingContent,
     ): Promise<SuccessResponse | ErrorResponse> {
         try {
             const userId = `user_${responsibleId}`;
@@ -408,7 +464,9 @@ export class BitrixEntityFlowService {
                     if (pField?.code) {
                         const pFieldCode = pField.code;
 
-                        for (const [targetFieldCode, value] of Object.entries(currentFieldsForUpdate)) {
+                        for (const [targetFieldCode, value] of Object.entries(
+                            currentFieldsForUpdate,
+                        )) {
                             if (pFieldCode === targetFieldCode) {
                                 switch (pFieldCode) {
                                     case 'manager_op':
@@ -422,22 +480,28 @@ export class BitrixEntityFlowService {
                                     case 'pres_comments':
                                     case 'op_history':
                                     case 'op_mhistory':
-                                        updatedFields[`UF_CRM_${pField.bitrixId}`] = value;
+                                        updatedFields[
+                                            `UF_CRM_${pField.bitrixId}`
+                                        ] = value;
                                         break;
 
                                     case 'op_work_status':
-                                        updatedFields[`UF_CRM_${pField.bitrixId}`] = this.getWorkstatusFieldItemValue(
+                                        updatedFields[
+                                            `UF_CRM_${pField.bitrixId}`
+                                        ] = this.getWorkstatusFieldItemValue(
                                             pField,
                                             workStatus,
-                                            'document'
+                                            'document',
                                         );
                                         break;
 
                                     case 'op_prospects_type':
-                                        updatedFields[`UF_CRM_${pField.bitrixId}`] = this.getProspectsFieldItemValue(
+                                        updatedFields[
+                                            `UF_CRM_${pField.bitrixId}`
+                                        ] = this.getProspectsFieldItemValue(
                                             pField,
                                             workStatus,
-                                            null
+                                            null,
                                         );
                                         break;
                                 }
@@ -451,7 +515,7 @@ export class BitrixEntityFlowService {
                 hook,
                 entityType,
                 entityId,
-                updatedFields
+                updatedFields,
             );
 
             return { result: 'success' };
@@ -460,41 +524,68 @@ export class BitrixEntityFlowService {
                 message: error.message,
                 file: error.file,
                 line: error.line,
-                trace: error.stack
+                trace: error.stack,
             };
 
-            BitrixEntityFlowService.logger.error('ERROR DOCUMENT FLOW: Exception caught', errorMessages);
-            BitrixEntityFlowService.logger.log('error DOCUMENT FLOW', { error: error.message });
+            BitrixEntityFlowService.logger.error(
+                'ERROR DOCUMENT FLOW: Exception caught',
+                errorMessages,
+            );
+            BitrixEntityFlowService.logger.log('error DOCUMENT FLOW', {
+                error: error.message,
+            });
 
             return errorMessages;
         }
     }
 
-    private static async updateCompanyCold(hook: any, companyId: number, fields: EntityFieldsUpdatingContent): Promise<any> {
+    private static async updateCompanyCold(
+        hook: any,
+        companyId: number,
+        fields: EntityFieldsUpdatingContent,
+    ): Promise<any> {
         // UF_CRM_10_1709907744 - дата следующего звонка
         try {
-            const result = await BitrixGeneralService.updateCompany(hook, companyId, fields);
+            const result = await BitrixGeneralService.updateCompany(
+                hook,
+                companyId,
+                fields,
+            );
             return result;
         } catch (error) {
-            BitrixEntityFlowService.logger.error('ERROR updateCompanyCold: Exception caught', {
-                error: error.message,
-                companyId,
-                fields
-            });
+            BitrixEntityFlowService.logger.error(
+                'ERROR updateCompanyCold: Exception caught',
+                {
+                    error: error.message,
+                    companyId,
+                    fields,
+                },
+            );
             throw error;
         }
     }
 
-    private static async updateLeadCold(hook: any, leadId: number, fields: EntityFieldsUpdatingContent): Promise<any> {
+    private static async updateLeadCold(
+        hook: any,
+        leadId: number,
+        fields: EntityFieldsUpdatingContent,
+    ): Promise<any> {
         try {
-            const result = await BitrixGeneralService.updateLead(hook, leadId, fields);
+            const result = await BitrixGeneralService.updateLead(
+                hook,
+                leadId,
+                fields,
+            );
             return result;
         } catch (error) {
-            BitrixEntityFlowService.logger.error('ERROR updateLeadCold: Exception caught', {
-                error: error.message,
-                leadId,
-                fields
-            });
+            BitrixEntityFlowService.logger.error(
+                'ERROR updateLeadCold: Exception caught',
+                {
+                    error: error.message,
+                    leadId,
+                    fields,
+                },
+            );
             throw error;
         }
     }
@@ -520,7 +611,7 @@ export class BitrixEntityFlowService {
         currentReportEventName: string,
         currentPlanEventName: string,
         comment: string,
-        entityType: string
+        entityType: string,
     ): Promise<any> {
         const userId = `user_${responsibleId}`;
         const isResult = resultStatus === 'result' || resultStatus === 'new';
@@ -531,7 +622,9 @@ export class BitrixEntityFlowService {
 
             const portalFieldCode = pField.code;
 
-            for (const [targetFieldCode, value] of Object.entries(currentFieldsForUpdate)) {
+            for (const [targetFieldCode, value] of Object.entries(
+                currentFieldsForUpdate,
+            )) {
                 if (portalFieldCode === targetFieldCode) {
                     switch (portalFieldCode) {
                         case 'manager_op':
@@ -556,35 +649,39 @@ export class BitrixEntityFlowService {
                             break;
 
                         case 'op_work_status':
-                            result[`UF_CRM_${pField.bitrixId}`] = this.getWorkstatusFieldItemValue(
-                                pField,
-                                workStatus,
-                                planEventType
-                            );
+                            result[`UF_CRM_${pField.bitrixId}`] =
+                                this.getWorkstatusFieldItemValue(
+                                    pField,
+                                    workStatus,
+                                    planEventType,
+                                );
                             break;
 
                         case 'op_prospects_type':
-                            result[`UF_CRM_${pField.bitrixId}`] = this.getProspectsFieldItemValue(
-                                pField,
-                                workStatus,
-                                failType
-                            );
+                            result[`UF_CRM_${pField.bitrixId}`] =
+                                this.getProspectsFieldItemValue(
+                                    pField,
+                                    workStatus,
+                                    failType,
+                                );
                             break;
 
                         case 'op_noresult_reason':
-                            result[`UF_CRM_${pField.bitrixId}`] = this.getNoresultReson(
-                                pField,
-                                { code: noResultReason.code },
-                                isResult
-                            );
+                            result[`UF_CRM_${pField.bitrixId}`] =
+                                this.getNoresultReson(
+                                    pField,
+                                    { code: noResultReason.code },
+                                    isResult,
+                                );
                             break;
 
                         case 'op_fail_reason':
-                            result[`UF_CRM_${pField.bitrixId}`] = this.getFailReason(
-                                pField,
-                                failReason,
-                                failType
-                            );
+                            result[`UF_CRM_${pField.bitrixId}`] =
+                                this.getFailReason(
+                                    pField,
+                                    failReason,
+                                    failType,
+                                );
                             break;
 
                         default:
@@ -607,13 +704,13 @@ export class BitrixEntityFlowService {
         failType: string,
         failReason: FailReason,
         noResultReason: NoresultReason,
-        reportEventType: string
+        reportEventType: string,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === resultStatus
+                item => item.code === resultStatus,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -627,13 +724,13 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         planEventType: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === planEventType
+                item => item.code === planEventType,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -647,13 +744,13 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         reportEventType: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === reportEventType
+                item => item.code === reportEventType,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -667,13 +764,13 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         currentReportEventName: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === currentReportEventName
+                item => item.code === currentReportEventName,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -687,13 +784,13 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         currentPlanEventName: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): number | null {
         let resultItemBtxId: number | null = null;
 
         if (portalField?.items) {
             const matchingItem = portalField.items.find(
-                (item) => item.code === currentPlanEventName
+                item => item.code === currentPlanEventName,
             );
             if (matchingItem?.bitrixId) {
                 resultItemBtxId = matchingItem.bitrixId;
@@ -707,7 +804,7 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         comment: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): string {
         return comment;
     }
@@ -716,7 +813,7 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         deadline: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): string {
         return deadline;
     }
@@ -725,7 +822,7 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         createdId: number,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): number {
         return createdId;
     }
@@ -734,7 +831,7 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         responsibleId: number,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): number {
         return responsibleId;
     }
@@ -743,8 +840,8 @@ export class BitrixEntityFlowService {
         portalField: PortalField,
         nowdate: string,
         isPresentationDone: boolean,
-        isUnplannedPresentation: boolean
+        isUnplannedPresentation: boolean,
     ): string {
         return nowdate;
     }
-} 
+}

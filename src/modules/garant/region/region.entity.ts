@@ -9,4 +9,4 @@ export class RegionEntity {
     tax_abs: number;
     created_at?: Date;
     updated_at?: Date;
-} 
+}

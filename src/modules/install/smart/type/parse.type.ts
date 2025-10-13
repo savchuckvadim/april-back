@@ -1,4 +1,4 @@
-import { EUserFieldType } from "@/modules/bitrix";
+import { EUserFieldType } from '@/modules/bitrix';
 
 export interface Smart {
     id: string;
@@ -57,11 +57,7 @@ export interface Category {
     order: number;
     isDefault: boolean;
     stages: Stage[];
-
 }
-
-
-
 
 export interface ListItem {
     VALUE: string;

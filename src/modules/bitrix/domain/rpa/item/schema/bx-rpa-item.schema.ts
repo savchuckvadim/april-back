@@ -1,7 +1,12 @@
-import { EBxMethod } from "src/modules/bitrix/core";
-import { CrmItemGetRequestType } from "../../../crm/type/crm-request.type";
-import { IBxRpaItem } from "../interface/bx-rpa-item.interface";
-import { AddRpaItemDto, GetRpaItemDto, ListRpaItemDto, UpdateRpaItemDto } from "../dto/rpa-item.dto";
+import { EBxMethod } from 'src/modules/bitrix/core';
+import { CrmItemGetRequestType } from '../../../crm/type/crm-request.type';
+import { IBxRpaItem } from '../interface/bx-rpa-item.interface';
+import {
+    AddRpaItemDto,
+    GetRpaItemDto,
+    ListRpaItemDto,
+    UpdateRpaItemDto,
+} from '../dto/rpa-item.dto';
 
 export type BxRpaItemSchema = {
     [EBxMethod.GET]: {
@@ -23,4 +28,4 @@ export type BxRpaItemSchema = {
         request: ListRpaItemDto;
         response: { items: IBxRpaItem[] };
     };
-}   
+};

@@ -1,10 +1,10 @@
-import { Injectable } from "@nestjs/common";
-import { InfoblockRepository } from "./infoblock.repository";
-import { InfoblockEntity } from "./infoblock.entity";
+import { Injectable } from '@nestjs/common';
+import { InfoblockRepository } from './infoblock.repository';
+import { InfoblockEntity } from './infoblock.entity';
 
 @Injectable()
 export class InfoblockService {
-    constructor(private readonly infoblockRepository: InfoblockRepository) { }
+    constructor(private readonly infoblockRepository: InfoblockRepository) {}
 
     async getInfoblocks(): Promise<InfoblockEntity[] | null> {
         return this.infoblockRepository.findMany();
@@ -14,7 +14,9 @@ export class InfoblockService {
         return this.infoblockRepository.findByCode(code);
     }
 
-    async getInfoblocksByCodse(codes: string[]): Promise<InfoblockEntity[] | null> {
+    async getInfoblocksByCodse(
+        codes: string[],
+    ): Promise<InfoblockEntity[] | null> {
         return await this.infoblockRepository.findByCodes(codes);
     }
 

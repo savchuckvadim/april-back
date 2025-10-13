@@ -1,16 +1,20 @@
-import { Injectable } from "@nestjs/common";
-import { InfogroupEntity } from "./infogroup.entity";
-import { InfogroupRepository } from "./infogroup.repository";
+import { Injectable } from '@nestjs/common';
+import { InfogroupEntity } from './infogroup.entity';
+import { InfogroupRepository } from './infogroup.repository';
 
 @Injectable()
 export class InfogroupService {
-    constructor(private readonly infogroupRepository: InfogroupRepository) { }
+    constructor(private readonly infogroupRepository: InfogroupRepository) {}
 
-    async create(infogroup: Partial<InfogroupEntity>): Promise<InfogroupEntity | null> {
+    async create(
+        infogroup: Partial<InfogroupEntity>,
+    ): Promise<InfogroupEntity | null> {
         return this.infogroupRepository.create(infogroup);
     }
 
-    async update(infogroup: Partial<InfogroupEntity>): Promise<InfogroupEntity | null> {
+    async update(
+        infogroup: Partial<InfogroupEntity>,
+    ): Promise<InfogroupEntity | null> {
         return this.infogroupRepository.update(infogroup);
     }
 
@@ -21,4 +25,4 @@ export class InfogroupService {
     async findMany(): Promise<InfogroupEntity[] | null> {
         return this.infogroupRepository.findMany();
     }
-} 
+}

@@ -13,15 +13,20 @@ export class YandexStorageService {
     private readonly s3Client: S3;
     private readonly bucket: string;
 
-    constructor(
-        private readonly configService: ConfigService,
-    ) {
-        this.bucket = this.configService.get<string>('YA_BUCKET_NAME') || 'april-test';
-        const accessKeyId = this.configService.get<string>('YA_ACCESS_KEY_KEY_ID');
-        const secretAccessKey = this.configService.get<string>('YA_ACCESS_KEY_SECRET');
+    constructor(private readonly configService: ConfigService) {
+        this.bucket =
+            this.configService.get<string>('YA_BUCKET_NAME') || 'april-test';
+        const accessKeyId = this.configService.get<string>(
+            'YA_ACCESS_KEY_KEY_ID',
+        );
+        const secretAccessKey = this.configService.get<string>(
+            'YA_ACCESS_KEY_SECRET',
+        );
 
         if (!accessKeyId || !secretAccessKey) {
-            throw new Error('YA_ACCESS_KEY_KEY_ID or YA_ACCESS_KEY_SECRET is not set');
+            throw new Error(
+                'YA_ACCESS_KEY_KEY_ID or YA_ACCESS_KEY_SECRET is not set',
+            );
         }
 
         this.logger.debug('Initializing S3 client with config:', {
@@ -45,7 +50,10 @@ export class YandexStorageService {
 
     async fileExists(key: string): Promise<boolean> {
         try {
-            this.logger.debug('Checking if file exists:', { bucket: this.bucket, key });
+            this.logger.debug('Checking if file exists:', {
+                bucket: this.bucket,
+                key,
+            });
 
             await this.s3Client.headObject({
                 Bucket: this.bucket,
@@ -57,7 +65,10 @@ export class YandexStorageService {
         } catch (error) {
             const s3Error = error as S3Error;
             if (s3Error.name === 'NotFound') {
-                this.logger.debug('File not found:', { bucket: this.bucket, key });
+                this.logger.debug('File not found:', {
+                    bucket: this.bucket,
+                    key,
+                });
                 return false;
             }
             this.logger.error('Error checking file existence:', {
@@ -77,7 +88,11 @@ export class YandexStorageService {
         return url;
     }
 
-    async uploadFile(fileContent: Buffer, key: string, contentType: string): Promise<string> {
+    async uploadFile(
+        fileContent: Buffer,
+        key: string,
+        contentType: string,
+    ): Promise<string> {
         try {
             this.logger.debug('Uploading file to S3:', {
                 bucket: this.bucket,
@@ -119,7 +134,10 @@ export class YandexStorageService {
 
     async downloadFile(key: string): Promise<Buffer> {
         try {
-            this.logger.debug('Downloading file from S3:', { bucket: this.bucket, key });
+            this.logger.debug('Downloading file from S3:', {
+                bucket: this.bucket,
+                key,
+            });
 
             const response = await this.s3Client.getObject({
                 Bucket: this.bucket,
@@ -130,8 +148,8 @@ export class YandexStorageService {
             const chunks: Buffer[] = [];
 
             return new Promise((resolve, reject) => {
-                stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-                stream.on('error', (err) => {
+                stream.on('data', chunk => chunks.push(Buffer.from(chunk)));
+                stream.on('error', err => {
                     const s3Error = err as S3Error;
                     this.logger.error('Error downloading file stream:', {
                         error: s3Error.message,
@@ -164,4 +182,4 @@ export class YandexStorageService {
             throw error;
         }
     }
-} 
+}

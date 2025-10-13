@@ -1,11 +1,11 @@
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
-  IsInt,
-  IsObject,
-  IsOptional,
-  IsString,
-  ValidateNested,
+    IsBoolean,
+    IsInt,
+    IsObject,
+    IsOptional,
+    IsString,
+    ValidateNested,
 } from 'class-validator';
 import { RowComplectDto } from './row-complect.dto';
 import { RowContractDto } from './row-contract.dto';
@@ -15,51 +15,51 @@ import { ProductDto } from './product.dto';
 import { SupplyDto } from './supply.dto';
 
 export class RowDto {
-  @IsInt()
-  number: number;
+    @IsInt()
+    number: number;
 
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 
-  @IsString()
-  shortName: string;
+    @IsString()
+    shortName: string;
 
-  @IsString()
-  type: string;
+    @IsString()
+    type: string;
 
-  @IsString()
-  productType: string;
+    @IsString()
+    productType: string;
 
-  @IsInt()
-  id: number;
+    @IsInt()
+    id: number;
 
-  @IsInt()
-  setId: number;
+    @IsInt()
+    setId: number;
 
-  @IsBoolean()
-  isUpdating: boolean;
+    @IsBoolean()
+    isUpdating: boolean;
 
-  @ValidateNested()
-  @Type(() => RowComplectDto)
-  complect: RowComplectDto;
+    @ValidateNested()
+    @Type(() => RowComplectDto)
+    complect: RowComplectDto;
 
-  @ValidateNested()
-  @Type(() => RowContractDto)
-  contract: RowContractDto;
+    @ValidateNested()
+    @Type(() => RowContractDto)
+    contract: RowContractDto;
 
-  @ValidateNested()
-  @Type(() => RowSupplyDto)
-  supply: RowSupplyDto;
+    @ValidateNested()
+    @Type(() => RowSupplyDto)
+    supply: RowSupplyDto;
 
-  @ValidateNested()
-  @Type(() => RowPriceDto)
-  price: RowPriceDto;
+    @ValidateNested()
+    @Type(() => RowPriceDto)
+    price: RowPriceDto;
 
-  @ValidateNested()
-  @Type(() => ProductDto)
-  product: ProductDto;
+    @ValidateNested()
+    @Type(() => ProductDto)
+    product: ProductDto;
 
-  @ValidateNested()
-  @Type(() => SupplyDto)
-  currentSupply: SupplyDto;
+    @ValidateNested()
+    @Type(() => SupplyDto)
+    currentSupply: SupplyDto;
 }

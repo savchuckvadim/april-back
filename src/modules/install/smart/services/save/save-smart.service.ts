@@ -1,24 +1,25 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "@/core/prisma";
-import { IBXSmartType } from "@/modules/bitrix/domain/crm/smart-type";
-import { PortalService } from "@/modules/portal-konstructor/portal/portal.service";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@/core/prisma';
+import { IBXSmartType } from '@/modules/bitrix/domain/crm/smart-type';
+import { PortalService } from '@/modules/portal-konstructor/portal/portal.service';
 
 @Injectable()
 export class SaveSmartService {
-
     public constructor(
         private readonly prismaService: PrismaService,
-        private readonly portalService: PortalService
-    ) { }
+        private readonly portalService: PortalService,
+    ) {}
 
-    public async saveSmart(domain: string, bxSmart: IBXSmartType, type: string, group: string) {
-
-
-
-        const portal = await this.getPortal(domain)
-        const portalId = BigInt(portal.id)
-        const smart = await this.getSmart(portalId, type, group)
-        const entityTypeId = Number(bxSmart.entityTypeId)
+    public async saveSmart(
+        domain: string,
+        bxSmart: IBXSmartType,
+        type: string,
+        group: string,
+    ) {
+        const portal = await this.getPortal(domain);
+        const portalId = BigInt(portal.id);
+        const smart = await this.getSmart(portalId, type, group);
+        const entityTypeId = Number(bxSmart.entityTypeId);
         const updatedData = {
             entityTypeId: entityTypeId,
             name: bxSmart.title,
@@ -30,7 +31,7 @@ export class SaveSmartService {
             crmId: entityTypeId,
             forFilterId: entityTypeId,
             forFilter: `DYNAMIC_${entityTypeId}_`,
-        }
+        };
         if (!smart) {
             await this.prismaService.smarts.create({
                 data: {
@@ -39,15 +40,14 @@ export class SaveSmartService {
                     group: group,
                     created_at: new Date(),
 
-                    ...updatedData
+                    ...updatedData,
                 },
-
-            })
+            });
         } else {
             await this.prismaService.smarts.update({
                 where: { id: smart.id },
-                data: updatedData
-            })
+                data: updatedData,
+            });
         }
     }
     // private async createSmart(portalId: bigint, bxSmart: IBXSmartType, type: string, group: string) {
@@ -69,21 +69,19 @@ export class SaveSmartService {
     // }
 
     public async getSmart(portalId: bigint, type: string, group: string) {
-
         const smart = await this.prismaService.smarts.findFirst({
             where: {
                 portal_id: portalId,
                 type: type,
-                group: group
-            }
-        })
-        return smart
+                group: group,
+            },
+        });
+        return smart;
     }
 
-
     private async getPortal(domain: string) {
-        const portal = await this.portalService.getPortalByDomain(domain)
-        if (!portal) throw new Error('Portal not found')
-        return portal
+        const portal = await this.portalService.getPortalByDomain(domain);
+        if (!portal) throw new Error('Portal not found');
+        return portal;
     }
 }

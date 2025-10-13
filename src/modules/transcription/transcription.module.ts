@@ -21,7 +21,7 @@ import { OnlineClientModule } from 'src/clients/online';
         QueueModule,
         StorageModule,
         YandexModule,
-        OnlineClientModule
+        OnlineClientModule,
     ],
     controllers: [TranscriptionController],
     providers: [
@@ -34,4 +34,4 @@ import { OnlineClientModule } from 'src/clients/online';
         TranscriptionService,
     ],
 })
-export class TranscriptionModule { } 
+export class TranscriptionModule {}

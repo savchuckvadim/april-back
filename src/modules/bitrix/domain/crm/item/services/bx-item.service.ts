@@ -1,12 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
-import { BxItemRepository } from "../repository/bx-item.repository";
-import { IBXItem } from "../interface/item.interface";
-import { BitrixOwnerTypeId } from "../../../enums/bitrix-constants.enum";
-
+import { Injectable } from '@nestjs/common';
+import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import { BxItemRepository } from '../repository/bx-item.repository';
+import { IBXItem } from '../interface/item.interface';
+import { BitrixOwnerTypeId } from '../../../enums/bitrix-constants.enum';
 
 export class BxItemService {
-    private repo: BxItemRepository
+    private repo: BxItemRepository;
 
     clone(api: BitrixBaseApi): BxItemService {
         const instance = new BxItemService();
@@ -14,13 +13,15 @@ export class BxItemService {
         return instance;
     }
 
-
     init(api: BitrixBaseApi) {
         this.repo = new BxItemRepository(api);
     }
 
-
-    update(id: number | string, entityTypeId: BitrixOwnerTypeId.DEAL, data: Partial<IBXItem>) {
+    update(
+        id: number | string,
+        entityTypeId: BitrixOwnerTypeId.DEAL,
+        data: Partial<IBXItem>,
+    ) {
         return this.repo.update(id, entityTypeId, data);
     }
 
@@ -35,5 +36,4 @@ export class BxItemService {
     add(entityTypeId: string, data: Partial<IBXItem>) {
         return this.repo.add(entityTypeId, data);
     }
-
 }

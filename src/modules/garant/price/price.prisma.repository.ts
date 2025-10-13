@@ -1,11 +1,9 @@
-import { PrismaService } from "src/core/prisma";
-import { PriceRepository } from "./price.repository";
-import { PriceEntity } from "./price.entity";
+import { PrismaService } from 'src/core/prisma';
+import { PriceRepository } from './price.repository';
+import { PriceEntity } from './price.entity';
 
 export class PricePrismaRepository implements PriceRepository {
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(price: Partial<PriceEntity>): Promise<PriceEntity | null> {
         const result = await this.prisma.garant_prof_prices.create({
@@ -21,30 +19,25 @@ export class PricePrismaRepository implements PriceRepository {
                 updated_at: price.updated_at ?? new Date(),
             },
         });
-        return result
+        return result;
     }
 
     async update(price: Partial<PriceEntity>): Promise<PriceEntity | null> {
-        return await this.prisma.garant_prof_prices.update({ where: { id: price.id }, data: price });
+        return await this.prisma.garant_prof_prices.update({
+            where: { id: price.id },
+            data: price,
+        });
     }
 
     async findById(id: number): Promise<PriceEntity | null> {
-        return await this.prisma.garant_prof_prices.findUnique(
-            {
-                where: {
-                    id
-                }
-            }
-        )
+        return await this.prisma.garant_prof_prices.findUnique({
+            where: {
+                id,
+            },
+        });
     }
 
     async findMany(): Promise<PriceEntity[] | null> {
-        return await this.prisma.garant_prof_prices.findMany()
-
+        return await this.prisma.garant_prof_prices.findMany();
     }
-
-
-
-
 }
-

@@ -1,4 +1,1 @@
-export {
-    StorageType,
-    StorageService
-} from './storage.service'
+export { StorageType, StorageService } from './storage.service';

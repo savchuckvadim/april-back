@@ -23,7 +23,7 @@ export class PortalService {
             deals: {},
             bitrixDeal: {},
             bitrixLists: {},
-            smarts: []
+            smarts: [],
         };
     }
-} 
+}

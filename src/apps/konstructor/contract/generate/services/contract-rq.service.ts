@@ -6,19 +6,13 @@ import { CONTRACT_LTYPE } from 'src/apps/konstructor/document-generate/type/cont
 import { RqEntity } from 'src/modules/portal-konstructor/provider';
 @Injectable()
 export class ContractRqService {
-    constructor(
-        private readonly clientRqService: DocumentClientBxRqService,
-
-    ) {
-
-    }
+    constructor(private readonly clientRqService: DocumentClientBxRqService) {}
 
     public getRqs(
         provider: RqEntity,
         clientRq: BxRqDto,
         clientType: ClientTypeEnum,
         contractType: CONTRACT_LTYPE,
-
     ): {
         we_role: string;
         we_rq: string[];
@@ -31,10 +25,11 @@ export class ContractRqService {
         client_direct_position: string;
         client_direct_fio: string;
     } {
-
-
         const providerRq = this.getProviderData(provider);
-        const clientRqData = this.clientRqService.getClientRq(clientRq, clientType);
+        const clientRqData = this.clientRqService.getClientRq(
+            clientRq,
+            clientType,
+        );
         const roles = this.getRoles(contractType);
         return {
             we_rq: [
@@ -48,7 +43,7 @@ export class ContractRqService {
                 providerRq.rs,
                 providerRq.ks,
                 providerRq.providerCompanyDirectorPosition,
-                providerRq.providerCompanyDirectorName
+                providerRq.providerCompanyDirectorName,
             ],
             client_rq: clientRqData,
             we_role: roles.provider,
@@ -60,13 +55,14 @@ export class ContractRqService {
             client_role: roles.client,
 
             client_role_case: roles.clientCase,
-            client_direct_position: clientRq.fields.find(field => field.code === 'position')?.value as string || '',
-            client_direct_fio: clientRq.fields.find(field => field.code === 'director')?.value as string || '',
-        }
-
-
+            client_direct_position:
+                (clientRq.fields.find(field => field.code === 'position')
+                    ?.value as string) || '',
+            client_direct_fio:
+                (clientRq.fields.find(field => field.code === 'director')
+                    ?.value as string) || '',
+        };
     }
-
 
     private getProviderData(provider: RqEntity) {
         const rq = provider;
@@ -86,7 +82,12 @@ export class ContractRqService {
         };
     }
 
-    public getRoles(contractType: string): { provider: string; client: string; providerCase: string; clientCase: string } {
+    public getRoles(contractType: string): {
+        provider: string;
+        client: string;
+        providerCase: string;
+        clientCase: string;
+    } {
         let clientRole = 'Заказчик';
         let providerRole = 'Исполнитель';
 
@@ -106,8 +107,8 @@ export class ContractRqService {
                 break;
         }
 
-        const providerCase = 'от Исполнителя'
-        const clientCase = 'от Заказчика'
+        const providerCase = 'от Исполнителя';
+        const clientCase = 'от Заказчика';
         return {
             provider: providerRole,
             client: clientRole,
@@ -115,5 +116,4 @@ export class ContractRqService {
             clientCase,
         };
     }
-
 }

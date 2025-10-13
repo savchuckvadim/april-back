@@ -4,24 +4,21 @@ import { TelegramService } from '../../../telegram/telegram.service';
 import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
 
-
-
 @Injectable({ scope: Scope.REQUEST })
 export class BitrixRequestApiService extends BitrixBaseApi {
-  constructor(
-    telegram: TelegramService,
-    http: HttpService,
-    @Optional() private readonly portalContext?: PortalContextService
-  ) {
-    super(telegram, http);
+    constructor(
+        telegram: TelegramService,
+        http: HttpService,
+        @Optional() private readonly portalContext?: PortalContextService,
+    ) {
+        super(telegram, http);
 
-    if (this.portalContext) {
-      const portal = this.portalContext.getPortal();
-      if (portal) this.initFromPortal(portal);
+        if (this.portalContext) {
+            const portal = this.portalContext.getPortal();
+            if (portal) this.init(portal);
+        }
     }
-  }
 }
-
 
 // @Injectable({ scope: Scope.REQUEST })
 // export class BitrixApiService {
@@ -47,7 +44,6 @@ export class BitrixRequestApiService extends BitrixBaseApi {
 //       httpsAgent: new https.Agent({ keepAlive: true }),
 //     };
 
-
 //     if (this.portalContext) {  // если мы в реквесте - автоматически инициилизируемся из portal contexta
 //       Logger.log('this.portalContext')
 
@@ -61,8 +57,6 @@ export class BitrixRequestApiService extends BitrixBaseApi {
 //     }
 //     //если нет - нас проинициализируют из воркера через bx api factory-> init from portal
 //   }
-
-
 
 //   initFromPortal(portal: IPortal) {
 //     this.logger.log(`Initializing BitrixApi from portal: ${portal.domain}`);
@@ -177,7 +171,7 @@ export class BitrixRequestApiService extends BitrixBaseApi {
 //         await this.telegramBot.sendMessageAdminError(`Batch error:
 //           callBatch
 //           ${this.domain}
-        
+
 //           ${JSON.stringify(error?.message)}`);
 //         results.push(error);
 //       }
@@ -272,16 +266,14 @@ export class BitrixRequestApiService extends BitrixBaseApi {
 //     if (!result?.result_error) return;
 //     this.logger.log(`
 //       success
-//       Domain: 
+//       Domain:
 //       ${this.domain}
 //       `);
-
-
 
 //     const errorEntries = Object.entries(result.result_error);
 //     for (const [key, error] of errorEntries) {
 //       const message = `[${context}] Ошибка в ${key}: ${JSON.stringify(error)}
-      
+
 //       Domain: ${this.domain}
 //       `;
 //       this.logger.log(`result_error: ${message}`);
