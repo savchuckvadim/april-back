@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import { OrkFields, OrkFieldsMetadata } from './type/ork-list-history.type';
+import { OrkFields } from '@/modules/ork-history-bx-list';
 
 @Injectable()
 export class KpiReportOrkEventService {
-    constructor(private readonly pbx: PBXService) {}
+    constructor(private readonly pbx: PBXService) { }
 
     async getReport(domain: string) {
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
@@ -14,11 +14,11 @@ export class KpiReportOrkEventService {
         }
         // const fields = portal.getListFieldsSelectAll(pbxList)
         if (!pbxList.bitrixfields) return [];
-        for (const field of pbxList.bitrixfields) {
-            if (field.code === OrkFields.author.code) {
-                const authorBitrixId = field.bitrixId;
-            }
-        }
+        // for (const field of pbxList.bitrixfields) {
+        //     if (field.code === OrkFields.author.code) {
+        //         const authorBitrixId = field.bitrixId;
+        //     }
+        // }
 
         Object.values(OrkFields).forEach(field => {
             if (field.code === OrkFields.ork_event_action.code) {

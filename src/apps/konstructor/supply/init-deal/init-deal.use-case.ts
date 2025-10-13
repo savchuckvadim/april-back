@@ -24,7 +24,7 @@ export class InitDealUseCase {
         private readonly pbx: PBXService,
         private readonly copyInnerDealService: CopyInnerDealService,
         private readonly telegram: TelegramService,
-    ) {}
+    ) { }
 
     async execute(dto: InitDealDto) {
         const domain = dto.auth.domain;
@@ -49,6 +49,8 @@ export class InitDealUseCase {
 
         const companyId = this.getCompanyIdFromRpa(rpa, PortalModel);
         const oldDealId = this.getDealIdFromRpa(rpa, PortalModel);
+        const responsibleId = this.getResponsibleIdFromRpa(rpa, PortalModel) || 1;
+
 
         const portalRpa = PortalModel.getRpaByCode('supply');
         const offerServicePortalSmart =
@@ -94,6 +96,7 @@ export class InitDealUseCase {
 
         dealValues.CATEGORY_ID = targetCategoryDeal?.bitrixId;
         dealValues.COMPANY_ID = companyId?.toString() || '';
+        dealValues.ASSIGNED_BY_ID = responsibleId?.toString() || '';
         // console.log('companyId')
         // console.log(companyId)
 
@@ -166,7 +169,7 @@ export class InitDealUseCase {
     }
     private getCommentRpaMessage(domain: string, newDealId: number) {
         const link = `https://${domain}/crm/deal/details/${newDealId}/`;
-        const message = `🚀 <a href="${link}" target="_blank">Сделка создана</a>`;
+        const message = `<a href="${link}" target="_blank">Сделка создана</a>`;
         return message;
     }
     private getCommentEntityMessage(
@@ -315,6 +318,20 @@ export class InitDealUseCase {
         const rpaField = portalModel.getRpaFieldBitrixIdByCode(
             'supply',
             'rpa_crm_base_deal',
+        );
+        if (rpaField) {
+            return Number(rpa[rpaField]);
+        }
+        return null;
+    }
+
+    private getResponsibleIdFromRpa(
+        rpa: IBxRpaItem,
+        portalModel: PortalModel,
+    ): number | null {
+        const rpaField = portalModel.getRpaFieldBitrixIdByCode(
+            'supply',
+            'manager_os',
         );
         if (rpaField) {
             return Number(rpa[rpaField]);

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 import { Filter } from '../dto/kpi.dto';
 import { FilterCode, FilterInnerCode } from '../type/ork-report-event.type';
-import { EnumOrkEventAction, EnumOrkEventType } from '../type/ork-list-history.enum';
+import { EnumOrkEventAction, EnumOrkEventType } from '@/modules/ork-history-bx-list';
 
 
 @Injectable()

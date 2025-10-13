@@ -45,7 +45,8 @@ export class CopyInnerDealService {
                 serviceSmartId: null,
                 domain: deal.domain,
                 portalId: deal.portalId,
-                // created_at и updated_at НЕ указываем — проставятся автоматически
+                created_at: new Date(),
+                updated_at: new Date(),
             },
         });
         console.log('newDeal', newDeal);

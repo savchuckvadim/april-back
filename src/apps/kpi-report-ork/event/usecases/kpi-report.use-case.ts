@@ -1,22 +1,18 @@
 // report-kpi.service.ts
-import { Injectable } from '@nestjs/common';
+
 import {
     IField,
     IPBXList,
     IPortal,
     IFieldItem,
 } from 'src/modules/portal/interfaces/portal.interface';
-
 import { PortalModel } from 'src/modules/portal/services/portal.model';
-
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionOrkEventService } from '../services/action-service';
-import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 import { ReportGetFiltersDto } from '../dto/get-report-request.dto';
 import { BXUserDto } from '../dto/get-report-request.dto';
-import { EnumOrkFieldCode } from '../type/ork-list-history.enum';
+import { EnumOrkFieldCode } from '@/modules/ork-history-bx-list';
 import { EnumFilterInnerCode, FilterInnerCode } from '../type/ork-report-event.type';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, BitrixService } from '@/modules/bitrix';
@@ -31,19 +27,14 @@ export class ReportKpiUseCase {
     private bitrixApi: BitrixBaseApi;
 
     constructor(
-        // private readonly portalContext: PortalContextService,
-        // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
-        // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
+
         private readonly pbx: PBXService,
     ) { }
 
     async init(domain: string) {
-        // this.domain = domain;
+
         const { portal, PortalModel, bitrix } = await this.pbx.init(domain);
 
-        //for queue
-        // this.portalModel = await this.portalProvider.getModelByDomain(domain);
-        // const portal = this.portalModel.getPortal();
 
         if (!portal) throw new Error('Portal not found');
 
