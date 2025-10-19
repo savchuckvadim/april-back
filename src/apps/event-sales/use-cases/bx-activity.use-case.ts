@@ -1,8 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
-import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
-import { PortalService } from 'src/modules/portal/portal.service';
-import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { BxActivityDto } from '../dto/bx-activity/bx-activity.dto';
 import { BxActivityRepository } from 'src/modules/bitrix/domain/activity/bx-activity.repository';
 import { BitrixOwnerTypeId } from 'src/modules/bitrix/domain/enums/bitrix-constants.enum';
@@ -12,6 +8,8 @@ import {
 } from 'src/modules/bitrix/domain/activity/interfaces/bx-activity.interface';
 import { BxFileRepository } from 'src/modules/bitrix/domain/file/bx-file.repository';
 import { IBXFile } from 'src/modules/bitrix/domain/file/bx-file.interface';
+import { PBXService } from '@/modules/pbx/pbx.service';
+import { BitrixBaseApi } from '@/modules/bitrix';
 
 export type ResultActivityFile = {
     activityId: string | number;
@@ -24,16 +22,16 @@ export type ResultActivityFile = {
 @Injectable()
 export class EventSalesActivityUseCase {
     private bitrixApi: BitrixBaseApi;
-    private portalModel: PortalModel;
+
     constructor(
-        private readonly portalService: PortalService,
-        private readonly bxFactory: BitrixApiFactoryService,
+
+        private readonly pbx: PBXService,
     ) {}
 
     async init(domain: string) {
-        this.portalModel = await this.portalService.getModelByDomain(domain);
-        const portal = this.portalModel.getPortal();
-        this.bitrixApi = this.bxFactory.create(portal);
+        const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
+        // this.portalModel = PortalModel;
+        this.bitrixApi = bitrix.api;
     }
 
     async getActivitiesByLeadId(dto: BxActivityDto) {

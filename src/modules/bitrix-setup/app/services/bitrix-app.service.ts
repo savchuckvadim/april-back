@@ -5,9 +5,8 @@ import { PrismaService } from 'src/core/prisma';
 
 import { BitrixAppRepository } from '../repositories/bitrix-app.repository';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
-import { PortalService } from 'src/modules/portal-konstructor/portal/portal.service';
-import { createPortalEntityFromPrisma } from 'src/modules/portal-konstructor/portal/lib/portal-entity.util'
-import { PortalEntity } from 'src/modules/portal-konstructor/portal/portal.entity';
+import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalEntity } from '@/modules/portal-konstructor/portal/portal.entity';
 import { BitrixTokenService } from '../../token/services/bitrix-token.service';
 import { BitrixTokenEntity, SetBitrixSecretDto } from '../../token';
 import { BITRIX_APP_CODES } from '../enums/bitrix-app.enum';
@@ -17,7 +16,7 @@ export class BitrixAppService {
     constructor(
         private readonly repository: BitrixAppRepository,
         private readonly prisma: PrismaService,
-        private readonly portalService: PortalService,
+        private readonly portalService: PortalStoreService,
         private readonly tokenService: BitrixTokenService,
     ) { }
 

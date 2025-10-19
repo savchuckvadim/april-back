@@ -3,7 +3,6 @@ import { BxProductRowRepository } from '../repository/bx-product-row.repository'
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXProductRow } from '../interface/bx-product-row.interface';
 
-@Injectable()
 export class BxProductRowBatchService {
     private repo: BxProductRowRepository;
     constructor() {}

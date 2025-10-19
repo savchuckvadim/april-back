@@ -1,4 +1,3 @@
-import { BitrixBaseApi } from '@/modules/bitrix/core';
 import { UserFieldConfigRepository } from '../repository/userfieldconfig.repository';
 import {
     UserFieldConfigAddDto,
@@ -7,6 +6,7 @@ import {
     UserFieldConfigListDto,
     UserFieldConfigUpdateDto,
 } from '../dto/userfieldconfig.dto';
+import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
 export class BxUserFieldConfigService {
     private repo: UserFieldConfigRepository;

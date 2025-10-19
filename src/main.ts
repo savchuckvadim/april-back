@@ -13,8 +13,9 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         cors: cors,
+        logger: ['error', 'warn', 'log', 'debug', 'verbose'],
         snapshot: true,
-        logger: WinstonModule.createLogger({ instance: winstonLogger }),
+        // logger: WinstonModule.createLogger({ instance: winstonLogger }),
     });
 
     app.useGlobalPipes(
@@ -69,6 +70,10 @@ async function bootstrap() {
 
     //documentation
     getSwaggerConfig(app);
+
+
+    app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
+
     await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

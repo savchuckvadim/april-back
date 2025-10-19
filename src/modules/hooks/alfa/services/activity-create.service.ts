@@ -1,7 +1,7 @@
 // infrastructure/services/activity-create.service.ts
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { BitrixActivityEntity } from 'src/modules/bitrix/domain/activity/entities/activity.entity';
-import { PBXService } from 'src/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 
 @Injectable()
 export class AlfaBxActivityCreateService {

@@ -2,19 +2,17 @@ import {
     Body,
     Controller,
     HttpCode,
-    HttpException,
-    HttpStatus,
-    Logger,
+
     Post,
 } from '@nestjs/common';
 import { DepartmentResolverService } from './services/department-resolver-bitrxi.service';
 import { DomainDto } from './dto/domain.dto';
 import {
     EDepartamentGroup,
-    IPortal,
+
 } from 'src/modules/portal/interfaces/portal.interface';
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 import { ApiTags } from '@nestjs/swagger';
+
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\department.controller.ts
 
@@ -24,7 +22,8 @@ export class DepartmentEndpointController {
     constructor(
         private readonly resolver: DepartmentResolverService,
         // private readonly bitrixApi: BitrixRequestApiService,
-        private readonly portalService: PortalContextService,
+        // private readonly portalService: PortalContextService,
+        // private readonly pbx: PBXService,
     ) {}
 
     @Post('sales')
@@ -32,19 +31,18 @@ export class DepartmentEndpointController {
     async getFullDepartment(@Body() dto: DomainDto) {
         // Logger.log('getFullDepartment dto');
 
-        const portal = this.portalService.getPortal();
-        const Portal = this.portalService.getModel();
-        if (portal && Portal) {
+        // const { portal, PortalModel } = await this.pbx.init(dto.domain);
+        // if (portal && PortalModel) {
             // this.bitrixApi.initFromPortal(portal);
 
             return this.resolver.getFullDepartment(
                 dto.domain,
                 EDepartamentGroup.sales,
             );
-        }
-        throw new HttpException(
-            'portal not found for domain:' + dto.domain,
-            HttpStatus.BAD_REQUEST,
-        );
+        // }
+        // throw new HttpException(
+        //     'portal not found for domain:' + dto.domain,
+        //     HttpStatus.BAD_REQUEST,
+        // );
     }
 }

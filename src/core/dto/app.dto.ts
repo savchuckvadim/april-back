@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { EResultCode } from '../interfaces/response.interface';
 
-export class SuccessResponseDto {
+export class SuccessResponseDto<T = any> {
     @ApiProperty({
         description: 'Код результата операции (0 - успех)',
         example: EResultCode.SUCCESS,
@@ -13,7 +13,7 @@ export class SuccessResponseDto {
         description: 'Данные ответа',
         type: Object,
     })
-    data: any;
+    data: T;
 }
 
 export class ErrorResponseDto {

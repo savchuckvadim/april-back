@@ -39,7 +39,7 @@ export class ProviderPrismaRepository implements ProviderRepository {
     }
 
     async findByDomain(domain: string): Promise<ProviderEntityWithRq[] | null> {
-        const portal = await this.prisma.portals.findFirst({
+        const portal = await this.prisma.portal.findFirst({
             where: { domain },
             select: { id: true },
         });

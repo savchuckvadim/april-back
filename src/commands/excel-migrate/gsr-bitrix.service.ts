@@ -8,7 +8,7 @@ import { GsrMigrateBitrixCompanyService } from './services/bitrix/gsr-migrate-bx
 import { GsrMigrateBitrixProductRowService } from './services/bitrix/gsr-migrate-bxproduct-row.service';
 import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bxcontact.service';
 import { BitrixService } from 'src/modules/bitrix/';
-import { PBXService } from 'src/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 
 @Injectable()

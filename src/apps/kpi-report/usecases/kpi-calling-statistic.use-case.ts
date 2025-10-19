@@ -1,7 +1,5 @@
 // report-kpi.service.ts
 import { Injectable } from '@nestjs/common';
-
-import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
 import { GetCallingStatisticDto } from '../dto/calling-statistic.dto';
 import {
     CALLING_TYPES,
@@ -11,13 +9,14 @@ import {
 } from '../types/calling-statistic.type';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
+import { BitrixBaseApi } from '@/modules/bitrix';
 
-@Injectable()
+
 export class CallingStatisticUseCase {
     // private bitrixApi: BitrixApiService;
 
     constructor(
-        private readonly bitrixApi: BitrixRequestApiService,
+        private readonly bitrixApi: BitrixBaseApi,
         // private readonly portalContext: PortalContextService,
     ) { }
 

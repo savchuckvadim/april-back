@@ -47,3 +47,5 @@ export class OfferTemplatePageBlockDto extends OfferTemplatePageBlock {
     @IsNumber()
     declare image_id: bigint;
 }
+
+

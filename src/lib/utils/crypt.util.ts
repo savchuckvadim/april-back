@@ -22,3 +22,8 @@ export const decrypt = (encryptedText: string): string => {
     decrypted += decipher.final('utf8');
     return decrypted;
 }
+
+
+export const compare = (text: string, encryptedText: string): boolean => {
+    return decrypt(encryptedText) === text;
+}

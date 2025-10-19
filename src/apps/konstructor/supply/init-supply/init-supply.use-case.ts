@@ -3,7 +3,7 @@ import { InitSupplyService } from './init-supply.service';
 import { InitSupplyDto } from './dto/init-supply.dto';
 import { InitSupplyTimelineCommentService } from './services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { InitSupplyRpaFieldsService } from './services/rpa-fields/init-supply-rpa-fields.service';
-import { PBXService } from '@/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBxRpaItem } from '@/modules/bitrix/domain/rpa/item/interface/bx-rpa-item.interface';
 import {
     EBXEntity,
@@ -21,7 +21,7 @@ export class InitSupplyUseCase {
         private readonly initSupplyService: InitSupplyService,
         private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,
         private readonly initSupplyTimelineCommentService: InitSupplyTimelineCommentService,
-    ) {}
+    ) { }
 
     async initSupply(dto: InitSupplyDto): Promise<any> {
         /*

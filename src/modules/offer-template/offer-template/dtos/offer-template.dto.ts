@@ -6,6 +6,7 @@ import {
     IsEnum,
     ValidateNested,
     IsArray,
+    IsObject,
 
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -72,6 +73,60 @@ export class OfferTemplateSummaryDto extends OfferTemplateSummary {
 }
 
 
+
+
+
+
+export enum OfferTemplateColorsCodeEnum {
+    text = 'text',
+    background = 'background',
+    accent = 'accent',
+    accentText = 'accentText',
+    base = 'base',
+}
+export enum OfferTemplateColorsNameEnum {
+    text = 'text',
+    background = 'background',
+    accent = 'accent',
+    accentText = 'accentText',
+    base = 'base',
+}
+export class OfferTemplateColorsItemDto<
+    C extends OfferTemplateColorsCodeEnum,
+    N extends OfferTemplateColorsNameEnum
+> {
+    code: C;
+    value: string;
+    name: N;
+}
+export interface IOfferTemplateColors {
+    text: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.text, OfferTemplateColorsNameEnum.text>;
+    background: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.background, OfferTemplateColorsNameEnum.background>;
+    accent: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accent, OfferTemplateColorsNameEnum.accent>;
+    accentText: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accentText, OfferTemplateColorsNameEnum.accentText>;
+    base: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.base, OfferTemplateColorsNameEnum.base>;
+}
+export class OfferTemplateColorsDto implements IOfferTemplateColors {
+    @ApiProperty({ description: 'The text color of the offer template', type: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.text, OfferTemplateColorsNameEnum.text> })
+    @Type(() => OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.text, OfferTemplateColorsNameEnum.text>)
+    text: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.text, OfferTemplateColorsNameEnum.text>;
+
+    @ApiProperty({ description: 'The background color of the offer template', type: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.background, OfferTemplateColorsNameEnum.background> })
+    @Type(() => OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.background, OfferTemplateColorsNameEnum.background>)
+    background: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.background, OfferTemplateColorsNameEnum.background>;
+    @ApiProperty({ description: 'The accent color of the offer template', type: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accent, OfferTemplateColorsNameEnum.accent> })
+    @Type(() => OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accent, OfferTemplateColorsNameEnum.accent>)
+    accent: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accent, OfferTemplateColorsNameEnum.accent>;
+
+    @ApiProperty({ description: 'The accent text color of the offer template', type: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accentText, OfferTemplateColorsNameEnum.accentText> })
+    @Type(() => OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accentText, OfferTemplateColorsNameEnum.accentText>)
+    accentText: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.accentText, OfferTemplateColorsNameEnum.accentText>;
+
+    @ApiProperty({ description: 'The base color of the offer template', type: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.base, OfferTemplateColorsNameEnum.base> })
+    @Type(() => OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.base, OfferTemplateColorsNameEnum.base>)
+    base: OfferTemplateColorsItemDto<OfferTemplateColorsCodeEnum.base, OfferTemplateColorsNameEnum.base>;
+}
+
 export class OfferTemplateDto extends OfferTemplate {
     @ApiProperty({ description: 'The id of the offer template' })
     @IsString()
@@ -120,9 +175,12 @@ export class OfferTemplateDto extends OfferTemplate {
     @IsString()
     declare style: string;
 
-    @ApiProperty({ description: 'The color of the offer template' })
-    @IsString()
-    declare color: string;
+    @ApiProperty({ description: 'The color of the offer template', type: OfferTemplateColorsDto })
+    @IsObject()
+    @ValidateNested({ each: true })
+    @Type(() => OfferTemplateColorsDto)
+    @IsOptional()
+    colors?: OfferTemplateColorsDto;
 
     @ApiProperty({ description: 'The code of the offer template' })
     @IsString()

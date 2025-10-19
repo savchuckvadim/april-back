@@ -13,11 +13,11 @@ import { KpiReportDownloadController } from './kpi-report-download.controller';
     controllers: [KpiReportController, KpiReportDownloadController],
     providers: [
         ExcelReportService,
-        ReportKpiUseCase,
-        CallingStatisticUseCase,
+
+        // CallingStatisticUseCase,
 
         SalesKpiReportQueueProcessor,
     ],
-    exports: [ReportKpiUseCase],
+    // exports: [ReportKpiUseCase],
 })
 export class KpiReportModule {}

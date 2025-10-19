@@ -1,9 +1,10 @@
 import { FieldEntity, FieldLightEntity } from '../field.entity';
 import { createTemplateBaseEntityFromPrisma } from '../../template-base/lib/template-base-entity.util';
 import { PrismaService } from 'src/core/prisma';
+import { Template } from 'generated/prisma';
 
-type Template = NonNullable<
-    Awaited<ReturnType<PrismaService['templates']['findUnique']>>
+type TemplateType = NonNullable<
+    Awaited<Template>
 >;
 
 export function createFieldEntityFromPrisma(data: any): FieldEntity {

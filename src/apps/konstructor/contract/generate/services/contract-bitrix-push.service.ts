@@ -1,11 +1,11 @@
-import { PBXService } from 'src/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { BitrixEntityType } from 'src/modules/bitrix';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ContractBitrixPushService {
-    constructor(private readonly pbx: PBXService) {}
+    constructor(private readonly pbx: PBXService) { }
 
     public async setInBitrix(
         dto: ContractGenerateDto,

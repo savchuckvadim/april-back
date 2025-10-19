@@ -23,7 +23,7 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { RecipientDto } from 'src/apps/konstructor/document-generate';
 // import { rubles } from 'rubles';
 import { formatRuble } from '../document-generate/lib/rubles.util';
-import { PBXService } from 'src/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 
 import { ProviderDto } from '../../../modules/portal-konstructor/provider';
 import { DocumentInfoblockService } from '../document-generate/';

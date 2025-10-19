@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { BitrixOwnerTypeId, BitrixService, IBXDeal } from 'src/modules/bitrix/';
 import { PortalService } from 'src/modules/portal';
 import { GetDealsDto, ReplaceDealsDto } from './dto/get-deals.dto';
-import { PBXService } from 'src/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 @Injectable()
 export class ChangeDealCategoryService {
     private bitrix: BitrixService;
 
-    constructor(private readonly pbx: PBXService) {}
+    constructor(private readonly pbx: PBXService) { }
 
     async getDeals(dto: GetDealsDto) {
         const { bitrix, portal, PortalModel } = await this.pbx.init(dto.domain);

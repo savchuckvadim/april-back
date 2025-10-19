@@ -18,7 +18,7 @@ export class BitrixTokenService {
     async storeOrUpdateToken(dto: CreateBitrixTokenDto): Promise<{ token: BitrixTokenEntity; message: string }> {
         try {
             // Find portal by domain
-            const portal = await this.prisma.portals.findFirst({
+            const portal = await this.prisma.portal.findFirst({
                 where: { domain: dto.domain },
             });
 
@@ -109,7 +109,7 @@ export class BitrixTokenService {
 
     async getToken(dto: GetBitrixTokenDto): Promise<BitrixTokenEntity> {
         // Find portal by domain
-        const portal = await this.prisma.portals.findFirst({
+        const portal = await this.prisma.portal.findFirst({
             where: { domain: dto.domain },
         });
 

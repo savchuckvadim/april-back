@@ -7,10 +7,10 @@ import { RegionExcelService } from './services/region-excel.service';
 import { StorageModule } from 'src/core/storage/storage.module';
 import { PortalRegionService } from './portal-region/portal-region.service';
 import { PortalRegionController } from './portal-region/portal.region.controller';
-import { PortalModule } from '@/modules/portal-konstructor/portal/portal.module';
+import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
 
 @Module({
-    imports: [StorageModule, PortalModule],
+    imports: [StorageModule, PortalStoreModule],
     controllers: [RegionController, PortalRegionController],
     providers: [
         RegionService,
@@ -24,4 +24,4 @@ import { PortalModule } from '@/modules/portal-konstructor/portal/portal.module'
     ],
     exports: [RegionService],
 })
-export class RegionModule {}
+export class RegionModule { }

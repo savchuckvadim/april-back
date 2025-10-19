@@ -14,8 +14,10 @@ export const getSwaggerConfig = (app: INestApplication) => {
         .build();
 
     const options: SwaggerDocumentOptions = {
-        operationIdFactory: (controllerKey: string, methodKey: string) =>
-            `${controllerKey}_${methodKey}`,
+        operationIdFactory: (controllerKey: string, methodKey: string) => {
+            const cleanController = controllerKey.replace(/Controller$/i, '');
+            return `${cleanController}_${methodKey}`;
+        },
     };
     const documentFactory = () =>
         SwaggerModule.createDocument(app, config, options);

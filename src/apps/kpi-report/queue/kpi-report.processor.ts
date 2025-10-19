@@ -6,14 +6,16 @@ import { Job } from 'bull';
 import { ReportKpiJob } from '../dto/report-kpi.job.dto';
 import { WsService } from 'src/core/ws';
 import { Logger } from '@nestjs/common';
+import { PBXService } from '@/modules/pbx';
 
 @Processor(QueueNames.SALES_KPI_REPORT)
 export class SalesKpiReportQueueProcessor {
     private readonly logger = new Logger(QueueNames.SALES_KPI_REPORT);
 
     constructor(
-        private readonly reportKpi: ReportKpiUseCase,
-        private readonly ws: WsService, // WebSocket шлюз
+        // private readonly reportKpi: ReportKpiUseCase,
+        private readonly ws: WsService, // WebSocket шлюз,
+        private readonly pbx: PBXService,
     ) {
         this.logger.log('constructor SALES_KPI_REPORT_GENERATE');
     }
@@ -22,8 +24,10 @@ export class SalesKpiReportQueueProcessor {
     async handle(job: Job<ReportKpiJob>) {
         const { domain, filters, socketId } = job.data;
         this.logger.log('SALES_KPI_REPORT_GENERATE');
-        await this.reportKpi.init(domain);
-        const result = await this.reportKpi.generateKpiReport(filters);
+
+        const reportKpiUseCase = new ReportKpiUseCase();
+        await reportKpiUseCase.init(domain, this.pbx);
+        const result = await reportKpiUseCase.generateKpiReport(filters);
 
         // this.logger.log(job)
         // Отправляем по WebSocket

@@ -1,10 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
 import { IBXDepartment, IBXUser } from '../../interfaces/bitrix.interface';
+import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
-@Injectable()
 export class DepartmentBitrixService {
-    constructor(private readonly bitrixApi: BitrixRequestApiService) {}
+    constructor(private readonly bitrixApi: BitrixBaseApi) {}
 
     async getDepartmentsAll() {
         const res = await this.bitrixApi.call('department.get', {});

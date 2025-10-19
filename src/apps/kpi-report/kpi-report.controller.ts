@@ -5,21 +5,22 @@ import {
     Body,
     Res,
     UseInterceptors,
-    HttpException,
-    HttpStatus,
+
 } from '@nestjs/common';
-import { ExcelReportService } from './services/kpi-report/kpi-report.service';
+// import { ExcelReportService } from './services/kpi-report/kpi-report.service';
 import { ReportGetRequestDto } from './dto/kpi-report-request.dto';
 import { ReportKpiUseCase } from './usecases/kpi-report.use-case';
 import { GetCallingStatisticDto } from './dto/calling-statistic.dto';
 import { CallingStatisticUseCase } from './usecases/kpi-calling-statistic.use-case';
+import { PBXService } from '@/modules/pbx';
 
 @Controller('kpi-report')
 export class KpiReportController {
     constructor(
         // private readonly excelService: ExcelReportService,
-        private readonly reportKpiUseCase: ReportKpiUseCase,
-        private readonly callingStatisticUseCase: CallingStatisticUseCase,
+        private readonly pbx: PBXService,
+        // private readonly reportKpiUseCase: ReportKpiUseCase,
+        // private readonly callingStatisticUseCase: CallingStatisticUseCase,
     ) {}
 
     @Post('get')
@@ -28,18 +29,11 @@ export class KpiReportController {
     async getReport(@Body() dto: ReportGetRequestDto) {
         const domain = dto.domain;
         const filters = dto.filters;
-        await this.reportKpiUseCase.init(domain);
-        const result = await this.reportKpiUseCase.generateKpiReport(filters);
+        const reportKpiUseCase = new ReportKpiUseCase();
+        await reportKpiUseCase.init(domain, this.pbx);
+        const result = await reportKpiUseCase.generateKpiReport(filters);
         return result;
     }
-    // async getReport(@Body() dto: ReportGetRequestDto) {
-    //   const { domain, filters, socketId } = dto;
-
-    //   const jobGotResult = await this.salesKpiReportQueue
-    //     .add(JobNames.SALES_KPI_REPORT_GENERATE, dto)
-
-    //   return { status: 'queued', result: jobGotResult }; // 👈 или jobId, если нужно отслеживать
-    // }
 
     @Post('calling-statistic')
     @HttpCode(200)
@@ -47,8 +41,10 @@ export class KpiReportController {
     async getCallingStatistic(@Body() dto: GetCallingStatisticDto) {
         // const domain = dto.domain;
         const filters = dto.filters;
+        const {bitrix} = await this.pbx.init(dto.domain);
+        const callingStatisticUseCase = new CallingStatisticUseCase(bitrix.api);
         // await this.callingStatisticUseCase.init(domain);
-        const result = await this.callingStatisticUseCase.get(dto);
+        const result = await callingStatisticUseCase.get(dto);
         return result;
     }
 }

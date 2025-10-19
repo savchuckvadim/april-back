@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 
 import { BitrixService, IBXCompany } from 'src/modules/bitrix/';
-import { PBXService } from 'src/modules/pbx/pbx.servise';
+import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { AlfaMigrateBitrixCompanyService } from './bitrix/alfa-migrate-bxcompany.service';
 import { IAlfaParse } from './alfa-parse.service';

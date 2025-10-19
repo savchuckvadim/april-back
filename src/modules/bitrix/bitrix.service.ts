@@ -1,6 +1,6 @@
 import { IPortal } from '../portal/interfaces/portal.interface';
 import { BitrixBaseApi } from './core/base/bitrix-base-api';
-import { BitrixApiFactoryService } from './core/queue/bitrix-api.factory.service';
+// import { BitrixApiFactoryService } from './core/queue/bitrix-api.factory.service';
 import {
     BxCompanyService,
     BxContactBatchService,
@@ -28,7 +28,7 @@ import { BxSmartTypeService } from './domain/crm/smart-type/services/bx-smart-ty
 import { BxRpaItemService } from './domain/rpa/item/services/bx-rpa-item.service';
 import { BxRpaItemBatchService } from './domain/rpa/item/services/bx-rpa-item.batch.service';
 import { BxFileService } from './domain/file/bx-file.service';
-import { AbstractBitrixApi } from './core/interface/abstract-bitrix-api';
+
 
 // @Injectable()
 export class BitrixService {
@@ -149,4 +149,6 @@ export class BitrixService {
     private initFile() {
         this.file = this.cloner.clone(BxFileService, this.api);
     }
+
+
 }

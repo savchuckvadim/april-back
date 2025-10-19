@@ -36,25 +36,26 @@ import { OnlineClientModule } from '../../clients/online';
         PortalModelFactory,
     ],
 })
-export class PortalModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer
-            .apply(PortalContextMiddleware)
-            .exclude({ path: '/queue/ping', method: RequestMethod.ALL })
-            .exclude('/hooks/*path') // не кладём portal
-            .exclude('/kpi-report/download') // не кладём portal
-            .exclude('api/queue/ping') // не кладём portal
-            .forRoutes(
-                KpiReportController,
-                DepartmentEndpointController,
-                // AlfaController,
-                // ListController
-            );
-        // .forRoutes({ path: '*', method: RequestMethod.ALL });
+export class PortalModule { }
+// export class PortalModule {
+//     configure(consumer: MiddlewareConsumer) {
+//         consumer
+//             .apply(PortalContextMiddleware)
+//             .exclude({ path: '/queue/ping', method: RequestMethod.ALL })
+//             .exclude('/hooks/*path') // не кладём portal
+//             .exclude('/kpi-report/download') // не кладём portal
+//             .exclude('api/queue/ping') // не кладём portal
+//             .forRoutes(
+//                 // KpiReportController,
+//                 // DepartmentEndpointController,
+//                 // AlfaController,
+//                 // ListController
+//             );
+//         // .forRoutes({ path: '*', method: RequestMethod.ALL });
 
-        // .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
-    }
-}
+//         // .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
+//     }
+// }
 
 // PortalService	Получает портал (с кэшем в Redis)
 // PortalModelFactory + PortalModel	Доступ к методам портала

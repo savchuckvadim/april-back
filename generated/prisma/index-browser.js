@@ -130,8 +130,7 @@ exports.Prisma.AgentsScalarFieldEnum = {
   name: 'name',
   code: 'code',
   number: 'number',
-  withTax: 'withTax',
-  portalsId: 'portalsId'
+  withTax: 'withTax'
 };
 
 exports.Prisma.Bitrixfield_itemsScalarFieldEnum = {
@@ -259,11 +258,14 @@ exports.Prisma.CallingsScalarFieldEnum = {
   portal_id: 'portal_id'
 };
 
-exports.Prisma.ClientsScalarFieldEnum = {
+exports.Prisma.ClientScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
-  name: 'name'
+  name: 'name',
+  email: 'email',
+  status: 'status',
+  is_active: 'is_active'
 };
 
 exports.Prisma.ContractsScalarFieldEnum = {
@@ -402,8 +404,7 @@ exports.Prisma.F_itemsScalarFieldEnum = {
   order: 'order',
   value: 'value',
   bitrixId: 'bitrixId',
-  fieldNumber: 'fieldNumber',
-  fieldsId: 'fieldsId'
+  fieldNumber: 'fieldNumber'
 };
 
 exports.Prisma.Failed_jobsScalarFieldEnum = {
@@ -416,7 +417,7 @@ exports.Prisma.Failed_jobsScalarFieldEnum = {
   failed_at: 'failed_at'
 };
 
-exports.Prisma.FieldsScalarFieldEnum = {
+exports.Prisma.FieldScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -453,7 +454,7 @@ exports.Prisma.FilesScalarFieldEnum = {
   entity_type: 'entity_type'
 };
 
-exports.Prisma.InfoblocksScalarFieldEnum = {
+exports.Prisma.InfoblockScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -581,7 +582,7 @@ exports.Prisma.Portal_measureScalarFieldEnum = {
   updated_at: 'updated_at'
 };
 
-exports.Prisma.PortalsScalarFieldEnum = {
+exports.Prisma.PortalScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -590,7 +591,8 @@ exports.Prisma.PortalsScalarFieldEnum = {
   C_REST_CLIENT_ID: 'C_REST_CLIENT_ID',
   C_REST_CLIENT_SECRET: 'C_REST_CLIENT_SECRET',
   C_REST_WEB_HOOK_URL: 'C_REST_WEB_HOOK_URL',
-  number: 'number'
+  number: 'number',
+  client_id: 'client_id'
 };
 
 exports.Prisma.Price_row_cellsScalarFieldEnum = {
@@ -726,7 +728,7 @@ exports.Prisma.Template_counterScalarFieldEnum = {
   size: 'size'
 };
 
-exports.Prisma.Template_fieldScalarFieldEnum = {
+exports.Prisma.TemplateFieldScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -734,7 +736,7 @@ exports.Prisma.Template_fieldScalarFieldEnum = {
   field_id: 'field_id'
 };
 
-exports.Prisma.TemplatesScalarFieldEnum = {
+exports.Prisma.TemplateScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -755,7 +757,7 @@ exports.Prisma.TimezonesScalarFieldEnum = {
   portal_id: 'portal_id'
 };
 
-exports.Prisma.UsersScalarFieldEnum = {
+exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
   surname: 'surname',
@@ -768,7 +770,9 @@ exports.Prisma.UsersScalarFieldEnum = {
   two_factor_recovery_codes: 'two_factor_recovery_codes',
   remember_token: 'remember_token',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  client_id: 'client_id',
+  bitrix_id: 'bitrix_id'
 };
 
 exports.Prisma.AisScalarFieldEnum = {
@@ -1338,6 +1342,14 @@ exports.Prisma.OfferTemplatePageScalarFieldEnum = {
   fonts: 'fonts'
 };
 
+exports.Prisma.RolesScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1439,8 +1451,10 @@ exports.Prisma.callingsOrderByRelevanceFieldEnum = {
   title: 'title'
 };
 
-exports.Prisma.clientsOrderByRelevanceFieldEnum = {
-  name: 'name'
+exports.Prisma.ClientOrderByRelevanceFieldEnum = {
+  name: 'name',
+  email: 'email',
+  status: 'status'
 };
 
 exports.Prisma.contractsOrderByRelevanceFieldEnum = {
@@ -1541,7 +1555,7 @@ exports.Prisma.failed_jobsOrderByRelevanceFieldEnum = {
   exception: 'exception'
 };
 
-exports.Prisma.fieldsOrderByRelevanceFieldEnum = {
+exports.Prisma.FieldOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code',
   type: 'type',
@@ -1562,7 +1576,7 @@ exports.Prisma.filesOrderByRelevanceFieldEnum = {
   entity_type: 'entity_type'
 };
 
-exports.Prisma.infoblocksOrderByRelevanceFieldEnum = {
+exports.Prisma.InfoblockOrderByRelevanceFieldEnum = {
   name: 'name',
   title: 'title',
   description: 'description',
@@ -1626,7 +1640,7 @@ exports.Prisma.portal_measureOrderByRelevanceFieldEnum = {
   fullName: 'fullName'
 };
 
-exports.Prisma.portalsOrderByRelevanceFieldEnum = {
+exports.Prisma.PortalOrderByRelevanceFieldEnum = {
   domain: 'domain',
   key: 'key',
   C_REST_CLIENT_ID: 'C_REST_CLIENT_ID',
@@ -1722,7 +1736,7 @@ exports.Prisma.template_counterOrderByRelevanceFieldEnum = {
   prefix: 'prefix'
 };
 
-exports.Prisma.templatesOrderByRelevanceFieldEnum = {
+exports.Prisma.TemplateOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code',
   type: 'type',
@@ -1737,7 +1751,7 @@ exports.Prisma.timezonesOrderByRelevanceFieldEnum = {
   offset: 'offset'
 };
 
-exports.Prisma.usersOrderByRelevanceFieldEnum = {
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
   name: 'name',
   surname: 'surname',
   email: 'email',
@@ -1745,7 +1759,8 @@ exports.Prisma.usersOrderByRelevanceFieldEnum = {
   password: 'password',
   two_factor_secret: 'two_factor_secret',
   two_factor_recovery_codes: 'two_factor_recovery_codes',
-  remember_token: 'remember_token'
+  remember_token: 'remember_token',
+  bitrix_id: 'bitrix_id'
 };
 
 exports.Prisma.JsonNullValueFilter = {
@@ -2096,6 +2111,11 @@ exports.Prisma.OfferTemplatePageOrderByRelevanceFieldEnum = {
   colors: 'colors',
   fonts: 'fonts'
 };
+
+exports.Prisma.rolesOrderByRelevanceFieldEnum = {
+  name: 'name',
+  code: 'code'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -2162,7 +2182,7 @@ exports.Prisma.ModelName = {
   btx_rpas: 'btx_rpas',
   btx_stages: 'btx_stages',
   callings: 'callings',
-  clients: 'clients',
+  Client: 'Client',
   contracts: 'contracts',
   counters: 'counters',
   deal_document_favorites: 'deal_document_favorites',
@@ -2172,9 +2192,9 @@ exports.Prisma.ModelName = {
   documents: 'documents',
   f_items: 'f_items',
   failed_jobs: 'failed_jobs',
-  fields: 'fields',
+  Field: 'Field',
   files: 'files',
-  infoblocks: 'infoblocks',
+  Infoblock: 'Infoblock',
   info_groups: 'info_groups',
   jobs: 'jobs',
   links: 'links',
@@ -2184,7 +2204,7 @@ exports.Prisma.ModelName = {
   personal_access_tokens: 'personal_access_tokens',
   portal_contracts: 'portal_contracts',
   portal_measure: 'portal_measure',
-  portals: 'portals',
+  Portal: 'Portal',
   price_row_cells: 'price_row_cells',
   rq_counter: 'rq_counter',
   rqs: 'rqs',
@@ -2194,10 +2214,10 @@ exports.Prisma.ModelName = {
   telescope_entries_tags: 'telescope_entries_tags',
   telescope_monitoring: 'telescope_monitoring',
   template_counter: 'template_counter',
-  template_field: 'template_field',
-  templates: 'templates',
+  TemplateField: 'TemplateField',
+  Template: 'Template',
   timezones: 'timezones',
-  users: 'users',
+  User: 'User',
   ais: 'ais',
   bitrix_app_placements: 'bitrix_app_placements',
   bitrix_app_secrets: 'bitrix_app_secrets',
@@ -2228,7 +2248,8 @@ exports.Prisma.ModelName = {
   OfferTemplateImage: 'OfferTemplateImage',
   OfferTemplatePageBlock: 'OfferTemplatePageBlock',
   OfferTemplatePageSticker: 'OfferTemplatePageSticker',
-  OfferTemplatePage: 'OfferTemplatePage'
+  OfferTemplatePage: 'OfferTemplatePage',
+  roles: 'roles'
 };
 
 /**

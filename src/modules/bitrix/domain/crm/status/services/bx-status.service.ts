@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { BxStatusRepository } from '../repository/bx-status.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXStatus } from '../interface/bx-status.interface';

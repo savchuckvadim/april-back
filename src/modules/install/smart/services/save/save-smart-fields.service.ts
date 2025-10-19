@@ -1,7 +1,7 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
 import { SaveSmartService } from './save-smart.service';
 import { Field } from '../../type/parse.type';
-import { PortalService } from '@/modules/portal-konstructor/portal/portal.service';
+import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { Injectable } from '@nestjs/common';
 import {
     IUserFieldConfig,
@@ -32,10 +32,10 @@ export class SaveSmartBitrixFieldsDto {
 export class SaveSmartFieldsService {
     public constructor(
         private readonly prismaService: PrismaService,
-        private readonly portalService: PortalService,
+        private readonly portalService: PortalStoreService,
         private readonly saveSmartService: SaveSmartService,
         private readonly pbxFieldService: PbxFieldService,
-    ) {}
+    ) { }
 
     public async installFields(dto: SaveSmartFieldsDto) {
         const { domain, fields, bxFields, type, group } = dto;

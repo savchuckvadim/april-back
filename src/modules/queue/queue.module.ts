@@ -2,7 +2,7 @@ import { BullModule } from '@nestjs/bull';
 import { Module, Logger, forwardRef } from '@nestjs/common';
 // import { QueueService } from './queue.service';
 // import { QueueProcessor } from './queue.processor';
-import { BitrixModule } from '../bitrix/bitrix.module';
+// import { BitrixModule } from '../bitrix/bitrix.module';
 import { RedisModule } from 'src/core/redis/redis.module';
 // import { RedisService } from 'src/core/redis/redis.service';
 import { ConfigService } from '@nestjs/config';
@@ -41,7 +41,7 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
         BullModule.registerQueue(
             ...Object.values(QueueNames).map(name => ({ name })),
         ),
-        BitrixModule,
+        // BitrixModule,
         RedisModule,
         SilentJobHandlersModule,
         // forwardRef(() => KpiReportModule),

@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma';
 import { IBXSmartType } from '@/modules/bitrix/domain/crm/smart-type';
-import { PortalService } from '@/modules/portal-konstructor/portal/portal.service';
+import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 
 @Injectable()
 export class SaveSmartService {
     public constructor(
         private readonly prismaService: PrismaService,
-        private readonly portalService: PortalService,
-    ) {}
+        private readonly portalService: PortalStoreService,
+    ) { }
 
     public async saveSmart(
         domain: string,

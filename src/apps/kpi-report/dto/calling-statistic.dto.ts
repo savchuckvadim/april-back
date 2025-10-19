@@ -38,6 +38,8 @@ export class GetCallingStatisticFiltersDto {
 
 export class GetCallingStatisticDto {
     @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
     domain: string;
 
     @ApiProperty({ type: GetCallingStatisticFiltersDto })

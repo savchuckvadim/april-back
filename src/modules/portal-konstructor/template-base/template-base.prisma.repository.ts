@@ -13,7 +13,7 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: number): Promise<TemplateBaseEntity | null> {
-        const result = await this.prisma.templates.findUnique({
+        const result = await this.prisma.template.findUnique({
             where: { id: BigInt(id) },
             include: {
                 template_counter: true,
@@ -27,7 +27,7 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
     }
 
     async findByCode(code: string): Promise<TemplateBaseEntity | null> {
-        const result = await this.prisma.templates.findFirst({
+        const result = await this.prisma.template.findFirst({
             where: { code },
             include: {
                 template_counter: true,
@@ -41,7 +41,7 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
     }
 
     async findMany(): Promise<TemplateBaseEntity[] | null> {
-        const result = await this.prisma.templates.findMany();
+        const result = await this.prisma.template.findMany();
         if (!result) return null;
 
         return result.map(template =>
@@ -51,21 +51,21 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
     async findByDomain(
         domain: string,
     ): Promise<TemplateBasePortalEntity[] | null> {
-        const portal = await this.prisma.portals.findFirst({
+        const portal = await this.prisma.portal.findFirst({
             where: { domain },
             select: { id: true },
         });
         if (!portal) {
             throw new Error('Portal not found');
         }
-        const result = await this.prisma.templates.findMany({
+        const result = await this.prisma.template.findMany({
             where: { portalId: portal.id },
             include: {
                 template_counter: true,
             },
         });
         if (!result) return null;
-        const fields = await this.prisma.fields.findMany({
+        const fields = await this.prisma.field.findMany({
             where: {
                 template_field: {
                     some: {
@@ -81,7 +81,7 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
         );
     }
     async findManyWithRelations(): Promise<TemplateBaseEntity[] | null> {
-        const result = await this.prisma.templates.findMany({
+        const result = await this.prisma.template.findMany({
             include: {
                 template_counter: true,
                 template_field: true,

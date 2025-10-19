@@ -1,8 +1,7 @@
 import { Body, Controller, Post, Query } from '@nestjs/common';
 
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InitDealDto } from './dto/init-deal.dto';
-import { InitDealUseCase } from './init-deal.use-case';
 import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
@@ -15,6 +14,7 @@ export class InitDealController {
         private readonly dispatcher: QueueDispatcherService,
     ) {}
 
+    @ApiOperation({ summary: 'Init deal' })
     @Post('init-deal')
     async initDeal(@Body() body: InitDealDto) {
         // return await this.initDealUseCase.execute(body)

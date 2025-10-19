@@ -9,12 +9,12 @@ export class FieldPrismaRepository implements FieldRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: number): Promise<FieldEntity | null> {
-        const result = await this.prisma.fields.findUnique({
+        const result = await this.prisma.field.findUnique({
             where: { id: BigInt(id) },
             include: {
                 template_field: {
                     include: {
-                        templates: true,
+                        template: true,
                     },
                 },
             },
@@ -26,12 +26,12 @@ export class FieldPrismaRepository implements FieldRepository {
     }
 
     async findByCode(code: string): Promise<FieldEntity | null> {
-        const result = await this.prisma.fields.findFirst({
+        const result = await this.prisma.field.findFirst({
             where: { code },
             include: {
                 template_field: {
                     include: {
-                        templates: true,
+                        template: true,
                     },
                 },
             },
@@ -43,18 +43,18 @@ export class FieldPrismaRepository implements FieldRepository {
     }
 
     async findMany(): Promise<FieldEntity[] | null> {
-        const result = await this.prisma.fields.findMany();
+        const result = await this.prisma.field.findMany();
         if (!result) return null;
 
         return result.map(field => createFieldEntityFromPrisma(field));
     }
 
     async findManyWithRelations(): Promise<FieldEntity[] | null> {
-        const result = await this.prisma.fields.findMany({
+        const result = await this.prisma.field.findMany({
             include: {
                 template_field: {
                     include: {
-                        templates: true,
+                        template: true,
                     },
                 },
             },

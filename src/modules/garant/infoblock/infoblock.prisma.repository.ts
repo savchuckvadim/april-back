@@ -10,7 +10,7 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: number): Promise<InfoblockEntity | null> {
-        const result = await this.prisma.infoblocks.findUnique({
+        const result = await this.prisma.infoblock.findUnique({
             where: { id: BigInt(id) },
             include: {
                 group: true,
@@ -68,7 +68,7 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
     }
 
     async findMany(): Promise<InfoblockEntity[] | null> {
-        const result = await this.prisma.infoblocks.findMany();
+        const result = await this.prisma.infoblock.findMany();
         if (!result) return null;
 
         return result.map(infoblock =>
@@ -77,7 +77,7 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
     }
 
     async findByCode(code: string): Promise<InfoblockEntity | null> {
-        const infoblock = await this.prisma.infoblocks.findFirst({
+        const infoblock = await this.prisma.infoblock.findFirst({
             where: { code },
             include: {
                 group: {
@@ -164,7 +164,7 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
     }
 
     async findByCodes(codes: string[]): Promise<InfoblockEntity[] | null> {
-        const infoblocks = await this.prisma.infoblocks.findMany({
+        const infoblocks = await this.prisma.infoblock.findMany({
             where: { code: { in: codes } },
         });
         if (!infoblocks) return null;
@@ -175,7 +175,7 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
     }
 
     async findManyWithRelations(): Promise<InfoblockEntity[] | null> {
-        const infoblocks = await this.prisma.infoblocks.findMany({
+        const infoblocks = await this.prisma.infoblock.findMany({
             include: {
                 group: true,
                 parent: true,

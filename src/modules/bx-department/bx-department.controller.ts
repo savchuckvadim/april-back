@@ -8,17 +8,17 @@ import {
     Post,
 } from '@nestjs/common';
 import { BxDepartmentService } from './services/bx-department.service';
-import { BxDepartmentDto, DomaintDto } from './dto/bx-department.dto';
+import { BxDepartmentDto } from './dto/bx-department.dto';
 import { BxAllDepartmentsService } from './services/bx-all-departments.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-@ApiTags('Bitrix24 Department')
+@ApiTags('Bitrix Domain Department')
 @Controller('bx/department')
 export class DepartmentController {
     constructor(
         private readonly service: BxDepartmentService,
         private readonly allDepartmentsService: BxAllDepartmentsService,
-    ) {}
+    ) { }
 
     @ApiOperation({ summary: 'Get full department information' })
     @ApiResponse({

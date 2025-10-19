@@ -15,7 +15,7 @@ export class BitrixPlacementService {
     async storePlacements(dto: CreateBitrixPlacementDto): Promise<{ message: string; app_id: bigint }> {
         try {
             // Find portal by domain
-            const portal = await this.prisma.portals.findFirst({
+            const portal = await this.prisma.portal.findFirst({
                 where: { domain: dto.domain },
             });
 

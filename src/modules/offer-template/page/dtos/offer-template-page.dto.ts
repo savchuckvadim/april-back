@@ -54,7 +54,7 @@ export class OfferTemplatePageDto extends OfferTemplatePage {
     @IsString()
     declare fonts: string;
 
-    @ApiProperty({ description: 'The blocks of the offer template page' })
+    @ApiProperty({ description: 'The blocks of the offer template page', type: [OfferTemplatePageBlockDto] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => OfferTemplatePageBlockDto)

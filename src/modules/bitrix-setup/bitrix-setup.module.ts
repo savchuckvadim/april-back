@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AppModule } from './app/app.module';
+import { BitrixSetupAppModule } from './app/bitrix-setup-app.module';
 import { TokenModule } from './token/token.module';
 import { SecretModule } from './secret/secret.module';
 import { PlacementModule } from './placement/placement.module';
@@ -8,7 +8,7 @@ import { BitrixSetupInstallModule } from './install/bitrix-setup-install.module'
 
 @Module({
     imports: [
-        AppModule,
+        BitrixSetupAppModule,
         TokenModule,
         SecretModule,
         PlacementModule,
@@ -16,7 +16,7 @@ import { BitrixSetupInstallModule } from './install/bitrix-setup-install.module'
         BitrixSetupInstallModule,
     ],
     exports: [
-        AppModule,
+        BitrixSetupAppModule,
         TokenModule,
         SecretModule,
         PlacementModule,

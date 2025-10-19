@@ -1,9 +1,10 @@
 import { PrismaService } from 'src/core/prisma';
 import { InfoblockEntity, InfoblockLightEntity } from '../infoblock.entity';
+import { Infoblock } from 'generated/prisma';
 
 export function createInfoblockEntityFromPrisma(
     data: NonNullable<
-        Awaited<ReturnType<PrismaService['infoblocks']['findUnique']>>
+        Awaited<Infoblock>
     >,
 ): InfoblockEntity {
     const entity = new InfoblockEntity();

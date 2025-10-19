@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PortalService } from './portal.service';
+import { PortalStoreService } from './portal-store.service';
 import { PortalEntity } from './portal.entity';
 import { UpdateWebhookDto } from './dtos/update-webhook.dto';
 
 @ApiTags('Portal Konstructor')
 @Controller('portal')
 export class PortalController {
-    constructor(private readonly service: PortalService) { }
+    constructor(private readonly service: PortalStoreService) { }
     @ApiOperation({ summary: 'Get portal by id' })
     @Get(':id')
     async getPortal(@Param('id') id: number): Promise<PortalEntity | null> {

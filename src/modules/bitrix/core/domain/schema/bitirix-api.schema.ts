@@ -23,12 +23,12 @@ import {
 import { TasksSchema } from 'src/modules/bitrix/domain/tasks/bx-tasks.schema';
 import { ActivitySchema } from 'src/modules/bitrix/domain/activity/bx-activity.schema';
 import { FileSchema } from 'src/modules/bitrix/domain/file/bx-file.schema';
-import {
-    CrmItemAddRequestType,
-    CrmItemGetRequestType,
-    CrmItemListRequestType,
-    CrmUpdateItemRequestType,
-} from '@/modules/bitrix/domain/crm/type/crm-request.type';
+// import {
+//     CrmItemAddRequestType,
+//     CrmItemGetRequestType,
+//     CrmItemListRequestType,
+//     CrmUpdateItemRequestType,
+// } from '@/modules/bitrix/domain/crm/type/crm-request.type';
 import { BxSmartTypeSchema } from '@/modules/bitrix/domain/crm/smart-type';
 // import { FieldsEnumerationSchema } from "src/modules/bitrix/domain/crm";
 

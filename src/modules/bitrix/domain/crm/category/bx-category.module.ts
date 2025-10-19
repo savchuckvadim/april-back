@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { BitrixCoreModule } from 'src/modules/bitrix/core/bitrix-core.module';
+// import { BitrixCoreModule } from 'src/modules/bitrix/core/bitrix-core.module';
 import { BxCategoryService } from './services/bx-category.service';
 
 @Module({
-    imports: [BitrixCoreModule],
+    // imports: [BitrixCoreModule],
     providers: [BxCategoryService],
     exports: [BxCategoryService],
 })

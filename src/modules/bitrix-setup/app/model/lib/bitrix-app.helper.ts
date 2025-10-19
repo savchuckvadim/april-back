@@ -12,7 +12,7 @@ export const createBitrixAppEntityFromPrisma = (app: NonNullable<
     Awaited<ReturnType<PrismaService['bitrix_app_placements']['findFirst']>> | null
 >, bitrix_settings?: NonNullable<
     Awaited<ReturnType<PrismaService['bitrix_settings']['findUnique']>> | null
->, portal?: NonNullable<Awaited<ReturnType<PrismaService['portals']['findUnique']>> | null>,): BitrixAppEntity => {
+>, portal?: NonNullable<Awaited<ReturnType<PrismaService['portal']['findUnique']>> | null>,): BitrixAppEntity => {
 
 
     const entity = new BitrixAppEntity();
@@ -43,7 +43,7 @@ export const getRelations = async (
         Awaited<ReturnType<PrismaService['bitrix_app_placements']['findFirst']>> | null> | undefined,
     bitrix_settings?: NonNullable<
         Awaited<ReturnType<PrismaService['bitrix_settings']['findFirst']>> | null> | undefined,
-    portal?: NonNullable<Awaited<ReturnType<PrismaService['portals']['findFirst']>> | null> | undefined,
+    portal?: NonNullable<Awaited<ReturnType<PrismaService['portal']['findFirst']>> | null> | undefined,
 }> => {
     const bitrix_tokens = await prisma.bitrix_tokens.findFirst({
         where: { bitrix_app_id: appId },
@@ -54,7 +54,7 @@ export const getRelations = async (
     const bitrix_settings = await prisma.bitrix_settings.findFirst({
         where: { settingable_id: appId },
     }) || undefined;
-    const portal = await prisma.portals.findFirst({
+    const portal = await prisma.portal.findFirst({
         where: { id: portalId },
     }) || undefined;
 

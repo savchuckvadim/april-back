@@ -5,13 +5,15 @@ import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from 'src/core/redis/redis.module';
 import { RedisService } from 'src/core/redis/redis.service';
-import { PortalModule } from '../portal/portal.module';
+// import { PortalModule } from '../portal/portal.module';
 import { BitrixCoreModule } from './core/bitrix-core.module';
-import { BitrixDomainModule } from './domain/bitrix-domain.module';
-import { BitrixEndpointsModule } from './endpoints/endpoints.module';
+
 import { BitrixService } from './bitrix.service';
 import { BitrixServiceFactory } from './bitrix-service.factory';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
+import { BitrixApiFactoryService } from './core';
+import { BitrixAuthService } from './auth/bitrix-auth.service';
+import { BitrixSetupModule } from '../bitrix-setup/bitrix-setup.module';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\bitrix.module.ts
 @Module({
     imports: [
@@ -19,27 +21,30 @@ import { ServiceClonerFactory } from './domain/service-clone.factory';
         ConfigModule,
         HttpModule, // 👈 обязательно
         RedisModule,
-        forwardRef(() => PortalModule),
+        // forwardRef(() => PortalModule),
         BitrixCoreModule,
+        BitrixSetupModule
         // BitrixDomainModule,
-        BitrixEndpointsModule,
+        // BitrixEndpointsModule,
     ],
     controllers: [],
     providers: [
         RedisService,
         BitrixService,
         BitrixServiceFactory,
+        BitrixAuthService,
         ServiceClonerFactory,
+        // BitrixApiFactoryService //fromm bitrix core  module
     ],
     exports: [
         BitrixCoreModule,
         // BitrixDomainModule,
-        BitrixEndpointsModule,
-        BitrixService,
+        // BitrixEndpointsModule,
+        // BitrixService,
         BitrixServiceFactory,
     ],
 })
-export class BitrixModule {}
+export class BitrixModule { }
 
 // src/modules/bitrix/
 // ├── core/

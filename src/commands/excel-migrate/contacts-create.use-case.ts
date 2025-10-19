@@ -2,9 +2,9 @@ import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-ap
 import { Injectable } from '@nestjs/common';
 import { PortalService } from 'src/modules/portal/portal.service';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
-import { BitrixApiQueueApiService } from 'src/modules/bitrix/core/queue/bitrix-queue-api.service';
 import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { ApiProperty } from '@nestjs/swagger';
+import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
 export class ContactCreateDto {
     @ApiProperty({
@@ -22,7 +22,7 @@ export class ContactCreateDto {
 }
 @Injectable()
 export class ContactsCreateUseCase {
-    protected bitrixApi: BitrixApiQueueApiService;
+    protected bitrixApi: BitrixBaseApi;
     protected portal: PortalModel;
     constructor(
         private readonly bitrixApiFactory: BitrixApiFactoryService,
@@ -31,7 +31,7 @@ export class ContactsCreateUseCase {
 
     async create(data: ContactCreateDto) {
         this.portal = await this.portalService.getModelByDomain(data.domain);
-        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
+        this.bitrixApi = await this.bitrixApiFactory.create(this.portal.getPortal());
 
         const fakeContact = {
             ASSIGNED_BY_ID: 1,

@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
 import { BitrixSetupInstallController } from "./controllers/bitrix-setup-install.controller";
-import { AppModule } from "../app/app.module";
+import { BitrixSetupAppModule } from "../app/bitrix-setup-app.module";
 
 
 
 @Module({
-    imports: [AppModule],
+    imports: [BitrixSetupAppModule],
     controllers: [BitrixSetupInstallController],
 
 })

@@ -9,7 +9,7 @@ export class PortalPrismaRepository implements PortalRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async create(portal: Partial<PortalEntity>): Promise<PortalEntity | null> {
-        const result = await this.prisma.portals.create({
+        const result = await this.prisma.portal.create({
             data: {
 
                 created_at: new Date(),
@@ -35,19 +35,19 @@ export class PortalPrismaRepository implements PortalRepository {
                 data[key] = portal[key];
             }
         }
-        const result = await this.prisma.portals.update({
+        const result = await this.prisma.portal.update({
             where: { id: BigInt(portal.id!) },
             data,
         });
         return createPortalEntityFromPrisma(result);
     }
     async delete(id: number): Promise<void> {
-        await this.prisma.portals.delete({
+        await this.prisma.portal.delete({
             where: { id: BigInt(id) },
         });
     }
     async findById(id: number): Promise<PortalEntity | null> {
-        const result = await this.prisma.portals.findUnique({
+        const result = await this.prisma.portal.findUnique({
             where: { id: BigInt(id) },
             include: {
                 agents: true,
@@ -60,7 +60,7 @@ export class PortalPrismaRepository implements PortalRepository {
         return createPortalEntityFromPrisma(result);
     }
     async findByDomain(domain: string): Promise<PortalEntity | null> {
-        const result = await this.prisma.portals.findFirst({
+        const result = await this.prisma.portal.findFirst({
             where: { domain },
             include: {
                 agents: true,
@@ -71,14 +71,14 @@ export class PortalPrismaRepository implements PortalRepository {
         return createPortalEntityFromPrisma(result);
     }
     async findMany(): Promise<PortalEntity[] | null> {
-        const result = await this.prisma.portals.findMany();
+        const result = await this.prisma.portal.findMany();
         if (!result) return null;
 
         return result.map(portal => createPortalEntityFromPrisma(portal));
     }
 
     async findManyWithRelations(): Promise<PortalEntity[] | null> {
-        const result = await this.prisma.portals.findMany({
+        const result = await this.prisma.portal.findMany({
             include: {
                 agents: true,
                 templates: true,
@@ -94,11 +94,11 @@ export class PortalPrismaRepository implements PortalRepository {
         domain: string,
         webhook: string,
     ): Promise<PortalEntity | null> {
-        const result = await this.prisma.portals.findFirst({
+        const result = await this.prisma.portal.findFirst({
             where: { domain },
         });
         if (!result) return null;
-        const updated = await this.prisma.portals.update({
+        const updated = await this.prisma.portal.update({
             where: { id: result.id },
             data: {
                 C_REST_WEB_HOOK_URL: webhook,

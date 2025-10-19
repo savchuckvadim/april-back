@@ -20,10 +20,6 @@ model agents {
   code       String    @db.VarChar(255)
   number     String    @db.VarChar(255)
   withTax    Boolean   @default(false)
-
-  
-  portal    portals @relation("PortalProviders", fields: [portalId], references: [id])
-  rq        rqs?    @relation(fields: [rqId], references: [id])
 }
 
 model bitrixfield_items {
@@ -183,6 +179,11 @@ model clients {
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
   name       String    @db.VarChar(255)
+  email      String?   @unique(map: "clients_email_unique") @db.VarChar(255)
+  status     String?   @db.VarChar(255)
+  is_active  Boolean?
+  portals    portals[]
+  users      users[]
 }
 
 model contracts {
@@ -328,8 +329,6 @@ model f_items {
   value       String?   @db.VarChar(255)
   bitrixId    String?   @db.VarChar(255)
   fieldNumber String    @db.VarChar(255)
-  fields      fields?   @relation(fields: [fieldsId], references: [id])
-  fieldsId    BigInt?   @db.UnsignedBigInt
 }
 
 model failed_jobs {
@@ -360,9 +359,6 @@ model fields {
   isActive         Boolean
   isPlural         Boolean
   isClient         Boolean?
-
-  template_field template_field[]
-  items          f_items[]
 }
 
 model files {
@@ -422,9 +418,6 @@ model infoblocks {
   relatedFrom                                infoblocks[]           @relation("RelatedToInfoblock")
   relation                                   infoblocks?            @relation("RelationToInfoblock", fields: [relation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "infoblocks_relation_id_foreign")
   relatedInfoblocks                          infoblocks[]           @relation("RelationToInfoblock")
-  // Package relations
-  packages                                   infoblocks[]           @relation("PackageToInfoblocks")
-  packageInfoblocks                          infoblocks[]           @relation("PackageToInfoblocks")
 
   @@index([excluded_id], map: "infoblocks_excluded_id_foreign")
   @@index([group_id], map: "infoblocks_group_id_foreign")
@@ -567,34 +560,37 @@ model portal_measure {
 }
 
 model portals {
-  id                      BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at              DateTime?                 @db.Timestamp(0)
-  updated_at              DateTime?                 @db.Timestamp(0)
-  domain                  String?                   @db.Text
-  key                     String?                   @db.Text
-  C_REST_CLIENT_ID        String?                   @db.Text
-  C_REST_CLIENT_SECRET    String?                   @db.Text
-  C_REST_WEB_HOOK_URL     String?                   @db.Text
-  number                  Int
-  bitrix_apps             bitrix_apps[]
-  bitrixlists             bitrixlists[]
-  btx_companies           btx_companies[]
-  btx_contacts            btx_contacts[]
-  btx_deals               btx_deals[]
-  btx_leads               btx_leads[]
-  btx_rpas                btx_rpas[]
-  callings                callings[]
-  departaments            departaments[]
-  offer_template_portal   offer_template_portal[]
-  offer_zakupki_settings  offer_zakupki_settings[]
-  portal_contracts        portal_contracts[]
-  portal_measure          portal_measure[]
-  portal_region           portal_region[]
-  smarts                  smarts[]
-  timezones               timezones[]
-  user_selected_templates user_selected_templates[]
-  templates               templates[]               @relation("PortalTemplates")
-  agents                  agents[]                  @relation("PortalProviders")
+  id                     BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at             DateTime?                @db.Timestamp(0)
+  updated_at             DateTime?                @db.Timestamp(0)
+  domain                 String?                  @db.Text
+  key                    String?                  @db.Text
+  C_REST_CLIENT_ID       String?                  @db.Text
+  C_REST_CLIENT_SECRET   String?                  @db.Text
+  C_REST_WEB_HOOK_URL    String?                  @db.Text
+  number                 Int
+  client_id              BigInt?                  @db.UnsignedBigInt
+  bitrix_apps            bitrix_apps[]
+  bitrixlists            bitrixlists[]
+  btx_companies          btx_companies[]
+  btx_contacts           btx_contacts[]
+  btx_deals              btx_deals[]
+  btx_leads              btx_leads[]
+  btx_rpas               btx_rpas[]
+  callings               callings[]
+  departaments           departaments[]
+  offerTemplateImages    OfferTemplateImage[]
+  offerTemplatePortal    OfferTemplatePortal[]
+  offer_zakupki_settings offer_zakupki_settings[]
+  portal_contracts       portal_contracts[]
+  portal_measure         portal_measure[]
+  portal_region          portal_region[]
+  clients                clients?                 @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "portals_client_id_foreign")
+  smarts                 smarts[]
+  timezones              timezones[]
+  userSelectedTemplates  UserSelectedTemplate[]
+
+  @@index([client_id], map: "portals_client_id_foreign")
 }
 
 model price_row_cells {
@@ -672,7 +668,6 @@ model rqs {
   stampId               BigInt?      @db.UnsignedBigInt
   agentId               BigInt?      @db.UnsignedBigInt
   rq_counter            rq_counter[]
-  agents                agents[]
 }
 
 model smarts {
@@ -756,15 +751,11 @@ model template_counter {
 }
 
 model template_field {
-  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at  DateTime?  @db.Timestamp(0)
-  updated_at  DateTime?  @db.Timestamp(0)
-  template_id BigInt     @db.UnsignedBigInt
-  field_id    BigInt     @db.UnsignedBigInt
-  fields      fields?    @relation(fields: [field_id], references: [id])
-  // fieldsId    BigInt?    @db.UnsignedBigInt
-  templates   templates? @relation(fields: [template_id], references: [id])
-  // templatesId BigInt?    @db.UnsignedBigInt
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  template_id BigInt    @db.UnsignedBigInt
+  field_id    BigInt    @db.UnsignedBigInt
 }
 
 model templates {
@@ -776,9 +767,7 @@ model templates {
   type             String             @db.VarChar(255)
   link             String?            @db.VarChar(255)
   portalId         BigInt             @db.UnsignedBigInt
-  portal           portals            @relation("PortalTemplates", fields: [portalId], references: [id])
   template_counter template_counter[]
-  template_field   template_field[]
 }
 
 model timezones {
@@ -808,6 +797,11 @@ model users {
   remember_token            String?   @db.VarChar(100)
   created_at                DateTime? @db.Timestamp(0)
   updated_at                DateTime? @db.Timestamp(0)
+  client_id                 BigInt?   @db.UnsignedBigInt
+  bitrix_id                 String?   @db.VarChar(255)
+  clients                   clients?  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_client_id_foreign")
+
+  @@index([client_id], map: "users_client_id_foreign")
 }
 
 model ais {
@@ -987,6 +981,7 @@ model BxDocumentDeal {
   shadowDealId       Int?
   serviceSmartId     Int?
   smartId            Int?
+
   @@map("bx_document_deals")
 }
 
@@ -1127,49 +1122,54 @@ model infoblock_package {
   @@index([infoblock_id], map: "infoblock_package_infoblock_id_foreign")
 }
 
-model offer_template_portal {
-  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
-  offer_template_id BigInt          @db.UnsignedBigInt
-  portal_id         BigInt          @db.UnsignedBigInt
-  is_default        Boolean         @default(false)
-  is_active         Boolean         @default(false)
-  created_at        DateTime?       @db.Timestamp(0)
-  updated_at        DateTime?       @db.Timestamp(0)
-  offer_templates   offer_templates @relation(fields: [offer_template_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_portal_offer_template_id_foreign")
-  portals           portals         @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_portal_portal_id_foreign")
+model OfferTemplatePortal {
+  id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  offer_template_id BigInt        @db.UnsignedBigInt
+  portal_id         BigInt        @db.UnsignedBigInt
+  is_default        Boolean       @default(false)
+  is_active         Boolean       @default(false)
+  created_at        DateTime?     @db.Timestamp(0)
+  updated_at        DateTime?     @db.Timestamp(0)
+  offer_templates   OfferTemplate @relation(fields: [offer_template_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_portal_offer_template_id_foreign")
+  portals           portals       @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_portal_portal_id_foreign")
 
   @@index([offer_template_id], map: "offer_template_portal_offer_template_id_foreign")
   @@index([portal_id], map: "offer_template_portal_portal_id_foreign")
+  @@map("offer_template_portal")
 }
 
-model offer_templates {
-  id                      BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
-  name                    String                     @db.VarChar(255)
-  visibility              offer_templates_visibility @default(private)
-  is_default              Boolean                    @default(false)
-  file_path               String                     @db.VarChar(255)
-  demo_path               String?                    @db.VarChar(255)
-  type                    String                     @default("single") @db.VarChar(255)
-  rules                   String?                    @db.LongText
-  price_settings          String?                    @db.LongText
-  infoblock_settings      String?                    @db.LongText
-  letter_text             String?                    @db.LongText
-  sale_text_1             String?                    @db.LongText
-  sale_text_2             String?                    @db.LongText
-  sale_text_3             String?                    @db.LongText
-  sale_text_4             String?                    @db.LongText
-  sale_text_5             String?                    @db.LongText
-  field_codes             String?                    @db.LongText
-  style                   String?                    @db.VarChar(255)
-  color                   String?                    @db.VarChar(255)
-  code                    String                     @db.VarChar(255)
-  tags                    String?                    @db.LongText
-  is_active               Boolean                    @default(false)
-  counter                 Int
-  created_at              DateTime?                  @db.Timestamp(0)
-  updated_at              DateTime?                  @db.Timestamp(0)
-  offer_template_portal   offer_template_portal[]
-  user_selected_templates user_selected_templates[]
+model OfferTemplate {
+  id                    BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  name                  String                     @db.VarChar(255)
+  visibility            offer_templates_visibility @default(private)
+  is_default            Boolean                    @default(false)
+  file_path             String                     @db.VarChar(255)
+  demo_path             String?                    @db.VarChar(255)
+  type                  String                     @default("single") @db.VarChar(255)
+  rules                 String?                    @db.LongText
+  price_settings        String?                    @db.LongText
+  infoblock_settings    String?                    @db.LongText
+  letter_text           String?                    @db.LongText
+  sale_text_1           String?                    @db.LongText
+  sale_text_2           String?                    @db.LongText
+  sale_text_3           String?                    @db.LongText
+  sale_text_4           String?                    @db.LongText
+  sale_text_5           String?                    @db.LongText
+  field_codes           String?                    @db.LongText
+  style                 String?                    @db.VarChar(255)
+  color                 String?                    @db.VarChar(255)
+  code                  String                     @db.VarChar(255)
+  tags                  String?                    @db.LongText
+  is_active             Boolean                    @default(false)
+  counter               Int
+  created_at            DateTime?                  @db.Timestamp(0)
+  updated_at            DateTime?                  @db.Timestamp(0)
+  offerTemplateFonts    OfferTemplateFont[]
+  offerTemplatePages    OfferTemplatePage[]
+  offerTemplatePortal   OfferTemplatePortal[]
+  userSelectedTemplates UserSelectedTemplate[]
+
+  @@map("offer_templates")
 }
 
 model offer_zakupki_settings {
@@ -1305,29 +1305,30 @@ model transcriptions {
   portal_id      String?   @db.VarChar(255)
 }
 
-model user_selected_templates {
-  id                 BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
-  bitrix_user_id     BigInt          @db.UnsignedBigInt
-  portal_id          BigInt          @db.UnsignedBigInt
-  offer_template_id  BigInt          @db.UnsignedBigInt
-  is_current         Boolean         @default(false)
-  is_favorite        Boolean         @default(false)
-  is_active          Boolean         @default(false)
-  price_settings     String?         @db.LongText
-  infoblock_settings String?         @db.LongText
-  letter_text        String?         @db.LongText
-  sale_text_1        String?         @db.LongText
-  sale_text_2        String?         @db.LongText
-  sale_text_3        String?         @db.LongText
-  sale_text_4        String?         @db.LongText
-  sale_text_5        String?         @db.LongText
-  created_at         DateTime?       @db.Timestamp(0)
-  updated_at         DateTime?       @db.Timestamp(0)
-  offer_templates    offer_templates @relation(fields: [offer_template_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_selected_templates_offer_template_id_foreign")
-  portals            portals         @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_selected_templates_portal_id_foreign")
+model UserSelectedTemplate {
+  id                 BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  bitrix_user_id     BigInt        @db.UnsignedBigInt
+  portal_id          BigInt        @db.UnsignedBigInt
+  offer_template_id  BigInt        @db.UnsignedBigInt
+  is_current         Boolean       @default(false)
+  is_favorite        Boolean       @default(false)
+  is_active          Boolean       @default(false)
+  price_settings     String?       @db.LongText
+  infoblock_settings String?       @db.LongText
+  letter_text        String?       @db.LongText
+  sale_text_1        String?       @db.LongText
+  sale_text_2        String?       @db.LongText
+  sale_text_3        String?       @db.LongText
+  sale_text_4        String?       @db.LongText
+  sale_text_5        String?       @db.LongText
+  created_at         DateTime?     @db.Timestamp(0)
+  updated_at         DateTime?     @db.Timestamp(0)
+  offerTemplate      OfferTemplate @relation(fields: [offer_template_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_selected_templates_offer_template_id_foreign")
+  portals            portals       @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_selected_templates_portal_id_foreign")
 
   @@index([offer_template_id], map: "user_selected_templates_offer_template_id_foreign")
   @@index([portal_id], map: "user_selected_templates_portal_id_foreign")
+  @@map("user_selected_templates")
 }
 
 model portal_region {
@@ -1357,8 +1358,179 @@ model regions {
   portal_region portal_region[]
 }
 
+model OfferTemplateFont {
+  id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at        DateTime?     @db.Timestamp(0)
+  updated_at        DateTime?     @db.Timestamp(0)
+  offer_template_id BigInt        @db.UnsignedBigInt
+  name              String        @db.VarChar(255)
+  code              String        @db.VarChar(255)
+  data              String?       @db.LongText
+  items             String?       @db.LongText
+  current           String?       @db.LongText
+  settings          String?       @db.LongText
+  offer_templates   OfferTemplate @relation(fields: [offer_template_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_fonts_offer_template_id_foreign")
+
+  @@index([offer_template_id], map: "offer_template_fonts_offer_template_id_foreign")
+  @@map("offer_template_fonts")
+}
+
+model OfferTemplateImage {
+  id                        BigInt                             @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at                DateTime?                          @db.Timestamp(0)
+  updated_at                DateTime?                          @db.Timestamp(0)
+  path                      String                             @db.VarChar(255)
+  storage_type              offer_template_images_storage_type @default(public)
+  original_name             String?                            @db.VarChar(255)
+  mime                      String?                            @db.VarChar(255)
+  size                      String                             @db.VarChar(255)
+  height                    String                             @db.VarChar(255)
+  width                     String                             @db.VarChar(255)
+  position                  String?                            @db.LongText
+  style                     String?                            @db.LongText
+  settings                  String?                            @db.LongText
+  is_public                 Boolean                            @default(false)
+  parent                    offer_template_images_parent       @default(other)
+  bitrix_user_id            String?                            @db.VarChar(255)
+  domain                    String?                            @db.VarChar(255)
+  portal_id                 BigInt?                            @db.UnsignedBigInt
+  portals                   portals?                           @relation(fields: [portal_id], references: [id], onUpdate: NoAction, map: "offer_template_images_portal_id_foreign")
+  offerTemplatePageBlocks   OfferTemplatePageBlock[]
+  offerTemplatePageStickers OfferTemplatePageSticker[]
+
+  @@index([portal_id], map: "offer_template_images_portal_id_foreign")
+  @@map("offer_template_images")
+}
+
+model OfferTemplatePageBlock {
+  id                     BigInt                          @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at             DateTime?                       @db.Timestamp(0)
+  updated_at             DateTime?                       @db.Timestamp(0)
+  offer_template_page_id BigInt                          @db.UnsignedBigInt
+  order                  Int
+  name                   String                          @db.VarChar(255)
+  code                   String?                         @db.VarChar(255)
+  type                   offer_template_page_blocks_type @default(default)
+  content                String?                         @db.LongText
+  settings               String?                         @db.LongText
+  stickers               String?                         @db.LongText
+  background             String?                         @db.LongText
+  colors                 String?                         @db.LongText
+  image_id               BigInt?                         @db.UnsignedBigInt
+  offerTemplateImage     OfferTemplateImage?             @relation(fields: [image_id], references: [id], onUpdate: NoAction, map: "offer_template_page_blocks_image_id_foreign")
+  offerTemplatePage      OfferTemplatePage               @relation(fields: [offer_template_page_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_page_blocks_offer_template_page_id_foreign")
+
+  @@index([image_id], map: "offer_template_page_blocks_image_id_foreign")
+  @@index([offer_template_page_id], map: "offer_template_page_blocks_offer_template_page_id_foreign")
+  @@map("offer_template_page_blocks")
+}
+
+model OfferTemplatePageSticker {
+  id                     BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at             DateTime?           @db.Timestamp(0)
+  updated_at             DateTime?           @db.Timestamp(0)
+  offer_template_page_id BigInt              @db.UnsignedBigInt
+  order                  Int
+  name                   String              @db.VarChar(255)
+  code                   String?             @db.VarChar(255)
+  size                   String              @db.VarChar(255)
+  height                 String              @db.VarChar(255)
+  width                  String              @db.VarChar(255)
+  position               String?             @db.LongText
+  style                  String?             @db.LongText
+  settings               String?             @db.LongText
+  background             String?             @db.LongText
+  colors                 String?             @db.LongText
+  image_id               BigInt?             @db.UnsignedBigInt
+  offerTemplateImages    OfferTemplateImage? @relation(fields: [image_id], references: [id], onUpdate: NoAction, map: "offer_template_page_stickers_image_id_foreign")
+  offerTemplatePages     OfferTemplatePage   @relation(fields: [offer_template_page_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_page_stickers_offer_template_page_id_foreign")
+
+  @@index([image_id], map: "offer_template_page_stickers_image_id_foreign")
+  @@index([offer_template_page_id], map: "offer_template_page_stickers_offer_template_page_id_foreign")
+  @@map("offer_template_page_stickers")
+}
+
+model OfferTemplatePage {
+  id                        BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at                DateTime?                  @db.Timestamp(0)
+  updated_at                DateTime?                  @db.Timestamp(0)
+  offer_template_id         BigInt                     @db.UnsignedBigInt
+  order                     Int
+  name                      String                     @db.VarChar(255)
+  code                      String?                    @db.VarChar(255)
+  type                      offer_template_pages_type  @default(default)
+  is_active                 Boolean                    @default(true)
+  settings                  String?                    @db.LongText
+  stickers                  String?                    @db.LongText
+  background                String?                    @db.LongText
+  colors                    String?                    @db.LongText
+  fonts                     String?                    @db.LongText
+  offerTemplatePageBlocks   OfferTemplatePageBlock[]
+  offerTemplatePageStickers OfferTemplatePageSticker[]
+  offerTemplate             OfferTemplate              @relation(fields: [offer_template_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "offer_template_pages_offer_template_id_foreign")
+
+  @@index([offer_template_id], map: "offer_template_pages_offer_template_id_foreign")
+  @@map("offer_template_pages")
+}
+
+model roles {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String    @unique(map: "roles_name_unique") @db.VarChar(255)
+  code       String    @unique(map: "roles_code_unique") @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
 enum offer_templates_visibility {
   public
   private
   user
+}
+
+enum offer_template_images_storage_type {
+  app
+  public
+  private
+}
+
+enum offer_template_page_blocks_type {
+  background
+  about
+  hero
+  letter
+  documentNumber
+  manager
+  logo
+  stamp
+  header
+  footer
+  infoblocks
+  price
+  slogan
+  infoblocksDescription
+  lt
+  otherComplects
+  comparison
+  comparisonComplects
+  comparisonIblocks
+  user
+  default
+}
+
+enum offer_template_pages_type {
+  letter
+  description
+  infoblocks
+  price
+  lt
+  other
+  default
+}
+
+enum offer_template_images_parent {
+  template
+  page
+  block
+  sticker
+  other
 }

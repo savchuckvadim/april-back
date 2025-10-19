@@ -7,14 +7,14 @@ import {
     DeletePortalRegionDto,
     UpdatePortalRegionDto,
 } from './dto/portal-region.dto';
-import { PortalService } from '@/modules/portal-konstructor/portal/portal.service';
+import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 
 @Injectable()
 export class PortalRegionService {
     constructor(
         private readonly repo: RegionRepository,
-        private readonly portalService: PortalService,
-    ) {}
+        private readonly portalService: PortalStoreService,
+    ) { }
 
     async getPortalRegions(domain: string): Promise<RegionEntity[] | null> {
         const portalId = await this.getPortalId(domain);

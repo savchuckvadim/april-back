@@ -8,7 +8,7 @@ import {
     EDepartamentGroup,
     IPortal,
 } from 'src/modules/portal/interfaces/portal.interface';
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
+import { PBXService } from '@/modules/pbx';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
 @Injectable()
@@ -16,35 +16,38 @@ export class DepartmentResolverService {
     private readonly redis: Redis;
 
     constructor(
-        private readonly bitrixService: DepartmentBitrixService,
+        // private readonly bitrixService: DepartmentBitrixService,
         private readonly redisService: RedisService,
-        private readonly portalContext: PortalContextService,
+        // private readonly portalContext: PortalContextService,
+        private readonly pbx: PBXService,
     ) {
         this.redis = this.redisService.getClient();
     }
 
     async getFullDepartment(domain: string, group: EDepartamentGroup) {
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
+        const departmentService = new DepartmentBitrixService(bitrix.api);
         const day = dayjs().format('MMDD');
         const sessionKey = `department_${domain}_${day}`;
         const fromCache = await this.redis.get(sessionKey);
         if (fromCache) return JSON.parse(fromCache);
 
-        const portal = this.portalContext.getModel();
+        const portal = PortalModel
         const baseDepartmentBitrix = portal.getDepartamentIdByCode(group);
 
         const baseDepartmentBitrixId = baseDepartmentBitrix?.bitrixId;
 
-        const general = await this.bitrixService.getDepartments({
+        const general = await departmentService.getDepartments({
             ID: baseDepartmentBitrixId,
         });
-        const children = await this.bitrixService.getDepartments({
+        const children = await departmentService.getDepartments({
             PARENT: baseDepartmentBitrixId,
         });
 
         const generalWithUsers =
-            await this.bitrixService.enrichWithUsers(general);
+            await departmentService.enrichWithUsers(general);
         const childrenWithUsers =
-            await this.bitrixService.enrichWithUsers(children);
+            await departmentService.enrichWithUsers(children);
 
         const allUsers: IBXUser[] = [];
         const allDepartments = [...generalWithUsers, ...childrenWithUsers].map(

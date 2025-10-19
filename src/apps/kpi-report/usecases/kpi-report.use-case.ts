@@ -1,5 +1,5 @@
 // report-kpi.service.ts
-import { Injectable } from '@nestjs/common';
+
 import {
     IField,
     IPBXList,
@@ -11,12 +11,12 @@ import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
-import { BitrixRequestApiService } from 'src/modules/bitrix/core/http/bitrix-request-api.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 
-@Injectable()
+import { PBXService } from '@/modules/pbx';
+import { BitrixBaseApi } from '@/modules/bitrix';
+
+
 export class ReportKpiUseCase {
     // protected domain: string;
     protected portal: IPortal;
@@ -24,18 +24,20 @@ export class ReportKpiUseCase {
     protected portalHistoryList?: IPBXList;
     protected hook: string;
     private portalModel: PortalModel;
-    // private bitrixApi: BitrixApiService;
+    private bitrixApi: BitrixBaseApi;
 
     constructor(
-        private readonly portalContext: PortalContextService,
-        private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
+        // private readonly portalContext: PortalContextService,
+        // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
         // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
+        // private readonly pbx: PBXService,
     ) { }
 
-    async init(domain: string) {
+    async init(domain: string, pbx: PBXService) {
         // this.domain = domain;
-        this.portalModel = this.portalContext.getModel();
-        const portal = this.portalModel.getPortal();
+        const { portal, PortalModel, bitrix } = await pbx.init(domain);
+        this.portalModel = PortalModel;
+        // const portal = this.portalModel.getPortal();
 
         //for queue
         // this.portalModel = await this.portalProvider.getModelByDomain(domain);
@@ -45,7 +47,7 @@ export class ReportKpiUseCase {
 
         // //for queue
         // this.bitrixApi = await this.bxFactory.create(portal)
-
+        this.bitrixApi = bitrix.api;
         this.portal = portal;
         this.hook = this.portalModel.getHook();
 

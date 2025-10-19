@@ -12,8 +12,13 @@ class GetBxListDto {
 export class ListController {
     constructor(private readonly listService: ListService) {}
 
-    @Post('get')
+    @Post('get-list-fields')
     async getListFields(@Body() body: GetBxListDto) {
-        return this.listService.getListFields();
+        return this.listService.getListFields(body.domain);
+    }
+
+    @Post('get-list')
+    async getList(@Body() body: GetBxListDto) {
+        return this.listService.getList(body.domain);
     }
 }

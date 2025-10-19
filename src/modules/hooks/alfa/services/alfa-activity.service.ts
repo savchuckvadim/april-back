@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { BitrixActivityCreateService } from 'src/modules/bitrix/domain/activity/services/activity-create.service';
 import { AlfaActivityData } from '../types/alfa-activity-data.interface';
+import { AlfaBxActivityCreateService } from './activity-create.service';
 
 // export interface AlfaActivityData {
 //     companyId: number;
@@ -11,7 +11,7 @@ import { AlfaActivityData } from '../types/alfa-activity-data.interface';
 
 @Injectable()
 export class AlfaActivityService {
-    constructor(private readonly bitrixService: BitrixActivityCreateService) {}
+    constructor(private readonly bitrixService: AlfaBxActivityCreateService) {}
 
     async processActivities(
         domain: string,

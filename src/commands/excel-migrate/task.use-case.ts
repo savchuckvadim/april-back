@@ -16,7 +16,7 @@ export class TaskUseCase {
 
     async getTasks(domain: string) {
         this.portal = await this.portalService.getModelByDomain(domain);
-        this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
+        this.bitrixApi = await this.bitrixApiFactory.create(this.portal.getPortal());
         const taskRepo = new BxTasksRepository(this.bitrixApi);
         const result = await taskRepo.getAll(
             {

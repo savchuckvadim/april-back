@@ -17,6 +17,7 @@ import { PortalModel } from '@/modules/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
+import { EnumOrkEventAction, EnumOrkEventType, OrkHistoryBxListService } from '@/modules/ork-history-bx-list';
 
 @Injectable()
 export class InitDealUseCase {
@@ -24,11 +25,12 @@ export class InitDealUseCase {
         private readonly pbx: PBXService,
         private readonly copyInnerDealService: CopyInnerDealService,
         private readonly telegram: TelegramService,
+        private readonly orkHistoryBxListService: OrkHistoryBxListService,
     ) { }
 
     async execute(dto: InitDealDto) {
         const domain = dto.auth.domain;
-        const { bitrix, PortalModel, portal } = await this.pbx.init(domain);
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
 
         const portalDeal = PortalModel.getDeal();
         const targetCategoryDeal = portalDeal.categories.find(
@@ -165,7 +167,16 @@ export class InitDealUseCase {
                 domain,
             );
         }
-        // return dealValues
+        const elementCode = `ork_pere_contract_${oldDealId}_${responsibleId}`;
+        const listResult = await this.orkHistoryBxListService.setOrkHistoryBxListItem(domain, {
+            type: EnumOrkEventType.et_ork_pere_contract,
+            action: EnumOrkEventAction.ea_ork_act_create,
+            responsibleId: responsibleId,
+            elementCode,
+            companyId: Number(companyId),
+            dealId: newDealId,
+        });
+        return listResult
     }
     private getCommentRpaMessage(domain: string, newDealId: number) {
         const link = `https://${domain}/crm/deal/details/${newDealId}/`;

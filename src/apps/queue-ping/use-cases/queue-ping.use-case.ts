@@ -1,5 +1,4 @@
-import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
-import { PortalModel } from 'src/modules/portal/services/portal.model';
+
 import { QueuePingDto } from '../dto/queue.dto';
 
 import {
@@ -10,47 +9,46 @@ import {
     Logger,
 } from '@nestjs/common';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { BitrixApiQueueApiService } from 'src/modules/bitrix/core/queue/bitrix-queue-api.service';
-import { PortalService } from 'src/modules/portal/portal.service';
+import { PBXService } from '@/modules/pbx/pbx.service';
 
 @Injectable()
 export class QueuePingUseCase {
-    private portalModel: PortalModel;
-    private bitrixApi: BitrixApiQueueApiService;
+    // private portalModel: PortalModel;
+    // private bitrixApi: BitrixBaseApi;
     constructor(
-        private readonly portalService: PortalService, //for queue standalone
-        /// NO!! scope: REQUEST
-        private readonly bxFactory: BitrixApiFactoryService, // scope: QUEUE
+        // private readonly portalService: PortalService, //for queue standalone
+        // /// NO!! scope: REQUEST
+        // private readonly bxFactory: BitrixApiFactoryService, // scope: QUEUE
+        private readonly pbx: PBXService,
     ) {}
 
     async init(domain: string) {
         try {
-            const provider = this.portalService;
+            // const { portal, PortalModel, bitrix } = await this.pbx.init(domain);
+            // // const provider = this.portalService;
 
             Logger.log('[queuePbxInit] called with domain: ' + domain);
 
-            Logger.log(
-                '[queuePbxInit] called with provider: ' + this.portalService,
-            );
 
-            this.portalModel = await provider.getModelByDomain(domain);
 
-            const portal = this.portalModel.getPortal();
-            Logger.log(
-                '[queuePbxInit] called with portal: ' + portal?.id || portal,
-            );
-            if (!portal)
-                throw new HttpException(
-                    'Portal not found queue init pbx',
-                    HttpStatus.BAD_REQUEST,
-                );
-            Logger.log('[queuePbxInit] called with domain: ' + portal.id);
-            //for queue
-            this.bitrixApi = this.bxFactory.create(portal);
-            Logger.log(
-                '[queuePbxInit] called with bitrixApi: ' +
-                    this.bitrixApi.getCmdBatch(),
-            );
+            // this.portalModel = PortalModel;
+
+            // // const portal = this.portalModel.getPortal();
+            // Logger.log(
+            //     '[queuePbxInit] called with portal: ' + portal?.id || portal,
+            // );
+            // if (!portal)
+            //     throw new HttpException(
+            //         'Portal not found queue init pbx',
+            //         HttpStatus.BAD_REQUEST,
+            //     );
+            // Logger.log('[queuePbxInit] called with domain: ' + portal.id);
+            // //for queue
+            // // this.bitrixApi = await this.bxFactory.create(portal);
+            // // Logger.log(
+            // //     '[queuePbxInit] called with bitrixApi: ' +
+            // //         this.bitrixApi.getCmdBatch(),
+            // // );
         } catch (e) {
             Logger.log('[ini] queue error: ');
             Logger.log(e);
@@ -60,12 +58,13 @@ export class QueuePingUseCase {
     async case(dto: QueuePingDto) {
         // await this.init(dto.domain)
         try {
+            const { portal, PortalModel, bitrix } = await this.pbx.init(dto.domain);
             Logger.log('PING QUEUE USE');
             Logger.log(dto);
-            const portal = this.portalModel.getPortal();
+
             const domainFromPortal = portal.domain;
             const portalId = portal.id;
-            const bxResponse = await this.bitrixApi.call<IBXUser[]>(
+            const bxResponse = await bitrix.api.call<IBXUser[]>(
                 'user.get',
                 {
                     ID: dto.userId,
@@ -83,4 +82,9 @@ export class QueuePingUseCase {
             // return null
         }
     }
+
+    // onModuleInit() {
+    //     console.log('[QueuePingUseCase] initialized');
+    // }
+
 }

@@ -3,20 +3,26 @@ import { HttpService } from '@nestjs/axios';
 import { TelegramService } from '../../../telegram/telegram.service';
 import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
+import { BxAuthType } from '../../bitrix-service.factory';
 
 @Injectable({ scope: Scope.REQUEST })
-export class BitrixRequestApiService extends BitrixBaseApi {
+// export class BitrixRequestApiService extends BitrixBaseApi {
+export class BitrixRequestApiService {
     constructor(
         telegram: TelegramService,
         http: HttpService,
         @Optional() private readonly portalContext?: PortalContextService,
     ) {
-        super(telegram, http);
-
-        if (this.portalContext) {
-            const portal = this.portalContext.getPortal();
-            if (portal) this.init(portal);
+        const portal = portalContext?.getPortal();
+        if (!portal) {
+            throw new Error('Portal not found');
         }
+        // super(telegram, portal.domain, portal?.C_REST_CLIENT_ID, null, BxAuthType.HOOK);
+
+        // if (this.portalContext) {
+        //     const portal = this.portalContext.getPortal();
+        //     if (portal) this.init(portal);
+        // }
     }
 }
 

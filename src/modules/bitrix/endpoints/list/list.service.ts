@@ -1,5 +1,3 @@
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
-import { BitrixRequestApiService } from '../../core/http/bitrix-request-api.service';
 import { BxListRepository } from '../../domain/list/repository/bx-list.repository';
 import { Logger, Injectable, HttpStatus, HttpException } from '@nestjs/common';
 import {
@@ -8,27 +6,30 @@ import {
 } from 'src/modules/portal/interfaces/portal.interface';
 import { EBxListCode } from '../../domain';
 
+import { PBXService } from '@/modules/pbx';
+
 @Injectable()
 export class ListService {
     constructor(
-        private readonly portalService: PortalContextService,
-        private readonly bitrixService: BitrixRequestApiService,
+        // private readonly portalService: PortalContextService,
+        // private readonly bitrixService: BitrixBaseApi,
+        private readonly pbx: PBXService,
     ) {}
 
-    async getList() {
+    async getList(domain: string) {
         Logger.log('getList domain from bx api');
-        Logger.log(this.bitrixService.domain);
-        const repository = new BxListRepository(this.bitrixService);
+        const { bitrix } = await this.pbx.init(domain);
+        const repository = new BxListRepository(bitrix.api);
         return await repository.getList(EBxListCode.SALES_KPI);
     }
 
-    async getListFields() {
+    async getListFields(domain: string) {
         Logger.log('getListFields domain from bx api');
-        Logger.log(this.bitrixService.domain);
-        const repository = new BxListRepository(this.bitrixService);
-        const p = this.portalService.getPortal();
-        const portal = this.portalService.getModel();
-        const kpiPList = portal.getListByCode('sales_kpi');
+        const { bitrix } = await this.pbx.init(domain);
+        const repository = new BxListRepository(bitrix.api);
+        const {PortalModel } = await this.pbx.init(domain);
+        const portal = PortalModel;
+        const kpiPList = PortalModel.getListByCode('sales_kpi');
         let kpiListField: IField | undefined;
         if (kpiPList) {
             kpiListField = portal.getIdByCodeFieldList(
@@ -43,7 +44,7 @@ export class ListService {
                 );
                 // const bxResult = await repository.getList();
                 return {
-                    p: p.domain,
+                    p: portal.getPortal().domain,
                     kpiListField: kpiListField,
                     // portalList: kpiPList?.bitrixfields,
                     bxResult,
