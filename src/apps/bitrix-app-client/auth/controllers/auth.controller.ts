@@ -30,10 +30,10 @@ export class AuthController {
         const { token, user, client } = await this.authService.login(dto);
         // ✅ Устанавливаем cookie
         res.cookie('access_token', token, {
-            httpOnly: true,
+            // httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'lax',
-            sameSite: 'none',
+            sameSite: 'lax',
+            // sameSite: 'none',
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
         });
         return {  user, client };
