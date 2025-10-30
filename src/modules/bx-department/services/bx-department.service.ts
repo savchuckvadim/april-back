@@ -38,8 +38,8 @@ export class BxDepartmentService {
         const day = dayjs().format('MMDD');
         const sessionKey = `department_${domain}_${day}_${targetGroup}`;
 
-        // const fromCache = await this.redis.get(sessionKey);
-        // if (fromCache) return JSON.parse(fromCache);
+        const fromCache = await this.redis.get(sessionKey);
+        if (fromCache) return JSON.parse(fromCache);
 
         const departmentService = new DepartmentBitrixService(bitrix.api);
 
