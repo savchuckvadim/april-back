@@ -170,7 +170,7 @@ export class InitDealUseCase {
         const elementCode = `ork_pere_contract_${oldDealId}_${responsibleId}`;
         const listResult = await this.orkHistoryBxListService.setOrkHistoryBxListItem(domain, {
             type: EnumOrkEventType.et_ork_pere_contract,
-            action: EnumOrkEventAction.ea_ork_act_create,
+            action: EnumOrkEventAction.ea_ork_done,
             responsibleId: responsibleId,
             elementCode,
             companyId: Number(companyId),

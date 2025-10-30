@@ -156,7 +156,7 @@ export enum EnumOrkFieldCode{
     ork_fail_reason = 'service_ork_fail_reason',
     author = 'service_author',
     su = 'service_su',
-    crm = 'service_crm',
+    crm = 'service_ork_history_crm',
     ork_crm_contact = 'service_ork_crm_contact',
     ork_evemt_tag = 'service_ork_evemt_tag',
 }

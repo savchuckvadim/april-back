@@ -1,19 +1,42 @@
 import { PBXService } from "@/modules/pbx";
-import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode } from "../type/ork-list-history.enum";
+import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode, EnumOrkResultStatus } from "../type/ork-list-history.enum";
 import { IPBXList } from "@/modules/portal/interfaces/portal.interface";
 import { OrkFieldsType, OrkFieldValue } from "../type/ork-list-history.type";
 import { PortalModel } from "@/modules/portal/services/portal.model";
 import { OrkHistoryFieldValueDto, OrkHistoryFieldItemValueDto, OrkListHistoryItemDto } from "../dto/ork-list-history.dto";
+import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { Injectable } from "@nestjs/common";
+import dayjs from "dayjs";
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export class OrkHistoryBxListItemDto {
+    @ApiProperty({ description: 'Type', enum: EnumOrkEventType })
+    @IsEnum(EnumOrkEventType)
     type: EnumOrkEventType
+    @ApiProperty({ description: 'Action', enum: EnumOrkEventAction })
+    @IsEnum(EnumOrkEventAction)
     action: EnumOrkEventAction
+    @ApiProperty({ description: 'Responsible ID' })
+    @IsNumber()
     responsibleId: number
-    elementCode: string
+    @ApiProperty({ description: 'Company ID' })
+    @IsNumber()
     companyId: number
+    @ApiProperty({ description: 'Deal ID' })
+    @IsNumber()
     dealId: number
+    @ApiProperty({ description: 'Comment' })
+    @IsString()
+    @IsOptional()
     comment?: string
+    @ApiProperty({ description: 'Element Code' })
+    @IsString()
+    elementCode: string
 }
 export type OrkFieldsInput = {
     [K in keyof OrkFieldsType]?: OrkFieldValue<K>;
@@ -21,7 +44,7 @@ export type OrkFieldsInput = {
 export enum ORK_HISTORY_LIST {
     CODE = 'service_ork_history'
 }
-
+@Injectable()
 export class OrkHistoryBxListService {
     constructor(private readonly pbx: PBXService) { }
 
@@ -36,20 +59,30 @@ export class OrkHistoryBxListService {
 
         const addListItemData = {
             IBLOCK_TYPE_ID: 'lists',
-            IBLOCK_CODE: portalListType,
+            IBLOCK_ID: portalList.bitrixId.toString(),
+            // IBLOCK_CODE: portalListType,
             ELEMENT_CODE: dto.elementCode,
             FIELDS: {
                 NAME: 'Перезаключение',
                 ...fields
             }
         }
-        void await bitrix.api.call('lists.element.add', addListItemData)
+        try {
+            void await bitrix.api.call('lists.element.add', addListItemData)
+
+        } catch (error) {
+            console.error('Error set item to Ork History Bx List');
+            console.error(error);
+            throw error;
+        }
 
         return portalList;
     }
     private getFields(dto: OrkHistoryBxListItemDto, portalList: IPBXList) {
 
         const fields: Record<string, string | string[]> = {}
+        const now = dayjs().tz('Europe/Moscow');;
+        const nowDateTime = now.format('DD-MM-YYYY HH:mm:ss');
         portalList.bitrixfields?.map(field => {
             const fieldCode = field.code as EnumOrkFieldCode;
             if (fieldCode === EnumOrkFieldCode.responsible) {
@@ -58,14 +91,24 @@ export class OrkHistoryBxListService {
 
             } else if (fieldCode === EnumOrkFieldCode.ork_event_action) {
 
-                fields[field.bitrixCamelId] = dto.action.toString()
+                fields[field.bitrixCamelId] = field.items?.find(item => item.code === dto.action)?.bitrixId?.toString() ?? ''
 
             } else if (fieldCode === EnumOrkFieldCode.ork_event_type) {
 
-                fields[field.bitrixCamelId] = dto.type.toString()
+                fields[field.bitrixCamelId] = field.items?.find(item => item.code === dto.type)?.bitrixId?.toString() ?? ''
+
+            } else if (fieldCode === EnumOrkFieldCode.ork_event_date) {
+
+                fields[field.bitrixCamelId] = nowDateTime
+
+            } else if (fieldCode === EnumOrkFieldCode.ork_result_status) {
+
+                fields[field.bitrixCamelId] = field.items?.find(item => item.code === EnumOrkResultStatus.ork_call_result_yes)?.bitrixId?.toString() ?? ''
 
             } else if (fieldCode === EnumOrkFieldCode.crm) {
                 fields[field.bitrixCamelId] = [`CO_${dto.companyId}`, `D_${dto.dealId}`]
+            } else if (fieldCode === EnumOrkFieldCode.ork_crm_company) {
+                fields[field.bitrixCamelId] = `CO_${dto.companyId}`
             } else if (fieldCode === EnumOrkFieldCode.manager_comment && dto.comment) {
                 fields[field.bitrixCamelId] = dto.comment
             }
