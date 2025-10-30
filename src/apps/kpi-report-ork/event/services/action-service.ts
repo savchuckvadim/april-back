@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
-import { Filter } from '../dto/kpi.dto';
-import { FilterCode, FilterInnerCode } from '../type/ork-report-event.type';
+import { OrkKpiFilter } from '../dto/kpi.dto';
+import { EnumOrkFilterCode, EnumOrkFilterInnerCode } from '../type/ork-report-event.type';
 import { EnumOrkEventAction, EnumOrkEventType } from '@/modules/ork-history-bx-list';
 
 
 @Injectable()
 export class ActionOrkEventService {
-    getActionWithTypeData(actionType: IFieldItem, action: IFieldItem): Filter {
+    getActionWithTypeData(actionType: IFieldItem, action: IFieldItem): OrkKpiFilter {
         const result: Record<string, any> = {};
 
         const atCode = actionType.code as EnumOrkEventType;
@@ -52,7 +52,7 @@ export class ActionOrkEventService {
 
                     ].includes(atCode)
                 ) {
-                    result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;
+                    result.innerCode = `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
                     const { actionTypeName } = atCode === EnumOrkEventType.et_ork_presentation_uniq ? { actionTypeName: 'През. уникальная' } : { actionTypeName: 'Презентация' }
                     // this.getFeminineActionTypeForm(atCode);
                     result.name = ` ${actionTypeName}`;
@@ -60,7 +60,7 @@ export class ActionOrkEventService {
                     [EnumOrkEventType.ev_success, EnumOrkEventType.et_ork_fail].includes(atCode) &&
                     acCode !== EnumOrkEventAction.ea_ork_plan
                 ) {
-                    result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;
+                    result.innerCode = `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
                     result.name = actionType.name;
                 } else {
                     break;
@@ -68,7 +68,7 @@ export class ActionOrkEventService {
                 if (actionName) {
                     result.name = `${actionName} ${result.name}`;
                 }
-                result.code = `${atCode}_${acCode}` as FilterCode;
+                result.code = `${atCode}_${acCode}` as EnumOrkFilterCode;
                 result.actionItem = action;
                 result.actionTypeItem = actionType;
                 break;
@@ -84,8 +84,8 @@ export class ActionOrkEventService {
                         EnumOrkEventType.et_ork_contract,
                     ].includes(atCode)
                 ) {
-                    result.code = `${atCode}_${acCode}` as FilterCode;
-                    result.innerCode = `${atCode}_${acCode}` as FilterInnerCode;
+                    result.code = `${atCode}_${acCode}` as EnumOrkFilterCode;
+                    result.innerCode = `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
 
                     result.name = actionType.name;
 
@@ -103,8 +103,8 @@ export class ActionOrkEventService {
             default:
                 break;
         }
-        result.order = this.getActionOrder(result.innerCode as FilterInnerCode);
-        return result as Filter;
+        result.order = this.getActionOrder(result.innerCode as EnumOrkFilterInnerCode);
+        return result as OrkKpiFilter;
     }
 
     // 🔤 Аналог функции для женского рода
@@ -141,8 +141,8 @@ export class ActionOrkEventService {
         return { actionTypeName };
     }
 
-    private getActionOrder(actionCode: FilterInnerCode): number {
-        switch (actionCode as FilterInnerCode) {
+    private getActionOrder(actionCode: EnumOrkFilterInnerCode): number {
+        switch (actionCode) {
             case 'et_ork_call_ea_ork_plan':
                 return 1;
             case 'et_ork_call_ea_ork_done':

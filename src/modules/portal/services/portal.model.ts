@@ -1,4 +1,4 @@
-import {Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import {
     IPortal,
     IPBXList,
@@ -12,8 +12,10 @@ import {
     PMeasureCode,
     IFieldCode,
     IDeal,
+    IStage,
 } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
+import { CategoryToStageMap, PbxDealCategoryCodeEnum, PbxDealsData } from './types/deals/portal.deal.type';
 
 
 // @Injectable()
@@ -23,7 +25,7 @@ export class PortalModel {
     constructor(
         private readonly portal: IPortal,
         private readonly telegramService: TelegramService,
-    ) {}
+    ) { }
 
     getPortal(): IPortal {
         return this.portal;
@@ -94,11 +96,21 @@ export class PortalModel {
         return this.portal.deals[0].categories;
     }
     getDealCategoryByCode(
-        code: 'service_base' | 'tmc_base' | 'sales_base' | 'sales_presentation',
+        code: PbxDealCategoryCodeEnum,
     ): ICategory | undefined {
         return this.portal.deals[0].categories.find(
             category => category.code === code,
         );
+    }
+    getDealStageByCode<
+        C extends keyof CategoryToStageMap,
+        S extends CategoryToStageMap[C]
+    >(
+        categoryCode: C,
+        stageCode: S
+    ): IStage | undefined {
+        const category = this.getDealCategoryByCode(categoryCode)
+        return category?.stages.find(st => st.code === stageCode);
     }
     getDealFields(): IField[] {
         return this.portal.deals[0].bitrixfields || [];

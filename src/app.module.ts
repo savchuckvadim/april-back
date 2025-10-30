@@ -17,7 +17,7 @@ import { WsModule } from './core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
 
 import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
-// import { EventServiceModule } from './apps/event-service/event-service.module';
+import { EventServiceAppModule } from './apps/event-service';
 import { KonstructorModule } from './apps/konstructor/konstructor.module';
 import { MetricsModule } from './core/metrics/metrics.module';
 import { AlfaModule } from './apps/alfa/alfa.module';
@@ -44,6 +44,7 @@ import { BitrixAppClientModule } from './apps/bitrix-app-client/app/bitrix-app-c
 import { BitrixModule } from './modules/bitrix/bitrix.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { AuthModule } from './apps/bitrix-app-client/auth/auth.module';
+import { MailModule } from './modules/mail/mail.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -68,9 +69,9 @@ import { AuthModule } from './apps/bitrix-app-client/auth/auth.module';
         MetricsModule,
         WsModule,
         QueueModule,
-
+        MailModule,
         //apps
-        // EventServiceAppModule,
+        EventServiceAppModule,
 
         // DealsScheduleModule,
 

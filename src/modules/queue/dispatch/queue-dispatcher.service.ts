@@ -1,5 +1,5 @@
 // modules/queue/queue-dispatcher.service.ts
-import { Queue } from 'bull';
+import { Job, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueNames } from '../constants/queue-names.enum';
@@ -15,28 +15,29 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT) private readonly eventQueue: Queue,
         @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
         @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
-        @InjectQueue(QueueNames.SALES_KPI_REPORT)
-        private readonly salesKpiReportQueue: Queue,
-        @InjectQueue(QueueNames.TRANSCRIBE_AUDIO)
-        private readonly transcribeAudioQueue: Queue,
-        @InjectQueue(QueueNames.SERVICE_DEALS_SCHEDULE)
-        private readonly serviceDealsScheduleQueue: Queue,
-        @InjectQueue(QueueNames.SERVICE_DEALS)
-        private readonly serviceDealsQueue: Queue,
+        @InjectQueue(QueueNames.SALES_KPI_REPORT) private readonly salesKpiReportQueue: Queue,
+        @InjectQueue(QueueNames.TRANSCRIBE_AUDIO) private readonly transcribeAudioQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_DEALS_SCHEDULE) private readonly serviceDealsScheduleQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_DEALS) private readonly serviceDealsQueue: Queue,
+        @InjectQueue(QueueNames.ORK_KPI_REPORT) private readonly orkKpiReportQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
 
-    async dispatch(
+    async dispatch<T>(
         queueName: QueueNames,
         jobName: SilentJobHandlerId | TranscribeJobHandlerId | JobNames,
         data: any,
-    ) {
+        jobId?: string,
+    ): Promise<Job<T>> {
         const queue = this.getQueue(queueName);
         this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
         this.logger.log(`Job data: ${JSON.stringify(data)}`);
-        await queue.add(jobName, data);
+        const job = jobId
+            ? await queue.add(jobName, data, { jobId })
+            : await queue.add(jobName, data);
         this.logger.log('Job added to queue');
+        return job;
     }
 
     getQueue(name: QueueNames): Queue {
@@ -56,11 +57,17 @@ export class QueueDispatcherService {
                 return this.serviceDealsScheduleQueue;
             case QueueNames.SERVICE_DEALS:
                 return this.serviceDealsQueue;
-
+            case QueueNames.ORK_KPI_REPORT:
+                return this.orkKpiReportQueue;
             default:
                 const error = `Unknown queue name: ${name}`;
                 this.logger.error(error);
                 throw new Error(error);
         }
+    }
+
+    async getJob(queueName: QueueNames, id: string): Promise<Job | null> {
+        const queue = this.getQueue(queueName);
+        return await queue.getJob(id);
     }
 }

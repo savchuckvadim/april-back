@@ -13,7 +13,9 @@ import { ReportKpiUseCase } from './usecases/kpi-report.use-case';
 import { GetCallingStatisticDto } from './dto/calling-statistic.dto';
 import { CallingStatisticUseCase } from './usecases/kpi-calling-statistic.use-case';
 import { PBXService } from '@/modules/pbx';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Sales Report')
 @Controller('kpi-report')
 export class KpiReportController {
     constructor(

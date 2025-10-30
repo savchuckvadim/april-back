@@ -11,8 +11,8 @@ import {
 } from 'class-validator';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
-import { EnumFilterCode, EnumFilterInnerCode, FilterCode, FilterInnerCode } from '../type/ork-report-event.type';
 import { ApiProperty } from '@nestjs/swagger';
+import { EnumOrkFilterCode, EnumOrkFilterInnerCode } from '../type/ork-report-event.type';
 
 // Wrapper classes for external interfaces
 export class BitrixUser implements IBXUser {
@@ -159,7 +159,7 @@ export class DateRangeDto {
 }
 
 
-export class KPIAction {
+export class OrkKpiAction {
     @ApiProperty()
     @IsNumber()
     id: number;
@@ -170,7 +170,7 @@ export class KPIAction {
 }
 
 
-export class Filter {
+export class OrkKpiFilter {
     @ApiProperty()
     @IsNumber()
     order: number;
@@ -185,29 +185,29 @@ export class Filter {
     @Type(() => FieldItem)
     actionTypeItem: FieldItem;
 
-    @ApiProperty({ enum: EnumFilterInnerCode })
-    @IsEnum(EnumFilterInnerCode)
-    innerCode: EnumFilterInnerCode;
+    @ApiProperty({ enum: EnumOrkFilterInnerCode })
+    @IsEnum(EnumOrkFilterInnerCode)
+    innerCode: EnumOrkFilterInnerCode;
 
     @ApiProperty()
     @IsString()
     name?: string;
 
-    @ApiProperty({ enum: EnumFilterCode })
-    @IsEnum(EnumFilterCode)
-    code: EnumFilterCode;
+    @ApiProperty({ enum: EnumOrkFilterCode })
+    @IsEnum(EnumOrkFilterCode)
+    code: EnumOrkFilterCode;
 }
 
 
-export class KPI {
+export class KPIOrk {
     @ApiProperty()
     @IsString()
     id: string;
 
-    @ApiProperty({ type: Filter })
+    @ApiProperty({ type: OrkKpiFilter })
     @ValidateNested()
-    @Type(() => Filter)
-    action: Filter;
+    @Type(() => OrkKpiFilter)
+    action: OrkKpiFilter;
 
     @ApiProperty()
     @IsNumber()
@@ -220,7 +220,7 @@ export class KPI {
 }
 
 
-export class ReportData {
+export class OrkReportKpiData {
     @ApiProperty()
     @ValidateNested()
     @Type(() => BitrixUser)
@@ -230,11 +230,11 @@ export class ReportData {
     @IsString()
     userName?: string;
 
-    @ApiProperty({ type: [KPI], description: 'KPI data' })
+    @ApiProperty({ type: [KPIOrk], description: 'KPI data' })
     @IsArray()
     @ValidateNested({ each: true })
-    @Type(() => KPI)
-    kpi: KPI[];
+    @Type(() => KPIOrk)
+    kpi: KPIOrk[];
 }
 
 
@@ -244,11 +244,11 @@ export class KpiReportDto {
     @IsEnum(EDownloadType)
     type: EDownloadType;
 
-    @ApiProperty({ type: [ReportData], description: 'Report data' })
+    @ApiProperty({ type: [OrkReportKpiData], description: 'Report data' })
     @IsArray()
     @ValidateNested({ each: true })
-    @Type(() => ReportData)
-    report: ReportData[];
+    @Type(() => OrkReportKpiData)
+    report: OrkReportKpiData[];
 
     @ApiProperty()
     @Type(() => DateRangeDto)

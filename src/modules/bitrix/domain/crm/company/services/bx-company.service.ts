@@ -21,10 +21,32 @@ export class BxCompanyService {
         return this.repo.get(companyId);
     }
 
-    getList(filter: Partial<IBXCompany>, select?: string[]) {
-        return this.repo.getList(filter, select);
+    getList(filter: Partial<IBXCompany>, select?: string[], order?: { [key in keyof IBXCompany]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
+        return this.repo.getList(filter, select, order);
     }
-
+    async all(filter: Partial<IBXCompany>, select?: string[]) {
+        const companies: IBXCompany[] = [];
+        let needMore = true;
+        let nextId = 0;
+        while (needMore) {
+            const fullFilter = {
+                ...filter,
+                '>ID': nextId,
+            };
+            const { result } = await this.repo.getList(fullFilter, select, {
+                ID: 'ASC',
+            });
+            if (result.length === 0) {
+                break;
+            }
+            nextId = result[result.length - 1]?.ID ?? 0;
+            if (nextId === 0) {
+                needMore = false;
+            }
+            companies.push(...result);
+        }
+        return companies;
+    }
     set(data: Partial<IBXCompany>) {
         return this.repo.set(data);
     }

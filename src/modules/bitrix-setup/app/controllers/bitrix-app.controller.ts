@@ -59,18 +59,7 @@ export class BitrixAppController {
     @ApiCreatedResponse({
         description: 'Приложение успешно создано или обновлено. Ответ обрабатывается ResponseInterceptor из src/core/interceptors',
         type: SuccessResponseDto,
-        schema: {
-            allOf: [
-                { $ref: '#/components/schemas/SuccessResponseDto' },
-                {
-                    properties: {
-                        data: {
-                            $ref: '#/components/schemas/BitrixAppResponseDto'
-                        }
-                    }
-                }
-            ]
-        }
+
     })
     @ApiBadRequestResponse({
         description: 'Некорректные данные запроса',
@@ -125,18 +114,7 @@ export class BitrixAppController {
         status: 200,
         description: 'Приложение найдено. Ответ обрабатывается ResponseInterceptor из src/core/interceptors',
         type: SuccessResponseDto,
-        schema: {
-            allOf: [
-                { $ref: '#/components/schemas/SuccessResponseDto' },
-                {
-                    properties: {
-                        data: {
-                            $ref: '#/components/schemas/BitrixAppResponseDto'
-                        }
-                    }
-                }
-            ]
-        }
+
     })
     @ApiNotFoundResponse({
         description: 'Приложение не найдено',
@@ -173,19 +151,7 @@ export class BitrixAppController {
         status: 200,
         description: 'Список приложений получен. Ответ обрабатывается ResponseInterceptor из src/core/interceptors',
         type: SuccessResponseDto,
-        schema: {
-            allOf: [
-                { $ref: '#/components/schemas/SuccessResponseDto' },
-                {
-                    properties: {
-                        data: {
-                            type: 'array',
-                            items: { $ref: '#/components/schemas/BitrixAppResponseDto' }
-                        }
-                    }
-                }
-            ]
-        }
+
     })
     @ApiInternalServerErrorResponse({
         description: 'Внутренняя ошибка сервера',
@@ -227,24 +193,7 @@ export class BitrixAppController {
         status: 200,
         description: 'Приложения портала найдены. Ответ обрабатывается ResponseInterceptor из src/core/interceptors',
         type: SuccessResponseDto,
-        schema: {
-            allOf: [
-                { $ref: '#/components/schemas/SuccessResponseDto' },
-                {
-                    properties: {
-                        data: {
-                            type: 'object',
-                            properties: {
-                                apps: {
-                                    type: 'array',
-                                    items: { $ref: '#/components/schemas/BitrixAppResponseDto' }
-                                }
-                            }
-                        }
-                    }
-                }
-            ]
-        }
+
     })
     @ApiNotFoundResponse({
         description: 'Приложения для портала не найдены',
@@ -294,18 +243,7 @@ export class BitrixAppController {
         status: 200,
         description: 'Приложение успешно обновлено. Ответ обрабатывается ResponseInterceptor из src/core/interceptors',
         type: SuccessResponseDto,
-        schema: {
-            allOf: [
-                { $ref: '#/components/schemas/SuccessResponseDto' },
-                {
-                    properties: {
-                        data: {
-                            $ref: '#/components/schemas/BitrixAppResponseDto'
-                        }
-                    }
-                }
-            ]
-        }
+       
     })
     @ApiNotFoundResponse({
         description: 'Приложение не найдено',

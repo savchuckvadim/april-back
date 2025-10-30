@@ -14,7 +14,7 @@ import { ActionService } from '../services/kpi-report/action-service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 
 import { PBXService } from '@/modules/pbx';
-import { BitrixBaseApi } from '@/modules/bitrix';
+import { BitrixBaseApi, EBXEntity, EBxMethod, EBxNamespace } from '@/modules/bitrix';
 
 
 export class ReportKpiUseCase {
@@ -261,6 +261,7 @@ export class ReportKpiUseCase {
                             'lists.element.get',
                             getListData,
                         );
+                       
                     }
 
                     if (action.code == 'call_done') {

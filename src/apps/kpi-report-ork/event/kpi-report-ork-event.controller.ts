@@ -1,23 +1,23 @@
 import { BadRequestException, Controller, Get, Post, Query, Body } from '@nestjs/common';
 
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { GetReportResponseDto } from './dto/get-report-response.dto';
+import { GetOrkReportKpiResponseDto } from './dto/get-report-response.dto';
 import { GetReportRequestDto } from './dto/get-report-request.dto';
 import { ReportKpiUseCase } from './usecases/kpi-report.use-case';
 import { PBXService } from '@/modules/pbx';
 
 
-@ApiTags('Kpi Report Service')
+@ApiTags('Ork Report')
 @Controller('kpi-report-ork-event')
-export class KpiReportOrkEventController {
+export class KpiController {
     constructor(
         private readonly pbx: PBXService,
     ) { }
 
     @ApiOperation({ summary: 'Get report' })
-    @ApiResponse({ status: 200, description: 'Report', type: GetReportResponseDto })
+    @ApiResponse({ status: 200, description: 'Report', type: GetOrkReportKpiResponseDto })
     @Post('get')
-    async get(@Body() dto: GetReportRequestDto): Promise<GetReportResponseDto> {
+    async get(@Body() dto: GetReportRequestDto): Promise<GetOrkReportKpiResponseDto> {
         if (!dto.domain) {
             throw new BadRequestException('Domain is required');
         }

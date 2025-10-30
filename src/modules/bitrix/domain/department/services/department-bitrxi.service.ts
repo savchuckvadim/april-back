@@ -30,6 +30,15 @@ export class DepartmentBitrixService {
                 'WORK_POSITION',
                 'UF_HEAD_DEPARTMENT',
                 'UF_DEPARTMENT_HEAD',
+                'PERSONAL_PHOTO',
+                'PERSONAL_WWW',
+                'PERSONAL_BIRTHDAY',
+                'PERSONAL_CITY',
+                'PERSONAL_GENDER',
+                'PERSONAL_MOBILE',
+                'PERSONAL_PHONE',
+                'PERSONAL_EMAIL',
+                'PERSONAL_ADDRESS',
             ],
         });
     }

@@ -46,7 +46,7 @@ export interface IField {
     bitrixCamelId: string;
     entity_id?: number;
     parent_type?: string;
-    bitrixfielditems?: Record<string, any>;
+    bitrixfielditems?: IFieldItem[]; // Record<string, any>;
     items: IFieldItem[];
 }
 export type IFieldCode =

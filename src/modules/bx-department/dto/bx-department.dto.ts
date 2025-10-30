@@ -1,6 +1,9 @@
+import { BXUserDto } from '@/apps/kpi-report-ork/event/dto/get-report-request.dto';
+import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 import { EDepartamentGroup } from '@/modules/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsNumber, IsOptional } from 'class-validator';
 
 export enum EClients {
     dev = 'april-dev.bitrix24.ru',
@@ -21,7 +24,7 @@ export class DomaintDto {
     domain: EClients;
 }
 
-export class BxDepartmentDto {
+export class BxDepartmentRequestDto {
     @ApiProperty({
         enum: EClients,
         description: 'Domain of the Bitrix24 portal',
@@ -40,4 +43,101 @@ export class BxDepartmentDto {
     @IsEnum(EDepartamentGroup)
     @IsOptional()
     department?: EDepartamentGroup;
+}
+
+
+
+export class BxDepartmentDto implements IBXDepartment {
+    @ApiProperty({
+        description: 'Department ID',
+        example: 1,
+        required: true,
+    })
+
+    ID: number;
+
+    @ApiProperty({
+        description: 'Department name',
+        example: 'Sales',
+        required: true,
+    })
+
+    NAME: string;
+
+    @ApiProperty({
+        description: 'Department parent',
+        example: 1,
+        required: true,
+    })
+
+    PARENT: string;
+
+    @ApiProperty({
+        description: 'Department sort',
+        example: 1,
+        required: true,
+    })
+
+    SORT: number;
+
+    @ApiProperty({
+        description: 'Department users',
+        example: [BXUserDto],
+        required: true,
+    })
+
+    USERS: BXUserDto[];
+
+    @ApiProperty({
+        description: 'Department head',
+        example: 1,
+        required: true,
+    })
+
+    UF_HEAD?: number | undefined;
+
+}
+export class BxDepartmentDataDto {
+
+    @ApiProperty({
+        description: 'Department ID',
+        example: 1,
+        required: true,
+    })
+    department: number;
+
+    @ApiProperty({
+        description: 'General department',
+        example: [BxDepartmentDto],
+        required: true, type: [BxDepartmentDto],
+    })
+    generalDepartment: BxDepartmentDto[];
+
+    @ApiProperty({
+        description: 'Children departments',
+        example: [BxDepartmentDto],
+        required: true,
+        type: [BxDepartmentDto],
+    })
+    childrenDepartments: BxDepartmentDto[];
+
+    @ApiProperty({
+        description: 'All users',
+        example: [BXUserDto],
+        required: true,
+        type: [BXUserDto],
+    })
+    allUsers: BXUserDto[];
+
+}
+
+
+export class BxDepartmentResponseDto {
+    @ApiProperty({
+        description: 'Department data',
+        example: BxDepartmentDataDto,
+        required: true,
+    })
+    @Type(() => BxDepartmentDataDto)
+    department: BxDepartmentDataDto;
 }

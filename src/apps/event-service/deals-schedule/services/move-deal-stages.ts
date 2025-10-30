@@ -1,4 +1,5 @@
 import { PBXService } from '@/modules/pbx/';
+import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 import { Injectable } from '@nestjs/common';
 
@@ -29,7 +30,7 @@ export class MoveDealStagesService {
         //     for (const domain of portalList) {
         const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
 
-        const dealService = PortalModel.getDealCategoryByCode('service_base');
+        const dealService = PortalModel.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
         if (!dealService) {
             await this.telegramService.sendMessage(
                 `Not service_base for domain: ${domain}`,

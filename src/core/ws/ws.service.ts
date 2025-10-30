@@ -44,6 +44,10 @@ export class WsService {
             client.emit(event, payload);
         }
     }
+    isConnected(socketId: string): boolean {
+        const client = this.clients.get(socketId);
+        return !!(client && client.connected);
+    }
 
     // emitToAll(event: string, payload: any) {
     //   this.gateway.server.emit(event, payload);

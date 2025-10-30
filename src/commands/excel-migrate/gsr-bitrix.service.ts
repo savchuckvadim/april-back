@@ -10,6 +10,7 @@ import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bx
 import { BitrixService } from 'src/modules/bitrix/';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
+import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
 
 @Injectable()
 export class GsrBitrixService {
@@ -138,7 +139,7 @@ export class GsrBitrixService {
         const pDealContractEndField2 =
             this.portal.getDealFieldBitrixIdByCode('contract_end');
 
-        const pDealCategory = this.portal.getDealCategoryByCode('service_base');
+        const pDealCategory = this.portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
 
         this.productRowService.setContext(this.bitrix, this.portal, userId);
 

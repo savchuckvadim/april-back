@@ -111,7 +111,26 @@ export class BXUserDto {
 
     @ApiProperty()
     @IsString()
-    LAST_NAME: string;
+    @IsOptional()
+    LAST_NAME?: string;
+
+
+    @ApiProperty()
+    @IsString()
+    @IsOptional()
+    EMAIL?: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsOptional()
+    WORK_PHONE?: string;
+
+    @ApiProperty()
+    PERSONAL_PHOTO?: any;
+
+
+
+
 }
 export class ReportGetFiltersDto {
     @ApiProperty()

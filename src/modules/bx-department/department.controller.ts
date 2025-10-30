@@ -12,7 +12,7 @@ import {
 } from 'src/modules/portal/interfaces/portal.interface';
 import { ApiTags } from '@nestjs/swagger';
 import { BxDepartmentService } from './services/bx-department.service';
-import { BxDepartmentDto } from './dto/bx-department.dto';
+import { BxDepartmentRequestDto } from './dto/bx-department.dto';
 
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\department.controller.ts
@@ -27,7 +27,7 @@ export class DepartmentEndpointController {
 
     @Post('sales')
     @HttpCode(200)
-    async getFullDepartment(@Body() dto: BxDepartmentDto) {
+    async getFullDepartment(@Body() dto: BxDepartmentRequestDto) {
 
             return this.service.getFullDepartment(
                 dto.domain,

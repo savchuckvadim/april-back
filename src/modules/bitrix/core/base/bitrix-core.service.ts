@@ -101,8 +101,16 @@ export class BitrixCore {
 
         // Ошибка квоты Bitrix
         if (typeof responseText === 'string' && responseText.includes('QUERY_LIMIT_EXCEEDED')) {
+            console.log('Bitrix query limit exceeded for ', method);
             this.logger.warn(`Bitrix query limit exceeded for ${method}, waiting...`);
-            await new Promise(res => setTimeout(res, 1000));
+            await new Promise(res => setTimeout(res, 35000));
+            return this.request<T>(method, data, retries - 1);
+        }
+
+        // Если Bitrix вернул 503 — подождать и повторить
+        if (error.response?.status === 503 && retries > 0) {
+            this.logger.warn(`Bitrix 503 Service Unavailable on ${method}, retrying in 10s...`);
+            await delay(10000);
             return this.request<T>(method, data, retries - 1);
         }
 

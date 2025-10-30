@@ -646,7 +646,12 @@ export const OrkFields = {
         code: EnumOrkFieldCode.ork_crm_contact,
     },
 } as const;
-
+export type OrkFieldsType = typeof OrkFields;
+export type OrkFieldsCode = keyof OrkFieldsType;
+export type OrkFieldValue<K extends keyof OrkFieldsType> =
+    OrkFieldsType[K] extends { items: Record<string, { code: infer C }> }
+    ? C
+    : string;
 type OrkFieldItem = {
     name: string;
     code: string;

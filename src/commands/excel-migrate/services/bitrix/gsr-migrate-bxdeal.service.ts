@@ -5,6 +5,7 @@ import { MigrateToBxDto } from '../../dto/migrate-to-bx.dto';
 import { GsrMigrateBitrixAbstract } from './gsr-migrate-bitrix-abstract.service';
 
 import { Injectable } from '@nestjs/common';
+import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
 @Injectable()
 export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
     getDealCommand(
@@ -13,7 +14,7 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
         dealCommandCode: string,
         contactCommands: string[],
     ) {
-        const pDealCategory = this.portal.getDealCategoryByCode('service_base');
+        const pDealCategory = this.portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
         const dealComment = this.getDealComment(element);
         const pDealContractEndField = this.portal.getDealFieldBitrixIdByCode(
             'ork_current_contract_fin_date',

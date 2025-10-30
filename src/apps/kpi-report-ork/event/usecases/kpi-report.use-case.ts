@@ -7,13 +7,13 @@ import {
     IFieldItem,
 } from 'src/modules/portal/interfaces/portal.interface';
 import { PortalModel } from 'src/modules/portal/services/portal.model';
-import { ReportData, Filter, KPI } from '../dto/kpi.dto';
-import { ActionOrkEventService } from '../services/action-service';
+import { OrkReportKpiData, OrkKpiFilter, KPIOrk } from '../dto/kpi.dto';
+// import { ActionOrkEventService } from '../services/action-service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { ReportGetFiltersDto } from '../dto/get-report-request.dto';
 import { BXUserDto } from '../dto/get-report-request.dto';
-import { EnumOrkFieldCode } from '@/modules/ork-history-bx-list';
-import { EnumFilterInnerCode, FilterInnerCode } from '../type/ork-report-event.type';
+import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/ork-history-bx-list';
+import { EnumOrkFilterInnerCode, EnumOrkFilterCode, OrkReportEventActionItems } from '../type/ork-report-event.type';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, BitrixService } from '@/modules/bitrix';
 
@@ -50,7 +50,7 @@ export class ReportKpiUseCase {
 
     }
 
-    async generateKpiReport(domain: string, dto: ReportGetFiltersDto): Promise<ReportData[]> {
+    async generateKpiReport(domain: string, dto: ReportGetFiltersDto): Promise<OrkReportKpiData[]> {
         // const bitrixApi = this.bitrixContext.getApi();
         await this.init(domain);
         const departament = dto.departament;
@@ -73,7 +73,7 @@ export class ReportKpiUseCase {
         const currentActionsData = this.getActionsData(
             eventAction?.items,
             eventActionType?.items,
-        ) as Filter[];
+        ) as OrkKpiFilter[];
 
         this.generateBatchCommands(
             departament,
@@ -169,32 +169,51 @@ export class ReportKpiUseCase {
     private getActionsData = (
         actionItems: IFieldItem[] | undefined,
         actionTypeItems: IFieldItem[] | undefined,
-    ): Filter[] => {
-        const currentActionsData = [] as Filter[];
-        const actionService = new ActionOrkEventService();
+    ): OrkKpiFilter[] => {
+        const currentActionsData = [] as OrkKpiFilter[];
+        // const actionService = new ActionOrkEventService();
         if (!actionTypeItems || !actionItems) {
             return currentActionsData;
         }
         if (actionTypeItems.length && actionItems.length) {
             for (const actionType of actionTypeItems) {
                 for (const action of actionItems) {
-                    const actionData = actionService.getActionWithTypeData(
-                        actionType,
-                        action,
-                    );
-                    if (actionData?.actionTypeItem && actionData?.actionItem) {
-                        currentActionsData.push(actionData);
+                    const actionTypeCode = actionType.code as EnumOrkEventType;
+                    const actionCode = action.code as EnumOrkEventAction;
+                    // const actionData = actionService.getActionWithTypeData(
+                    //     actionType,
+                    //     action,
+                    // );
+                    // if (actionData?.actionTypeItem && actionData?.actionItem) {
+                    //     currentActionsData.push(actionData);
+                    // }
+                    const eventActionInitDataItems = OrkReportEventActionItems[actionCode];
+                    if(!eventActionInitDataItems) continue;
+
+                    console.log(eventActionInitDataItems);
+                    console.log(eventActionInitDataItems[actionTypeCode]);
+                    const initDataItem = eventActionInitDataItems[actionTypeCode]
+                    if(!initDataItem) continue;
+
+
+                    const item: OrkKpiFilter = {
+                        code: initDataItem.code,
+                        innerCode: initDataItem.code,
+                        name: initDataItem.name,
+                        actionItem: action,
+                        actionTypeItem: actionType,
+                        order: initDataItem.order
                     }
+                    currentActionsData.push(item);
                 }
             }
         }
 
         return currentActionsData.sort((a, b) => a.order - b.order);
     };
-
     private generateBatchCommands = (
         departament: BXUserDto[],
-        currentActionsData: Filter[],
+        currentActionsData: OrkKpiFilter[],
         eventResponsibleFieldId: string,
 
         actionFieldId: string,
@@ -215,8 +234,8 @@ export class ReportKpiUseCase {
                 const isCommunicationResult = innerCode.includes(
                     'et_ork_call',
                 );
-                const isNoResult = innerCode.includes('noresult_communication' as FilterInnerCode);
-                const isCall = innerCode.includes('call' as FilterInnerCode);
+                const isNoResult = innerCode.includes('noresult_communication' as EnumOrkFilterInnerCode);
+                const isCall = innerCode.includes('call' as EnumOrkFilterInnerCode);
 
                 if (!isCommunicationResult && !isNoResult && isCall) {
                     const actionValuebitrixId = action.actionItem.bitrixId;
@@ -253,7 +272,8 @@ export class ReportKpiUseCase {
                                 callPlanAction.code == 'et_ork_fail_prevention_ea_ork_plan' ||
                                 callPlanAction.code == 'et_ork_fail_work_ea_ork_plan' ||
                                 callPlanAction.code == 'et_ork_threat_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_fail_work_success_ea_ork_plan'
+                                callPlanAction.code == 'et_ork_fail_work_success_ea_ork_plan' ||
+                                callPlanAction.code == 'et_ork_presentation_ea_ork_plan'
 
                             ) {
                                 const actionTypeArray = getListData.filter[
@@ -306,7 +326,9 @@ export class ReportKpiUseCase {
                                 callDoneAction.code == 'et_ork_fail_prevention_ea_ork_done' ||
                                 callDoneAction.code == 'et_ork_fail_work_ea_ork_done' ||
                                 callDoneAction.code == 'et_ork_threat_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_fail_work_success_ea_ork_done'
+                                callDoneAction.code == 'et_ork_fail_work_success_ea_ork_done' ||
+                                callDoneAction.code == EnumOrkFilterCode.supply_done ||
+                                callDoneAction.code == EnumOrkFilterCode.fail
 
                             ) {
                                 const actionTypeArray = getListData.filter[
@@ -364,24 +386,24 @@ export class ReportKpiUseCase {
     };
 
     private proccesResultCommunications = (
-        reportData: ReportData,
-    ): ReportData => {
+        reportData: OrkReportKpiData,
+    ): OrkReportKpiData => {
         const targetKpiItemResultPlan = {
             id: 'result_communication_plan' as string,
             count: 0,
-        } as KPI;
+        } as KPIOrk;
         const targetKpiItemResultDone = {
             id: 'result_communication_done' as string,
             count: 0,
-        } as KPI;
+        } as KPIOrk;
 
         reportData.kpi.forEach(kpi => {
             const isOriginalPlan =
-                kpi.action.innerCode === EnumFilterInnerCode.call_plan ||
-                kpi.action.innerCode === EnumFilterInnerCode.presentation_plan;
+                kpi.action.innerCode === EnumOrkFilterInnerCode.call_plan ||
+                kpi.action.innerCode === EnumOrkFilterInnerCode.presentation_plan;
             const isOriginalDone =
-                kpi.action.innerCode === EnumFilterInnerCode.call_done ||
-                kpi.action.innerCode === EnumFilterInnerCode.presentation_done;
+                kpi.action.innerCode === EnumOrkFilterInnerCode.call_done ||
+                kpi.action.innerCode === EnumOrkFilterInnerCode.presentation_done;
 
             if (isOriginalPlan) {
                 targetKpiItemResultPlan.count += kpi.count;
@@ -393,12 +415,12 @@ export class ReportKpiUseCase {
                 targetKpiItemResultPlan.action = { ...kpi.action };
                 targetKpiItemResultPlan.action.name = 'План';
 
-                targetKpiItemResultPlan.action.innerCode = EnumFilterInnerCode.call_plan;
+                targetKpiItemResultPlan.action.innerCode = EnumOrkFilterInnerCode.call_plan;
             }
             if (kpi.action.innerCode === 'et_ork_call_ea_ork_done') {
                 targetKpiItemResultDone.action = { ...kpi.action };
                 targetKpiItemResultDone.action.name = 'Результативные';
-                targetKpiItemResultDone.action.innerCode = EnumFilterInnerCode.call_done;
+                targetKpiItemResultDone.action.innerCode = EnumOrkFilterInnerCode.call_done;
             }
         });
         // reportData.kpi.unshift(
@@ -412,9 +434,9 @@ export class ReportKpiUseCase {
     private getCalculateResults = (
         results: IBitrixBatchResponseResult[],
         departament: BXUserDto[],
-        currentActionsData: Filter[],
-    ): ReportData[] => {
-        const report = [] as ReportData[];
+        currentActionsData: OrkKpiFilter[],
+    ): OrkReportKpiData[] => {
+        const report = [] as OrkReportKpiData[];
 
         for (const user of departament) {
             const userId = user.ID;
@@ -423,15 +445,15 @@ export class ReportKpiUseCase {
             let userReport = {
                 user: user,
                 userName: userName,
-                kpi: [] as KPI[],
-            } as ReportData;
+                kpi: [] as KPIOrk[],
+            } as OrkReportKpiData;
             for (const action of currentActionsData) {
                 const cmdKey = `user_${userId}_action_${action.code}`;
                 const kpi = {
                     id: action.innerCode,
                     action: action,
                     count: 0,
-                } as KPI;
+                } as KPIOrk;
                 for (const result of results) {
                     for (const resultKey in result.result) {
                         if (resultKey === cmdKey) {
@@ -445,7 +467,7 @@ export class ReportKpiUseCase {
             }
             userReport = this.proccesResultCommunications(
                 userReport,
-            ) as ReportData;
+            ) as OrkReportKpiData;
             report.push(userReport);
         }
         return report;

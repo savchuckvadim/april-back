@@ -30,6 +30,7 @@ import { FileSchema } from 'src/modules/bitrix/domain/file/bx-file.schema';
 //     CrmUpdateItemRequestType,
 // } from '@/modules/bitrix/domain/crm/type/crm-request.type';
 import { BxSmartTypeSchema } from '@/modules/bitrix/domain/crm/smart-type';
+import { BxListItemSchema } from '@/modules/bitrix/domain/list-item/schema/bx-list-item.schema';
 // import { FieldsEnumerationSchema } from "src/modules/bitrix/domain/crm";
 
 export type BXApiSchema = {
@@ -99,6 +100,10 @@ export type BXApiSchema = {
     [EBxNamespace.WITHOUT_NAMESPACE]: {
         [EBXEntity.LISTS]: BxListSchema;
         [EBXEntity.USER_FIELD_CONFIG]: UserFieldConfigSchema;
+    };
+    [EBxNamespace.LISTS]: {
+        [EBXEntity.ELEMENT]: BxListItemSchema;
+
     };
     [EBxNamespace.CATALOG]: {
         [EBXEntity.PRODUCT]: BxCatalogSchema;

@@ -2,13 +2,16 @@ import { Injectable } from '@nestjs/common';
 import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
-import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import { IBXDepartment, IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { EDepartamentGroup } from 'src/modules/portal/interfaces/portal.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@/modules/portal/services/portal.model';
+import { BxDepartmentResponseDto } from '../dto/bx-department.dto';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
+
+
 @Injectable()
 export class BxDepartmentService {
     private readonly redis: Redis;
@@ -24,7 +27,7 @@ export class BxDepartmentService {
     async getFullDepartment(
         domain: string,
         group: EDepartamentGroup | undefined,
-    ) {
+    ): Promise<BxDepartmentResponseDto> {
         const { bitrix, PortalModel } = await this.pbx.init(domain);
 
         const targetGroup = this.getTargetGroup(group);
@@ -35,8 +38,8 @@ export class BxDepartmentService {
         const day = dayjs().format('MMDD');
         const sessionKey = `department_${domain}_${day}_${targetGroup}`;
 
-        const fromCache = await this.redis.get(sessionKey);
-        if (fromCache) return JSON.parse(fromCache);
+        // const fromCache = await this.redis.get(sessionKey);
+        // if (fromCache) return JSON.parse(fromCache);
 
         const departmentService = new DepartmentBitrixService(bitrix.api);
 
@@ -72,7 +75,14 @@ export class BxDepartmentService {
         };
 
         await this.redis.set(sessionKey, JSON.stringify(result));
-        return result;
+        return {
+            department: {
+                department: baseDepartmentBitrixId,
+                generalDepartment: generalWithUsers,
+                childrenDepartments: childrenWithUsers,
+                allUsers,
+            },
+        } as BxDepartmentResponseDto;
     }
 
     private getBaseDepartmentIdByGroup(

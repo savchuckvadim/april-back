@@ -8,7 +8,7 @@ import {
     Post,
 } from '@nestjs/common';
 import { BxDepartmentService } from './services/bx-department.service';
-import { BxDepartmentDto } from './dto/bx-department.dto';
+import { BxDepartmentRequestDto, BxDepartmentResponseDto } from './dto/bx-department.dto';
 import { BxAllDepartmentsService } from './services/bx-all-departments.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -23,43 +23,14 @@ export class DepartmentController {
     @ApiOperation({ summary: 'Get full department information' })
     @ApiResponse({
         status: 200,
-        description:
-            'Returns full department information including general department, children departments, and all users',
-        schema: {
-            type: 'object',
-            properties: {
-                department: {
-                    type: 'object',
-                    properties: {
-                        department: {
-                            type: 'number',
-                            description: 'Base department ID',
-                        },
-                        generalDepartment: {
-                            type: 'array',
-                            items: { type: 'object' },
-                            description: 'General department information',
-                        },
-                        childrenDepartments: {
-                            type: 'array',
-                            items: { type: 'object' },
-                            description: 'Child departments information',
-                        },
-                        allUsers: {
-                            type: 'array',
-                            items: { type: 'object' },
-                            description: 'All users in the department',
-                        },
-                    },
-                },
-            },
-        },
+        description: 'Full department information',
+        type: BxDepartmentResponseDto,
     })
     @ApiResponse({ status: 400, description: 'Invalid input data' })
     @ApiResponse({ status: 500, description: 'Internal server error' })
     @Post('')
     @HttpCode(200)
-    async getFullDepartment(@Body() dto: BxDepartmentDto) {
+    async getFullDepartment(@Body() dto: BxDepartmentRequestDto): Promise<BxDepartmentResponseDto> {
         return await this.service.getFullDepartment(dto.domain, dto.department);
     }
 

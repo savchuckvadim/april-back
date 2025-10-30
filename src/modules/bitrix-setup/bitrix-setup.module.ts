@@ -5,7 +5,8 @@ import { SecretModule } from './secret/secret.module';
 import { PlacementModule } from './placement/placement.module';
 import { SettingModule } from './setting/setting.module';
 import { BitrixSetupInstallModule } from './install/bitrix-setup-install.module';
-
+// TODO настройки карточки просмотра
+//https://apidocs.bitrix24.com/api-reference/crm/deals/custom-form/index.html
 @Module({
     imports: [
         BitrixSetupAppModule,
