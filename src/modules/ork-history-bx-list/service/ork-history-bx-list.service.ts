@@ -1,8 +1,7 @@
 import { PBXService } from "@/modules/pbx";
-import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventType, EnumOrkFieldCode } from "../type/ork-list-history.enum";
-import { IField, IPBXList } from "@/modules/portal/interfaces/portal.interface";
-import { IBitrixBatchResponseResult } from "@/modules/bitrix/core/interface/bitrix-api-http.intterface";
-import { OrkFieldsCode, OrkFieldsType, OrkFieldValue } from "../type/ork-list-history.type";
+import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode } from "../type/ork-list-history.enum";
+import { IPBXList } from "@/modules/portal/interfaces/portal.interface";
+import { OrkFieldsType, OrkFieldValue } from "../type/ork-list-history.type";
 import { PortalModel } from "@/modules/portal/services/portal.model";
 import { OrkHistoryFieldValueDto, OrkHistoryFieldItemValueDto, OrkListHistoryItemDto } from "../dto/ork-list-history.dto";
 
@@ -33,12 +32,16 @@ export class OrkHistoryBxListService {
         if (!portalList) {
             throw new Error('List not found');
         }
+        const fields = this.getFields(dto, portalList);
 
         const addListItemData = {
             IBLOCK_TYPE_ID: 'lists',
             IBLOCK_CODE: portalListType,
             ELEMENT_CODE: dto.elementCode,
-            FIELDS: this.getFields(dto, portalList)
+            FIELDS: {
+                NAME: 'Перезаключение',
+                ...fields
+            }
         }
         void await bitrix.api.call('lists.element.add', addListItemData)
 
@@ -46,28 +49,25 @@ export class OrkHistoryBxListService {
     }
     private getFields(dto: OrkHistoryBxListItemDto, portalList: IPBXList) {
 
-        const fields = portalList.bitrixfields?.map(field => {
+        const fields: Record<string, string | string[]> = {}
+        portalList.bitrixfields?.map(field => {
             const fieldCode = field.code as EnumOrkFieldCode;
             if (fieldCode === EnumOrkFieldCode.responsible) {
-                return {
-                    [field.bitrixId]: dto.responsibleId.toString()
-                }
+
+                fields[field.bitrixCamelId] = dto.responsibleId.toString()
+
             } else if (fieldCode === EnumOrkFieldCode.ork_event_action) {
-                return {
-                    [field.bitrixId]: dto.action.toString()
-                }
+
+                fields[field.bitrixCamelId] = dto.action.toString()
+
             } else if (fieldCode === EnumOrkFieldCode.ork_event_type) {
-                return {
-                    [field.bitrixId]: dto.type.toString()
-                }
+
+                fields[field.bitrixCamelId] = dto.type.toString()
+
             } else if (fieldCode === EnumOrkFieldCode.crm) {
-                return {
-                    [field.bitrixId]: [`CO_${dto.companyId}`, `D_${dto.dealId}`]
-                }
+                fields[field.bitrixCamelId] = [`CO_${dto.companyId}`, `D_${dto.dealId}`]
             } else if (fieldCode === EnumOrkFieldCode.manager_comment && dto.comment) {
-                return {
-                    [field.bitrixId]: dto.comment
-                }
+                fields[field.bitrixCamelId] = dto.comment
             }
         })
         return fields
