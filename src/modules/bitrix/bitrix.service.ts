@@ -29,6 +29,10 @@ import { BxRpaItemService } from './domain/rpa/item/services/bx-rpa-item.service
 import { BxRpaItemBatchService } from './domain/rpa/item/services/bx-rpa-item.batch.service';
 import { BxFileService } from './domain/file/bx-file.service';
 import { BxListItemService } from './domain/list-item';
+import { BxRecentService } from './domain/chat/recent/services/bx-recent.service';
+import { BxRecentBatchService } from './domain/chat/recent/services/bx-recent.batch.service';
+import { BxMessageService } from './domain/chat/message/services/bx-message.service';
+import { BxMessageBatchService } from './domain/chat/message/services/bx-message.batch.service';
 
 
 // @Injectable()
@@ -49,6 +53,8 @@ export class BitrixService {
     public smartType: BxSmartTypeService;
     public rpaItem: BxRpaItemService;
     public file: BxFileService;
+    public recent: BxRecentService;
+    public message: BxMessageService;
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -61,6 +67,8 @@ export class BitrixService {
         product: null as unknown as BxProductBatchService,
         userFieldConfig: null as unknown as BxUserFieldConfigBatchService,
         rpaItem: null as unknown as BxRpaItemBatchService,
+        recent: null as unknown as BxRecentBatchService,
+        message: null as unknown as BxMessageBatchService,
     };
     constructor(
         private readonly bxApi: BitrixBaseApi,
@@ -85,6 +93,8 @@ export class BitrixService {
         this.initSmartType();
         this.initRpaItem();
         this.initFile();
+        this.initRecent();
+        this.initMessage();
     }
 
     private initDeal() {
@@ -154,6 +164,16 @@ export class BitrixService {
     }
     private initFile() {
         this.file = this.cloner.clone(BxFileService, this.api);
+    }
+
+    private initRecent() {
+        this.recent = this.cloner.clone(BxRecentService, this.api);
+        this.batch.recent = this.cloner.clone(BxRecentBatchService, this.api);
+    }
+
+    private initMessage() {
+        this.message = this.cloner.clone(BxMessageService, this.api);
+        this.batch.message = this.cloner.clone(BxMessageBatchService, this.api);
     }
 
 

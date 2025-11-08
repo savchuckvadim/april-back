@@ -31,6 +31,8 @@ import { FileSchema } from 'src/modules/bitrix/domain/file/bx-file.schema';
 // } from '@/modules/bitrix/domain/crm/type/crm-request.type';
 import { BxSmartTypeSchema } from '@/modules/bitrix/domain/crm/smart-type';
 import { BxListItemSchema } from '@/modules/bitrix/domain/list-item/schema/bx-list-item.schema';
+import { RecentSchema } from '@/modules/bitrix/domain/chat/recent/schema/bx-recent.schema';
+import { MessageSchema } from '@/modules/bitrix/domain/chat/message/schema/bx-message.schema';
 // import { FieldsEnumerationSchema } from "src/modules/bitrix/domain/crm";
 
 export type BXApiSchema = {
@@ -107,5 +109,9 @@ export type BXApiSchema = {
     };
     [EBxNamespace.CATALOG]: {
         [EBXEntity.PRODUCT]: BxCatalogSchema;
+    };
+    [EBxNamespace.IM]: {
+        [EBXEntity.RECENT]: RecentSchema;
+        [EBXEntity.MESSAGE]: MessageSchema;
     };
 };

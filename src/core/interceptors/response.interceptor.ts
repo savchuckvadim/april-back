@@ -10,8 +10,7 @@ import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 
 @Injectable()
 export class ResponseInterceptor<T>
-    implements NestInterceptor<T, ApiResponse<T>>
-{
+    implements NestInterceptor<T, ApiResponse<T>> {
     intercept(
         context: ExecutionContext,
         next: CallHandler,

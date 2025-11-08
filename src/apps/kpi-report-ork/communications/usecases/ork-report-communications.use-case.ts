@@ -9,7 +9,7 @@ import {
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/ork-history-bx-list';
+import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/pbx-ork-history-bx-list';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, BitrixService } from '@/modules/bitrix';
 import { CommunicationsReportData, FilterCommunication, KPICommunication } from '../dto/communications.dto';

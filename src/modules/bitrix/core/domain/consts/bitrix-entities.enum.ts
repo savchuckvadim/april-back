@@ -19,4 +19,6 @@ export enum EBXEntity {
     STATUS = 'status',
     PRODUCT = 'product',
     RPA = 'rpa',
+    RECENT = 'recent',
+    MESSAGE = 'message',
 }

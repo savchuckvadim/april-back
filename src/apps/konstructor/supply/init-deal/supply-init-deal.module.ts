@@ -7,7 +7,7 @@ import { OnlineModule } from '@/clients/online/client/online/api-online.module';
 import { TelegramModule } from '@/modules/telegram/telegram.module';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { InitDealProcessor } from './processor/init-deal.processor';
-import { OrkHistoryBxListModule } from '@/modules/ork-history-bx-list';
+import { OrkHistoryBxListModule } from '@/modules/pbx-ork-history-bx-list';
 
 @Module({
     imports: [PBXModule, OnlineModule, TelegramModule, QueueModule, OrkHistoryBxListModule],
@@ -15,4 +15,4 @@ import { OrkHistoryBxListModule } from '@/modules/ork-history-bx-list';
     providers: [InitDealUseCase, CopyInnerDealService, InitDealProcessor],
     exports: [],
 })
-export class SupplyInitDealModule {}
+export class SupplyInitDealModule { }

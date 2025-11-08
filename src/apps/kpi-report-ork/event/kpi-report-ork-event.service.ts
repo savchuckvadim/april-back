@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import { OrkFields } from '@/modules/ork-history-bx-list';
+import { OrkFields } from '@/modules/pbx-ork-history-bx-list';
 
 @Injectable()
 export class KpiReportOrkEventService {

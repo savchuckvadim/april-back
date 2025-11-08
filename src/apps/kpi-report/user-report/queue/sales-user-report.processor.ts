@@ -22,7 +22,7 @@ export class SalesUserReportQueueProcessor {
             `Processing job ${job.id} of type ${job.name} with data ${job.data}...`,
         );
     }
-    private readonly logger = new Logger(QueueNames.ORK_KPI_REPORT);
+    private readonly logger = new Logger(QueueNames.SALES_KPI_REPORT);
 
     constructor(
         readonly redis: RedisService,

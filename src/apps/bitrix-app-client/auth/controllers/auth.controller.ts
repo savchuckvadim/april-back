@@ -1,15 +1,21 @@
 import { AuthService } from "../services/auth.service";
-import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ClientRegistrationRequestDto, ClientResponseDto, LoginDto, LoginResponseDto, LogoutResponseDto } from "../dto/auth.dto";
-import { AuthGuard } from "../guard/jwt.guard";
+import { ClientRegistrationRequestDto, ClientResponseDto, LoginDto, LoginResponseDto, LogoutResponseDto, MeResponseDto } from "../dto/auth.dto";
+import { AuthGuard } from "../guard/jwt-auth.guard";
 import { Response } from "express";
+import { ConfigService } from "@nestjs/config";
+import { SetAuthCookie } from "@/core/decorators/auth/set-auth-cookie.decorator";
+import { UserResponseDto } from "../../user/dto/user-response.dto";
 
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+    constructor(
+        private readonly authService: AuthService,
+        private readonly configService: ConfigService
+    ) { }
 
 
     @ApiOperation({ summary: 'Register new client' })
@@ -20,23 +26,20 @@ export class AuthController {
     async registerClient(@Body() dto: ClientRegistrationRequestDto): Promise<ClientResponseDto> {
         return await this.authService.registerClient(dto);
     }
+
+
+
     @ApiOperation({ summary: 'Login' })
     @ApiResponse({
 
         status: 200, description: 'Logged in', type: LoginResponseDto
     })
     @Post('login')
+    @SetAuthCookie()
     async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response): Promise<LoginResponseDto> {
         const { token, user, client } = await this.authService.login(dto);
-        // ✅ Устанавливаем cookie
-        res.cookie('access_token', token, {
-            // httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            // sameSite: 'none',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
-        });
-        return {  user, client };
+
+        return { token, user, client };
     }
 
     @ApiOperation({ summary: 'Logout' })
@@ -45,8 +48,9 @@ export class AuthController {
     })
     @Post('logout')
     @UseGuards(AuthGuard)
-    async logout(@Req() req: any): Promise<LogoutResponseDto> {
-        return this.authService.logout(req.user);
+    async logout(@Req() req: any, @Res({ passthrough: true }) res: Response): Promise<LogoutResponseDto> {
+
+        return this.authService.logout(req.user, res);
     }
 
     @ApiOperation({ summary: 'Confirm email' })
@@ -65,5 +69,19 @@ export class AuthController {
     @Post('resend-confirmation')
     async resendConfirmation(@Body('email') email: string): Promise<LogoutResponseDto> {
         return this.authService.resendConfirmation(email);
+    }
+
+    @ApiOperation({ summary: 'Me' })
+    @ApiResponse({
+        status: 200, description: 'Current user', type: MeResponseDto
+    })
+    @Get('me')
+    @UseGuards(AuthGuard)
+    async me(@Req() req: any): Promise<MeResponseDto> {
+        const user = await this.authService.validateUserById(req.user.id);
+        if (!user) throw new UnauthorizedException('User not found');
+        const client = await this.authService.validateClientById(req.user.client_id);
+        if (!client) throw new UnauthorizedException('Client not found');
+        return { user, client };
     }
 }

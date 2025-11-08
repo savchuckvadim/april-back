@@ -1,121 +1,121 @@
-import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/ork-history-bx-list"
+import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-ork-history-bx-list"
 
 
 
 
 
 // export type FilterCode = EnumFilterCode
-    // | 'et_ork_signal_ea_ork_plan' //Сервисный сигнал
-    // | 'et_ork_signal_ea_ork_expired' // Сервисный сигнал
-    // | 'et_ork_signal_ea_ork_done' // Сервисный сигнал
-    // | 'et_ork_signal_ea_ork_pound' // Сервисный сигнал
-    // | 'et_ork_signal_ea_ork_act_noresult_fail' // Сервисный сигнал
+// | 'et_ork_signal_ea_ork_plan' //Сервисный сигнал
+// | 'et_ork_signal_ea_ork_expired' // Сервисный сигнал
+// | 'et_ork_signal_ea_ork_done' // Сервисный сигнал
+// | 'et_ork_signal_ea_ork_pound' // Сервисный сигнал
+// | 'et_ork_signal_ea_ork_act_noresult_fail' // Сервисный сигнал
 
-    // | 'et_ork_info_ea_ork_plan' // Информация
-    // | 'et_ork_info_ea_ork_expired' // Информация
-    // | 'et_ork_info_ea_ork_done' // Информация
-    // | 'et_ork_info_ea_ork_pound' // Информация
-    // | 'et_ork_info_ea_ork_act_noresult_fail' // Информация
-
-
-    // | 'et_ork_call_doc_ea_ork_plan' // Звонок по документам
-    // | 'et_ork_call_doc_ea_ork_expired' // Звонок по документам
-    // | 'et_ork_call_doc_ea_ork_done' // Звонок по документам
-    // | 'et_ork_call_doc_ea_ork_pound' // Звонок по документам
-    // | 'et_ork_call_doc_ea_ork_act_noresult_fail' // Звонок по документам
-
-    // | 'et_ork_call_money_ea_ork_plan' // Звонок по оплате
-    // | 'et_ork_call_money_ea_ork_expired' // Звонок по оплате
-    // | 'et_ork_call_money_ea_ork_done' // Звонок по оплате
-    // | 'et_ork_call_money_ea_ork_pound' // Звонок по оплате
-    // | 'et_ork_call_money_ea_ork_act_noresult_fail' // Звонок по оплате
-
-    // | 'et_ork_call_collect_ea_ork_plan' // Звонок по задолженности
-    // | 'et_ork_call_collect_ea_ork_expired' // Звонок по задолженности
-    // | 'et_ork_call_collect_ea_ork_done' // Звонок по задолженности
-    // | 'et_ork_call_collect_ea_ork_pound' // Звонок по задолженности
-    // | 'et_ork_call_collect_ea_ork_act_noresult_fail' // Звонок по задолженности
-
-    // | 'et_ork_info_garant_ea_ork_plan' // Инфоповод Гарант
-    // | 'et_ork_info_garant_ea_ork_expired' // Инфоповод Гарант
-    // | 'et_ork_info_garant_ea_ork_done' // Инфоповод Гарант
-    // | 'et_ork_info_garant_ea_ork_pound' // Инфоповод Гарант
-    // | 'et_ork_info_garant_ea_ork_act_noresult_fail' // Инфоповод Гарант
-
-    // | 'et_ork_presentation_ea_ork_plan' // Презентация
-    // | 'et_ork_presentation_ea_ork_expired' // Презентация
-    // | 'et_ork_presentation_ea_ork_done' // Презентация
-    // | 'et_ork_presentation_ea_ork_pound' // Презентация
-    // | 'et_ork_presentation_ea_ork_act_noresult_fail' // Презентация
-
-    // | 'et_ork_presentation_uniq_ea_ork_plan' // Презентация(уникальная)
-    // | 'et_ork_presentation_uniq_ea_ork_expired' // Презентация(уникальная)
-    // | 'et_ork_presentation_uniq_ea_ork_done' // Презентация(уникальная)
-    // | 'et_ork_presentation_uniq_ea_ork_pound' // Презентация(уникальная)
-    // | 'et_ork_presentation_uniq_ea_ork_act_noresult_fail' // Презентация(уникальная)
-
-    // | 'et_ork_edu_first_ea_ork_plan' // Обучение первичное
-    // | 'et_ork_edu_first_ea_ork_expired' // Обучение первичное
-    // | 'et_ork_edu_first_ea_ork_done' // Обучение первичное
-    // | 'et_ork_edu_first_ea_ork_pound' // Обучение первичное
-    // | 'et_ork_edu_first_ea_ork_act_noresult_fail' // Обучение первичное
-
-    // | 'et_ork_edu_ea_ork_plan' // Обучение
-    // | 'et_ork_edu_ea_ork_expired' // Обучение
-    // | 'et_ork_edu_ea_ork_done' // Обучение
-    // | 'et_ork_edu_ea_ork_pound' // Обучение
-    // | 'et_ork_edu_ea_ork_act_noresult_fail' // Обучение
-
-    // | 'et_ork_complect_up_work_ea_ork_plan' // Работа по увеличению комплекта
-    // | 'et_ork_complect_up_work_ea_ork_expired' // Работа по увеличению комплекта
-    // | 'et_ork_complect_up_work_ea_ork_done' // Работа по увеличению комплекта
-    // | 'et_ork_complect_up_work_ea_ork_pound' // Работа по увеличению комплекта
-    // | 'et_ork_complect_up_work_ea_ork_act_noresult_fail' // Работа по увеличению комплекта
+// | 'et_ork_info_ea_ork_plan' // Информация
+// | 'et_ork_info_ea_ork_expired' // Информация
+// | 'et_ork_info_ea_ork_done' // Информация
+// | 'et_ork_info_ea_ork_pound' // Информация
+// | 'et_ork_info_ea_ork_act_noresult_fail' // Информация
 
 
-    // | 'et_ork_pere_contract_ea_ork_plan' // Перезаключение
-    // | 'et_ork_pere_contract_ea_ork_expired' // Перезаключение
-    // | 'et_ork_pere_contract_ea_ork_done' // Перезаключение
-    // | 'et_ork_pere_contract_ea_ork_pound' // Перезаключение
-    // | 'et_ork_pere_contract_ea_ork_act_noresult_fail' // Перезаключение
+// | 'et_ork_call_doc_ea_ork_plan' // Звонок по документам
+// | 'et_ork_call_doc_ea_ork_expired' // Звонок по документам
+// | 'et_ork_call_doc_ea_ork_done' // Звонок по документам
+// | 'et_ork_call_doc_ea_ork_pound' // Звонок по документам
+// | 'et_ork_call_doc_ea_ork_act_noresult_fail' // Звонок по документам
 
-    // | 'et_ork_complect_up_ea_ork_plan' // Увеличение комплекта
-    // | 'et_ork_complect_up_ea_ork_expired' // Увеличение комплекта
-    // | 'et_ork_complect_up_ea_ork_done' // Увеличение комплекта
-    // | 'et_ork_complect_up_ea_ork_pound' // Увеличение комплекта
-    // | 'et_ork_complect_up_ea_ork_act_noresult_fail' // Увеличение комплекта
+// | 'et_ork_call_money_ea_ork_plan' // Звонок по оплате
+// | 'et_ork_call_money_ea_ork_expired' // Звонок по оплате
+// | 'et_ork_call_money_ea_ork_done' // Звонок по оплате
+// | 'et_ork_call_money_ea_ork_pound' // Звонок по оплате
+// | 'et_ork_call_money_ea_ork_act_noresult_fail' // Звонок по оплате
+
+// | 'et_ork_call_collect_ea_ork_plan' // Звонок по задолженности
+// | 'et_ork_call_collect_ea_ork_expired' // Звонок по задолженности
+// | 'et_ork_call_collect_ea_ork_done' // Звонок по задолженности
+// | 'et_ork_call_collect_ea_ork_pound' // Звонок по задолженности
+// | 'et_ork_call_collect_ea_ork_act_noresult_fail' // Звонок по задолженности
+
+// | 'et_ork_info_garant_ea_ork_plan' // Инфоповод Гарант
+// | 'et_ork_info_garant_ea_ork_expired' // Инфоповод Гарант
+// | 'et_ork_info_garant_ea_ork_done' // Инфоповод Гарант
+// | 'et_ork_info_garant_ea_ork_pound' // Инфоповод Гарант
+// | 'et_ork_info_garant_ea_ork_act_noresult_fail' // Инфоповод Гарант
+
+// | 'et_ork_presentation_ea_ork_plan' // Презентация
+// | 'et_ork_presentation_ea_ork_expired' // Презентация
+// | 'et_ork_presentation_ea_ork_done' // Презентация
+// | 'et_ork_presentation_ea_ork_pound' // Презентация
+// | 'et_ork_presentation_ea_ork_act_noresult_fail' // Презентация
+
+// | 'et_ork_presentation_uniq_ea_ork_plan' // Презентация(уникальная)
+// | 'et_ork_presentation_uniq_ea_ork_expired' // Презентация(уникальная)
+// | 'et_ork_presentation_uniq_ea_ork_done' // Презентация(уникальная)
+// | 'et_ork_presentation_uniq_ea_ork_pound' // Презентация(уникальная)
+// | 'et_ork_presentation_uniq_ea_ork_act_noresult_fail' // Презентация(уникальная)
+
+// | 'et_ork_edu_first_ea_ork_plan' // Обучение первичное
+// | 'et_ork_edu_first_ea_ork_expired' // Обучение первичное
+// | 'et_ork_edu_first_ea_ork_done' // Обучение первичное
+// | 'et_ork_edu_first_ea_ork_pound' // Обучение первичное
+// | 'et_ork_edu_first_ea_ork_act_noresult_fail' // Обучение первичное
+
+// | 'et_ork_edu_ea_ork_plan' // Обучение
+// | 'et_ork_edu_ea_ork_expired' // Обучение
+// | 'et_ork_edu_ea_ork_done' // Обучение
+// | 'et_ork_edu_ea_ork_pound' // Обучение
+// | 'et_ork_edu_ea_ork_act_noresult_fail' // Обучение
+
+// | 'et_ork_complect_up_work_ea_ork_plan' // Работа по увеличению комплекта
+// | 'et_ork_complect_up_work_ea_ork_expired' // Работа по увеличению комплекта
+// | 'et_ork_complect_up_work_ea_ork_done' // Работа по увеличению комплекта
+// | 'et_ork_complect_up_work_ea_ork_pound' // Работа по увеличению комплекта
+// | 'et_ork_complect_up_work_ea_ork_act_noresult_fail' // Работа по увеличению комплекта
 
 
-    // | 'et_ork_complect_down_ea_ork_plan' // Уменьшение комплекта
-    // | 'et_ork_complect_down_ea_ork_expired' // Уменьшение комплекта
-    // | 'et_ork_complect_down_ea_ork_done' // Уменьшение комплекта
-    // | 'et_ork_complect_down_ea_ork_pound' // Уменьшение комплекта
-    // | 'et_ork_complect_down_ea_ork_act_noresult_fail' // Уменьшение комплекта
+// | 'et_ork_pere_contract_ea_ork_plan' // Перезаключение
+// | 'et_ork_pere_contract_ea_ork_expired' // Перезаключение
+// | 'et_ork_pere_contract_ea_ork_done' // Перезаключение
+// | 'et_ork_pere_contract_ea_ork_pound' // Перезаключение
+// | 'et_ork_pere_contract_ea_ork_act_noresult_fail' // Перезаключение
+
+// | 'et_ork_complect_up_ea_ork_plan' // Увеличение комплекта
+// | 'et_ork_complect_up_ea_ork_expired' // Увеличение комплекта
+// | 'et_ork_complect_up_ea_ork_done' // Увеличение комплекта
+// | 'et_ork_complect_up_ea_ork_pound' // Увеличение комплекта
+// | 'et_ork_complect_up_ea_ork_act_noresult_fail' // Увеличение комплекта
 
 
-    // | 'et_ork_fail_prevention_ea_ork_plan' // Профилактика отказа
-    // | 'et_ork_fail_prevention_ea_ork_expired' // Профилактика отказа
-    // | 'et_ork_fail_prevention_ea_ork_done' // Профилактика отказа
-    // | 'et_ork_fail_prevention_ea_ork_pound' // Профилактика отказа
-    // | 'et_ork_fail_prevention_ea_ork_act_noresult_fail' // Профилактика отказа
+// | 'et_ork_complect_down_ea_ork_plan' // Уменьшение комплекта
+// | 'et_ork_complect_down_ea_ork_expired' // Уменьшение комплекта
+// | 'et_ork_complect_down_ea_ork_done' // Уменьшение комплекта
+// | 'et_ork_complect_down_ea_ork_pound' // Уменьшение комплекта
+// | 'et_ork_complect_down_ea_ork_act_noresult_fail' // Уменьшение комплекта
 
-    // | 'et_ork_fail_work_ea_ork_plan' // Работа по устранению угрозы отказа
-    // | 'et_ork_fail_work_ea_ork_expired' // Работа по устранению угрозы отказа
-    // | 'et_ork_fail_work_ea_ork_done' // Работа по устранению угрозы отказа
-    // | 'et_ork_fail_work_ea_ork_pound' // Работа по устранению угрозы отказа
-    // | 'et_ork_fail_work_ea_ork_act_noresult_fail' // Работа по устранению угрозы отказа
 
-    // | 'et_ork_threat_ea_ork_plan' // Возникновение угрозы отказа
-    // | 'et_ork_threat_ea_ork_expired' // Возникновение угрозы отказа
-    // | 'et_ork_threat_ea_ork_done' // Возникновение угрозы отказа
-    // | 'et_ork_threat_ea_ork_pound' // Возникновение угрозы отказа
-    // | 'et_ork_threat_ea_ork_act_noresult_fail' // Возникновение угрозы отказа
+// | 'et_ork_fail_prevention_ea_ork_plan' // Профилактика отказа
+// | 'et_ork_fail_prevention_ea_ork_expired' // Профилактика отказа
+// | 'et_ork_fail_prevention_ea_ork_done' // Профилактика отказа
+// | 'et_ork_fail_prevention_ea_ork_pound' // Профилактика отказа
+// | 'et_ork_fail_prevention_ea_ork_act_noresult_fail' // Профилактика отказа
 
-    // | 'et_ork_fail_work_success_ea_ork_plan' // Устранение угрозы отказа
-    // | 'et_ork_fail_work_success_ea_ork_expired' // Устранение угрозы отказа
-    // | 'et_ork_fail_work_success_ea_ork_done' // Устранение угрозы отказа
-    // | 'et_ork_fail_work_success_ea_ork_pound' // Устранение угрозы отказа
-    // | 'et_ork_fail_work_success_ea_ork_act_noresult_fail' // Устранение угрозы отказа
+// | 'et_ork_fail_work_ea_ork_plan' // Работа по устранению угрозы отказа
+// | 'et_ork_fail_work_ea_ork_expired' // Работа по устранению угрозы отказа
+// | 'et_ork_fail_work_ea_ork_done' // Работа по устранению угрозы отказа
+// | 'et_ork_fail_work_ea_ork_pound' // Работа по устранению угрозы отказа
+// | 'et_ork_fail_work_ea_ork_act_noresult_fail' // Работа по устранению угрозы отказа
+
+// | 'et_ork_threat_ea_ork_plan' // Возникновение угрозы отказа
+// | 'et_ork_threat_ea_ork_expired' // Возникновение угрозы отказа
+// | 'et_ork_threat_ea_ork_done' // Возникновение угрозы отказа
+// | 'et_ork_threat_ea_ork_pound' // Возникновение угрозы отказа
+// | 'et_ork_threat_ea_ork_act_noresult_fail' // Возникновение угрозы отказа
+
+// | 'et_ork_fail_work_success_ea_ork_plan' // Устранение угрозы отказа
+// | 'et_ork_fail_work_success_ea_ork_expired' // Устранение угрозы отказа
+// | 'et_ork_fail_work_success_ea_ork_done' // Устранение угрозы отказа
+// | 'et_ork_fail_work_success_ea_ork_pound' // Устранение угрозы отказа
+// | 'et_ork_fail_work_success_ea_ork_act_noresult_fail' // Устранение угрозы отказа
 
 
 // | FilterCode

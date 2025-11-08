@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Param, Post } from "@nestjs/common";
 import { OrkUserReportGetRequestDto, OrkUserReportStartResponseDto } from "../dto/ork-user-report.dto";
 import { OrkUserReportService } from "../services/ork-user-report.service";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { OrkListHistoryItemDto } from "@/modules/ork-history-bx-list/dto/ork-list-history.dto";
+import { OrkListHistoryItemDto } from "@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto";
 import { QueueDispatcherService } from "@/modules/queue/dispatch/queue-dispatcher.service";
 import { QueueNames } from "@/modules/queue/constants/queue-names.enum";
 import { JobNames } from "@/modules/queue/constants/job-names.enum";

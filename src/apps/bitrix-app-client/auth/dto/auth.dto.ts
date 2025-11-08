@@ -89,7 +89,7 @@ export class LoginResponseCookieDto {
     client: ClientDto;
 }
 
-export class LoginResponseDto {
+export class MeResponseDto {
 
 
     @ApiProperty({ description: 'User', example: 'User' })
@@ -105,6 +105,33 @@ export class LoginResponseDto {
     @ValidateNested()
     @Type(() => ClientDto)
     client: ClientDto;
+
+
+
+}
+
+export class LoginResponseDto extends MeResponseDto {
+
+
+    // @ApiProperty({ description: 'User', example: 'User' })
+    // @IsNotEmpty()
+    // @IsObject()
+    // @ValidateNested()
+    // @Type(() => UserResponseDto)
+    // user: UserResponseDto;
+
+    // @ApiProperty({ description: 'Client', example: 'Client' })
+    // @IsNotEmpty()
+    // @IsObject()
+    // @ValidateNested()
+    // @Type(() => ClientDto)
+    // client: ClientDto;
+
+
+    @ApiProperty({ description: 'Token', example: 'token123' })
+    @IsNotEmpty()
+    @IsString()
+    token: string;
 }
 export class ClientResponseDto {
     @ApiProperty({ description: 'Message', example: 'Client registered, please confirm email' })

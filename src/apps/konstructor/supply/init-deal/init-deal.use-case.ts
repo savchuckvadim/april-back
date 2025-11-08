@@ -17,7 +17,7 @@ import { PortalModel } from '@/modules/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
-import { EnumOrkEventAction, EnumOrkEventType, OrkHistoryBxListService } from '@/modules/ork-history-bx-list';
+import { EnumOrkEventAction, EnumOrkEventType, OrkHistoryBxListService } from '@/modules/pbx-ork-history-bx-list';
 
 @Injectable()
 export class InitDealUseCase {

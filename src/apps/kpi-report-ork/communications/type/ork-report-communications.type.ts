@@ -1,4 +1,4 @@
-import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFieldCode, OrkFields } from "@/modules/ork-history-bx-list"
+import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFieldCode, OrkFields } from "@/modules/pbx-ork-history-bx-list"
 
 
 
@@ -35,7 +35,7 @@ export const OrkReportCommunicationItems = {
         [OrkFields.ork_event_initiative.items.ei_ork_incoming.code as EnumOrkEventInitiative]: { //Входящий
             [OrkFields.event_communication.items.ec_ork_call.code as EnumOrkEventCommunication]: { //звонок
                 name: 'Входящий звонок запланирован',
-                code: EnumCommunicationCode.incoming_call_plan ,
+                code: EnumCommunicationCode.incoming_call_plan,
                 type: 'call',
                 isActive: false,
 
@@ -135,7 +135,7 @@ export const OrkReportCommunicationItems = {
         [OrkFields.ork_event_initiative.items.ei_ork_outgoing.code as EnumOrkEventInitiative]: { //Исходящий
             [OrkFields.event_communication.items.ec_ork_call.code as EnumOrkEventCommunication]: { //звонок
                 name: 'Исходящий звонок состоялся',
-                    code: EnumCommunicationCode.outgoing_call_done,
+                code: EnumCommunicationCode.outgoing_call_done,
                 type: 'call',
                 isActive: true,
             },
@@ -157,7 +157,7 @@ export const OrkReportCommunicationItems = {
                 type: 'edo',
                 isActive: true,
             },
-          
+
         }
     }
 }

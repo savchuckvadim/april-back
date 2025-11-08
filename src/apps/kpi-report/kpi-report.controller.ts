@@ -23,7 +23,7 @@ export class KpiReportController {
         private readonly pbx: PBXService,
         // private readonly reportKpiUseCase: ReportKpiUseCase,
         // private readonly callingStatisticUseCase: CallingStatisticUseCase,
-    ) {}
+    ) { }
 
     @Post('get')
     @HttpCode(200)
@@ -43,7 +43,7 @@ export class KpiReportController {
     async getCallingStatistic(@Body() dto: GetCallingStatisticDto) {
         // const domain = dto.domain;
         const filters = dto.filters;
-        const {bitrix} = await this.pbx.init(dto.domain);
+        const { bitrix } = await this.pbx.init(dto.domain);
         const callingStatisticUseCase = new CallingStatisticUseCase(bitrix.api);
         // await this.callingStatisticUseCase.init(domain);
         const result = await callingStatisticUseCase.get(dto);

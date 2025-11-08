@@ -9,6 +9,7 @@ import { cors } from './core/config/cors/cors.config';
 import { winstonLogger } from './core/config/logs/logger';
 import { WinstonModule } from 'nest-winston';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
@@ -73,6 +74,7 @@ async function bootstrap() {
 
 
     app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
+    app.use(cookieParser());
 
     await app.listen(process.env.PORT ?? 3000);
 }

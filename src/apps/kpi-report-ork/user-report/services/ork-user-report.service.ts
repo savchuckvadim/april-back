@@ -2,11 +2,11 @@ import { BitrixService } from "@/modules/bitrix";
 import { PBXService } from "@/modules/pbx";
 import { OrkUserReportGetRequestDto } from "../dto/ork-user-report.dto";
 import { Injectable } from "@nestjs/common";
-import { OrkFieldsInput, OrkHistoryBxListService } from "@/modules/ork-history-bx-list/service/ork-history-bx-list.service";
+import { OrkFieldsInput, OrkHistoryBxListService } from "@/modules/pbx-ork-history-bx-list/service/ork-history-bx-list.service";
 import { IPBXList } from "@/modules/portal/interfaces/portal.interface";
 import { PortalModel } from "@/modules/portal/services/portal.model";
-import { EnumOrkFieldCode, OrkFieldsType } from "@/modules/ork-history-bx-list";
-import { OrkHistoryFieldItemValueDto, OrkHistoryFieldValueDto, OrkListHistoryItemDto } from "@/modules/ork-history-bx-list/dto/ork-list-history.dto";
+import { EnumOrkFieldCode, OrkFieldsType } from "@/modules/pbx-ork-history-bx-list";
+import { OrkHistoryFieldItemValueDto, OrkHistoryFieldValueDto, OrkListHistoryItemDto } from "@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto";
 import { delay } from "@/lib";
 import { BxListItemGetRequestDto } from "@/modules/bitrix/domain/list-item";
 
@@ -148,14 +148,14 @@ export class OrkUserReportService {
                     ...result,
                     ['<' + bitrixId]: itemCodeOrValue
                 };
-                console.log(result)
+              
 
             } else if (key === EnumOrkFieldCode.ork_event_date) {
                 result = {
                     ...result,
                     ['>' + bitrixId]: itemCodeOrValue
                 };
-                console.log(result)
+
 
             }
             else {
@@ -213,7 +213,7 @@ export class OrkUserReportService {
                     for (const key in currentValue as Record<string, string>) {
                         currentCommentStringValue += currentValue[key]
                         if (pField.code === EnumOrkFieldCode.ork_crm_company) {
-                            
+
                             currentCommentStringValue = currentCommentStringValue
                                 .toString()
                                 .replace(/\D/g, '') as string;

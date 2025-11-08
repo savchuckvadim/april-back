@@ -22,7 +22,7 @@ import { EnumSalesKpiEventAction, EnumSalesKpiEventType, EnumSalesKpiFieldCode, 
 // su
 // crm
 
-export const OrkFields = {
+export const SalesKpiFields = {
     [EnumSalesKpiFieldCode.event_type]: {
         name: 'Тип События',
         code: EnumSalesKpiFieldCode.event_type,
@@ -186,42 +186,42 @@ export const OrkFields = {
                 code: EnumSalesKpiOpNoresultReason.secretar,
             },
         },
-            [EnumSalesKpiOpNoresultReason.nopickup]: {
-                name: 'Не взяли трубку',
-                code: EnumSalesKpiOpNoresultReason.nopickup,
-            },
-            [EnumSalesKpiOpNoresultReason.nonumber]: {
-                name: 'Не номер',
-                code: EnumSalesKpiOpNoresultReason.nonumber,
-            },
-            [EnumSalesKpiOpNoresultReason.busy]: {
-                name: 'Занято',
-                code: EnumSalesKpiOpNoresultReason.busy,
-            },
-            [EnumSalesKpiOpNoresultReason.noresult_notime]: {
-                name: 'Перенос - не было времени',
-                code: EnumSalesKpiOpNoresultReason.noresult_notime,
-            },
-            [EnumSalesKpiOpNoresultReason.nocontact]: {
-                name: 'Контактера нет на месте',
-                code: EnumSalesKpiOpNoresultReason.nocontact,
-            },
-            [EnumSalesKpiOpNoresultReason.giveup]: {
-                name: 'Просят оставить свой номер',
-                code: EnumSalesKpiOpNoresultReason.giveup,
-            },
-            [EnumSalesKpiOpNoresultReason.bay]: {
-                name: 'Не интересует, до свидания',
-                code: EnumSalesKpiOpNoresultReason.bay,
-            },
-            [EnumSalesKpiOpNoresultReason.wrong]: {
-                name: 'По телефону отвечает не та организация',
-                code: EnumSalesKpiOpNoresultReason.wrong,
-            },
-            [EnumSalesKpiOpNoresultReason.auto]: {
-                name: 'Автоответчик',
-                code: EnumSalesKpiOpNoresultReason.auto,
-            },
+        [EnumSalesKpiOpNoresultReason.nopickup]: {
+            name: 'Не взяли трубку',
+            code: EnumSalesKpiOpNoresultReason.nopickup,
+        },
+        [EnumSalesKpiOpNoresultReason.nonumber]: {
+            name: 'Не номер',
+            code: EnumSalesKpiOpNoresultReason.nonumber,
+        },
+        [EnumSalesKpiOpNoresultReason.busy]: {
+            name: 'Занято',
+            code: EnumSalesKpiOpNoresultReason.busy,
+        },
+        [EnumSalesKpiOpNoresultReason.noresult_notime]: {
+            name: 'Перенос - не было времени',
+            code: EnumSalesKpiOpNoresultReason.noresult_notime,
+        },
+        [EnumSalesKpiOpNoresultReason.nocontact]: {
+            name: 'Контактера нет на месте',
+            code: EnumSalesKpiOpNoresultReason.nocontact,
+        },
+        [EnumSalesKpiOpNoresultReason.giveup]: {
+            name: 'Просят оставить свой номер',
+            code: EnumSalesKpiOpNoresultReason.giveup,
+        },
+        [EnumSalesKpiOpNoresultReason.bay]: {
+            name: 'Не интересует, до свидания',
+            code: EnumSalesKpiOpNoresultReason.bay,
+        },
+        [EnumSalesKpiOpNoresultReason.wrong]: {
+            name: 'По телефону отвечает не та организация',
+            code: EnumSalesKpiOpNoresultReason.wrong,
+        },
+        [EnumSalesKpiOpNoresultReason.auto]: {
+            name: 'Автоответчик',
+            code: EnumSalesKpiOpNoresultReason.auto,
+        },
     },
     [EnumSalesKpiFieldCode.op_work_status]: {
         name: 'Статус работы в компании',
@@ -305,28 +305,28 @@ export const OrkFields = {
     },
 
 } as const;
-export type OrkFieldsType = typeof OrkFields;
-export type OrkFieldsCode = keyof OrkFieldsType;
-export type OrkFieldValue<K extends keyof OrkFieldsType> =
-    OrkFieldsType[K] extends { items: Record<string, { code: infer C }> }
+export type SalesKpiFieldsType = typeof SalesKpiFields;
+export type SalesKpiFieldsCode = keyof SalesKpiFieldsType;
+export type SalesKpiFieldValue<K extends keyof SalesKpiFieldsType> =
+    SalesKpiFieldsType[K] extends { items: Record<string, { code: infer C }> }
     ? C
     : string;
-type OrkFieldItem = {
+type SalesKpiFieldItem = {
     name: string;
     code: string;
 };
 
-type OrkField = {
+type SalesKpiField = {
     name: string;
     code: string;
-    items?: Record<string, OrkFieldItem>;
+    items?: Record<string, SalesKpiFieldItem>;
 };
 
-export type OrkFieldCode = keyof typeof OrkFields;
-export type OrkItemCode<T extends OrkFieldCode> =
-    T extends keyof typeof OrkFields
-    ? (typeof OrkFields)[T] extends { items: Record<string, OrkFieldItem> }
-    ? keyof (typeof OrkFields)[T]['items']
+export type SalesKpiFieldCode = keyof typeof SalesKpiFields;
+export type SalesKpiItemCode<T extends SalesKpiFieldCode> =
+    T extends keyof typeof SalesKpiFields
+    ? (typeof SalesKpiFields)[T] extends { items: Record<string, SalesKpiFieldItem> }
+    ? keyof (typeof SalesKpiFields)[T]['items']
     : never
     : never;
 
@@ -434,6 +434,7 @@ export const SalesKpiReport = {
             EnumSalesKpiEventType.site,
             EnumSalesKpiEventType.presentation,
             EnumSalesKpiEventType.presentation_uniq,
+            EnumSalesKpiEventType.presentation_contact_uniq,
             EnumSalesKpiEventType.seminar,
         ]
     },
@@ -447,13 +448,14 @@ export const SalesKpiReport = {
             EnumSalesKpiEventType.site,
             EnumSalesKpiEventType.presentation,
             EnumSalesKpiEventType.presentation_uniq,
+            EnumSalesKpiEventType.presentation_contact_uniq,
             EnumSalesKpiEventType.seminar,
         ]
     }
 } as const;
 
 
-export const OrkCallingTypes = [
+export const SalesKpiCallingTypes = [
     EnumSalesKpiEventType.xo,
     EnumSalesKpiEventType.info,
     EnumSalesKpiEventType.call,

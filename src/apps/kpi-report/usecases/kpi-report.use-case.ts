@@ -12,7 +12,6 @@ import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, EBXEntity, EBxMethod, EBxNamespace } from '@/modules/bitrix';
 
@@ -261,7 +260,7 @@ export class ReportKpiUseCase {
                             'lists.element.get',
                             getListData,
                         );
-                       
+
                     }
 
                     if (action.code == 'call_done') {
@@ -420,6 +419,7 @@ export class ReportKpiUseCase {
             const userName = user.NAME + ' ' + user.LAST_NAME;
 
             let userReport = {
+                id: Number(userId),
                 user: user,
                 userName: userName,
                 kpi: [] as KPI[],

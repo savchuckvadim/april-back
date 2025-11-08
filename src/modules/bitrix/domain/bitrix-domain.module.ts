@@ -7,6 +7,7 @@ import { UserFieldConfigModule } from './userfieldconfig';
 import { BxRpaItemDomainModule } from './rpa/item/bx-rpa-item-domain.module';
 import { BxFileDomainModule } from './file/bx-file.module';
 import { BxListItemDomainModule } from './list-item';
+import { BitrixChatDomainModule } from './chat/bx-chat-domain.module';
 @Module({
     imports: [
         BitrixActivityDomainModule,
@@ -17,6 +18,7 @@ import { BxListItemDomainModule } from './list-item';
         BxRpaItemDomainModule,
         BxFileDomainModule,
         BxListItemDomainModule,
+        BitrixChatDomainModule,
     ],
     exports: [
         BitrixActivityDomainModule,
@@ -27,6 +29,7 @@ import { BxListItemDomainModule } from './list-item';
         BxRpaItemDomainModule,
         BxFileDomainModule,
         BxListItemDomainModule,
+        BitrixChatDomainModule,
     ],
 })
-export class BitrixDomainModule {}
+export class BitrixDomainModule { }

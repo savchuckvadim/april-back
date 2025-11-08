@@ -6,9 +6,11 @@ import { ClientModule } from '../client/client.module';
 import { UserModule } from '../user/user.module';
 import { MailService } from './services/mail.service';
 import { AuthController } from './controllers/auth.controller';
+import { CookieModule } from '@/core/cookie/cookie.module';
 
 @Module({
     imports: [
+        CookieModule,
         ClientModule,
         UserModule,
         JwtModule.register({

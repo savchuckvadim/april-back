@@ -6,6 +6,8 @@ import { JwtService } from "@nestjs/jwt";
 import { MailService } from "./mail.service";
 import { UserService } from "../../user/services/user.service";
 import { compare } from "@/lib/utils/crypt.util";
+import { CookieService } from "@/core/cookie/cookie.service";
+import { Response } from "express";
 
 @Injectable()
 export class AuthService {
@@ -14,6 +16,7 @@ export class AuthService {
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
         private readonly mailer: MailService,
+        private readonly cookieService: CookieService,
     ) { }
 
     async registerClient(dto: ClientRegistrationRequestDto): Promise<ClientResponseDto> {
@@ -75,9 +78,9 @@ export class AuthService {
         return { token, user, client };
     }
 
-    async logout(user: any) {
+    async logout(user: any, res: Response) {
         // Если используем JWT — клиент просто забывает токен
-        // Если используем Sanctum-style токены — удаляем из таблицы tokens
+        this.cookieService.clearAuthCookie(res);
         return { message: 'Logged out' };
     }
 
@@ -94,6 +97,12 @@ export class AuthService {
     verifyToken(token: string) {
         return this.jwtService.verify(token);
     }
+    async validateUserById(userId: number) {
+        return await this.userService.findUserById(userId);
+    }
 
+    async validateClientById(clientId: number) {
+        return await this.clientService.findById(clientId);
+    }
 
 }

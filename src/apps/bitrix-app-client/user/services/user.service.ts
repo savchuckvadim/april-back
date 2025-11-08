@@ -5,6 +5,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { UserRole } from '../entities/user.entity';
 import { encrypt, decrypt } from '@/lib/utils/crypt.util';
+import { User } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
@@ -192,20 +193,20 @@ export class UserService {
         return this.mapToResponseDto(user);
     }
 
-    private mapToResponseDto(user: any): UserResponseDto {
+    private mapToResponseDto(user: User): UserResponseDto {
         return {
             id: Number(user.id),
             name: user.name,
             surname: user.surname,
-            email: user.email,
+            email: user.email ?? '',
             password: user.password,
-            photo: user.photo,
+            photo: user.photo ?? undefined,
             role_id: Number(user.role_id),
-            email_verified_at: user.email_verified_at,
-            bitrix_id: user.bitrix_id,
+            email_verified_at: user.email_verified_at ?? undefined,
+            bitrix_id: user.bitrix_id ?? undefined,
             client_id: Number(user.client_id),
-            created_at: user.created_at,
-            updated_at: user.updated_at,
+            created_at: user.created_at ?? undefined,
+            updated_at: user.updated_at ?? undefined,
         };
     }
 }

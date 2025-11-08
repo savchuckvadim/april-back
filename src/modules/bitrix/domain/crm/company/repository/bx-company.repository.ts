@@ -19,13 +19,13 @@ export class BxCompanyRepository {
         );
     }
 
-    async getBtch(cmdCode: string, companyId: number | string) {
+    async getBtch(cmdCode: string, companyId: number | string, select?: string[]) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.GET,
-            { ID: companyId, select: ['ID'] },
+            { ID: companyId, select: select ?? ['ID'] },
         );
     }
 

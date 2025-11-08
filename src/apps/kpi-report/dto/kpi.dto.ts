@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
     IsArray,
@@ -154,13 +155,22 @@ export class DateRangeDto {
     to: string;
 }
 export class ReportData {
+
+    @ApiProperty({ description: 'User ID' })
+    @IsNumber()
+    id: number;
+
+
+    @ApiProperty({ description: 'User data' })
     @ValidateNested()
     @Type(() => BitrixUser)
     user: BitrixUser;
 
+    @ApiProperty({ description: 'User name' })
     @IsString()
     userName?: string;
 
+    @ApiProperty({ description: 'KPI data' })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => KPI)

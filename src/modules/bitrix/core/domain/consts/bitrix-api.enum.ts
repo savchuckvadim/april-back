@@ -7,6 +7,7 @@ export enum EBxNamespace {
     DISK = 'disk',
     CATALOG = 'catalog',
     RPA = 'rpa',
+    IM = 'im',
 }
 
 export enum EBxMethod {

@@ -12,7 +12,7 @@ import { OrkReportKpiData, OrkKpiFilter, KPIOrk } from '../dto/kpi.dto';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { ReportGetFiltersDto } from '../dto/get-report-request.dto';
 import { BXUserDto } from '../dto/get-report-request.dto';
-import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/ork-history-bx-list';
+import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/pbx-ork-history-bx-list';
 import { EnumOrkFilterInnerCode, EnumOrkFilterCode, OrkReportEventActionItems } from '../type/ork-report-event.type';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, BitrixService } from '@/modules/bitrix';
@@ -188,12 +188,12 @@ export class ReportKpiUseCase {
                     //     currentActionsData.push(actionData);
                     // }
                     const eventActionInitDataItems = OrkReportEventActionItems[actionCode];
-                    if(!eventActionInitDataItems) continue;
+                    if (!eventActionInitDataItems) continue;
 
                     console.log(eventActionInitDataItems);
                     console.log(eventActionInitDataItems[actionTypeCode]);
                     const initDataItem = eventActionInitDataItems[actionTypeCode]
-                    if(!initDataItem) continue;
+                    if (!initDataItem) continue;
 
 
                     const item: OrkKpiFilter = {
