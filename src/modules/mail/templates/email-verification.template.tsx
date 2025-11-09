@@ -22,7 +22,7 @@ interface EmailVerificationTemplateProps {
     token: string
 }
 
-const baseUrl = `${process.env.AUTH_COOKIE_SPA_DOMAIN}`
+const baseUrl = `https://${process.env.AUTH_COOKIE_SPA_DOMAIN}`
 
 export function EmailVerificationTemplate({ user, token }: EmailVerificationTemplateProps) {
     const logo = `${baseUrl}/touch-icons/512x512.png`
