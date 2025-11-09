@@ -1,13 +1,13 @@
-import { PrismaService } from "@/core/prisma/prisma.service";
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { BitrixClientService } from "../../client/services/bitrix-client.service";
 import { ClientRegistrationRequestDto, ClientResponseDto, LoginDto, LoginResponseCookieDto, LoginResponseDto } from "../dto/auth.dto";
 import { JwtService } from "@nestjs/jwt";
-import { MailService } from "./mail.service";
+import { MailConfirmationService } from "./mail.service";
 import { UserService } from "../../user/services/user.service";
 import { compare } from "@/lib/utils/crypt.util";
 import { CookieService } from "@/core/cookie/cookie.service";
 import { Response } from "express";
+import { User } from "generated/prisma";
 
 @Injectable()
 export class AuthService {
@@ -15,30 +15,36 @@ export class AuthService {
         private readonly clientService: BitrixClientService,
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
-        private readonly mailer: MailService,
+        private readonly mailer: MailConfirmationService,
         private readonly cookieService: CookieService,
     ) { }
 
     async registerClient(dto: ClientRegistrationRequestDto): Promise<ClientResponseDto> {
         // 1️⃣ Проверка, существует ли email
         const existingEmail = await this.clientService.findByEmail(dto.email);
+
         if (existingEmail) throw new BadRequestException('Email already registered');
+
         const existingUser = await this.userService.findUserByEmail(dto.email);
+
+
         if (existingUser) throw new BadRequestException('Domain already registered');
 
         // 2️⃣ Создаём клиента
         const client = await this.clientService.registrationClient(dto);
-        const owner = await this.userService.createOwnerUser(client.client.id, {
-            name: dto.userName,
-            surname: dto.userSurname,
-            email: dto.email,
-            password: dto.password,
-        });
+        // const owner = await this.userService.createOwnerUser(Number(client.client.id), {
+        //     name: dto.userName,
+        //     surname: dto.userSurname,
+        //     email: dto.email,
+        //     password: dto.password,
+        // });
+        const owner = client.ownerUser;
+        if (!owner) throw new BadRequestException('Owner did not created');
         // 3️⃣ Отправляем письмо подтверждения
         const token = this.jwtService.sign({ email: dto.email }, { expiresIn: '24h' });
-        await this.mailer.sendEmailConfirmation(dto.email, token);
+        await this.mailer.sendEmailConfirmation(owner as User, token);
 
-        return { message: 'Client registered, please confirm email', client: client.client, owner: owner ?? null };
+        return { id: Number(client.client.id), message: 'Client registered, please confirm email', client: client.clientDto, owner: this.userService.getUserDto(owner as User) ?? null };
     }
 
     async confirmClientEmail(token: string) {
@@ -47,7 +53,7 @@ export class AuthService {
         await this.userService.updateUserByEmail(email, {
             email_verified_at: new Date(),
         });
-        await this.clientService.update(user?.client_id ?? 0, {
+        await this.clientService.update(Number(user?.client_id ?? 0), {
             status: 'active',
             is_active: true,
 
@@ -67,15 +73,16 @@ export class AuthService {
 
     async login(dto: LoginDto): Promise<LoginResponseCookieDto> {
         const user = await this.userService.findUserByEmail(dto.email);
-        if (!user) throw new UnauthorizedException('Invalid credentials');
+        const userDto = this.userService.getUserDto(user as User);
+        if (!userDto) throw new UnauthorizedException('Invalid credentials');
         const valid = compare(dto.password, user?.password ?? '');
         if (!valid) throw new UnauthorizedException('Invalid credentials');
-        const client = await this.clientService.findById(user.client_id);
+        const client = await this.clientService.findById(userDto.client_id);
         if (!client) throw new ForbiddenException('Client not found');
         if (!client?.is_active) throw new ForbiddenException('Client is inactive');
 
-        const token = this.jwtService.sign({ sub: user.id, client_id: user.client_id });
-        return { token, user, client };
+        const token = this.jwtService.sign({ sub: userDto.id, client_id: userDto.client_id });
+        return { token, user: userDto, client };
     }
 
     async logout(user: any, res: Response) {
@@ -86,7 +93,11 @@ export class AuthService {
 
     async resendConfirmation(email: string) {
         const token = this.jwtService.sign({ email }, { expiresIn: '24h' });
-        await this.mailer.sendEmailConfirmation(email, token);
+        const user = await this.userService.findUserByEmail(email);
+        if (!user) throw new NotFoundException('User not found');
+
+
+        await this.mailer.sendEmailConfirmation(user, token);
         return { message: 'Confirmation email resent' };
     }
 
@@ -103,6 +114,22 @@ export class AuthService {
 
     async validateClientById(clientId: number) {
         return await this.clientService.findById(clientId);
+    }
+
+    async deleteClient(clientId: number) {
+        return await this.clientService.delete(clientId);
+    }
+
+    async deleteUser(userId: number) {
+        return await this.userService.deleteUser(userId);
+    }
+
+    async getAllClients() {
+        return await this.clientService.findMany();
+    }
+
+    async getClientsUsers(clientId: number) {
+        return await this.userService.findUsersByClientId(clientId);
     }
 
 }

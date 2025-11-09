@@ -1,12 +1,13 @@
 import { AuthService } from "../services/auth.service";
-import { Body, Controller, Get, Param, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ClientRegistrationRequestDto, ClientResponseDto, LoginDto, LoginResponseDto, LogoutResponseDto, MeResponseDto } from "../dto/auth.dto";
+import { ClientRegistrationRequestDto, ClientResponseDto, GetAllClientsUsersDto, LoginDto, LoginResponseDto, LogoutResponseDto, MeResponseDto } from "../dto/auth.dto";
 import { AuthGuard } from "../guard/jwt-auth.guard";
 import { Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { SetAuthCookie } from "@/core/decorators/auth/set-auth-cookie.decorator";
 import { UserResponseDto } from "../../user/dto/user-response.dto";
+import { UserService } from "../../user/services/user.service";
 
 
 @ApiTags('Auth')
@@ -14,7 +15,8 @@ import { UserResponseDto } from "../../user/dto/user-response.dto";
 export class AuthController {
     constructor(
         private readonly authService: AuthService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
+        private readonly userService: UserService
     ) { }
 
 
@@ -83,5 +85,65 @@ export class AuthController {
         const client = await this.authService.validateClientById(req.user.client_id);
         if (!client) throw new UnauthorizedException('Client not found');
         return { user, client };
+    }
+
+    @ApiOperation({ summary: 'Delete client' })
+    @ApiResponse({
+        status: 200, description: 'Client deleted', type: LogoutResponseDto
+    })
+    @Delete('delete-client/:id')
+    async deleteClient(@Param('id') id: number): Promise<LogoutResponseDto> {
+        this.authService.deleteClient(id);
+        return { message: 'Client deleted' };
+    }
+
+    @ApiOperation({ summary: 'Delete user' })
+    @ApiResponse({
+        status: 200, description: 'User deleted', type: LogoutResponseDto
+    })
+    @Delete('delete-user/:id')
+    async deleteUser(@Param('id') id: number): Promise<LogoutResponseDto> {
+        this.authService.deleteUser(id);
+        return { message: 'User deleted' };
+    }
+    @ApiOperation({ summary: 'Get all clients' })
+    @ApiResponse({
+        status: 200, description: 'Clients found', type: [ClientResponseDto]
+    })
+    @Get('get-all-clients')
+    async getAllClients(): Promise<ClientResponseDto[]> {
+        const data = await this.authService.getAllClients();
+        return data.map(client => {
+            return {
+                id: Number(client.id),
+                name: client.name,
+                email: client.email,
+                message: 'Client found',
+                client: client,
+                owner: null,
+            }
+        });
+    }
+
+
+    @ApiOperation({ summary: 'Get all clients users' })
+    @ApiResponse({
+        status: 200, description: 'Clients found', type: [ClientResponseDto]
+    })
+    @Post('get-all-clients-users')
+    async getAllClientsUsers(@Body() dto: GetAllClientsUsersDto): Promise<UserResponseDto[]> {
+        const data = await this.authService.getClientsUsers(dto.clientId);
+        return data;
+    }
+
+
+    @ApiOperation({ summary: 'Get all clients users' })
+    @ApiResponse({
+        status: 200, description: 'Clients found', type: [ClientResponseDto]
+    })
+    @Get('get-all-users')
+    async getAllUsers(): Promise<UserResponseDto[]> {
+        const data = await this.userService.findAllUsers();
+        return data;
     }
 }

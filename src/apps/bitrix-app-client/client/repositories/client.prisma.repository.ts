@@ -76,4 +76,10 @@ export class ClientPrismaRepository implements ClientRepository {
         });
         return result;
     }
+    async delete(id: number): Promise<boolean> {
+        const result = await this.prisma.client.delete({
+            where: { id: BigInt(id) },
+        });
+        return result ? true : false;
+    }
 }

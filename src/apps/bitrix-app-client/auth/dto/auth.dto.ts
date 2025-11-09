@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, IsObject, IsString, IsStrongPassword, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { IsEmail, IsNotEmpty, IsNumber, IsObject, IsString, IsStrongPassword, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { Client } from "generated/prisma";
 import { UserResponseDto } from "../../user/dto/user-response.dto";
 import { Type } from "class-transformer";
@@ -134,6 +134,11 @@ export class LoginResponseDto extends MeResponseDto {
     token: string;
 }
 export class ClientResponseDto {
+    @ApiProperty({ description: 'Client ID', example: 1 })
+    @IsNotEmpty()
+    @IsNumber()
+    id: number;
+
     @ApiProperty({ description: 'Message', example: 'Client registered, please confirm email' })
     @IsNotEmpty()
     @IsString()
@@ -160,4 +165,11 @@ export class LogoutResponseDto {
     @IsNotEmpty()
     @IsString()
     message: string;
+}
+
+export class GetAllClientsUsersDto {
+    @ApiProperty({ description: 'Client ID', example: 1 })
+    @IsNotEmpty()
+    @IsNumber()
+    clientId: number;
 }

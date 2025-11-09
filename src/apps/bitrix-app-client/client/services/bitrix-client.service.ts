@@ -35,7 +35,8 @@ export class BitrixClientService {
         });
 
         return {
-            client: this.mapToResponseDto(client),
+            client: client,
+            clientDto: this.mapToResponseDto(client),
             ownerUser,
         };
     }
@@ -102,6 +103,10 @@ export class BitrixClientService {
             return null;
         }
         return this.mapToResponseDto(updatedClient);
+    }
+
+    async delete(id: number): Promise<void> {
+        await this.clientRepository.delete(id);
     }
 
     private mapToResponseDto(client: Client): ClientDto {

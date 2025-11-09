@@ -37,7 +37,8 @@ export class UserService {
         }
         return this.mapToResponseDto(user);
     }
-    async createOwnerUser(clientId: number, userData: Omit<CreateUserDto, 'client_id'>): Promise<UserResponseDto | null> {
+
+    async createOwnerUser(clientId: number, userData: Omit<CreateUserDto, 'client_id'>): Promise<User | null> {
         // Создаем пользователя-владельца при регистрации клиента
         const user = await this.userRepository.create({
             name: userData.name,
@@ -54,8 +55,28 @@ export class UserService {
             return null;
         }
 
-        return this.mapToResponseDto(user);
+        return user;
     }
+
+    // async createOwnerUser(clientId: number, userData: Omit<CreateUserDto, 'client_id'>): Promise<UserResponseDto | null> {
+    //     // Создаем пользователя-владельца при регистрации клиента
+    //     const user = await this.userRepository.create({
+    //         name: userData.name,
+    //         surname: userData.surname,
+    //         email: userData.email,
+    //         password: userData.password,
+    //         client_id: BigInt(clientId),
+    //         photo: userData.photo,
+    //         bitrix_id: userData.bitrix_id,
+    //         role_id: BigInt(1), // Роль owner (предполагаем, что role_id = 1 для owner)
+    //     });
+
+    //     if (!user) {
+    //         return null;
+    //     }
+
+    //     return this.mapToResponseDto(user);
+    // }
 
     async findUserById(id: number): Promise<UserResponseDto | null> {
         const user = await this.userRepository.findById(id);
@@ -65,12 +86,12 @@ export class UserService {
         return this.mapToResponseDto(user);
     }
 
-    async findUserByEmail(email: string): Promise<UserResponseDto | null> {
+    async findUserByEmail(email: string): Promise<User | null> {
         const user = await this.userRepository.findByEmail(email);
         if (!user) {
             return null;
         }
-        return this.mapToResponseDto(user);
+        return user; // this.mapToResponseDto(user);
     }
 
     async findUsersByClientId(clientId: number): Promise<UserResponseDto[]> {
@@ -190,6 +211,10 @@ export class UserService {
             return null;
         }
 
+        return this.mapToResponseDto(user);
+    }
+
+    public getUserDto(user: User): UserResponseDto {
         return this.mapToResponseDto(user);
     }
 

@@ -41,16 +41,16 @@ export class BitrixClientController {
         return await this.bitrixClientService.registrationClient(dto);
     }
 
-login
-emailConfirmation
-changeStatus
-updateRegistrationData
-logout
-addNewUser
-addPortal
-deletePortal
-deleteUser
-deleteClient
-deleteAllData
+// login
+// emailConfirmation
+// changeStatus
+// updateRegistrationData
+// logout
+// addNewUser
+// addPortal
+// deletePortal
+// deleteUser
+// deleteClient
+// deleteAllData
 
 }

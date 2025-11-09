@@ -39,12 +39,20 @@ export class MailService {
     public async sendEmailVerification(user: User, token: string) {
         const html = await render(EmailVerificationTemplate({ user, token }))
 
-        await this.queue.add(
-            'send-email',
-            { email: user.email, subject: 'Верификация почты', html },
-            { removeOnComplete: true }
-        )
+        // await this.queue.add(
+        //     'send-email',
+        //     { email: user.email, subject: 'Верификация почты', html },
+        //     { removeOnComplete: true }
+        // )
 
+        await this.sendEmail({
+            subject: 'Верификация почты',
+            html: html,
+            to: [user.email ?? 'april-app@mail.ru'],
+            context: {
+                name: user.name,
+            },
+        })
         return true
     }
 
@@ -99,8 +107,7 @@ export class MailService {
     }) {
         try {
             const from =`"April App" <${process.env.SMTP_FROM || 'manager@april-app.ru'}>`
-            console.log(from);
-            console.log(params.html);
+     
             const emailsList: string[] = params.to;
 
             if (!emailsList) {

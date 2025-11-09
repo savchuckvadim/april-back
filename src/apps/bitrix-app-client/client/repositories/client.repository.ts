@@ -11,4 +11,5 @@ export abstract class ClientRepository {
     abstract findByPortalId(portalId: number): Promise<Client[] | null>;
     abstract findByUserId(userId: number): Promise<Client[] | null>;
     abstract update(id: number, client: Partial<Client>): Promise<Client | null>;
+    abstract delete(id: number): Promise<boolean>;
 }
