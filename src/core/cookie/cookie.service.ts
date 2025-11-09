@@ -17,7 +17,7 @@ export class CookieService {
             secure: isProd,
             sameSite: isProd ? 'none' : 'lax',
             // domain: isProd
-            //     ? this.configService.get('AUTH_COOKIE_DOMAIN') // например .backend.ru
+            //     ? this.configService.get('AUTH_COOKIE_SPA_DOMAIN') // например .backend.ru
             //     : undefined,
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -30,7 +30,7 @@ export class CookieService {
             secure: isProd,
             sameSite: isProd ? 'none' : 'lax',
             domain: isProd
-                ? this.configService.get('AUTH_COOKIE_DOMAIN')
+                ? this.configService.get('AUTH_COOKIE_SPA_DOMAIN')
                 : undefined,
         });
     }

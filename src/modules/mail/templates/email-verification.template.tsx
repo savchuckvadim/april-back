@@ -22,12 +22,12 @@ interface EmailVerificationTemplateProps {
     token: string
 }
 
-const baseUrl = process.env.APP_URL
+const baseUrl = `${process.env.AUTH_COOKIE_SPA_DOMAIN}`
 
 export function EmailVerificationTemplate({ user, token }: EmailVerificationTemplateProps) {
     const logo = `${baseUrl}/touch-icons/512x512.png`
     // const verfiyLink = `${baseUrl}/auth/verify/${token}`
-    const verfiyLink = `${baseUrl}/api/auth/confirm/${token}`;
+    const verfiyLink = `${baseUrl}/auth/confirm/${token}`;
 
     return (
         <Tailwind>
