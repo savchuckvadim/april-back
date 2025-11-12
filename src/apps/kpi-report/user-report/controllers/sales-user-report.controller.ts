@@ -36,7 +36,7 @@ export class SalesUserReportController {
         const { domain, } = body;
 
         const { PortalModel } = await this.pbx.init(domain);
-        const portalKPIList = PortalModel.getListByCode('sales_kpi');
+        let portalKPIList = PortalModel.getListByCode('sales_kpi');
         if (!portalKPIList) throw new Error('Portal KPI list not found');
         const listId = Number(portalKPIList.bitrixId);
         if (existingJob && (await existingJob.isActive() || await existingJob.isWaiting())) {

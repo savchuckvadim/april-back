@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Row, Workbook, Worksheet } from 'exceljs';
-import { KpiReportDto } from '../../dto/kpi.dto';
+import { DownLoadKpiReportDto as KpiReportDto } from '../../dto/get-excel-report.dto';
 import { Buffer } from 'buffer';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -48,7 +48,7 @@ export class ExcelReportService {
     }
 
     private getHeads(dto: KpiReportDto, worksheet: Worksheet): void {
-        const heads = dto.report[0].kpi.map(kpi => kpi.action.name);
+        const heads = dto.report[0].kpi.map(kpi => kpi.action);
         heads.unshift('ФИО');
         const row = worksheet.addRow(heads);
 
@@ -90,8 +90,10 @@ export class ExcelReportService {
     private getValues(dto: KpiReportDto, worksheet: Worksheet): void {
         dto.report.forEach((reportItem, index) => {
             const userName =
-                reportItem.userName ||
-                `${reportItem.user?.LAST_NAME || ''} ${reportItem.user?.NAME || ''}`.trim();
+                reportItem.userName
+                // ||
+                // `${reportItem.user?.LAST_NAME || ''} ${reportItem.user?.NAME || ''}`.trim();
+
             const values = reportItem.kpi.map(kpiItem => kpiItem.count);
             worksheet.addRow([userName, ...values]);
 
@@ -107,7 +109,7 @@ export class ExcelReportService {
     }
 
     private addTotalRow(dto: KpiReportDto, worksheet: Worksheet): void {
-        const heads = dto.report[0].kpi.map(kpi => kpi.action.name);
+        const heads = dto.report[0].kpi.map(kpi => kpi.action);
         const kpiCount = heads.length;
 
         // Инициализируем массив из нулей для суммы

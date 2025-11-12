@@ -8,7 +8,7 @@ import {
 import { IBXCompany } from '../interface/bx-company.interface';
 
 export class BxCompanyRepository {
-    constructor(private readonly bxApi: BitrixBaseApi) {}
+    constructor(private readonly bxApi: BitrixBaseApi) { }
 
     async get(companyId: number) {
         return this.bxApi.callType(

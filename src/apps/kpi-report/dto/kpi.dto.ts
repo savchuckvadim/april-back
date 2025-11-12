@@ -143,14 +143,17 @@ export class FieldItem implements IFieldItem {
     bitrixId: number;
 }
 
-export enum EDownloadType {
-    EXCEL = 'excel',
-    PDF = 'pdf',
-}
+// export enum EDownloadType {
+//     EXCEL = 'excel',
+//     PDF = 'pdf',
+// }
 
 export class DateRangeDto {
+    @ApiProperty({ description: 'From date' })
     @IsString()
     from: string;
+
+    @ApiProperty({ description: 'To date' })
     @IsString()
     to: string;
 }
@@ -177,19 +180,19 @@ export class ReportData {
     kpi: KPI[];
 }
 
-export class KpiReportDto {
-    @IsEnum(EDownloadType)
-    type: EDownloadType;
+// export class KpiReportDto {
+//     // @IsEnum(EDownloadType)
+//     // type: EDownloadType;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ReportData)
-    report: ReportData[];
+//     @IsArray()
+//     @ValidateNested({ each: true })
+//     @Type(() => ReportData)
+//     report: ReportData[];
 
-    @Type(() => DateRangeDto)
-    @ValidateNested()
-    date: DateRangeDto;
-}
+//     @Type(() => DateRangeDto)
+//     @ValidateNested()
+//     date: DateRangeDto;
+// }
 
 export class KPIAction {
     @IsNumber()

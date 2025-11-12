@@ -7,7 +7,7 @@ import { SuccessResponseDto } from '@/core';
 import { BitrixAppDto } from '@/modules/bitrix-setup/install/dto/app.dto';
 import { BitrixAppEntity } from '@/modules/bitrix-setup/app/model/bitrix-app.model';
 
-@ApiTags('Bitrix App Client')
+@ApiTags('Bitrix App Client App')
 @Controller('bitrix-app-client')
 export class BitrixAppClientController {
     constructor(private readonly bitrixAppClientService: BitrixAppClientService) { }

@@ -29,9 +29,9 @@ export class CookieService {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? 'none' : 'lax',
-            domain: isProd
-                ? this.configService.get('AUTH_COOKIE_SPA_DOMAIN')
-                : undefined,
+            // domain: isProd
+            //     ? this.configService.get('AUTH_COOKIE_SPA_DOMAIN')
+            //     : undefined,
         });
     }
 }

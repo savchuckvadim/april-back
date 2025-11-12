@@ -4,7 +4,7 @@ import { ClientDto, ClientRegistrationRequestDto } from '../dto/client-registrat
 import { ClientRepository } from '../repositories/client.repository';
 import { UserService } from '../../user/services/user.service';
 import { Client } from 'generated/prisma';
-import { UserResponseDto } from '../../user/dto/user-response.dto';
+
 
 @Injectable()
 export class BitrixClientService {

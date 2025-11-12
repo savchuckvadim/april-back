@@ -56,8 +56,9 @@ export class PbxSalesKpiContactDto {
 }
 
 export class PbxSalesKpiCompanyDto implements IBXCompany {
-    constructor(data: IBXCompany) {
+    constructor(data: IBXCompany, color: string) {
         Object.assign(this, data);
+        this.color = color;
     }
     @ApiProperty({ description: 'Assigned By ID' })
     ASSIGNED_BY_ID: string
@@ -71,8 +72,13 @@ export class PbxSalesKpiCompanyDto implements IBXCompany {
     UF_CRM_USER_CARDNUM: string
     @ApiProperty({ description: 'Comments' })
     COMMENTS: string
+    @ApiProperty({ description: 'Цвет' })
+    UF_CRM_OP_PROSPECTS: string
+    @ApiProperty({ description: 'История' })
+    UF_CRM_OP_MHISTORY: string[]
 
-
+    @ApiProperty({ description: 'Цвет code' })
+    color: string;
 
 }
 

@@ -80,7 +80,7 @@ export class AuthController {
     @Get('me')
     @UseGuards(AuthGuard)
     async me(@Req() req: any): Promise<MeResponseDto> {
-        const user = await this.authService.validateUserById(req.user.id);
+        const user = await this.authService.validateUserById(req.user.sub);
         if (!user) throw new UnauthorizedException('User not found');
         const client = await this.authService.validateClientById(req.user.client_id);
         if (!client) throw new UnauthorizedException('Client not found');

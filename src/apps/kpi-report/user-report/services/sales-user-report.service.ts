@@ -45,7 +45,7 @@ export class SalesUserReportService {
 
 
 
-        for await (const batch of this.getAllItems(filterForBitrix, bitrix, portalKPIList)) {
+        for await (const batch of this.getAllItems(filterForBitrix, bitrix, portalKPIList, PortalModel)) {
             yield batch;
         }
 
@@ -60,7 +60,7 @@ export class SalesUserReportService {
 
 
     }
-    private async *getAllItems(filterForBitrix: Record<string, any>, bitrix: BitrixService, portalList: IPBXList) {
+    private async *getAllItems(filterForBitrix: Record<string, any>, bitrix: BitrixService, portalList: IPBXList, PortalModel: PortalModel) {
 
 
         for await (const batch of this.all({
@@ -68,8 +68,9 @@ export class SalesUserReportService {
             filter: filterForBitrix
         }, bitrix)) {
             const preparedResult = await this.prepareResponse(portalList, batch, bitrix);
-            const preparedWithCompanies = await this.getCompanies(preparedResult, bitrix);
+            const preparedWithCompanies = await this.getCompanies(preparedResult, bitrix, PortalModel);
             // const preparedWithContacts = await this.getContacts(preparedWithCompanies, bitrix);
+           
             yield preparedWithCompanies;
         }
     }
@@ -299,51 +300,102 @@ export class SalesUserReportService {
     //TODO: Implement getCompanies and getContacts
     // add company name and contacts (name, post, id...) in list item elements
 
-    protected async getCompanies(listItems: PbxSalesKpiListItemDto[], bitrix: BitrixService) {
+    protected async getCompanies(listItems: PbxSalesKpiListItemDto[], bitrix: BitrixService, PortalModel: PortalModel) {
         // const result: PbxSalesKpiListItemDto[] = [];
-        for (const item of listItems) {
-            if (item[EnumSalesKpiFieldCode.crm_company]) {
-                const companyId = (item[EnumSalesKpiFieldCode.crm_company].value as PbxSalesKpiFieldItemValueDto).value as string;
-                bitrix.batch.company.get('cmd_company_get_' + companyId, Number(companyId));
+        const companiesIds = listItems.map(item => {
+            return (item[EnumSalesKpiFieldCode.crm_company]?.value as PbxSalesKpiFieldItemValueDto)?.value as string | undefined;
+        }).filter(id => id !== undefined) as string[];
+        const companies = await bitrix.company.all({
+            '@ID': companiesIds
+        }, ['ID', 'TITLE', 'UF_CRM_1539345538', 'UF_CRM_1632896396', 'UF_CRM_OP_MHISTORY', 'UF_CRM_OP_PROSPECTS', 'UF_CRM_CARD_NUM'])
 
-                // result.push({
-                //     ...item,
-                //     company: new PbxSalesKpiCompanyDto(company.result)
-                // } as PbxSalesKpiListItemDto);
-            }
-        }
-        const companiesBatchResult = await bitrix.api.callBatchWithConcurrency(1);
         const result: PbxSalesKpiListItemDto[] = listItems.map(item => {
-            let company: PbxSalesKpiCompanyDto | null = null;
+            const companyId = (item[EnumSalesKpiFieldCode.crm_company]?.value as PbxSalesKpiFieldItemValueDto)?.value as string | undefined;
+            if (!companyId) {
+                return item;
+            }
+            const company: IBXCompany | null = companies.find(company => Number(company.ID) === Number(companyId)) ?? null;
 
-            companiesBatchResult.forEach(response => {
-                response.result
+            const color = this.getCompanyColor(company as IBXCompany, PortalModel);
+            const searchedCompany = new PbxSalesKpiCompanyDto(company as IBXCompany, color);
 
-                for (const key in response.result) {
-                    console.log('key');
-                    console.log(key);
-
-                    console.log('item.companyId');
-                    console.log((item[EnumSalesKpiFieldCode.crm_company]?.value as PbxSalesKpiFieldItemValueDto).value );
-                    const itemCompanyId = (item[EnumSalesKpiFieldCode.crm_company]?.value as PbxSalesKpiFieldItemValueDto).value as string;
-                    if (key === 'cmd_company_get_' + itemCompanyId) {
-                        console.log('found');
-                        console.log(response.result[key]);
-                        const searchedCompany = new PbxSalesKpiCompanyDto(response.result[key] as IBXCompany);
-                        if (searchedCompany.ID === item.companyId) {
-                            company = searchedCompany;
-                        }
-                    }
-                }
-            });
 
             return {
                 ...item,
-                company: company ?? undefined
+                company: searchedCompany ?? undefined
             } as PbxSalesKpiListItemDto;
         });
+
+
         return result;
     }
+    private getCompanyColor(company: IBXCompany, PortalModel: PortalModel): string {
+        if (!company || !company.UF_CRM_OP_PROSPECTS) {
+            return '';
+        }
+        const portalColorField = PortalModel.getCompanyFieldByCode('op_prospects');
+        if (!portalColorField) {
+            return '';
+        }
+        const pFieldBitrixId = portalColorField.bitrixId;
+
+        const currentItemId = Number(company.UF_CRM_OP_PROSPECTS) as number;
+
+        if (currentItemId) {
+            const colorCode = portalColorField.items?.find(item => Number(item.bitrixId) === currentItemId)?.code as string;
+            return colorCode as string ?? '';
+        }
+        return '';
+    }
+    // protected async getCompanies(listItems: PbxSalesKpiListItemDto[], bitrix: BitrixService) {
+    //     // const result: PbxSalesKpiListItemDto[] = [];
+    //     for (const item of listItems) {
+    //         if (item[EnumSalesKpiFieldCode.crm_company]) {
+    //             const companyId = (item[EnumSalesKpiFieldCode.crm_company].value as PbxSalesKpiFieldItemValueDto).value as string;
+    //             bitrix.batch.company.get('cmd_company_get_' + companyId, Number(companyId),
+    //                 ['ID', 'TITLE', 'UF_CRM_1539345538', 'UF_CRM_1632896396', 'UF_CRM_OP_MHISTORY']
+    //             );
+
+    //             // result.push({
+    //             //     ...item,
+    //             //     company: new PbxSalesKpiCompanyDto(company.result)
+    //             // } as PbxSalesKpiListItemDto);
+    //         }
+    //     }
+    //     const companiesBatchResult = await bitrix.api.callBatchWithConcurrency(1);
+    //     const result: PbxSalesKpiListItemDto[] = listItems.map(item => {
+    //         let company: PbxSalesKpiCompanyDto | null = null;
+
+    //         companiesBatchResult.forEach(response => {
+    //             response.result
+
+    //             for (const key in response.result) {
+    //                 console.log('key');
+    //                 console.log(key);
+
+    //                 console.log('item.companyId');
+    //                 console.log((item[EnumSalesKpiFieldCode.crm_company]?.value as PbxSalesKpiFieldItemValueDto).value);
+    //                 const itemCompanyId = (item[EnumSalesKpiFieldCode.crm_company]?.value as PbxSalesKpiFieldItemValueDto).value as string;
+    //                 if (key === 'cmd_company_get_' + itemCompanyId) {
+    //                     console.log('found');
+    //                     console.log(response.result[key]);
+    //                     const searchedCompany = new PbxSalesKpiCompanyDto(response.result[key] as IBXCompany);
+
+    //                         company = searchedCompany;
+    //                     break;
+    //                 }
+    //             }
+    //         });
+
+    //         return {
+    //             ...item,
+    //             company: company ?? undefined
+    //         } as PbxSalesKpiListItemDto;
+    //     });
+
+
+    //     return result;
+    // }
 
     protected async getContacts(listItems: PbxSalesKpiListItemDto[], bitrix: BitrixService) {
         const result: PbxSalesKpiListItemDto[] = [];
