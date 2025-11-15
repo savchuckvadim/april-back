@@ -20,19 +20,10 @@ export class BitrixClientPortalService {
         // private readonly userService: UserService,
     ) { }
 
-    async getClientPortals(dto: GetClientPortalsRequestDto) {
-        const result = await this.prisma.client.findUnique({
-            where: {
-                id: dto.clientId,
-            },
-            include: {
-                portals: true,
-
-            },
-        });
-        console.log(result)
-        if (!result) throw new NotFoundException('Client not found');
-        return result.portals;
+    async getClientPortals(dto: GetClientPortalsRequestDto): Promise<{ id: number, domain: string }[] | null> {
+    
+        const portals = await this.portalService.getPortalsByClientId(dto.clientId);
+        return portals?.map(portal => ({ id: Number(portal.id), domain: portal.domain! })) || null;
     }
 
 

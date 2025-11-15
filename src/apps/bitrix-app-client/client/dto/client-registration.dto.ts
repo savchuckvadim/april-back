@@ -1,5 +1,6 @@
 import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsNumber, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsBitrixDomain } from '@/core/decorators/dto/bitrix-domain-validate.decorator';
 
 export class ClientRegistrationRequestDto {
     @ApiProperty({ description: 'Client name', example: 'Acme Corp' })
@@ -26,6 +27,12 @@ export class ClientRegistrationRequestDto {
     @IsString()
     @MinLength(6)
     password: string;
+
+    @ApiProperty({ description: 'Portal domain', example: 'example.bitrix24.ru' })
+    @IsNotEmpty()
+    @IsString()
+    @IsBitrixDomain()
+    domain: string;
 }
 
 

@@ -13,7 +13,7 @@ import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PBXService } from '@/modules/pbx';
-import { BitrixBaseApi, EBXEntity, EBxMethod, EBxNamespace } from '@/modules/bitrix';
+import { BitrixBaseApi} from '@/modules/bitrix';
 
 
 export class ReportKpiUseCase {
@@ -93,7 +93,7 @@ export class ReportKpiUseCase {
             listId as string,
         );
         // const commandsResult = bitrixApi.getCmdBatch();
-        const results = await this.bitrixApi.callBatchWithConcurrency(3);
+        const results = await this.bitrixApi.callBatchWithConcurrency(1);
         const report = this.getCalculateResults(
             results,
             departament,

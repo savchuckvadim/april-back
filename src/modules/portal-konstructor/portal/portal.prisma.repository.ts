@@ -9,17 +9,19 @@ export class PortalPrismaRepository implements PortalRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async create(portal: Partial<PortalEntity>): Promise<PortalEntity | null> {
+        const allPortalsCount: number = await this.prisma.portal.count();
         const result = await this.prisma.portal.create({
             data: {
 
                 created_at: new Date(),
                 updated_at: new Date(),
-                number: portal.number!,
+                number: allPortalsCount + 1,
                 C_REST_CLIENT_ID: portal.cRestClientId!,
                 C_REST_CLIENT_SECRET: portal.cRestClientSecret!,
                 C_REST_WEB_HOOK_URL: portal.cRestWebHookUrl!,
                 domain: portal.domain!,
                 key: portal.key!,
+                client_id: BigInt(portal.clientId!),
 
 
             },
@@ -46,6 +48,11 @@ export class PortalPrismaRepository implements PortalRepository {
             where: { id: BigInt(id) },
         });
     }
+    async deleteByClientId(clientId: number): Promise<void> {
+        await this.prisma.portal.deleteMany({
+            where: { client_id: BigInt(clientId) },
+        });
+    }
     async findById(id: number): Promise<PortalEntity | null> {
         const result = await this.prisma.portal.findUnique({
             where: { id: BigInt(id) },
@@ -69,6 +76,13 @@ export class PortalPrismaRepository implements PortalRepository {
         });
         if (!result) return null;
         return createPortalEntityFromPrisma(result);
+    }
+    async findByClientId(clientId: number): Promise<PortalEntity[] | null> {
+        const result = await this.prisma.portal.findMany({
+            where: { client_id: BigInt(clientId) },
+        });
+        if (!result) return null;
+        return result.map(portal => createPortalEntityFromPrisma(portal));
     }
     async findMany(): Promise<PortalEntity[] | null> {
         const result = await this.prisma.portal.findMany();

@@ -4,10 +4,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BitrixTokenDto } from '../../token';
 import { Type } from 'class-transformer';
 import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES, VALID_APP_STATUSES, VALID_APP_TYPES } from '../enums/bitrix-app.enum';
+import { CreateBitrixSecretDto } from '../../secret/dto/bitrix-secret.dto';
 
-
-
-export class CreateBitrixAppDto {
+export class CreateBitrixAppBaseDto {
     @ApiProperty({
         description: 'Домен портала Bitrix24',
         example: 'example.bitrix24.ru',
@@ -48,8 +47,26 @@ export class CreateBitrixAppDto {
         enum: BITRIX_APP_STATUSES,
     })
     @IsEnum(BITRIX_APP_STATUSES)
-
     status: BITRIX_APP_STATUSES;
+
+
+
+
+}
+
+export class CreateBitrixAppDto extends CreateBitrixAppBaseDto {
+
+    @ApiProperty({
+        description: 'Секреты приложения',
+        type: CreateBitrixSecretDto,
+    })
+    @Type(() => CreateBitrixSecretDto)
+    secret: CreateBitrixSecretDto;
+
+
+}
+
+export class CreateBitrixAppWithTokenDto extends CreateBitrixAppBaseDto {
 
 
     @ApiProperty({
@@ -215,4 +232,7 @@ export class BitrixAppResponseDto {
     })
     settings?: any[];
 }
+
+
+
 

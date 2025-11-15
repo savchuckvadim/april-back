@@ -3,7 +3,7 @@ import { PrismaService } from 'src/core/prisma';
 import { BitrixAppRepository } from './bitrix-app.repository';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
 import { createBitrixAppEntityFromPrisma, getRelations } from '../model/lib/bitrix-app.helper';
-import e from 'express';
+
 
 
 @Injectable()
@@ -195,7 +195,22 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             return null;
         }
     }
-
+    async findByPortalId(portalId: number): Promise<BitrixAppEntity[] | null> {
+        try {
+            const result = await this.prisma.bitrix_apps.findMany({
+                where: { portal_id: BigInt(portalId) },
+            });
+            const fullResult: BitrixAppEntity[] = [];
+            for (const app of result) {
+                const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, app.id, app.portal_id);
+                fullResult.push(createBitrixAppEntityFromPrisma(app, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal));
+            }
+            return fullResult;
+        } catch (error) {
+            console.error('Error in findByPortalId:', error);
+            return null;
+        }
+    }
     async update(id: bigint, data: Partial<BitrixAppEntity>): Promise<BitrixAppEntity> {
         try {
             const result = await this.prisma.bitrix_apps.update({

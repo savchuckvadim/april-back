@@ -11,7 +11,7 @@ import { BitrixAppDto } from '../dto/app.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto, SuccessResponseDto } from 'src/core';
 import { BitrixAppService } from '../../app/services/bitrix-app.service';
-import { CreateBitrixAppDto } from '../../app/dto/bitrix-app.dto';
+import { CreateBitrixAppDto, CreateBitrixAppWithTokenDto } from '../../app/dto/bitrix-app.dto';
 import { BitrixTokenDto } from '../../token/dto/bitrix-token.dto';
 import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES } from '../../app/enums/bitrix-app.enum';
 
@@ -72,7 +72,7 @@ export class BitrixSetupInstallController {
                 const expiresAt = new Date(Date.now() + (tokenPayload.expires_in ?? 3600) * 1000)
                     .toISOString();
 
-                const data: CreateBitrixAppDto = {
+                const data: CreateBitrixAppWithTokenDto = {
                     code: BITRIX_APP_CODES.SALES,
                     domain: tokenPayload.domain,
                     group: BITRIX_APP_GROUPS.SALES,
@@ -87,7 +87,7 @@ export class BitrixSetupInstallController {
                     } as BitrixTokenDto,
                 };
 
-               const app = await this.bitrixAppService.storeOrUpdateApp(data);
+               const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data);
                if (app) {
                 installStatus = 'success';
                }

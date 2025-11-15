@@ -17,6 +17,9 @@ export class PortalStoreService {
     async delete(id: number): Promise<void> {
         await this.portalRepository.delete(id);
     }
+    async deleteByClientId(clientId: number): Promise<void> {
+        await this.portalRepository.deleteByClientId(clientId);
+    }
 
     async getPortal(id: number): Promise<PortalEntity | null> {
         return await this.portalRepository.findById(id);
@@ -28,6 +31,9 @@ export class PortalStoreService {
 
     async getPortals(): Promise<PortalEntity[] | null> {
         return await this.portalRepository.findManyWithRelations();
+    }
+    async getPortalsByClientId(clientId: number): Promise<PortalEntity[] | null> {
+        return await this.portalRepository.findByClientId(clientId);
     }
 
     async getPortalById(id: number): Promise<PortalEntity | null> {

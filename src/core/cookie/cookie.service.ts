@@ -11,9 +11,12 @@ export class CookieService {
 
     setAuthCookie(res: Response, token: string) {
         const isProd = this.configService.get('NODE_ENV') === 'production';
-
+        console.log('isProd', isProd);
+        console.log('token', token);
+        console.log('COOKIE_NAME', this.COOKIE_NAME);
         res.cookie(this.COOKIE_NAME, token, {
-            httpOnly: true,
+            // httpOnly: true,
+            httpOnly: false,
             secure: isProd,
             sameSite: isProd ? 'none' : 'lax',
             // domain: isProd

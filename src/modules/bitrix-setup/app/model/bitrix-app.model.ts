@@ -32,7 +32,21 @@ export class BitrixAppEntity implements IBitrixAppEntity {
     settings?: any[]; // BitrixSetting entities
     portal?: any; // Portal entity
 }
-export class BitrixAppModel {
+export class BitrixAppDto {
+    constructor(app: BitrixAppEntity) {
+        this.id = app.id;
+        this.created_at = app.created_at;
+        this.updated_at = app.updated_at;
+        this.portal_id = app.portal_id;
+        this.group = app.group;
+        this.type = app.type as BITRIX_APP_TYPES;
+        this.code = app.code;
+        this.status = app.status as BITRIX_APP_STATUSES;
+        this.portal = app.portal;
+        this.placements = app.placements || [];
+        this.settings = app.settings || [];
+    }
+
     @ApiProperty({
         description: 'ID приложения',
         example: 1,

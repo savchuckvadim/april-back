@@ -14,5 +14,6 @@ export class PortalEntity {
         public readonly number: number,
         public readonly providers: ProviderEntity[] | null,
         public readonly templates: TemplateBaseEntity[] | null,
+        public readonly clientId?: number | null | undefined,
     ) {}
 }

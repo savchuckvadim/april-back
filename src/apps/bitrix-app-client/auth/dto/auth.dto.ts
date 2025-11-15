@@ -4,6 +4,7 @@ import { Client } from "generated/prisma";
 import { UserResponseDto } from "../../user/dto/user-response.dto";
 import { Type } from "class-transformer";
 import { ClientDto } from "../../client/dto/client-registration.dto";
+import { IsBitrixDomain } from "@/core/decorators/dto/bitrix-domain-validate.decorator";
 
 export class ClientRegistrationRequestDto {
     @ApiProperty({ description: 'Client name', example: 'Acme Corp' })
@@ -44,6 +45,7 @@ export class ClientRegistrationRequestDto {
     @ApiProperty({ description: 'Domain', example: 'example.com' })
     @IsNotEmpty()
     @IsString()
+    @IsBitrixDomain()
     domain: string;
 }
 

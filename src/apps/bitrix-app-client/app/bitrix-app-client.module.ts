@@ -5,6 +5,10 @@ import { BitrixAppClientService } from './services/bitrix-app-client.service';
 import { UserModule } from '../user/user.module';
 import { ClientModule } from '../client/client.module';
 import { AuthModule } from '../auth/auth.module';
+import { BitrixAppUiController } from './controllers/bitrix-app-ui.controller';
+import { BitrixSetupAppModule } from '@/modules/bitrix-setup/app/bitrix-setup-app.module';
+import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
+import { CookieModule } from '@/core/cookie/cookie.module';
 
 @Module({
     imports: [
@@ -12,8 +16,11 @@ import { AuthModule } from '../auth/auth.module';
         UserModule,
         ClientModule,
         AuthModule,
+        BitrixSetupAppModule,
+        PortalStoreModule,
+        CookieModule,
     ],
-    controllers: [BitrixAppClientController],
+    controllers: [BitrixAppClientController, BitrixAppUiController],
     providers: [BitrixAppClientService],
     exports: [
         UserModule,

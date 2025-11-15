@@ -7,12 +7,13 @@ import { BitrixAppRepository } from './repositories/bitrix-app.repository';
 import { BitrixAppPrismaRepository } from './repositories/bitrix-app.prisma.repository';
 import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
 import { TokenModule } from '../token/token.module';
+import { SecretModule } from '../secret/secret.module';
 
 @Module({
-    imports: [PortalStoreModule, TokenModule],
-    controllers: [
-        BitrixAppController,
-    ],
+    imports: [PortalStoreModule, TokenModule, SecretModule],
+    // controllers: [
+    //     BitrixAppController,
+    // ],
     providers: [
         BitrixAppService,
         {

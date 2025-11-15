@@ -8,12 +8,14 @@ import { compare } from "@/lib/utils/crypt.util";
 import { CookieService } from "@/core/cookie/cookie.service";
 import { Response } from "express";
 import { User } from "generated/prisma";
+import { PortalStoreService } from "@/modules/portal-konstructor/portal/portal-store.service";
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly clientService: BitrixClientService,
         private readonly userService: UserService,
+        private readonly portalService: PortalStoreService,
         private readonly jwtService: JwtService,
         private readonly mailer: MailConfirmationService,
         private readonly cookieService: CookieService,
@@ -28,7 +30,13 @@ export class AuthService {
         const existingUser = await this.userService.findUserByEmail(dto.email);
 
 
-        if (existingUser) throw new BadRequestException('Domain already registered');
+        if (existingUser) throw new BadRequestException('User with this email already registered');
+
+
+        const existingPortal = await this.portalService.getPortalByDomain(dto.domain);
+
+
+        if (existingPortal) throw new BadRequestException('Portal with Domain already registered');
 
         // 2️⃣ Создаём клиента
         const client = await this.clientService.registrationClient(dto);
@@ -84,6 +92,7 @@ export class AuthService {
         const token = this.jwtService.sign({ sub: userDto.id, client_id: userDto.client_id });
         return { token, user: userDto, client };
     }
+    
 
     async logout(user: any, res: Response) {
         // Если используем JWT — клиент просто забывает токен

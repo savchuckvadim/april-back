@@ -1,9 +1,7 @@
 import { Controller, Post, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ClientRegistrationRequestDto } from '../dto/client-registration.dto';
 import { SuccessResponseDto } from '@/core';
-import { BitrixClientService } from '../services/bitrix-client.service';
-import { AuthGuard } from '../../auth/guard/jwt-auth.guard';
+
 import { GetClientPortalsRequestDto } from '../dto/get-client-portals.dto';
 import { Portal } from 'generated/prisma';
 import { BitrixClientPortalService } from '../services/bitrix-client-portal.service';
@@ -23,22 +21,11 @@ export class BitrixClientController {
         status: 200, description: 'Client portals get', type: SuccessResponseDto<Portal[]>
     })
     @Post('get-client-portals')
-    async getClientPortals(@Body() dto: GetClientPortalsRequestDto): Promise<Portal[]> {
+    async getClientPortals(@Body() dto: GetClientPortalsRequestDto): Promise<{ id: number, domain: string }[] | null> {
         return await this.bitrixClientPortalService.getClientPortals(dto);
     }
 
 
 
-    // login
-    // emailConfirmation
-    // changeStatus
-    // updateRegistrationData
-    // logout
-    // addNewUser
-    // addPortal
-    // deletePortal
-    // deleteUser
-    // deleteClient
-    // deleteAllData
 
 }

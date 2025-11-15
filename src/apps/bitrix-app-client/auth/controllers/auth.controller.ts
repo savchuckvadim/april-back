@@ -8,6 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { SetAuthCookie } from "@/core/decorators/auth/set-auth-cookie.decorator";
 import { UserResponseDto } from "../../user/dto/user-response.dto";
 import { UserService } from "../../user/services/user.service";
+import { PortalStoreService } from "@/modules/portal-konstructor/portal/portal-store.service";
 
 
 @ApiTags('Auth')
@@ -16,7 +17,8 @@ export class AuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly configService: ConfigService,
-        private readonly userService: UserService
+        private readonly userService: UserService,
+        private readonly portalService: PortalStoreService
     ) { }
 
 
@@ -144,6 +146,14 @@ export class AuthController {
     @Get('get-all-users')
     async getAllUsers(): Promise<UserResponseDto[]> {
         const data = await this.userService.findAllUsers();
+        return data;
+    }
+
+
+    @ApiOperation({ summary: 'Get all clients portls' })
+    @Get('get-all-portls')
+    async getAllPortals(): Promise<any[] | null> {
+        const data = await this.portalService.getPortals();
         return data;
     }
 }
