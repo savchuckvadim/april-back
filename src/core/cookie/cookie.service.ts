@@ -16,12 +16,9 @@ export class CookieService {
         console.log('COOKIE_NAME', this.COOKIE_NAME);
         res.cookie(this.COOKIE_NAME, token, {
             // httpOnly: true,
-            httpOnly: false,
-            secure: isProd,
-            sameSite: isProd ? 'none' : 'lax',
-            // domain: isProd
-            //     ? this.configService.get('AUTH_COOKIE_SPA_DOMAIN') // например .backend.ru
-            //     : undefined,
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
     }
@@ -30,11 +27,9 @@ export class CookieService {
         const isProd = this.configService.get('NODE_ENV') === 'production';
         res.clearCookie(this.COOKIE_NAME, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? 'none' : 'lax',
-            // domain: isProd
-            //     ? this.configService.get('AUTH_COOKIE_SPA_DOMAIN')
-            //     : undefined,
+            secure: true,
+            sameSite: true ? 'none' : 'lax',
+
         });
     }
 }

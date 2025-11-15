@@ -15,6 +15,7 @@ import {
 import { BitrixAppService } from '../services/bitrix-app.service';
 import {
     CreateBitrixAppDto,
+    CreateBitrixAppWithTokenDto,
     GetBitrixAppDto,
     UpdateBitrixAppDto,
 
@@ -53,7 +54,7 @@ export class BitrixAppController {
         description: 'Создает новое приложение или обновляет существующее в системе Bitrix24'
     })
     @ApiBody({
-        type: CreateBitrixAppDto,
+        type: CreateBitrixAppWithTokenDto,
         description: 'Данные приложения для создания или обновления'
     })
     @ApiCreatedResponse({
@@ -65,9 +66,9 @@ export class BitrixAppController {
         description: 'Некорректные данные запроса',
         type: ErrorResponseDto
     })
-    async storeOrUpdate(@Body() dto: CreateBitrixAppDto) {
+    async storeOrUpdate(@Body() dto: CreateBitrixAppWithTokenDto) {
         try {
-            const result = await this.bitrixAppService.storeOrUpdateApp(dto);
+            const result = await this.bitrixAppService.storeOrUpdateAppWithToken(dto);
 
             return {
                 success: true,
@@ -243,7 +244,7 @@ export class BitrixAppController {
         status: 200,
         description: 'Приложение успешно обновлено. Ответ обрабатывается ResponseInterceptor из src/core/interceptors',
         type: SuccessResponseDto,
-       
+
     })
     @ApiNotFoundResponse({
         description: 'Приложение не найдено',
