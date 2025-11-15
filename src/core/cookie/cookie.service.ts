@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-const host =  'april-bitrix-main.vercel.app';
+const host =  'april-bitrix-main.vercel.app/';
 
 @Injectable()
 export class CookieService {
@@ -21,7 +21,6 @@ export class CookieService {
             secure: true,
             sameSite: 'none',
             maxAge: 7 * 24 * 60 * 60 * 1000,
-            domain: host,
         });
     }
 
@@ -31,7 +30,6 @@ export class CookieService {
             httpOnly: true,
             secure: true,
             sameSite: true ? 'none' : 'lax',
-            domain: host,
 
         });
     }
