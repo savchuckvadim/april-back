@@ -82,31 +82,31 @@ export class BitrixAppUiController {
                 };
             }
 
-     
-            let redirectUrl = `https://april-bitrix-main.vercel.app/standalone`;
+
+            let redirectUrl = `https://bitrix.april-app.ru/standalone`;
             const portal = await this.portalService.getPortalByDomain(domain);
             if (portal) {
-                redirectUrl = `https://april-bitrix-main.vercel.app/standalone/portal/${portal.id}`;
+                redirectUrl = `https://bitrix.april-app.ru/standalone/portal/${portal.id}`;
 
                 const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
                 if (clientDta) {
                     const { client, ownerUser } = clientDta;
                     const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
-                    redirectUrl = `https://april-bitrix-main.vercel.app/standalone/portal/${portal.id}?token=${token}`;
+                    redirectUrl = `https://bitrix.april-app.ru/standalone/portal/${portal.id}?token=${token}`;
 
                     const bxApp = await this.bitrixAppService.getApp({
                         domain: domain,
                         code: BITRIX_APP_CODES.SALES,
                     });
                     if (bxApp) {
-                        redirectUrl = `https://april-bitrix-main.vercel.app/standalone/portal/${portal.id}/app/${bxApp.id}`;
+                        redirectUrl = `https://bitrix.april-app.ru/standalone/portal/${portal.id}/app/${bxApp.id}`;
                     }
                 }
             }
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return res.redirect(HttpStatus.FOUND, `https://april-bitrix-main.vercel.app/install?install=fail`);
+            return res.redirect(HttpStatus.FOUND, `https://bitrix.april-app.ru/install?install=fail`);
         }
     }
 }
