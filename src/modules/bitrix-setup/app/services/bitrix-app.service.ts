@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
-import { CreateBitrixAppDto, CreateBitrixAppWithTokenDto, GetBitrixAppDto } from '../dto/bitrix-app.dto';
+import { BitrixAppDto, CreateBitrixAppDto, CreateBitrixAppWithTokenDto, GetBitrixAppDto } from '../dto/bitrix-app.dto';
 import { PrismaService } from 'src/core/prisma';
 
 import { BitrixAppRepository } from '../repositories/bitrix-app.repository';
-import { BitrixAppEntity, BitrixAppDto } from '../model/bitrix-app.model';
+import { BitrixAppEntity} from '../model/bitrix-app.model';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { PortalEntity } from '@/modules/portal-konstructor/portal/portal.entity';
 import { BitrixTokenService } from '../../token/services/bitrix-token.service';
@@ -12,6 +12,7 @@ import { BitrixTokenEntity, SetBitrixSecretDto } from '../../token';
 import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_TYPES } from '../enums/bitrix-app.enum';
 import { EnabledAppDto } from '../dto/enaled-app.dto';
 import { BitrixSecretService } from '../../secret/services/bitrix-secret.service';
+import { toBitrixAppDto } from '../lib/bx-app-dto.mapper';
 
 @Injectable()
 export class BitrixAppService {
@@ -89,7 +90,7 @@ export class BitrixAppService {
             // NO need to create or update token
 
             return {
-                app: new BitrixAppDto(app),
+                app: toBitrixAppDto(app),
                 message: 'Bitrix App saved and token created',
             };
         } catch (error) {

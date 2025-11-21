@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { BitrixAppController } from './controllers/bitrix-app.controller';
+// import { BitrixAppController } from './controllers/bitrix-app.controller';
 import { PrismaService } from 'src/core/prisma';
 import { BitrixAppService } from './services/bitrix-app.service';
 import { BitrixAppRepository } from './repositories/bitrix-app.repository';

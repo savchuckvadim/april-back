@@ -1,10 +1,12 @@
-import { IsString, IsOptional, IsNotEmpty, IsIn, ValidateNested, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsIn, ValidateNested, IsEnum, IsNumber } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BitrixTokenDto } from '../../token';
+import { BitrixTokenDto, BitrixTokenEntity } from '../../token';
 import { Type } from 'class-transformer';
 import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES, VALID_APP_STATUSES, VALID_APP_TYPES } from '../enums/bitrix-app.enum';
 import { CreateBitrixSecretDto } from '../../secret/dto/bitrix-secret.dto';
+import { BitrixAppEntity } from '../model/bitrix-app.model';
+import { PortalDto, } from '@/modules/portal-konstructor/portal/portal.entity';
 
 export class CreateBitrixAppBaseDto {
     @ApiProperty({
@@ -145,14 +147,28 @@ export class UpdateBitrixAppDto {
     status?: BITRIX_APP_STATUSES;
 }
 
-export class BitrixAppResponseDto {
+export class BitrixAppDto {
+    constructor(app: BitrixAppEntity, portal: PortalDto) {
+        this.id = String(app?.id) || '';
+        this.created_at = app.created_at;
+        this.updated_at = app.updated_at;
+        this.portal_id = String(app.portal_id) || '';
+        this.group = app.group as BITRIX_APP_GROUPS;
+        this.type = app.type as BITRIX_APP_TYPES;
+        this.code = app.code as BITRIX_APP_CODES;
+        this.status = app.status as BITRIX_APP_STATUSES;
+        this.portal = portal as PortalDto ;
+        // this.token = app.bitrix_tokens as BitrixTokenEntity;
+        // this.placements = app.placements;
+        // this.settings = app.settings;
+    }
     @ApiProperty({
         description: 'ID приложения',
-        example: 1,
-        type: Number,
+        example: '1',
+        type: String,
     })
+
     @IsString()
-    @IsNotEmpty()
     id: string;
 
     @ApiProperty({
@@ -171,10 +187,10 @@ export class BitrixAppResponseDto {
 
     @ApiProperty({
         description: 'ID портала',
-        example: 1,
-        type: Number,
+        example: '1',
+        type: String,
     })
-    portal_id: bigint;
+    portal_id: string;
 
     @ApiPropertyOptional({
         description: 'Группа приложения',
@@ -210,9 +226,9 @@ export class BitrixAppResponseDto {
 
     @ApiPropertyOptional({
         description: 'Информация о портале',
-        type: Object,
+        type: PortalDto,
     })
-    portal?: any;
+    portal?: PortalDto ;
 
     @ApiPropertyOptional({
         description: 'Токены приложения',

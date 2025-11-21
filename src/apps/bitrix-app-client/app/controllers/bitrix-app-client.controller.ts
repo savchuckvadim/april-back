@@ -1,10 +1,10 @@
 import { Controller, Post, Query, Body, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BitrixAppClientService } from '../services/bitrix-app-client.service';
-import { CreateBitrixAppDto, GetBitrixAppDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import { BitrixAppDto, CreateBitrixAppDto, GetBitrixAppDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { SetSecretDto } from '../dto/set-secret.dto';
 
-import { BitrixAppDto, BitrixAppEntity } from '@/modules/bitrix-setup/app/model/bitrix-app.model';
+import {  BitrixAppEntity } from '@/modules/bitrix-setup/app/model/bitrix-app.model';
 import { GetPortalAppsDto } from '../dto/get-app.dto';
 import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
 import { EnabledAppDto } from '@/modules/bitrix-setup/app/dto/enaled-app.dto';
@@ -19,11 +19,11 @@ export class BitrixAppClientController {
 
 
     @ApiOperation({ summary: 'Get app' })
-    @ApiResponse({ status: 200, description: 'App get', type: BitrixAppEntity })
+    @ApiResponse({ status: 200, description: 'App get', type: BitrixAppDto })
 
 
     @Post('get-app')
-    async getApp(@Body() dto: GetBitrixAppDto): Promise<BitrixAppEntity> {
+    async getApp(@Body() dto: GetBitrixAppDto): Promise<BitrixAppDto> {
         return await this.bitrixAppClientService.getApp(dto);
     }
 
@@ -37,9 +37,10 @@ export class BitrixAppClientController {
 
 
     @ApiOperation({ summary: 'Get portal apps' })
-    @ApiResponse({ status: 200, description: 'Portal apps get. Отдает приложения привязанные к порталу', type: [BitrixAppEntity] })
+    @ApiResponse({ status: 200, description: 'Portal apps get. Отдает приложения привязанные к порталу',
+         type: [BitrixAppDto] })
     @Get('get-portal-apps')
-    async getPortalApps(@Query() dto: GetPortalAppsDto) {
+    async getPortalApps(@Query() dto: GetPortalAppsDto): Promise<BitrixAppDto[]> {
         return await this.bitrixAppClientService.getPortalApps(dto);
     }
 

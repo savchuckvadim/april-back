@@ -92,7 +92,7 @@ export class AuthService {
         const token = this.jwtService.sign({ sub: userDto.id, client_id: userDto.client_id });
         return { token, user: userDto, client };
     }
-    
+
 
     async logout(user: any, res: Response) {
         // Если используем JWT — клиент просто забывает токен

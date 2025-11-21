@@ -155,6 +155,7 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
                     portals: true,
                     bitrix_tokens: true,
                     bitrix_app_placements: true,
+                    
                 },
             });
             if (!result) {

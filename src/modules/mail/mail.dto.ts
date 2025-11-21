@@ -29,3 +29,15 @@ export class SendEmailRequestDto {
     @IsString()
     body: string;
 }
+
+
+
+export class SendEmailOfferRequestDto {
+    @ApiProperty({ description: 'Email', example: 'test@example.com' })
+    @IsString()
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
+
+
+}

@@ -7,11 +7,10 @@ import {
     HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { BitrixAppDto } from '../dto/app.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto, SuccessResponseDto } from 'src/core';
 import { BitrixAppService } from '../../app/services/bitrix-app.service';
-import { CreateBitrixAppDto, CreateBitrixAppWithTokenDto } from '../../app/dto/bitrix-app.dto';
+import {  CreateBitrixAppWithTokenDto } from '../../app/dto/bitrix-app.dto';
 import { BitrixTokenDto } from '../../token/dto/bitrix-token.dto';
 import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES } from '../../app/enums/bitrix-app.enum';
 
@@ -87,10 +86,12 @@ export class BitrixSetupInstallController {
                     } as BitrixTokenDto,
                 };
 
-               const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data);
-               if (app) {
-                installStatus = 'success';
-               }
+                //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
+                // в битрикс app install/
+                const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data);
+                if (app) {
+                    installStatus = 'success';
+                }
             }
 
             const redirectUrl = `https://april-bitrix-main.vercel.app/install?install=${installStatus}`;
