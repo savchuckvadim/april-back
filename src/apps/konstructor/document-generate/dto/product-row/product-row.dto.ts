@@ -8,7 +8,7 @@ import {
     IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SupplyDto } from '../supply.dto';
+import { SupplyDto } from '../../../dto/supply.dto';
 import { ProductDto, ProductTypeEnum } from '../product/product.dto';
 import { RowPriceDto } from './product-row-price.dto';
 
@@ -17,12 +17,12 @@ export class RowComplectDto {
     @IsNumber() number: number;
 }
 
-export class RowContractDto {
+export class ProductRowContractDto {
     @IsString() name: string;
     @IsNumber() number: number;
 }
 
-export class RowSupplyDto {
+export class ProductRowSupplyDto {
     @IsString() name: string;
     @IsString() forkp: string;
     @IsNumber() number: number;
@@ -46,8 +46,8 @@ export class ProductRowDto {
     @IsBoolean() isUpdating: boolean;
     @IsOptional() @IsEnum(ProductTypeEnum) productType?: ProductTypeEnum;
     @ValidateNested() @Type(() => RowComplectDto) complect: RowComplectDto;
-    @ValidateNested() @Type(() => RowContractDto) contract: RowContractDto;
-    @ValidateNested() @Type(() => RowSupplyDto) supply: RowSupplyDto;
+    @ValidateNested() @Type(() => ProductRowContractDto) contract: ProductRowContractDto;
+    @ValidateNested() @Type(() => ProductRowSupplyDto) supply: ProductRowSupplyDto;
     @ValidateNested() @Type(() => RowPriceDto) price: RowPriceDto;
     @ValidateNested() @Type(() => ProductDto) product: ProductDto;
     @ValidateNested() @Type(() => SupplyDto) currentSupply: SupplyDto;

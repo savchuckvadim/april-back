@@ -491,6 +491,7 @@ model Infoblock {
     @@index([parent_id], map: "infoblocks_parent_id_foreign")
     @@index([related_id], map: "infoblocks_related_id_foreign")
     @@index([relation_id], map: "infoblocks_relation_id_foreign")
+    @@map("infoblocks")
 }
 
 model info_groups {
@@ -833,7 +834,7 @@ model TemplateField {
 
     @@index([template_id], map: "template_field_template_id_foreign")
     @@index([field_id], map: "template_field_field_id_foreign")
-    @@map("template_fields")
+    @@map("template_field")
 }
 
 model Template {

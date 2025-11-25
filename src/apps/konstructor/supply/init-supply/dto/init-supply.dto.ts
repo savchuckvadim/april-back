@@ -11,7 +11,7 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ContractDto } from '@/apps/konstructor/document-generate/dto/contract.dto';
+import { ContractDto } from '@/apps/konstructor/dto/contract.dto';
 import { RegionsDto } from '@/apps/konstructor/document-generate/dto/region.dto';
 import { RegionDto } from '@/apps/konstructor/document-generate/dto/region.dto';
 import { PbxDealDto } from './pbx-deal.dto';
@@ -19,7 +19,7 @@ import { PbxCompanyDto } from './pbx-company.dto';
 import { SupplyReportDto } from './supply-fields/supply-fields.dto';
 import { ClientTypeEnum } from '@/apps/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from '@/apps/konstructor/document-generate/type/contract.type';
-import { ProductRowDto, SupplyDto } from '@/apps/konstructor/document-generate';
+import { ProductRowDto, ProductRowSupplyDto } from '@/apps/konstructor/document-generate';
 
 export class ClientTypeDto {
     @ApiProperty({ description: 'Client type', type: String })
@@ -161,10 +161,10 @@ export class InitSupplyDto {
     @IsString({ message: 'clientArmId must be a string' })
     clientArmId: string;
 
-    @ApiProperty({ description: 'Supply', type: SupplyDto })
+    @ApiProperty({ description: 'Supply', type: ProductRowSupplyDto })
     @ValidateNested()
-    @Type(() => SupplyDto)
-    supply: SupplyDto;
+    @Type(() => ProductRowSupplyDto)
+    supply: ProductRowSupplyDto;
 
     @ApiProperty({ description: 'Total sum', type: Number })
     @IsArray()

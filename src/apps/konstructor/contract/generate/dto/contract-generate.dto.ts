@@ -12,8 +12,7 @@ import {
 import {
     ProductRowDto,
     ProductRowSetDto,
-    ContractDto,
-    SupplyDto,
+    ProductRowSupplyDto,
     PriceDto,
     RegionDto,
     RegionsDto,
@@ -25,6 +24,7 @@ import { BxRqDto } from '../../../document-generate/dto/bx-rq/bx-rq.dto';
 import { ContractSpecificationDto } from '../../../document-generate/dto/specification/specification.dto';
 import { CONTRACT_LTYPE } from '../../../document-generate/type/contract.type';
 import { ApiProperty } from '@nestjs/swagger';
+import { ContractDto } from '../../../dto/contract.dto';
 
 class PlacementDto {
     @ApiProperty({ description: 'Placement of the contract' })
@@ -81,10 +81,10 @@ export class ContractGenerateDto {
     @Type(() => ComplectDto)
     complect: ComplectDto[];
 
-    @ApiProperty({ description: 'Supply of the contract', type: SupplyDto })
+    @ApiProperty({ description: 'Supply of the contract', type: ProductRowSupplyDto })
     @ValidateNested()
-    @Type(() => SupplyDto)
-    supply: SupplyDto;
+    @Type(() => ProductRowSupplyDto)
+    supply: ProductRowSupplyDto;
 
     @ApiProperty({ description: 'Price of the contract', type: PriceDto })
     @ValidateNested()

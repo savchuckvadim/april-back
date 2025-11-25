@@ -3,8 +3,8 @@ import { Type } from 'class-transformer';
 import { IsNumber } from 'class-validator';
 import { IsString } from 'class-validator';
 import { ValidateNested } from 'class-validator';
-import { SupplyDto } from 'src/modules/document/supply-report/dto/supply.dto';
-import { ContractDto } from '../contract.dto';
+import { ProductRowSupplyDto } from '../product-row/product-row.dto';
+import { ContractDto } from '../../../dto/contract.dto';
 
 export enum ProductTypeEnum {
     garant = 'garant',
@@ -35,8 +35,8 @@ export class ProductDto {
 
     @ValidateIf(o => o.supply !== false)
     @ValidateNested()
-    @Type(() => SupplyDto)
-    supply: SupplyDto | false;
+    @Type(() => ProductRowSupplyDto)
+    supply: ProductRowSupplyDto | false;
 
     @IsEnum(ProductTypeEnum) type: ProductTypeEnum;
     // остальные поля по аналогии (можно расширить)

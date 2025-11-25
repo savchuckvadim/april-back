@@ -5,9 +5,10 @@ import { InitRegionService } from './services/init.region.service';
 import { KonstructorInitController } from './konstructor-init.controller';
 import { InitComplectService } from './services/init-complect.service';
 import { InitInfoblockService } from './services/init-infoblock.service';
+import { PortalKonstructorModule } from '@/modules/portal-konstructor/portal-konstructor.module';
 
 @Module({
-    imports: [GarantModule],
+    imports: [GarantModule, PortalKonstructorModule],
     controllers: [KonstructorInitController],
     providers: [
         KonstructorInitUseCase,

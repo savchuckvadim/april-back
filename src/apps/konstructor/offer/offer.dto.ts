@@ -10,16 +10,17 @@ import { TemplateDto } from './dto/template.dto';
 import { PlacementDto } from 'src/apps/event-sales/dto/event-sale-flow/placement.dto';
 import {
     ComplectDto,
-    ContractDto,
+
     PriceDto,
     RecipientDto,
     RegionDto,
     RegionsDto,
-    SupplyDto,
+    ProductRowSupplyDto,
 } from '../document-generate';
 import { OfferSettingSDto } from './dto/offer-settings.dto';
 import { ProviderDto } from '../../../modules/portal-konstructor/provider/provider.dto';
 import { InvoiceSettingsDto } from './dto/invoice-settings.dto';
+import { ContractDto } from '../dto/contract.dto';
 
 export class OfferDto {
     @IsString() domain: string;
@@ -33,7 +34,7 @@ export class OfferDto {
     @Type(() => ComplectDto)
     complect: ComplectDto[];
 
-    @ValidateNested() @Type(() => SupplyDto) supply: SupplyDto;
+    @ValidateNested() @Type(() => ProductRowSupplyDto) supply: ProductRowSupplyDto;
 
     @ValidateNested() @Type(() => ContractDto) contract: ContractDto;
     @ValidateNested() @Type(() => RegionDto) region: RegionDto;

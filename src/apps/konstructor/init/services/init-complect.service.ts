@@ -8,11 +8,11 @@ import {
 } from '@/modules/garant';
 import { Injectable } from '@nestjs/common';
 
-export interface Complects {
-    prof: Complect[];
-    universal: Complect[];
+export interface IComplects {
+    prof: IComplect[];
+    universal: IComplect[];
 }
-interface Complect {
+export interface IComplect {
     id: number;
     name: string;
     title: string;
@@ -59,7 +59,7 @@ export class InitComplectService {
         private readonly infoGroupService: InfogroupService,
     ) {}
 
-    async get(): Promise<Complects | null> {
+    async get(): Promise<IComplects | null> {
         const complects = await this.complectService.findAll();
         if (!complects) return null;
 
@@ -73,7 +73,7 @@ export class InitComplectService {
         };
     }
 
-    private getComplectItem(complect: ComplectEntity): Complect {
+    private getComplectItem(complect: ComplectEntity): IComplect {
         if (!complect.infoblocks) {
             throw new Error(
                 'Infoblocks in Complect not found' +

@@ -5,15 +5,15 @@ import {
     InfogroupService,
 } from '@/modules/garant';
 
-export interface InfoGroups {
+export interface IInfoGroups {
     id: number;
     code: string;
     groupName: string;
     type: string;
     productType: string;
-    value: Infoblock[];
+    value: IInfoblock[];
 }
-interface Infoblock {
+export interface IInfoblock {
     id: number;
     name: string;
     code: string;
@@ -32,21 +32,21 @@ interface Infoblock {
 }
 @Injectable()
 export class InitInfoblockService {
-    constructor(private readonly infogroupService: InfogroupService) {}
+    constructor(private readonly infogroupService: InfogroupService) { }
 
-    async get(): Promise<InfoGroups[] | null> {
+    async get(): Promise<IInfoGroups[] | null> {
         const infogroups = await this.infogroupService.findMany();
         if (!infogroups) return null;
 
         return this.getGroups(infogroups);
     }
 
-    private getGroups(groups: InfogroupEntity[]): InfoGroups[] {
+    private getGroups(groups: InfogroupEntity[]): IInfoGroups[] {
         return groups.map(group => {
             return this.getInfogroupItem(group);
         });
     }
-    private getInfogroupItem(infogroup: InfogroupEntity): InfoGroups {
+    private getInfogroupItem(infogroup: InfogroupEntity): IInfoGroups {
         return {
             id: Number(infogroup.id),
             code: infogroup.code || '',
@@ -62,7 +62,7 @@ export class InitInfoblockService {
     private getInfoblockItem(
         group: InfogroupEntity,
         infoblock: InfoblockEntity,
-    ): Infoblock {
+    ): IInfoblock {
         return {
             id: Number(infoblock.id),
             name: infoblock.name || '',

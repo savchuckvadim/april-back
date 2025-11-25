@@ -12,7 +12,8 @@ import { RowContractDto } from './row-contract.dto';
 import { RowSupplyDto } from './row-supply.dto';
 import { RowPriceDto } from './row-price.dto';
 import { ProductDto } from './product.dto';
-import { SupplyDto } from './supply.dto';
+import { ProductRowSupplyDto } from '@/apps/konstructor/document-generate';
+
 
 export class RowDto {
     @IsInt()
@@ -60,6 +61,6 @@ export class RowDto {
     product: ProductDto;
 
     @ValidateNested()
-    @Type(() => SupplyDto)
-    currentSupply: SupplyDto;
+    @Type(() => ProductRowSupplyDto)
+    currentSupply: ProductRowSupplyDto;
 }

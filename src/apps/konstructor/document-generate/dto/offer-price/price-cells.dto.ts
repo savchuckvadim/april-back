@@ -4,7 +4,7 @@ import { IsNumber, ValidateNested } from 'class-validator';
 import { IsBoolean } from 'class-validator';
 import { IsString } from 'class-validator';
 import { IsOptional } from 'class-validator';
-import { SupplyDto } from '../supply.dto';
+import { SupplyDto } from '../../../dto/supply.dto';
 import { ApiProperty } from '@nestjs/swagger';
 export class SupplyFieldDto {
     @ApiProperty({ description: 'Name of the supply field' })
