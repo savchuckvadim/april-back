@@ -4,8 +4,10 @@ import { ContractService } from './contract.service';
 import { ContractRepository } from './contract.repository';
 import { ContractPrismaRepository } from './contract.prisma.repository';
 import { PrismaService } from 'src/core/prisma';
+import { PrismaModule } from '@/core/prisma/prisma.module';
 
 @Module({
+    imports: [PrismaModule],
     controllers: [ContractController],
     providers: [
         ContractService,
@@ -13,8 +15,8 @@ import { PrismaService } from 'src/core/prisma';
             provide: ContractRepository,
             useClass: ContractPrismaRepository,
         },
-        PrismaService,
+
     ],
     exports: [ContractService],
 })
-export class ContractModule {}
+export class ContractModule { }
