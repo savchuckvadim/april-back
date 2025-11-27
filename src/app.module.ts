@@ -47,6 +47,7 @@ import { AuthModule } from './apps/bitrix-app-client/auth/auth.module';
 import { MailModule } from './modules/mail/mail.module';
 import { OrkHistoryBxListModule } from './modules/pbx-ork-history-bx-list';
 import { CookieModule } from '@/core/cookie/cookie.module';
+import { WordTemplateModule } from './modules/offer-template/word';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -114,7 +115,7 @@ import { CookieModule } from '@/core/cookie/cookie.module';
         GarantModule,
         PortalKonstructorModule,
         OfferTemplateModule,
-
+        WordTemplateModule,
         BxDepartmentModule,
 
         HelperModule,

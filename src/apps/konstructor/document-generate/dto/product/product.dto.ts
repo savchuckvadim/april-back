@@ -5,6 +5,7 @@ import { IsString } from 'class-validator';
 import { ValidateNested } from 'class-validator';
 import { ProductRowSupplyDto } from '../product-row/product-row.dto';
 import { ContractDto } from '../../../dto/contract.dto';
+import { SupplyDto } from '@/apps/konstructor/dto';
 
 export enum ProductTypeEnum {
     garant = 'garant',
@@ -35,8 +36,8 @@ export class ProductDto {
 
     @ValidateIf(o => o.supply !== false)
     @ValidateNested()
-    @Type(() => ProductRowSupplyDto)
-    supply: ProductRowSupplyDto | false;
+    @Type(() => SupplyDto)
+    supply: SupplyDto | false;
 
     @IsEnum(ProductTypeEnum) type: ProductTypeEnum;
     // остальные поля по аналогии (можно расширить)

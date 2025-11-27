@@ -13,9 +13,27 @@ import { UpdateOfferTemplateDto } from '../dtos/update-offer-template.dto';
 import { OfferTemplatePage } from '../../page/entities/offer-template-page.entity';
 import { OfferTemplatePageRepository } from '../../page/repositories/offer-template-page.repository';
 import { OfferTemplatePageBlockRepository } from '../../page-block/repositories/offer-template-page-block.repository';
-import { CreateOfferTemplatePageBlockDto} from '../../page-block';
+import { CreateOfferTemplatePageBlockDto } from '../../page-block';
 import { CreateOfferTemplateRequestDto } from '../dtos/create-offer-template.dto';
 
+
+/**
+ * OfferTemplateService is a service that provides methods to interact with offer templates.
+ * будет использоваться как для pdf  так и для word шаблонов
+ * при этом они будут иметь ввыиду абсолютно разные сущности
+ *
+ * word будет содержать ссылку на реальный word docx template
+ * pdf будет содержать связь с pages и blocks и тд ввиде json
+ * будет использоваться для генерации pdf
+ *  при этом возможно будет какая то ссылка на демо
+ *
+ *
+ * Services-обертки Word и Pdf - у каждого своя детализация типизации
+ *
+ * тут более низкий уровень-абстракция
+
+
+*/
 @Injectable()
 export class OfferTemplateService {
     constructor(
@@ -57,7 +75,7 @@ export class OfferTemplateService {
         const result = await this.offerTemplateRepository.findMany(filters);
         console.log(result);
 
-        
+
         return result;
 
     }

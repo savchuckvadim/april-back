@@ -61,7 +61,7 @@ export class CreateOfferTemplateResponseDto implements OfferTemplate {
     @ApiProperty({ description: 'The type of the offer template' })
     @IsString()
     @IsOptional()
-    type: string = 'single';
+    type: string = 'single'; // pdf or word
 
     @IsString()
     @IsOptional()

@@ -16,7 +16,6 @@ import {
     ProductRowSetDto,
     RecipientDto,
 
-    ProductRowSupplyDto,
     PriceDto,
     RegionDto,
     RegionsDto,
@@ -24,6 +23,7 @@ import {
 } from 'src/apps/konstructor/document-generate';
 import { ProviderDto } from '../../../../modules/portal-konstructor/provider';
 import { ContractDto } from '../../dto/contract.dto';
+import { SupplyDto } from '../../dto';
 
 class PlacementDto {
     @IsString() placement: string;
@@ -56,7 +56,7 @@ export class CreateOfferDto {
     @ValidateNested({ each: true })
     @Type(() => ComplectDto)
     complect: ComplectDto[];
-    @ValidateNested() @Type(() => ProductRowSupplyDto) supply: ProductRowSupplyDto;
+    @ValidateNested() @Type(() => SupplyDto) supply: SupplyDto;
     @ValidateNested() @Type(() => PriceDto) price: PriceDto;
     @ValidateNested() @Type(() => ContractDto) contract: ContractDto;
     @ValidateNested() @Type(() => RegionsDto) regions: RegionsDto;
