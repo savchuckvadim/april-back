@@ -14,6 +14,7 @@ import {
     UseInterceptors,
     Res,
     NotFoundException,
+    Put,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -32,10 +33,23 @@ import {
 } from '../dtos/word-template-params.dto';
 import { WordTemplateQueryDto } from '../dtos/find-all-word-template.dto';
 import {
+    UserSelectedTemplateSummaryDto,
     WordTemplateDto,
     WordTemplateSummaryDto,
 } from '../dtos/word-template.dto';
+import { UserSelectedTemplate } from 'generated/prisma';
 
+
+
+/**
+ * set default
+ * default может установить для шаблонов public только суперюзер
+ * с пометкой is_default: true может быть только один шаблон в группе
+ *
+ *  default может установить для шаблонов portal любой user
+ *
+
+ */
 @ApiTags('Konstructor Word Template')
 @Controller('word-templates')
 export class WordTemplateController {
@@ -166,7 +180,7 @@ export class WordTemplateController {
     async findByPortal(
         @Param() params: WordTemplatePortalIdParamsDto,
     ): Promise<WordTemplateSummaryDto[]> {
-        const templates = await this.wordTemplateService.findByPortal(
+        const templates = await this.wordTemplateService.findPortalTemplates(
             BigInt(params.portal_id),
         );
         return templates.map(t => ({
@@ -196,23 +210,30 @@ export class WordTemplateController {
     @Get('user/:user_id/portal/:portal_id')
     async findUserTemplates(
         @Param() params: WordTemplateUserPortalParamsDto,
-    ): Promise<WordTemplateSummaryDto[]> {
+    ): Promise<{
+        templates: WordTemplateSummaryDto[];
+        selected: UserSelectedTemplateSummaryDto[];
+    }> {
         const templates = await this.wordTemplateService.findUserTemplates(
             BigInt(params.user_id),
             BigInt(params.portal_id),
         );
-        return templates.map(t => ({
-            id: String(t.id), // Преобразуем BigInt в string
-            name: t.name,
-            visibility: t.visibility as any,
-            is_default: t.is_default,
-            type: t.type,
-            code: t.code,
-            is_active: t.is_active,
-            counter: t.counter,
-            template_url: t.template_url,
-            created_at: t.created_at,
-        }));
+        const result = {
+            templates: templates.templates.map(t => ({
+                id: String(t.id), // Преобразуем BigInt в string
+                name: t.name,
+                visibility: t.visibility as any,
+                is_default: t.is_default,
+                type: t.type,
+                code: t.code,
+                is_active: t.is_active,
+                counter: t.counter,
+                template_url: t.template_url,
+                created_at: t.created_at,
+            })),
+            selected: templates.selected.map(t => new UserSelectedTemplateSummaryDto(t)),
+        };
+        return result;
     }
 
     @ApiOperation({
@@ -330,7 +351,7 @@ export class WordTemplateController {
         description: 'Word template updated successfully',
         type: WordTemplateDto,
     })
-    @Patch(':id')
+    @Put(':id')
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data')
     @ApiBody({

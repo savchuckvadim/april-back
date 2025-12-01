@@ -1572,6 +1572,7 @@ enum offer_templates_visibility {
     public
     private
     user
+    portal
 }
 
 enum offer_template_images_storage_type {

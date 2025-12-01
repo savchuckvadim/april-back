@@ -1,3 +1,4 @@
+import { offer_templates_visibility } from 'generated/prisma';
 import { OfferTemplate } from '../../offer-template/entities/offer-template.entity';
 
 /**
@@ -7,7 +8,7 @@ import { OfferTemplate } from '../../offer-template/entities/offer-template.enti
 export class WordTemplate {
     id?: string;
     name: string;
-    visibility: 'public' | 'private' | 'user';
+    visibility: offer_templates_visibility;
     is_default: boolean;
     file_path: string; // путь к docx файлу в хранилище
     demo_path?: string;
@@ -71,6 +72,7 @@ export class WordTemplate {
             tags: this.tags,
             is_active: this.is_active,
             counter: this.counter,
+
         };
     }
 }
@@ -78,7 +80,7 @@ export class WordTemplate {
 export class WordTemplateSummary {
     id: bigint | string;
     name: string;
-    visibility: 'public' | 'private' | 'user';
+    visibility: offer_templates_visibility;
     is_default: boolean;
     type: string;
     code: string;

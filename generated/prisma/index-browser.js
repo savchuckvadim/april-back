@@ -2119,7 +2119,8 @@ exports.Prisma.rolesOrderByRelevanceFieldEnum = {
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
-  user: 'user'
+  user: 'user',
+  portal: 'portal'
 };
 
 exports.offer_template_images_storage_type = exports.$Enums.offer_template_images_storage_type = {

@@ -58,10 +58,12 @@ export class UserSelectedTemplateService {
 
     async findByUserAndTemplate(
         user_id: bigint,
+        portal_id: bigint,
         template_id: bigint,
     ): Promise<UserSelectedTemplate | null> {
         return this.userSelectedTemplateRepository.findByUserAndTemplate(
             user_id,
+            portal_id,
             template_id,
         );
     }
@@ -93,6 +95,7 @@ export class UserSelectedTemplateService {
         const existingTemplate =
             await this.userSelectedTemplateRepository.findByUserAndTemplate(
                 BigInt(createDto.bitrix_user_id),
+                BigInt(createDto.portal_id),
                 BigInt(createDto.offer_template_id),
             );
 

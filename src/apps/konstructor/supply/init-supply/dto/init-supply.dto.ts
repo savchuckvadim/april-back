@@ -20,6 +20,7 @@ import { SupplyReportDto } from './supply-fields/supply-fields.dto';
 import { ClientTypeEnum } from '@/apps/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from '@/apps/konstructor/document-generate/type/contract.type';
 import { ProductRowDto, ProductRowSupplyDto } from '@/apps/konstructor/document-generate';
+import { SupplyDto } from '@/apps/konstructor/dto';
 
 export class ClientTypeDto {
     @ApiProperty({ description: 'Client type', type: String })
@@ -163,8 +164,8 @@ export class InitSupplyDto {
 
     @ApiProperty({ description: 'Supply', type: ProductRowSupplyDto })
     @ValidateNested()
-    @Type(() => ProductRowSupplyDto)
-    supply: ProductRowSupplyDto;
+    @Type(() => SupplyDto)
+    supply: SupplyDto;
 
     @ApiProperty({ description: 'Total sum', type: Number })
     @IsArray()

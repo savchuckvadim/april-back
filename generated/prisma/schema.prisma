@@ -607,6 +607,7 @@ model portal_contracts {
   @@index([contract_id], map: "portal_contracts_contract_id_foreign")
   @@index([portal_id], map: "portal_contracts_portal_id_foreign")
   @@index([portal_measure_id], map: "portal_contracts_portal_measure_id_foreign")
+  @@map("portal_contracts")
 }
 
 model portal_measure {
@@ -1570,6 +1571,7 @@ enum offer_templates_visibility {
   public
   private
   user
+  portal
 }
 
 enum offer_template_images_storage_type {

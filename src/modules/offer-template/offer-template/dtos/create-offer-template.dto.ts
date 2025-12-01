@@ -15,7 +15,7 @@ import { OfferTemplate } from '../entities/offer-template.entity';
 
 export enum OfferTemplateVisibility {
     PUBLIC = 'public',
-    PRIVATE = 'private',
+    PORTAL = 'portal',
     USER = 'user',
 }
 
@@ -42,7 +42,7 @@ export class CreateOfferTemplateResponseDto implements OfferTemplate {
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
-    visibility: OfferTemplateVisibility = OfferTemplateVisibility.PRIVATE;
+    visibility: OfferTemplateVisibility = OfferTemplateVisibility.USER;
 
     @ApiProperty({ description: 'Whether the offer template is default' })
     @IsBoolean()
@@ -176,7 +176,7 @@ export class CreateOfferTemplateRequestDto {
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
-    visibility?: OfferTemplateVisibility = OfferTemplateVisibility.PRIVATE;
+    visibility?: OfferTemplateVisibility = OfferTemplateVisibility.USER;
 
     @ApiProperty({ description: 'Whether the offer template is default' })
     @IsBoolean()

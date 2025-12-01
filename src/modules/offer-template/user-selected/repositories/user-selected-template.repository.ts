@@ -27,6 +27,7 @@ export abstract class UserSelectedTemplateRepository {
     ): Promise<UserSelectedTemplate[]>;
     abstract findByUserAndTemplate(
         user_id: bigint,
+        portal_id: bigint,
         template_id: bigint,
     ): Promise<UserSelectedTemplate | null>;
     abstract findCurrentByUser(

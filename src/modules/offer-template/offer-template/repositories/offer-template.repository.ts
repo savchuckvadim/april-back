@@ -1,3 +1,4 @@
+import { offer_templates_visibility } from 'generated/prisma';
 import {
     OfferTemplate,
     OfferTemplateSummary,
@@ -6,7 +7,7 @@ import {
 export abstract class OfferTemplateRepository {
     abstract findById(id: bigint): Promise<OfferTemplate | null>;
     abstract findMany(filters?: {
-        visibility?: 'public' | 'private' | 'user';
+        visibility?: offer_templates_visibility | undefined;
         portal_id?: bigint;
         is_active?: boolean;
         search?: string;
@@ -24,4 +25,9 @@ export abstract class OfferTemplateRepository {
         user_id: bigint,
         portal_id: bigint,
     ): Promise<OfferTemplateSummary[]>;
+    abstract findFullUserTemplates(
+        user_id: bigint,
+        portal_id: bigint,
+    ): Promise<OfferTemplate[]>;
+
 }

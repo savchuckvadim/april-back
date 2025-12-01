@@ -23,10 +23,16 @@ import { ClientTypeEnum } from '../../document-generate/type/client.type';
 import { ContractDto } from '../../dto/contract.dto';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
 import { PlacementDto } from '@/apps/event-sales/dto/event-sale-flow/placement.dto';
+import { SupplyDto } from '../../dto';
 //
 
 
 export class OfferWordByTemplateGenerateDto {
+
+    @ApiProperty({ description: 'ID of the template' })
+    @IsString()
+    templateId: string;
+
     @ApiProperty({ description: 'Domain of the company' })
     @IsString()
     domain: string;
@@ -64,10 +70,10 @@ export class OfferWordByTemplateGenerateDto {
     @Type(() => ComplectDto)
     complect: ComplectDto[];
 
-    @ApiProperty({ description: 'Supply of the contract', type: ProductRowSupplyDto })
+    @ApiProperty({ description: 'Supply of the contract', type: SupplyDto })
     @ValidateNested()
-    @Type(() => ProductRowSupplyDto)
-    supply: ProductRowSupplyDto;
+    @Type(() => SupplyDto)
+    supply: SupplyDto;
 
     @ApiProperty({ description: 'Price of the contract', type: PriceDto })
     @ValidateNested()

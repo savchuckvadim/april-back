@@ -236,11 +236,13 @@ export class UserSelectedTemplatePrismaRepository
 
     async findByUserAndTemplate(
         user_id: bigint,
+        portal_id: bigint,
         template_id: bigint,
     ): Promise<UserSelectedTemplate | null> {
         const result = (await this.prisma.userSelectedTemplate.findFirst({
             where: {
                 bitrix_user_id: user_id,
+                portal_id: portal_id,
                 offer_template_id: template_id,
             },
             include: {

@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { WordTemplate, WordTemplateSummary } from '../entities/word-template.entity';
 import { OfferTemplateVisibility } from '../../offer-template/dtos/create-offer-template.dto';
 import { IsString } from 'class-validator';
+import { UserSelectedTemplate } from '../../user-selected';
 
 export class WordTemplateDto extends WordTemplate {
     @ApiProperty()
@@ -80,3 +81,39 @@ export class WordTemplateSummaryDto extends WordTemplateSummary {
     declare created_at?: Date;
 }
 
+export class UserSelectedTemplateSummaryDto {
+    constructor(partial: Partial<UserSelectedTemplate>) {
+
+        Object.assign(this, {
+            // id: String(partial.id),
+            template_id: Number(partial.offer_template_id),
+            is_current: partial.is_current,
+            is_favorite: partial.is_favorite,
+            is_active: partial.is_active,
+            portal_id: Number(partial.portal_id),
+            bitrix_user_id: Number(partial.bitrix_user_id),
+        });
+    }
+    @ApiProperty()
+    id: number;
+
+    @ApiProperty()
+    bitrix_user_id: number;
+
+    @ApiProperty()
+    portal_id: number;
+
+    @ApiProperty()
+    template_id: number;
+
+    @ApiProperty()
+    is_current: boolean;
+
+    @ApiProperty()
+    is_favorite: boolean;
+
+    @ApiProperty()
+    is_active: boolean;
+
+
+}

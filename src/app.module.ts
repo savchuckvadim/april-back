@@ -48,6 +48,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { OrkHistoryBxListModule } from './modules/pbx-ork-history-bx-list';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { WordTemplateModule } from './modules/offer-template/word';
+import { OfferWordModule } from './apps/konstructor/offer-word/offer-word.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -117,6 +118,8 @@ import { WordTemplateModule } from './modules/offer-template/word';
         OfferTemplateModule,
         WordTemplateModule,
         BxDepartmentModule,
+        OfferWordModule,
+
 
         HelperModule,
 

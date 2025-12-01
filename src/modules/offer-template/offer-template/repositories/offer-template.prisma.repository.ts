@@ -279,19 +279,14 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     ): Promise<OfferTemplateSummary[]> {
         const results = (await this.prisma.offerTemplate.findMany({
             where: {
-                OR: [
-                    { visibility: 'public' },
-                    { visibility: 'user' },
-                    {
-                        userSelectedTemplates: {
-                            some: {
-                                bitrix_user_id: user_id,
-                                portal_id,
-                            },
-                        },
-                    },
-                ],
+                visibility: 'user',
                 is_active: true,
+                userSelectedTemplates: {
+                    some: {
+                        bitrix_user_id: user_id,
+                        portal_id: portal_id,
+                    },
+                },
             },
             select: {
                 id: true,
@@ -310,5 +305,49 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
         })) as Partial<OfferTemplateSummary>[];
 
         return results.map(result => new OfferTemplateSummary(result));
+    }
+
+    async findFullUserTemplates(
+        user_id: bigint,
+        portal_id: bigint,
+    ): Promise<OfferTemplate[]> {
+        const results = (await this.prisma.offerTemplate.findMany({
+            where: {
+                OR: [
+
+                    { visibility: 'user' },
+                    {
+                        userSelectedTemplates: {
+                            some: {
+                                bitrix_user_id: user_id,
+                                portal_id,
+                            },
+                        },
+                    },
+                ],
+                is_active: true,
+            },
+
+            select: {
+                id: true,
+                name: true,
+                visibility: true,
+                is_default: true,
+                type: true,
+                style: true,
+                color: true,
+                code: true,
+                is_active: true,
+                counter: true,
+                created_at: true,
+                offerTemplateFonts: true,
+            },
+            orderBy: { created_at: 'desc' },
+        })) as Partial<OfferTemplateSummary>[];
+
+        return results.map(result => new OfferTemplate({
+            ...result,
+            id: String(result.id),
+        }));
     }
 }

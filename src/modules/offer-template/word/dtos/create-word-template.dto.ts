@@ -27,7 +27,7 @@ export class CreateWordTemplateRequestDto {
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
-    visibility?: OfferTemplateVisibility = OfferTemplateVisibility.PRIVATE;
+    visibility?: OfferTemplateVisibility = OfferTemplateVisibility.USER;
 
     @ApiProperty({ description: 'Whether the word template is default' })
     @IsBoolean()

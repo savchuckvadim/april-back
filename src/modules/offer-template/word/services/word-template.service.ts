@@ -10,8 +10,10 @@ import { StorageService, StorageType } from '../../../../core/storage/storage.se
 import { WordTemplate, WordTemplateSummary } from '../entities/word-template.entity';
 import { CreateWordTemplateRequestDto } from '../dtos/create-word-template.dto';
 import { UpdateWordTemplateDto } from '../dtos/update-word-template.dto';
-import { OfferTemplate } from '../../offer-template/entities/offer-template.entity';
+import { OfferTemplate, OfferTemplateSummary } from '../../offer-template/entities/offer-template.entity';
 import { validateDocxFile } from '../lib/file-validator';
+import { offer_templates_visibility } from 'generated/prisma';
+import { UserSelectedTemplate } from '../../user-selected';
 
 @Injectable()
 export class WordTemplateService {
@@ -127,38 +129,83 @@ export class WordTemplateService {
         return wordTemplates;
     }
 
+    // /**
+    //  * Находит Word шаблоны c определенным портал id
+    //  */
+    // async findByPortal(portal_id: bigint): Promise<WordTemplateSummary[]> {
+    //     const templates = await this.offerTemplateRepository.findByPortal(portal_id);
+    //     const wordTemplates: WordTemplateSummary[] = [];
+
+    //     for (const t of templates) {
+    //         if (t.type === 'word') {
+    //             const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
+    //             const summary = new WordTemplateSummary({
+    //                 id: t.id,
+    //                 name: t.name,
+    //                 visibility: t.visibility,
+    //                 is_default: t.is_default,
+    //                 type: t.type,
+    //                 code: t.code,
+    //                 is_active: t.is_active,
+    //                 counter: t.counter,
+    //                 created_at: t.created_at,
+    //             });
+    //             if (fullTemplate?.file_path) {
+    //                 summary.template_url = this.getTemplateUrl(
+    //                     fullTemplate.file_path,
+    //                     String(t.id),
+    //                 );
+    //             }
+    //             wordTemplates.push(summary);
+    //         }
+    //     }
+
+    //     return wordTemplates;
+    // }
+
     /**
-     * Находит Word шаблоны для портала
-     */
-    async findByPortal(portal_id: bigint): Promise<WordTemplateSummary[]> {
-        const templates = await this.offerTemplateRepository.findByPortal(portal_id);
-        const wordTemplates: WordTemplateSummary[] = [];
+    * Находит Word шаблоны для портала
+    */
+    async findPortalTemplates(portal_id: bigint): Promise<WordTemplateSummary[]> {
+        const templates = await this.offerTemplateRepository.findMany({
+            portal_id: portal_id,
+            visibility: offer_templates_visibility.portal,
+        });
 
+        const fullTemplates: OfferTemplate[] = [];
         for (const t of templates) {
-            if (t.type === 'word') {
-                const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
-                const summary = new WordTemplateSummary({
-                    id: t.id,
-                    name: t.name,
-                    visibility: t.visibility,
-                    is_default: t.is_default,
-                    type: t.type,
-                    code: t.code,
-                    is_active: t.is_active,
-                    counter: t.counter,
-                    created_at: t.created_at,
-                });
-                if (fullTemplate?.file_path) {
-                    summary.template_url = this.getTemplateUrl(
-                        fullTemplate.file_path,
-                        String(t.id),
-                    );
-                }
-                wordTemplates.push(summary);
-            }
+            const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
+            fullTemplate && fullTemplates.push(fullTemplate);
         }
-
+        const wordTemplates: WordTemplateSummary[] = await this.getWordTemplates(fullTemplates);
         return wordTemplates;
+        // const wordTemplates: WordTemplateSummary[] = [];
+
+        // for (const t of templates) {
+        //     if (t.type === 'word') {
+        //         const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
+        //         const summary = new WordTemplateSummary({
+        //             id: t.id,
+        //             name: t.name,
+        //             visibility: t.visibility,
+        //             is_default: t.is_default,
+        //             type: t.type,
+        //             code: t.code,
+        //             is_active: t.is_active,
+        //             counter: t.counter,
+        //             created_at: t.created_at,
+        //         });
+        //         if (fullTemplate?.file_path) {
+        //             summary.template_url = this.getTemplateUrl(
+        //                 fullTemplate.file_path,
+        //                 String(t.id),
+        //             );
+        //         }
+        //         wordTemplates.push(summary);
+        //     }
+        // }
+
+        // return wordTemplates;
     }
 
     /**
@@ -167,40 +214,50 @@ export class WordTemplateService {
     async findUserTemplates(
         user_id: bigint,
         portal_id: bigint,
-    ): Promise<WordTemplateSummary[]> {
-        const templates = await this.offerTemplateRepository.findUserTemplates(
+    ): Promise<{
+        templates: WordTemplateSummary[];
+        selected: UserSelectedTemplate[];
+    }> {
+        const templates = await this.offerTemplateRepository.findFullUserTemplates(
             user_id,
             portal_id,
         );
-        const wordTemplates: WordTemplateSummary[] = [];
 
-        for (const t of templates) {
-            if (t.type === 'word') {
-                const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
-                const summary = new WordTemplateSummary({
-                    id: t.id,
-                    name: t.name,
-                    visibility: t.visibility,
-                    is_default: t.is_default,
-                    type: t.type,
-                    code: t.code,
-                    is_active: t.is_active,
-                    counter: t.counter,
-                    created_at: t.created_at,
-                });
-                if (fullTemplate?.file_path) {
-                    summary.template_url = this.getTemplateUrl(
-                        fullTemplate.file_path,
-                        String(t.id),
-                    );
-                }
-                wordTemplates.push(summary);
-            }
-        }
-
-        return wordTemplates;
+        const wordTemplates: WordTemplateSummary[] = await this.getWordTemplates(templates);
+        const selectedTemplates = await this.userSelectedTemplateRepository.findByUser(user_id, portal_id);
+        return {
+            templates: wordTemplates,
+            selected: selectedTemplates,
+        };
     }
+    private async getWordTemplates(templates: OfferTemplate[]): Promise<WordTemplateSummary[]> {
+        return Promise.all(templates
+            .filter(t => t.type === 'word')
+            .map(t => this.getWordTemplateSummary(t)));
+    }
+    private async getWordTemplateSummary(template: OfferTemplate): Promise<WordTemplateSummary> {
 
+
+        const summary = new WordTemplateSummary({
+            id: template.id,
+            name: template.name,
+            visibility: template.visibility,
+            is_default: template.is_default,
+            type: template.type,
+            code: template.code,
+            is_active: template.is_active,
+            counter: template.counter,
+            created_at: template.created_at,
+
+        });
+        if (template?.file_path) {
+            summary.template_url = this.getTemplateUrl(
+                template.file_path,
+                String(template.id),
+            );
+        }
+        return summary;
+    }
     /**
      * Создает новый Word шаблон с загрузкой docx файла
      */
@@ -208,6 +265,14 @@ export class WordTemplateService {
         createDto: CreateWordTemplateRequestDto,
         file?: Express.Multer.File,
     ): Promise<WordTemplate> {
+        //
+        /**
+         * Если visibility portal делаем связь  с portal
+         * но также должны засунуть userSelectedTemplates связь с пользователем
+         * чтобы имел пометку выбран пользователем
+         */
+
+
         // Валидируем файл (тип, размер)
         validateDocxFile(file, {
             maxSize: 10 * 1024 * 1024, // 10 MB
@@ -231,7 +296,7 @@ export class WordTemplateService {
         // Создаем шаблон в БД
         const templateData: Partial<OfferTemplate> = {
             name: createDto.name,
-            visibility: createDto.visibility || 'private',
+            visibility: createDto.visibility || offer_templates_visibility.user,
             is_default: createDto.is_default || false,
             file_path: filePath,
             type: 'word',
@@ -260,6 +325,7 @@ export class WordTemplateService {
             // Проверяем, не существует ли уже такая связь
             const existing = await this.userSelectedTemplateRepository.findByUserAndTemplate(
                 BigInt(createDto.user_id),
+                BigInt(createDto.portal_id),
                 BigInt(createdTemplate.id!),
             );
 

@@ -2,11 +2,12 @@ import { IsNumber } from 'class-validator';
 import { IsString } from 'class-validator';
 import { IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNumberOrString } from '@/core/decorators/dto/number-or-string.decorator';
 
 export class SupplyDto {
     @ApiProperty({ description: 'Contract prop supplies quantity' })
-    @IsNumber()
-    contractPropSuppliesQuantity: number;
+    @IsNumberOrString()
+    contractPropSuppliesQuantity: number | string;
 
     @ApiProperty({ description: 'Contract prop 2' })
     @IsOptional()

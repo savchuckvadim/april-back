@@ -1,3 +1,4 @@
+import { offer_templates_visibility } from 'generated/prisma';
 import { OfferTemplateFont } from '../../font/';
 import { OfferTemplatePage } from '../../page/';
 import { OfferTemplatePortal } from '../../portal/';
@@ -6,7 +7,7 @@ import { UserSelectedTemplate } from '../../user-selected/';
 export class OfferTemplate {
     id?: string;
     name: string;
-    visibility: 'public' | 'private' | 'user';
+    visibility: offer_templates_visibility;
     is_default: boolean;
     file_path: string;
     demo_path?: string;
@@ -56,7 +57,7 @@ export class OfferTemplate {
 export class OfferTemplateSummary {
     id: bigint | string;
     name: string;
-    visibility: 'public' | 'private' | 'user';
+    visibility: offer_templates_visibility;
     is_default: boolean;
     type: string;
     style?: string;

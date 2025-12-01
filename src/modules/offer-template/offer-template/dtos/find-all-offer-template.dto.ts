@@ -23,7 +23,7 @@ export class OfferTemplateQueryDto {
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
-    visibility?: OfferTemplateVisibility = OfferTemplateVisibility.PRIVATE;
+    visibility?: OfferTemplateVisibility = OfferTemplateVisibility.USER;
 
 
     @ApiPropertyOptional({
