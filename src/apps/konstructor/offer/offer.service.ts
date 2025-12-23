@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OfferDto } from './offer.dto';
 import { FileLinkService } from 'src/core/file-link/file-link.service';
 import { ConfigService } from '@nestjs/config';
@@ -34,6 +34,8 @@ export interface OfferTemplateRenderData {
     infoblocksRight: string[];
     table: PriceTableRenderData;
 }
+
+//TODO: Не может быть injectable так как в конструкторе хардкодится один шаблон
 @Injectable()
 export class OfferService {
     private doc: Docxtemplater<PizZip>;
@@ -42,6 +44,7 @@ export class OfferService {
     private resultPath: string;
     private documentName: string;
     private baseUrl: string;
+    private readonly logger = new Logger(OfferService.name);
     constructor(
         private readonly storage: StorageService,
         private readonly fileLinkService: FileLinkService,
@@ -50,25 +53,35 @@ export class OfferService {
     ) {
         this.currentYear = dayjs().format('YYYY');
         this.baseUrl = this.configService.get('APP_URL') as string;
-        this.getDocTemplater();
+        try {
+            this.getDocTemplater();
+        } catch (error) {
+            this.logger.error('Error initializing OfferService:', error);
+        }
+
     }
     private getDocTemplater() {
-        const templatePath = this.storage.getFilePath(
-            StorageType.APP,
-            'konstructor/templates/offer',
-            'template.docx',
-        );
-        const content = fs.readFileSync(templatePath, 'binary');
+        try {
+            const templatePath = this.storage.getFilePath(
+                StorageType.APP,
+                'konstructor/templates/offer',
+                'template.docx',
+            );
+            const content = fs.readFileSync(templatePath, 'binary');
 
-        const zip = new PizZip(content);
-        this.doc = new Docxtemplater(
-            zip,
+            const zip = new PizZip(content);
+            this.doc = new Docxtemplater(
+                zip,
 
-            {
-                paragraphLoop: true,
-                linebreaks: true,
-            },
-        );
+                {
+                    paragraphLoop: true,
+                    linebreaks: true,
+                },
+            );
+        } catch (error) {
+            this.logger.error('Error getting DocTemplater getDocTemplater:', error);
+        }
+
     }
     async createOffer(
         dto: OfferDto,
