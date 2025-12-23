@@ -2,6 +2,7 @@ import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { Contact, MigrateToBxDto } from '../../dto/migrate-to-bx.dto';
 import { GsrMigrateBitrixAbstract } from './gsr-migrate-bitrix-abstract.service';
 import { IField } from 'src/modules/portal/interfaces/portal.interface';
+import { delay } from '@/lib';
 
 export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
     private isValidEmail(email: string): boolean {
@@ -66,6 +67,83 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
         });
         return contactCodes;
     }
+
+    async getContactSetContactsByCompanyId(
+        element: MigrateToBxDto,
+        companyId: string,
+    ): Promise<string[]> {
+        const contactIds = [] as string[];
+
+        for (const contact of element.contacts) {
+
+            const hlPfieldBitrixId =
+                this.portal.getContactFieldBitrixId('ork_hotline_count');
+            const skapPfieldBitrixId =
+                this.portal.getContactFieldBitrixId('ork_skap_count');
+            const chkField = this.portal.getContactField('ork_chk_garant');
+            let chkFieldBitrixId = '';
+            let chekFieldValue: number | undefined;
+            if (chkField) {
+                chkFieldBitrixId = this.portal.getFieldBitrixId(chkField);
+            }
+
+            if (chkFieldBitrixId && chkField) {
+                chekFieldValue = this.getChFieldItem(contact, chkField);
+            }
+            const chkFieldBxValue = {};
+            if (chkFieldBitrixId && chekFieldValue) {
+                chkFieldBxValue[chkFieldBitrixId] = chekFieldValue;
+            }
+
+            const email = contact?.email?.trim();
+
+            const emailField = this.isValidEmail(email)
+                ? [{ VALUE: email, TYPE: 'WORK' }]
+                : []; // ← пустой массив, Bitrix проглоти
+
+            if (contact.phone.length < 200) {
+                let addContactData = {
+                    ASSIGNED_BY_ID: this.userId,
+                    COMPANY_ID: companyId,
+                    NAME: contact.name,
+                    COMMENTS: this.getComment(contact),
+
+                    EMAIL: emailField,
+                    POST: contact.position,
+                    [hlPfieldBitrixId]: contact.conmtactGl,
+                    [skapPfieldBitrixId]: contact.contactSkap,
+                    ...chkFieldBxValue,
+                }
+                if(contact.phone){
+                    addContactData['PHONE'] = [
+                        {
+                            VALUE: contact.phone,
+                            TYPE: 'WORK',
+                        },
+                    ]
+                }
+                try {
+                    const resultContactIdResponse = await this.bitrix.contact.set(
+                        addContactData
+
+                    );
+                    contactIds.push(resultContactIdResponse.result.toString());
+
+                } catch (error) {
+                    console.log(
+                        error
+                    )
+                    console.log(
+                        addContactData
+                    )
+                }
+                await delay(1000)
+            }
+        };
+        return contactIds;
+    }
+
+
     private getComment(contact: Contact) {
         let comment =
             ' <br><b>Имя</b> ' +

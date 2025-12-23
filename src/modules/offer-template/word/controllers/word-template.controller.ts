@@ -38,6 +38,7 @@ import {
     WordTemplateSummaryDto,
 } from '../dtos/word-template.dto';
 import { UserSelectedTemplate } from 'generated/prisma';
+import { randomUUID } from 'crypto';
 
 
 
@@ -78,7 +79,14 @@ export class WordTemplateController {
         @Body() createDto: CreateWordTemplateRequestDto,
     ): Promise<CreateWordTemplateResponseDto> {
         try {
-            const result = await this.wordTemplateService.create(createDto, file);
+
+            const uuid = randomUUID();
+
+            const code =  `offer-word-${uuid}`;
+            const result = await this.wordTemplateService.create({
+                ...createDto,
+                code,
+            }, file);
             return {
                 id: String(result.id!), // Преобразуем BigInt в string
                 name: result.name,

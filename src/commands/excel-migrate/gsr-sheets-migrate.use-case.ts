@@ -7,7 +7,7 @@ import * as ExcelJS from 'exceljs';
 export class GsrSheetsMigrateUseCase {
     constructor(
         private readonly parseService: GsrParseService,
-        // private readonly bitrixService: GsrBitrixService
+        private readonly bitrixService: GsrBitrixService
     ) {}
 
     async migrate(domain: string, userId: string, filePath: string) {
@@ -22,6 +22,8 @@ export class GsrSheetsMigrateUseCase {
         await workbook.xlsx.readFile(filePath);
         const sheets = workbook.worksheets;
         const data: any[] = [];
+        console.log('sheets');
+        console.log(sheets?.length);
         sheets.forEach((sheet, index) => {
             const sheetItem = {
                 sheetId: index,
@@ -30,6 +32,8 @@ export class GsrSheetsMigrateUseCase {
                 contacts: [] as any[],
                 company: {} as any,
             };
+            console.log('sheetItem');
+            console.log(sheetItem);
             const company = {
                 clientName: '',
                 address: '',
@@ -156,8 +160,9 @@ export class GsrSheetsMigrateUseCase {
                         if (index === 0) contact.position = item;
                         if (index === 1) contact.name = item;
                         if (index === 2) contact.phone = item;
-                        if (index === 3) contact.email = item;
-                        if (index === 4) contact.payinfo = item;
+                        // if (index === 3) contact.phone = item; //todo доп номер
+                        if (index === 4) contact.email = item;
+                        if (index === 5) contact.payinfo = item;
                         company.contacts.push(contact);
                     });
                 }

@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
 import { PortalRepository } from './portal.repository';
 import { PortalEntity } from './portal.entity';
-import { createPortalEntityFromPrisma } from './lib/portal-entity.util';
+import { createPortalEntityFromPrisma, PortalWithRelations } from './lib/portal-entity.util';
+import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class PortalPrismaRepository implements PortalRepository {
@@ -29,18 +30,44 @@ export class PortalPrismaRepository implements PortalRepository {
         return createPortalEntityFromPrisma(result);
     }
     async update(portal: Partial<PortalEntity>): Promise<PortalEntity | null> {
-        const data = {
+        const data: Prisma.PortalUpdateInput = {
             updated_at: new Date(),
+        };
+
+        if (portal.domain !== undefined) {
+            data.domain = portal.domain;
         }
-        for (const key in portal) {
-            if (portal[key] && key !== 'id') {
-                data[key] = portal[key];
-            }
+
+        if (portal.key !== undefined) {
+            data.key = portal.key;
         }
+
+        if (portal.cRestClientId !== undefined) {
+            data.C_REST_CLIENT_ID = portal.cRestClientId;
+        }
+
+        if (portal.cRestClientSecret !== undefined) {
+            data.C_REST_CLIENT_SECRET = portal.cRestClientSecret;
+        }
+
+        if (portal.cRestWebHookUrl !== undefined) {
+            data.C_REST_WEB_HOOK_URL = portal.cRestWebHookUrl;
+        }
+
+        // 🔥 ВОТ ГЛАВНОЕ убрать на продакшен client будет пущиться только в create
+        if (portal.clientId) {
+            data.clients = {
+                connect: {
+                    id: BigInt(portal.clientId!),
+                },
+            };
+        }
+
         const result = await this.prisma.portal.update({
             where: { id: BigInt(portal.id!) },
             data,
         });
+
         return createPortalEntityFromPrisma(result);
     }
     async delete(id: number): Promise<void> {
@@ -59,12 +86,13 @@ export class PortalPrismaRepository implements PortalRepository {
             include: {
                 agents: true,
                 templates: true,
+                clients: true,
             },
         });
 
         if (!result) return null;
 
-        return createPortalEntityFromPrisma(result);
+        return createPortalEntityFromPrisma(result as PortalWithRelations);
     }
     async findByDomain(domain: string): Promise<PortalEntity | null> {
         const result = await this.prisma.portal.findFirst({
@@ -72,10 +100,11 @@ export class PortalPrismaRepository implements PortalRepository {
             include: {
                 agents: true,
                 templates: true,
+                clients: true,
             },
         });
         if (!result) return null;
-        return createPortalEntityFromPrisma(result);
+        return createPortalEntityFromPrisma(result as PortalWithRelations);
     }
     async findByClientId(clientId: number): Promise<PortalEntity[] | null> {
         const result = await this.prisma.portal.findMany({
@@ -96,8 +125,9 @@ export class PortalPrismaRepository implements PortalRepository {
             include: {
                 agents: true,
                 templates: true,
+                clients: true,
             },
-        });
+        }) as PortalWithRelations[] | null;
 
         if (!result) return null;
 

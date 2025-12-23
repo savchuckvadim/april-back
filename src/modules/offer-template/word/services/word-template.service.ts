@@ -50,6 +50,8 @@ export class WordTemplateService {
         return wordTemplate;
     }
 
+
+
     /**
      * Находит все Word шаблоны с фильтрами
      */
@@ -285,7 +287,7 @@ export class WordTemplateService {
 
         // Сохраняем файл в хранилище
         const fileName = `${Date.now()}_${file.originalname}`;
-        const subPath = 'word-templates';
+        const subPath = 'konstructor/word-templates';
         const filePath = await this.storageService.saveFile(
             file.buffer,
             fileName,
@@ -396,7 +398,7 @@ export class WordTemplateService {
 
             // Сохраняем новый файл
             const fileName = `${Date.now()}_${file.originalname}`;
-            const subPath = 'word-templates';
+            const subPath = 'konstructor/word-templates';
             const filePath = await this.storageService.saveFile(
                 file.buffer,
                 fileName,
@@ -517,10 +519,12 @@ export class WordTemplateService {
     private getTemplateUrl(filePath: string, templateId?: string): string {
         if (templateId) {
             // Генерируем URL через API эндпоинт для скачивания
-            return `/api/word-templates/${String(templateId)}/download`;
+            return `/api/konstructor/word-templates/${String(templateId)}/download`;
         }
         // Если ID не передан, возвращаем путь к файлу (для обратной совместимости)
-        return `/api/files/word-templates/${filePath.split('/').pop()}`;
+        return `/api/files/konstructor/word-templates/${filePath.split('/').pop()}`;
     }
+
+
 }
 

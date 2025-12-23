@@ -20,6 +20,7 @@ import { IBXTask } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { TaskUseCase } from './task.use-case';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
+import { GsrBitrixService } from './gsr-bitrix.service';
 import { Express } from 'express';
 
 class GsrMigrateDto {
@@ -38,6 +39,7 @@ export class GsrServiceController {
         private readonly contactsCreateUseCase: ContactsCreateUseCase,
         private readonly taskUseCase: TaskUseCase,
         private readonly sheetsMigrateUseCase: GsrSheetsMigrateUseCase,
+        private readonly bitrixService: GsrBitrixService,
     ) { }
 
     @Post('parse')
@@ -87,6 +89,9 @@ export class GsrServiceController {
             body.userId,
             file.path,
         );
+        console.log('result');
+        console.log(result);
+        console.log(file.path);
         return res.send(result);
     }
 
@@ -147,6 +152,27 @@ export class GsrServiceController {
             body.domain,
             body.userId,
             file.path,
+        );
+        return res.send(result);
+    }
+
+    @Post('migrate-from-json')
+    @ApiOperation({ summary: 'Migrate data from JSON file to Bitrix' })
+    @ApiResponse({
+        status: 200,
+        description: 'Migration completed successfully',
+    })
+    async migrateFromJson(
+        @Body() body: GsrMigrateDto & { jsonFilePath?: string },
+        @Res() res: Response,
+    ) {
+        // По умолчанию используем gsr.last-migrate.json, если путь не указан
+        const jsonFilePath = body.jsonFilePath || 'uploads/gsr.last-migrate.json';
+
+        const result = await this.bitrixService.loadAndMigrateFromJson(
+            body.domain,
+            body.userId,
+            jsonFilePath,
         );
         return res.send(result);
     }

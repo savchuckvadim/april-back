@@ -10,7 +10,7 @@ import { RedisModule } from './core/redis/redis.module';
 import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
 import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 import { EventSalesModule } from './apps/event-sales/event.module';
-// import { GsrModule } from './commands/excel-migrate/gsr.module';
+import { GsrModule } from './commands/excel-migrate/gsr.module';
 import { HealthController } from './health.controller';
 import { PBXModule } from './modules/pbx/pbx.module';
 import { WsModule } from './core/ws/ws.module';

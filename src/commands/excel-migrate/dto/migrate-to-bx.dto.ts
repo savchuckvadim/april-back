@@ -1,8 +1,12 @@
 export type Product = {
+    id?: number;
     name: string;
     quantity: number;
     monthSum: string;
     armId: string;
+    contractEndDate?: string;
+    contractType?: string;
+    contractPrepayment?: number;
 };
 
 export type Contact = {

@@ -46,6 +46,44 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
             UF_CRM_RPA_ARM_COMPLECT_ID: armIds,
         });
     }
+    async getDealSet(
+        element: MigrateToBxDto,
+        companyId: string,
+    ): Promise<string> {
+        const pDealCategory = this.portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
+        const dealComment = this.getDealComment(element);
+        const pDealContractEndField = this.portal.getDealFieldBitrixIdByCode(
+            'ork_current_contract_fin_date',
+        );
+        const pDealSupplyDateField =
+            this.portal.getDealFieldBitrixIdByCode('supply_date');
+        const pDealContractEndField2 =
+            this.portal.getDealFieldBitrixIdByCode('contract_end');
+        const pDealContractTypeField =
+            this.portal.getDealFieldBitrixIdByCode('contract_type');
+
+        const armIds = element.products.map(p => p?.id?.toString() || p?.armId || '');
+        const name = element.company;
+        let title = name ? name.replace(/[\r\n]+/g, ' ') : '';
+        title = title ? title.slice(0, 79) : '';
+        const resultResponse = await this.bitrix.deal.set({
+            ASSIGNED_BY_ID: this.userId,
+            COMPANY_ID: companyId,
+            // // @ts-ignore
+            // CONTACT_IDS: contactCommands.map(cmd => `$result[${cmd}]`),
+            TITLE: title,
+            COMMENTS: dealComment,
+            CATEGORY_ID: pDealCategory?.bitrixId || '',
+            STAGE_ID: pDealCategory?.stages[0].bitrixId || '',
+            [pDealContractEndField]: element.contract.contractEndDate,
+            [pDealSupplyDateField]: element.supplyDate,
+            [pDealContractEndField2]: element.contract.contractEndDate,
+            [pDealContractTypeField]: element.contract.contractType,
+            UF_CRM_RPA_ARM_COMPLECT_ID: armIds,
+        });
+        return resultResponse.result.toString();
+    }
+
 
     getDealUpdateCommand(contactCommands: string[], dealCommandCode: string) {
         const contactIds = contactCommands.map(cmd => `$result[${cmd}]`);
@@ -57,7 +95,17 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
             contactIds,
         );
     }
-
+    async getDealUpdateWithContactIds(dealId: string, contactIds: string[]) {
+        // const contactIds = contactCommands.map(cmd => `$result[${cmd}]`);
+        console.log('getDealUpdateCommand');
+        console.log(contactIds);
+        this.bitrix.batch.deal.contactItemsSet(
+            `updt_to_contacts_${dealId}`,
+            `${dealId}`,
+            contactIds,
+        );
+        await this.bitrix.api.callBatchWithConcurrency()
+    }
     private getDealComment(element: MigrateToBxDto) {
         const comment =
             ' <br><b>Информация об оплате</b> ' +

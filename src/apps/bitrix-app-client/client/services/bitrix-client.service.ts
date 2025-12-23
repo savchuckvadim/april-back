@@ -16,7 +16,7 @@ export class BitrixClientService {
         private readonly portalService: PortalStoreService,
     ) { }
 
-    async registrationClient(dto: ClientRegistrationRequestDto) {
+    async registrationClient(dto: ClientRegistrationRequestDto, portalId?: number) {
         // Создаем клиента
         const client = await this.clientRepository.create({
             name: dto.name,
@@ -38,10 +38,24 @@ export class BitrixClientService {
             password: dto.password,
         });
 
-        const rootClientPortal = await this.portalService.create({
+        //for test
+        let rootClientPortal = portalId ? await this.portalService.update({
+            id: portalId.toString(),
+            domain: dto.domain,
+
+            clientId: Number(client.id),
+
+        }) : await this.portalService.create({
             domain: dto.domain,
             clientId: Number(client.id),
         });
+
+
+        //for production
+        // const rootClientPortal = await this.portalService.create({
+        //     domain: dto.domain,
+        //     clientId: Number(client.id),
+        // });
 
 
         const portals = await this.portalService.getPortalsByClientId(Number(client.id));

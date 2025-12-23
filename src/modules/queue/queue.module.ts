@@ -62,11 +62,5 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
         SilentJobHandlersModule,
     ],
 })
-export class QueueModule {
-    private readonly logger = new Logger(QueueModule.name);
 
-    constructor() {
-        this.logger.log('QueueModule initialized');
-        this.logger.log('Registered queues:', Object.values(QueueNames));
-    }
-}
+export class QueueModule {}

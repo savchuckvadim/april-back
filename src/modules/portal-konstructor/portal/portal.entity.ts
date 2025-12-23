@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ProviderEntity } from '../provider/provider.entity';
 import { TemplateBaseEntity } from '../template-base';
 
+
 export class PortalEntity {
     constructor(
         public readonly id: string,

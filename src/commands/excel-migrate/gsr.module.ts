@@ -11,6 +11,7 @@ import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bx
 import { ContactsCreateUseCase } from './contacts-create.use-case';
 import { TaskUseCase } from './task.use-case';
 import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
+import { SheetDataToMigrateConverter } from './services/sheet-data-to-migrate.converter';
 import { AlfaServiceController } from './alfa/alfa-migrate.controller';
 import { AlfaMigrateUseCase } from './alfa/alfa-migrate.use-case';
 import { AlfaBitrixService } from './alfa/services/alfa-bitrix.service';
@@ -31,6 +32,7 @@ import { AlfaParseService } from './alfa/services/alfa-parse.service';
         ContactsCreateUseCase,
         TaskUseCase,
         GsrSheetsMigrateUseCase,
+        SheetDataToMigrateConverter,
 
         AlfaMigrateUseCase,
         AlfaBitrixService,
@@ -38,4 +40,4 @@ import { AlfaParseService } from './alfa/services/alfa-parse.service';
         AlfaParseService,
     ],
 })
-export class GsrModule {}
+export class GsrModule { }

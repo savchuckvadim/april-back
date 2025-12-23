@@ -1,6 +1,10 @@
 import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { Injectable } from '@nestjs/common';
 import { MigrateToBxDto } from './dto/migrate-to-bx.dto';
+import { SheetData } from './dto/sheet-data.dto';
+import { SheetDataToMigrateConverter } from './services/sheet-data-to-migrate.converter';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { GsrMigrateBitrixDealService } from './services/bitrix/gsr-migrate-bxdeal.service';
@@ -11,6 +15,8 @@ import { BitrixService } from 'src/modules/bitrix/';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
+import { gsrMigrateDataDto } from './gsr.nigrate-dto';
+import { delay } from '@/lib';
 
 @Injectable()
 export class GsrBitrixService {
@@ -18,7 +24,7 @@ export class GsrBitrixService {
     private bitrix: BitrixService;
     constructor(
         private readonly pbx: PBXService,
-
+        private readonly converter: SheetDataToMigrateConverter,
         private readonly companyService: GsrMigrateBitrixCompanyService,
         private readonly dealService: GsrMigrateBitrixDealService,
         private readonly productRowService: GsrMigrateBitrixProductRowService,
@@ -26,6 +32,68 @@ export class GsrBitrixService {
     ) { }
 
     async migrateToBitrix(
+        domain: string,
+        userId: string,
+        data: MigrateToBxDto[],
+    ) {
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
+        this.bitrix = bitrix;
+        this.portal = PortalModel;
+
+        // // передаём shared context
+        this.companyService.setContext(this.bitrix, this.portal, userId);
+        this.dealService.setContext(this.bitrix, this.portal, userId);
+        this.productRowService.setContext(this.bitrix, this.portal, userId);
+        this.contactService.setContext(this.bitrix, this.portal, userId);
+        const results = [] as IBitrixBatchResponseResult[][];
+        let count = 0;
+        // for (let i = 0; i < data.length; i += 1) {
+        //     const chunk = data.slice(i, i + 1)
+
+        // chunk.
+
+        for (const element of data) {
+            const companyId = await this.companyService.getCompanyResutId(element);
+            console.log(companyId);
+
+            const contactIds = await this.contactService.getContactSetContactsByCompanyId(
+                element,
+                companyId.toString(),
+            );
+
+            const dealId = await this.dealService.getDealSet(
+                element,
+                companyId.toString()
+
+            );
+            await this.productRowService.getProductRowSetByDealId(element, dealId);
+            await this.dealService.getDealUpdateWithContactIds(dealId, contactIds);
+
+            await delay(3000)
+
+        }
+
+
+        const result = await this.bitrix.api.callBatchWithConcurrency(1);
+        console.log(result);
+        results.push(result);
+        // count += 1
+        // await new Promise(resolve => {
+        //     console.log('wait')
+        //     console.log(chunk)
+        //     console.log(count)
+        //     setTimeout(resolve, 700)
+        // })
+        // }
+        return {
+            // commands,
+            // portal: this.portal,
+            count: data.length,
+            results,
+        };
+    }
+
+    async migrateToBitrixBatch(
         domain: string,
         userId: string,
         data: MigrateToBxDto[],
@@ -68,6 +136,8 @@ export class GsrBitrixService {
             this.dealService.getDealUpdateCommand(cntcCmds, dealCmd);
 
             // }
+
+
         });
 
         const result = await this.bitrix.api.callBatchWithConcurrency(1);
@@ -212,5 +282,41 @@ export class GsrBitrixService {
         // })
         // const doubles = Object.values(result.result).filter(value => value.length > 1)
         return { result: result.result, data };
+    }
+
+    /**
+     * Загружает данные из JSON файла и преобразует в формат для миграции
+     * @param jsonFilePath Путь к JSON файлу (например, uploads/gsr.last-migrate.json)
+     */
+    async loadAndMigrateFromJson(
+        domain: string,
+        userId: string,
+        jsonFilePath: string,
+    ) {
+        // Загружаем JSON файл
+        const filePath = path.isAbsolute(jsonFilePath)
+            ? jsonFilePath
+            : path.join(process.cwd(), jsonFilePath);
+
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`Файл не найден: ${filePath}`);
+        }
+
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const sheetsData: SheetData[] = JSON.parse(fileContent);
+
+        // Преобразуем в формат MigrateToBxDto
+        // const migrateData = this.converter.convertSheetsToMigrate(sheetsData);
+        const migrateData = gsrMigrateDataDto as MigrateToBxDto[];
+        // Выполняем миграцию
+        return await this.migrateToBitrix(domain, userId, migrateData);
+    }
+
+    /**
+     * Преобразует массив SheetData в MigrateToBxDto[] без выполнения миграции
+     * Полезно для предварительного просмотра данных
+     */
+    convertSheetDataToMigrate(sheetsData: SheetData[]): MigrateToBxDto[] {
+        return this.converter.convertSheetsToMigrate(sheetsData);
     }
 }

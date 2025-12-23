@@ -29,6 +29,7 @@ import {
 import { OfferTemplateDto, OfferTemplateSummaryDto } from '../dtos/offer-template.dto';
 import { templateResponseMap } from '../lib/offer-template.mapper';
 import { CreateOfferTemplateRequestDto, CreateOfferTemplateResponseDto, OfferTemplateVisibility } from '../dtos/create-offer-template.dto';
+import { randomUUID } from 'crypto';
 
 
 @ApiTags('Konstructor Offer Template')
@@ -46,9 +47,21 @@ export class OfferTemplateController {
     async createOfferTemplate(
         @Body() createOfferTemplateDto: CreateOfferTemplateRequestDto,
     ): Promise<CreateOfferTemplateResponseDto> {
-        const result = await this.offerTemplateService.create(createOfferTemplateDto);
+
+        const uuid = randomUUID();
+
+        const code = createOfferTemplateDto.code || `offer-${uuid}`;
+
+ 
+        const data = {
+            ...createOfferTemplateDto,
+            code: code,
+        }
+        const result = await this.offerTemplateService.create(data);
+
         const templte = {
             ...result,
+
             visibility: result.visibility as OfferTemplateVisibility,
         } as CreateOfferTemplateResponseDto;
         return templte;

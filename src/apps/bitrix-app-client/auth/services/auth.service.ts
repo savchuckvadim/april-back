@@ -36,10 +36,11 @@ export class AuthService {
         const existingPortal = await this.portalService.getPortalByDomain(dto.domain);
 
 
-        if (existingPortal) throw new BadRequestException('Portal with Domain already registered');
-
+        //for prod
+        // if (existingPortal) throw new BadRequestException('Portal with Domain already registered');
+        const portalId = existingPortal?.id;
         // 2️⃣ Создаём клиента
-        const client = await this.clientService.registrationClient(dto);
+        const client = await this.clientService.registrationClient(dto, Number(portalId));
         // const owner = await this.userService.createOwnerUser(Number(client.client.id), {
         //     name: dto.userName,
         //     surname: dto.userSurname,
