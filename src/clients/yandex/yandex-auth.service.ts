@@ -29,10 +29,12 @@ export class YandexAuthService {
 
         if (!fs.existsSync(this.keyJsonPath)) {
             this.logger.error(`Key file not found: ${this.keyJsonPath}`);
-            throw new Error(`Key file not found: ${this.keyJsonPath}`);
+            // throw new Error(`Key file not found: ${this.keyJsonPath}`);
+        } else {
+            this.keyData = JSON.parse(fs.readFileSync(this.keyJsonPath, 'utf8'));
+
         }
 
-        this.keyData = JSON.parse(fs.readFileSync(this.keyJsonPath, 'utf8'));
     }
 
     async getIamToken(): Promise<string | null> {
