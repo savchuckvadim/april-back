@@ -16,8 +16,14 @@ export class YandexAuthService {
         private readonly configService: ConfigService,
         private readonly redisService: RedisService,
     ) {
-        this.tokensUrl = 'https://iam.api.cloud.yandex.net/iam/v1/tokens';
-        this.keyJsonPath = path.join(process.cwd(), 'keys', 'key.json');
+        try {
+            this.tokensUrl = 'https://iam.api.cloud.yandex.net/iam/v1/tokens';
+            this.keyJsonPath = path.join(process.cwd(), 'keys', 'key.json');
+
+        } catch (error) {
+            this.logger.error('Error initializing YandexAuthService:', error);
+
+        }
 
         this.logger.log(`Key JSON path: ${this.keyJsonPath}`);
 
