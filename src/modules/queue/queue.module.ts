@@ -11,6 +11,8 @@ import { QueueNames } from './constants/queue-names.enum';
 import { SilentJobManagerService } from 'src/core/silence/silent-job-manager.service';
 import { SilentJobProcessor } from './processors/silent-job.processor';
 import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.module';
+import { createRedisOptions } from '@/core/redis/redis.config';
+import { RedisOptions } from 'ioredis';
 // import { SalesKpiReportQueueProcessor } from 'src/apps/kpi-report/queue/kpi-report.processor';
 // import { KpiReportModule } from 'src/apps/kpi-report/kpi-report.module';
 
@@ -18,22 +20,14 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
     imports: [
         BullModule.forRootAsync({
             useFactory: (configService: ConfigService) => {
-                const host = configService.get('REDIS_HOST') ?? 'redis';
-                const port = parseInt(
-                    configService.get('REDIS_PORT') ?? '6379',
-                    10,
-                );
-
-                const logger = new Logger('BullModule');
-                logger.log(
-                    `BullModule Redis config: host=${host}, port=${port}`,
-                );
-
+                const redisOptions = createRedisOptions(configService);
+                
                 return {
-                    redis: {
-                        host,
-                        port,
-                    },
+                    redis: redisOptions.url
+                        ? redisOptions.url
+                        : {
+                            ...redisOptions
+                        } as RedisOptions,
                 };
             },
             inject: [ConfigService],
@@ -63,4 +57,4 @@ import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.mo
     ],
 })
 
-export class QueueModule {}
+export class QueueModule { }
