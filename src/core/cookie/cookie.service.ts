@@ -12,15 +12,16 @@ export class CookieService {
 
     setAuthCookie(res: Response, token: string) {
         const isProd = this.configService.get('NODE_ENV') === 'production';
+        const domain = this.configService.get('AUTH_COOKIE_SPA_DOMAIN') || '.april-app.ru';
         console.log('isProd', isProd);
         console.log('token', token);
         console.log('COOKIE_NAME', this.COOKIE_NAME);
-        
+        console.log('AUTH_COOKIE_SPA_DOMAIN', domain);
         res.cookie(this.COOKIE_NAME, token, {
             httpOnly: true,
             secure: true,
             sameSite: isProd ? 'none' : 'lax',          // КРОСС-ДОМЕН обязательно нужно 'none'
-            domain: isProd ? '.april-app.ru' : 'localhost',   // общий домен для subdomain → MUST HAVE
+            domain: isProd ? domain : 'localhost',   // общий домен для subdomain → MUST HAVE
             path: '/',                 // важно
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -28,11 +29,13 @@ export class CookieService {
 
     clearAuthCookie(res: Response) {
         const isProd = this.configService.get('NODE_ENV') === 'production';
+        const domain = this.configService.get('AUTH_COOKIE_SPA_DOMAIN') || '.april-app.ru';
+        console.log('AUTH_COOKIE_SPA_DOMAIN', domain);
         res.clearCookie(this.COOKIE_NAME, {
             httpOnly: true,
             secure: true,
             sameSite: isProd ? 'none' : 'lax',          // КРОСС-ДОМЕН обязательно нужно 'none'
-            domain:  isProd ?  '.april-app.ru' : 'localhost',   // общий домен для subdomain → MUST HAVE
+            domain:  isProd ?  domain : 'localhost',   // общий домен для subdomain → MUST HAVE
             path: '/',                 // важно
 
         });
