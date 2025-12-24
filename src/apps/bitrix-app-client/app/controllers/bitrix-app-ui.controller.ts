@@ -20,19 +20,22 @@ import { JwtService } from '@nestjs/jwt';
 import { BitrixClientService } from '@/apps/bitrix-app-client/client/services/bitrix-client.service';
 import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES } from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
 import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator';
+import { ConfigService } from '@nestjs/config';
 
-const FRONT_BASE_URL = 'https://9gtd2w-77-241-172-226.ru.tuna.am';
+
 @ApiTags('Bitrix Setup App UI')
 @Controller('bitrix-app-ui')
 export class BitrixAppUiController {
-
+    FRONT_BASE_URL = process.env.CLIENT_CABINET_URL || 'https://';
     constructor(
         private readonly portalService: PortalStoreService,
         private readonly clientService: BitrixClientService,
         private readonly jwtService: JwtService,
         private readonly bitrixAppService: BitrixAppService,
-
-    ) { }
+        private readonly configService: ConfigService,
+    ) {
+        this.FRONT_BASE_URL = this.configService.get('CLIENT_CABINET_URL') || 'https://';
+    }
 
     @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
     @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
@@ -83,30 +86,30 @@ export class BitrixAppUiController {
             }
 
 
-            let redirectUrl = `${FRONT_BASE_URL}/standalone`;
+            let redirectUrl = `${this.FRONT_BASE_URL}/standalone`;
             const portal = await this.portalService.getPortalByDomain(domain);
             if (portal) {
-                redirectUrl = `${FRONT_BASE_URL}/standalone/portal/${portal.id}`;
+                redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}`;
 
                 const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
                 if (clientDta) {
                     const { client, ownerUser } = clientDta;
                     const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
-                    redirectUrl = `${FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
+                    redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
 
                     const bxApp = await this.bitrixAppService.getApp({
                         domain: domain,
                         code: BITRIX_APP_CODES.SALES,
                     });
                     if (bxApp) {
-                        redirectUrl = `${FRONT_BASE_URL}/standalone/portal/${portal.id}/app/${bxApp.id}`;
+                        redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}/app/${bxApp.id}`;
                     }
                 }
             }
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return res.redirect(HttpStatus.FOUND, `https://bitrix.april-app.ru/install?install=fail`);
+            return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
         }
     }
 }
