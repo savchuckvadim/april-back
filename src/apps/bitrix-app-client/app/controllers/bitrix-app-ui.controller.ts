@@ -3,7 +3,8 @@ import {
     Post,
     HttpStatus,
     Req,
-    Res
+    Res,
+    Get
 } from '@nestjs/common';
 import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/bitrix-app.service';
 import { Request, Response } from 'express';
@@ -109,7 +110,84 @@ export class BitrixAppUiController {
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
+            return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/standalone`);
+        }
+    }
+
+
+    @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
+    @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
+    @ApiResponse({ status: 400, description: 'Sales Manager App for Bitrix not installed', type: ErrorResponseDto })
+    @Get('sales-manager')
+    @SetAuthCookie()
+    async salesManagerAppGet(
+        @Req() req: Request, @Res() res: Response
+    ) {
+        try {
+            const body = req.body as Record<string, any>;
+            const query = req.query as Record<string, any>;
+            const params = {
+                ...body,
+                ...query,
+            };
+            // const params = new URLSearchParams(req.body?.toString() || '');
+            const event = params?.event;
+            const placement = params?.PLACEMENT;
+            const domain = req.query['DOMAIN'] as string;
+            const applicationToken = req.query['APP_SID'] as string;
+            const memberId = params?.member_id;
+
+            let tokenPayload: any = {};
+            let install = false;
+
+            if (event === 'ONAPPINSTALL') {
+                const auth = JSON.parse(params?.auth || '{}');
+                install = !!auth.access_token;
+                tokenPayload = {
+                    access_token: auth.access_token,
+                    refresh_token: auth.refresh_token,
+                    expires_in: auth.expires_in,
+                    domain,
+                    application_token: applicationToken,
+                    member_id: memberId,
+                };
+            } else if (placement === 'DEFAULT') {
+                install = !!params?.AUTH_ID;
+                tokenPayload = {
+                    access_token: params?.AUTH_ID,
+                    refresh_token: params?.REFRESH_ID,
+                    expires_in: Number(params?.AUTH_EXPIRES),
+                    domain,
+                    application_token: applicationToken,
+                    member_id: memberId,
+                };
+            }
+
+
+            let redirectUrl = `${this.FRONT_BASE_URL}/standalone`;
+            const portal = await this.portalService.getPortalByDomain(domain);
+            if (portal) {
+                redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}`;
+
+                const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
+                if (clientDta) {
+                    const { client, ownerUser } = clientDta;
+                    const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
+                    redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
+
+                    const bxApp = await this.bitrixAppService.getApp({
+                        domain: domain,
+                        code: BITRIX_APP_CODES.SALES,
+                    });
+                    if (bxApp) {
+                        redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}/app/${bxApp.id}`;
+                    }
+                }
+            }
+            return res.redirect(HttpStatus.FOUND, redirectUrl);
+        } catch (error) {
+            console.error('[Bitrix Install] error:', error);
+            return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/standalone`);
         }
     }
 }
