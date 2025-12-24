@@ -9,6 +9,7 @@ import { BitrixAppUiController } from './controllers/bitrix-app-ui.controller';
 import { BitrixSetupAppModule } from '@/modules/bitrix-setup/app/bitrix-setup-app.module';
 import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
 import { CookieModule } from '@/core/cookie/cookie.module';
+import { BitrixAppInstallController } from './controllers/bitrix-app-install.controller';
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { CookieModule } from '@/core/cookie/cookie.module';
         PortalStoreModule,
         CookieModule,
     ],
-    controllers: [BitrixAppClientController, BitrixAppUiController],
+    controllers: [BitrixAppClientController, BitrixAppUiController, BitrixAppInstallController],
     providers: [BitrixAppClientService],
     exports: [
         UserModule,
