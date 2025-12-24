@@ -1,8 +1,8 @@
 export interface IBitrixTokenEntity {
-    id: bigint;
+    id: string;
     created_at?: Date;
     updated_at?: Date;
-    bitrix_app_id: bigint;
+    bitrix_app_id: string;
     client_id: string;
     client_secret: string;
     access_token: string;
@@ -13,10 +13,10 @@ export interface IBitrixTokenEntity {
     bitrix_app?: any; // BitrixApp entity
 }
 export class BitrixTokenEntity implements IBitrixTokenEntity {
-    id: bigint;
+    id: string;
     created_at?: Date;
     updated_at?: Date;
-    bitrix_app_id: bigint;
+    bitrix_app_id: string;
     client_id: string;
     client_secret: string;
     access_token: string;

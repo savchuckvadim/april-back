@@ -54,15 +54,14 @@ export class BitrixTokenService {
             const encryptedMemberId = encrypt(dto.member_id);
 
             // Create or update token
-            const token = await this.repository.storeOrUpdate({
-                bitrix_app_id: appId,
-
-                access_token: encryptedAccessToken,
-                refresh_token: encryptedRefreshToken,
-                expires_at: new Date(dto.expires_at),
-                application_token: encryptedApplicationToken,
-                member_id: encryptedMemberId,
-            });
+            const token = await this.repository.storeOrUpdateTokensWithoutSecrets(
+                appId,
+                encryptedAccessToken,
+                encryptedRefreshToken,
+                new Date(dto.expires_at),
+                encryptedApplicationToken,
+                encryptedMemberId
+            );
 
             if (!token) {
                 throw new BadRequestException('Failed to create or update token');
@@ -87,19 +86,25 @@ export class BitrixTokenService {
 
 
             // Create or update token
-            const token = await this.repository.storeOrUpdate({
-                bitrix_app_id: appId,
-                client_id: encryptedClientId,
-                client_secret: encryptedClientSecret,
+            const token = await this.repository.storeOrUpdateSecrets(
+                appId,
+                encryptedClientId,
+                encryptedClientSecret
 
-            });
+            );
+            console.log('storeOrUpdateAppSecret token', token);
 
             if (!token) {
                 throw new BadRequestException('Failed to create or update token');
             }
 
             return {
-                token,
+                token: {
+
+                    ...token,
+                    id: `${token.id}`,
+                    bitrix_app_id: `${token.bitrix_app_id}`,
+                },
                 message: 'Bitrix Token saved',
             };
         } catch (error) {

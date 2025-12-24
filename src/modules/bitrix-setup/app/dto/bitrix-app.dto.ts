@@ -78,6 +78,7 @@ export class CreateBitrixAppDto extends CreateBitrixAppBaseDto {
         description: 'Секреты приложения',
         type: CreateBitrixAppSecretDto,
     })
+    @ValidateNested()
     @Type(() => CreateBitrixAppSecretDto)
     secret: CreateBitrixAppSecretDto;
 

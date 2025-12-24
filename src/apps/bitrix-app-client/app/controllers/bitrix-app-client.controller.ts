@@ -57,6 +57,9 @@ export class BitrixAppClientController {
     @ApiResponse({ status: 200, description: 'App created', type: BitrixAppDto })
     @Post('create-app')
     async createApp(@Body() dto: CreateBitrixAppDto) {
+        console.log('createApp dto', dto);
+
+        
         return await this.bitrixAppService.storeOrUpdateApp(dto);
     }
 

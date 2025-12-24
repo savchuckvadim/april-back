@@ -21,7 +21,7 @@ export class BitrixAppService {
         private readonly prisma: PrismaService,
         private readonly portalService: PortalStoreService,
         private readonly tokenService: BitrixTokenService,
-        private readonly secretService: BitrixSecretService,
+        private readonly secretService: BitrixSecretService, //секреты записываются в токен
     ) { }
 
 
@@ -95,13 +95,15 @@ export class BitrixAppService {
                 } as SetBitrixSecretDto);
             }
 
-
-
-            return {
+            const result = {
                 app: toBitrixAppDto(app),
                 secrets: savedSecrets ? savedSecrets.token : null,
                 message: 'Bitrix App saved and token created',
             };
+
+            console.log('storeOrUpdateApp result', result);
+
+            return result;
         } catch (error) {
             throw new BadRequestException(`Failed to store or update app: ${error.message}`);
         }
@@ -164,6 +166,7 @@ export class BitrixAppService {
                 message: `App with domain ${domain} and code ${code} not found`,
             };
         }
+
         return await this.tokenService.storeOrUpdateAppSecret(app.id, dto);
 
     }

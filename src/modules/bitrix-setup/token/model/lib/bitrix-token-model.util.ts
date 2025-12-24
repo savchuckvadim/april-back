@@ -6,10 +6,10 @@ export const createBitrixTokenEntityFromPrisma = (token: NonNullable<
     Awaited<ReturnType<PrismaService['bitrix_tokens']['findUnique']>>
 >): BitrixTokenEntity => {
     const entity = new BitrixTokenEntity();
-    entity.id = token.id;
+    entity.id = `${token.id}`;
     entity.created_at = token.created_at || undefined;
     entity.updated_at = token.updated_at || undefined;
-    entity.bitrix_app_id = token.bitrix_app_id;
+    entity.bitrix_app_id = `${token.bitrix_app_id}`;
     entity.client_id = decrypt(token.client_id);
     entity.client_secret = decrypt(token.client_secret);
     entity.access_token = decrypt(token.access_token);

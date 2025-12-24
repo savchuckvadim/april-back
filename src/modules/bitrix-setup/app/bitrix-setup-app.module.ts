@@ -11,9 +11,7 @@ import { SecretModule } from '../secret/secret.module';
 
 @Module({
     imports: [PortalStoreModule, TokenModule, SecretModule],
-    // controllers: [
-    //     BitrixAppController,
-    // ],
+
     providers: [
         BitrixAppService,
         {
