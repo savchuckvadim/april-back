@@ -29,11 +29,11 @@ export class BitrixAppClientController {
 
     //bx - install
 
-    //set secret
-    @Post('set-secret')
-    async setSecret(@Body() dto: SetSecretDto) {
-        return await this.bitrixAppClientService.setSecret(dto);
-    }
+    // //set secret
+    // @Post('set-secret')
+    // async setSecret(@Body() dto: SetSecretDto) {
+    //     return await this.bitrixAppClientService.setSecret(dto);
+    // }
 
 
     @ApiOperation({ summary: 'Get portal apps' })

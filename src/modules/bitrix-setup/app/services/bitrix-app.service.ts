@@ -4,7 +4,7 @@ import { BitrixAppDto, CreateBitrixAppDto, CreateBitrixAppWithTokenDto, GetBitri
 import { PrismaService } from 'src/core/prisma';
 
 import { BitrixAppRepository } from '../repositories/bitrix-app.repository';
-import { BitrixAppEntity} from '../model/bitrix-app.model';
+import { BitrixAppEntity } from '../model/bitrix-app.model';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { PortalEntity } from '@/modules/portal-konstructor/portal/portal.entity';
 import { BitrixTokenService } from '../../token/services/bitrix-token.service';
@@ -62,6 +62,7 @@ export class BitrixAppService {
     // BitrixApp methods
     async storeOrUpdateApp(dto: CreateBitrixAppDto): Promise<{
         app: BitrixAppDto;
+        secrets: BitrixTokenEntity | null;
         message: string
     }> {
         try {
@@ -86,11 +87,19 @@ export class BitrixAppService {
             if (!app) {
                 throw new BadRequestException('Failed to create or update app');
             }
+            let savedSecrets: { token: BitrixTokenEntity | null; message: string } | null = null;
+            if (dto.secret && dto.secret.client_id && dto.secret.client_secret) {
+                savedSecrets = await this.setSecret(dto.domain, dto.code, {
+                    clientId: dto.secret.client_id,
+                    clientSecret: dto.secret.client_secret,
+                } as SetBitrixSecretDto);
+            }
 
-            // NO need to create or update token
+
 
             return {
                 app: toBitrixAppDto(app),
+                secrets: savedSecrets ? savedSecrets.token : null,
                 message: 'Bitrix App saved and token created',
             };
         } catch (error) {
@@ -139,10 +148,15 @@ export class BitrixAppService {
         }
     }
 
-    async setSecret(domain: string, code: BITRIX_APP_CODES, dto: SetBitrixSecretDto): Promise<{
+    private async setSecret(domain: string, code: BITRIX_APP_CODES, dto: SetBitrixSecretDto): Promise<{
         token: BitrixTokenEntity | null;
         message: string;
     }> {
+
+        /*
+        сохраняет или создaёn client_id и client_secret для app
+        при создании или редактировании app из формы
+        */
         const app = await this.repository.findByCodeAndDomain(code, domain);
         if (!app) {
             return {

@@ -22,12 +22,12 @@ export class BitrixAppClientService {
         return toBitrixAppDto(app);
     }
 
-    async setSecret(dto: SetSecretDto) {
-        return await this.bitrixAppService.setSecret(dto.domain, dto.code, {
-            clientId: dto.clientId,
-            clientSecret: dto.clientSecret,
-        });
-    }
+    // async setSecret(dto: SetSecretDto) {
+    //     return await this.bitrixAppService.setSecret(dto.domain, dto.code, {
+    //         clientId: dto.clientId,
+    //         clientSecret: dto.clientSecret,
+    //     });
+    // }
 
     async getPortalApps(dto: GetPortalAppsDto): Promise<BitrixAppDto[]> {
         const apps = await this.bitrixAppService.getAppsByPortalId(dto.portalId);

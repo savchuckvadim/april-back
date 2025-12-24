@@ -55,15 +55,31 @@ export class CreateBitrixAppBaseDto {
 
 
 }
+export class CreateBitrixAppSecretDto {
+    @ApiProperty({
+        description: 'Client id',
+        example: '1234567890',
+        type: String,
+    })
+    @IsString()
+    client_id: string;
 
+    @ApiProperty({
+        description: 'Client secret',
+        example: '1234567890',
+        type: String,
+    })
+    @IsString()
+    client_secret: string;
+}
 export class CreateBitrixAppDto extends CreateBitrixAppBaseDto {
 
     @ApiProperty({
         description: 'Секреты приложения',
-        type: CreateBitrixSecretDto,
+        type: CreateBitrixAppSecretDto,
     })
-    @Type(() => CreateBitrixSecretDto)
-    secret: CreateBitrixSecretDto;
+    @Type(() => CreateBitrixAppSecretDto)
+    secret: CreateBitrixAppSecretDto;
 
 
 }
