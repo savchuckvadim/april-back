@@ -26,6 +26,7 @@ import { PBXService } from '@/modules/pbx';
 import { BxAuthType } from '@/modules/bitrix/bitrix-service.factory';
 import { CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { BitrixTokenDto } from '@/modules/bitrix-setup/token';
+import { getExpiresAt } from '@/lib';
 
 
 @ApiTags('Bitrix Setup App UI Install')
@@ -134,7 +135,7 @@ export class BitrixAppInstallController {
                 }
             }
             installStatus = 'success';
-            
+
             const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
 
             console.log('bitrix sales manager app install', bitrix.api);

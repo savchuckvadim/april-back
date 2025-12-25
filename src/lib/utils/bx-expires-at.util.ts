@@ -1,6 +1,4 @@
-
-
-const getExpiresAt = (expires_in: number | undefined) => {
+export const getExpiresAt = (expires_in: number | undefined) => {
     const expiresAt = new Date(
         Date.now() + (expires_in ?? 3600) * 1000,
     )
@@ -10,3 +8,4 @@ const getExpiresAt = (expires_in: number | undefined) => {
         .split('.')[0]; // убираем миллисекунды
     return expiresAt;
 };
+
