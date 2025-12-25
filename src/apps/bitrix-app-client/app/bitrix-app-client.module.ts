@@ -10,6 +10,7 @@ import { BitrixSetupAppModule } from '@/modules/bitrix-setup/app/bitrix-setup-ap
 import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { BitrixAppInstallController } from './controllers/bitrix-app-install.controller';
+import { PBXModule } from '@/modules/pbx';
 
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import { BitrixAppInstallController } from './controllers/bitrix-app-install.con
         BitrixSetupAppModule,
         PortalStoreModule,
         CookieModule,
+        PBXModule,
     ],
     controllers: [BitrixAppClientController, BitrixAppUiController, BitrixAppInstallController],
     providers: [BitrixAppClientService],
