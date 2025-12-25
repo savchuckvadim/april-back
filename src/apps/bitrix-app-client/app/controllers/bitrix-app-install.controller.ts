@@ -109,32 +109,32 @@ export class BitrixAppInstallController {
                     });
                     console.log('bxApp sales manager app install', bxApp);
 
-                    if (!bxApp) {
-                        const data: CreateBitrixAppWithTokenDto = {
-                            code: BITRIX_APP_CODES.SALES,
-                            domain: tokenPayload.domain,
-                            group: BITRIX_APP_GROUPS.SALES,
-                            status: BITRIX_APP_STATUSES.ACTIVE,
-                            type: BITRIX_APP_TYPES.FULL,
-                            token: {
-                                access_token: tokenPayload.access_token,
-                                refresh_token: tokenPayload.refresh_token,
-                                expires_at: getExpiresAt(tokenPayload.expires_in),
-                                application_token: tokenPayload.application_token,
-                                member_id: tokenPayload.member_id,
-                            } as BitrixTokenDto,
-                        };
 
-                        //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
-                        // в битрикс app install/
-                        const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data);
-                        bxApp = app.app;
-                        console.log('app sales manager app install', app);
-                    }
+                    const data: CreateBitrixAppWithTokenDto = {
+                        code: BITRIX_APP_CODES.SALES,
+                        domain: tokenPayload.domain,
+                        group: BITRIX_APP_GROUPS.SALES,
+                        status: BITRIX_APP_STATUSES.ACTIVE,
+                        type: BITRIX_APP_TYPES.FULL,
+                        token: {
+                            access_token: tokenPayload.access_token,
+                            refresh_token: tokenPayload.refresh_token,
+                            expires_at: getExpiresAt(tokenPayload.expires_in),
+                            application_token: tokenPayload.application_token,
+                            member_id: tokenPayload.member_id,
+                        } as BitrixTokenDto,
+                    };
+
+                    //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
+                    // в битрикс app install/
+                    const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
+                    bxApp = app.app;
+                    console.log('app sales manager app install', app);
+
                 }
             }
             const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
-
+            console.log('bitrix sales manager app install', bitrix.api);
             redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
