@@ -110,7 +110,7 @@ export class BitrixAppService {
     }
 
 
-    async storeOrUpdateAppWithToken(dto: CreateBitrixAppWithTokenDto): Promise<{
+    async storeOrUpdateAppWithToken(dto: CreateBitrixAppWithTokenDto, appId?: bigint): Promise<{
         app: BitrixAppEntity;
         token: BitrixTokenEntity;
         message: string
@@ -123,16 +123,18 @@ export class BitrixAppService {
                     domain: dto.domain,
                 });
             }
-
-            // Create or update app
-            const app = await this.repository.storeOrUpdate({
+            let dataForCreateOrUpdateApp: Partial<BitrixAppEntity> = {
                 portal_id: BigInt(portal!.id!),
                 group: dto.group,
                 type: dto.type,
                 code: dto.code,
                 status: dto.status,
-            });
-
+            }
+            // Create without appId
+            if (appId) {
+                dataForCreateOrUpdateApp.id = appId;
+            }
+            const app = await this.repository.storeOrUpdate(dataForCreateOrUpdateApp);
             if (!app) {
                 throw new BadRequestException('Failed to create or update app');
             }
