@@ -129,11 +129,14 @@ export class BitrixAppInstallController {
                     // в битрикс app install/
                     const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
                     bxApp = app.app;
-                    console.log('app sales manager app install', app);
+                    console.log('app sales manager app install post', app);
 
                 }
             }
+            installStatus = 'success';
+            
             const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
+
             console.log('bitrix sales manager app install', bitrix.api);
             redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
             return res.redirect(HttpStatus.FOUND, redirectUrl);
@@ -230,12 +233,13 @@ export class BitrixAppInstallController {
                     // в битрикс app install/
                     const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
                     bxApp = app.app;
-                    console.log('app sales manager app install', app);
+                    console.log('app sales manager app install get', app);
 
                 }
             }
+            installStatus = 'success';
             const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
-            console.log('bitrix sales manager app install', bitrix.api);
+            console.log('bitrix sales manager app install get', bitrix.api);
             redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
