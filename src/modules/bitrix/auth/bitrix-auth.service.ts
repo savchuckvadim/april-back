@@ -50,19 +50,11 @@ export class BitrixAuthService {
         if (!app) {
             throw new Error(`No Bitrix app found for domain ${domain}`);
         }
+        // уже расшифрованы
+        const refreshToken = app.bitrix_tokens?.refresh_token || '';
+        const clientId = app.bitrix_tokens?.client_id || '';
+        const clientSecret = app.bitrix_tokens?.client_secret || '';
 
-        const cryptedefreshToken = app.bitrix_tokens?.refresh_token || '';
-        const cryptedefreshClientId = app.bitrix_tokens?.client_id || '';
-        const cryptedefreshClientSecret = app.bitrix_tokens?.client_secret || '';
-        console.log('BitrixAuthService cryptedefreshToken', cryptedefreshToken);
-        console.log('BitrixAuthService cryptedefreshClientId', cryptedefreshClientId);
-        console.log('BitrixAuthService cryptedefreshClientSecret', cryptedefreshClientSecret);
-        const refreshToken = decrypt(cryptedefreshToken || '');
-        const clientId = decrypt(cryptedefreshClientId || '');
-        const clientSecret = decrypt(cryptedefreshClientSecret || '');
-        console.log('BitrixAuthService refreshToken', refreshToken);
-        console.log('BitrixAuthService clientId', clientId);
-        console.log('BitrixAuthService clientSecret', clientSecret);
 
         const url = `https://${domain}/oauth/token/?grant_type=refresh_token&client_id=${clientId}&client_secret=${clientSecret}&refresh_token=${refreshToken}`;
         console.log('BitrixAuthService url', url);
