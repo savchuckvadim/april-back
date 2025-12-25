@@ -138,7 +138,7 @@ export class BitrixAppInstallController {
 
             const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
 
-            console.log('bitrix sales manager app install', bitrix.api);
+
             redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
@@ -240,7 +240,7 @@ export class BitrixAppInstallController {
             }
             installStatus = 'success';
             const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
-            console.log('bitrix sales manager app install get', bitrix.api);
+      
             redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
