@@ -4,6 +4,7 @@ import { BitrixAppService } from '../../bitrix-setup/app/services/bitrix-app.ser
 import { firstValueFrom } from 'rxjs';
 import { BitrixTokenService } from '../../bitrix-setup/token/services/bitrix-token.service';
 import { BITRIX_APP_CODES } from 'src/modules/bitrix-setup/app/enums/bitrix-app.enum';
+import { decrypt } from '@/lib/utils/crypt.util';
 
 @Injectable()
 export class BitrixAuthService {
@@ -50,9 +51,15 @@ export class BitrixAuthService {
             throw new Error(`No Bitrix app found for domain ${domain}`);
         }
 
-        const refreshToken = app.bitrix_tokens?.refresh_token;
+        const cryptedefreshToken = app.bitrix_tokens?.refresh_token || '';
+        const cryptedefreshClientId = app.bitrix_tokens?.client_id || '';
+        const cryptedefreshClientSecret = app.bitrix_tokens?.client_secret || '';
+        const refreshToken = decrypt(cryptedefreshToken || '');
+        const clientId = decrypt(cryptedefreshClientId || '');
+        const clientSecret = decrypt(cryptedefreshClientSecret || '');
 
-        const url = `https://${domain}/oauth/token/?grant_type=refresh_token&client_id=local.68e76bf63fcee8.85701907&client_secret=iEbZAGP6yMxrZxuI3MPzvaZg64VAr6cZoIEVaMaIJV5iMWHd4b&refresh_token=${refreshToken}`;
+
+        const url = `https://${domain}/oauth/token/?grant_type=refresh_token&client_id=${clientId}&client_secret=${clientSecret}&refresh_token=${refreshToken}`;
 
         const response = await firstValueFrom(this.http.get(url));
         const data = response.data;
