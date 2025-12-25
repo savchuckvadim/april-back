@@ -83,7 +83,8 @@ export class BitrixTokenService {
             // Encrypt token data
             const encryptedClientId = encrypt(dto.clientId); // You might want to get this from app secret
             const encryptedClientSecret = encrypt(dto.clientSecret); // You might want to get this from app secret
-
+            console.log('storeOrUpdateAppSecret encryptedClientId', encryptedClientId);
+            console.log('storeOrUpdateAppSecret encryptedClientSecret', encryptedClientSecret);
 
             // Create or update token
             const token = await this.repository.storeOrUpdateSecrets(
