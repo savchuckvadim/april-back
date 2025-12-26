@@ -4,7 +4,8 @@ import {
     HttpStatus,
     Req,
     Res,
-    Get
+    Get,
+    Body
 } from '@nestjs/common';
 import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/bitrix-app.service';
 import { Request, Response } from 'express';
@@ -24,9 +25,10 @@ import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator'
 import { ConfigService } from '@nestjs/config';
 import { PBXService } from '@/modules/pbx';
 import { BxAuthType } from '@/modules/bitrix/bitrix-service.factory';
-import { CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import { CreateBitrixAppDto, CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { BitrixTokenDto } from '@/modules/bitrix-setup/token';
 import { getExpiresAt } from '@/lib';
+import { InstallAppFromPortalResponseDto } from '../dto/install-app.response.dto';
 
 
 @ApiTags('Bitrix Setup App UI Install')
@@ -45,65 +47,32 @@ export class BitrixAppInstallController {
     }
 
     @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
-    @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
-    @ApiResponse({ status: 400, description: 'Sales Manager App for Bitrix not installed', type: ErrorResponseDto })
+    @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: InstallAppFromPortalResponseDto })
+
     @Post('sales-manager')
     @SetAuthCookie()
     async salesManagerInstall(
-        @Req() req: Request, @Res() res: Response
+        @Body() dto: CreateBitrixAppWithTokenDto, @Res() res: Response
     ) {
         try {
-            const body = req.body as Record<string, any>;
-            const query = req.query as Record<string, any>;
-            const params = {
-                ...body,
-                ...query,
-            };
-            // const params = new URLSearchParams(req.body?.toString() || '');
-            const event = params?.event;
-            const placement = params?.PLACEMENT;
-            const domain = req.query['DOMAIN'] as string;
-            const applicationToken = req.query['APP_SID'] as string;
-            const memberId = params?.member_id;
+            //front отправляет перед installFinish
+            const { domain } = dto;
 
-            let tokenPayload: any = {};
-            let install = false;
 
-            if (event === 'ONAPPINSTALL') {
-                const auth = JSON.parse(params?.auth || '{}');
-                install = !!auth.access_token;
-                tokenPayload = {
-                    access_token: auth.access_token,
-                    refresh_token: auth.refresh_token,
-                    expires_in: auth.expires_in,
-                    domain,
-                    application_token: applicationToken,
-                    member_id: memberId,
-                };
-            } else if (placement === 'DEFAULT') {
-                install = !!params?.AUTH_ID;
-                tokenPayload = {
-                    access_token: params?.AUTH_ID,
-                    refresh_token: params?.REFRESH_ID,
-                    expires_in: Number(params?.AUTH_EXPIRES),
-                    domain,
-                    application_token: applicationToken,
-                    member_id: memberId,
-                };
-            }
 
             let installStatus = 'fail';
-            let redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
+            let signedJwtToken: string | null = null;
             const portal = await this.portalService.getPortalByDomain(domain);
             if (portal) {
-                // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}`;
+
 
                 const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
                 if (clientDta) {
                     const { client, ownerUser } = clientDta;
-                    const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
-                    // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
-                    console.log('token sales manager app install', token);
+                    signedJwtToken = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
+
+
+
                     let bxApp = await this.bitrixAppService.getApp({
                         domain: domain,
                         code: BITRIX_APP_CODES.SALES,
@@ -111,24 +80,8 @@ export class BitrixAppInstallController {
                     console.log('bxApp sales manager app install', bxApp);
 
 
-                    const data: CreateBitrixAppWithTokenDto = {
-                        code: BITRIX_APP_CODES.SALES,
-                        domain: tokenPayload.domain,
-                        group: BITRIX_APP_GROUPS.SALES,
-                        status: BITRIX_APP_STATUSES.ACTIVE,
-                        type: BITRIX_APP_TYPES.FULL,
-                        token: {
-                            access_token: tokenPayload.access_token,
-                            refresh_token: tokenPayload.refresh_token,
-                            expires_at: getExpiresAt(tokenPayload.expires_in),
-                            application_token: tokenPayload.application_token,
-                            member_id: tokenPayload.member_id,
-                        } as BitrixTokenDto,
-                    };
 
-                    //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
-                    // в битрикс app install/
-                    const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
+                    const app = await this.bitrixAppService.storeOrUpdateAppWithToken(dto, bxApp?.id ? BigInt(bxApp.id) : undefined);
                     bxApp = app.app;
                     console.log('app sales manager app install post', app);
 
@@ -136,119 +89,221 @@ export class BitrixAppInstallController {
             }
             installStatus = 'success';
 
-            // const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
-            // const appInfo = await bitrix.api.call('app.info', {});
-            // console.log('BX APP INFO sales manager app install from bx POST', appInfo);
 
 
-            redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
-            return res.redirect(HttpStatus.FOUND, redirectUrl);
+
+            return { token: signedJwtToken, status: installStatus };
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
+            return { token: null, message: error.message, status: 'fail' };
         }
     }
 
+    // @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
+    // @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
+    // @ApiResponse({ status: 400, description: 'Sales Manager App for Bitrix not installed', type: ErrorResponseDto })
+    // @Post('sales-manager')
+    // @SetAuthCookie()
+    // async salesManagerInstall(
+    //     @Req() req: Request, @Res() res: Response
+    // ) {
+    //     try {
+    //         const body = req.body as Record<string, any>;
+    //         const query = req.query as Record<string, any>;
+    //         const params = {
+    //             ...body,
+    //             ...query,
+    //         };
+    //         // const params = new URLSearchParams(req.body?.toString() || '');
+    //         const event = params?.event;
+    //         const placement = params?.PLACEMENT;
+    //         const domain = req.query['DOMAIN'] as string;
+    //         const applicationToken = req.query['APP_SID'] as string;
+    //         const memberId = params?.member_id;
 
-    @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
-    @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
-    @ApiResponse({ status: 400, description: 'Sales Manager App for Bitrix not installed', type: ErrorResponseDto })
-    @Get('sales-manager')
-    @SetAuthCookie()
-    async salesManagerAppInstallGet(
-        @Req() req: Request, @Res() res: Response
-    ) {
-        try {
-            const body = req.body as Record<string, any>;
-            const query = req.query as Record<string, any>;
-            const params = {
-                ...body,
-                ...query,
-            };
-            // const params = new URLSearchParams(req.body?.toString() || '');
-            const event = params?.event;
-            const placement = params?.PLACEMENT;
-            const domain = req.query['DOMAIN'] as string;
-            const applicationToken = req.query['APP_SID'] as string;
-            const memberId = params?.member_id;
+    //         let tokenPayload: any = {};
+    //         let install = false;
 
-            let tokenPayload: any = {};
-            let install = false;
+    //         if (event === 'ONAPPINSTALL') {
+    //             const auth = JSON.parse(params?.auth || '{}');
+    //             install = !!auth.access_token;
+    //             tokenPayload = {
+    //                 access_token: auth.access_token,
+    //                 refresh_token: auth.refresh_token,
+    //                 expires_in: auth.expires_in,
+    //                 domain,
+    //                 application_token: applicationToken,
+    //                 member_id: memberId,
+    //             };
+    //         } else if (placement === 'DEFAULT') {
+    //             install = !!params?.AUTH_ID;
+    //             tokenPayload = {
+    //                 access_token: params?.AUTH_ID,
+    //                 refresh_token: params?.REFRESH_ID,
+    //                 expires_in: Number(params?.AUTH_EXPIRES),
+    //                 domain,
+    //                 application_token: applicationToken,
+    //                 member_id: memberId,
+    //             };
+    //         }
 
-            if (event === 'ONAPPINSTALL') {
-                const auth = JSON.parse(params?.auth || '{}');
-                install = !!auth.access_token;
-                tokenPayload = {
-                    access_token: auth.access_token,
-                    refresh_token: auth.refresh_token,
-                    expires_in: auth.expires_in,
-                    domain,
-                    application_token: applicationToken,
-                    member_id: memberId,
-                };
-            } else if (placement === 'DEFAULT') {
-                install = !!params?.AUTH_ID;
-                tokenPayload = {
-                    access_token: params?.AUTH_ID,
-                    refresh_token: params?.REFRESH_ID,
-                    expires_in: Number(params?.AUTH_EXPIRES),
-                    domain,
-                    application_token: applicationToken,
-                    member_id: memberId,
-                };
-            }
+    //         let installStatus = 'fail';
+    //         let redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
+    //         const portal = await this.portalService.getPortalByDomain(domain);
+    //         if (portal) {
+    //             // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}`;
 
-            let installStatus = 'fail';
-            let redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
-            const portal = await this.portalService.getPortalByDomain(domain);
-            if (portal) {
-                // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}`;
-
-                const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
-                if (clientDta) {
-                    const { client, ownerUser } = clientDta;
-                    const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
-                    // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
-                    console.log('token sales manager app install', token);
-                    let bxApp = await this.bitrixAppService.getApp({
-                        domain: domain,
-                        code: BITRIX_APP_CODES.SALES,
-                    });
-                    console.log('bxApp sales manager app install', bxApp);
+    //             const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
+    //             if (clientDta) {
+    //                 const { client, ownerUser } = clientDta;
+    //                 const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
+    //                 // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
+    //                 console.log('token sales manager app install', token);
+    //                 let bxApp = await this.bitrixAppService.getApp({
+    //                     domain: domain,
+    //                     code: BITRIX_APP_CODES.SALES,
+    //                 });
+    //                 console.log('bxApp sales manager app install', bxApp);
 
 
-                    const data: CreateBitrixAppWithTokenDto = {
-                        code: BITRIX_APP_CODES.SALES,
-                        domain: tokenPayload.domain,
-                        group: BITRIX_APP_GROUPS.SALES,
-                        status: BITRIX_APP_STATUSES.ACTIVE,
-                        type: BITRIX_APP_TYPES.FULL,
-                        token: {
-                            access_token: tokenPayload.access_token,
-                            refresh_token: tokenPayload.refresh_token,
-                            expires_at: getExpiresAt(tokenPayload.expires_in),
-                            application_token: tokenPayload.application_token,
-                            member_id: tokenPayload.member_id,
-                        } as BitrixTokenDto,
-                    };
+    //                 const data: CreateBitrixAppWithTokenDto = {
+    //                     code: BITRIX_APP_CODES.SALES,
+    //                     domain: tokenPayload.domain,
+    //                     group: BITRIX_APP_GROUPS.SALES,
+    //                     status: BITRIX_APP_STATUSES.ACTIVE,
+    //                     type: BITRIX_APP_TYPES.FULL,
+    //                     token: {
+    //                         access_token: tokenPayload.access_token,
+    //                         refresh_token: tokenPayload.refresh_token,
+    //                         expires_at: getExpiresAt(tokenPayload.expires_in),
+    //                         application_token: tokenPayload.application_token,
+    //                         member_id: tokenPayload.member_id,
+    //                     } as BitrixTokenDto,
+    //                 };
 
-                    //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
-                    // в битрикс app install/
-                    const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
-                    bxApp = app.app;
-                    console.log('app sales manager app install get', app);
+    //                 //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
+    //                 // в битрикс app install/
+    //                 const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
+    //                 bxApp = app.app;
+    //                 console.log('app sales manager app install post', app);
 
-                }
-            }
-            installStatus = 'success';
-            const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
-            // const appInfo = await bitrix.api.call('app.info', {});
-            // console.log('BX APP INFO sales manager app install get', appInfo);
-            redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
-            return res.redirect(HttpStatus.FOUND, redirectUrl);
-        } catch (error) {
-            console.error('[Bitrix Install] error:', error);
-            return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
-        }
-    }
+    //             }
+    //         }
+    //         installStatus = 'success';
+
+    //         // const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
+    //         // const appInfo = await bitrix.api.call('app.info', {});
+    //         // console.log('BX APP INFO sales manager app install from bx POST', appInfo);
+
+
+    //         redirectUrl = `${this.FRONT_BASE_URL}/install?install=${memberId || installStatus}`;
+    //         return res.redirect(HttpStatus.FOUND, redirectUrl);
+    //     } catch (error) {
+    //         console.error('[Bitrix Install] error:', error);
+    //         return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
+    //     }
+    // }
+
+
+    // @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
+    // @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
+    // @ApiResponse({ status: 400, description: 'Sales Manager App for Bitrix not installed', type: ErrorResponseDto })
+    // @Get('sales-manager')
+    // @SetAuthCookie()
+    // async salesManagerAppInstallGet(
+    //     @Req() req: Request, @Res() res: Response
+    // ) {
+    //     try {
+    //         const body = req.body as Record<string, any>;
+    //         const query = req.query as Record<string, any>;
+    //         const params = {
+    //             ...body,
+    //             ...query,
+    //         };
+    //         // const params = new URLSearchParams(req.body?.toString() || '');
+    //         const event = params?.event;
+    //         const placement = params?.PLACEMENT;
+    //         const domain = req.query['DOMAIN'] as string;
+    //         const applicationToken = req.query['APP_SID'] as string;
+    //         const memberId = params?.member_id;
+
+    //         let tokenPayload: any = {};
+    //         let install = false;
+
+    //         if (event === 'ONAPPINSTALL') {
+    //             const auth = JSON.parse(params?.auth || '{}');
+    //             install = !!auth.access_token;
+    //             tokenPayload = {
+    //                 access_token: auth.access_token,
+    //                 refresh_token: auth.refresh_token,
+    //                 expires_in: auth.expires_in,
+    //                 domain,
+    //                 application_token: applicationToken,
+    //                 member_id: memberId,
+    //             };
+    //         } else if (placement === 'DEFAULT') {
+    //             install = !!params?.AUTH_ID;
+    //             tokenPayload = {
+    //                 access_token: params?.AUTH_ID,
+    //                 refresh_token: params?.REFRESH_ID,
+    //                 expires_in: Number(params?.AUTH_EXPIRES),
+    //                 domain,
+    //                 application_token: applicationToken,
+    //                 member_id: memberId,
+    //             };
+    //         }
+
+    //         let installStatus = 'fail';
+    //         let redirectUrl = `${this.FRONT_BASE_URL}/install?install=${installStatus}`;
+    //         const portal = await this.portalService.getPortalByDomain(domain);
+    //         if (portal) {
+    //             // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}`;
+
+    //             const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
+    //             if (clientDta) {
+    //                 const { client, ownerUser } = clientDta;
+    //                 const token = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
+    //                 // redirectUrl = `${this.FRONT_BASE_URL}/standalone/portal/${portal.id}?token=${token}`;
+    //                 console.log('token sales manager app install', token);
+    //                 let bxApp = await this.bitrixAppService.getApp({
+    //                     domain: domain,
+    //                     code: BITRIX_APP_CODES.SALES,
+    //                 });
+    //                 console.log('bxApp sales manager app install', bxApp);
+
+
+    //                 const data: CreateBitrixAppWithTokenDto = {
+    //                     code: BITRIX_APP_CODES.SALES,
+    //                     domain: tokenPayload.domain,
+    //                     group: BITRIX_APP_GROUPS.SALES,
+    //                     status: BITRIX_APP_STATUSES.ACTIVE,
+    //                     type: BITRIX_APP_TYPES.FULL,
+    //                     token: {
+    //                         access_token: tokenPayload.access_token,
+    //                         refresh_token: tokenPayload.refresh_token,
+    //                         expires_at: getExpiresAt(tokenPayload.expires_in),
+    //                         application_token: tokenPayload.application_token,
+    //                         member_id: tokenPayload.member_id,
+    //                     } as BitrixTokenDto,
+    //                 };
+
+    //                 //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
+    //                 // в битрикс app install/
+    //                 const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data, bxApp?.id ? BigInt(bxApp.id) : undefined);
+    //                 bxApp = app.app;
+    //                 console.log('app sales manager app install get', app);
+
+    //             }
+    //         }
+    //         installStatus = 'success';
+    //         const { bitrix } = await this.pbxService.init(domain, BxAuthType.TOKEN);
+    //         // const appInfo = await bitrix.api.call('app.info', {});
+    //         // console.log('BX APP INFO sales manager app install get', appInfo);
+    //         redirectUrl = `${this.FRONT_BASE_URL}/install?install=${memberId || installStatus}`;
+    //         return res.redirect(HttpStatus.FOUND, redirectUrl);
+    //     } catch (error) {
+    //         console.error('[Bitrix Install] error:', error);
+    //         return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
+    //     }
+    // }
 }
