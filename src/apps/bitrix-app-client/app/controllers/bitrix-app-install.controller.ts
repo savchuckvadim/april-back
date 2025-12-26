@@ -48,11 +48,10 @@ export class BitrixAppInstallController {
 
     @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
     @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: InstallAppFromPortalResponseDto })
-
     @Post('sales-manager')
     @SetAuthCookie()
     async salesManagerInstall(
-        @Body() dto: CreateBitrixAppWithTokenDto, @Res() res: Response
+        @Body() dto: CreateBitrixAppWithTokenDto
     ) {
         try {
             //front отправляет перед installFinish

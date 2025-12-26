@@ -16,7 +16,7 @@ export class AuthCookieInterceptor implements NestInterceptor {
             tap((data) => {
                 if (data?.token) {
                     this.cookieService.setAuthCookie(res, data.token);
-                    delete data.token; // если не хочешь отдавать токен в JSON
+                    return data.token; // если не хочешь отдавать токен в JSON
                 }
             }),
         );
