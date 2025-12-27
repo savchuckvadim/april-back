@@ -3,7 +3,10 @@ import { Client } from 'generated/prisma';
 import { ClientRepository } from '../repositories/client.repository';
 import { CreateClientDto } from '../dto/create-client.dto';
 import { UpdateClientDto } from '../dto/update-client.dto';
-import { ClientResponseDto } from '../dto/client-response.dto';
+import { ClientResponseDto, ClientWithRelationsResponseDto } from '../dto/client-response.dto';
+import { ClientWithRelations } from '../entity/client.entity';
+import { UserResponseDto } from '@/apps/bitrix-app-client/user/dto/user-response.dto';
+import { PortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
 
 @Injectable()
 export class ClientService {
@@ -39,6 +42,13 @@ export class ClientService {
         return this.mapToResponseDto(client);
     }
 
+    async findByIdWithRelations(id: number): Promise<ClientWithRelationsResponseDto> {
+        const client = await this.repository.findByIdWithRelations(id);
+        if (!client) {
+            throw new NotFoundException(`Client with id ${id} not found`);
+        }
+        return this.mapToResponseDtoWithRelations(client);
+    }
     async findMany(): Promise<ClientResponseDto[]> {
         const clients = await this.repository.findMany();
         if (!clients) {
@@ -109,6 +119,14 @@ export class ClientService {
             is_active: client.is_active,
             created_at: client.created_at,
             updated_at: client.updated_at,
+        };
+    }
+
+    private mapToResponseDtoWithRelations(client: ClientWithRelations): ClientWithRelationsResponseDto {
+        return {
+            ...this.mapToResponseDto(client),
+            users: client.users?.map(user => new UserResponseDto(user)) || [],
+            portal: client.portal ? new PortalResponseDto(client.portal) : null,
         };
     }
 }

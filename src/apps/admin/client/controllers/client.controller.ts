@@ -14,7 +14,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ClientService } from '@/modules/client/services/client.service';
 import { CreateClientDto } from '@/modules/client/dto/create-client.dto';
 import { UpdateClientDto } from '@/modules/client/dto/update-client.dto';
-import { ClientResponseDto } from '@/modules/client/dto/client-response.dto';
+import { ClientResponseDto, ClientWithRelationsResponseDto } from '@/modules/client/dto/client-response.dto';
 import { SuccessResponseDto, EResultCode, ErrorResponseDto } from '@/core';
 
 @ApiTags('Admin Client Management')
@@ -43,7 +43,7 @@ export class AdminClientController {
     @ApiResponse({
         status: 200,
         description: 'Client found',
-        type: ClientResponseDto,
+        type: ClientWithRelationsResponseDto,
     })
     @ApiResponse({
         status: 404,
@@ -51,8 +51,8 @@ export class AdminClientController {
         type: ErrorResponseDto,
     })
     @Get(':id')
-    async getClientById(@Param('id', ParseIntPipe) id: number): Promise<ClientResponseDto> {
-        const client = await this.clientService.findById(id);
+    async getClientById(@Param('id', ParseIntPipe) id: number): Promise<ClientWithRelationsResponseDto> {
+        const client = await this.clientService.findByIdWithRelations(id);
         return client;
     }
 

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { Client } from 'generated/prisma';
 import { PrismaService } from '@/core/prisma';
 import { ClientRepository } from './client.repository';
+import { ClientWithRelations } from '../entity/client.entity';
+import { createPortalEntityFromPrisma } from '@/modules/portal-konstructor/portal/lib/portal-entity.util';
 
 @Injectable()
 export class ClientPrismaRepository implements ClientRepository {
@@ -25,12 +27,34 @@ export class ClientPrismaRepository implements ClientRepository {
             include: {
                 users: true,
                 portals: true,
+
             },
         });
 
         if (!result) return null;
         return result;
     }
+
+    async findByIdWithRelations(id: number): Promise<ClientWithRelations | null> {
+        const result = await this.prisma.client.findUnique({
+            where: { id: BigInt(id) },
+            include: {
+                users: true,
+                portals: true,
+            },
+        });
+
+        if (!result) return null;
+        const portal = await this.prisma.portal.findFirst({
+            where: { client_id: BigInt(id) },
+            include: {
+                agents: true,
+                templates: true,
+            },
+        });
+        return { ...result, portal };
+    }
+
 
     async findMany(): Promise<Client[] | null> {
         const result = await this.prisma.client.findMany({

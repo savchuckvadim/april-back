@@ -1,8 +1,10 @@
 import { Client } from 'generated/prisma';
+import { ClientWithRelations } from '../entity/client.entity';
 
 export abstract class ClientRepository {
     abstract create(client: Partial<Client>): Promise<Client | null>;
     abstract findById(id: number): Promise<Client | null>;
+    abstract findByIdWithRelations(id: number): Promise<ClientWithRelations | null>;
     abstract findMany(): Promise<Client[] | null>;
     abstract findByEmail(email: string): Promise<Client | null>;
     abstract findByStatus(status: string): Promise<Client[] | null>;
