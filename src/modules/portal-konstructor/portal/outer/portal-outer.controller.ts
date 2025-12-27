@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { UpdatePortalDto } from './dto/update-portal.dto';
+import { UpdatePortalOuterDto } from './dto/update-portal.dto';
 import { PortalOuterService } from './portal-outer.service';
 
 @ApiTags('Portal Outer')
@@ -20,7 +20,7 @@ export class PortalOuterController {
     @ApiOperation({ summary: 'Update portal in online server by domain' })
     @Post('update')
     async updatePortalByDomain(
-        @Body() body: UpdatePortalDto,
+        @Body() body: UpdatePortalOuterDto,
     ): Promise<any | null> {
         return await this.service.setOrUpdate(body);
     }

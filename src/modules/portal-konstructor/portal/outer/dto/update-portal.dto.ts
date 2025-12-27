@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString } from 'class-validator';
 
-export class UpdatePortalDto {
+export class UpdatePortalOuterDto  {
     @ApiProperty()
     @IsString()
     domain: string;

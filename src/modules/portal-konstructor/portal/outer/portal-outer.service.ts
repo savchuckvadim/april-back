@@ -1,7 +1,7 @@
 import { APIOnlineAdminClient } from '@/clients/online/client/admin/api-online-admin.client';
 import { APIOnlineClient } from '../../../../clients/online';
 import { Injectable } from '@nestjs/common';
-import { UpdatePortalDto } from './dto/update-portal.dto';
+import { UpdatePortalOuterDto } from './dto/update-portal.dto';
 
 @Injectable()
 export class PortalOuterService {
@@ -23,7 +23,7 @@ export class PortalOuterService {
         }
         throw new Error(response.message);
     }
-    async setOrUpdate(dto: UpdatePortalDto): Promise<void> {
+    async setOrUpdate(dto: UpdatePortalOuterDto): Promise<void> {
         const response = await this.apiOnlineAdminClient.request(
             'post',
             'update/portal',
