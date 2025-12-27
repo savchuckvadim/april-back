@@ -49,6 +49,7 @@ import { OrkHistoryBxListModule } from './modules/pbx-ork-history-bx-list';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { WordTemplateModule } from './modules/offer-template/word';
 import { OfferWordModule } from './apps/konstructor/offer-word/offer-word.module';
+import { AdminModule } from './apps/admin/admin.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -130,6 +131,7 @@ import { OfferWordModule } from './apps/konstructor/offer-word/offer-word.module
         BitrixAppClientModule,
 
         AuthModule,
+        AdminModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],

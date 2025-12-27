@@ -3,3 +3,4 @@ export * from './interfaces/response.interface';
 export * from './prisma';
 export * from './interceptors/response.interceptor';
 export * from './filters/global-exception.filter';
+export { SuccessResponseDto, ErrorResponseDto } from './dto/app.dto';
