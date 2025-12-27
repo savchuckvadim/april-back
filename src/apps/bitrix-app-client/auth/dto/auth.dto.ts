@@ -135,7 +135,7 @@ export class LoginResponseDto extends MeResponseDto {
     @IsString()
     token: string;
 }
-export class ClientResponseDto {
+export class ClientAuthResponseDto {
     @ApiProperty({ description: 'Client ID', example: 1 })
     @IsNotEmpty()
     @IsNumber()

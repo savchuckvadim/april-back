@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { BitrixClientService } from "../../client/services/bitrix-client.service";
-import { ClientRegistrationRequestDto, ClientResponseDto, LoginDto, LoginResponseCookieDto, LoginResponseDto } from "../dto/auth.dto";
+import { ClientRegistrationRequestDto, ClientAuthResponseDto, LoginDto, LoginResponseCookieDto, LoginResponseDto } from "../dto/auth.dto";
 import { JwtService } from "@nestjs/jwt";
 import { MailConfirmationService } from "./mail.service";
 import { UserService } from "../../user/services/user.service";
@@ -21,7 +21,7 @@ export class AuthService {
         private readonly cookieService: CookieService,
     ) { }
 
-    async registerClient(dto: ClientRegistrationRequestDto): Promise<ClientResponseDto> {
+    async registerClient(dto: ClientRegistrationRequestDto): Promise<ClientAuthResponseDto> {
         // 1️⃣ Проверка, существует ли email
         const existingEmail = await this.clientService.findByEmail(dto.email);
 

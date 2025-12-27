@@ -1,7 +1,7 @@
 import { AuthService } from "../services/auth.service";
 import { Body, Controller, Delete, Get, Param, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ClientRegistrationRequestDto, ClientResponseDto, GetAllClientsUsersDto, LoginDto, LoginResponseDto, LogoutResponseDto, MeResponseDto } from "../dto/auth.dto";
+import { ClientRegistrationRequestDto, ClientAuthResponseDto, GetAllClientsUsersDto, LoginDto, LoginResponseDto, LogoutResponseDto, MeResponseDto } from "../dto/auth.dto";
 import { AuthGuard } from "../guard/jwt-auth.guard";
 import { Response } from "express";
 import { ConfigService } from "@nestjs/config";
@@ -24,10 +24,10 @@ export class AuthController {
 
     @ApiOperation({ summary: 'Register new client' })
     @ApiResponse({
-        status: 200, description: 'Client registered', type: ClientResponseDto
+        status: 200, description: 'Client registered', type: ClientAuthResponseDto
     })
     @Post('register-client')
-    async registerClient(@Body() dto: ClientRegistrationRequestDto): Promise<ClientResponseDto> {
+    async registerClient(@Body() dto: ClientRegistrationRequestDto): Promise<ClientAuthResponseDto> {
         return await this.authService.registerClient(dto);
     }
 
@@ -110,10 +110,10 @@ export class AuthController {
     }
     @ApiOperation({ summary: 'Get all clients' })
     @ApiResponse({
-        status: 200, description: 'Clients found', type: [ClientResponseDto]
+        status: 200, description: 'Clients found', type: [ClientAuthResponseDto]
     })
     @Get('get-all-clients')
-    async getAllClients(): Promise<ClientResponseDto[]> {
+    async getAllClients(): Promise<ClientAuthResponseDto[]> {
         const data = await this.authService.getAllClients();
         return data.map(client => {
             return {
@@ -130,7 +130,7 @@ export class AuthController {
 
     @ApiOperation({ summary: 'Get all clients users' })
     @ApiResponse({
-        status: 200, description: 'Clients found', type: [ClientResponseDto]
+        status: 200, description: 'Clients found', type: [ClientAuthResponseDto]
     })
     @Post('get-all-clients-users')
     async getAllClientsUsers(@Body() dto: GetAllClientsUsersDto): Promise<UserResponseDto[]> {
@@ -141,7 +141,7 @@ export class AuthController {
 
     @ApiOperation({ summary: 'Get all clients users' })
     @ApiResponse({
-        status: 200, description: 'Clients found', type: [ClientResponseDto]
+        status: 200, description: 'Clients found', type: [ClientAuthResponseDto]
     })
     @Get('get-all-users')
     async getAllUsers(): Promise<UserResponseDto[]> {
