@@ -15,7 +15,7 @@ import { ClientService } from '@/modules/client/services/client.service';
 import { CreateClientDto } from '@/modules/client/dto/create-client.dto';
 import { UpdateClientDto } from '@/modules/client/dto/update-client.dto';
 import { ClientResponseDto } from '@/modules/client/dto/client-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
+import { SuccessResponseDto, EResultCode, ErrorResponseDto } from '@/core';
 
 @ApiTags('Admin Client Management')
 @Controller('admin/clients')
@@ -31,14 +31,12 @@ export class AdminClientController {
     @ApiResponse({
         status: 400,
         description: 'Bad request - validation error or email already exists',
+        type: ErrorResponseDto,
     })
     @Post()
-    async createClient(@Body() createClientDto: CreateClientDto): Promise<SuccessResponseDto> {
+    async createClient(@Body() createClientDto: CreateClientDto): Promise<ClientResponseDto> {
         const client = await this.clientService.create(createClientDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: client,
-        };
+        return client;
     }
 
     @ApiOperation({ summary: 'Get client by ID' })
@@ -50,14 +48,12 @@ export class AdminClientController {
     @ApiResponse({
         status: 404,
         description: 'Client not found',
+        type: ErrorResponseDto,
     })
     @Get(':id')
-    async getClientById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getClientById(@Param('id', ParseIntPipe) id: number): Promise<ClientResponseDto> {
         const client = await this.clientService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: client,
-        };
+        return client;
     }
 
     @ApiOperation({ summary: 'Get all clients' })
@@ -70,7 +66,7 @@ export class AdminClientController {
     async getAllClients(
         @Query('status') status?: string,
         @Query('is_active') isActive?: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<ClientResponseDto[]> {
         let clients;
         if (status) {
             clients = await this.clientService.findByStatus(status);
@@ -80,10 +76,7 @@ export class AdminClientController {
             clients = await this.clientService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: clients,
-        };
+        return clients;
     }
 
     @ApiOperation({ summary: 'Get client by email' })
@@ -120,6 +113,7 @@ export class AdminClientController {
     @ApiResponse({
         status: 404,
         description: 'Client not found',
+        type: ErrorResponseDto,
     })
     @ApiResponse({
         status: 400,
@@ -129,30 +123,25 @@ export class AdminClientController {
     async updateClient(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateClientDto: UpdateClientDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<ClientResponseDto> {
         const client = await this.clientService.update(id, updateClientDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: client,
-        };
+        return client;
     }
 
     @ApiOperation({ summary: 'Delete client' })
     @ApiResponse({
         status: 200,
         description: 'Client deleted successfully',
+        type: Boolean,
     })
     @ApiResponse({
         status: 404,
         description: 'Client not found',
     })
     @Delete(':id')
-    async deleteClient(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteClient(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.clientService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
 
