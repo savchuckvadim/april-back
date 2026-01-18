@@ -11,19 +11,19 @@ export class EventSalesController {
         // private readonly bitrixContext: BitrixContextService,
         // private readonly bitrixApi: BitrixRequestApiService,
         private readonly flowService: EventSalesFlowUseCase,
-    ) {}
+    ) { }
 
     @Post('flow')
     @HttpCode(200)
     async getFlow(@Body() dto: EventSalesFlowDto) {
-        this.logger.debug(
-            'Received flow request:',
-            JSON.stringify(dto, null, 2),
-        );
+        // this.logger.debug(
+        //     'Received flow request:',
+        //     JSON.stringify(dto, null, 2),
+        // );
         // this.bitrixContext.initFromRequestContext();
         // const service = new EventSalesFlowUseCase(this.portalProvider);
-        await this.flowService.init(dto);
-        const result = await this.flowService.getFlow(dto.domain);
+
+        const result = await this.flowService.getFlow(dto);
         return result;
     }
 }

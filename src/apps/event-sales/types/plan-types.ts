@@ -1,4 +1,4 @@
-export enum EV_PLAN_CODE {
+export enum EnumEventPlanCode {
     COLD = 'cold',
     WARM = 'warm',
     PRESENTATION = 'presentation',
@@ -9,6 +9,6 @@ export enum EV_PLAN_CODE {
 
 export type EventPlanCall = {
     id: number;
-    code: EV_PLAN_CODE;
+    code: EnumEventPlanCode;
     name: string;
 };

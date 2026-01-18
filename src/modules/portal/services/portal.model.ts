@@ -5,13 +5,13 @@ import {
     IField,
     IFieldItem,
     IRPA,
-    ICategory,
+    IPCategory,
     EDepartamentGroup,
     IPDepartment,
     IPPortalMeasure,
     PMeasureCode,
     IFieldCode,
-    IDeal,
+    IPDeal,
     IStage,
 } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
@@ -88,7 +88,7 @@ export class PortalModel {
         }
         return item;
     }
-    getDeal(): IDeal {
+    getDeal(): IPDeal {
         return this.portal.deals[0];
     }
 
@@ -97,7 +97,7 @@ export class PortalModel {
     }
     getDealCategoryByCode(
         code: PbxDealCategoryCodeEnum,
-    ): ICategory | undefined {
+    ): IPCategory | undefined {
         return this.portal.deals[0].categories.find(
             category => category.code === code,
         );

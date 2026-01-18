@@ -1,6 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { portal_contracts } from 'generated/prisma';
 
 export class PortalContractResponseDto {
+    constructor(portalContract: portal_contracts) {
+        this.id = Number(portalContract.id);
+        this.portal_id = Number(portalContract.portal_id);
+        this.contract_id = Number(portalContract.contract_id);
+        this.portal_measure_id = Number(portalContract.portal_measure_id);
+        this.bitrixfield_item_id = Number(portalContract.bitrixfield_item_id);
+        this.title = portalContract.title;
+
+        this.template = portalContract.template;
+        this.order = portalContract.order;
+        this.productName = portalContract.productName;
+        this.description = portalContract.description;
+        this.created_at = portalContract.created_at;
+        this.updated_at = portalContract.updated_at;
+    }
+
+
     @ApiProperty({
         description: 'Portal Contract ID',
         example: 1,

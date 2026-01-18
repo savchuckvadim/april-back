@@ -1,5 +1,5 @@
 import {
-    EEventItemResultType,
+    EnumEventItemResultType,
     WorkStatus,
     NoresultReason,
     FailType,
@@ -7,6 +7,8 @@ import {
 } from '../../types/report-types';
 import {
     IsBoolean,
+    IsEnum,
+    IsNotEmpty,
     IsObject,
     IsOptional,
     IsString,
@@ -16,8 +18,9 @@ import { Type } from 'class-transformer';
 import { ContactDto } from './contact.dto';
 
 export class ReportDto {
-    @IsString()
-    resultStatus: EEventItemResultType;
+    @IsEnum(EnumEventItemResultType)
+    @IsNotEmpty()
+    resultStatus: EnumEventItemResultType;
 
     @IsString()
     description: string;

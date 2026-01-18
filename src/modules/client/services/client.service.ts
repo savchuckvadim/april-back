@@ -6,7 +6,7 @@ import { UpdateClientDto } from '../dto/update-client.dto';
 import { ClientResponseDto, ClientWithRelationsResponseDto } from '../dto/client-response.dto';
 import { ClientWithRelations } from '../entity/client.entity';
 import { UserResponseDto } from '@/apps/bitrix-app-client/user/dto/user-response.dto';
-import { PortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
+import { AdminPortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
 
 @Injectable()
 export class ClientService {
@@ -126,7 +126,7 @@ export class ClientService {
         return {
             ...this.mapToResponseDto(client),
             users: client.users?.map(user => new UserResponseDto(user)) || [],
-            portal: client.portal ? new PortalResponseDto(client.portal) : null,
+            portal: client.portal ? new AdminPortalResponseDto(client.portal) : null,
         };
     }
 }

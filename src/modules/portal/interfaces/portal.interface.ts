@@ -15,8 +15,8 @@ export interface IPortal {
     id?: number;
     departament?: IDepartment;
     smarts?: IPSmart[];
-    // deal?: IDeal;
-    deals: IDeal[];
+    // deal?: IPDeal;
+    deals: IPDeal[];
     rpas?: IRPA[];
     company?: ICompany;
     contact?: IContact;
@@ -55,7 +55,7 @@ export type IFieldCode =
     | 'sales_kpi_event_date'
     | 'sales_kpi_event_type'
     | string;
-export interface ICategory {
+export interface IPCategory {
     id: number;
     type: string;
     group: string;
@@ -101,7 +101,7 @@ export interface IRPA {
     forFilterId: number;
     crmId: number;
     portal_id: number;
-    categories: ICategory[];
+    categories: IPCategory[];
     bitrixfields: IField[];
 }
 
@@ -122,7 +122,7 @@ export interface IPSmart {
     forFilter: string;
     bitrixfields: IField[];
     fields: IField[];
-    categories: ICategory[];
+    categories: IPCategory[];
 }
 
 export interface IPresetRQ {
@@ -153,13 +153,13 @@ export enum EDepartamentGroup {
     service = 'service',
     tmc = 'tmc',
 }
-export interface IDeal {
+export interface IPDeal {
     id: number;
     portal_id: number;
     code: string;
     name: string;
     title: string;
-    categories: ICategory[];
+    categories: IPCategory[];
     bitrixfields: IField[];
 }
 

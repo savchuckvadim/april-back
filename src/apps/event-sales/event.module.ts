@@ -19,6 +19,6 @@ import { EventSalesActivityUseCase } from './use-cases/bx-activity.use-case';
     ],
     controllers: [EventSalesController, EventSalesBxActivityController],
     providers: [EventSalesFlowUseCase, EventSalesActivityUseCase],
-    exports: [EventSalesFlowUseCase],
+    // exports: [EventSalesFlowUseCase],
 })
 export class EventSalesModule {}

@@ -1,6 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { portal_measure } from 'generated/prisma';
 
 export class PortalMeasureResponseDto {
+    constructor(portalMeasure: portal_measure) {
+        this.id = Number(portalMeasure.id);
+        this.measure_id = Number(portalMeasure.measure_id);
+        this.portal_id = Number(portalMeasure.portal_id);
+        this.bitrixId = portalMeasure.bitrixId;
+        this.name = portalMeasure.name;
+        this.shortName = portalMeasure.shortName;
+        this.fullName = portalMeasure.fullName;
+        this.created_at = portalMeasure.created_at ?? undefined;
+        this.updated_at = portalMeasure.updated_at ?? undefined;
+    }
+
     @ApiProperty({
         description: 'Portal Measure ID',
         example: 1,

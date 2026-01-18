@@ -1,6 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { timezones } from 'generated/prisma';
 
 export class TimezoneResponseDto {
+    constructor(timezone: timezones) {
+        this.id = Number(timezone.id);
+        this.name = timezone.name;
+        this.title = timezone.title;
+        this.value = timezone.value;
+        this.portal_id = Number(timezone.portal_id);
+        this.type = timezone.type;
+        this.offset = timezone.offset;
+
+    }
     @ApiProperty({
         description: 'Timezone ID',
         example: 1,

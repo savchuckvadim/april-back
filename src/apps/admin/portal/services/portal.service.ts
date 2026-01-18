@@ -3,13 +3,14 @@ import { Portal } from 'generated/prisma';
 import { AdminPortalRepository } from '../repositories/portal.repository';
 import { CreatePortalDto } from '../dto/create-portal.dto';
 import { UpdatePortalDto } from '../dto/update-portal.dto';
-import { PortalResponseDto } from '../dto/portal-response.dto';
+import { AdminPortalWithRelationsResponseDto, AdminPortalResponseDto } from '../dto/portal-response.dto';
+import { AdminPortalWithRelations } from '../type/admin-portal.type';
 
 @Injectable()
 export class AdminPortalService {
     constructor(private readonly repository: AdminPortalRepository) {}
 
-    async create(dto: CreatePortalDto): Promise<PortalResponseDto> {
+    async create(dto: CreatePortalDto): Promise<AdminPortalResponseDto> {
         try {
             const portal = await this.repository.create({
                 domain: dto.domain,
@@ -34,15 +35,15 @@ export class AdminPortalService {
         }
     }
 
-    async findById(id: number): Promise<PortalResponseDto> {
+    async findById(id: number): Promise<AdminPortalWithRelationsResponseDto> {
         const portal = await this.repository.findById(id);
         if (!portal) {
             throw new NotFoundException(`Portal with id ${id} not found`);
         }
-        return this.mapToResponseDto(portal);
+        return this.mapToWithRelationsResponseDto(portal);
     }
 
-    async findMany(): Promise<PortalResponseDto[]> {
+    async findMany(): Promise<AdminPortalResponseDto[]> {
         const portals = await this.repository.findMany();
         if (!portals) {
             return [];
@@ -50,7 +51,7 @@ export class AdminPortalService {
         return portals.map(this.mapToResponseDto);
     }
 
-    async findByDomain(domain: string): Promise<PortalResponseDto | null> {
+    async findByDomain(domain: string): Promise<AdminPortalResponseDto | null> {
         const portal = await this.repository.findByDomain(domain);
         if (!portal) {
             return null;
@@ -58,7 +59,7 @@ export class AdminPortalService {
         return this.mapToResponseDto(portal);
     }
 
-    async findByClientId(clientId: number): Promise<PortalResponseDto[]> {
+    async findByClientId(clientId: number): Promise<AdminPortalResponseDto[]> {
         const portals = await this.repository.findByClientId(clientId);
         if (!portals) {
             return [];
@@ -66,7 +67,7 @@ export class AdminPortalService {
         return portals.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdatePortalDto): Promise<PortalResponseDto> {
+    async update(id: number, dto: UpdatePortalDto): Promise<AdminPortalResponseDto> {
         const portal = await this.repository.findById(id);
         if (!portal) {
             throw new NotFoundException(`Portal with id ${id} not found`);
@@ -104,7 +105,7 @@ export class AdminPortalService {
         await this.repository.delete(id);
     }
 
-    private mapToResponseDto(portal: Portal): PortalResponseDto {
+    private mapToResponseDto(portal: Portal): AdminPortalResponseDto {
         return {
             id: Number(portal.id),
             domain: portal.domain,
@@ -117,6 +118,9 @@ export class AdminPortalService {
             created_at: portal.created_at,
             updated_at: portal.updated_at,
         };
+    }
+    private mapToWithRelationsResponseDto(portal: AdminPortalWithRelations): AdminPortalWithRelationsResponseDto {
+        return new AdminPortalWithRelationsResponseDto(portal);
     }
 }
 

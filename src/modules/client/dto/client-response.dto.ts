@@ -1,9 +1,19 @@
-import { PortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
+import { AdminPortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
 import { UserResponseDto } from '@/apps/bitrix-app-client/user/dto/user-response.dto';
 import { BitrixAppDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Client } from 'generated/prisma';
 
 export class ClientResponseDto {
+    constructor(client: Client) {
+        this.id = Number(client.id);
+        this.name = client.name;
+        this.email = client.email ?? '';
+        this.status = client.status ?? '';
+        this.is_active = client.is_active ?? false;
+        this.created_at = client.created_at ?? undefined;
+        this.updated_at = client.updated_at ?? undefined;
+    }
     @ApiProperty({
         description: 'Client ID',
         example: 1,
@@ -59,9 +69,9 @@ export class ClientWithRelationsResponseDto extends ClientResponseDto {
     @ApiPropertyOptional({
         description: 'Client portal',
         example: 'https://portal.example.com',
-        type: PortalResponseDto,
+        type: AdminPortalResponseDto,
     })
-    portal?: PortalResponseDto | null;
+    portal?: AdminPortalResponseDto | null;
 
     @ApiPropertyOptional({
         description: 'Client users',

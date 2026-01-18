@@ -1,6 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { smarts } from 'generated/prisma';
 
 export class SmartResponseDto {
+    constructor(smart: smarts) {
+        this.id = Number(smart.id);
+        this.type = smart.type;
+        this.group = smart.group;
+        this.name = smart.name;
+        this.title = smart.title;
+        this.entityTypeId = Number(smart.entityTypeId);
+        this.portal_id = Number(smart.portal_id);
+        this.bitrixId = smart.bitrixId ? Number(smart.bitrixId) : null;
+        this.forStageId = smart.forStageId ? Number(smart.forStageId) : null;
+        this.forFilterId = smart.forFilterId ? Number(smart.forFilterId) : null;
+        this.crmId = smart.crmId ? Number(smart.crmId) : null;
+        this.forStage = smart.forStage;
+        this.forFilter = smart.forFilter;
+        this.crm = smart.crm;
+        this.created_at = smart.created_at ?? undefined;
+        this.updated_at = smart.updated_at ?? undefined;
+    }
     @ApiProperty({
         description: 'Smart ID',
         example: 1,

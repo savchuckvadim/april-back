@@ -5,22 +5,66 @@ import {
 import { EV_TYPE, IEventTask } from '../../types/task-types';
 import { PresentationStateCount } from '../../types/presentation-types';
 import { IBXDeal } from 'src/modules/bitrix';
+import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { MinimalUserDto } from './user.dto';
+import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
 
-export class EventTaskDto implements IEventTask {
+export enum EnumTaskEventType {
+    XO = 'xo',
+    WARM = 'warm',
+    PRESENTATION = 'presentation',
+    IN_PROGRESS = 'in_progress',
+    MONEY_AWAIT = 'money_await',
+    EVENT = 'event',
+    SUPPLY = 'supply',
+}
+export class EventTaskUserDto {
+    @IsNumeric()
+    id: number;
+
+    @IsString()
     name: string;
+
+    @IsString()
+    icon: string;
+
+    @IsString()
+    workPosition: string;
+}
+
+export class EventTaskGroupDto {
+
+    @IsOptional()
+    @IsNumeric()
+    id: number;
+}
+export class EventTaskDto {
+    @IsNumeric()
+    id: number;
+
+    @IsOptional()
+    @IsString()
+    name: string;
+    @IsString()
     type: EV_TYPE;
+    @IsString()
     isExpired: 'no' | 'almost' | 'yes';
-    eventType:
-        | 'xo'
-        | 'warm'
-        | 'presentation'
-        | 'in_progress'
-        | 'money_await'
-        | 'event'
-        | 'supply';
+    @IsEnum(EnumTaskEventType)
+    eventType: EnumTaskEventType;
+
+    @IsOptional()
     presentation: null | PresentationStateCount;
+
+
     dealBase: null | IBXDeal;
+
+    @IsOptional()
+    @IsEnum(['presentation'])
     originalEventType?: 'presentation' | null;
+
+    @IsOptional()
+    @IsBoolean()
     isPresentationCanceled?: boolean;
     // IBXTask properties
     accomplices: [];
@@ -38,8 +82,16 @@ export class EventTaskDto implements IEventTask {
     commentsCount: null;
     createdBy: '1';
     createdDate: '2017-12-29T12:15:42+03:00';
-    creator: IBXUser;
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => EventTaskUserDto)
+    creator: EventTaskUserDto;
     dateStart: '2017-12-29T13:04:29+03:00';
+
+    @IsOptional()
+    @IsString()
+    @Type(() => String)
     deadline: '2017-12-29T15:00:00+03:00';
     description: string;
     descriptionInBbcode: 'Y';
@@ -53,14 +105,25 @@ export class EventTaskDto implements IEventTask {
     forkedByTemplateId: null;
     forumId: null;
     forumTopicId: null;
-    group: [];
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => EventTaskGroupDto)
+    group: EventTaskGroupDto;
+
+    @IsOptional()
+    @IsNumeric()
     groupId: number;
     guid: '{9bd11fb5-8e76-4379-b3be-1f4cbe9bae1d}';
-    id: number;
+
     isMuted: 'N';
     isPinned: 'N';
     isPinnedInGroup: 'N';
+
+    @IsOptional()
+    @IsEnum(EBXTaskMark)
     mark: EBXTaskMark;
+
+
     matchWorkTime: 'N';
     multitask: 'N';
     newCommentsCount: 0;
@@ -69,8 +132,17 @@ export class EventTaskDto implements IEventTask {
     parentId: null;
     priority: '0';
     replicate: 'N';
-    responsible: IBXUser;
-    responsibleId: '81';
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => EventTaskUserDto)
+    responsible: EventTaskUserDto;
+
+    @IsOptional()
+    @IsNumeric()
+    responsibleId: number;
+
+
     serviceCommentsCount: null;
     siteId: 's1';
     sorting: null;
@@ -87,5 +159,10 @@ export class EventTaskDto implements IEventTask {
     title: string;
     viewedDate: '2017-12-29T19:44:28+03:00';
     xmlId: null;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @Type(() => String)
     ufCrmTask: string[];
 }

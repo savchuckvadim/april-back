@@ -9,14 +9,16 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import { IsNumberOrString } from '@/core/decorators/dto/number-or-string.decorator';
+import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
 
 export class MinimalUserDto {
-    @IsNumber()
+    @IsNumeric()
     ID: number;
 }
 
 export class FullUserDto implements IBXUser {
-    @IsNumber()
+    @IsNumeric()
     ID: number;
 
     @IsBoolean()

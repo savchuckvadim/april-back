@@ -1,26 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { BitrixGeneralService } from '../general/bitrix-general.service';
+// import { BitrixGeneralService } from '../general/bitrix-general.service';
+import { BitrixService, IBXDeal } from '@/modules/bitrix';
+import { IPCategory, IPDeal } from '@/modules/portal/interfaces/portal.interface';
 
-interface DealCategory {
-    code: string;
-    bitrixId: number;
-    stages: DealStage[];
-}
+// interface DealCategory {
+//     code: string;
+//     bitrixId: number;
+//     stages: DealStage[];
+// }
 
-interface DealStage {
-    code: string;
-    bitrixId: string;
-    order: number;
-}
+// interface DealStage {
+//     code: string;
+//     bitrixId: string;
+//     order: number;
+// }
 
-export interface Deal {
-    ID: string;
+export interface Deal extends IBXDeal {
+    ID: number;
     CATEGORY_ID: string;
     STAGE_ID: string;
-    COMPANY_ID?: string;
+    COMPANY_ID: string;
     LEAD_ID?: string;
     ASSIGNED_BY_ID: string;
-    TITLE?: string;
+    TITLE: string;
     UF_CRM_TO_BASE_SALES?: number;
     UF_CRM_TO_PRESENTATION_SALES?: number;
     UF_CRM_PRES_COMMENTS?: string;
@@ -28,9 +30,7 @@ export interface Deal {
     UF_CRM_MANAGER_OP?: number;
 }
 
-interface PortalDeal {
-    categories: DealCategory[];
-}
+
 
 interface EventOrder {
     code: string;
@@ -40,24 +40,32 @@ interface EventOrder {
 
 @Injectable()
 export class BitrixDealService {
-    constructor(private readonly bitrixGeneralService: BitrixGeneralService) {}
+    constructor(
+        private readonly bitrix: BitrixService
+    ) { }
 
     async getDealId(
-        hook: string,
-        leadId: number | null,
-        companyId: number | null,
-        userId: number,
-        portalDeal: PortalDeal,
-        currentCategoryData: DealCategory,
-    ): Promise<Deal | null> {
-        let currentDeal: Deal | null = null;
+        // hook: string,
+        leadId: string | null,
+        companyId: string | null,
+        userId: string,
+        // portalDeal: PortalDeal,
+        currentCategoryData: IPCategory,
+    ): Promise<IBXDeal | null> {
+        let currentDeal: IBXDeal | null = null;
 
         try {
             const method = '/crm.deal.list.json';
-            const url = hook + method;
+            // const url = hook + method;
             const currentCategoryBtxId = currentCategoryData.bitrixId;
 
-            let data: any = {};
+            let data: {
+                filter: Partial<IBXDeal>,
+                select: string[],
+            } = {
+                filter: {},
+                select: [],
+            };
 
             if (companyId) {
                 data = {
@@ -83,11 +91,8 @@ export class BitrixDealService {
                 };
             }
 
-            const response = await this.bitrixGeneralService.makeRequest(
-                url,
-                data,
-            );
-            currentDeal = response?.items?.[0] || null;
+            const response = await this.bitrix.deal.getList(data.filter, data.select);
+            currentDeal = response?.result?.[0] as IBXDeal | null;
 
             if (Array.isArray(currentDeal)) {
                 currentDeal = currentDeal[0];
@@ -101,12 +106,12 @@ export class BitrixDealService {
     }
 
     getTargetCategoryData(
-        portalDealData: PortalDeal,
+        portalDealData: IPDeal,
         currentDepartamentType: string,
         eventType: string,
         eventAction: string,
-    ): DealCategory[] {
-        const resultCategoryDatas: DealCategory[] = [];
+    ): IPCategory[] {
+        const resultCategoryDatas: IPCategory[] = [];
         const categoryPrephicks: string[] = [];
 
         if (currentDepartamentType === 'sales') {
@@ -148,7 +153,7 @@ export class BitrixDealService {
     }
 
     getTargetStage(
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
         group: string,
         eventType: string,
         eventAction: string,
@@ -236,14 +241,12 @@ export class BitrixDealService {
         return targetStageBtxId;
     }
 
-    async getDeal(hook: string, params: { id: number }): Promise<Deal | null> {
+    async getDeal(dealId: number): Promise<Deal | null> {
         try {
-            const method = '/crm.deal.get.json';
-            const url = hook + method;
-            const response = await this.bitrixGeneralService.makeRequest(url, {
-                id: params.id,
-            });
-            return response?.result || null;
+
+
+            const response = await this.bitrix.deal.get(dealId, ['ID', 'CATEGORY_ID', 'STAGE_ID']);
+            return response?.result as IBXDeal | null;
         } catch (error) {
             console.error('Error in getDeal:', error);
             return null;
@@ -251,22 +254,14 @@ export class BitrixDealService {
     }
 
     async updateDeal(
-        hook: string,
+
         dealId: number,
-        fields: Partial<Deal>,
-    ): Promise<any> {
+        fields: Partial<IBXDeal>,
+    ): Promise<number | null> {
         try {
-            const method = '/crm.deal.update.json';
-            const url = hook + method;
-            const data = {
-                id: dealId,
-                fields: fields,
-            };
-            const response = await this.bitrixGeneralService.makeRequest(
-                url,
-                data,
-            );
-            return response?.result || null;
+
+            const response = await this.bitrix.deal.update(dealId, fields);
+            return response?.result;
         } catch (error) {
             console.error('Error in updateDeal:', error);
             return null;
@@ -274,13 +269,12 @@ export class BitrixDealService {
     }
 
     async setDeal(
-        hook: string,
+
         fields: Partial<Deal>,
-        category?: DealCategory,
+        category?: IPCategory,
     ): Promise<string | null> {
         try {
-            const method = '/crm.deal.add.json';
-            const url = hook + method;
+
             const data = {
                 fields: {
                     ...fields,
@@ -289,14 +283,11 @@ export class BitrixDealService {
             if (category) {
                 data.fields = {
                     ...fields,
-                    CATEGORY_ID: category.bitrixId.toString(),
+                    CATEGORY_ID: category.bitrixId,
                 };
             }
-            const response = await this.bitrixGeneralService.makeRequest(
-                url,
-                data,
-            );
-            return response?.result || null;
+            const response = await this.bitrix.deal.set(data.fields);
+            return response?.result.toString();
         } catch (error) {
             console.error('Error in setDeal:', error);
             return null;
@@ -304,7 +295,7 @@ export class BitrixDealService {
     }
 
     getBaseDealFromCurrentBtxDeals(
-        portalDealData: PortalDeal,
+        portalDealData: IPDeal,
         currentBtxDeals: Deal[],
     ): Deal[] {
         const result: Deal[] = [];
@@ -315,7 +306,7 @@ export class BitrixDealService {
                 for (const category of portalDealData.categories) {
                     if (
                         category.code === 'sales_base' &&
-                        Number(btxDeal.CATEGORY_ID) === category.bitrixId
+                        btxDeal.CATEGORY_ID === category.bitrixId
                     ) {
                         currentBtxDeal = btxDeal;
                         result.push(currentBtxDeal);
@@ -328,7 +319,7 @@ export class BitrixDealService {
     }
 
     getSaleBaseTargetStage(
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
         currentStageOrder: string | null,
         planEventType: string | null,
         reportEventType: string,
@@ -434,7 +425,7 @@ export class BitrixDealService {
 
     getEventOrderFromCurrentBaseDeal(
         currentBtxDeal: Deal | null,
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
@@ -502,7 +493,7 @@ export class BitrixDealService {
     }
 
     getTMCTargetStage(
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
         currentStageOrder: string | null,
         planEventType: string | null,
         reportEventType: string,
@@ -619,7 +610,7 @@ export class BitrixDealService {
 
     getEventOrderFromCurrentTMCDeal(
         currentBtxDeal: Deal | null,
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
     ): string | null {
         let stageSuphicks = 'plan';
         let stagePrephicks = 'sales_tmc';
@@ -690,7 +681,7 @@ export class BitrixDealService {
     }
 
     getXOTargetStage(
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
         reportEventType: string,
         isExpired: boolean,
         isResult: boolean,
@@ -732,7 +723,7 @@ export class BitrixDealService {
     }
 
     getTargetStagePresentation(
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
         eventAction: string,
         isResult: boolean,
     ): string | null {
@@ -765,7 +756,7 @@ export class BitrixDealService {
     getIsCanDealStageUpdate(
         currentDeal: Deal | null,
         targetStageBtxId: string | null,
-        currentCategoryData: DealCategory,
+        currentCategoryData: IPCategory,
     ): boolean {
         let result = false;
 

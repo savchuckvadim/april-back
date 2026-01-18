@@ -9,7 +9,7 @@ import {
     IBxRpaItem,
 } from '@/modules/bitrix';
 import {
-    IDeal,
+    IPDeal,
     IPSmart,
     IRPA,
 } from '@/modules/portal/interfaces/portal.interface';
@@ -195,7 +195,7 @@ export class InitDealUseCase {
     private async getDealValuesFromOfferSmart(
         offerSmartItem: IBXItem,
         portalSmart: IPSmart,
-        portalDeal: IDeal,
+        portalDeal: IPDeal,
         bitrix: BitrixService,
     ): Promise<Partial<IBXDeal>> {
         const smartTypeId = portalSmart.entityTypeId;
@@ -233,7 +233,7 @@ export class InitDealUseCase {
     private async getDealFieldValuesFromRpa(
         rpa: IBxRpaItem,
         portalRpa: IRPA,
-        portalDeal: IDeal,
+        portalDeal: IPDeal,
         bitrix: BitrixService,
         isFiles: boolean = false,
     ): Promise<Partial<IBXDeal>> {

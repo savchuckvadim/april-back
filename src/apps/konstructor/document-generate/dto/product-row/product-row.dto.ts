@@ -27,18 +27,35 @@ export class ProductRowSupplyDto {
     @IsString() forkp: string;
     @IsNumber() number: number;
     @IsString() type: 'internet' | 'proxima';
-    @IsString() defaultName: string;
-    @IsString() alternativeName: string;
+
+
+    @IsOptional()
+    @IsString()
+    defaultName?: string;
+
+    @IsOptional()
+    @IsString()
+    alternativeName?: string;
 }
 
 export class ProductRowDto {
     @IsNumber() number: number;
     @IsString() name: string;
     @IsString() shortName: string;
-    @IsString() defaultName: string;
-    @IsString() defaultShortName: string;
-    @IsString() alternativeName: string;
-    @IsString() alternativeShortName: string;
+    @IsOptional()
+    @IsString()
+    defaultName?: string;
+    @IsOptional()
+    @IsString()
+    defaultShortName?: string;
+    @IsOptional()
+    @IsString()
+    alternativeName?: string;
+    @IsOptional()
+    @IsString()
+    alternativeShortName?: string;
+
+
     @IsString() type: string;
 
     @IsNumber() id: number;

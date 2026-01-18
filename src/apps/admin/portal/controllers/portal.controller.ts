@@ -13,7 +13,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminPortalService } from '../services/portal.service';
 import { CreatePortalDto } from '../dto/create-portal.dto';
 import { UpdatePortalDto } from '../dto/update-portal.dto';
-import { PortalResponseDto } from '../dto/portal-response.dto';
+import { AdminPortalResponseDto, AdminPortalWithRelationsResponseDto} from '../dto/portal-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Portal Management')
@@ -25,7 +25,7 @@ export class AdminPortalController {
     @ApiResponse({
         status: 201,
         description: 'Portal created successfully',
-        type: PortalResponseDto,
+        type: AdminPortalResponseDto,
     })
     @ApiResponse({
         status: 400,
@@ -44,32 +44,29 @@ export class AdminPortalController {
     @ApiResponse({
         status: 200,
         description: 'Portal found',
-        type: PortalResponseDto,
+        type: AdminPortalWithRelationsResponseDto,
     })
     @ApiResponse({
         status: 404,
         description: 'Portal not found',
     })
     @Get(':id')
-    async getPortalById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getPortalById(@Param('id', ParseIntPipe) id: number): Promise<AdminPortalWithRelationsResponseDto> {
         const portal = await this.portalService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portal,
-        };
+        return portal;
     }
 
     @ApiOperation({ summary: 'Get all portals' })
     @ApiResponse({
         status: 200,
         description: 'Portals found',
-        type: [PortalResponseDto],
+        type: [AdminPortalResponseDto],
     })
     @Get()
     async getAllPortals(
         @Query('client_id') clientId?: string,
         @Query('domain') domain?: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<AdminPortalResponseDto[]> {
         let portals;
         if (clientId) {
             portals = await this.portalService.findByClientId(Number(clientId));
@@ -80,42 +77,31 @@ export class AdminPortalController {
             portals = await this.portalService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portals,
-        };
+        return portals;
     }
 
     @ApiOperation({ summary: 'Get portal by domain' })
     @ApiResponse({
         status: 200,
         description: 'Portal found',
-        type: PortalResponseDto,
+        type: AdminPortalResponseDto,
     })
     @ApiResponse({
         status: 404,
         description: 'Portal not found',
     })
     @Get('domain/:domain')
-    async getPortalByDomain(@Param('domain') domain: string): Promise<SuccessResponseDto> {
+    async getPortalByDomain(@Param('domain') domain: string): Promise<AdminPortalResponseDto | null> {
         const portal = await this.portalService.findByDomain(domain);
-        if (!portal) {
-            return {
-                resultCode: EResultCode.ERROR,
-                data: null,
-            };
-        }
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portal,
-        };
+       
+        return portal;
     }
 
     @ApiOperation({ summary: 'Update portal' })
     @ApiResponse({
         status: 200,
         description: 'Portal updated successfully',
-        type: PortalResponseDto,
+        type: AdminPortalResponseDto,
     })
     @ApiResponse({
         status: 404,
@@ -129,30 +115,25 @@ export class AdminPortalController {
     async updatePortal(
         @Param('id', ParseIntPipe) id: number,
         @Body() updatePortalDto: UpdatePortalDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<AdminPortalResponseDto> {
         const portal = await this.portalService.update(id, updatePortalDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portal,
-        };
+        return portal
     }
 
     @ApiOperation({ summary: 'Delete portal' })
     @ApiResponse({
         status: 200,
         description: 'Portal deleted successfully',
+        type: Boolean,
     })
     @ApiResponse({
         status: 404,
         description: 'Portal not found',
     })
     @Delete(':id')
-    async deletePortal(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deletePortal(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.portalService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
 
