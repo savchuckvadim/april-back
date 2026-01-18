@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 export function createRedisOptions(
     configService: ConfigService,
 ): {
-   
+
     url: string | undefined,
     host: string | undefined,
     port: number, maxRetriesPerRequest: number,
