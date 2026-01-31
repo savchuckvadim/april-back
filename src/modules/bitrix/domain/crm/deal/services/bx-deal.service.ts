@@ -4,13 +4,15 @@ import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXDeal } from '../interface/bx-deal.interface';
 
 export class BxDealService {
+    private repo: BxDealRepository;
+    
     clone(api: BitrixBaseApi): BxDealService {
         const instance = new BxDealService();
         instance.init(api);
         return instance;
     }
 
-    private repo: BxDealRepository;
+
 
     init(api: BitrixBaseApi) {
         this.repo = new BxDealRepository(api);

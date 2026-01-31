@@ -9,9 +9,9 @@ export interface BXActivityRequest {
 }
 
 export interface BXActivityRequestFields {
-    [key: string]: string | number | string[] | undefined;
+    [key: string]: string | number  | number[]  | string[] | undefined;
     ID?: number | string;
-    OWNER_ID?: number | string;
+    OWNER_ID?: number | string | number[] | string[];
     OWNER_TYPE_ID?: BitrixOwnerTypeId;
     TYPE_ID?: BitrixActivityTypeId;
     // "PROVIDER_ID": "VOXIMPLANT_CALL",
@@ -56,7 +56,7 @@ export interface IBXActivity {
     ID?: number | string;
 
     OWNER_TYPE_ID: BitrixOwnerTypeId;
-    OWNER_ID: number | string;
+    OWNER_ID: number | string | number[] | string[];
     TYPE_ID: BitrixActivityTypeId;
     SUBJECT: string;
     RESPONSIBLE_ID: number | string;

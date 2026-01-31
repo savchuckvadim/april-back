@@ -16,8 +16,7 @@ import { GsrMigrateUseCase } from './gsr-migrate.use-case';
 import { GetDealsDto } from './dtos/get-deals.dto';
 import { ContactsCreateUseCase } from './contacts-create.use-case';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { IBXTask } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { TaskUseCase } from './task.use-case';
+
 import { IsString, IsNotEmpty } from 'class-validator';
 import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
 import { GsrBitrixService } from './gsr-bitrix.service';
@@ -37,7 +36,7 @@ export class GsrServiceController {
     constructor(
         private readonly migrateUseCase: GsrMigrateUseCase,
         private readonly contactsCreateUseCase: ContactsCreateUseCase,
-        private readonly taskUseCase: TaskUseCase,
+
         private readonly sheetsMigrateUseCase: GsrSheetsMigrateUseCase,
         private readonly bitrixService: GsrBitrixService,
     ) { }
@@ -177,19 +176,5 @@ export class GsrServiceController {
         return res.send(result);
     }
 
-    @Get('tasks/:domain')
-    @ApiOperation({ summary: 'Get tasks by domain' })
-    @ApiParam({
-        name: 'domain',
-        description: 'Domain of the Bitrix portal',
-        example: 'example.bitrix24.ru',
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Returns list of tasks',
-        // type: [IBXTask ] // или создайте TaskDto если нужна более специфичная структура
-    })
-    async getTasks(@Param('domain') domain: string) {
-        return await this.taskUseCase.getTasks(domain);
-    }
+
 }

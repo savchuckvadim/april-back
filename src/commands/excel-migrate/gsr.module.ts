@@ -9,7 +9,7 @@ import { GsrMigrateBitrixCompanyService } from './services/bitrix/gsr-migrate-bx
 import { GsrMigrateBitrixProductRowService } from './services/bitrix/gsr-migrate-bxproduct-row.service';
 import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bxcontact.service';
 import { ContactsCreateUseCase } from './contacts-create.use-case';
-import { TaskUseCase } from './task.use-case';
+
 import { GsrSheetsMigrateUseCase } from './gsr-sheets-migrate.use-case';
 import { SheetDataToMigrateConverter } from './services/sheet-data-to-migrate.converter';
 import { AlfaServiceController } from './alfa/alfa-migrate.controller';
@@ -30,7 +30,7 @@ import { AlfaParseService } from './alfa/services/alfa-parse.service';
         GsrMigrateBitrixProductRowService,
         GsrMigrateBitrixContactService,
         ContactsCreateUseCase,
-        TaskUseCase,
+
         GsrSheetsMigrateUseCase,
         SheetDataToMigrateConverter,
 

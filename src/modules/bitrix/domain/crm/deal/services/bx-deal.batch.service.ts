@@ -5,13 +5,17 @@ import { IBXDeal } from '../interface/bx-deal.interface';
 
 @Injectable()
 export class BxDealBatchService {
+
+    private repo: BxDealRepository;
+
+    
     clone(api: BitrixBaseApi): BxDealBatchService {
         const instance = new BxDealBatchService();
         instance.init(api);
         return instance;
     }
 
-    private repo: BxDealRepository;
+
 
     init(api: BitrixBaseApi) {
         this.repo = new BxDealRepository(api);

@@ -33,6 +33,10 @@ import { BxRecentService } from './domain/chat/recent/services/bx-recent.service
 import { BxRecentBatchService } from './domain/chat/recent/services/bx-recent.batch.service';
 import { BxMessageService } from './domain/chat/message/services/bx-message.service';
 import { BxMessageBatchService } from './domain/chat/message/services/bx-message.batch.service';
+import { BxTaskBatchService, BxTaskService } from './domain/tasks/task';
+import { ActivityService } from './domain/activity/services/bx-activity.service';
+import { BxActivityBatchService } from './domain/activity/services/bx-activity.batch.service';
+import { BxFileBatchService } from './domain/file/bx-file.batch.service';
 
 
 // @Injectable()
@@ -55,6 +59,8 @@ export class BitrixService {
     public file: BxFileService;
     public recent: BxRecentService;
     public message: BxMessageService;
+    public task: BxTaskService;
+    public activity: ActivityService
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -69,6 +75,9 @@ export class BitrixService {
         rpaItem: null as unknown as BxRpaItemBatchService,
         recent: null as unknown as BxRecentBatchService,
         message: null as unknown as BxMessageBatchService,
+        task: null as unknown as BxTaskBatchService,
+        activity: null as unknown as BxActivityBatchService,
+        file: null as unknown as BxFileBatchService
     };
     constructor(
         private readonly bxApi: BitrixBaseApi,
@@ -95,6 +104,8 @@ export class BitrixService {
         this.initFile();
         this.initRecent();
         this.initMessage();
+        this.initTask();
+        this.initiActivities();
     }
 
     private initDeal() {
@@ -164,6 +175,7 @@ export class BitrixService {
     }
     private initFile() {
         this.file = this.cloner.clone(BxFileService, this.api);
+        this.batch.file = this.cloner.clone(BxFileBatchService, this.api);
     }
 
     private initRecent() {
@@ -176,5 +188,12 @@ export class BitrixService {
         this.batch.message = this.cloner.clone(BxMessageBatchService, this.api);
     }
 
-
+    private initTask() {
+        this.task = this.cloner.clone(BxTaskService, this.api);
+        this.batch.task = this.cloner.clone(BxTaskBatchService, this.api);
+    }
+    private initiActivities() {
+        this.activity = this.cloner.clone(ActivityService, this.api);
+        this.batch.activity = this.cloner.clone(BxActivityBatchService, this.api);
+    }
 }

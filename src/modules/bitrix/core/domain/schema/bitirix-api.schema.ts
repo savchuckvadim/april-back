@@ -20,7 +20,7 @@ import {
     TimelineCommentSchema,
 } from 'src/modules/bitrix/';
 
-import { TasksSchema } from 'src/modules/bitrix/domain/tasks/bx-tasks.schema';
+import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
 import { ActivitySchema } from 'src/modules/bitrix/domain/activity/bx-activity.schema';
 import { FileSchema } from 'src/modules/bitrix/domain/file/bx-file.schema';
 // import {
@@ -83,7 +83,7 @@ export type BXApiSchema = {
         [EBXEntity.ITEM]: BxRpaItemSchema;
     };
     [EBxNamespace.TASKS]: {
-        [EBXEntity.TASK]: TasksSchema;
+        [EBXEntity.TASK]: TaskSchema;
     };
     [EBxNamespace.CRM_ITEM]: {
         [EBXEntity.PRODUCT_ROW]: ProductRowSchema;

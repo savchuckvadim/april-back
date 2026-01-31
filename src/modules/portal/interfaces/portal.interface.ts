@@ -23,6 +23,8 @@ export interface IPortal {
     lead?: Record<string, any>;
     bx_rq?: IPresetRQ[];
     measures: IPPortalMeasure[];
+    bitrixCallingTasksGroup?: IPCallingTasksGroup;
+    callingGroups?: IPCallingTasksGroup[];
 }
 
 export interface IFieldItem {
@@ -238,3 +240,17 @@ export type PMeasureCode =
     | 'abonHalf'
     | 'abonYear'
     | 'abonTwoYears';
+
+
+export interface IPCallingTasksGroup {
+    id: number;
+    type: "sales" | "service" | "tmc";
+    group: "sales" | "service" | "tmc";
+    name: string;
+    title: string;
+    bitrixId: number;
+    portal_id: number
+}
+
+
+

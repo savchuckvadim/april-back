@@ -11,6 +11,7 @@ import {
     BXActivityRequestFields,
     IBXActivity,
 } from './interfaces/bx-activity.interface';
+import { delay } from '@/lib';
 
 export class BxActivityRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) { }
@@ -85,7 +86,8 @@ export class BxActivityRepository {
                         ...filter,
                         '>ID': lastId,
                     },
-                    order: { ID: 'asc' },
+                    order: { ID: 'ASC' },
+                    start: -1
                 },
             );
             if (result && result.result) {
@@ -94,9 +96,11 @@ export class BxActivityRepository {
                     results.push(t);
                 });
             }
-            if (!result.total) {
+
+            if (result.result.length < 50) {
                 condition = false;
             }
+            await delay(1000);
         }
         return {
             activities: results,

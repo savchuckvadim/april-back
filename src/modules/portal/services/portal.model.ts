@@ -284,4 +284,50 @@ export class PortalModel {
     ): IFieldItem | undefined {
         return field.items.find(item => item.code === itemCode);
     }
+
+
+    getSalesTaskGroupId = (portal: IPortal): number => {
+        let result = 41
+        if (portal) {
+            if (portal.bitrixCallingTasksGroup) {
+
+                result = portal.bitrixCallingTasksGroup.bitrixId
+            }
+        }
+        return result;
+    }
+
+    getServiceTaskGroupId = (): number => {
+
+
+        const domain = this.portal.domain;
+        if (domain.includes('dev')) {
+            return 15
+        }
+        if (domain.includes('gsr')) {
+            return 45
+        }
+        if (domain.includes('april')) {
+            return 34
+        }
+        return 41
+
+    }
+
+    getServiceSignalTaskGroupId = (): number => {
+
+        const domain = this.portal.domain;
+        if (domain.includes('dev')) {
+            return 17
+        }
+        if (domain.includes('gsr')) {
+            return 9
+        }
+        if (domain.includes('april')) {
+            return 34
+        }
+        return 41
+
+    }
+
 }

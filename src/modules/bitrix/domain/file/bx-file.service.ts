@@ -15,7 +15,9 @@ export class BxFileService {
     init(api: BitrixBaseApi) {
         this.repo = new BxFileRepository(api);
     }
-
+    async get(id: number) {
+        return await this.repo.get(id);
+    }
     public async downloadBitrixFileAndConvertToBase64(
         url: string,
         name?: string,

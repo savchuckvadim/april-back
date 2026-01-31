@@ -1,5 +1,5 @@
 import { BxActivityRepository } from '../bx-activity.repository';
-import { IBXActivity } from '../interfaces/bx-activity.interface';
+import { BXActivityRequestFields, IBXActivity } from '../interfaces/bx-activity.interface';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 
 export class ActivityService {
@@ -14,7 +14,21 @@ export class ActivityService {
     init(api: BitrixBaseApi) {
         this.repo = new BxActivityRepository(api);
     }
-
+    async get(id: number) {
+        return await this.repo.get(id);
+    }
+    async getAll(
+        filter: Partial<BXActivityRequestFields>,
+        select?: string[]
+    ) {
+        return await this.repo.getAll(filter, select);
+    }
+    async getList(
+        filter: Partial<BXActivityRequestFields>,
+        select?: string[]
+    ) {
+        return await this.repo.getList(filter, select);
+    }
     async createActivity(activity: IBXActivity) {
         return this.repo.create(activity);
     }

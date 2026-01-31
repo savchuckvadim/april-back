@@ -8,6 +8,7 @@ import { BxRpaItemDomainModule } from './rpa/item/bx-rpa-item-domain.module';
 import { BxFileDomainModule } from './file/bx-file.module';
 import { BxListItemDomainModule } from './list-item';
 import { BitrixChatDomainModule } from './chat/bx-chat-domain.module';
+import { BxTaskDomainModule } from './tasks/task/bx-tasks.module';
 @Module({
     imports: [
         BitrixActivityDomainModule,
@@ -19,6 +20,7 @@ import { BitrixChatDomainModule } from './chat/bx-chat-domain.module';
         BxFileDomainModule,
         BxListItemDomainModule,
         BitrixChatDomainModule,
+        BxTaskDomainModule,
     ],
     exports: [
         BitrixActivityDomainModule,
@@ -30,6 +32,7 @@ import { BitrixChatDomainModule } from './chat/bx-chat-domain.module';
         BxFileDomainModule,
         BxListItemDomainModule,
         BitrixChatDomainModule,
+        BxTaskDomainModule
     ],
 })
 export class BitrixDomainModule { }

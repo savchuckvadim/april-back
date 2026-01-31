@@ -9,7 +9,7 @@
 import { BitrixOwnerType } from '../../../enums/bitrix-constants.enum';
 
 export interface IBXProductRow {
-    ownerType: BitrixOwnerType;
+    ownerType: BitrixOwnerType | string;
     ownerId: string | number;
     productRows: IBXProductRowRow[];
 }
@@ -29,6 +29,8 @@ export interface IBXProductRowRow {
     supply?: string;
     measureCode?: string;
     measureId?: number | string;
+
+    measureName?: string;
     sort?: number;
 }
 
