@@ -13,6 +13,9 @@ import { YandexModule } from 'src/clients/yandex/yandex.module';
 import { TranscriptionService } from './services/transcription.service';
 import { FileStorageService } from './services/file-storage.service';
 import { OnlineClientModule } from 'src/clients/online';
+import { TranscriptionRepository } from './repository/transcription.repository';
+import { TranscriptionPrismaRepository } from './repository/transcription.prisma.repository';
+import { TranscriptionStoreService } from './services/transcription.store.service';
 
 @Module({
     imports: [
@@ -25,6 +28,11 @@ import { OnlineClientModule } from 'src/clients/online';
     ],
     controllers: [TranscriptionController],
     providers: [
+        {
+            provide: TranscriptionRepository,
+            useClass: TranscriptionPrismaRepository,
+        },
+        TranscriptionStoreService,
         StartTranscriptionUseCase,
         GetTranscriptionResultUseCase,
         StreamingTranscriptionService,
@@ -34,4 +42,4 @@ import { OnlineClientModule } from 'src/clients/online';
         TranscriptionService,
     ],
 })
-export class TranscriptionModule {}
+export class TranscriptionModule { }

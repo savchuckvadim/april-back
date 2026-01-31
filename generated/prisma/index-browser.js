@@ -775,7 +775,7 @@ exports.Prisma.UserScalarFieldEnum = {
   bitrix_id: 'bitrix_id'
 };
 
-exports.Prisma.AisScalarFieldEnum = {
+exports.Prisma.AiScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -1182,7 +1182,7 @@ exports.Prisma.SuppliesScalarFieldEnum = {
   lcontractPropEmail: 'lcontractPropEmail'
 };
 
-exports.Prisma.TranscriptionsScalarFieldEnum = {
+exports.Prisma.TranscriptionScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -1774,7 +1774,7 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
-exports.Prisma.aisOrderByRelevanceFieldEnum = {
+exports.Prisma.AiOrderByRelevanceFieldEnum = {
   provider: 'provider',
   activity_id: 'activity_id',
   file_id: 'file_id',
@@ -2013,7 +2013,7 @@ exports.Prisma.suppliesOrderByRelevanceFieldEnum = {
   lcontractPropEmail: 'lcontractPropEmail'
 };
 
-exports.Prisma.transcriptionsOrderByRelevanceFieldEnum = {
+exports.Prisma.TranscriptionOrderByRelevanceFieldEnum = {
   provider: 'provider',
   activity_id: 'activity_id',
   file_id: 'file_id',
@@ -2219,7 +2219,7 @@ exports.Prisma.ModelName = {
   Template: 'Template',
   timezones: 'timezones',
   User: 'User',
-  ais: 'ais',
+  Ai: 'Ai',
   bitrix_app_placements: 'bitrix_app_placements',
   bitrix_app_secrets: 'bitrix_app_secrets',
   bitrix_apps: 'bitrix_apps',
@@ -2241,7 +2241,7 @@ exports.Prisma.ModelName = {
   provider_currents: 'provider_currents',
   report_settings: 'report_settings',
   supplies: 'supplies',
-  transcriptions: 'transcriptions',
+  Transcription: 'Transcription',
   UserSelectedTemplate: 'UserSelectedTemplate',
   portal_region: 'portal_region',
   regions: 'regions',

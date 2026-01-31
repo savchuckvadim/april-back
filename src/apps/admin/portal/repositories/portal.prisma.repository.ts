@@ -99,7 +99,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         const deals = await this.prisma.deals.findMany({
             where: { portalId: BigInt(result.id) },
         });
-        const ais = await this.prisma.ais.findMany({
+        const ais = await this.prisma.ai.findMany({
             where: { portal_id: BigInt(result.id) },
         });
         const agents =  await this.prisma.agents.findMany({
@@ -108,7 +108,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         const bx_rqs = await this.prisma.bx_rqs.findMany({
             where: { portal_id: BigInt(result.id) },
         });
-        const transcriptions = await this.prisma.transcriptions.findMany({
+        const transcriptions = await this.prisma.transcription.findMany({
             where: { portal_id: String(result.id) },
         });
         const fullResult = {

@@ -890,7 +890,7 @@ model User {
   @@map("users")
 }
 
-model ais {
+model Ai {
   id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   created_at       DateTime? @db.Timestamp(0)
   updated_at       DateTime? @db.Timestamp(0)
@@ -923,6 +923,8 @@ model ais {
   model            String?   @db.VarChar(255)
   portal_id        BigInt?
   transcription_id BigInt?
+
+  @@map("ais")
 }
 
 model bitrix_app_placements {
@@ -1359,7 +1361,7 @@ model supplies {
   garant_prof_prices         garant_prof_prices[]
 }
 
-model transcriptions {
+model Transcription {
   id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   created_at     DateTime? @db.Timestamp(0)
   updated_at     DateTime? @db.Timestamp(0)
@@ -1389,6 +1391,8 @@ model transcriptions {
   in_report      Boolean   @default(false)
   report_item_id String?   @db.VarChar(255)
   portal_id      String?   @db.VarChar(255)
+
+  @@map("transcriptions")
 }
 
 model UserSelectedTemplate {
