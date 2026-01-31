@@ -16,6 +16,7 @@ import { OnlineClientModule } from 'src/clients/online';
 import { TranscriptionRepository } from './repository/transcription.repository';
 import { TranscriptionPrismaRepository } from './repository/transcription.prisma.repository';
 import { TranscriptionStoreService } from './services/transcription.store.service';
+import { TranscriptionStoreController } from './controllers/transcription-store.controller';
 
 @Module({
     imports: [
@@ -26,7 +27,7 @@ import { TranscriptionStoreService } from './services/transcription.store.servic
         YandexModule,
         OnlineClientModule,
     ],
-    controllers: [TranscriptionController],
+    controllers: [TranscriptionController, TranscriptionStoreController],
     providers: [
         {
             provide: TranscriptionRepository,
