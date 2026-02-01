@@ -66,6 +66,31 @@ export class TranscriptionBaseDto {
     @IsString()
     @IsNotEmpty()
     userName: string;
+
+    @ApiProperty({ description: 'Application name' })
+    @IsString()
+    @IsNotEmpty()
+    app: string;
+
+    @ApiProperty({ description: 'Entity type' })
+    @IsString()
+    @IsNotEmpty()
+    entityType: string;
+
+    @ApiProperty({ description: 'Entity ID' })
+    @IsString()
+    @IsNotEmpty()
+    entityId: string;
+
+    @ApiProperty({ description: 'Entity name' })
+    @IsString()
+    @IsNotEmpty()
+    entityName: string;
+
+    @ApiProperty({ description: 'Department' })
+    @IsString()
+    @IsNotEmpty()
+    department: string;
 }
 
 

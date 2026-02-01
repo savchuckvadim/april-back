@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { TranscriptionRepository } from "../repository/transcription.repository";
-import { createTranscriptionResponseDtoFromPrisma } from "../lib/db.mapper";
+import { createTranscriptionEntityFromDto, createTranscriptionResponseDtoFromPrisma } from "../lib/db.mapper";
 import { TranscriptionBaseDto, TranscriptionStoreDto } from "../dto/transcription.store.dto";
 
 @Injectable()
@@ -18,8 +18,8 @@ export class TranscriptionStoreService {
         return createTranscriptionResponseDtoFromPrisma(transcription);
     }
 
-    async updateTranscription(id: string, transcriptionDto: TranscriptionBaseDto): Promise<TranscriptionStoreDto> {
-        const transcription = await this.transcriptionRepository.update(id, transcriptionDto);
+    async updateTranscription(id: string, transcriptionDto: Partial<TranscriptionBaseDto>): Promise<TranscriptionStoreDto> {
+        const transcription = await this.transcriptionRepository.update(id, createTranscriptionEntityFromDto(transcriptionDto));
         if (!transcription) {
             throw new NotFoundException('Transcription not found');
         }

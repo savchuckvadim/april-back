@@ -4,6 +4,7 @@ import { RedisService } from 'src/core/redis/redis.service';
 import { FileStorageService } from './file-storage.service';
 import { StreamingTranscriptionService } from './streaming-transcription.service';
 import { OnlineTranscriptionService } from 'src/clients/online';
+import { TranscriptionStoreService } from './transcription.store.service';
 
 @Injectable()
 export class TranscriptionService {
@@ -14,7 +15,8 @@ export class TranscriptionService {
         private readonly fileStorageService: FileStorageService,
         private readonly streamingTranscriptionService: StreamingTranscriptionService,
         private readonly onlineClient: OnlineTranscriptionService,
-    ) {}
+        private readonly transcriptionStoreService: TranscriptionStoreService,
+    ) { }
 
     async transcribe(
         fileUrl: string,
@@ -36,27 +38,45 @@ export class TranscriptionService {
         try {
             await this.updateStatus(taskId, 'processing');
 
-            const transcriptionOnline =
-                await this.onlineClient.sendTranscription({
-                    user_name: userName,
-                    app: appName,
-                    activity_id: activityId,
-                    file_id: fileId,
-                    duration: duration,
-                    department: department,
-                    domain: domain,
-                    user_id: userId,
-                    entity_type: entityType,
-                    entity_id: entityId,
-                    entity_name: entityName,
-                    status: 'processing',
-                    symbols_count: 0,
-                    price: 0,
-                    text: '',
-                    provider: 'yandex',
-                });
+            const transcriptionOnline = await this.transcriptionStoreService.create({
+                userName: userName,
+                app: appName,
+                activityId: activityId,
+                fileId: fileId,
+                duration: duration,
+                department: department,
+                domain: domain,
+                userId: userId,
+                entityType: entityType,
+                entityId: entityId,
+                entityName: entityName,
+                status: 'processing',
+                symbolsCount: '0',
+                price: '0',
+                text: '',
+                provider: 'yandex',
+                inComment: false,
+            });
+            // await this.onlineClient.sendTranscription({
+            //     user_name: userName,
+            //     app: appName,
+            //     activity_id: activityId,
+            //     file_id: fileId,
+            //     duration: duration,
+            //     department: department,
+            //     domain: domain,
+            //     user_id: userId,
+            //     entity_type: entityType,
+            //     entity_id: entityId,
+            //     entity_name: entityName,
+            //     status: 'processing',
+            //     symbols_count: 0,
+            //     price: 0,
+            //     text: '',
+            //     provider: 'yandex',
+            // });
             if (transcriptionOnline && transcriptionOnline.id) {
-                transcriptionId = transcriptionOnline.id;
+                transcriptionId = transcriptionOnline.id.toString();
             }
             this.logger.log(
                 `Transcription online: ${JSON.stringify(transcriptionOnline)}`,
@@ -109,16 +129,26 @@ export class TranscriptionService {
                 );
 
                 if (transcriptionId) {
-                    void (await this.onlineClient.updateTranscription(
+                    // void (await this.onlineClient.updateTranscription(
+                    //     {
+                    //         status: 'done',
+                    //         symbols_count: text.length,
+                    //         price: 0,
+                    //         text,
+                    //         provider: 'yandex',
+                    //     },
+                    //     transcriptionId,
+                    // ));
+                    await this.transcriptionStoreService.updateTranscription(
+                        transcriptionId,
                         {
                             status: 'done',
-                            symbols_count: text.length,
-                            price: 0,
-                            text,
-                            provider: 'yandex',
-                        },
-                        transcriptionId,
-                    ));
+                            symbolsCount: text.length.toString(),
+                            price: '0',
+                            text: text,
+
+                        }
+                    )
                 }
                 return text;
             }
@@ -131,16 +161,26 @@ export class TranscriptionService {
             );
 
             if (transcriptionId) {
-                void (await this.onlineClient.updateTranscription(
+                // void (await this.onlineClient.updateTranscription(
+                //     {
+                //         status: 'error',
+                //         symbols_count: text.length,
+                //         price: 0,
+                //         text,
+                //         provider: 'yandex',
+                //     },
+                //     transcriptionId,
+                // ));
+                await this.transcriptionStoreService.updateTranscription(
+                    transcriptionId,
                     {
                         status: 'error',
-                        symbols_count: text.length,
-                        price: 0,
-                        text,
-                        provider: 'yandex',
-                    },
-                    transcriptionId,
-                ));
+                        symbolsCount: text.length.toString(),
+                        price: '0',
+                        text: text,
+
+                    }
+                )
             }
 
             return null;

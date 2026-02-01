@@ -7,7 +7,7 @@ export abstract class TranscriptionRepository {
     ): Promise<Transcription | null>;
     abstract update(
         id: string,
-        transcription: TranscriptionBaseDto,
+        transcription: Partial<Transcription>,
     ): Promise<Transcription | null>;
     abstract findById(id: string): Promise<Transcription | null>;
     abstract findMany(): Promise<Transcription[] | null>;

@@ -2,16 +2,33 @@ import { Injectable } from "@nestjs/common";
 import { TranscriptionRepository } from "./transcription.repository";
 import { PrismaService } from "@/core";
 import { Transcription } from "generated/prisma";
+import { TranscriptionBaseDto } from "../dto/transcription.store.dto";
 
 @Injectable()
 export class TranscriptionPrismaRepository implements TranscriptionRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    async create(transcription: Partial<Transcription>): Promise<Transcription | null> {
+    async create(transcription: TranscriptionBaseDto): Promise<Transcription | null> {
         return this.prisma.transcription.create({
             data: {
-                ...transcription,
-                user_result: transcription.user_result ? JSON.parse(transcription.user_result as string) : null,
+                user_name: transcription.userName,
+                app: transcription.app,
+                activity_id: transcription.activityId,
+                file_id: transcription.fileId,
+                in_comment: transcription.inComment,
+                status: transcription.status,
+                text: transcription.text,
+                symbols_count: transcription.symbolsCount,
+                price: transcription.price,
+                duration: transcription.duration,
+                domain: transcription.domain,
+                user_id: transcription.userId,
+                entity_type: transcription.entityType,
+                entity_id: transcription.entityId,
+                entity_name: transcription.entityName,
+                department: transcription.department,
+                user_result: transcription.userResult ? JSON.parse(transcription.userResult as string) : null,
+                provider: transcription.provider,
             },
         });
     }
