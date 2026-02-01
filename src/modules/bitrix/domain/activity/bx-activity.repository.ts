@@ -68,6 +68,7 @@ export class BxActivityRepository {
     async getAll(
         filter: Partial<BXActivityRequestFields>,
         select?: string[],
+        limit?: number
     ): Promise<{
         activities: IBXActivity[];
         total: number;
@@ -97,7 +98,61 @@ export class BxActivityRepository {
                 });
             }
 
-            if (result.result.length < 50) {
+            if (result.result.length < 50 || (limit && results.length >= limit)) {
+                condition = false;
+            }
+            await delay(1000);
+        }
+        return {
+            activities: results,
+            total: results.length,
+        };
+    }
+    async getAllFresh(
+        filter: Partial<BXActivityRequestFields>,
+        select?: string[],
+        limit?: number
+    ): Promise<{
+        activities: IBXActivity[];
+        total: number;
+    }> {
+        let condition = true;
+        const results = [] as IBXActivity[];
+        let lastId = undefined as undefined | number | string;
+        while (condition) {
+            const filterWithId = lastId !== undefined
+                ? { ...filter, '<ID': lastId }
+                : filter;
+
+            const result = await this.bitrixService.callType(
+                EBxNamespace.CRM,
+                EBXEntity.ACTIVITY,
+                EBxMethod.LIST,
+                {
+                    select,
+                    filter: filterWithId,
+                    order: { ID: 'DESC' },
+                    start: -1
+                },
+            );
+            if (result && result.result && result.result.length > 0) {
+                result.result.map(t => {
+                    lastId = t.id;
+                    results.push(t);
+                });
+            }
+
+            // Останавливаем цикл если:
+            // 1. Нет результата или пустой массив (больше нет записей)
+            // 2. Вернулось меньше 50 записей (это последняя страница)
+            // 3. Достигли указанного лимита
+            if (
+                !result ||
+                !result.result ||
+                result.result.length === 0 ||
+                result.result.length < 50 ||
+                (limit && results.length >= limit)
+            ) {
                 condition = false;
             }
             await delay(1000);

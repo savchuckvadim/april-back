@@ -19,9 +19,17 @@ export class ActivityService {
     }
     async getAll(
         filter: Partial<BXActivityRequestFields>,
-        select?: string[]
+        select?: string[],
+        limit?: number
     ) {
-        return await this.repo.getAll(filter, select);
+        return await this.repo.getAll(filter, select, limit);
+    }
+    async getAllFresh(
+        filter: Partial<BXActivityRequestFields>,
+        select?: string[],
+        limit?: number
+    ) {
+        return await this.repo.getAllFresh(filter, select, limit);
     }
     async getList(
         filter: Partial<BXActivityRequestFields>,

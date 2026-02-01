@@ -17,9 +17,10 @@ export class CompanyRelationsService {
         // Если контакты не переданы, получаем их из компании
         if (!contactsIds || contactsIds.length === 0) {
             const contacts = await this.getContacts(companyId);
-            contactsIds = contacts
+            contactsIds = contacts && contacts.length > 0 ? contacts
                 .filter(contact => contact.ID)
-                .map(contact => Number(contact.ID));
+                .map(contact => Number(contact.ID))
+                : [];
         }
 
         return {
