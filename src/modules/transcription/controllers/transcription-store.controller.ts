@@ -4,7 +4,7 @@ import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common"
 import { TranscriptionBaseDto, TranscriptionStoreDto } from "../dto/transcription.store.dto";
 
 @ApiTags('Transcription Store')
-@Controller('transcription/store')
+@Controller('transcription-store')
 export class TranscriptionStoreController {
     constructor(
         private readonly transcriptionStoreService: TranscriptionStoreService,

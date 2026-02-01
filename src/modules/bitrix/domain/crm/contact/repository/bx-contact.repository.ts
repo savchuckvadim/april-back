@@ -32,8 +32,8 @@ export class BxContactRepository {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: filter.ID || 0 },
+            EBxMethod.LIST,
+            { filter, select },
         );
     }
 
@@ -46,8 +46,8 @@ export class BxContactRepository {
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: filter.ID || 0 },
+            EBxMethod.LIST,
+            { filter, select },
         );
     }
 
