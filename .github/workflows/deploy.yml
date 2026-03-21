@@ -24,6 +24,7 @@ jobs:
 
                   debug: true
                   script: |
+                      set -e
                       echo "🧩 Подключение к серверу NEST API"
                       cd /var/www/html/back.april-app
                       git pull origin main
@@ -31,7 +32,20 @@ jobs:
                       echo "⏳ Запускаю пересборку контейнера nest-api..."
                       old_id=$(docker ps -aq --filter "name=^/nest-api$" | head -n1)
 
-                      DOCKER_BUILDKIT=1 docker-compose up -d --build
+                      if docker buildx version >/dev/null 2>&1; then
+                        echo "✅ buildx найден, включаю BuildKit"
+                        export DOCKER_BUILDKIT=1
+                      else
+                        echo "⚠️ buildx не найден, использую legacy builder"
+                        export DOCKER_BUILDKIT=0
+                      fi
+
+                      if ! docker-compose up -d --build; then
+                        echo "❌ docker-compose build/up завершился с ошибкой"
+                        docker-compose ps || true
+                        docker-compose logs --tail 200 api || true
+                        exit 1
+                      fi
 
                       echo "⏳ Жду, пока контейнер обновится и станет running/healthy..."
                       timeout=900
