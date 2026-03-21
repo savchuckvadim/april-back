@@ -28,6 +28,8 @@ jobs:
                       echo "🧩 Подключение к серверу NEST API"
                       cd /var/www/html/back.april-app
                       git pull origin main
+                      echo "🔍 Проверяю Docker Compose v2..."
+                      docker compose version
 
                       echo "⏳ Запускаю пересборку контейнера nest-api..."
                       old_id=$(docker ps -aq --filter "name=^/nest-api$" | head -n1)
@@ -40,10 +42,12 @@ jobs:
                         export DOCKER_BUILDKIT=0
                       fi
 
-                      if ! docker-compose up -d --build; then
-                        echo "❌ docker-compose build/up завершился с ошибкой"
-                        docker-compose ps || true
-                        docker-compose logs --tail 200 api || true
+                      docker rm -f nest-api || true
+
+                      if ! docker compose up -d --build; then
+                        echo "❌ docker compose build/up завершился с ошибкой"
+                        docker compose ps || true
+                        docker compose logs --tail 200 api || true
                         exit 1
                       fi
 
@@ -62,7 +66,7 @@ jobs:
 
                         if [ "$elapsed" -ge "$timeout" ]; then
                           echo "❌ Таймаут ожидания контейнера nest-api"
-                          docker ps -a
+                          docker compose ps || true
                           docker logs nest-api --tail 200 || true
                           exit 1
                         fi
@@ -72,5 +76,5 @@ jobs:
                         elapsed=$((elapsed + 5))
                       done
 
-                      docker ps -a
+                      docker compose ps
                       docker logs nest-api --tail 100 || true
