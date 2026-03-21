@@ -6,6 +6,8 @@ services:
     container_name: nest-api
     ports:
       - "8334:3000"
+    env_file:
+        - .env
     environment:
       - NODE_ENV=production
       - REDIS_HOST=redis

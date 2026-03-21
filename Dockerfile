@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM node:20-slim AS deps
 
 RUN apt-get update && \
@@ -6,7 +7,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
 
 FROM node:20-slim AS build
@@ -33,7 +34,7 @@ WORKDIR /app
 
 # только prod зависимости для рантайма
 COPY package*.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --no-audit --no-fund
 
 # артефакты сборки
 COPY --from=build /app/dist ./dist
