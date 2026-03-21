@@ -1,0 +1,53 @@
+# name: Deploy NEST BACK API on push to main
+
+# on:
+#     push:
+#         branches:
+#             - main
+
+# jobs:
+#     deploy:
+#         runs-on: ubuntu-latest
+
+#         steps:
+#             - name: ✅ CI запущен
+#               run: echo "🚀 NESTback api GitHub Actions запущен"
+
+#             - name: Deploy to server via SSH
+#               uses: appleboy/ssh-action@v0.1.10
+#               with:
+#                   host: ${{ secrets.SERVER_IP }}
+#                   username: ${{ secrets.SERVER_USER }}
+#                   key: ${{ secrets.SERVER_SSH_KEY }}
+#                   timeout: 30m
+
+#                   debug: true
+#                   script: |
+#                       echo "🧩 Подключение к серверу NEST API"
+#                       cd /var/www/html/back.april-app
+#                       git pull origin main
+
+#                       tmux kill-session -t deploy-session-nest-api || true
+#                       tmux new -d -s deploy-session-nest-api "docker-compose up -d --build && echo ✅ nest-api Готово"
+
+#                       echo "⏳ Жду, пока контейнер nest-api поднимется..."
+#                       old_id=$(docker ps --filter "name=nest-api" --format "{{.ID}}")
+
+#                       docker-compose up -d --build
+
+#                       echo "⏳ Жду, пока произойдёт обновление контейнера..."
+#                       for i in {1..60}; do
+#                         new_id=$(docker ps --filter "name=nest-api" --format "{{.ID}}")
+#                         if [ "$new_id" != "$old_id" ]; then
+#                           echo "✅ Контейнер обновился: $old_id → $new_id"
+#                           break
+#                         fi
+#                         echo "⌛ Контейнер ещё старый, жду..."
+#                         sleep 2
+#                       done
+
+
+#                       sleep 55
+#                       echo "⏳7 Жду, пока контейнер nest-api поднимется..."
+#                       docker ps -a
+#                       docker logs nest-api || true
