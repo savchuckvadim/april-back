@@ -30,7 +30,7 @@ export class InitDealUseCase {
         private readonly copyInnerDealService: CopyInnerDealService,
         private readonly telegram: TelegramService,
         private readonly orkHistoryBxListService: OrkHistoryBxListService,
-    ) {}
+    ) { }
 
     async execute(dto: InitDealDto) {
         const domain = dto.auth.domain;

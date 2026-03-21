@@ -16,7 +16,7 @@ export class CopyProductRowsService {
 
         private readonly bitrix: BitrixService,
         // private readonly telegram: TelegramService,
-    ) {}
+    ) { }
 
     async copyProductFromSmartToDeal(
         serviceSmartId: number,

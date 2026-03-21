@@ -7,3 +7,36 @@ nest-vscode-debugging
 
 /storage
 /storage/**
+
+
+
+# git
+.git
+.gitignore
+.github
+
+# node / build
+node_modules
+dist
+coverage
+.nestjs
+tmp
+temp
+logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+
+
+# local/dev files
+.vscode
+.idea
+*.swp
+*.swo
+
+# duplicates / artifacts
+Dockerfile copy
+docker-compose copy.yml
+AUTH_ANALYSIS.md
+

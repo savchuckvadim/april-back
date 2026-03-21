@@ -13,7 +13,7 @@ export class SchedulerService {
     constructor(
         private readonly telegramService: TelegramService,
         private readonly dispatcher: QueueDispatcherService,
-    ) {}
+    ) { }
 
     @Cron(CronExpression.EVERY_3_HOURS, { timeZone: 'Europe/Moscow' })
     async handleDailyTasks() {

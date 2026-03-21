@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
-    constructor(private readonly telegram: TelegramService) {}
+    constructor(private readonly telegram: TelegramService) { }
 
     async use(req: Request, res: Response, next: NextFunction) {
         const timeStart = dayjs();
