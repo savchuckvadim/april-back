@@ -20,6 +20,7 @@ jobs:
                   username: ${{ secrets.SERVER_USER }}
                   key: ${{ secrets.SERVER_SSH_KEY }}
                   timeout: 30m
+                  command_timeout: 90m
 
                   debug: true
                   script: |
@@ -30,7 +31,7 @@ jobs:
                       echo "⏳ Запускаю пересборку контейнера nest-api..."
                       old_id=$(docker ps -aq --filter "name=^/nest-api$" | head -n1)
 
-                      docker-compose up -d --build
+                      DOCKER_BUILDKIT=1 docker-compose up -d --build
 
                       echo "⏳ Жду, пока контейнер обновится и станет running/healthy..."
                       timeout=900
