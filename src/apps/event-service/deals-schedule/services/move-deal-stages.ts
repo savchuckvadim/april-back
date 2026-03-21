@@ -8,7 +8,7 @@ export class MoveDealStagesService {
     constructor(
         private readonly telegramService: TelegramService,
         private readonly pbx: PBXService,
-    ) { }
+    ) {}
 
     async moveDealStages() {
         const now = new Date();

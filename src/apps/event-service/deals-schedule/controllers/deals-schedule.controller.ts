@@ -15,7 +15,7 @@ export class DealsScheduleController {
         private readonly telegramService: TelegramService,
         private readonly dispatcher: QueueDispatcherService,
         private readonly moveDealStagesService: MoveDealStagesService,
-    ) { }
+    ) {}
 
     @Get('move-deal-stages')
     async moveDealStages() {

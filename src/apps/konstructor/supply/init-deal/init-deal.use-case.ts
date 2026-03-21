@@ -30,7 +30,7 @@ export class InitDealUseCase {
         private readonly copyInnerDealService: CopyInnerDealService,
         private readonly telegram: TelegramService,
         private readonly orkHistoryBxListService: OrkHistoryBxListService,
-    ) { }
+    ) {}
 
     async execute(dto: InitDealDto) {
         const domain = dto.auth.domain;
@@ -66,7 +66,6 @@ export class InitDealUseCase {
             'supply',
             'service_offer_smart',
         );
-
 
         let serviceSmartId = null as number | null;
         if (rpa && offerSmartEntityType && offerSmartInRpaId) {

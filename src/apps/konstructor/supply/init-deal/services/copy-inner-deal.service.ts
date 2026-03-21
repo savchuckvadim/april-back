@@ -7,7 +7,7 @@ export class CopyInnerDealService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly telegram: TelegramService,
-    ) { }
+    ) {}
 
     public async copyInnerDeal(
         serviceSmartId: number,

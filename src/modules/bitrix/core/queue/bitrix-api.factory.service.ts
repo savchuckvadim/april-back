@@ -9,7 +9,7 @@ import { BitrixAuthService } from '../../auth/bitrix-auth.service';
 
 @Injectable()
 export class BitrixApiFactoryService {
-    constructor(private readonly telegram: TelegramService) { }
+    constructor(private readonly telegram: TelegramService) {}
 
     //NEW//
     public async create(

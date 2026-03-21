@@ -24,8 +24,7 @@ export class ReportKpiUseCase {
     private portalModel: PortalModel;
     private bitrixApi: BitrixBaseApi;
 
-    constructor() // private readonly portalContext: PortalContextService,
-    // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
+    constructor() // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST // private readonly portalContext: PortalContextService,
     // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
     // private readonly pbx: PBXService,
     {}

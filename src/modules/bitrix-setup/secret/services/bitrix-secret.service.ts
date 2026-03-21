@@ -56,9 +56,7 @@ export class BitrixSecretService {
         }
     }
 
-    async getSecretByCode(
-        dto: GetBitrixSecretDto,
-    ): Promise<{
+    async getSecretByCode(dto: GetBitrixSecretDto): Promise<{
         app: BitrixSecretEntity;
         client_id: string;
         client_secret: string;

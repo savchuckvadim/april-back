@@ -16,7 +16,7 @@ import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 export class GlobalExceptionFilter implements ExceptionFilter {
     private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-    constructor(private readonly telegram: TelegramService) { }
+    constructor(private readonly telegram: TelegramService) {}
 
     async catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();

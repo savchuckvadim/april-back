@@ -83,4 +83,3 @@ export class TelegramService {
             .slice(0, 4000); // Telegram лимит: 4096 символов;
     }
 }
-

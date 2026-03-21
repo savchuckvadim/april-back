@@ -28,7 +28,7 @@ export class PortalModel {
     constructor(
         private readonly portal: IPortal,
         private readonly telegramService: TelegramService,
-    ) { }
+    ) {}
 
     getPortal(): IPortal {
         return this.portal;
