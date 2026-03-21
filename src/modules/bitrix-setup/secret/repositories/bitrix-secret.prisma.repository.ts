@@ -5,15 +5,18 @@ import { BitrixSecretEntity } from '../model/bitrix-secret.model';
 
 @Injectable()
 export class BitrixSecretPrismaRepository implements BitrixSecretRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     // BitrixSecret methods
-    async storeOrUpdate(secret: Partial<BitrixSecretEntity>): Promise<BitrixSecretEntity | null> {
+    async storeOrUpdate(
+        secret: Partial<BitrixSecretEntity>,
+    ): Promise<BitrixSecretEntity | null> {
         try {
             // First try to find existing secret
-            const existingSecret = await this.prisma.bitrix_app_secrets.findFirst({
-                where: { code: secret.code! },
-            });
+            const existingSecret =
+                await this.prisma.bitrix_app_secrets.findFirst({
+                    where: { code: secret.code! },
+                });
 
             let result;
             if (existingSecret) {

@@ -10,22 +10,23 @@ import { BitrixClientPortalService } from '../services/bitrix-client-portal.serv
 @Controller('bitrix-client')
 export class BitrixClientController {
     constructor(
-        private readonly bitrixClientPortalService: BitrixClientPortalService
-    ) { }
+        private readonly bitrixClientPortalService: BitrixClientPortalService,
+    ) {}
 
-
-
-    @ApiOperation({ summary: 'Get client portals', description: 'Get client portals by client id' })
+    @ApiOperation({
+        summary: 'Get client portals',
+        description: 'Get client portals by client id',
+    })
     @ApiBody({ type: GetClientPortalsRequestDto })
     @ApiResponse({
-        status: 200, description: 'Client portals get', type: SuccessResponseDto<Portal[]>
+        status: 200,
+        description: 'Client portals get',
+        type: SuccessResponseDto<Portal[]>,
     })
     @Post('get-client-portals')
-    async getClientPortals(@Body() dto: GetClientPortalsRequestDto): Promise<{ id: number, domain: string }[] | null> {
+    async getClientPortals(
+        @Body() dto: GetClientPortalsRequestDto,
+    ): Promise<{ id: number; domain: string }[] | null> {
         return await this.bitrixClientPortalService.getClientPortals(dto);
     }
-
-
-
-
 }

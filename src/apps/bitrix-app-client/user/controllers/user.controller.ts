@@ -6,12 +6,14 @@ import {
     Delete,
     Body,
     Param,
-    Query,
     ParseIntPipe,
-    UseGuards,
-    Request
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+    ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -21,7 +23,7 @@ import { EResultCode, SuccessResponseDto } from '@/core';
 @ApiTags('User Management')
 @Controller('users')
 export class UserController {
-    constructor(private readonly userService: UserService) { }
+    constructor(private readonly userService: UserService) {}
 
     @ApiOperation({ summary: 'Create a new user' })
     @ApiResponse({
@@ -34,7 +36,9 @@ export class UserController {
         description: 'User with this email already exists',
     })
     @Post()
-    async createUser(@Body() createUserDto: CreateUserDto): Promise<SuccessResponseDto> {
+    async createUser(
+        @Body() createUserDto: CreateUserDto,
+    ): Promise<SuccessResponseDto> {
         const user = await this.userService.createUser(createUserDto);
         return {
             resultCode: 0, // EResultCode.SUCCESS
@@ -53,7 +57,9 @@ export class UserController {
         description: 'User not found',
     })
     @Get(':id')
-    async getUserById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getUserById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const user = await this.userService.findUserById(id);
         return {
             resultCode: 0,
@@ -72,7 +78,9 @@ export class UserController {
         description: 'User not found',
     })
     @Get('email/:email')
-    async getUserByEmail(@Param('email') email: string): Promise<SuccessResponseDto> {
+    async getUserByEmail(
+        @Param('email') email: string,
+    ): Promise<SuccessResponseDto> {
         const user = await this.userService.findUserByEmail(email);
         return {
             resultCode: 0,
@@ -87,7 +95,9 @@ export class UserController {
         type: [UserResponseDto],
     })
     @Get('client/:clientId')
-    async getUsersByClientId(@Param('clientId', ParseIntPipe) clientId: number): Promise<SuccessResponseDto> {
+    async getUsersByClientId(
+        @Param('clientId', ParseIntPipe) clientId: number,
+    ): Promise<SuccessResponseDto> {
         const users = await this.userService.findUsersByClientId(clientId);
         return {
             resultCode: 0,
@@ -106,7 +116,9 @@ export class UserController {
         description: 'User not found',
     })
     @Get('bitrix/:bitrixId')
-    async getUserByBitrixId(@Param('bitrixId') bitrixId: string): Promise<SuccessResponseDto> {
+    async getUserByBitrixId(
+        @Param('bitrixId') bitrixId: string,
+    ): Promise<SuccessResponseDto> {
         const user = await this.userService.findUserByBitrixId(bitrixId);
         return {
             resultCode: 0,
@@ -146,7 +158,7 @@ export class UserController {
     @Put(':id')
     async updateUser(
         @Param('id', ParseIntPipe) id: number,
-        @Body() updateUserDto: UpdateUserDto
+        @Body() updateUserDto: UpdateUserDto,
     ): Promise<SuccessResponseDto> {
         const user = await this.userService.updateUser(id, updateUserDto);
         return {
@@ -165,7 +177,9 @@ export class UserController {
         description: 'User not found',
     })
     @Delete(':id')
-    async deleteUser(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteUser(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.userService.deleteUser(id);
         return {
             resultCode: 0,
@@ -184,7 +198,9 @@ export class UserController {
         description: 'Owner not found',
     })
     @Get('client/:clientId/owner')
-    async getOwnerByClientId(@Param('clientId', ParseIntPipe) clientId: number): Promise<SuccessResponseDto> {
+    async getOwnerByClientId(
+        @Param('clientId', ParseIntPipe) clientId: number,
+    ): Promise<SuccessResponseDto> {
         const owner = await this.userService.findOwnerByClientId(clientId);
         return {
             resultCode: 0,
@@ -199,7 +215,9 @@ export class UserController {
         type: [UserResponseDto],
     })
     @Get('role/:roleId')
-    async getUsersByRoleId(@Param('roleId', ParseIntPipe) roleId: number): Promise<SuccessResponseDto> {
+    async getUsersByRoleId(
+        @Param('roleId', ParseIntPipe) roleId: number,
+    ): Promise<SuccessResponseDto> {
         const users = await this.userService.findUsersByRoleId(roleId);
         return {
             resultCode: 0,
@@ -214,8 +232,11 @@ export class UserController {
         type: [UserResponseDto],
     })
     @Get('client/:clientId/active')
-    async getActiveUsersByClientId(@Param('clientId', ParseIntPipe) clientId: number): Promise<SuccessResponseDto> {
-        const users = await this.userService.findActiveUsersByClientId(clientId);
+    async getActiveUsersByClientId(
+        @Param('clientId', ParseIntPipe) clientId: number,
+    ): Promise<SuccessResponseDto> {
+        const users =
+            await this.userService.findActiveUsersByClientId(clientId);
         return {
             resultCode: 0,
             data: users,
@@ -234,9 +255,12 @@ export class UserController {
     })
     @Post('validate-credentials')
     async validateCredentials(
-        @Body() credentials: { email: string; password: string }
+        @Body() credentials: { email: string; password: string },
     ): Promise<SuccessResponseDto> {
-        const user = await this.userService.validateUserCredentials(credentials.email, credentials.password);
+        const user = await this.userService.validateUserCredentials(
+            credentials.email,
+            credentials.password,
+        );
         if (!user) {
             return {
                 resultCode: EResultCode.ERROR, // EResultCode.ERROR

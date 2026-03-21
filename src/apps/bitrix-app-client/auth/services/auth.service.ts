@@ -1,14 +1,26 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { BitrixClientService } from "../../client/services/bitrix-client.service";
-import { ClientRegistrationRequestDto, ClientAuthResponseDto, LoginDto, LoginResponseCookieDto, LoginResponseDto } from "../dto/auth.dto";
-import { JwtService } from "@nestjs/jwt";
-import { MailConfirmationService } from "./mail.service";
-import { UserService } from "../../user/services/user.service";
-import { compare } from "@/lib/utils/crypt.util";
-import { CookieService } from "@/core/cookie/cookie.service";
-import { Response } from "express";
-import { User } from "generated/prisma";
-import { PortalStoreService } from "@/modules/portal-konstructor/portal/portal-store.service";
+import {
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { BitrixClientService } from '../../client/services/bitrix-client.service';
+import {
+    ClientRegistrationRequestDto,
+    ClientAuthResponseDto,
+    LoginDto,
+    LoginResponseCookieDto,
+    LoginResponseDto,
+} from '../dto/auth.dto';
+import { JwtService } from '@nestjs/jwt';
+import { MailConfirmationService } from './mail.service';
+import { UserService } from '../../user/services/user.service';
+import { compare } from '@/lib/utils/crypt.util';
+import { CookieService } from '@/core/cookie/cookie.service';
+import { Response } from 'express';
+import { User } from 'generated/prisma';
+import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 
 @Injectable()
 export class AuthService {
@@ -19,28 +31,36 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly mailer: MailConfirmationService,
         private readonly cookieService: CookieService,
-    ) { }
+    ) {}
 
-    async registerClient(dto: ClientRegistrationRequestDto): Promise<ClientAuthResponseDto> {
+    async registerClient(
+        dto: ClientRegistrationRequestDto,
+    ): Promise<ClientAuthResponseDto> {
         // 1️⃣ Проверка, существует ли email
         const existingEmail = await this.clientService.findByEmail(dto.email);
 
-        if (existingEmail) throw new BadRequestException('Email already registered');
+        if (existingEmail)
+            throw new BadRequestException('Email already registered');
 
         const existingUser = await this.userService.findUserByEmail(dto.email);
 
+        if (existingUser)
+            throw new BadRequestException(
+                'User with this email already registered',
+            );
 
-        if (existingUser) throw new BadRequestException('User with this email already registered');
-
-
-        const existingPortal = await this.portalService.getPortalByDomain(dto.domain);
-
+        const existingPortal = await this.portalService.getPortalByDomain(
+            dto.domain,
+        );
 
         //for prod
         // if (existingPortal) throw new BadRequestException('Portal with Domain already registered');
         const portalId = existingPortal?.id;
         // 2️⃣ Создаём клиента
-        const client = await this.clientService.registrationClient(dto, Number(portalId));
+        const client = await this.clientService.registrationClient(
+            dto,
+            Number(portalId),
+        );
         // const owner = await this.userService.createOwnerUser(Number(client.client.id), {
         //     name: dto.userName,
         //     surname: dto.userSurname,
@@ -50,10 +70,18 @@ export class AuthService {
         const owner = client.ownerUser;
         if (!owner) throw new BadRequestException('Owner did not created');
         // 3️⃣ Отправляем письмо подтверждения
-        const token = this.jwtService.sign({ email: dto.email }, { expiresIn: '24h' });
+        const token = this.jwtService.sign(
+            { email: dto.email },
+            { expiresIn: '24h' },
+        );
         await this.mailer.sendEmailConfirmation(owner as User, token);
 
-        return { id: Number(client.client.id), message: 'Client registered, please confirm email', client: client.clientDto, owner: this.userService.getUserDto(owner as User) ?? null };
+        return {
+            id: Number(client.client.id),
+            message: 'Client registered, please confirm email',
+            client: client.clientDto,
+            owner: this.userService.getUserDto(owner as User) ?? null,
+        };
     }
 
     async confirmClientEmail(token: string) {
@@ -65,7 +93,6 @@ export class AuthService {
         await this.clientService.update(Number(user?.client_id ?? 0), {
             status: 'active',
             is_active: true,
-
         });
         return { message: 'Email confirmed successfully' };
     }
@@ -88,12 +115,15 @@ export class AuthService {
         if (!valid) throw new UnauthorizedException('Invalid credentials');
         const client = await this.clientService.findById(userDto.client_id);
         if (!client) throw new ForbiddenException('Client not found');
-        if (!client?.is_active) throw new ForbiddenException('Client is inactive');
+        if (!client?.is_active)
+            throw new ForbiddenException('Client is inactive');
 
-        const token = this.jwtService.sign({ sub: userDto.id, client_id: userDto.client_id });
+        const token = this.jwtService.sign({
+            sub: userDto.id,
+            client_id: userDto.client_id,
+        });
         return { token, user: userDto, client };
     }
-
 
     async logout(user: any, res: Response) {
         // Если используем JWT — клиент просто забывает токен
@@ -105,7 +135,6 @@ export class AuthService {
         const token = this.jwtService.sign({ email }, { expiresIn: '24h' });
         const user = await this.userService.findUserByEmail(email);
         if (!user) throw new NotFoundException('User not found');
-
 
         await this.mailer.sendEmailConfirmation(user, token);
         return { message: 'Confirmation email resent' };
@@ -141,5 +170,4 @@ export class AuthService {
     async getClientsUsers(clientId: number) {
         return await this.userService.findUsersByClientId(clientId);
     }
-
 }

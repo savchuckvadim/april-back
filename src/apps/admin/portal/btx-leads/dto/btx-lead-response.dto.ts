@@ -43,4 +43,3 @@ export class BtxLeadResponseDto {
     })
     updated_at?: Date | null;
 }
-

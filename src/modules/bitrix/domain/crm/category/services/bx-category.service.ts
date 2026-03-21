@@ -3,7 +3,6 @@ import { BxCategoryRepository } from '../repository/bx-category.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { BitrixOwnerTypeId } from 'src/modules/bitrix/domain/enums/bitrix-constants.enum';
 
-
 export class BxCategoryService {
     private repo: BxCategoryRepository;
     constructor() {}

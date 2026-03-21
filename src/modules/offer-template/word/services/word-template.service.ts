@@ -6,11 +6,20 @@ import {
 import { OfferTemplateRepository } from '../../offer-template/repositories/offer-template.repository';
 import { OfferTemplatePortalRepository } from '../../portal/repositories/offer-template-portal.repository';
 import { UserSelectedTemplateRepository } from '../../user-selected/repositories/user-selected-template.repository';
-import { StorageService, StorageType } from '../../../../core/storage/storage.service';
-import { WordTemplate, WordTemplateSummary } from '../entities/word-template.entity';
+import {
+    StorageService,
+    StorageType,
+} from '../../../../core/storage/storage.service';
+import {
+    WordTemplate,
+    WordTemplateSummary,
+} from '../entities/word-template.entity';
 import { CreateWordTemplateRequestDto } from '../dtos/create-word-template.dto';
 import { UpdateWordTemplateDto } from '../dtos/update-word-template.dto';
-import { OfferTemplate, OfferTemplateSummary } from '../../offer-template/entities/offer-template.entity';
+import {
+    OfferTemplate,
+    OfferTemplateSummary,
+} from '../../offer-template/entities/offer-template.entity';
 import { validateDocxFile } from '../lib/file-validator';
 import { offer_templates_visibility } from 'generated/prisma';
 import { UserSelectedTemplate } from '../../user-selected';
@@ -22,7 +31,7 @@ export class WordTemplateService {
         private readonly offerTemplatePortalRepository: OfferTemplatePortalRepository,
         private readonly userSelectedTemplateRepository: UserSelectedTemplateRepository,
         private readonly storageService: StorageService,
-    ) { }
+    ) {}
 
     /**
      * Находит Word шаблон по ID
@@ -50,8 +59,6 @@ export class WordTemplateService {
         return wordTemplate;
     }
 
-
-
     /**
      * Находит все Word шаблоны с фильтрами
      */
@@ -72,7 +79,8 @@ export class WordTemplateService {
         for (const t of templates) {
             if (t.type === 'word') {
                 // Загружаем полные данные для получения file_path
-                const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
+                const fullTemplate =
+                    await this.offerTemplateRepository.findById(BigInt(t.id));
                 const summary = new WordTemplateSummary({
                     id: t.id,
                     name: t.name,
@@ -106,7 +114,8 @@ export class WordTemplateService {
 
         for (const t of templates) {
             if (t.type === 'word') {
-                const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
+                const fullTemplate =
+                    await this.offerTemplateRepository.findById(BigInt(t.id));
                 const summary = new WordTemplateSummary({
                     id: t.id,
                     name: t.name,
@@ -166,9 +175,11 @@ export class WordTemplateService {
     // }
 
     /**
-    * Находит Word шаблоны для портала
-    */
-    async findPortalTemplates(portal_id: bigint): Promise<WordTemplateSummary[]> {
+     * Находит Word шаблоны для портала
+     */
+    async findPortalTemplates(
+        portal_id: bigint,
+    ): Promise<WordTemplateSummary[]> {
         const templates = await this.offerTemplateRepository.findMany({
             portal_id: portal_id,
             visibility: offer_templates_visibility.portal,
@@ -176,10 +187,13 @@ export class WordTemplateService {
 
         const fullTemplates: OfferTemplate[] = [];
         for (const t of templates) {
-            const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
+            const fullTemplate = await this.offerTemplateRepository.findById(
+                BigInt(t.id),
+            );
             fullTemplate && fullTemplates.push(fullTemplate);
         }
-        const wordTemplates: WordTemplateSummary[] = await this.getWordTemplates(fullTemplates);
+        const wordTemplates: WordTemplateSummary[] =
+            await this.getWordTemplates(fullTemplates);
         return wordTemplates;
         // const wordTemplates: WordTemplateSummary[] = [];
 
@@ -220,26 +234,36 @@ export class WordTemplateService {
         templates: WordTemplateSummary[];
         selected: UserSelectedTemplate[];
     }> {
-        const templates = await this.offerTemplateRepository.findFullUserTemplates(
-            user_id,
-            portal_id,
-        );
+        const templates =
+            await this.offerTemplateRepository.findFullUserTemplates(
+                user_id,
+                portal_id,
+            );
 
-        const wordTemplates: WordTemplateSummary[] = await this.getWordTemplates(templates);
-        const selectedTemplates = await this.userSelectedTemplateRepository.findByUser(user_id, portal_id);
+        const wordTemplates: WordTemplateSummary[] =
+            await this.getWordTemplates(templates);
+        const selectedTemplates =
+            await this.userSelectedTemplateRepository.findByUser(
+                user_id,
+                portal_id,
+            );
         return {
             templates: wordTemplates,
             selected: selectedTemplates,
         };
     }
-    private async getWordTemplates(templates: OfferTemplate[]): Promise<WordTemplateSummary[]> {
-        return Promise.all(templates
-            .filter(t => t.type === 'word')
-            .map(t => this.getWordTemplateSummary(t)));
+    private async getWordTemplates(
+        templates: OfferTemplate[],
+    ): Promise<WordTemplateSummary[]> {
+        return Promise.all(
+            templates
+                .filter(t => t.type === 'word')
+                .map(t => this.getWordTemplateSummary(t)),
+        );
     }
-    private async getWordTemplateSummary(template: OfferTemplate): Promise<WordTemplateSummary> {
-
-
+    private async getWordTemplateSummary(
+        template: OfferTemplate,
+    ): Promise<WordTemplateSummary> {
         const summary = new WordTemplateSummary({
             id: template.id,
             name: template.name,
@@ -250,7 +274,6 @@ export class WordTemplateService {
             is_active: template.is_active,
             counter: template.counter,
             created_at: template.created_at,
-
         });
         if (template?.file_path) {
             summary.template_url = this.getTemplateUrl(
@@ -273,7 +296,6 @@ export class WordTemplateService {
          * но также должны засунуть userSelectedTemplates связь с пользователем
          * чтобы имел пометку выбран пользователем
          */
-
 
         // Валидируем файл (тип, размер)
         validateDocxFile(file, {
@@ -308,9 +330,8 @@ export class WordTemplateService {
             counter: 0,
         };
 
-        const createdTemplate = await this.offerTemplateRepository.create(
-            templateData,
-        );
+        const createdTemplate =
+            await this.offerTemplateRepository.create(templateData);
 
         // Если указан portal_id, создаем связь с порталом
         if (createDto.portal_id) {
@@ -325,11 +346,12 @@ export class WordTemplateService {
         // Если указан user_id, создаем связь с пользователем
         if (createDto.user_id && createDto.portal_id) {
             // Проверяем, не существует ли уже такая связь
-            const existing = await this.userSelectedTemplateRepository.findByUserAndTemplate(
-                BigInt(createDto.user_id),
-                BigInt(createDto.portal_id),
-                BigInt(createdTemplate.id!),
-            );
+            const existing =
+                await this.userSelectedTemplateRepository.findByUserAndTemplate(
+                    BigInt(createDto.user_id),
+                    BigInt(createDto.portal_id),
+                    BigInt(createdTemplate.id!),
+                );
 
             if (!existing) {
                 await this.userSelectedTemplateRepository.create({
@@ -524,7 +546,4 @@ export class WordTemplateService {
         // Если ID не передан, возвращаем путь к файлу (для обратной совместимости)
         return `/api/files/konstructor/word-templates/${filePath.split('/').pop()}`;
     }
-
-
 }
-

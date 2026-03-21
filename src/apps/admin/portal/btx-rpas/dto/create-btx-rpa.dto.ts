@@ -106,4 +106,3 @@ export class CreateBtxRpaDto {
     @IsOptional()
     crmId?: number;
 }
-

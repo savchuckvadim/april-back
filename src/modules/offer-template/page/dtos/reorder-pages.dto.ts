@@ -19,7 +19,7 @@ export class ReorderPagesDto {
 
     @ApiProperty({
         description: 'The page orders',
-        type: [PageOrderDto]
+        type: [PageOrderDto],
     })
     @IsArray()
     @ValidateNested({ each: true })

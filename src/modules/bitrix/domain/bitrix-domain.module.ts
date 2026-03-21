@@ -32,7 +32,7 @@ import { BxTaskDomainModule } from './tasks/task/bx-tasks.module';
         BxFileDomainModule,
         BxListItemDomainModule,
         BitrixChatDomainModule,
-        BxTaskDomainModule
+        BxTaskDomainModule,
     ],
 })
-export class BitrixDomainModule { }
+export class BitrixDomainModule {}

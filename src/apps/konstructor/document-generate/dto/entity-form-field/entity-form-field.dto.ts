@@ -3,7 +3,7 @@ import {
     PbxFieldEntity,
     PbxFieldEntityType,
     PbxFieldItemEntity,
-} from '@/modules/pbx-domain/field/pbx-field.entity';
+} from '@/modules/pbx-domain/field/entity/pbx-field.entity';
 import {
     IsNotEmpty,
     IsObject,

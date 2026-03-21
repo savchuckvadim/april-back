@@ -19,7 +19,7 @@ export class ReorderStickersDto {
 
     @ApiProperty({
         description: 'The sticker orders',
-        type: [StickerOrderDto]
+        type: [StickerOrderDto],
     })
     @IsArray()
     @ValidateNested({ each: true })

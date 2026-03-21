@@ -1,0 +1,61 @@
+name: Deploy NEST BACK API on push to main
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: ✅ CI запущен
+              run: echo "🚀 NESTback api GitHub Actions запущен"
+
+            - name: Deploy to server via SSH
+              uses: appleboy/ssh-action@v0.1.10
+              with:
+                  host: ${{ secrets.SERVER_IP }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  timeout: 30m
+
+                  debug: true
+                  script: |
+                      echo "🧩 Подключение к серверу NEST API"
+                      cd /var/www/html/back.april-app
+                      git pull origin main
+
+                      echo "⏳ Запускаю пересборку контейнера nest-api..."
+                      old_id=$(docker ps -aq --filter "name=^/nest-api$" | head -n1)
+
+                      docker-compose up -d --build
+
+                      echo "⏳ Жду, пока контейнер обновится и станет running/healthy..."
+                      timeout=900
+                      elapsed=0
+                      while true; do
+                        new_id=$(docker ps -aq --filter "name=^/nest-api$" | head -n1)
+                        status=$(docker inspect -f '{{.State.Status}}' "$new_id" 2>/dev/null || echo "missing")
+                        health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$new_id" 2>/dev/null || echo "unknown")
+
+                        if [ -n "$new_id" ] && [ "$new_id" != "$old_id" ] && [ "$status" = "running" ] && { [ "$health" = "healthy" ] || [ "$health" = "none" ]; }; then
+                          echo "✅ Контейнер обновился: $old_id -> $new_id (status=$status, health=$health)"
+                          break
+                        fi
+
+                        if [ "$elapsed" -ge "$timeout" ]; then
+                          echo "❌ Таймаут ожидания контейнера nest-api"
+                          docker ps -a
+                          docker logs nest-api --tail 200 || true
+                          exit 1
+                        fi
+
+                        echo "⌛ Жду... status=$status health=$health elapsed=${elapsed}s"
+                        sleep 5
+                        elapsed=$((elapsed + 5))
+                      done
+
+                      docker ps -a
+                      docker logs nest-api --tail 100 || true

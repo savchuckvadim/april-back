@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { smarts } from 'generated/prisma';
 import { SmartRepository } from '../repositories/smart.repository';
 import { CreateSmartDto } from '../dto/create-smart.dto';
@@ -7,7 +11,7 @@ import { SmartResponseDto } from '../dto/smart-response.dto';
 
 @Injectable()
 export class SmartService {
-    constructor(private readonly repository: SmartRepository) { }
+    constructor(private readonly repository: SmartRepository) {}
 
     async create(dto: CreateSmartDto): Promise<SmartResponseDto> {
         try {
@@ -18,7 +22,7 @@ export class SmartService {
                 title: dto.title,
                 entityTypeId: BigInt(dto.entityTypeId),
                 portal_id: BigInt(dto.portal_id),
-                bitrixId:    BigInt(dto.bitrixId),
+                bitrixId: BigInt(dto.bitrixId),
                 forStageId: BigInt(dto.forStageId),
                 forFilterId: BigInt(dto.forFilterId),
                 crmId: BigInt(dto.crmId),
@@ -73,14 +77,27 @@ export class SmartService {
             if (dto.group !== undefined) updateData.group = dto.group;
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.title !== undefined) updateData.title = dto.title;
-            if (dto.entityTypeId !== undefined) updateData.entityTypeId = BigInt(dto.entityTypeId);
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
-            if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId ? BigInt(dto.bitrixId) : null;
-            if (dto.forStageId !== undefined) updateData.forStageId = dto.forStageId ? BigInt(dto.forStageId) : null;
-            if (dto.forFilterId !== undefined) updateData.forFilterId = dto.forFilterId ? BigInt(dto.forFilterId) : null;
-            if (dto.crmId !== undefined) updateData.crmId = dto.crmId ? BigInt(dto.crmId) : null;
+            if (dto.entityTypeId !== undefined)
+                updateData.entityTypeId = BigInt(dto.entityTypeId);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.bitrixId !== undefined)
+                updateData.bitrixId = dto.bitrixId
+                    ? BigInt(dto.bitrixId)
+                    : null;
+            if (dto.forStageId !== undefined)
+                updateData.forStageId = dto.forStageId
+                    ? BigInt(dto.forStageId)
+                    : null;
+            if (dto.forFilterId !== undefined)
+                updateData.forFilterId = dto.forFilterId
+                    ? BigInt(dto.forFilterId)
+                    : null;
+            if (dto.crmId !== undefined)
+                updateData.crmId = dto.crmId ? BigInt(dto.crmId) : null;
             if (dto.forStage !== undefined) updateData.forStage = dto.forStage;
-            if (dto.forFilter !== undefined) updateData.forFilter = dto.forFilter;
+            if (dto.forFilter !== undefined)
+                updateData.forFilter = dto.forFilter;
             if (dto.crm !== undefined) updateData.crm = dto.crm;
 
             const updatedSmart = await this.repository.update(id, updateData);
@@ -123,4 +140,3 @@ export class SmartService {
         };
     }
 }
-

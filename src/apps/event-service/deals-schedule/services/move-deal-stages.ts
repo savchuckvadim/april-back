@@ -30,7 +30,9 @@ export class MoveDealStagesService {
         //     for (const domain of portalList) {
         const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
 
-        const dealService = PortalModel.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
+        const dealService = PortalModel.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.service_base,
+        );
         if (!dealService) {
             await this.telegramService.sendMessage(
                 `Not service_base for domain: ${domain}`,

@@ -19,15 +19,17 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OfferTemplatePageBlockIdParamsDto } from '../dtos/offer-template-page-block-params.dto';
 import { ReorderBlocksDto } from '../dtos/reorder-blocks.dto';
 
-
 @ApiTags('Konstructor Offer Template')
 @Controller('offer-template-page-blocks')
 export class OfferTemplatePageBlockController {
     constructor(
         private readonly offerTemplatePageBlockService: OfferTemplatePageBlockService,
-    ) { }
+    ) {}
 
-    @ApiOperation({ summary: 'Create offer template page block', description: 'Create a new offer template page block' })
+    @ApiOperation({
+        summary: 'Create offer template page block',
+        description: 'Create a new offer template page block',
+    })
     @Post()
     async create(
         @Body()
@@ -123,7 +125,10 @@ export class OfferTemplatePageBlockController {
     //     return this.offerTemplatePageBlockService.findByType(type);
     // }
 
-    @ApiOperation({ summary: 'Get offer template page block by id', description: 'Get offer template page block by id' })
+    @ApiOperation({
+        summary: 'Get offer template page block by id',
+        description: 'Get offer template page block by id',
+    })
     @Get(':id')
     async findOne(
         @Param() params: OfferTemplatePageBlockIdParamsDto,
@@ -131,15 +136,23 @@ export class OfferTemplatePageBlockController {
         return this.offerTemplatePageBlockService.findById(BigInt(params.id));
     }
 
-    @ApiOperation({ summary: 'Get offer template page block by id with relations', description: 'Get offer template page block by id with relations' })
+    @ApiOperation({
+        summary: 'Get offer template page block by id with relations',
+        description: 'Get offer template page block by id with relations',
+    })
     @Get(':id/full')
     async findOneWithRelations(
         @Param() params: OfferTemplatePageBlockIdParamsDto,
     ): Promise<OfferTemplatePageBlock> {
-        return this.offerTemplatePageBlockService.findWithRelations(BigInt(params.id));
+        return this.offerTemplatePageBlockService.findWithRelations(
+            BigInt(params.id),
+        );
     }
 
-    @ApiOperation({ summary: 'Update offer template page block', description: 'Update offer template page block' })
+    @ApiOperation({
+        summary: 'Update offer template page block',
+        description: 'Update offer template page block',
+    })
     @Patch(':id')
     async update(
         @Param() params: OfferTemplatePageBlockIdParamsDto,
@@ -152,14 +165,22 @@ export class OfferTemplatePageBlockController {
         );
     }
 
-    @ApiOperation({ summary: 'Delete offer template page block', description: 'Delete offer template page block' })
+    @ApiOperation({
+        summary: 'Delete offer template page block',
+        description: 'Delete offer template page block',
+    })
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async remove(@Param() params: OfferTemplatePageBlockIdParamsDto): Promise<void> {
+    async remove(
+        @Param() params: OfferTemplatePageBlockIdParamsDto,
+    ): Promise<void> {
         return this.offerTemplatePageBlockService.delete(BigInt(params.id));
     }
 
-    @ApiOperation({ summary: 'Reorder offer template page blocks', description: 'Reorder offer template page blocks' })
+    @ApiOperation({
+        summary: 'Reorder offer template page blocks',
+        description: 'Reorder offer template page blocks',
+    })
     @Post('reorder')
     async reorderBlocks(
         @Body() reorderData: ReorderBlocksDto,

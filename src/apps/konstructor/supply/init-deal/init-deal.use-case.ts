@@ -17,7 +17,11 @@ import { PortalModel } from '@/modules/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
-import { EnumOrkEventAction, EnumOrkEventType, OrkHistoryBxListService } from '@/modules/pbx-ork-history-bx-list';
+import {
+    EnumOrkEventAction,
+    EnumOrkEventType,
+    OrkHistoryBxListService,
+} from '@/modules/pbx-ork-history-bx-list';
 
 @Injectable()
 export class InitDealUseCase {
@@ -26,7 +30,7 @@ export class InitDealUseCase {
         private readonly copyInnerDealService: CopyInnerDealService,
         private readonly telegram: TelegramService,
         private readonly orkHistoryBxListService: OrkHistoryBxListService,
-    ) { }
+    ) {}
 
     async execute(dto: InitDealDto) {
         const domain = dto.auth.domain;
@@ -51,8 +55,8 @@ export class InitDealUseCase {
 
         const companyId = this.getCompanyIdFromRpa(rpa, PortalModel);
         const oldDealId = this.getDealIdFromRpa(rpa, PortalModel);
-        const responsibleId = this.getResponsibleIdFromRpa(rpa, PortalModel) || 1;
-
+        const responsibleId =
+            this.getResponsibleIdFromRpa(rpa, PortalModel) || 1;
 
         const portalRpa = PortalModel.getRpaByCode('supply');
         const offerServicePortalSmart =
@@ -63,8 +67,6 @@ export class InitDealUseCase {
             'service_offer_smart',
         );
 
-        // console.log('offerServicePortalSmart')
-        // console.log(offerServicePortalSmart)
 
         let serviceSmartId = null as number | null;
         if (rpa && offerSmartEntityType && offerSmartInRpaId) {
@@ -168,15 +170,16 @@ export class InitDealUseCase {
             );
         }
         const elementCode = `ork_pere_contract_${oldDealId}_${responsibleId}`;
-        const listResult = await this.orkHistoryBxListService.setOrkHistoryBxListItem(domain, {
-            type: EnumOrkEventType.et_ork_pere_contract,
-            action: EnumOrkEventAction.ea_ork_done,
-            responsibleId: responsibleId,
-            elementCode,
-            companyId: Number(companyId),
-            dealId: newDealId,
-        });
-        return listResult
+        const listResult =
+            await this.orkHistoryBxListService.setOrkHistoryBxListItem(domain, {
+                type: EnumOrkEventType.et_ork_pere_contract,
+                action: EnumOrkEventAction.ea_ork_done,
+                responsibleId: responsibleId,
+                elementCode,
+                companyId: Number(companyId),
+                dealId: newDealId,
+            });
+        return listResult;
     }
     private getCommentRpaMessage(domain: string, newDealId: number) {
         const link = `https://${domain}/crm/deal/details/${newDealId}/`;

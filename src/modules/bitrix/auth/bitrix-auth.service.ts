@@ -12,7 +12,7 @@ export class BitrixAuthService {
         private readonly http: HttpService,
         private readonly appService: BitrixAppService,
         private readonly tokenService: BitrixTokenService,
-    ) { }
+    ) {}
     public async getFreshToken(domain: string): Promise<string> {
         const app = await this.appService.getApp({
             domain,
@@ -31,16 +31,17 @@ export class BitrixAuthService {
         const expiresAt = new Date(expires_at).getTime();
         const now = Date.now();
         const threeHours = 3 * 60 * 60 * 1000;
-        const diff = expiresAt - now
-        const isExpired = diff < threeHours
+        const diff = expiresAt - now;
+        const isExpired = diff < threeHours;
 
         if (isExpired) {
-            console.log(`[Bitrix] Token for ${domain} expires soon → refreshing...`);
+            console.log(
+                `[Bitrix] Token for ${domain} expires soon → refreshing...`,
+            );
             const newToken = await this.refreshToken(domain);
             access_token = newToken.access_token;
         }
         return access_token || '';
-
     }
     async refreshToken(domain: string) {
         const app = await this.appService.getApp({
@@ -55,7 +56,6 @@ export class BitrixAuthService {
         const clientId = app.bitrix_tokens?.client_id || '';
         const clientSecret = app.bitrix_tokens?.client_secret || '';
 
-
         const url = `https://${domain}/oauth/token/?grant_type=refresh_token&client_id=${clientId}&client_secret=${clientSecret}&refresh_token=${refreshToken}`;
         console.log('BitrixAuthService url', url);
         const response = await firstValueFrom(this.http.get(url));
@@ -65,7 +65,9 @@ export class BitrixAuthService {
             throw new Error('Failed to refresh token: ' + JSON.stringify(data));
         }
 
-        const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
+        const expiresAt = new Date(
+            Date.now() + data.expires_in * 1000,
+        ).toISOString();
 
         await this.tokenService.storeOrUpdateAppToken(app.id, {
             access_token: data.access_token,

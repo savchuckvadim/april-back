@@ -6,7 +6,7 @@ import { AdminPortalWithRelations } from '../type/admin-portal.type';
 
 @Injectable()
 export class AdminPortalPrismaRepository implements AdminPortalRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(portal: Partial<Portal>): Promise<Portal | null> {
         const result = await this.prisma.portal.create({
@@ -24,7 +24,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
     }
 
     async findById(id: number): Promise<AdminPortalWithRelations | null> {
-        const result = await this.prisma.portal.findUnique({
+        const result = (await this.prisma.portal.findUnique({
             where: { id: BigInt(id) },
             include: {
                 clients: true,
@@ -38,7 +38,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
                 bitrix_apps: true,
                 bitrixlists: true,
             },
-        }) as Portal | null;
+        })) as Portal | null;
         if (!result) return null;
         const portal_templates = await this.prisma.template.findMany({
             where: { portalId: result.id },
@@ -72,12 +72,14 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         const departaments = await this.prisma.departaments.findMany({
             where: { portal_id: BigInt(result.id) },
         });
-        const offerTemplatePortal = await this.prisma.offerTemplatePortal.findMany({
-            where: { portal_id: BigInt(result.id) },
-        });
-        const offer_zakupki_settings = await this.prisma.offer_zakupki_settings.findMany({
-            where: { portal_id: BigInt(result.id) },
-        });
+        const offerTemplatePortal =
+            await this.prisma.offerTemplatePortal.findMany({
+                where: { portal_id: BigInt(result.id) },
+            });
+        const offer_zakupki_settings =
+            await this.prisma.offer_zakupki_settings.findMany({
+                where: { portal_id: BigInt(result.id) },
+            });
         const portal_contracts = await this.prisma.portal_contracts.findMany({
             where: { portal_id: BigInt(result.id) },
         });
@@ -102,7 +104,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         const ais = await this.prisma.ai.findMany({
             where: { portal_id: BigInt(result.id) },
         });
-        const agents =  await this.prisma.agents.findMany({
+        const agents = await this.prisma.agents.findMany({
             where: { portalId: BigInt(result.id) },
         });
         const bx_rqs = await this.prisma.bx_rqs.findMany({
@@ -113,29 +115,29 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         });
         const fullResult = {
             ...result,
-           portal_templates,
-           bitrixlists,
-           bitrix_apps,
-           btx_companies,
-           btx_contacts,
-           btx_deals,
-           btx_leads,
-           btx_rpas,
-           callings,
-           departaments,
-           offerTemplatePortal,
-           offer_zakupki_settings,
-           portal_contracts,
-           portal_region,
-           portal_measures,
-           portal_smarts,
-           portal_timezones,
-           bxDocumentDeal,
-           deals,
-           ais,
-           agents,
-           bx_rqs,
-           transcriptions,
+            portal_templates,
+            bitrixlists,
+            bitrix_apps,
+            btx_companies,
+            btx_contacts,
+            btx_deals,
+            btx_leads,
+            btx_rpas,
+            callings,
+            departaments,
+            offerTemplatePortal,
+            offer_zakupki_settings,
+            portal_contracts,
+            portal_region,
+            portal_measures,
+            portal_smarts,
+            portal_timezones,
+            bxDocumentDeal,
+            deals,
+            ais,
+            agents,
+            bx_rqs,
+            transcriptions,
         } as AdminPortalWithRelations;
         return result;
     }
@@ -173,11 +175,17 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         const updateData: any = {};
         if (portal.domain !== undefined) updateData.domain = portal.domain;
         if (portal.key !== undefined) updateData.key = portal.key;
-        if (portal.C_REST_CLIENT_ID !== undefined) updateData.C_REST_CLIENT_ID = portal.C_REST_CLIENT_ID;
-        if (portal.C_REST_CLIENT_SECRET !== undefined) updateData.C_REST_CLIENT_SECRET = portal.C_REST_CLIENT_SECRET;
-        if (portal.C_REST_WEB_HOOK_URL !== undefined) updateData.C_REST_WEB_HOOK_URL = portal.C_REST_WEB_HOOK_URL;
+        if (portal.C_REST_CLIENT_ID !== undefined)
+            updateData.C_REST_CLIENT_ID = portal.C_REST_CLIENT_ID;
+        if (portal.C_REST_CLIENT_SECRET !== undefined)
+            updateData.C_REST_CLIENT_SECRET = portal.C_REST_CLIENT_SECRET;
+        if (portal.C_REST_WEB_HOOK_URL !== undefined)
+            updateData.C_REST_WEB_HOOK_URL = portal.C_REST_WEB_HOOK_URL;
         if (portal.number !== undefined) updateData.number = portal.number;
-        if (portal.client_id !== undefined) updateData.client_id = portal.client_id ? BigInt(portal.client_id) : null;
+        if (portal.client_id !== undefined)
+            updateData.client_id = portal.client_id
+                ? BigInt(portal.client_id)
+                : null;
 
         const result = await this.prisma.portal.update({
             where: { id: BigInt(id) },
@@ -193,4 +201,3 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         return result ? true : false;
     }
 }
-

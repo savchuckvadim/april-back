@@ -1,15 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-
-    IsOptional,
-    IsBoolean,
-    IsNumber,
-    IsEnum,
-
-} from 'class-validator';
+import { IsOptional, IsBoolean, IsNumber, IsEnum } from 'class-validator';
 
 import { PageType } from './create-offer-template-page.dto';
-
 
 export class OfferTemplatePageQueryDto {
     @ApiProperty({ description: 'The offer template id' })
@@ -23,7 +15,7 @@ export class OfferTemplatePageQueryDto {
     @ApiProperty({
         description: 'The type of the offer template page',
         enum: PageType,
-        enumName: 'PageType'
+        enumName: 'PageType',
     })
     @IsEnum(PageType)
     @IsOptional()
@@ -33,9 +25,4 @@ export class OfferTemplatePageQueryDto {
     @IsBoolean()
     @IsOptional()
     is_active?: boolean;
-
-
-
-
-
 }

@@ -8,6 +8,7 @@ export enum EBxNamespace {
     CATALOG = 'catalog',
     RPA = 'rpa',
     IM = 'im',
+    USER = 'user',
 }
 
 export enum EBxMethod {
@@ -15,9 +16,12 @@ export enum EBxMethod {
     SET = 'set',
     UPDATE = 'update',
     GET = 'get',
+
     USER_FIELD_LIST = 'userfield.list',
     USER_FIELD_GET = 'userfield.get',
     USER_FIELD_ADD = 'userfield.add',
+    USER_FIELD_UPDATE = 'userfield.update',
+    USER_FIELD_DELETE = 'userfield.delete',
     LIST = 'list',
     DELETE = 'delete',
     CONTACT_ITEMS_SET = 'contact.items.set',
@@ -46,4 +50,7 @@ export enum EBxMethod {
     HISTORY_LIST = 'history.list',
     MUTE = 'mute',
     UNMUTE = 'unmute',
+    SEARCH = 'search',
+    CURRENT = 'current',
+    DIALOG_GET = 'dialog.get',
 }

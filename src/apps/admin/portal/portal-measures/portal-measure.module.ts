@@ -18,4 +18,3 @@ import { PortalMeasureController } from './controllers/portal-measure.controller
     exports: [PortalMeasureService, PortalMeasureRepository],
 })
 export class PortalMeasureModule {}
-

@@ -9,7 +9,10 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateOfferTemplatePageBlockDto, CreateOfferTemplatePageBlockRequestDto } from '../../page-block';
+import {
+    CreateOfferTemplatePageBlockDto,
+    CreateOfferTemplatePageBlockRequestDto,
+} from '../../page-block';
 import { CreateOfferTemplatePageStickerDto } from '../../page-sticker';
 import { OfferTemplatePage } from '../entities/offer-template-page.entity';
 
@@ -23,7 +26,6 @@ export enum PageType {
     DEFAULT = 'default',
 }
 class CreateOfferTemplatePageDto {
-
     @ApiProperty({ description: 'The offer template id' })
     @IsNumber()
     offer_template_id: number;
@@ -44,7 +46,7 @@ class CreateOfferTemplatePageDto {
     @ApiProperty({
         description: 'The type of the offer template page',
         enum: PageType,
-        enumName: 'PageType'
+        enumName: 'PageType',
     })
     @IsEnum(PageType)
     @IsOptional()
@@ -80,49 +82,40 @@ class CreateOfferTemplatePageDto {
     @IsOptional()
     fonts?: string;
 
-    @ApiProperty({ description: 'The stickers of the offer template page', type: [CreateOfferTemplatePageStickerDto] })
+    @ApiProperty({
+        description: 'The stickers of the offer template page',
+        type: [CreateOfferTemplatePageStickerDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplatePageStickerDto)
     @IsOptional()
     stickers_items?: CreateOfferTemplatePageStickerDto[];
-
-
-
 }
 export class CreateOfferTemplatePageRequestDto extends CreateOfferTemplatePageDto {
-
-
-
-
-
-    @ApiProperty({ description: 'The blocks of the offer template page', type: [CreateOfferTemplatePageBlockRequestDto] })
+    @ApiProperty({
+        description: 'The blocks of the offer template page',
+        type: [CreateOfferTemplatePageBlockRequestDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplatePageBlockRequestDto)
     @IsOptional()
     blocks?: CreateOfferTemplatePageBlockRequestDto[];
-
-
-
 }
-
-
 
 export class CreateOfferTemplatePageResponseDto extends OfferTemplatePage {
     @ApiProperty({ description: 'The offer template id' })
     @IsNumber()
     declare offer_template_id: bigint;
 
-
-    @ApiProperty({ description: 'The blocks of the offer template page', type: [CreateOfferTemplatePageBlockRequestDto] })
+    @ApiProperty({
+        description: 'The blocks of the offer template page',
+        type: [CreateOfferTemplatePageBlockRequestDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplatePageBlockDto)
     @IsOptional()
     blocks?: CreateOfferTemplatePageBlockDto[];
-
-
-
 }
-

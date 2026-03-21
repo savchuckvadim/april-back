@@ -21,7 +21,7 @@ import { OfferTemplatePortalIdParamsDto } from '../dtos/offer-template-portal-pa
 export class OfferTemplatePortalController {
     constructor(
         private readonly offerTemplatePortalService: OfferTemplatePortalService,
-    ) { }
+    ) {}
 
     @Post()
     async createOfferTemplatePortal(
@@ -103,7 +103,9 @@ export class OfferTemplatePortalController {
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async remove(@Param() params: OfferTemplatePortalIdParamsDto): Promise<void> {
+    async remove(
+        @Param() params: OfferTemplatePortalIdParamsDto,
+    ): Promise<void> {
         return this.offerTemplatePortalService.delete(BigInt(params.id));
     }
 
@@ -112,7 +114,10 @@ export class OfferTemplatePortalController {
         @Param() params: OfferTemplatePortalIdParamsDto,
         @Body('is_active') is_active: boolean,
     ): Promise<OfferTemplatePortal> {
-        return this.offerTemplatePortalService.setActive(BigInt(params.id), is_active);
+        return this.offerTemplatePortalService.setActive(
+            BigInt(params.id),
+            is_active,
+        );
     }
 
     @Patch(':id/default')

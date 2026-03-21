@@ -43,7 +43,7 @@ export class PortalRegionController {
     @Post('add')
     async createPortalRegion(
         @Body() dto: CreatePortalRegionDto,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<RegionEntity | null> {
         return await this.portalRegionService.createPortalRegion(dto);
     }
 
@@ -59,7 +59,7 @@ export class PortalRegionController {
     @Post('update')
     async updatePortalRegion(
         @Body() dto: UpdatePortalRegionDto,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<RegionEntity | null> {
         return await this.portalRegionService.updatePortalRegion(dto);
     }
 
@@ -73,7 +73,7 @@ export class PortalRegionController {
     @Post('delete')
     async deletePortalRegion(
         @Body() dto: DeletePortalRegionDto,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<boolean> {
         return await this.portalRegionService.deletePortalRegion(dto);
     }
 }

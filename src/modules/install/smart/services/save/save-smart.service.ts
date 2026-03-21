@@ -8,7 +8,7 @@ export class SaveSmartService {
     public constructor(
         private readonly prismaService: PrismaService,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
     public async saveSmart(
         domain: string,

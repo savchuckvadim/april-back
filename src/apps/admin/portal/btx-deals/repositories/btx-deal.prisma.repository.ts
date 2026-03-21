@@ -5,7 +5,7 @@ import { BtxDealRepository } from './btx-deal.repository';
 
 @Injectable()
 export class BtxDealPrismaRepository implements BtxDealRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(deal: Partial<btx_deals>): Promise<btx_deals | null> {
         const result = await this.prisma.btx_deals.create({
@@ -48,12 +48,16 @@ export class BtxDealPrismaRepository implements BtxDealRepository {
         return result;
     }
 
-    async update(id: number, deal: Partial<btx_deals>): Promise<btx_deals | null> {
+    async update(
+        id: number,
+        deal: Partial<btx_deals>,
+    ): Promise<btx_deals | null> {
         const updateData: any = {};
         if (deal.name !== undefined) updateData.name = deal.name;
         if (deal.title !== undefined) updateData.title = deal.title;
         if (deal.code !== undefined) updateData.code = deal.code;
-        if (deal.portal_id !== undefined) updateData.portal_id = BigInt(deal.portal_id);
+        if (deal.portal_id !== undefined)
+            updateData.portal_id = BigInt(deal.portal_id);
 
         const result = await this.prisma.btx_deals.update({
             where: { id: BigInt(id) },
@@ -69,4 +73,3 @@ export class BtxDealPrismaRepository implements BtxDealRepository {
         return result ? true : false;
     }
 }
-

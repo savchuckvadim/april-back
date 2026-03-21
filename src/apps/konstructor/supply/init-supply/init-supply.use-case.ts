@@ -21,7 +21,7 @@ export class InitSupplyUseCase {
         private readonly initSupplyService: InitSupplyService,
         private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,
         private readonly initSupplyTimelineCommentService: InitSupplyTimelineCommentService,
-    ) { }
+    ) {}
 
     async initSupply(dto: InitSupplyDto): Promise<any> {
         /*

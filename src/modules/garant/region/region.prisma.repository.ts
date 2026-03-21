@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
 import { RegionRepository } from './region.repository';
-import { RegionEntity } from './region.entity';
+import { PortalRegionEntity, RegionEntity } from './region.entity';
 import { createRegionEntityFromPrisma } from './lib/region-entity.util';
 import { Decimal } from '@prisma/client/runtime/library';
+import { portal_region, regions } from 'generated/prisma';
 
 @Injectable()
 export class RegionPrismaRepository implements RegionRepository {
@@ -108,37 +113,106 @@ export class RegionPrismaRepository implements RegionRepository {
                 id: { in: portalRegions.map(region => region.region_id) },
             },
         });
-        const withOwnAbsRegions = regions.map(region => {
-            const portalRegion = portalRegions.find(
+        const withOwnAbsRegions = regions.map((region: regions) => {
+            const portalRegion: portal_region | undefined = portalRegions.find(
                 portalRegion => portalRegion.region_id === region.id,
             );
-            const withOwnAbsRegion = {
-                ...region,
-                tax_abs: portalRegion?.own_tax_abs
-                    ? portalRegion.own_tax_abs
-                    : region.tax_abs,
-                tax: portalRegion?.own_tax ? portalRegion.own_tax : region.tax,
-                abs: portalRegion?.own_abs ? portalRegion.own_abs : region.abs,
-            };
-            return createRegionEntityFromPrisma(withOwnAbsRegion);
+            // const withOwnAbsRegion = {
+            //     ...region,
+            //     tax_abs: portalRegion?.own_tax_abs
+            //         ? portalRegion.own_tax_abs
+            //         : region.tax_abs,
+            //     tax: portalRegion?.own_tax ? portalRegion.own_tax : region.tax,
+            //     abs: portalRegion?.own_abs ? portalRegion.own_abs : region.abs,
+            // };
+            return this.getRegionEntityMergedByPortalRegion(
+                region,
+                portalRegion,
+            );
         });
         if (!withOwnAbsRegions) return null;
         return withOwnAbsRegions;
     }
 
+    async delete(id: string): Promise<RegionEntity | null> {
+        try {
+            const result = await this.prisma.regions.delete({
+                where: { id: BigInt(id) },
+            });
+            if (!result) return null;
+            return createRegionEntityFromPrisma(result);
+        } catch (error) {
+            console.error('Error deleting region:', error);
+            return null;
+        }
+    }
+
     async createPortalRegion(
         portalId: number,
         regionId: number,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<RegionEntity | null> {
         try {
-            await this.prisma.portal_region.create({
-                data: { portal_id: portalId, region_id: regionId },
+            let portalRegion = await this.prisma.portal_region.findUnique({
+                where: {
+                    portal_id_region_id: {
+                        portal_id: portalId,
+                        region_id: regionId,
+                    },
+                },
             });
-            return await this.findByPortalId(portalId);
+            if (!portalRegion) {
+                portalRegion = await this.prisma.portal_region.create({
+                    data: { portal_id: portalId, region_id: regionId },
+                });
+            }
+            const region = await this.findById(regionId.toString());
+            if (!region) {
+                throw new NotFoundException(
+                    `Something wrong. Region with id ${regionId} not found in database`,
+                );
+            }
+            return this.getRegionEntityMergedByPortalRegion(
+                region,
+                portalRegion,
+            );
         } catch (error) {
             console.error('Error creating portal region:', error);
             return null;
         }
+    }
+
+    async findByPortalIdPortalRegion(
+        portalId: number,
+        regionId: number,
+    ): Promise<PortalRegionEntity | null> {
+        const region = await this.findById(regionId.toString());
+        if (!region) {
+            throw new NotFoundException(
+                `Something wrong. Region with id ${regionId} not found in database`,
+            );
+        }
+        const result = await this.prisma.portal_region.findUnique({
+            where: {
+                portal_id_region_id: {
+                    portal_id: portalId,
+                    region_id: regionId,
+                },
+            },
+        });
+        const portalRegionEntity = new PortalRegionEntity();
+        portalRegionEntity.portalId = portalId;
+        portalRegionEntity.regionId = regionId;
+        portalRegionEntity.own_abs = result?.own_abs
+            ? Number(result.own_abs)
+            : 0;
+        portalRegionEntity.own_tax = result?.own_tax
+            ? Number(result.own_tax)
+            : 0;
+        portalRegionEntity.own_tax_abs = result?.own_tax_abs
+            ? Number(result.own_tax_abs)
+            : 0;
+        portalRegionEntity.regionCode = region?.code || '';
+        return portalRegionEntity;
     }
 
     async updatePortalRegion(
@@ -147,7 +221,7 @@ export class RegionPrismaRepository implements RegionRepository {
         own_abs: Decimal | null,
         own_tax: Decimal | null,
         own_tax_abs: Decimal | null,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<RegionEntity | null> {
         try {
             const result = await this.prisma.portal_region.update({
                 where: {
@@ -158,7 +232,13 @@ export class RegionPrismaRepository implements RegionRepository {
                 },
                 data: { own_abs, own_tax, own_tax_abs },
             });
-            return await this.findByPortalId(portalId);
+            const region = await this.findById(regionId.toString());
+            if (!region) {
+                throw new NotFoundException(
+                    `Something wrong. Region with id ${regionId} not found in database`,
+                );
+            }
+            return this.getRegionEntityMergedByPortalRegion(region, result);
         } catch (error) {
             console.error('Error updating portal region:', error);
             return null;
@@ -168,9 +248,9 @@ export class RegionPrismaRepository implements RegionRepository {
     async deletePortalRegion(
         portalId: number,
         regionId: number,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<boolean> {
         try {
-            const result = await this.prisma.portal_region.delete({
+            await this.prisma.portal_region.delete({
                 where: {
                     portal_id_region_id: {
                         portal_id: portalId,
@@ -178,10 +258,42 @@ export class RegionPrismaRepository implements RegionRepository {
                     },
                 },
             });
-            return await this.findByPortalId(portalId);
+            return true;
         } catch (error) {
             console.error('Error deleting portal region:', error);
-            return null;
+            throw new InternalServerErrorException(
+                'Something wrong. Failed to delete portal region',
+                error,
+            );
         }
+    }
+
+    private getRegionEntityMergedByPortalRegion(
+        region: regions | RegionEntity,
+        portalRegion?: portal_region | undefined,
+    ): RegionEntity {
+        const isRegionEntity = region instanceof RegionEntity;
+        let regionEntity = isRegionEntity
+            ? region
+            : createRegionEntityFromPrisma(region);
+
+        if (!portalRegion) {
+            return regionEntity;
+        }
+
+        const result = {
+            ...regionEntity,
+            tax_abs: portalRegion?.own_tax_abs
+                ? Number(portalRegion.own_tax_abs)
+                : regionEntity.tax_abs,
+
+            tax: portalRegion?.own_tax
+                ? Number(portalRegion.own_tax)
+                : regionEntity.tax,
+            abs: portalRegion?.own_abs
+                ? Number(portalRegion.own_abs)
+                : regionEntity.abs,
+        };
+        return result;
     }
 }

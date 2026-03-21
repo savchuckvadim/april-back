@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { btx_rpas } from 'generated/prisma';
 import { BtxRpaRepository } from '../repositories/btx-rpa.repository';
 import { CreateBtxRpaDto } from '../dto/create-btx-rpa.dto';
@@ -7,7 +11,7 @@ import { BtxRpaResponseDto } from '../dto/btx-rpa-response.dto';
 
 @Injectable()
 export class BtxRpaService {
-    constructor(private readonly repository: BtxRpaRepository) { }
+    constructor(private readonly repository: BtxRpaRepository) {}
 
     async create(dto: CreateBtxRpaDto): Promise<BtxRpaResponseDto> {
         try {
@@ -21,7 +25,9 @@ export class BtxRpaService {
                 image: dto.image,
                 bitrixId: dto.bitrixId ? BigInt(dto.bitrixId) : null,
                 description: dto.description,
-                entityTypeId: dto.entityTypeId ? BigInt(dto.entityTypeId) : null,
+                entityTypeId: dto.entityTypeId
+                    ? BigInt(dto.entityTypeId)
+                    : null,
                 forStageId: dto.forStageId ? BigInt(dto.forStageId) : null,
                 forFilterId: dto.forFilterId ? BigInt(dto.forFilterId) : null,
                 crmId: dto.crmId ? BigInt(dto.crmId) : null,
@@ -74,14 +80,29 @@ export class BtxRpaService {
             if (dto.code !== undefined) updateData.code = dto.code;
             if (dto.type !== undefined) updateData.type = dto.type;
             if (dto.typeId !== undefined) updateData.typeId = dto.typeId;
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
             if (dto.image !== undefined) updateData.image = dto.image;
-            if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId ? BigInt(dto.bitrixId) : null;
-            if (dto.description !== undefined) updateData.description = dto.description;
-            if (dto.entityTypeId !== undefined) updateData.entityTypeId = dto.entityTypeId ? BigInt(dto.entityTypeId) : null;
-            if (dto.forStageId !== undefined) updateData.forStageId = dto.forStageId ? BigInt(dto.forStageId) : null;
-            if (dto.forFilterId !== undefined) updateData.forFilterId = dto.forFilterId ? BigInt(dto.forFilterId) : null;
-            if (dto.crmId !== undefined) updateData.crmId = dto.crmId ? BigInt(dto.crmId) : null;
+            if (dto.bitrixId !== undefined)
+                updateData.bitrixId = dto.bitrixId
+                    ? BigInt(dto.bitrixId)
+                    : null;
+            if (dto.description !== undefined)
+                updateData.description = dto.description;
+            if (dto.entityTypeId !== undefined)
+                updateData.entityTypeId = dto.entityTypeId
+                    ? BigInt(dto.entityTypeId)
+                    : null;
+            if (dto.forStageId !== undefined)
+                updateData.forStageId = dto.forStageId
+                    ? BigInt(dto.forStageId)
+                    : null;
+            if (dto.forFilterId !== undefined)
+                updateData.forFilterId = dto.forFilterId
+                    ? BigInt(dto.forFilterId)
+                    : null;
+            if (dto.crmId !== undefined)
+                updateData.crmId = dto.crmId ? BigInt(dto.crmId) : null;
 
             const updatedRpa = await this.repository.update(id, updateData);
             if (!updatedRpa) {
@@ -123,4 +144,3 @@ export class BtxRpaService {
         };
     }
 }
-

@@ -5,7 +5,7 @@ import { BtxRpaRepository } from './btx-rpa.repository';
 
 @Injectable()
 export class BtxRpaPrismaRepository implements BtxRpaRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(rpa: Partial<btx_rpas>): Promise<btx_rpas | null> {
         const result = await this.prisma.btx_rpas.create({
@@ -19,7 +19,9 @@ export class BtxRpaPrismaRepository implements BtxRpaRepository {
                 image: rpa.image,
                 bitrixId: rpa.bitrixId ? BigInt(rpa.bitrixId) : null,
                 description: rpa.description,
-                entityTypeId: rpa.entityTypeId ? BigInt(rpa.entityTypeId) : null,
+                entityTypeId: rpa.entityTypeId
+                    ? BigInt(rpa.entityTypeId)
+                    : null,
                 forStageId: rpa.forStageId ? BigInt(rpa.forStageId) : null,
                 forFilterId: rpa.forFilterId ? BigInt(rpa.forFilterId) : null,
                 crmId: rpa.crmId ? BigInt(rpa.crmId) : null,
@@ -64,14 +66,27 @@ export class BtxRpaPrismaRepository implements BtxRpaRepository {
         if (rpa.code !== undefined) updateData.code = rpa.code;
         if (rpa.type !== undefined) updateData.type = rpa.type;
         if (rpa.typeId !== undefined) updateData.typeId = rpa.typeId;
-        if (rpa.portal_id !== undefined) updateData.portal_id = BigInt(rpa.portal_id);
+        if (rpa.portal_id !== undefined)
+            updateData.portal_id = BigInt(rpa.portal_id);
         if (rpa.image !== undefined) updateData.image = rpa.image;
-        if (rpa.bitrixId !== undefined) updateData.bitrixId = rpa.bitrixId ? BigInt(rpa.bitrixId) : null;
-        if (rpa.description !== undefined) updateData.description = rpa.description;
-        if (rpa.entityTypeId !== undefined) updateData.entityTypeId = rpa.entityTypeId ? BigInt(rpa.entityTypeId) : null;
-        if (rpa.forStageId !== undefined) updateData.forStageId = rpa.forStageId ? BigInt(rpa.forStageId) : null;
-        if (rpa.forFilterId !== undefined) updateData.forFilterId = rpa.forFilterId ? BigInt(rpa.forFilterId) : null;
-        if (rpa.crmId !== undefined) updateData.crmId = rpa.crmId ? BigInt(rpa.crmId) : null;
+        if (rpa.bitrixId !== undefined)
+            updateData.bitrixId = rpa.bitrixId ? BigInt(rpa.bitrixId) : null;
+        if (rpa.description !== undefined)
+            updateData.description = rpa.description;
+        if (rpa.entityTypeId !== undefined)
+            updateData.entityTypeId = rpa.entityTypeId
+                ? BigInt(rpa.entityTypeId)
+                : null;
+        if (rpa.forStageId !== undefined)
+            updateData.forStageId = rpa.forStageId
+                ? BigInt(rpa.forStageId)
+                : null;
+        if (rpa.forFilterId !== undefined)
+            updateData.forFilterId = rpa.forFilterId
+                ? BigInt(rpa.forFilterId)
+                : null;
+        if (rpa.crmId !== undefined)
+            updateData.crmId = rpa.crmId ? BigInt(rpa.crmId) : null;
 
         const result = await this.prisma.btx_rpas.update({
             where: { id: BigInt(id) },
@@ -87,4 +102,3 @@ export class BtxRpaPrismaRepository implements BtxRpaRepository {
         return result ? true : false;
     }
 }
-

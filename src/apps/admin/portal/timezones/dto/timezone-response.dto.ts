@@ -10,7 +10,6 @@ export class TimezoneResponseDto {
         this.portal_id = Number(timezone.portal_id);
         this.type = timezone.type;
         this.offset = timezone.offset;
-
     }
     @ApiProperty({
         description: 'Timezone ID',
@@ -54,4 +53,3 @@ export class TimezoneResponseDto {
     })
     offset?: string | null;
 }
-

@@ -29,5 +29,4 @@ export abstract class OfferTemplateRepository {
         user_id: bigint,
         portal_id: bigint,
     ): Promise<OfferTemplate[]>;
-
 }

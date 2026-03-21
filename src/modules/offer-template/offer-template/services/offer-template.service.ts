@@ -16,7 +16,6 @@ import { OfferTemplatePageBlockRepository } from '../../page-block/repositories/
 import { CreateOfferTemplatePageBlockDto } from '../../page-block';
 import { CreateOfferTemplateRequestDto } from '../dtos/create-offer-template.dto';
 
-
 /**
  * OfferTemplateService is a service that provides methods to interact with offer templates.
  * будет использоваться как для pdf  так и для word шаблонов
@@ -40,7 +39,7 @@ export class OfferTemplateService {
         private readonly offerTemplateRepository: OfferTemplateRepository,
         private readonly offerTemplatePageRepository: OfferTemplatePageRepository,
         private readonly offerTemplatePageBlockRepository: OfferTemplatePageBlockRepository,
-    ) { }
+    ) {}
 
     async findById(id: bigint): Promise<OfferTemplate> {
         const template = await this.offerTemplateRepository.findById(id);
@@ -69,15 +68,12 @@ export class OfferTemplateService {
         is_active?: boolean;
         search?: string;
     }): Promise<OfferTemplateSummary[]> {
-
         console.log(filters);
 
         const result = await this.offerTemplateRepository.findMany(filters);
         console.log(result);
 
-
         return result;
-
     }
 
     async findPublic(): Promise<OfferTemplateSummary[]> {
@@ -98,7 +94,9 @@ export class OfferTemplateService {
         );
     }
 
-    async create(createDto: CreateOfferTemplateRequestDto): Promise<OfferTemplate> {
+    async create(
+        createDto: CreateOfferTemplateRequestDto,
+    ): Promise<OfferTemplate> {
         // Check if template with same code already exists
         // TODO: check if this is needed
         // TODO unique check for code
@@ -136,35 +134,27 @@ export class OfferTemplateService {
             tags: createDto.tags,
             is_active: createDto.is_active || false,
             counter: createDto.counter || 0,
-
-
         };
         const result = await this.offerTemplateRepository.create(templateData);
 
         if (!result || !result.id) {
-            throw new BadRequestException(
-                `Failed to create offer template`,
-            );
+            throw new BadRequestException(`Failed to create offer template`);
         }
 
         for (const p of createDto.pages || []) {
-
             const page = await this.offerTemplatePageRepository.create(
                 new OfferTemplatePage({
                     ...p,
                     offer_template_id: BigInt(result.id),
                     offerTemplate: result,
-
-                })
-
-
+                }),
             );
 
-            const blocks: Partial<CreateOfferTemplatePageBlockDto>[] = p.blocks?.map(b => ({
-                ...b,
-                offer_template_page_id: BigInt(page.id),
-
-            })) || [];
+            const blocks: Partial<CreateOfferTemplatePageBlockDto>[] =
+                p.blocks?.map(b => ({
+                    ...b,
+                    offer_template_page_id: BigInt(page.id),
+                })) || [];
 
             if (!page || !page.id) {
                 throw new BadRequestException(
@@ -172,10 +162,15 @@ export class OfferTemplateService {
                 );
             }
 
-            blocks && await this.offerTemplatePageBlockRepository.createMany(blocks);
+            blocks &&
+                (await this.offerTemplatePageBlockRepository.createMany(
+                    blocks,
+                ));
         }
 
-        const resultWithRelations = await this.offerTemplateRepository.findById(BigInt(result.id));
+        const resultWithRelations = await this.offerTemplateRepository.findById(
+            BigInt(result.id),
+        );
         //@ts-ignore
         return resultWithRelations;
     }

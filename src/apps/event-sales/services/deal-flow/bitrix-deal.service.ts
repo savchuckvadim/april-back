@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 // import { BitrixGeneralService } from '../general/bitrix-general.service';
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
-import { IPCategory, IPDeal } from '@/modules/portal/interfaces/portal.interface';
+import {
+    IPCategory,
+    IPDeal,
+} from '@/modules/portal/interfaces/portal.interface';
 
 // interface DealCategory {
 //     code: string;
@@ -30,8 +33,6 @@ export interface Deal extends IBXDeal {
     UF_CRM_MANAGER_OP?: number;
 }
 
-
-
 interface EventOrder {
     code: string;
     order: number;
@@ -40,9 +41,7 @@ interface EventOrder {
 
 @Injectable()
 export class BitrixDealService {
-    constructor(
-        private readonly bitrix: BitrixService
-    ) { }
+    constructor(private readonly bitrix: BitrixService) {}
 
     async getDealId(
         // hook: string,
@@ -60,8 +59,8 @@ export class BitrixDealService {
             const currentCategoryBtxId = currentCategoryData.bitrixId;
 
             let data: {
-                filter: Partial<IBXDeal>,
-                select: string[],
+                filter: Partial<IBXDeal>;
+                select: string[];
             } = {
                 filter: {},
                 select: [],
@@ -91,7 +90,10 @@ export class BitrixDealService {
                 };
             }
 
-            const response = await this.bitrix.deal.getList(data.filter, data.select);
+            const response = await this.bitrix.deal.getList(
+                data.filter,
+                data.select,
+            );
             currentDeal = response?.result?.[0] as IBXDeal | null;
 
             if (Array.isArray(currentDeal)) {
@@ -243,9 +245,11 @@ export class BitrixDealService {
 
     async getDeal(dealId: number): Promise<Deal | null> {
         try {
-
-
-            const response = await this.bitrix.deal.get(dealId, ['ID', 'CATEGORY_ID', 'STAGE_ID']);
+            const response = await this.bitrix.deal.get(dealId, [
+                'ID',
+                'CATEGORY_ID',
+                'STAGE_ID',
+            ]);
             return response?.result as IBXDeal | null;
         } catch (error) {
             console.error('Error in getDeal:', error);
@@ -254,12 +258,10 @@ export class BitrixDealService {
     }
 
     async updateDeal(
-
         dealId: number,
         fields: Partial<IBXDeal>,
     ): Promise<number | null> {
         try {
-
             const response = await this.bitrix.deal.update(dealId, fields);
             return response?.result;
         } catch (error) {
@@ -269,12 +271,10 @@ export class BitrixDealService {
     }
 
     async setDeal(
-
         fields: Partial<Deal>,
         category?: IPCategory,
     ): Promise<string | null> {
         try {
-
             const data = {
                 fields: {
                     ...fields,

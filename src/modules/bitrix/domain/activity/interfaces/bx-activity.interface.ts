@@ -9,7 +9,7 @@ export interface BXActivityRequest {
 }
 
 export interface BXActivityRequestFields {
-    [key: string]: string | number  | number[]  | string[] | undefined;
+    [key: string]: string | number | number[] | string[] | undefined;
     ID?: number | string;
     OWNER_ID?: number | string | number[] | string[];
     OWNER_TYPE_ID?: BitrixOwnerTypeId;

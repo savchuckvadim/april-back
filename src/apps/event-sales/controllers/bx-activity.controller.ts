@@ -35,6 +35,5 @@ export class EventSalesBxActivityController {
         return await this.bxActivityUseCase.getActivitiesByLeadId(dto);
     }
 
-
     //TODO: get activities by company id
 }

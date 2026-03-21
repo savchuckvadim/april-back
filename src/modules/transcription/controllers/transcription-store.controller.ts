@@ -1,15 +1,25 @@
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { TranscriptionStoreService } from "../services/transcription.store.service";
-import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
-import { TranscriptionBaseDto, TranscriptionStoreDto } from "../dto/transcription.store.dto";
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { TranscriptionStoreService } from '../services/transcription.store.service';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Post,
+    Put,
+} from '@nestjs/common';
+import {
+    TranscriptionBaseDto,
+    TranscriptionStoreDto,
+} from '../dto/transcription.store.dto';
 
 @ApiTags('Transcription Store')
 @Controller('transcription-store')
 export class TranscriptionStoreController {
     constructor(
         private readonly transcriptionStoreService: TranscriptionStoreService,
-
-    ) { }
+    ) {}
 
     @ApiOperation({ summary: 'Create transcription' })
     @ApiResponse({
@@ -18,7 +28,9 @@ export class TranscriptionStoreController {
         type: TranscriptionStoreDto,
     })
     @Post()
-    async create(@Body() transcriptionDto: TranscriptionBaseDto): Promise<TranscriptionStoreDto> {
+    async create(
+        @Body() transcriptionDto: TranscriptionBaseDto,
+    ): Promise<TranscriptionStoreDto> {
         return this.transcriptionStoreService.create(transcriptionDto);
     }
 
@@ -51,7 +63,9 @@ export class TranscriptionStoreController {
         type: [TranscriptionStoreDto],
     })
     @Get('domain/:domain')
-    async findByDomain(@Param('domain') domain: string): Promise<TranscriptionStoreDto[]> {
+    async findByDomain(
+        @Param('domain') domain: string,
+    ): Promise<TranscriptionStoreDto[]> {
         return this.transcriptionStoreService.findByDomain(domain);
     }
 
@@ -62,8 +76,14 @@ export class TranscriptionStoreController {
         type: [TranscriptionStoreDto],
     })
     @Get('domain/:domain/user/:userId')
-    async findByDomainAndUser(@Param('domain') domain: string, @Param('userId') userId: string): Promise<TranscriptionStoreDto[]> {
-        return this.transcriptionStoreService.findByDomainAndUser(domain, userId);
+    async findByDomainAndUser(
+        @Param('domain') domain: string,
+        @Param('userId') userId: string,
+    ): Promise<TranscriptionStoreDto[]> {
+        return this.transcriptionStoreService.findByDomainAndUser(
+            domain,
+            userId,
+        );
     }
 
     @ApiOperation({ summary: 'Update transcription' })
@@ -73,8 +93,14 @@ export class TranscriptionStoreController {
         type: TranscriptionStoreDto,
     })
     @Put(':id')
-    async update(@Param('id') id: string, @Body() transcriptionDto: TranscriptionBaseDto): Promise<TranscriptionStoreDto> {
-        return this.transcriptionStoreService.updateTranscription(id, transcriptionDto);
+    async update(
+        @Param('id') id: string,
+        @Body() transcriptionDto: TranscriptionBaseDto,
+    ): Promise<TranscriptionStoreDto> {
+        return this.transcriptionStoreService.updateTranscription(
+            id,
+            transcriptionDto,
+        );
     }
 
     @ApiOperation({ summary: 'Delete transcription' })

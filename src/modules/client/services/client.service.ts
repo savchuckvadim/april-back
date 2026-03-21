@@ -1,16 +1,23 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { Client } from 'generated/prisma';
 import { ClientRepository } from '../repositories/client.repository';
 import { CreateClientDto } from '../dto/create-client.dto';
 import { UpdateClientDto } from '../dto/update-client.dto';
-import { ClientResponseDto, ClientWithRelationsResponseDto } from '../dto/client-response.dto';
+import {
+    ClientResponseDto,
+    ClientWithRelationsResponseDto,
+} from '../dto/client-response.dto';
 import { ClientWithRelations } from '../entity/client.entity';
 import { UserResponseDto } from '@/apps/bitrix-app-client/user/dto/user-response.dto';
 import { AdminPortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
 
 @Injectable()
 export class ClientService {
-    constructor(private readonly repository: ClientRepository) { }
+    constructor(private readonly repository: ClientRepository) {}
 
     async create(dto: CreateClientDto): Promise<ClientResponseDto> {
         try {
@@ -28,7 +35,9 @@ export class ClientService {
             return this.mapToResponseDto(client);
         } catch (error) {
             if (error.code === 'P2002') {
-                throw new BadRequestException('Client with this email already exists');
+                throw new BadRequestException(
+                    'Client with this email already exists',
+                );
             }
             throw error;
         }
@@ -42,7 +51,9 @@ export class ClientService {
         return this.mapToResponseDto(client);
     }
 
-    async findByIdWithRelations(id: number): Promise<ClientWithRelationsResponseDto> {
+    async findByIdWithRelations(
+        id: number,
+    ): Promise<ClientWithRelationsResponseDto> {
         const client = await this.repository.findByIdWithRelations(id);
         if (!client) {
             throw new NotFoundException(`Client with id ${id} not found`);
@@ -95,7 +106,9 @@ export class ClientService {
             return this.mapToResponseDto(updatedClient);
         } catch (error) {
             if (error.code === 'P2002') {
-                throw new BadRequestException('Client with this email already exists');
+                throw new BadRequestException(
+                    'Client with this email already exists',
+                );
             }
             throw error;
         }
@@ -122,12 +135,15 @@ export class ClientService {
         };
     }
 
-    private mapToResponseDtoWithRelations(client: ClientWithRelations): ClientWithRelationsResponseDto {
+    private mapToResponseDtoWithRelations(
+        client: ClientWithRelations,
+    ): ClientWithRelationsResponseDto {
         return {
             ...this.mapToResponseDto(client),
             users: client.users?.map(user => new UserResponseDto(user)) || [],
-            portal: client.portal ? new AdminPortalResponseDto(client.portal) : null,
+            portal: client.portal
+                ? new AdminPortalResponseDto(client.portal)
+                : null,
         };
     }
 }
-

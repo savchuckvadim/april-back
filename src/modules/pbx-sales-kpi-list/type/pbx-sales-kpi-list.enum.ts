@@ -29,8 +29,6 @@ export enum EnumSalesKpiEventType {
     come_call = 'come_call',
     site = 'site',
 
-
-
     presentation_uniq = 'presentation_uniq',
     presentation_contact_uniq = 'presentation_contact_uniq',
     ev_offer = 'ev_offer',

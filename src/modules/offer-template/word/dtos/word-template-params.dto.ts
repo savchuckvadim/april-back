@@ -22,4 +22,3 @@ export class WordTemplateUserPortalParamsDto {
     @IsNumberString()
     portal_id: string;
 }
-

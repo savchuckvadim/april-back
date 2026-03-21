@@ -5,7 +5,15 @@ import {
 import { EV_TYPE, IEventTask } from '../../types/task-types';
 import { PresentationStateCount } from '../../types/presentation-types';
 import { IBXDeal } from 'src/modules/bitrix';
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+    IsArray,
+    IsBoolean,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { MinimalUserDto } from './user.dto';
 import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
@@ -34,7 +42,6 @@ export class EventTaskUserDto {
 }
 
 export class EventTaskGroupDto {
-
     @IsOptional()
     @IsNumeric()
     id: number;
@@ -55,7 +62,6 @@ export class EventTaskDto {
 
     @IsOptional()
     presentation: null | PresentationStateCount;
-
 
     dealBase: null | IBXDeal;
 
@@ -123,7 +129,6 @@ export class EventTaskDto {
     @IsEnum(EBXTaskMark)
     mark: EBXTaskMark;
 
-
     matchWorkTime: 'N';
     multitask: 'N';
     newCommentsCount: 0;
@@ -141,7 +146,6 @@ export class EventTaskDto {
     @IsOptional()
     @IsNumeric()
     responsibleId: number;
-
 
     serviceCommentsCount: null;
     siteId: 's1';

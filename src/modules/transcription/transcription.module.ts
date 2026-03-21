@@ -17,6 +17,7 @@ import { TranscriptionRepository } from './repository/transcription.repository';
 import { TranscriptionPrismaRepository } from './repository/transcription.prisma.repository';
 import { TranscriptionStoreService } from './services/transcription.store.service';
 import { TranscriptionStoreController } from './controllers/transcription-store.controller';
+import { AdminTranscriptionStoreController } from './controllers/transcription-store.admin.controller';
 
 @Module({
     imports: [
@@ -27,7 +28,11 @@ import { TranscriptionStoreController } from './controllers/transcription-store.
         YandexModule,
         OnlineClientModule,
     ],
-    controllers: [TranscriptionController, TranscriptionStoreController],
+    controllers: [
+        TranscriptionController,
+        TranscriptionStoreController,
+        AdminTranscriptionStoreController,
+    ],
     providers: [
         {
             provide: TranscriptionRepository,
@@ -43,4 +48,4 @@ import { TranscriptionStoreController } from './controllers/transcription-store.
         TranscriptionService,
     ],
 })
-export class TranscriptionModule { }
+export class TranscriptionModule {}

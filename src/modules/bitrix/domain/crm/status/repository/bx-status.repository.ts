@@ -8,7 +8,7 @@ import {
 } from '../dto/status-entity.dto';
 
 export class BxStatusRepository {
-    constructor(private readonly bxApi: BitrixBaseApi) { }
+    constructor(private readonly bxApi: BitrixBaseApi) {}
 
     async getList(filter: Partial<IBXStatus>) {
         return this.bxApi.callType(

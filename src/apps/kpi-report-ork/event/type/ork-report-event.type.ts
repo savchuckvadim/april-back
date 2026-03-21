@@ -1,8 +1,8 @@
-import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-ork-history-bx-list"
-
-
-
-
+import {
+    EnumOrkEventAction,
+    EnumOrkEventType,
+    OrkFields,
+} from '@/modules/pbx-ork-history-bx-list';
 
 // export type FilterCode = EnumFilterCode
 // | 'et_ork_signal_ea_ork_plan' //Сервисный сигнал
@@ -16,7 +16,6 @@ import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-o
 // | 'et_ork_info_ea_ork_done' // Информация
 // | 'et_ork_info_ea_ork_pound' // Информация
 // | 'et_ork_info_ea_ork_act_noresult_fail' // Информация
-
 
 // | 'et_ork_call_doc_ea_ork_plan' // Звонок по документам
 // | 'et_ork_call_doc_ea_ork_expired' // Звонок по документам
@@ -72,7 +71,6 @@ import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-o
 // | 'et_ork_complect_up_work_ea_ork_pound' // Работа по увеличению комплекта
 // | 'et_ork_complect_up_work_ea_ork_act_noresult_fail' // Работа по увеличению комплекта
 
-
 // | 'et_ork_pere_contract_ea_ork_plan' // Перезаключение
 // | 'et_ork_pere_contract_ea_ork_expired' // Перезаключение
 // | 'et_ork_pere_contract_ea_ork_done' // Перезаключение
@@ -85,13 +83,11 @@ import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-o
 // | 'et_ork_complect_up_ea_ork_pound' // Увеличение комплекта
 // | 'et_ork_complect_up_ea_ork_act_noresult_fail' // Увеличение комплекта
 
-
 // | 'et_ork_complect_down_ea_ork_plan' // Уменьшение комплекта
 // | 'et_ork_complect_down_ea_ork_expired' // Уменьшение комплекта
 // | 'et_ork_complect_down_ea_ork_done' // Уменьшение комплекта
 // | 'et_ork_complect_down_ea_ork_pound' // Уменьшение комплекта
 // | 'et_ork_complect_down_ea_ork_act_noresult_fail' // Уменьшение комплекта
-
 
 // | 'et_ork_fail_prevention_ea_ork_plan' // Профилактика отказа
 // | 'et_ork_fail_prevention_ea_ork_expired' // Профилактика отказа
@@ -117,7 +113,6 @@ import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-o
 // | 'et_ork_fail_work_success_ea_ork_pound' // Устранение угрозы отказа
 // | 'et_ork_fail_work_success_ea_ork_act_noresult_fail' // Устранение угрозы отказа
 
-
 // | FilterCode
 
 // | 'et_ork_call_ea_ork_plan' // Звонок по оплате
@@ -125,7 +120,6 @@ import { EnumOrkEventAction, EnumOrkEventType, OrkFields } from "@/modules/pbx-o
 // | 'et_ork_call_ea_ork_done' // Звонок по оплате
 // | 'et_ork_call_ea_ork_pound' // Звонок по оплате
 // | 'et_ork_call_ea_ork_act_noresult_fail' // Звонок по оплате;
-
 
 export enum EnumOrkFilterInnerCode {
     signal_plan = 'et_ork_signal_ea_ork_plan', //Сервисный сигнал
@@ -139,7 +133,6 @@ export enum EnumOrkFilterInnerCode {
     info_done = 'et_ork_info_ea_ork_done', // Информация
     info_pound = 'et_ork_info_ea_ork_pound', // Информация
     info_act_noresult_fail = 'et_ork_info_ea_ork_act_noresult_fail', // Информация
-
 
     call_doc_plan = 'et_ork_call_doc_ea_ork_plan', // Звонок по документам
     call_doc_expired = 'et_ork_call_doc_ea_ork_expired', // Звонок по документам
@@ -195,7 +188,6 @@ export enum EnumOrkFilterInnerCode {
     complect_up_work_pound = 'et_ork_complect_up_work_ea_ork_pound', // Работа по увеличению комплекта
     complect_up_work_act_noresult_fail = 'et_ork_complect_up_work_ea_ork_act_noresult_fail', // Работа по увеличению комплекта
 
-
     pere_contract_plan = 'et_ork_pere_contract_ea_ork_plan', // Перезаключение
     pere_contract_expired = 'et_ork_pere_contract_ea_ork_expired', // Перезаключение
     pere_contract_done = 'et_ork_pere_contract_ea_ork_done', // Перезаключение
@@ -208,13 +200,11 @@ export enum EnumOrkFilterInnerCode {
     complect_up_pound = 'et_ork_complect_up_ea_ork_pound', // Увеличение комплекта
     complect_up_act_noresult_fail = 'et_ork_complect_up_ea_ork_act_noresult_fail', // Увеличение комплекта
 
-
     complect_down_plan = 'et_ork_complect_down_ea_ork_plan', // Уменьшение комплекта
     complect_down_expired = 'et_ork_complect_down_ea_ork_expired', // Уменьшение комплекта
     complect_down_done = 'et_ork_complect_down_ea_ork_done', // Уменьшение комплекта
     complect_down_pound = 'et_ork_complect_down_ea_ork_pound', // Уменьшение комплекта
     complect_down_act_noresult_fail = 'et_ork_complect_down_ea_ork_act_noresult_fail', // Уменьшение комплекта
-
 
     fail_prevention_plan = 'et_ork_fail_prevention_ea_ork_plan', // Профилактика отказа
     fail_prevention_expired = 'et_ork_fail_prevention_ea_ork_expired', // Профилактика отказа
@@ -246,14 +236,9 @@ export enum EnumOrkFilterInnerCode {
     call_pound = 'et_ork_call_ea_ork_pound',
     call_act_noresult_fail = 'et_ork_call_ea_ork_act_noresult_fail',
 
-
-
     supply_done = 'et_ork_supply_ea_ork_done', // Поставка
     fail = 'et_ork_fail_ea_ork_done', // Отказ
-
-
 }
-
 
 export enum EnumOrkFilterCode {
     signal_plan = `${EnumOrkEventType.et_ork_signal}_${EnumOrkEventAction.ea_ork_plan}`, //Сервисный сигнал
@@ -268,7 +253,6 @@ export enum EnumOrkFilterCode {
     info_done = `${EnumOrkEventType.et_ork_info}_${EnumOrkEventAction.ea_ork_done}`, // Информация
     info_pound = `${EnumOrkEventType.et_ork_info}_${EnumOrkEventAction.ea_ork_pound}`, // Информация
     info_act_noresult_fail = `${EnumOrkEventType.et_ork_info}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Информация
-
 
     call_doc_plan = `${EnumOrkEventType.et_ork_call_doc}_${EnumOrkEventAction.ea_ork_plan}`, // Звонок по документам
     call_doc_expired = `${EnumOrkEventType.et_ork_call_doc}_${EnumOrkEventAction.ea_ork_expired}`, // Звонок по документам
@@ -300,7 +284,7 @@ export enum EnumOrkFilterCode {
     presentation_pound = `${EnumOrkEventType.et_ork_presentation}_${EnumOrkEventAction.ea_ork_pound}`,
     presentation_act_noresult_fail = `${EnumOrkEventType.et_ork_presentation}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Презентация
 
-    presentati_plan = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_plan}`,  // Презентация(уникальная)
+    presentati_plan = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_plan}`, // Презентация(уникальная)
     presentati_expired = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_expired}`, // Презентация // Презентация(уникальная)
     presentati_done = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_done}`, // Презентация // Презентация(уникальная)
     presentati_pound = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_expired}`, // Презентация(уникальная)
@@ -330,7 +314,6 @@ export enum EnumOrkFilterCode {
     complect_up_work_pound = `${EnumOrkEventType.et_ork_complect_up_work}_${EnumOrkEventAction.ea_ork_pound}`, // Работа по увеличению комплекта
     complect_up_work_act_noresult_fail = `${EnumOrkEventType.et_ork_complect_up_work}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Работа по увеличению комплекта
 
-
     pere_contract_plan = `${EnumOrkEventType.et_ork_pere_contract}_${EnumOrkEventAction.ea_ork_plan}`, // Перезаключение
     pere_contract_expired = `${EnumOrkEventType.et_ork_pere_contract}_${EnumOrkEventAction.ea_ork_expired}`, // Перезаключение
     pere_contract_done = `${EnumOrkEventType.et_ork_pere_contract}_${EnumOrkEventAction.ea_ork_done}`, // Перезаключение
@@ -343,13 +326,11 @@ export enum EnumOrkFilterCode {
     complect_up_pound = `${EnumOrkEventType.et_ork_complect_up}_${EnumOrkEventAction.ea_ork_pound}`, // Увеличение комплекта
     complect_up_act_noresult_fail = `${EnumOrkEventType.et_ork_complect_up}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Увеличение комплекта
 
-
     complect_down_plan = `${EnumOrkEventType.et_ork_complect_down}_${EnumOrkEventAction.ea_ork_plan}`, // Уменьшение комплекта
     complect_down_expired = `${EnumOrkEventType.et_ork_complect_down}_${EnumOrkEventAction.ea_ork_expired}`, // Уменьшение комплекта
     complect_down_done = `${EnumOrkEventType.et_ork_complect_down}_${EnumOrkEventAction.ea_ork_done}`, // Уменьшение комплекта
     complect_down_pound = `${EnumOrkEventType.et_ork_complect_down}_${EnumOrkEventAction.ea_ork_pound}`, // Уменьшение комплекта
     complect_down_act_noresult_fail = `${EnumOrkEventType.et_ork_complect_down}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Уменьшение комплекта
-
 
     fail_prevention_plan = `${EnumOrkEventType.et_ork_fail_prevention}_${EnumOrkEventAction.ea_ork_plan}`, // Профилактика отказа
     fail_prevention_expired = `${EnumOrkEventType.et_ork_fail_prevention}_${EnumOrkEventAction.ea_ork_expired}`, // Профилактика отказа
@@ -375,87 +356,84 @@ export enum EnumOrkFilterCode {
     fail_work_success_pound = `${EnumOrkEventType.et_ork_fail_work_success}_${EnumOrkEventAction.ea_ork_pound}`, // Устранение угрозы отказа
     fail_work_success_act_noresult_fail = `${EnumOrkEventType.et_ork_fail_work_success}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Устранение угрозы отказа
 
-
     supply_done = `${EnumOrkEventType.et_ork_supply}_${EnumOrkEventAction.ea_ork_done}`, // Перезаключение договора
     fail = `${EnumOrkEventType.et_ork_fail}_${EnumOrkEventAction.ea_ork_done}`, // Отказ
-
-
 }
-
 
 export const OrkReportEventActionItems = {
     [OrkFields.ork_event_action.items.ea_ork_plan.code as EnumOrkEventAction]: {
-        [OrkFields.ork_event_type.items.et_ork_signal.code as EnumOrkEventType]: {
-            name: 'Сервисный сигнал запланирован',
-            code: EnumOrkFilterCode.signal_plan,
-            type: 'signal',
-            order: 1
-        },
+        [OrkFields.ork_event_type.items.et_ork_signal.code as EnumOrkEventType]:
+            {
+                name: 'Сервисный сигнал запланирован',
+                code: EnumOrkFilterCode.signal_plan,
+                type: 'signal',
+                order: 1,
+            },
         [OrkFields.ork_event_type.items.et_ork_info.code]: {
             name: 'Информация запланирован',
             code: EnumOrkFilterCode.info_plan,
             type: 'info',
-            order: 3
+            order: 3,
         },
         [OrkFields.ork_event_type.items.et_ork_call_doc.code]: {
             name: 'Звонок по документам запланирован',
             code: EnumOrkFilterCode.call_doc_plan,
             type: 'call_doc',
-            order: 5
+            order: 5,
         },
         [OrkFields.ork_event_type.items.et_ork_call_money.code]: {
             name: 'Звонок по оплате запланирован',
             code: EnumOrkFilterCode.call_money_plan,
             type: 'call_money',
-            order: 7
+            order: 7,
         },
         [OrkFields.ork_event_type.items.et_ork_call_collect.code]: {
             name: 'Звонок по задолженности запланирован',
             code: EnumOrkFilterCode.call_collect_plan,
             type: 'call_collect',
-            order: 9
+            order: 9,
         },
         [OrkFields.ork_event_type.items.et_ork_info_garant.code]: {
             name: 'Инфоповод Гарант запланирован',
             code: EnumOrkFilterCode.info_garant_plan,
             type: 'info_garant',
-            order: 11
+            order: 11,
         },
         [OrkFields.ork_event_type.items.et_ork_presentation.code]: {
             name: 'Презентация запланирован',
             code: EnumOrkFilterCode.presentation_plan,
             type: 'presentation',
-            order: 13
+            order: 13,
         },
         [OrkFields.ork_event_type.items.et_ork_presentation_uniq.code]: {
             name: 'Презентация(уникальная) запланирован',
             code: EnumOrkFilterCode.presentati_plan,
             type: 'presentation_uniq',
-            order: 15
+            order: 15,
         },
         [OrkFields.ork_event_type.items.et_ork_edu_first.code]: {
             name: 'Обучение первичное запланировано',
             code: EnumOrkFilterCode.edu_first_plan,
             type: 'edu_first',
-            order: 17
+            order: 17,
         },
         [OrkFields.ork_event_type.items.et_ork_edu.code]: {
             name: 'Обучение запланировано',
             code: EnumOrkFilterCode.edu_first_plan,
             type: 'edu',
-            order: 19
+            order: 19,
         },
         [OrkFields.ork_event_type.items.et_ork_edu_uniq.code]: {
             name: 'Обучение(уникальное) запланировано',
             code: EnumOrkFilterCode.edu_uniq_plan,
             type: 'edu_uniq',
-            order: 21
+            order: 21,
         },
         [OrkFields.ork_event_type.items.et_ork_threat.code]: {
             name: 'Обработка угрозы отказа запланировано',
             code: EnumOrkFilterCode.threat_ea_plan,
             type: 'edu_uniq',
-            order: 22
+            order: 22,
         },
     },
     [OrkFields.ork_event_action.items.ea_ork_done.code as EnumOrkEventAction]: {
@@ -463,93 +441,95 @@ export const OrkReportEventActionItems = {
             name: 'Сервисный сигнал обработан',
             code: EnumOrkFilterCode.signal_done,
             type: 'signal',
-            order: 2
+            order: 2,
         },
         [OrkFields.ork_event_type.items.et_ork_info.code]: {
             name: 'Информационный звонок совершен',
             code: EnumOrkFilterCode.info_done,
             type: 'info',
-            order: 4
+            order: 4,
         },
         [OrkFields.ork_event_type.items.et_ork_call_doc.code]: {
             name: 'Звонок по документам совершен',
             code: EnumOrkFilterCode.call_doc_done,
             type: 'call_doc',
-            order: 6
+            order: 6,
         },
         [OrkFields.ork_event_type.items.et_ork_call_money.code]: {
             name: 'Звонок по оплате совершен',
             code: EnumOrkFilterCode.call_money_done,
             type: 'call_money',
-            order: 8
+            order: 8,
         },
         [OrkFields.ork_event_type.items.et_ork_call_collect.code]: {
             name: 'Звонок по задолженности совершен',
             code: EnumOrkFilterCode.call_collect_done,
             type: 'call_collect',
-            order: 10
+            order: 10,
         },
         [OrkFields.ork_event_type.items.et_ork_info_garant.code]: {
             name: 'Инфоповод Гарант совершен',
             code: EnumOrkFilterCode.info_garant_done,
             type: 'info_garant',
-            order: 12
+            order: 12,
         },
         [OrkFields.ork_event_type.items.et_ork_presentation.code]: {
             name: 'Презентация проведена',
             code: EnumOrkFilterCode.presentation_done,
             type: 'presentation',
-            order: 14
+            order: 14,
         },
         [OrkFields.ork_event_type.items.et_ork_presentation_uniq.code]: {
             name: 'Презентация(уникальная) проведена',
             code: EnumOrkFilterCode.presentati_done,
             type: 'presentation_uniq',
-            order: 16
+            order: 16,
         },
         [OrkFields.ork_event_type.items.et_ork_edu_first.code]: {
             name: 'Обучение первичное проведено',
             code: EnumOrkFilterCode.edu_first_done,
             type: 'edu_first',
-            order: 18
+            order: 18,
         },
         [OrkFields.ork_event_type.items.et_ork_edu.code]: {
             name: 'Обучение проведено',
             code: EnumOrkFilterCode.edu_done,
             type: 'edu',
-            order: 20
+            order: 20,
         },
         [OrkFields.ork_event_type.items.et_ork_edu_uniq.code]: {
             name: 'Обучение(уникальное) проведено',
             code: EnumOrkFilterCode.edu_uniq_done,
             type: 'edu_uniq',
-            order: 21
+            order: 21,
         },
         [OrkFields.ork_event_type.items.et_ork_threat.code]: {
             name: 'Обработка угрозы отказа проведено',
             code: EnumOrkFilterCode.threat_ea_done,
             type: 'edu_uniq',
-            order: 22
+            order: 22,
         },
         [OrkFields.ork_event_type.items.et_ork_supply.code]: {
             name: 'Перезаключение договора совершено',
             code: EnumOrkFilterCode.supply_done,
             type: 'supply',
-            order: 23
+            order: 23,
         },
         [OrkFields.ork_event_type.items.et_ork_fail.code]: {
             name: 'Отказ',
             code: EnumOrkFilterCode.fail,
             type: 'fail',
-            order: 24
+            order: 24,
         },
     },
-    [OrkFields.ork_event_action.items.ea_ork_act_create.code as EnumOrkEventAction]: {
-        [OrkFields.ork_event_type.items.et_ork_signal.code as EnumOrkEventType]: {
-            name: 'Сервисный сигнал создан',
-            code: EnumOrkFilterCode.signal_act_create,
-            type: 'signal',
-            order: 1
-        },
-    }
-}
+    [OrkFields.ork_event_action.items.ea_ork_act_create
+        .code as EnumOrkEventAction]: {
+        [OrkFields.ork_event_type.items.et_ork_signal.code as EnumOrkEventType]:
+            {
+                name: 'Сервисный сигнал создан',
+                code: EnumOrkFilterCode.signal_act_create,
+                type: 'signal',
+                order: 1,
+            },
+    },
+};

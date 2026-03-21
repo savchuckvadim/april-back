@@ -38,7 +38,7 @@ export class AlfaHookController {
     @Post('activity')
     async handleActivity(
         @Req() req: Request,
-        @Query() query: AlfaActivityQueryDto
+        @Query() query: AlfaActivityQueryDto,
     ) {
         this.logger.log('handleActivity called');
         const domain = req.body?.auth?.domain;

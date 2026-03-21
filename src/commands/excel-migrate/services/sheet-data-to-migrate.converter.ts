@@ -1,6 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { MigrateToBxDto, Product, Contact, Contract } from '../dto/migrate-to-bx.dto';
-import { SheetData, SheetDataProduct, SheetDataContact } from '../dto/sheet-data.dto';
+import {
+    MigrateToBxDto,
+    Product,
+    Contact,
+    Contract,
+} from '../dto/migrate-to-bx.dto';
+import {
+    SheetData,
+    SheetDataProduct,
+    SheetDataContact,
+} from '../dto/sheet-data.dto';
 
 @Injectable()
 export class SheetDataToMigrateConverter {
@@ -56,7 +65,8 @@ export class SheetDataToMigrateConverter {
             return {
                 contractEndDate: productWithContract.contractEndDate || '',
                 contractType: productWithContract.contractType || '',
-                contractPrepayment: productWithContract.contractPrepayment?.toString() || '',
+                contractPrepayment:
+                    productWithContract.contractPrepayment?.toString() || '',
             };
         }
 
@@ -83,10 +93,14 @@ export class SheetDataToMigrateConverter {
         dto.supplyDate = ''; // Не заполняется в SheetData
 
         // Продукты
-        dto.products = sheetData.company.products.map(p => this.convertProduct(p));
+        dto.products = sheetData.company.products.map(p =>
+            this.convertProduct(p),
+        );
 
         // Контакты
-        dto.contacts = sheetData.company.contacts.map(c => this.convertContact(c));
+        dto.contacts = sheetData.company.contacts.map(c =>
+            this.convertContact(c),
+        );
 
         // Договор (берем из первого продукта с данными о договоре)
         dto.contract = this.createContract(sheetData.company.products);
@@ -103,4 +117,3 @@ export class SheetDataToMigrateConverter {
             .map(sheet => this.convertSheetToMigrate(sheet));
     }
 }
-

@@ -37,7 +37,9 @@ import { BxTaskBatchService, BxTaskService } from './domain/tasks/task';
 import { ActivityService } from './domain/activity/services/bx-activity.service';
 import { BxActivityBatchService } from './domain/activity/services/bx-activity.batch.service';
 import { BxFileBatchService } from './domain/file/bx-file.batch.service';
-
+import { BxUserService } from './domain/user/services/bx-user.service';
+import { BxUserBatchService } from './domain/user/services/bx-user.batch.service';
+import { BxDialogBatchService, BxDialogService } from './domain/chat/dialog';
 
 // @Injectable()
 export class BitrixService {
@@ -57,10 +59,12 @@ export class BitrixService {
     public smartType: BxSmartTypeService;
     public rpaItem: BxRpaItemService;
     public file: BxFileService;
+    public dialog: BxDialogService;
     public recent: BxRecentService;
     public message: BxMessageService;
     public task: BxTaskService;
-    public activity: ActivityService
+    public activity: ActivityService;
+    public user: BxUserService;
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -77,7 +81,9 @@ export class BitrixService {
         message: null as unknown as BxMessageBatchService,
         task: null as unknown as BxTaskBatchService,
         activity: null as unknown as BxActivityBatchService,
-        file: null as unknown as BxFileBatchService
+        file: null as unknown as BxFileBatchService,
+        user: null as unknown as BxUserBatchService,
+        dialog: null as unknown as BxDialogBatchService,
     };
     constructor(
         private readonly bxApi: BitrixBaseApi,
@@ -106,6 +112,8 @@ export class BitrixService {
         this.initMessage();
         this.initTask();
         this.initiActivities();
+        this.initUser();
+        this.initDialog();
     }
 
     private initDeal() {
@@ -178,6 +186,10 @@ export class BitrixService {
         this.batch.file = this.cloner.clone(BxFileBatchService, this.api);
     }
 
+    private initDialog() {
+        this.dialog = this.cloner.clone(BxDialogService, this.api);
+        this.batch.dialog = this.cloner.clone(BxDialogBatchService, this.api);
+    }
     private initRecent() {
         this.recent = this.cloner.clone(BxRecentService, this.api);
         this.batch.recent = this.cloner.clone(BxRecentBatchService, this.api);
@@ -194,6 +206,13 @@ export class BitrixService {
     }
     private initiActivities() {
         this.activity = this.cloner.clone(ActivityService, this.api);
-        this.batch.activity = this.cloner.clone(BxActivityBatchService, this.api);
+        this.batch.activity = this.cloner.clone(
+            BxActivityBatchService,
+            this.api,
+        );
+    }
+    private initUser() {
+        this.user = this.cloner.clone(BxUserService, this.api);
+        this.batch.user = this.cloner.clone(BxUserBatchService, this.api);
     }
 }

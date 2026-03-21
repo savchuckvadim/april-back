@@ -26,9 +26,7 @@ import { PlacementDto } from '@/apps/event-sales/dto/event-sale-flow/placement.d
 import { SupplyDto } from '../../dto';
 //
 
-
 export class OfferWordByTemplateGenerateDto {
-
     @ApiProperty({ description: 'ID of the template' })
     @IsString()
     templateId: string;
@@ -40,7 +38,6 @@ export class OfferWordByTemplateGenerateDto {
     @ApiProperty({ description: 'ID of the company' })
     @IsString()
     companyId: string;
-
 
     @ApiProperty({ description: 'ID of the deal' })
     @IsString()
@@ -114,14 +111,10 @@ export class OfferWordByTemplateGenerateDto {
     @Type(() => ProductRowSetDto)
     productSet: ProductRowSetDto;
 
-
-
     @ApiProperty({
         description: 'Client type of the contract',
         enum: ClientTypeEnum,
     })
     @IsEnum(ClientTypeEnum)
     clientType: ClientTypeEnum;
-
-
 }

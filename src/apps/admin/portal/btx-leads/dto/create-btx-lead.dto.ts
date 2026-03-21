@@ -34,4 +34,3 @@ export class CreateBtxLeadDto {
     @IsNotEmpty()
     portal_id: number;
 }
-

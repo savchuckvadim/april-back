@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { WordTemplate, WordTemplateSummary } from '../entities/word-template.entity';
+import {
+    WordTemplate,
+    WordTemplateSummary,
+} from '../entities/word-template.entity';
 import { OfferTemplateVisibility } from '../../offer-template/dtos/create-offer-template.dto';
 import { IsString } from 'class-validator';
 import { UserSelectedTemplate } from '../../user-selected';
@@ -83,7 +86,6 @@ export class WordTemplateSummaryDto extends WordTemplateSummary {
 
 export class UserSelectedTemplateSummaryDto {
     constructor(partial: Partial<UserSelectedTemplate>) {
-
         Object.assign(this, {
             // id: String(partial.id),
             template_id: Number(partial.offer_template_id),
@@ -114,6 +116,4 @@ export class UserSelectedTemplateSummaryDto {
 
     @ApiProperty()
     is_active: boolean;
-
-
 }

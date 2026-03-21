@@ -1,8 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BITRIX_APP_STATUSES, BITRIX_APP_TYPES } from '../enums/bitrix-app.enum';
+import {
+    BITRIX_APP_STATUSES,
+    BITRIX_APP_TYPES,
+} from '../enums/bitrix-app.enum';
 import { IsEnum } from 'class-validator';
 import { BitrixTokenEntity } from '../../token';
-
 
 export interface IBitrixAppEntity {
     id: bigint;

@@ -17,9 +17,9 @@ import { BtxRpaResponseDto } from '../dto/btx-rpa-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx RPAs Management')
-@Controller('admin/portals/btx-rpas')
+@Controller('admin/pbx/btx-rpas')
 export class BtxRpaController {
-    constructor(private readonly rpaService: BtxRpaService) { }
+    constructor(private readonly rpaService: BtxRpaService) {}
 
     @ApiOperation({ summary: 'Create a new btx RPA' })
     @ApiResponse({
@@ -28,12 +28,11 @@ export class BtxRpaController {
         type: BtxRpaResponseDto,
     })
     @Post()
-    async createRpa(@Body() createRpaDto: CreateBtxRpaDto): Promise<SuccessResponseDto> {
+    async createRpa(
+        @Body() createRpaDto: CreateBtxRpaDto,
+    ): Promise<BtxRpaResponseDto> {
         const rpa = await this.rpaService.create(createRpaDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rpa,
-        };
+        return rpa;
     }
 
     @ApiOperation({ summary: 'Get RPA by ID' })
@@ -43,12 +42,11 @@ export class BtxRpaController {
         type: BtxRpaResponseDto,
     })
     @Get(':id')
-    async getRpaById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getRpaById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BtxRpaResponseDto> {
         const rpa = await this.rpaService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rpa,
-        };
+        return rpa;
     }
 
     @ApiOperation({ summary: 'Get all RPAs' })
@@ -58,7 +56,9 @@ export class BtxRpaController {
         type: [BtxRpaResponseDto],
     })
     @Get()
-    async getAllRpas(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllRpas(
+        @Query('portal_id') portalId?: string,
+    ): Promise<BtxRpaResponseDto[]> {
         let rpas;
         if (portalId) {
             rpas = await this.rpaService.findByPortalId(Number(portalId));
@@ -66,10 +66,7 @@ export class BtxRpaController {
             rpas = await this.rpaService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rpas,
-        };
+        return rpas;
     }
 
     @ApiOperation({ summary: 'Update RPA' })
@@ -82,12 +79,9 @@ export class BtxRpaController {
     async updateRpa(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateRpaDto: UpdateBtxRpaDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxRpaResponseDto> {
         const rpa = await this.rpaService.update(id, updateRpaDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rpa,
-        };
+        return rpa;
     }
 
     @ApiOperation({ summary: 'Delete RPA' })
@@ -96,12 +90,8 @@ export class BtxRpaController {
         description: 'RPA deleted successfully',
     })
     @Delete(':id')
-    async deleteRpa(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteRpa(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.rpaService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

@@ -32,7 +32,7 @@ export interface IInfoblock {
 }
 @Injectable()
 export class InitInfoblockService {
-    constructor(private readonly infogroupService: InfogroupService) { }
+    constructor(private readonly infogroupService: InfogroupService) {}
 
     async get(): Promise<IInfoGroups[] | null> {
         const infogroups = await this.infogroupService.findMany();

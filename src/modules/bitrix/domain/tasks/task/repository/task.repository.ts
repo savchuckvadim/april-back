@@ -1,11 +1,15 @@
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { EBXEntity } from 'src/modules/bitrix/core/domain/consts/bitrix-entities.enum';
-import { ITaskFilter, ITaskCreateFields, ITaskUpdateFields } from '../interface/task.interface';
+import {
+    ITaskFilter,
+    ITaskCreateFields,
+    ITaskUpdateFields,
+} from '../interface/task.interface';
 import { IBXTask } from '../../../interfaces/bitrix.interface';
 
 export class BxTaskRepository {
-    constructor(private readonly bxApi: BitrixBaseApi) { }
+    constructor(private readonly bxApi: BitrixBaseApi) {}
 
     /**
      * Создает задачу
@@ -108,7 +112,11 @@ export class BxTaskRepository {
     /**
      * Обновляет задачу (batch)
      */
-    updateBtch(cmdCode: string, taskId: number | string, fields: ITaskUpdateFields) {
+    updateBtch(
+        cmdCode: string,
+        taskId: number | string,
+        fields: ITaskUpdateFields,
+    ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.TASKS,
@@ -183,7 +191,11 @@ export class BxTaskRepository {
     /**
      * Делегирует задачу (batch)
      */
-    delegateBtch(cmdCode: string, taskId: number | string, userId: number | string) {
+    delegateBtch(
+        cmdCode: string,
+        taskId: number | string,
+        userId: number | string,
+    ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.TASKS,

@@ -14,7 +14,6 @@ import { RowPriceDto } from './row-price.dto';
 import { ProductDto } from './product.dto';
 import { ProductRowSupplyDto } from '@/apps/konstructor/document-generate';
 
-
 export class RowDto {
     @IsInt()
     number: number;

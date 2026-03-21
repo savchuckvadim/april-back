@@ -97,4 +97,3 @@ export class BtxRpaResponseDto {
     })
     updated_at?: Date | null;
 }
-

@@ -5,7 +5,8 @@ import { InfogroupModule } from './infogroup';
 import { SupplyModule } from './supply';
 import { PriceModule } from './price';
 import { RegionModule } from './region';
-import { ContractModule } from './contract/contract.module';
+import { ContractModule } from './contract';
+import { PackageModule } from './package';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { ContractModule } from './contract/contract.module';
         InfogroupModule,
         RegionModule,
         ContractModule,
+        PackageModule,
     ],
     exports: [
         PriceModule,
@@ -25,6 +27,7 @@ import { ContractModule } from './contract/contract.module';
         InfogroupModule,
         RegionModule,
         ContractModule,
+        PackageModule,
     ],
 })
 export class GarantModule {}

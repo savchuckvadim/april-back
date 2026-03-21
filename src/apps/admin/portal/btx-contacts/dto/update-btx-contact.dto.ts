@@ -34,4 +34,3 @@ export class UpdateBtxContactDto {
     @IsOptional()
     portal_id?: number;
 }
-

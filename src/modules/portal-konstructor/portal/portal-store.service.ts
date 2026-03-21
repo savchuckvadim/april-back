@@ -32,7 +32,9 @@ export class PortalStoreService {
     async getPortals(): Promise<PortalEntity[] | null> {
         return await this.portalRepository.findManyWithRelations();
     }
-    async getPortalsByClientId(clientId: number): Promise<PortalEntity[] | null> {
+    async getPortalsByClientId(
+        clientId: number,
+    ): Promise<PortalEntity[] | null> {
         return await this.portalRepository.findByClientId(clientId);
     }
 

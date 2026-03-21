@@ -14,12 +14,12 @@ import { PortalMeasureService } from '../services/portal-measure.service';
 import { CreatePortalMeasureDto } from '../dto/create-portal-measure.dto';
 import { UpdatePortalMeasureDto } from '../dto/update-portal-measure.dto';
 import { PortalMeasureResponseDto } from '../dto/portal-measure-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
+import { GetPortalMeasuresQueryDto } from '../dto/get-portal-measures-query.dto';
 
 @ApiTags('Admin Portal Measures Management')
-@Controller('admin/portals/portal-measures')
+@Controller('admin/pbx/portal-measures')
 export class PortalMeasureController {
-    constructor(private readonly portalMeasureService: PortalMeasureService) { }
+    constructor(private readonly portalMeasureService: PortalMeasureService) {}
 
     @ApiOperation({ summary: 'Create a new portal measure' })
     @ApiResponse({
@@ -28,12 +28,13 @@ export class PortalMeasureController {
         type: PortalMeasureResponseDto,
     })
     @Post()
-    async createPortalMeasure(@Body() createPortalMeasureDto: CreatePortalMeasureDto): Promise<SuccessResponseDto> {
-        const portalMeasure = await this.portalMeasureService.create(createPortalMeasureDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portalMeasure,
-        };
+    async createPortalMeasure(
+        @Body() createPortalMeasureDto: CreatePortalMeasureDto,
+    ): Promise<PortalMeasureResponseDto> {
+        const portalMeasure = await this.portalMeasureService.create(
+            createPortalMeasureDto,
+        );
+        return portalMeasure;
     }
 
     @ApiOperation({ summary: 'Get portal measure by ID' })
@@ -43,12 +44,11 @@ export class PortalMeasureController {
         type: PortalMeasureResponseDto,
     })
     @Get(':id')
-    async getPortalMeasureById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getPortalMeasureById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<PortalMeasureResponseDto> {
         const portalMeasure = await this.portalMeasureService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portalMeasure,
-        };
+        return portalMeasure;
     }
 
     @ApiOperation({ summary: 'Get all portal measures' })
@@ -59,22 +59,23 @@ export class PortalMeasureController {
     })
     @Get()
     async getAllPortalMeasures(
-        @Query('portal_id') portalId?: string,
-        @Query('measure_id') measureId?: string,
-    ): Promise<SuccessResponseDto> {
+        @Query() query: GetPortalMeasuresQueryDto,
+    ): Promise<PortalMeasureResponseDto[]> {
+        const { portalId, measureId } = query;
         let portalMeasures;
         if (portalId) {
-            portalMeasures = await this.portalMeasureService.findByPortalId(Number(portalId));
+            portalMeasures = await this.portalMeasureService.findByPortalId(
+                Number(portalId),
+            );
         } else if (measureId) {
-            portalMeasures = await this.portalMeasureService.findByMeasureId(Number(measureId));
+            portalMeasures = await this.portalMeasureService.findByMeasureId(
+                Number(measureId),
+            );
         } else {
             portalMeasures = await this.portalMeasureService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portalMeasures,
-        };
+        return portalMeasures;
     }
 
     @ApiOperation({ summary: 'Update portal measure' })
@@ -87,12 +88,12 @@ export class PortalMeasureController {
     async updatePortalMeasure(
         @Param('id', ParseIntPipe) id: number,
         @Body() updatePortalMeasureDto: UpdatePortalMeasureDto,
-    ): Promise<SuccessResponseDto> {
-        const portalMeasure = await this.portalMeasureService.update(id, updatePortalMeasureDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portalMeasure,
-        };
+    ): Promise<PortalMeasureResponseDto> {
+        const portalMeasure = await this.portalMeasureService.update(
+            id,
+            updatePortalMeasureDto,
+        );
+        return portalMeasure;
     }
 
     @ApiOperation({ summary: 'Delete portal measure' })
@@ -101,12 +102,10 @@ export class PortalMeasureController {
         description: 'Portal measure deleted successfully',
     })
     @Delete(':id')
-    async deletePortalMeasure(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deletePortalMeasure(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<boolean> {
         await this.portalMeasureService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

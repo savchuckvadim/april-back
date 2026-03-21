@@ -6,5 +6,4 @@ import { AdminBitrixAppController } from './controllers/bitrix-app.controller';
     imports: [BitrixSetupAppModule],
     controllers: [AdminBitrixAppController],
 })
-export class AdminAppModule { }
-
+export class AdminAppModule {}

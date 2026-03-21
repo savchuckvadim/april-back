@@ -3,9 +3,7 @@ import { createTemplateBaseEntityFromPrisma } from '../../template-base/lib/temp
 import { PrismaService } from 'src/core/prisma';
 import { Template } from 'generated/prisma';
 
-type TemplateType = NonNullable<
-    Awaited<Template>
->;
+type TemplateType = NonNullable<Awaited<Template>>;
 
 export function createFieldEntityFromPrisma(data: any): FieldEntity {
     const entity = new FieldEntity();

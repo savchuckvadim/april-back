@@ -5,5 +5,4 @@ import { BxMessageBatchService } from './services/bx-message.batch.service';
 @Module({
     exports: [BxMessageService, BxMessageBatchService],
 })
-export class BitrixMessageDomainModule { }
-
+export class BitrixMessageDomainModule {}

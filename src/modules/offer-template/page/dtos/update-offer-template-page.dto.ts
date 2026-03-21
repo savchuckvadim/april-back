@@ -4,6 +4,3 @@ import { CreateOfferTemplatePageRequestDto } from './create-offer-template-page.
 export class UpdateOfferTemplatePageRequestDto extends PartialType(
     CreateOfferTemplatePageRequestDto,
 ) {}
-
-
-

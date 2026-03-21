@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RegionRepository } from '../region.repository';
 import { RegionEntity } from '../region.entity';
+import { Decimal } from 'generated/prisma/runtime/library';
 
 import {
     CreatePortalRegionDto,
@@ -14,7 +15,7 @@ export class PortalRegionService {
     constructor(
         private readonly repo: RegionRepository,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
     async getPortalRegions(domain: string): Promise<RegionEntity[] | null> {
         const portalId = await this.getPortalId(domain);
@@ -23,7 +24,7 @@ export class PortalRegionService {
 
     async createPortalRegion(
         dto: CreatePortalRegionDto,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<RegionEntity | null> {
         const portalId = await this.getPortalId(dto.domain);
         const regionId = await this.getRegionId(dto.regionCode);
         return await this.repo.createPortalRegion(portalId, regionId);
@@ -31,21 +32,27 @@ export class PortalRegionService {
 
     async updatePortalRegion(
         dto: UpdatePortalRegionDto,
-    ): Promise<RegionEntity[] | null> {
+    ): Promise<RegionEntity | null> {
         const portalId = await this.getPortalId(dto.domain);
         const regionId = await this.getRegionId(dto.regionCode);
+
+        // Конвертируем строки в Decimal (Prisma может принимать строки, но лучше явно создать Decimal)
+        const own_abs = dto.own_abs ? new Decimal(dto.own_abs) : null;
+        const own_tax = dto.own_tax ? new Decimal(dto.own_tax) : null;
+        const own_tax_abs = dto.own_tax_abs
+            ? new Decimal(dto.own_tax_abs)
+            : null;
+
         return await this.repo.updatePortalRegion(
             portalId,
             regionId,
-            dto.own_abs,
-            dto.own_tax,
-            dto.own_tax_abs,
+            own_abs,
+            own_tax,
+            own_tax_abs,
         );
     }
 
-    async deletePortalRegion(
-        dto: DeletePortalRegionDto,
-    ): Promise<RegionEntity[] | null> {
+    async deletePortalRegion(dto: DeletePortalRegionDto): Promise<boolean> {
         return await this.repo.deletePortalRegion(dto.portalId, dto.regionId);
     }
 

@@ -1,4 +1,3 @@
-
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { BxItemRepository } from '../repository/bx-item.repository';
 import { IBXItem } from '../interface/item.interface';

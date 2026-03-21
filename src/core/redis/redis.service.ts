@@ -12,7 +12,13 @@ export class RedisService implements OnModuleDestroy {
     constructor(private readonly configService: ConfigService) {
         this.logger.log('Создание Redis клиента...');
 
-        const { url: redisUrl, host, port, connectTimeout, maxRetriesPerRequest } = createRedisOptions(this.configService);
+        const {
+            url: redisUrl,
+            host,
+            port,
+            connectTimeout,
+            maxRetriesPerRequest,
+        } = createRedisOptions(this.configService);
         this.logger.log(`Получены настройки Redis из конфига:`);
         this.logger.log(`REDIS_HOST: ${host}`);
         this.logger.log(`REDIS_PORT: ${port}`);
@@ -31,7 +37,6 @@ export class RedisService implements OnModuleDestroy {
                 maxRetriesPerRequest,
                 connectTimeout,
             });
-
         } else {
             this.client = new Redis({
                 host,

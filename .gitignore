@@ -7,6 +7,9 @@
 nest-vscode-debugging
 /.vscode
 
+/github-old-workflow
+/docs
+
 # Logs
 /logs
 *.log

@@ -7,9 +7,7 @@ import { BitrixTokenPrismaRepository } from './repositories/bitrix-token.prisma.
 
 @Module({
     imports: [],
-    controllers: [
-        BitrixTokenController,
-    ],
+    controllers: [BitrixTokenController],
     providers: [
         BitrixTokenService,
         {
@@ -18,9 +16,6 @@ import { BitrixTokenPrismaRepository } from './repositories/bitrix-token.prisma.
         },
         PrismaService,
     ],
-    exports: [
-        BitrixTokenService,
-        BitrixTokenRepository,
-    ],
+    exports: [BitrixTokenService, BitrixTokenRepository],
 })
-export class TokenModule { }
+export class TokenModule {}

@@ -1,6 +1,11 @@
-import { applyDecorators } from "@nestjs/common";
-import { Transform } from "class-transformer";
-import { IsNumber, ValidationOptions, registerDecorator, ValidationArguments } from "class-validator";
+import { applyDecorators } from '@nestjs/common';
+import { Transform } from 'class-transformer';
+import {
+    IsNumber,
+    ValidationOptions,
+    registerDecorator,
+    ValidationArguments,
+} from 'class-validator';
 
 /**
  * Декоратор для валидации Bitrix Hook User ID
@@ -18,7 +23,11 @@ export function IsBxHookUserId(validationOptions?: ValidationOptions) {
                 return value;
             }
             const splitedValue = value.split('_')[1];
-            if (splitedValue === null || splitedValue === undefined || splitedValue === '') {
+            if (
+                splitedValue === null ||
+                splitedValue === undefined ||
+                splitedValue === ''
+            ) {
                 return splitedValue;
             }
             const num = Number(splitedValue);
@@ -28,9 +37,11 @@ export function IsBxHookUserId(validationOptions?: ValidationOptions) {
         IsNumber(
             {},
             {
-                message: validationOptions?.message || 'Поле должно быть числом в формате user_123',
+                message:
+                    validationOptions?.message ||
+                    'Поле должно быть числом в формате user_123',
                 ...validationOptions,
-            }
+            },
         ),
     );
 }
@@ -46,7 +57,9 @@ export function IsBxHookUserIdCustom(validationOptions?: ValidationOptions) {
             target: object.constructor,
             propertyName: propertyName,
             options: {
-                message: validationOptions?.message || 'Поле должно быть в формате user_123, где 123 - число',
+                message:
+                    validationOptions?.message ||
+                    'Поле должно быть в формате user_123, где 123 - число',
                 ...validationOptions,
             },
             validator: {
@@ -73,8 +86,10 @@ export function IsBxHookUserIdCustom(validationOptions?: ValidationOptions) {
                     return false;
                 },
                 defaultMessage(args: ValidationArguments) {
-                    return validationOptions?.message as string ||
-                        `Поле ${args.property} должно быть в формате user_123`;
+                    return (
+                        (validationOptions?.message as string) ||
+                        `Поле ${args.property} должно быть в формате user_123`
+                    );
                 },
             },
         });

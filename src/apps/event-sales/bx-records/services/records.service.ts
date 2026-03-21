@@ -1,5 +1,5 @@
-import { BitrixService } from "@/modules/bitrix";
-import { IBXActivity } from "@/modules/bitrix/domain/activity/interfaces/bx-activity.interface";
+import { BitrixService } from '@/modules/bitrix';
+import { IBXActivity } from '@/modules/bitrix/domain/activity/interfaces/bx-activity.interface';
 export interface IRecord {
     id: number;
     name: string;
@@ -9,19 +9,24 @@ export interface IRecord {
     activityId: number;
 }
 export class RecordsService {
-    constructor(
-        private readonly bitrix: BitrixService
-    ) { }
+    constructor(private readonly bitrix: BitrixService) {}
 
     public async getRecords(activities: IBXActivity[]): Promise<IRecord[]> {
-        const files: { [key: number]: IRecord } = {
-
-        }
+        const files: { [key: number]: IRecord } = {};
         for (const activity of activities) {
             if (activity.FILES) {
                 for (const file of activity.FILES) {
-
-                    const date = new Date(activity.LAST_UPDATED).toLocaleString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const date = new Date(activity.LAST_UPDATED).toLocaleString(
+                        'ru-RU',
+                        {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                        },
+                    );
                     const name = `${activity.SUBJECT} ${date}`;
                     files[file.id] = {
                         id: file.id,
@@ -30,12 +35,12 @@ export class RecordsService {
                         duration: null,
                         isPlaying: false,
                         activityId: activity.ID,
-                    }
+                    };
                 }
             }
         }
         for (const fileId in files) {
-            this.bitrix.batch.file.get(`${fileId}`, fileId as string)
+            this.bitrix.batch.file.get(`${fileId}`, fileId as string);
         }
         const responses = await this.bitrix.api.callBatchWithConcurrency(3);
         for (const response of responses) {

@@ -18,5 +18,4 @@ export class BxFileBatchService {
     get(cmdCode: string, id: number | string) {
         return this.repo.getBtch(cmdCode, id);
     }
-
 }

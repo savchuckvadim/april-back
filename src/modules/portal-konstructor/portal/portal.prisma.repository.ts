@@ -2,18 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
 import { PortalRepository } from './portal.repository';
 import { PortalEntity } from './portal.entity';
-import { createPortalEntityFromPrisma, PortalWithRelations } from './lib/portal-entity.util';
+import {
+    createPortalEntityFromPrisma,
+    PortalWithRelations,
+} from './lib/portal-entity.util';
 import { Prisma } from 'generated/prisma';
 
 @Injectable()
 export class PortalPrismaRepository implements PortalRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(portal: Partial<PortalEntity>): Promise<PortalEntity | null> {
         const allPortalsCount: number = await this.prisma.portal.count();
         const result = await this.prisma.portal.create({
             data: {
-
                 created_at: new Date(),
                 updated_at: new Date(),
                 number: allPortalsCount + 1,
@@ -23,8 +25,6 @@ export class PortalPrismaRepository implements PortalRepository {
                 domain: portal.domain!,
                 key: portal.key!,
                 client_id: BigInt(portal.clientId!),
-
-
             },
         });
         return createPortalEntityFromPrisma(result);
@@ -121,13 +121,13 @@ export class PortalPrismaRepository implements PortalRepository {
     }
 
     async findManyWithRelations(): Promise<PortalEntity[] | null> {
-        const result = await this.prisma.portal.findMany({
+        const result = (await this.prisma.portal.findMany({
             include: {
                 agents: true,
                 templates: true,
                 clients: true,
             },
-        }) as PortalWithRelations[] | null;
+        })) as PortalWithRelations[] | null;
 
         if (!result) return null;
 

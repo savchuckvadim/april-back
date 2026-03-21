@@ -1,11 +1,10 @@
-import {  Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
     IsArray,
     IsEnum,
     IsString,
     ValidateNested,
     IsNumber,
-
 } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -45,7 +44,6 @@ export class FilterCommunication {
     code: EnumCommunicationCode;
 }
 
-
 export class KPICommunication {
     @ApiProperty()
     @IsString()
@@ -66,7 +64,6 @@ export class KPICommunication {
     // list?: Array<KPIListItem>;
 }
 
-
 export class CommunicationsReportData {
     @ApiProperty()
     @ValidateNested()
@@ -77,16 +74,21 @@ export class CommunicationsReportData {
     @IsString()
     userName?: string;
 
-    @ApiProperty({ type: [KPICommunication], description: 'KPI Communication data' })
+    @ApiProperty({
+        type: [KPICommunication],
+        description: 'KPI Communication data',
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => KPICommunication)
     kpi: KPICommunication[];
 }
 
-
 export class GetReportCommunicationsResponseDto {
-    @ApiProperty({ type: [CommunicationsReportData] , description: 'Report data'})
+    @ApiProperty({
+        type: [CommunicationsReportData],
+        description: 'Report data',
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CommunicationsReportData)

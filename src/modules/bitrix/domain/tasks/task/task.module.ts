@@ -6,4 +6,4 @@ import { BxTaskBatchService } from './services/task.batch.service';
     providers: [BxTaskService, BxTaskBatchService],
     exports: [BxTaskService, BxTaskBatchService],
 })
-export class BxTaskModule { }
+export class BxTaskModule {}

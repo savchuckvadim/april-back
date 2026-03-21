@@ -84,25 +84,37 @@ function fixGsrMigrateDto() {
                         const oldText = ltProduct.full;
                         const newText = oldText.replace(
                             /monthSum:\s*"[^"]+"/,
-                            'monthSum: "0"'
+                            'monthSum: "0"',
                         );
 
                         if (oldText !== newText) {
                             // Находим абсолютную позицию в content
                             const companyStart = content.indexOf(companyBlock);
-                            const productsStart = companyStart + companyBlock.indexOf('products:');
-                            const productStart = productsStart + productsMatch[0].indexOf(productsBlock) + ltProduct.startPos;
+                            const productsStart =
+                                companyStart +
+                                companyBlock.indexOf('products:');
+                            const productStart =
+                                productsStart +
+                                productsMatch[0].indexOf(productsBlock) +
+                                ltProduct.startPos;
 
                             const before = content.substring(0, productStart);
-                            const after = content.substring(productStart + oldText.length);
+                            const after = content.substring(
+                                productStart + oldText.length,
+                            );
                             content = before + newText + after;
 
                             // Обновляем позиции в companyBlock
                             const offset = newText.length - oldText.length;
-                            companyBlock = content.substring(companyStart, companyStart + companyBlock.length + offset);
+                            companyBlock = content.substring(
+                                companyStart,
+                                companyStart + companyBlock.length + offset,
+                            );
 
                             changesCount++;
-                            console.log(`✓ Цена исправлена: "${ltProduct.name}" -> "0"`);
+                            console.log(
+                                `✓ Цена исправлена: "${ltProduct.name}" -> "0"`,
+                            );
                         }
                     });
                 }
@@ -114,31 +126,46 @@ function fixGsrMigrateDto() {
             if (product.hasLT && /ОД/i.test(product.name)) {
                 const oldName = product.name;
                 // Убираем паттерн типа "5ОД", "10ОД", " 5 ОД" и т.д.
-                const newName = oldName.replace(/\s*\d+\s*ОД\s*/gi, ' ').trim() + ' ';
+                const newName =
+                    oldName.replace(/\s*\d+\s*ОД\s*/gi, ' ').trim() + ' ';
 
                 if (oldName !== newName) {
                     const oldText = product.full;
-                    const escapedOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const escapedOldName = oldName.replace(
+                        /[.*+?^${}()|[\]\\]/g,
+                        '\\$&',
+                    );
                     const newText = oldText.replace(
                         new RegExp(`name:\\s*"${escapedOldName}"`),
-                        `name: "${newName}"`
+                        `name: "${newName}"`,
                     );
 
                     if (oldText !== newText) {
                         const companyStart = content.indexOf(companyBlock);
-                        const productsStart = companyStart + companyBlock.indexOf('products:');
-                        const productStart = productsStart + productsMatch[0].indexOf(productsBlock) + product.startPos;
+                        const productsStart =
+                            companyStart + companyBlock.indexOf('products:');
+                        const productStart =
+                            productsStart +
+                            productsMatch[0].indexOf(productsBlock) +
+                            product.startPos;
 
                         const before = content.substring(0, productStart);
-                        const after = content.substring(productStart + oldText.length);
+                        const after = content.substring(
+                            productStart + oldText.length,
+                        );
                         content = before + newText + after;
 
                         // Обновляем companyBlock
                         const offset = newText.length - oldText.length;
-                        companyBlock = content.substring(companyStart, companyStart + companyBlock.length + offset);
+                        companyBlock = content.substring(
+                            companyStart,
+                            companyStart + companyBlock.length + offset,
+                        );
 
                         changesCount++;
-                        console.log(`✓ Название исправлено: "${oldName}" -> "${newName}"`);
+                        console.log(
+                            `✓ Название исправлено: "${oldName}" -> "${newName}"`,
+                        );
                     }
                 }
             }
@@ -157,4 +184,3 @@ function fixGsrMigrateDto() {
 
 // Запуск
 fixGsrMigrateDto();
-

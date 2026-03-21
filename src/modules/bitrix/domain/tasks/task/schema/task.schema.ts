@@ -1,6 +1,9 @@
 import { EBxMethod } from 'src/modules/bitrix/core';
 import { IBXTask } from '../../../interfaces/bitrix.interface';
-import { ITaskCreateFields, ITaskUpdateFields } from '../interface/task.interface';
+import {
+    ITaskCreateFields,
+    ITaskUpdateFields,
+} from '../interface/task.interface';
 
 /**
  * Schema для всех методов задач
@@ -36,7 +39,9 @@ export type TaskSchema = {
         request: {
             filter?: Partial<IBXTask>;
             select?: string[];
-            order?: { [key in keyof IBXTask]?: 'asc' | 'desc' | 'ASC' | 'DESC' };
+            order?: {
+                [key in keyof IBXTask]?: 'asc' | 'desc' | 'ASC' | 'DESC';
+            };
             start?: number;
         };
         response: {

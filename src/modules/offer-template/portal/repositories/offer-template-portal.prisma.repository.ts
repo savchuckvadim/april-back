@@ -5,8 +5,9 @@ import { OfferTemplatePortal } from '../entities/offer-template-portal.entity';
 
 @Injectable()
 export class OfferTemplatePortalPrismaRepository
-    implements OfferTemplatePortalRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    implements OfferTemplatePortalRepository
+{
+    constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: bigint): Promise<OfferTemplatePortal | null> {
         const result = (await this.prisma.offerTemplatePortal.findUnique({
@@ -43,25 +44,28 @@ export class OfferTemplatePortalPrismaRepository
             where.is_default = filters.is_default;
         }
 
-        const results = (await this.prisma.offerTemplatePortal.findMany({
+        const results = await this.prisma.offerTemplatePortal.findMany({
             where,
             include: {
                 offer_templates: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
+        });
 
         if (!results) return [];
 
-
-        const entities = results.map(result => ({
-            ...result,
-            offer_templates: result.offer_templates ? {
-                ...result.offer_templates,
-                id: String(result.offer_templates.id),
-            } : undefined,
-        } as Partial<OfferTemplatePortal>));
-
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    offer_templates: result.offer_templates
+                        ? {
+                              ...result.offer_templates,
+                              id: String(result.offer_templates.id),
+                          }
+                        : undefined,
+                }) as Partial<OfferTemplatePortal>,
+        );
 
         return entities.map(entity => new OfferTemplatePortal(entity));
     }
@@ -122,7 +126,7 @@ export class OfferTemplatePortalPrismaRepository
     }
 
     async findByPortal(portal_id: bigint): Promise<OfferTemplatePortal[]> {
-        const results = (await this.prisma.offerTemplatePortal.findMany({
+        const results = await this.prisma.offerTemplatePortal.findMany({
             where: {
                 portal_id,
             },
@@ -130,23 +134,28 @@ export class OfferTemplatePortalPrismaRepository
                 offer_templates: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
+        });
 
         if (!results) return [];
 
-        const entities = results.map(result => ({
-            ...result,
-            offer_templates: result.offer_templates ? {
-                ...result.offer_templates,
-                id: String(result.offer_templates.id),
-            } : undefined,
-        } as Partial<OfferTemplatePortal>));
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    offer_templates: result.offer_templates
+                        ? {
+                              ...result.offer_templates,
+                              id: String(result.offer_templates.id),
+                          }
+                        : undefined,
+                }) as Partial<OfferTemplatePortal>,
+        );
 
         return entities.map(entity => new OfferTemplatePortal(entity));
     }
 
     async findByTemplate(template_id: bigint): Promise<OfferTemplatePortal[]> {
-        const results = (await this.prisma.offerTemplatePortal.findMany({
+        const results = await this.prisma.offerTemplatePortal.findMany({
             where: {
                 offer_template_id: template_id,
             },
@@ -154,17 +163,22 @@ export class OfferTemplatePortalPrismaRepository
                 offer_templates: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
+        });
 
         if (!results) return [];
 
-        const entities = results.map(result => ({
-            ...result,
-            offer_templates: result.offer_templates ? {
-                ...result.offer_templates,
-                id: String(result.offer_templates.id),
-            } : undefined,
-        } as Partial<OfferTemplatePortal>));
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    offer_templates: result.offer_templates
+                        ? {
+                              ...result.offer_templates,
+                              id: String(result.offer_templates.id),
+                          }
+                        : undefined,
+                }) as Partial<OfferTemplatePortal>,
+        );
 
         return entities.map(entity => new OfferTemplatePortal(entity));
     }
@@ -172,7 +186,7 @@ export class OfferTemplatePortalPrismaRepository
     async findActiveByPortal(
         portal_id: bigint,
     ): Promise<OfferTemplatePortal[]> {
-        const results = (await this.prisma.offerTemplatePortal.findMany({
+        const results = await this.prisma.offerTemplatePortal.findMany({
             where: {
                 portal_id,
                 is_active: true,
@@ -181,17 +195,22 @@ export class OfferTemplatePortalPrismaRepository
                 offer_templates: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
+        });
 
         if (!results) return [];
 
-        const entities = results.map(result => ({
-            ...result,
-            offer_templates: result.offer_templates ? {
-                ...result.offer_templates,
-                id: String(result.offer_templates.id),
-            } : undefined,
-        } as Partial<OfferTemplatePortal>));
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    offer_templates: result.offer_templates
+                        ? {
+                              ...result.offer_templates,
+                              id: String(result.offer_templates.id),
+                          }
+                        : undefined,
+                }) as Partial<OfferTemplatePortal>,
+        );
 
         return entities.map(entity => new OfferTemplatePortal(entity));
     }

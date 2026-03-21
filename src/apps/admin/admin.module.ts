@@ -12,10 +12,15 @@ import { SmartModule } from './portal/smarts/smart.module';
 import { BxRqModule } from './portal/bx-rqs/bx-rq.module';
 import { TimezoneModule } from './portal/timezones/timezone.module';
 import { BtxCategoryModule } from './portal/btx-categories/btx-category.module';
-import { ContractModule } from './contracts/contract.module';
-import { MeasureModule } from './measures/measure.module';
+import { ContractModule } from './garant/contracts/contract.module';
+import { MeasureModule } from './garant/measures/measure.module';
 import { PortalMeasureModule } from './portal/portal-measures/portal-measure.module';
 import { PortalContractModule } from './portal/portal-contracts/portal-contract.module';
+import { AdminGarantRegionModule } from './garant/regions/admin-garant-region.module';
+import { AdminGarantComplectModule } from './garant/complect/admin-garant-complect.module';
+import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.module';
+import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
+import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
 
 @Module({
     imports: [
@@ -36,7 +41,12 @@ import { PortalContractModule } from './portal/portal-contracts/portal-contract.
         MeasureModule,
         PortalMeasureModule,
         PortalContractModule,
+        AdminGarantRegionModule,
+        AdminGarantComplectModule,
+        AdminGarantSupplyModule,
+
+        AdminGarantInfogroupModule,
+        AdminGarantInfoblockModule,
     ],
 })
-export class AdminModule { }
-
+export class AdminModule {}

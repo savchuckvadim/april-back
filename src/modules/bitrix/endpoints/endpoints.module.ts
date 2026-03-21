@@ -5,13 +5,12 @@ import { BxListEndpointModule } from './list/bx-list-endpoint.module';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\endpoints.module.ts
 @Module({
     imports: [
-
         // BitrixDepartmentEndpointModule,
-        BxListEndpointModule
+        BxListEndpointModule,
     ],
     exports: [
         // BitrixDepartmentEndpointModule,
-        BxListEndpointModule
+        BxListEndpointModule,
     ],
 })
-export class BitrixEndpointsModule { }
+export class BitrixEndpointsModule {}

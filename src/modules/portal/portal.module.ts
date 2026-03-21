@@ -36,7 +36,7 @@ import { OnlineClientModule } from '../../clients/online';
         PortalModelFactory,
     ],
 })
-export class PortalModule { }
+export class PortalModule {}
 // export class PortalModule {
 //     configure(consumer: MiddlewareConsumer) {
 //         consumer

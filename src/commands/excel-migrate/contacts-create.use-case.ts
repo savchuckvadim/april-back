@@ -31,7 +31,9 @@ export class ContactsCreateUseCase {
 
     async create(data: ContactCreateDto) {
         this.portal = await this.portalService.getModelByDomain(data.domain);
-        this.bitrixApi = await this.bitrixApiFactory.create(this.portal.getPortal());
+        this.bitrixApi = await this.bitrixApiFactory.create(
+            this.portal.getPortal(),
+        );
 
         const fakeContact = {
             ASSIGNED_BY_ID: 1,

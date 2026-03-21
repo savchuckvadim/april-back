@@ -29,7 +29,6 @@ export class ClientPrismaRepository implements ClientRepository {
 
         if (!result) return null;
 
-
         return result;
     }
 
@@ -54,7 +53,7 @@ export class ClientPrismaRepository implements ClientRepository {
     async findByIsActive(isActive: boolean): Promise<Client[] | null> {
         const result = await this.prisma.client.findMany({
             where: { is_active: isActive },
-        })
+        });
         return result;
     }
     async findByUserId(userId: number): Promise<Client[] | null> {

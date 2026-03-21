@@ -46,7 +46,10 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
         return result;
     }
 
-    async findByEntity(entityType: string, entityId: number): Promise<bitrixfields[] | null> {
+    async findByEntity(
+        entityType: string,
+        entityId: number,
+    ): Promise<bitrixfields[] | null> {
         const result = await this.prisma.bitrixfields.findMany({
             where: {
                 entity_type: entityType,
@@ -59,7 +62,11 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
         return result;
     }
 
-    async findByEntityAndParentType(entityType: string, entityId: number, parentType: string): Promise<bitrixfields[] | null> {
+    async findByEntityAndParentType(
+        entityType: string,
+        entityId: number,
+        parentType: string,
+    ): Promise<bitrixfields[] | null> {
         const result = await this.prisma.bitrixfields.findMany({
             where: {
                 entity_type: entityType,
@@ -73,16 +80,23 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
         return result;
     }
 
-    async update(id: number, field: Partial<bitrixfields>): Promise<bitrixfields | null> {
+    async update(
+        id: number,
+        field: Partial<bitrixfields>,
+    ): Promise<bitrixfields | null> {
         const updateData: any = {};
-        if (field.entity_type !== undefined) updateData.entity_type = field.entity_type;
-        if (field.entity_id !== undefined) updateData.entity_id = BigInt(field.entity_id);
-        if (field.parent_type !== undefined) updateData.parent_type = field.parent_type;
+        if (field.entity_type !== undefined)
+            updateData.entity_type = field.entity_type;
+        if (field.entity_id !== undefined)
+            updateData.entity_id = BigInt(field.entity_id);
+        if (field.parent_type !== undefined)
+            updateData.parent_type = field.parent_type;
         if (field.type !== undefined) updateData.type = field.type;
         if (field.title !== undefined) updateData.title = field.title;
         if (field.name !== undefined) updateData.name = field.name;
         if (field.bitrixId !== undefined) updateData.bitrixId = field.bitrixId;
-        if (field.bitrixCamelId !== undefined) updateData.bitrixCamelId = field.bitrixCamelId;
+        if (field.bitrixCamelId !== undefined)
+            updateData.bitrixCamelId = field.bitrixCamelId;
         if (field.code !== undefined) updateData.code = field.code;
 
         const result = await this.prisma.bitrixfields.update({
@@ -102,4 +116,3 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
         return result ? true : false;
     }
 }
-

@@ -17,7 +17,7 @@ import { BtxContactResponseDto } from '../dto/btx-contact-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Contacts Management')
-@Controller('admin/portals/btx-contacts')
+@Controller('admin/pbx/btx-contacts')
 export class BtxContactController {
     constructor(private readonly contactService: BtxContactService) {}
 
@@ -28,12 +28,11 @@ export class BtxContactController {
         type: BtxContactResponseDto,
     })
     @Post()
-    async createContact(@Body() createContactDto: CreateBtxContactDto): Promise<SuccessResponseDto> {
+    async createContact(
+        @Body() createContactDto: CreateBtxContactDto,
+    ): Promise<BtxContactResponseDto> {
         const contact = await this.contactService.create(createContactDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: contact,
-        };
+        return contact;
     }
 
     @ApiOperation({ summary: 'Get contact by ID' })
@@ -43,12 +42,11 @@ export class BtxContactController {
         type: BtxContactResponseDto,
     })
     @Get(':id')
-    async getContactById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getContactById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BtxContactResponseDto> {
         const contact = await this.contactService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: contact,
-        };
+        return contact;
     }
 
     @ApiOperation({ summary: 'Get all contacts' })
@@ -58,18 +56,19 @@ export class BtxContactController {
         type: [BtxContactResponseDto],
     })
     @Get()
-    async getAllContacts(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllContacts(
+        @Query('portal_id') portalId?: string,
+    ): Promise<BtxContactResponseDto[]> {
         let contacts;
         if (portalId) {
-            contacts = await this.contactService.findByPortalId(Number(portalId));
+            contacts = await this.contactService.findByPortalId(
+                Number(portalId),
+            );
         } else {
             contacts = await this.contactService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: contacts,
-        };
+        return contacts;
     }
 
     @ApiOperation({ summary: 'Update contact' })
@@ -82,12 +81,9 @@ export class BtxContactController {
     async updateContact(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateContactDto: UpdateBtxContactDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxContactResponseDto> {
         const contact = await this.contactService.update(id, updateContactDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: contact,
-        };
+        return contact;
     }
 
     @ApiOperation({ summary: 'Delete contact' })
@@ -96,12 +92,10 @@ export class BtxContactController {
         description: 'Contact deleted successfully',
     })
     @Delete(':id')
-    async deleteContact(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteContact(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<boolean> {
         await this.contactService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

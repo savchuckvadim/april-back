@@ -81,7 +81,10 @@ export class ContractGenerateDto {
     @Type(() => ComplectDto)
     complect: ComplectDto[];
 
-    @ApiProperty({ description: 'Supply of the contract', type: ProductRowSupplyDto })
+    @ApiProperty({
+        description: 'Supply of the contract',
+        type: ProductRowSupplyDto,
+    })
     @ValidateNested()
     @Type(() => ProductRowSupplyDto)
     supply: ProductRowSupplyDto;

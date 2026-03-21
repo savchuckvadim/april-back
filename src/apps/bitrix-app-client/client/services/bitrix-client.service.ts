@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
-import { ClientDto, ClientRegistrationRequestDto } from '../dto/client-registration.dto';
+import {
+    ClientDto,
+    ClientRegistrationRequestDto,
+} from '../dto/client-registration.dto';
 import { ClientRepository } from '../repositories/client.repository';
 import { UserService } from '../../user/services/user.service';
 import { Client, User } from 'generated/prisma';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
-
 
 @Injectable()
 export class BitrixClientService {
@@ -14,16 +16,18 @@ export class BitrixClientService {
         private readonly clientRepository: ClientRepository,
         private readonly userService: UserService,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
-    async registrationClient(dto: ClientRegistrationRequestDto, portalId?: number) {
+    async registrationClient(
+        dto: ClientRegistrationRequestDto,
+        portalId?: number,
+    ) {
         // Создаем клиента
         const client = await this.clientRepository.create({
             name: dto.name,
             email: dto.email,
             status: 'active',
             is_active: true,
-
         });
 
         if (!client) {
@@ -31,25 +35,28 @@ export class BitrixClientService {
         }
 
         // Создаем первого пользователя-владельца
-        const ownerUser = await this.userService.createOwnerUser(Number(client.id), {
-            name: dto.userName,
-            surname: dto.userSurname,
-            email: dto.email,
-            password: dto.password,
-        });
+        const ownerUser = await this.userService.createOwnerUser(
+            Number(client.id),
+            {
+                name: dto.userName,
+                surname: dto.userSurname,
+                email: dto.email,
+                password: dto.password,
+            },
+        );
 
         //for test
-        let rootClientPortal = portalId ? await this.portalService.update({
-            id: portalId.toString(),
-            domain: dto.domain,
+        let rootClientPortal = portalId
+            ? await this.portalService.update({
+                  id: portalId.toString(),
+                  domain: dto.domain,
 
-            clientId: Number(client.id),
-
-        }) : await this.portalService.create({
-            domain: dto.domain,
-            clientId: Number(client.id),
-        });
-
+                  clientId: Number(client.id),
+              })
+            : await this.portalService.create({
+                  domain: dto.domain,
+                  clientId: Number(client.id),
+              });
 
         //for production
         // const rootClientPortal = await this.portalService.create({
@@ -57,8 +64,9 @@ export class BitrixClientService {
         //     clientId: Number(client.id),
         // });
 
-
-        const portals = await this.portalService.getPortalsByClientId(Number(client.id));
+        const portals = await this.portalService.getPortalsByClientId(
+            Number(client.id),
+        );
         return {
             client: client,
             clientDto: this.mapToResponseDto(client),
@@ -84,14 +92,16 @@ export class BitrixClientService {
         return this.mapToResponseDto(client);
     }
     async findByIdWithOwnerUser(id: number): Promise<{
-        client: ClientDto,
-        ownerUser: UserResponseDto,
+        client: ClientDto;
+        ownerUser: UserResponseDto;
     } | null> {
         const client = await this.clientRepository.findById(id);
         if (!client) {
             return null;
         }
-        const ownerUser = await this.userService.findOwnerByClientId(Number(client.id));
+        const ownerUser = await this.userService.findOwnerByClientId(
+            Number(client.id),
+        );
         if (!ownerUser) {
             return null;
         }
@@ -140,7 +150,10 @@ export class BitrixClientService {
         return clients.map(this.mapToResponseDto);
     }
 
-    async update(id: number, client: Partial<Client>): Promise<ClientDto | null> {
+    async update(
+        id: number,
+        client: Partial<Client>,
+    ): Promise<ClientDto | null> {
         const updatedClient = await this.clientRepository.update(id, client);
         if (!updatedClient) {
             return null;
@@ -151,7 +164,6 @@ export class BitrixClientService {
     async delete(id: number): Promise<void> {
         // await this.portalService.deleteByClientId(id);
         await this.clientRepository.delete(id);
-
     }
 
     private mapToResponseDto(client: Client): ClientDto {
@@ -162,7 +174,6 @@ export class BitrixClientService {
             is_active: client.is_active ?? false,
             created_at: client.created_at ?? new Date(),
             updated_at: client.updated_at ?? new Date(),
-
         };
     }
 }

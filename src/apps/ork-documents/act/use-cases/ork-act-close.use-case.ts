@@ -1,8 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import { CreateActDto } from "../ork-act.dto";
-import { PBXService } from "@/modules/pbx";
-import { BitrixOwnerType, BitrixService, IBXProductRowRow } from "@/modules/bitrix";
-import { ListProductRowDto } from "@/modules/bitrix/domain/crm/product-row/dto/list-product-row.sto";
+import { Injectable } from '@nestjs/common';
+import { CreateActDto } from '../ork-act.dto';
+import { PBXService } from '@/modules/pbx';
+import {
+    BitrixOwnerType,
+    BitrixService,
+    IBXProductRowRow,
+} from '@/modules/bitrix';
+import { ListProductRowDto } from '@/modules/bitrix/domain/crm/product-row/dto/list-product-row.sto';
 
 const ACT_SMART_TYPE_ID = `1044`;
 const ACT_SMART_ID = 13;
@@ -10,7 +14,7 @@ const ACT_SMART_ID = 13;
 @Injectable()
 export class OrkOnActCloseUseCase {
     private bitrix: BitrixService;
-    constructor(private readonly pbx: PBXService) { }
+    constructor(private readonly pbx: PBXService) {}
     async init(bitrix: BitrixService) {
         this.bitrix = bitrix;
     }
@@ -21,18 +25,19 @@ export class OrkOnActCloseUseCase {
         await this.init(bitrix);
         const smartCrmId = this.getSmartCrmId(dto.smartCrmId, dto.smartId);
 
-
         const currentSmartResponse = await bitrix.item.get(
             dto.smartId,
-            `${dto.smartTypeId}`
+            `${dto.smartTypeId}`,
         );
         const currentSmart = currentSmartResponse.result.item;
         const succeededSmartsResponse = await bitrix.item.list(
             `${dto.smartTypeId}`,
             {
                 parentId2: dto.dealId,
-                '@stageId': [`DT${dto.smartTypeId}_${dto.smartCategoryId}:SUCCESS`]
-            }
+                '@stageId': [
+                    `DT${dto.smartTypeId}_${dto.smartCategoryId}:SUCCESS`,
+                ],
+            },
         );
         const succeededSmarts = succeededSmartsResponse.result.items;
 
@@ -41,7 +46,7 @@ export class OrkOnActCloseUseCase {
         }
         let closedCount = 0;
         for (const smart of succeededSmarts) {
-            const smartProductCount = Number(smart.ufCrm13ProductCount)
+            const smartProductCount = Number(smart.ufCrm13ProductCount);
 
             closedCount += smartProductCount;
         }
@@ -53,37 +58,34 @@ export class OrkOnActCloseUseCase {
             currentQuantity: quantityBtCurrentDeal,
         } = await this.getDealProductRows(dto.dealId);
 
-
         const smartProductRows = dealProductRows
             ? await this.setDealProductRows(
-                dto.dealId,
-                dealProductRows,
-                closedCount || 1,
-                quantityBtCurrentDeal,
-            )
+                  dto.dealId,
+                  dealProductRows,
+                  closedCount || 1,
+                  quantityBtCurrentDeal,
+              )
             : undefined;
         console.log(smartProductRows);
 
         const actStatuses = await bitrix.status.getList({
-            ENTITY_ID: `${dto.smartTypeId}`
-        })
+            ENTITY_ID: `${dto.smartTypeId}`,
+        });
         console.log(actStatuses);
         return { result: true };
     }
 
     private getSmartCrmId(smartCrmId: string, smartId: number): string {
-        const end = smartCrmId.toString().length - smartId.toString().length - 1;
+        const end =
+            smartCrmId.toString().length - smartId.toString().length - 1;
 
         const result = smartCrmId.slice(0, end);
         return result;
     }
-    private async getDealProductRows(
-        dealId: number,
-    ): Promise<{
-        rows: IBXProductRowRow[] | undefined
-        currentQuantity: number
+    private async getDealProductRows(dealId: number): Promise<{
+        rows: IBXProductRowRow[] | undefined;
+        currentQuantity: number;
     }> {
-
         const getProductRowsData: ListProductRowDto = {
             '=ownerType': BitrixOwnerType.DEAL,
             '=ownerId': dealId,
@@ -97,24 +99,18 @@ export class OrkOnActCloseUseCase {
         };
     }
 
-
     private async setDealProductRows(
         dealId: number,
         productRows: IBXProductRowRow[],
         quantityByActs: number,
         quantityBtCurrentDeal: number,
-
     ): Promise<IBXProductRowRow[] | undefined> {
-
         if (quantityByActs <= quantityBtCurrentDeal) {
             return undefined;
         }
 
-
-
         const updatedProductRows = productRows.map(row => {
             return {
-
                 ...row,
                 quantity: quantityByActs,
             };
@@ -124,7 +120,7 @@ export class OrkOnActCloseUseCase {
             ownerType: BitrixOwnerType.DEAL, // `DYNAMIC_${ACT_SMART_TYPE_ID}`,
             ownerId: dealId,
             productRows: updatedProductRows,
-        }
+        };
 
         try {
             const response = await this.bitrix.productRow.set(setData);
@@ -134,6 +130,5 @@ export class OrkOnActCloseUseCase {
             console.error(error);
             return undefined;
         }
-
     }
 }

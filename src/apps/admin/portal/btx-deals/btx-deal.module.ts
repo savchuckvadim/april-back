@@ -17,5 +17,4 @@ import { BtxDealController } from './controllers/btx-deal.controller';
     controllers: [BtxDealController],
     exports: [BtxDealService, BtxDealRepository],
 })
-export class BtxDealModule { }
-
+export class BtxDealModule {}

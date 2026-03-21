@@ -31,8 +31,13 @@ async function analyzeExcelStructure(filePath: string) {
                 let value = '';
 
                 if (cell.value !== null && cell.value !== undefined) {
-                    if (typeof cell.value === 'object' && 'richText' in cell.value) {
-                        value = cell.value.richText.map((rt: any) => rt.text || '').join('');
+                    if (
+                        typeof cell.value === 'object' &&
+                        'richText' in cell.value
+                    ) {
+                        value = cell.value.richText
+                            .map((rt: any) => rt.text || '')
+                            .join('');
                     } else if (cell.value instanceof Date) {
                         value = cell.value.toISOString();
                     } else {
@@ -53,14 +58,16 @@ async function analyzeExcelStructure(filePath: string) {
 }
 
 // Запуск
-const filePath = path.join(__dirname, '../../../uploads/NEW_мигрция_sheets_1.xlsx');
+const filePath = path.join(
+    __dirname,
+    '../../../uploads/NEW_мигрция_sheets_1.xlsx',
+);
 analyzeExcelStructure(filePath)
     .then(() => {
         console.log('\n=== АНАЛИЗ ЗАВЕРШЕН ===\n');
         process.exit(0);
     })
-    .catch((error) => {
+    .catch(error => {
         console.error('Ошибка:', error);
         process.exit(1);
     });
-

@@ -1,1 +1,1 @@
-import { PbxFieldEntity, PbxFieldEntityType } from '../pbx-field.entity';
+import { PbxFieldEntity, PbxFieldEntityType } from '../entity/pbx-field.entity';

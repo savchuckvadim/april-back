@@ -14,7 +14,9 @@ export function IsBitrixDomain(validationOptions?: ValidationOptions) {
             validator: {
                 validate(value: any) {
                     const regex = /^[a-z0-9-]+\.bitrix24\.ru$/i;
-                    return typeof value === 'string' && regex.test(value.trim());
+                    return (
+                        typeof value === 'string' && regex.test(value.trim())
+                    );
                 },
                 defaultMessage(args: ValidationArguments) {
                     return `${args.property} must be a Bitrix24 domain like "example.bitrix24.ru" (no https/www).`;

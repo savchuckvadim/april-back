@@ -38,4 +38,3 @@ export interface SheetData {
     contacts: SheetDataContact[];
     company: SheetDataCompany;
 }
-

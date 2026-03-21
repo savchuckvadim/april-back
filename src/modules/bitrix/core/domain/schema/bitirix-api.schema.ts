@@ -1,11 +1,11 @@
-import { EBxMethod, EBxNamespace } from '../consts/bitrix-api.enum';
+import { EBxNamespace } from '../consts/bitrix-api.enum';
 import { EBXEntity } from '../consts/bitrix-entities.enum';
 import {
     BxCatalogSchema,
     BxListSchema,
     BxRpaItemSchema,
-    IBXItem,
     UserFieldConfigSchema,
+    UserSchema,
 } from '@/modules/bitrix/';
 import {
     CompanySchema,
@@ -33,6 +33,7 @@ import { BxSmartTypeSchema } from '@/modules/bitrix/domain/crm/smart-type';
 import { BxListItemSchema } from '@/modules/bitrix/domain/list-item/schema/bx-list-item.schema';
 import { RecentSchema } from '@/modules/bitrix/domain/chat/recent/schema/bx-recent.schema';
 import { MessageSchema } from '@/modules/bitrix/domain/chat/message/schema/bx-message.schema';
+import { DialogSchema } from '@/modules/bitrix/domain/chat/dialog/schema/bx-dialog.schema';
 // import { FieldsEnumerationSchema } from "src/modules/bitrix/domain/crm";
 
 export type BXApiSchema = {
@@ -102,10 +103,10 @@ export type BXApiSchema = {
     [EBxNamespace.WITHOUT_NAMESPACE]: {
         [EBXEntity.LISTS]: BxListSchema;
         [EBXEntity.USER_FIELD_CONFIG]: UserFieldConfigSchema;
+        [EBXEntity.USER]: UserSchema;
     };
     [EBxNamespace.LISTS]: {
         [EBXEntity.ELEMENT]: BxListItemSchema;
-
     };
     [EBxNamespace.CATALOG]: {
         [EBXEntity.PRODUCT]: BxCatalogSchema;
@@ -113,5 +114,7 @@ export type BXApiSchema = {
     [EBxNamespace.IM]: {
         [EBXEntity.RECENT]: RecentSchema;
         [EBXEntity.MESSAGE]: MessageSchema;
+        [EBXEntity.CHAT]: DialogSchema;
+        [EBXEntity.DIALOG]: DialogSchema;
     };
 };

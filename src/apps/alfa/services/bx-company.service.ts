@@ -10,7 +10,6 @@ export class BxCompanyService {
         dealId: number,
         inn: string,
     ): Promise<IBXCompany[] | null> {
-       
         const innFieldId = BxCompanyData.inn.bitrixId;
         const response = await this.bitrix.company.getList(
             {

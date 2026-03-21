@@ -1,14 +1,16 @@
-import { Injectable } from "@nestjs/common";
-import { TranscriptionRepository } from "./transcription.repository";
-import { PrismaService } from "@/core";
-import { Transcription } from "generated/prisma";
-import { TranscriptionBaseDto } from "../dto/transcription.store.dto";
+import { Injectable } from '@nestjs/common';
+import { TranscriptionRepository } from './transcription.repository';
+import { PrismaService } from '@/core';
+import { Transcription } from 'generated/prisma';
+import { TranscriptionBaseDto } from '../dto/transcription.store.dto';
 
 @Injectable()
 export class TranscriptionPrismaRepository implements TranscriptionRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
-    async create(transcription: TranscriptionBaseDto): Promise<Transcription | null> {
+    async create(
+        transcription: TranscriptionBaseDto,
+    ): Promise<Transcription | null> {
         return this.prisma.transcription.create({
             data: {
                 user_name: transcription.userName,
@@ -27,17 +29,27 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
                 entity_id: transcription.entityId,
                 entity_name: transcription.entityName,
                 department: transcription.department,
-                user_result: transcription.userResult ? JSON.parse(transcription.userResult as string) : null,
+                user_result: transcription.userResult
+                    ? JSON.parse(transcription.userResult as string)
+                    : null,
                 provider: transcription.provider,
+                created_at: new Date(),
+                updated_at: new Date(),
             },
         });
     }
-    async update(id: string, transcription: Partial<Transcription>): Promise<Transcription | null> {
+    async update(
+        id: string,
+        transcription: Partial<Transcription>,
+    ): Promise<Transcription | null> {
         return this.prisma.transcription.update({
             where: { id: BigInt(id) },
             data: {
                 ...transcription,
-                user_result: transcription.user_result ? JSON.parse(transcription.user_result as string) : null,
+                user_result: transcription.user_result
+                    ? JSON.parse(transcription.user_result as string)
+                    : null,
+                updated_at: new Date(),
             },
         });
     }
@@ -54,7 +66,10 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             where: { domain },
         });
     }
-    async findByDomainAndUser(domain: string, userId: string): Promise<Transcription[] | null> {
+    async findByDomainAndUser(
+        domain: string,
+        userId: string,
+    ): Promise<Transcription[] | null> {
         return this.prisma.transcription.findMany({
             where: { domain, user_id: userId },
         });

@@ -1,5 +1,32 @@
-import { PrismaService } from "@/core";
-import { agents, Ai, bitrix_apps, bitrixlists, btx_companies, btx_contacts, btx_deals, btx_leads, btx_rpas, bx_rqs, BxDocumentDeal, callings, Client, deals, departaments, offer_zakupki_settings, OfferTemplatePortal, Portal, portal_contracts, portal_measure, portal_region, provider_currents, smarts, Template, timezones, Transcription } from "generated/prisma";
+import { PrismaService } from '@/core';
+import {
+    agents,
+    Ai,
+    bitrix_apps,
+    bitrixlists,
+    btx_companies,
+    btx_contacts,
+    btx_deals,
+    btx_leads,
+    btx_rpas,
+    bx_rqs,
+    BxDocumentDeal,
+    callings,
+    Client,
+    deals,
+    departaments,
+    offer_zakupki_settings,
+    OfferTemplatePortal,
+    Portal,
+    portal_contracts,
+    portal_measure,
+    portal_region,
+    provider_currents,
+    smarts,
+    Template,
+    timezones,
+    Transcription,
+} from 'generated/prisma';
 
 export interface AdminPortalWithRelations extends Portal {
     agents?: agents[];

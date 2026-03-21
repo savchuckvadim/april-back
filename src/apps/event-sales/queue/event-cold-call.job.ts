@@ -4,8 +4,7 @@ import { Job } from 'bull';
 // apps/event/queue/event-cold-call.job.ts
 @Processor('event')
 export class ColdCallProcessor {
-    constructor() // private readonly portalContext: PortalContext, // private readonly eventService: EventService,
-    {}
+    constructor() {} // private readonly portalContext: PortalContext, // private readonly eventService: EventService,
 
     @Process('cold-call')
     async handle(job: Job<{ domain: string }>) {

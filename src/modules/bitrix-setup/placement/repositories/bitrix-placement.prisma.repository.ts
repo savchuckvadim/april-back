@@ -4,11 +4,16 @@ import { BitrixPlacementRepository } from './bitrix-placement.repository';
 import { BitrixPlacementEntity } from '../model/bitrix-placement.model';
 
 @Injectable()
-export class BitrixPlacementPrismaRepository implements BitrixPlacementRepository {
-    constructor(private readonly prisma: PrismaService) { }
+export class BitrixPlacementPrismaRepository
+    implements BitrixPlacementRepository
+{
+    constructor(private readonly prisma: PrismaService) {}
 
     // BitrixPlacement methods
-    async storePlacements(appId: bigint, placements: Partial<BitrixPlacementEntity>[]): Promise<BitrixPlacementEntity[]> {
+    async storePlacements(
+        appId: bigint,
+        placements: Partial<BitrixPlacementEntity>[],
+    ): Promise<BitrixPlacementEntity[]> {
         try {
             const result = await this.prisma.bitrix_app_placements.createMany({
                 data: placements.map(placement => ({
@@ -24,12 +29,13 @@ export class BitrixPlacementPrismaRepository implements BitrixPlacementRepositor
             });
 
             // Return the created placements
-            const createdPlacements = await this.prisma.bitrix_app_placements.findMany({
-                where: { bitrix_app_id: appId },
-                include: {
-                    bitrix_apps: true,
-                },
-            });
+            const createdPlacements =
+                await this.prisma.bitrix_app_placements.findMany({
+                    where: { bitrix_app_id: appId },
+                    include: {
+                        bitrix_apps: true,
+                    },
+                });
 
             return createdPlacements as BitrixPlacementEntity[];
         } catch (error) {

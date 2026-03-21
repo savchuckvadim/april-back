@@ -1,12 +1,11 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IComplects } from "../services/init-complect.service";
-import { IInfoblock, IInfoGroups } from "../services/init-infoblock.service";
-import { RegionEntity } from "@/modules/garant";
-import { IComplect } from "../services/init-complect.service";
-import { IKonstruktorInit } from "../konstructor-init.use-case";
-import { ProductRowContractDto } from "../../document-generate";
-import { ContractDto } from "../../dto/contract.dto";
-
+import { ApiProperty } from '@nestjs/swagger';
+import { IComplects } from '../services/init-complect.service';
+import { IInfoblock, IInfoGroups } from '../services/init-infoblock.service';
+import { RegionEntity } from '@/modules/garant';
+import { IComplect } from '../services/init-complect.service';
+import { IKonstruktorInit } from '../konstructor-init.use-case';
+import { ProductRowContractDto } from '../../document-generate';
+import { ContractDto } from '../../dto/contract.dto';
 
 export class ComplectDto implements IComplect {
     @ApiProperty({ description: 'Id', type: Number })
@@ -58,7 +57,6 @@ export class ComplectsDto implements IComplects {
     universal: ComplectDto[];
 }
 
-
 export class InfoblockDto implements IInfoblock {
     @ApiProperty({ description: 'Id', type: Number })
     id: number;
@@ -106,7 +104,6 @@ export class InfoGroupsDto implements IInfoGroups {
     value: InfoblockDto[];
 }
 
-
 export class RegionInitDto implements RegionEntity {
     @ApiProperty({ description: 'Id', type: String })
     id: string;
@@ -116,7 +113,6 @@ export class RegionInitDto implements RegionEntity {
     code: string;
     @ApiProperty({ description: 'Weight', type: Number })
     weight: number;
-
 
     @ApiProperty({ description: 'Number', type: Number })
     number: number;
@@ -189,8 +185,6 @@ export class KonstructorInitDataDto implements IKonstruktorInit {
     infoblocks: InfoGroupsDto[];
     @ApiProperty({ description: 'Regions', type: [RegionEntity] })
     regions: RegionEntity[];
-    @ApiProperty({ description: 'Contracts', type: ContractsDto})
+    @ApiProperty({ description: 'Contracts', type: ContractsDto })
     contracts: ContractsDto;
-
-
 }

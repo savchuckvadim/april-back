@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export class TranscriptionBaseDto {
     @ApiProperty({ description: 'Provider of the transcription' })
@@ -92,7 +92,6 @@ export class TranscriptionBaseDto {
     @IsNotEmpty()
     department: string;
 }
-
 
 export class TranscriptionStoreDto extends TranscriptionBaseDto {
     @ApiProperty({ description: 'Transcription ID' })

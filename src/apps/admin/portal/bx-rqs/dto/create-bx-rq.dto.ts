@@ -83,4 +83,3 @@ export class CreateBxRqDto {
     @IsOptional()
     sort?: number;
 }
-

@@ -8,4 +8,3 @@ export abstract class BxRqRepository {
     abstract update(id: number, rq: Partial<bx_rqs>): Promise<bx_rqs | null>;
     abstract delete(id: number): Promise<boolean>;
 }
-

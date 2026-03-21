@@ -13,8 +13,7 @@ import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PBXService } from '@/modules/pbx';
-import { BitrixBaseApi} from '@/modules/bitrix';
-
+import { BitrixBaseApi } from '@/modules/bitrix';
 
 export class ReportKpiUseCase {
     // protected domain: string;
@@ -25,12 +24,11 @@ export class ReportKpiUseCase {
     private portalModel: PortalModel;
     private bitrixApi: BitrixBaseApi;
 
-    constructor(
-        // private readonly portalContext: PortalContextService,
-        // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
-        // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
-        // private readonly pbx: PBXService,
-    ) { }
+    constructor() // private readonly portalContext: PortalContextService,
+    // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST
+    // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
+    // private readonly pbx: PBXService,
+    {}
 
     async init(domain: string, pbx: PBXService) {
         // this.domain = domain;
@@ -249,8 +247,8 @@ export class ReportKpiUseCase {
                                 ] as (string | number)[];
                                 actionTypeArray.push(
                                     callPlanAction.actionTypeItem.bitrixId as
-                                    | string
-                                    | number,
+                                        | string
+                                        | number,
                                 );
                             }
                         }
@@ -260,7 +258,6 @@ export class ReportKpiUseCase {
                             'lists.element.get',
                             getListData,
                         );
-
                     }
 
                     if (action.code == 'call_done') {
@@ -290,8 +287,8 @@ export class ReportKpiUseCase {
                                 ] as (string | number)[];
                                 actionTypeArray.push(
                                     callDoneAction.actionTypeItem.bitrixId as
-                                    | string
-                                    | number,
+                                        | string
+                                        | number,
                                 );
                             }
                         }

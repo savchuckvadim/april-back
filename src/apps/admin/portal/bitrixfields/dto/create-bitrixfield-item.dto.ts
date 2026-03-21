@@ -34,4 +34,3 @@ export class CreateBitrixFieldItemDto {
     @IsNotEmpty()
     bitrixId: number;
 }
-

@@ -64,7 +64,6 @@ export class ClientResponseDto {
     updated_at?: Date | string | null;
 }
 
-
 export class ClientWithRelationsResponseDto extends ClientResponseDto {
     @ApiPropertyOptional({
         description: 'Client portal',

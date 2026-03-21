@@ -17,9 +17,9 @@ import { SmartResponseDto } from '../dto/smart-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Smarts Management')
-@Controller('admin/portals/smarts')
+@Controller('admin/pbx/smarts')
 export class SmartController {
-    constructor(private readonly smartService: SmartService) { }
+    constructor(private readonly smartService: SmartService) {}
 
     @ApiOperation({ summary: 'Create a new smart' })
     @ApiResponse({
@@ -28,12 +28,11 @@ export class SmartController {
         type: SmartResponseDto,
     })
     @Post()
-    async createSmart(@Body() createSmartDto: CreateSmartDto): Promise<SuccessResponseDto> {
+    async createSmart(
+        @Body() createSmartDto: CreateSmartDto,
+    ): Promise<SmartResponseDto | null> {
         const smart = await this.smartService.create(createSmartDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: smart,
-        };
+        return smart;
     }
 
     @ApiOperation({ summary: 'Get smart by ID' })
@@ -43,12 +42,11 @@ export class SmartController {
         type: SmartResponseDto,
     })
     @Get(':id')
-    async getSmartById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getSmartById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SmartResponseDto | null> {
         const smart = await this.smartService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: smart,
-        };
+        return smart;
     }
 
     @ApiOperation({ summary: 'Get all smarts' })
@@ -58,7 +56,9 @@ export class SmartController {
         type: [SmartResponseDto],
     })
     @Get()
-    async getAllSmarts(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllSmarts(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SmartResponseDto[]> {
         let smarts;
         if (portalId) {
             smarts = await this.smartService.findByPortalId(Number(portalId));
@@ -66,10 +66,7 @@ export class SmartController {
             smarts = await this.smartService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: smarts,
-        };
+        return smarts;
     }
 
     @ApiOperation({ summary: 'Update smart' })
@@ -82,12 +79,9 @@ export class SmartController {
     async updateSmart(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateSmartDto: UpdateSmartDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<SmartResponseDto | null> {
         const smart = await this.smartService.update(id, updateSmartDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: smart,
-        };
+        return smart;
     }
 
     @ApiOperation({ summary: 'Delete smart' })
@@ -96,12 +90,8 @@ export class SmartController {
         description: 'Smart deleted successfully',
     })
     @Delete(':id')
-    async deleteSmart(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteSmart(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.smartService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

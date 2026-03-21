@@ -12,7 +12,7 @@ import { AddSmartItemDto, CategoryId, StageId } from './dto/smart-item.dto';
 @ApiTags('Alfa Smart Item')
 @Controller('alfa-smart-item')
 export class AlfaSmartItemController {
-    constructor(private readonly useCase: SmartUseCase) { }
+    constructor(private readonly useCase: SmartUseCase) {}
 
     @ApiOperation({ summary: 'Get smarts' })
     @Get('get-list/:entityTypeId')

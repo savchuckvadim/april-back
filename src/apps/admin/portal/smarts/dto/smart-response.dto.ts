@@ -116,4 +116,3 @@ export class SmartResponseDto {
     })
     updated_at?: Date | null;
 }
-

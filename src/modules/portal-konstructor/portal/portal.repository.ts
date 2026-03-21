@@ -1,8 +1,12 @@
 import { PortalEntity } from './portal.entity';
 
 export abstract class PortalRepository {
-    abstract create(portal: Partial<PortalEntity>): Promise<PortalEntity | null>;
-    abstract update(portal: Partial<PortalEntity>): Promise<PortalEntity | null>;
+    abstract create(
+        portal: Partial<PortalEntity>,
+    ): Promise<PortalEntity | null>;
+    abstract update(
+        portal: Partial<PortalEntity>,
+    ): Promise<PortalEntity | null>;
     abstract delete(id: number): Promise<void>;
     abstract deleteByClientId(clientId: number): Promise<void>;
     abstract findById(id: number): Promise<PortalEntity | null>;

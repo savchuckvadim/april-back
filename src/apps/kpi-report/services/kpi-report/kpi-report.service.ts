@@ -89,10 +89,9 @@ export class ExcelReportService {
 
     private getValues(dto: KpiReportDto, worksheet: Worksheet): void {
         dto.report.forEach((reportItem, index) => {
-            const userName =
-                reportItem.userName
-                // ||
-                // `${reportItem.user?.LAST_NAME || ''} ${reportItem.user?.NAME || ''}`.trim();
+            const userName = reportItem.userName;
+            // ||
+            // `${reportItem.user?.LAST_NAME || ''} ${reportItem.user?.NAME || ''}`.trim();
 
             const values = reportItem.kpi.map(kpiItem => kpiItem.count);
             worksheet.addRow([userName, ...values]);

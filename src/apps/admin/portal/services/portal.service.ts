@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { Portal } from 'generated/prisma';
 import { AdminPortalRepository } from '../repositories/portal.repository';
 import { CreatePortalDto } from '../dto/create-portal.dto';
 import { UpdatePortalDto } from '../dto/update-portal.dto';
-import { AdminPortalWithRelationsResponseDto, AdminPortalResponseDto } from '../dto/portal-response.dto';
+import {
+    AdminPortalWithRelationsResponseDto,
+    AdminPortalResponseDto,
+} from '../dto/portal-response.dto';
 import { AdminPortalWithRelations } from '../type/admin-portal.type';
 
 @Injectable()
@@ -29,18 +36,20 @@ export class AdminPortalService {
             return this.mapToResponseDto(portal);
         } catch (error) {
             if (error.code === 'P2002') {
-                throw new BadRequestException('Portal with this domain already exists');
+                throw new BadRequestException(
+                    'Portal with this domain already exists',
+                );
             }
             throw error;
         }
     }
 
-    async findById(id: number): Promise<AdminPortalWithRelationsResponseDto> {
+    async findById(id: number): Promise<AdminPortalResponseDto> {
         const portal = await this.repository.findById(id);
         if (!portal) {
             throw new NotFoundException(`Portal with id ${id} not found`);
         }
-        return this.mapToWithRelationsResponseDto(portal);
+        return this.mapToResponseDto(portal);
     }
 
     async findMany(): Promise<AdminPortalResponseDto[]> {
@@ -67,7 +76,10 @@ export class AdminPortalService {
         return portals.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdatePortalDto): Promise<AdminPortalResponseDto> {
+    async update(
+        id: number,
+        dto: UpdatePortalDto,
+    ): Promise<AdminPortalResponseDto> {
         const portal = await this.repository.findById(id);
         if (!portal) {
             throw new NotFoundException(`Portal with id ${id} not found`);
@@ -77,11 +89,17 @@ export class AdminPortalService {
             const updateData: Partial<Portal> = {};
             if (dto.domain !== undefined) updateData.domain = dto.domain;
             if (dto.key !== undefined) updateData.key = dto.key;
-            if (dto.C_REST_CLIENT_ID !== undefined) updateData.C_REST_CLIENT_ID = dto.C_REST_CLIENT_ID;
-            if (dto.C_REST_CLIENT_SECRET !== undefined) updateData.C_REST_CLIENT_SECRET = dto.C_REST_CLIENT_SECRET;
-            if (dto.C_REST_WEB_HOOK_URL !== undefined) updateData.C_REST_WEB_HOOK_URL = dto.C_REST_WEB_HOOK_URL;
+            if (dto.C_REST_CLIENT_ID !== undefined)
+                updateData.C_REST_CLIENT_ID = dto.C_REST_CLIENT_ID;
+            if (dto.C_REST_CLIENT_SECRET !== undefined)
+                updateData.C_REST_CLIENT_SECRET = dto.C_REST_CLIENT_SECRET;
+            if (dto.C_REST_WEB_HOOK_URL !== undefined)
+                updateData.C_REST_WEB_HOOK_URL = dto.C_REST_WEB_HOOK_URL;
             if (dto.number !== undefined) updateData.number = dto.number;
-            if (dto.client_id !== undefined) updateData.client_id = dto.client_id ? BigInt(dto.client_id) : null;
+            if (dto.client_id !== undefined)
+                updateData.client_id = dto.client_id
+                    ? BigInt(dto.client_id)
+                    : null;
 
             const updatedPortal = await this.repository.update(id, updateData);
             if (!updatedPortal) {
@@ -90,7 +108,9 @@ export class AdminPortalService {
             return this.mapToResponseDto(updatedPortal);
         } catch (error) {
             if (error.code === 'P2002') {
-                throw new BadRequestException('Portal with this domain already exists');
+                throw new BadRequestException(
+                    'Portal with this domain already exists',
+                );
             }
             throw error;
         }
@@ -119,8 +139,9 @@ export class AdminPortalService {
             updated_at: portal.updated_at,
         };
     }
-    private mapToWithRelationsResponseDto(portal: AdminPortalWithRelations): AdminPortalWithRelationsResponseDto {
+    private mapToWithRelationsResponseDto(
+        portal: AdminPortalWithRelations,
+    ): AdminPortalWithRelationsResponseDto {
         return new AdminPortalWithRelationsResponseDto(portal);
     }
 }
-

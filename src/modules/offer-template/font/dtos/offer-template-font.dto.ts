@@ -1,6 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNumber, IsString } from "class-validator";
-import { OfferTemplateFont } from "../entities/offer-template-font.entity";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNumber, IsString } from 'class-validator';
+import { OfferTemplateFont } from '../entities/offer-template-font.entity';
 
 export class OfferTemplateFontDto extends OfferTemplateFont {
     @ApiProperty({ description: 'The offer template id' })
@@ -15,7 +15,10 @@ export class OfferTemplateFontDto extends OfferTemplateFont {
     @IsString()
     declare code: string;
 
-    @ApiProperty({ description: 'The data of the offer template font. JSON string. Long text.' })
+    @ApiProperty({
+        description:
+            'The data of the offer template font. JSON string. Long text.',
+    })
     @IsString()
     declare data: string;
 
@@ -27,7 +30,10 @@ export class OfferTemplateFontDto extends OfferTemplateFont {
     @IsString()
     declare current: string;
 
-    @ApiProperty({ description: 'The settings of the offer template font. JSON string. Long text.' })
+    @ApiProperty({
+        description:
+            'The settings of the offer template font. JSON string. Long text.',
+    })
     @IsString()
     declare settings: string;
 }

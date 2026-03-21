@@ -1,6 +1,10 @@
 import { BxTaskRepository } from '../repository/task.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
-import { ITaskFilter, ITaskCreateFields, ITaskUpdateFields } from '../interface/task.interface';
+import {
+    ITaskFilter,
+    ITaskCreateFields,
+    ITaskUpdateFields,
+} from '../interface/task.interface';
 import { IBXTask } from '../../../interfaces/bitrix.interface';
 
 export class BxTaskService {
@@ -55,7 +59,12 @@ export class BxTaskService {
         let start = 0;
 
         while (needMore) {
-            const result = await this.repo.getList(filter, select, order, start);
+            const result = await this.repo.getList(
+                filter,
+                select,
+                order,
+                start,
+            );
             if (result.result?.tasks && result.result.tasks.length > 0) {
                 tasks.push(...result.result.tasks);
                 start += result.result.tasks.length;

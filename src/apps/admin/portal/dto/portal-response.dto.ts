@@ -1,14 +1,13 @@
 import { ClientResponseDto } from '@/modules/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Portal } from 'generated/prisma';
-import { MeasureResponseDto } from '../../measures/dto/measure-response.dto';
+import { MeasureResponseDto } from '../../garant/measures/dto/measure-response.dto';
 import { TimezoneResponseDto } from '../timezones/dto/timezone-response.dto';
-import { ContractResponseDto } from '../../contracts/dto/contract-response.dto';
+import { ContractResponseDto } from '../../garant/contracts/dto/contract-response.dto';
 import { PortalContractResponseDto } from '../portal-contracts/dto/portal-contract-response.dto';
 import { PortalMeasureResponseDto } from '../portal-measures/dto/portal-measure-response.dto';
 import { SmartResponseDto } from '../smarts/dto/smart-response.dto';
 import { AdminPortalWithRelations } from '../type/admin-portal.type';
-
 
 export class AdminPortalResponseDto {
     constructor(portal: Portal) {
@@ -94,29 +93,45 @@ export class AdminPortalResponseDto {
     updated_at?: Date | null;
 }
 
-
-
 export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto {
-    constructor(
-        portal: AdminPortalWithRelations
-    
-    ) {
-        super(portal);
-        this.client = portal.client ? new ClientResponseDto(portal.client) : null;
-        this.agents = portal.agents;
-        this.templates = portal.portal_templates;
-        this.contracts = portal.portal_contracts?.map(contract => new PortalContractResponseDto(contract)) ?? null;
-        this.smarts = portal.portal_smarts?.map(smart => new SmartResponseDto(smart)) ?? null;
-        this.timezones = portal.portal_timezones?.map(timezone => new TimezoneResponseDto(timezone)) ?? null;
+    constructor(portal: AdminPortalWithRelations) {
+        super(portal as Portal);
+        this.id = Number(portal.id.toString());
+        this.client = portal.client
+            ? new ClientResponseDto(portal.client)
+            : null;
+        this.agents =
+            portal.agents?.map(agent => ({
+                ...agent,
+                id: Number(agent.id.toString()),
+            })) ?? null;
+        this.templates =
+            portal.portal_templates?.map(template => ({
+                ...template,
+                id: Number(template.id.toString()),
+            })) ?? null;
+        this.contracts =
+            portal.portal_contracts?.map(
+                contract => new PortalContractResponseDto(contract),
+            ) ?? null;
+        this.smarts =
+            portal.portal_smarts?.map(smart => new SmartResponseDto(smart)) ??
+            null;
+        this.timezones =
+            portal.portal_timezones?.map(
+                timezone => new TimezoneResponseDto(timezone),
+            ) ?? null;
 
+        this.portalMeasures =
+            portal.portal_measures?.map(
+                measure => new PortalMeasureResponseDto(measure),
+            ) ?? null;
+        this.smarts =
+            portal.portal_smarts?.map(smart => new SmartResponseDto(smart)) ??
+            null;
 
-
-        this.portalMeasures = portal.portal_measures?.map(measure => new PortalMeasureResponseDto(measure)) ?? null;
-        this.smarts = portal.portal_smarts?.map(smart => new SmartResponseDto(smart)) ?? null;
-
-    
         // this.regions = portal.portal_regions?.map(region => new PortalRegionResponseDto(region)) ?? null;
-        this.templates = portal.portal_templates;
+        // this.templates = portal.portal_templates;
         // this.apps = portal.bitrix_apps;
         // this.lists = portal.bitrixlists;
         // this.companies = portal.btx_companies;
@@ -134,10 +149,6 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
         // this.ais = portal.ais;
         // this.bx_rqs = portal.bx_rqs;
         // this.transcriptions = portal.transcriptions;
-
-
-
-
     }
     @ApiPropertyOptional({
         description: 'Client',
@@ -149,14 +160,12 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
     @ApiPropertyOptional({
         description: 'Agents',
         example: [{ id: 1, name: 'John Doe', email: 'john.doe@example.com' }],
-
     })
     agents?: any[] | null;
 
     @ApiPropertyOptional({
         description: 'Templates',
         example: [{ id: 1, name: 'John Doe', email: 'john.doe@example.com' }],
-
     })
     templates?: any[] | null;
 
@@ -166,8 +175,6 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
         type: [PortalContractResponseDto],
     })
     contracts?: PortalContractResponseDto[] | null;
-
-
 
     @ApiPropertyOptional({
         description: 'Smarts',
@@ -197,7 +204,6 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
     })
     portalMeasures?: PortalMeasureResponseDto[] | null;
 
-
     // @ApiPropertyOptional({
     //     description: 'Regions',
     //     example: [{ id: 1, name: 'John Doe', email: 'john.doe@example.com' }],
@@ -205,7 +211,6 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
     // })
 
     // regions?: PortalRegionResponseDto[] | null;
-
 
     // @ApiPropertyOptional({
     //     description: 'Bitrix Apps',
@@ -220,7 +225,7 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
     //     type: [BitrixListResponseDto],
     // })
     // lists?: BitrixListResponseDto[] | null;
-    
+
     // @ApiPropertyOptional({
     //     description: 'Btx Companies',
     //     example: [{ id: 1, name: 'John Doe', email: 'john.doe@example.com' }],
@@ -234,6 +239,4 @@ export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto 
     //     type: [BtxContactResponseDto],
     // })
     // contacts?: BtxContactResponseDto[] | null;
-
-
 }

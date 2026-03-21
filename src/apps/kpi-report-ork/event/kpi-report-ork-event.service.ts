@@ -4,7 +4,7 @@ import { OrkFields } from '@/modules/pbx-ork-history-bx-list';
 
 @Injectable()
 export class KpiReportOrkEventService {
-    constructor(private readonly pbx: PBXService) { }
+    constructor(private readonly pbx: PBXService) {}
 
     async getReport(domain: string) {
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);

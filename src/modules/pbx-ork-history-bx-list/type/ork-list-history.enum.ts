@@ -3,7 +3,6 @@
 // Компания	calling	crm	ork_crm_company
 // Дата	calling	datetime	ork_event_date
 
-
 // Тип События	calling	enumeration	ork_event_type
 // Событие	calling	enumeration	ork_event_action
 // Тип коммуникации	calling	enumeration	event_communication
@@ -58,8 +57,6 @@
 // Отказ	ork_event_type	et_ork_fail
 // Возврат	ork_event_type	et_ork_return
 
-
-
 // Создан	ork_event_action	ea_ork_act_create
 // Запланирован	ork_event_action	ea_ork_plan
 // Просрочен	ork_event_action	ea_ork_expired
@@ -73,17 +70,14 @@
 // Сдан	ork_event_action	ea_ork_act_in_office
 // Оплачен	ork_event_action	ea_ork_act_pay
 
-
 // Звонок	event_communication	ec_ork_call
 // Выезд	event_communication	ec_ork_face
 // Письмо	event_communication	ec_ork_mail
 // ЭДО	event_communication	ec_ork_edo
 // СС	event_communication	ec_ork_signal
 
-
 // Входящий	ork_event_initiative	ei_ork_incoming
 // Исходящий	ork_event_initiative	ei_ork_outgoing
-
 
 // Новый	ork_work_status	ork_work_status_new
 // Поставка	ork_work_status	ork_work_status_supply
@@ -135,7 +129,7 @@
 // По телефону отвечает не та организация	ork_noresult_reason	wrong
 // Автоответчик	ork_noresult_reason	auto
 
-export enum EnumOrkFieldCode{
+export enum EnumOrkFieldCode {
     event_title = 'service_ork_history_event_title',
     ork_crm_company = 'service_ork_history_ork_crm_company',
     ork_event_date = 'service_ork_history_ork_event_date',
@@ -161,7 +155,7 @@ export enum EnumOrkFieldCode{
     ork_evemt_tag = 'service_ork_evemt_tag',
 }
 
-export enum EnumOrkEventType{
+export enum EnumOrkEventType {
     et_ork_signal = 'et_ork_signal',
     et_ork_info = 'et_ork_info',
     et_ork_call_doc = 'et_ork_call_doc',
@@ -268,5 +262,3 @@ export enum EnumOrkResultStatus {
     ork_call_result_yes = 'ork_call_result_yes',
     ork_call_result_no = 'ork_call_result_no',
 }
-
-

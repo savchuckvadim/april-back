@@ -43,4 +43,3 @@ export class BtxCompanyResponseDto {
     })
     updated_at?: Date | null;
 }
-

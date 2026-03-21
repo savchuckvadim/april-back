@@ -1,15 +1,15 @@
-import { BitrixService, IBXCompany, IBXContact } from "@/modules/bitrix";
-import { EnumTaskEventType } from "../../dto/event-sale-flow/task.dto";
-import { EV_TYPE } from "../../types/task-types";
+import { BitrixService, IBXCompany, IBXContact } from '@/modules/bitrix';
+import { EnumTaskEventType } from '../../dto/event-sale-flow/task.dto';
+import { EV_TYPE } from '../../types/task-types';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { PortalService } from "@/modules/portal";
-import { IPortal } from "@/modules/portal/interfaces/portal.interface";
-import { PortalModel } from "@/modules/portal/services/portal.model";
-import { EnumEventPlanCode } from "../../types/plan-types";
-import { IBXLead } from "@/modules/bitrix/domain/interfaces/bitrix.interface";
+import { PortalService } from '@/modules/portal';
+import { IPortal } from '@/modules/portal/interfaces/portal.interface';
+import { PortalModel } from '@/modules/portal/services/portal.model';
+import { EnumEventPlanCode } from '../../types/plan-types';
+import { IBXLead } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -59,17 +59,11 @@ export class TaskBitrixService {
     constructor(
         private readonly bitrix: BitrixService,
         // private readonly portal: PortalModel
-
-    ) { }
-
-
+    ) {}
 
     async createTask(dto: CreateTaskDto): Promise<void> {
         const data = await this.getDataForCreateTask(dto);
         await this.bitrix.api.call('tasks.task.add', data);
-
-
-
     }
     async createTaskBatch(cmd: string, dto: CreateTaskDto): Promise<void> {
         const data = await this.getDataForCreateTask(dto);
@@ -77,9 +71,9 @@ export class TaskBitrixService {
     }
     async getDataForCreateTask(dto: CreateTaskDto): Promise<CreateTaskDataDto> {
         const domain = this.bitrix.api.domain;
-        const nowDate = dayjs().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss');
-
-
+        const nowDate = dayjs()
+            .tz('Europe/Moscow')
+            .format('YYYY-MM-DD HH:mm:ss');
 
         let contactId: number | null = null;
         let contactName: string | null = null;
@@ -108,16 +102,11 @@ export class TaskBitrixService {
             tasksCrmRelations.push(`C_${contactId}`);
         }
 
-
-
-
         // Build CRM items array
         let crmItems: string[] = [...tasksCrmRelations];
 
-
         // Convert deadline to Moscow time
         const moscowTime = this.getTaskMoscowDeadline(dto.deadline, domain);
-
 
         // Build task title
         let taskTitle = `${stringType}  ${dto.name}`;
@@ -164,17 +153,13 @@ export class TaskBitrixService {
         if (dto.isNeedCompleteOtherTasks) {
             if (!taskIdsForComplete.length) {
                 this.getCurrentTasksIdsBatchCommands(
-
                     dto.callingTaskGroupId,
                     crmItems,
                     dto.responsibleId,
                     !dto.isXO, //$isNeedCompleteOnlyTypeTasks
                     dto.stringType,
-
-
                 );
             }
-
         }
         if (taskIdsForComplete.length) {
             this.completeTaskBatchCommand(taskIdsForComplete);
@@ -188,7 +173,6 @@ export class TaskBitrixService {
             return description;
         }
 
-
         let cmpnPhonesEmailsList = '';
         if (company.PHONE) {
             const companyPhones = company.PHONE;
@@ -197,7 +181,6 @@ export class TaskBitrixService {
             for (const phone of companyPhones) {
                 cmpnyListContent += `[*]' .  ${phone?.VALUE ?? ''} . "   "`;
             }
-
 
             if (company.EMAIL) {
                 const companyEmails = company.EMAIL;
@@ -209,10 +192,19 @@ export class TaskBitrixService {
 
                 cmpnPhonesEmailsList = '[LIST]' + cmpnyListContent + '[/LIST]';
             }
-
         }
 
-        const companyTitleString = '[URL=https://' + domain + '/crm/company/details/' + company.ID + '/][B][COLOR=#0070c0] Компания: ' + company.TITLE + ' [/COLOR][/B][/URl]' + "\n" + 'Телефоны: ' + "\n";
+        const companyTitleString =
+            '[URL=https://' +
+            domain +
+            '/crm/company/details/' +
+            company.ID +
+            '/][B][COLOR=#0070c0] Компания: ' +
+            company.TITLE +
+            ' [/COLOR][/B][/URl]' +
+            '\n' +
+            'Телефоны: ' +
+            '\n';
         description = companyTitleString;
         description = description + '' + cmpnPhonesEmailsList;
 
@@ -229,13 +221,16 @@ export class TaskBitrixService {
             timezoneStr = 'Asia/Novosibirsk';
         }
 
-
-
-        if (domain === 'alfacentr.bitrix24.ru' || domain === 'gsirk.bitrix24.ru') {
+        if (
+            domain === 'alfacentr.bitrix24.ru' ||
+            domain === 'gsirk.bitrix24.ru'
+        ) {
             const parsedDate = dayjs(deadline, 'DD.MM.YYYY HH:mm:ss', true);
             if (parsedDate.isValid()) {
                 const localTime = parsedDate.tz(timezoneStr);
-                moscowTime = localTime.tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss');
+                moscowTime = localTime
+                    .tz('Europe/Moscow')
+                    .format('YYYY-MM-DD HH:mm:ss');
             }
         } else {
             // If deadline is in DD.MM.YYYY HH:mm:ss format, convert to YYYY-MM-DD HH:mm:ss
@@ -244,39 +239,33 @@ export class TaskBitrixService {
                 moscowTime = parsedDate.format('YYYY-MM-DD HH:mm:ss');
             }
         }
-        return moscowTime
+        return moscowTime;
     }
 
     private getCurrentTasksIdsBatchCommands(
-
         callingTaskGroupId: number,
         crmItems: string[],
         responsibleId: number,
         isNeedCompleteOnlyTypeTasks: boolean,
         stringType: string,
-
     ): void {
-
         const filter = {
             GROUP_ID: callingTaskGroupId,
             UF_CRM_TASK: crmItems,
             RESPONSIBLE_ID: responsibleId,
-        }
+        };
         if (isNeedCompleteOnlyTypeTasks) {
             filter['%TITLE'] = stringType;
         }
-        const batchKey = 'get_tasks_list'
+        const batchKey = 'get_tasks_list';
         this.bitrix.api.addCmdBatch(batchKey, 'tasks.task.list', {
             filter,
         });
     }
 
-
     public completeTaskBatchCommand(taskIds: number[]): void {
         const methodUpdate = 'tasks.task.update';
         const methodComplete = 'tasks.task.complete';
-
-
 
         for (const taskId of taskIds) {
             const updateTaskBathKey = `updateTask_${taskId}`;
@@ -290,18 +279,11 @@ export class TaskBitrixService {
             this.bitrix.api.addCmdBatch(completeTaskBathKey, methodComplete, {
                 taskId: taskId,
             });
-
         }
-
-
-
     }
 
-
-
-
-
-    async updateTaskCrmRelations(taskId: number,
+    async updateTaskCrmRelations(
+        taskId: number,
         leadId?: number,
         contactIds?: number[],
         companyId?: number,
@@ -332,20 +314,20 @@ export class TaskBitrixService {
         });
     }
 
-
-
-
-
-
-    async changeCurrentTaskDeadline(domain: string, taskId: number, deadline: string, isBatch: boolean = false): Promise<void> {
+    async changeCurrentTaskDeadline(
+        domain: string,
+        taskId: number,
+        deadline: string,
+        isBatch: boolean = false,
+    ): Promise<void> {
         const moscowTime = this.getTaskMoscowDeadline(deadline, domain);
         const data = {
             taskId: taskId,
             fields: {
                 DEADLINE: moscowTime,
-                ALLOW_CHANGE_DEADLINE: 'Y'
+                ALLOW_CHANGE_DEADLINE: 'Y',
             },
-        }
+        };
         if (isBatch) {
             const batchKey = `changeCurrentTaskDeadline_${taskId}`;
             this.bitrix.api.addCmdBatch(batchKey, 'tasks.task.update', data);
@@ -353,5 +335,4 @@ export class TaskBitrixService {
             await this.bitrix.api.call('tasks.task.update', data);
         }
     }
-
 }

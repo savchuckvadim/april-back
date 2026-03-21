@@ -88,4 +88,3 @@ export interface IBXRecentListRequest {
     SKIP_CHAT?: 'Y' | 'N';
     LAST_MESSAGE_DATE?: string;
 }
-

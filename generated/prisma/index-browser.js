@@ -1019,7 +1019,13 @@ exports.Prisma.Garant_prof_pricesScalarFieldEnum = {
   region_type: 'region_type',
   supply_type: 'supply_type',
   value: 'value',
-  discount: 'discount'
+  discount: 'discount',
+  code: 'code',
+  complect_code: 'complect_code',
+  garant_package_code: 'garant_package_code',
+  supply_type_code: 'supply_type_code',
+  supply_code: 'supply_code',
+  isSpecial: 'isSpecial'
 };
 
 exports.Prisma.Google_tokensScalarFieldEnum = {
@@ -1348,6 +1354,14 @@ exports.Prisma.RolesScalarFieldEnum = {
   code: 'code',
   created_at: 'created_at',
   updated_at: 'updated_at'
+};
+
+exports.Prisma.BtxUserScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  code: 'code',
+  portal_id: 'portal_id'
 };
 
 exports.Prisma.SortOrder = {
@@ -1917,7 +1931,12 @@ exports.Prisma.garant_packagesOrderByRelevanceFieldEnum = {
 
 exports.Prisma.garant_prof_pricesOrderByRelevanceFieldEnum = {
   region_type: 'region_type',
-  supply_type: 'supply_type'
+  supply_type: 'supply_type',
+  code: 'code',
+  complect_code: 'complect_code',
+  garant_package_code: 'garant_package_code',
+  supply_type_code: 'supply_type_code',
+  supply_code: 'supply_code'
 };
 
 exports.Prisma.google_tokensOrderByRelevanceFieldEnum = {
@@ -2116,6 +2135,10 @@ exports.Prisma.rolesOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code'
 };
+
+exports.Prisma.BtxUserOrderByRelevanceFieldEnum = {
+  code: 'code'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -2250,7 +2273,8 @@ exports.Prisma.ModelName = {
   OfferTemplatePageBlock: 'OfferTemplatePageBlock',
   OfferTemplatePageSticker: 'OfferTemplatePageSticker',
   OfferTemplatePage: 'OfferTemplatePage',
-  roles: 'roles'
+  roles: 'roles',
+  BtxUser: 'BtxUser'
 };
 
 /**

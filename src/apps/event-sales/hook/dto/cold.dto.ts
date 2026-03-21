@@ -11,10 +11,8 @@ export enum EnumColdCallEntityType {
 export enum EnumColdCallIsTmc {
     Y = 'Y',
     N = 'N',
-
 }
 export class ColdCallQueryDto {
-
     @ApiProperty({ example: 'company', enum: EnumColdCallEntityType })
     @IsEnum(EnumColdCallEntityType)
     entityType: EnumColdCallEntityType;
@@ -34,7 +32,6 @@ export class ColdCallQueryDto {
     @ApiProperty({ example: '2021-01-01' })
     @IsString()
     deadline: string;
-
 
     @ApiProperty({ example: 'some name' })
     @IsString()

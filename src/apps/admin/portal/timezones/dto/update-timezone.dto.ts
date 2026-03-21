@@ -50,4 +50,3 @@ export class UpdateTimezoneDto {
     @IsOptional()
     offset?: string;
 }
-

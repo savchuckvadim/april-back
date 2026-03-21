@@ -1,25 +1,39 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { TranscriptionRepository } from "../repository/transcription.repository";
-import { createTranscriptionEntityFromDto, createTranscriptionResponseDtoFromPrisma } from "../lib/db.mapper";
-import { TranscriptionBaseDto, TranscriptionStoreDto } from "../dto/transcription.store.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { TranscriptionRepository } from '../repository/transcription.repository';
+import {
+    createTranscriptionEntityFromDto,
+    createTranscriptionResponseDtoFromPrisma,
+} from '../lib/db.mapper';
+import {
+    TranscriptionBaseDto,
+    TranscriptionStoreDto,
+} from '../dto/transcription.store.dto';
 
 @Injectable()
 export class TranscriptionStoreService {
     constructor(
-        private readonly transcriptionRepository: TranscriptionRepository
+        private readonly transcriptionRepository: TranscriptionRepository,
+    ) {}
 
-    ) { }
-
-    async create(transcriptionDto: TranscriptionBaseDto): Promise<TranscriptionStoreDto> {
-        const transcription = await this.transcriptionRepository.create(transcriptionDto);
+    async create(
+        transcriptionDto: TranscriptionBaseDto,
+    ): Promise<TranscriptionStoreDto> {
+        const transcription =
+            await this.transcriptionRepository.create(transcriptionDto);
         if (!transcription) {
             throw new NotFoundException('Transcription not found');
         }
         return createTranscriptionResponseDtoFromPrisma(transcription);
     }
 
-    async updateTranscription(id: string, transcriptionDto: Partial<TranscriptionBaseDto>): Promise<TranscriptionStoreDto> {
-        const transcription = await this.transcriptionRepository.update(id, createTranscriptionEntityFromDto(transcriptionDto));
+    async updateTranscription(
+        id: string,
+        transcriptionDto: Partial<TranscriptionBaseDto>,
+    ): Promise<TranscriptionStoreDto> {
+        const transcription = await this.transcriptionRepository.update(
+            id,
+            createTranscriptionEntityFromDto(transcriptionDto),
+        );
         if (!transcription) {
             throw new NotFoundException('Transcription not found');
         }
@@ -42,14 +56,22 @@ export class TranscriptionStoreService {
         return transcriptions.map(createTranscriptionResponseDtoFromPrisma);
     }
     async findByDomain(domain: string): Promise<TranscriptionStoreDto[]> {
-        const transcriptions = await this.transcriptionRepository.findByDomain(domain);
+        const transcriptions =
+            await this.transcriptionRepository.findByDomain(domain);
         if (!transcriptions) {
             throw new NotFoundException('Transcriptions not found');
         }
         return transcriptions.map(createTranscriptionResponseDtoFromPrisma);
     }
-    async findByDomainAndUser(domain: string, userId: string): Promise<TranscriptionStoreDto[]> {
-        const transcriptions = await this.transcriptionRepository.findByDomainAndUser(domain, userId);
+    async findByDomainAndUser(
+        domain: string,
+        userId: string,
+    ): Promise<TranscriptionStoreDto[]> {
+        const transcriptions =
+            await this.transcriptionRepository.findByDomainAndUser(
+                domain,
+                userId,
+            );
         if (!transcriptions) {
             throw new NotFoundException('Transcriptions not found');
         }

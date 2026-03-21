@@ -22,14 +22,11 @@ export class ReportGetCommunicationsFiltersDto {
     @IsString()
     dateTo: string;
 
-
     @ApiProperty({ type: [BXUserDto] })
     @ValidateNested({ each: true })
     @Type(() => BXUserDto)
     @IsArray()
     departament: BXUserDto[];
-
-
 }
 
 export class GetReportCommunicationsRequestDto {

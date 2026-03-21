@@ -8,7 +8,10 @@ import {
     Post,
 } from '@nestjs/common';
 import { BxDepartmentService } from './services/bx-department.service';
-import { BxDepartmentRequestDto, BxDepartmentResponseDto } from './dto/bx-department.dto';
+import {
+    BxDepartmentRequestDto,
+    BxDepartmentResponseDto,
+} from './dto/bx-department.dto';
 import { BxAllDepartmentsService } from './services/bx-all-departments.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -18,7 +21,7 @@ export class DepartmentController {
     constructor(
         private readonly service: BxDepartmentService,
         private readonly allDepartmentsService: BxAllDepartmentsService,
-    ) { }
+    ) {}
 
     @ApiOperation({ summary: 'Get full department information' })
     @ApiResponse({
@@ -30,7 +33,9 @@ export class DepartmentController {
     @ApiResponse({ status: 500, description: 'Internal server error' })
     @Post('')
     @HttpCode(200)
-    async getFullDepartment(@Body() dto: BxDepartmentRequestDto): Promise<BxDepartmentResponseDto> {
+    async getFullDepartment(
+        @Body() dto: BxDepartmentRequestDto,
+    ): Promise<BxDepartmentResponseDto> {
         return await this.service.getFullDepartment(dto.domain, dto.department);
     }
 

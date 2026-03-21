@@ -24,4 +24,3 @@ export interface IBXMessageAddRequest {
 export interface IBXMessageAddResponse {
     result: number; // MESSAGE_ID - идентификатор сообщения
 }
-

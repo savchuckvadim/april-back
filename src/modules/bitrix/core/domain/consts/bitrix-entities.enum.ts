@@ -21,4 +21,7 @@ export enum EBXEntity {
     RPA = 'rpa',
     RECENT = 'recent',
     MESSAGE = 'message',
+    USER = 'user',
+    CHAT = 'chat',
+    DIALOG = 'dialog',
 }

@@ -20,9 +20,6 @@ import { SecretModule } from '../secret/secret.module';
         },
         PrismaService,
     ],
-    exports: [
-        BitrixAppService,
-        BitrixAppRepository,
-    ],
+    exports: [BitrixAppService, BitrixAppRepository],
 })
-export class BitrixSetupAppModule { }
+export class BitrixSetupAppModule {}

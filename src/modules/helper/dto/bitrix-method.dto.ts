@@ -15,7 +15,11 @@ export class BitrixMethodDto {
     @IsObject()
     bxData: any;
 
-    @ApiProperty({ description: 'Auth type of the bitrix', required: false, enum: BxAuthType })
+    @ApiProperty({
+        description: 'Auth type of the bitrix',
+        required: false,
+        enum: BxAuthType,
+    })
     @IsOptional()
     @IsEnum(BxAuthType)
     authType: BxAuthType;

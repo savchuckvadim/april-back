@@ -75,7 +75,6 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
         const contactIds = [] as string[];
 
         for (const contact of element.contacts) {
-
             const hlPfieldBitrixId =
                 this.portal.getContactFieldBitrixId('ork_hotline_count');
             const skapPfieldBitrixId =
@@ -113,36 +112,28 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
                     [hlPfieldBitrixId]: contact.conmtactGl,
                     [skapPfieldBitrixId]: contact.contactSkap,
                     ...chkFieldBxValue,
-                }
-                if(contact.phone){
+                };
+                if (contact.phone) {
                     addContactData['PHONE'] = [
                         {
                             VALUE: contact.phone,
                             TYPE: 'WORK',
                         },
-                    ]
+                    ];
                 }
                 try {
-                    const resultContactIdResponse = await this.bitrix.contact.set(
-                        addContactData
-
-                    );
+                    const resultContactIdResponse =
+                        await this.bitrix.contact.set(addContactData);
                     contactIds.push(resultContactIdResponse.result.toString());
-
                 } catch (error) {
-                    console.log(
-                        error
-                    )
-                    console.log(
-                        addContactData
-                    )
+                    console.log(error);
+                    console.log(addContactData);
                 }
-                await delay(1000)
+                await delay(1000);
             }
-        };
+        }
         return contactIds;
     }
-
 
     private getComment(contact: Contact) {
         let comment =

@@ -12,7 +12,7 @@ import { UpdateOfferTemplatePageStickerDto } from '../dtos/update-offer-template
 export class OfferTemplatePageStickerService {
     constructor(
         private readonly offerTemplatePageStickerRepository: OfferTemplatePageStickerRepository,
-    ) { }
+    ) {}
 
     async findById(id: bigint): Promise<OfferTemplatePageSticker> {
         const sticker =

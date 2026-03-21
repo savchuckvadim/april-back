@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { btx_companies } from 'generated/prisma';
 import { BtxCompanyRepository } from '../repositories/btx-company.repository';
 import { CreateBtxCompanyDto } from '../dto/create-btx-company.dto';
@@ -52,7 +56,10 @@ export class BtxCompanyService {
         return companies.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateBtxCompanyDto): Promise<BtxCompanyResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateBtxCompanyDto,
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.repository.findById(id);
         if (!company) {
             throw new NotFoundException(`Company with id ${id} not found`);
@@ -63,7 +70,8 @@ export class BtxCompanyService {
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
 
             const updatedCompany = await this.repository.update(id, updateData);
             if (!updatedCompany) {
@@ -96,4 +104,3 @@ export class BtxCompanyService {
         };
     }
 }
-

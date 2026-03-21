@@ -17,7 +17,7 @@ import { BtxCompanyResponseDto } from '../dto/btx-company-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Companies Management')
-@Controller('admin/portals/btx-companies')
+@Controller('admin/pbx/btx-companies')
 export class BtxCompanyController {
     constructor(private readonly companyService: BtxCompanyService) {}
 
@@ -28,12 +28,11 @@ export class BtxCompanyController {
         type: BtxCompanyResponseDto,
     })
     @Post()
-    async createCompany(@Body() createCompanyDto: CreateBtxCompanyDto): Promise<SuccessResponseDto> {
+    async createCompany(
+        @Body() createCompanyDto: CreateBtxCompanyDto,
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.companyService.create(createCompanyDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: company,
-        };
+        return company;
     }
 
     @ApiOperation({ summary: 'Get company by ID' })
@@ -43,12 +42,11 @@ export class BtxCompanyController {
         type: BtxCompanyResponseDto,
     })
     @Get(':id')
-    async getCompanyById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getCompanyById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.companyService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: company,
-        };
+        return company;
     }
 
     @ApiOperation({ summary: 'Get all companies' })
@@ -58,18 +56,19 @@ export class BtxCompanyController {
         type: [BtxCompanyResponseDto],
     })
     @Get()
-    async getAllCompanies(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllCompanies(
+        @Query('portal_id') portalId?: string,
+    ): Promise<BtxCompanyResponseDto[]> {
         let companies;
         if (portalId) {
-            companies = await this.companyService.findByPortalId(Number(portalId));
+            companies = await this.companyService.findByPortalId(
+                Number(portalId),
+            );
         } else {
             companies = await this.companyService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: companies,
-        };
+        return companies;
     }
 
     @ApiOperation({ summary: 'Update company' })
@@ -82,12 +81,9 @@ export class BtxCompanyController {
     async updateCompany(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateCompanyDto: UpdateBtxCompanyDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.companyService.update(id, updateCompanyDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: company,
-        };
+        return company;
     }
 
     @ApiOperation({ summary: 'Delete company' })
@@ -96,12 +92,10 @@ export class BtxCompanyController {
         description: 'Company deleted successfully',
     })
     @Delete(':id')
-    async deleteCompany(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteCompany(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<boolean> {
         await this.companyService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

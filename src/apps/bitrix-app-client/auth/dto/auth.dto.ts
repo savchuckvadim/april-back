@@ -1,10 +1,21 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, IsNumber, IsObject, IsString, IsStrongPassword, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
-import { Client } from "generated/prisma";
-import { UserResponseDto } from "../../user/dto/user-response.dto";
-import { Type } from "class-transformer";
-import { ClientDto } from "../../client/dto/client-registration.dto";
-import { IsBitrixDomain } from "@/core/decorators/dto/bitrix-domain-validate.decorator";
+import { ApiProperty } from '@nestjs/swagger';
+import {
+    IsEmail,
+    IsNotEmpty,
+    IsNumber,
+    IsObject,
+    IsString,
+    IsStrongPassword,
+    Matches,
+    MaxLength,
+    MinLength,
+    ValidateNested,
+} from 'class-validator';
+import { Client } from 'generated/prisma';
+import { UserResponseDto } from '../../user/dto/user-response.dto';
+import { Type } from 'class-transformer';
+import { ClientDto } from '../../client/dto/client-registration.dto';
+import { IsBitrixDomain } from '@/core/decorators/dto/bitrix-domain-validate.decorator';
 
 export class ClientRegistrationRequestDto {
     @ApiProperty({ description: 'Client name', example: 'Acme Corp' })
@@ -27,20 +38,29 @@ export class ClientRegistrationRequestDto {
     @IsEmail()
     email: string;
 
-    @ApiProperty({ description: 'User password', example: 'password123', minLength: 6 })
+    @ApiProperty({
+        description: 'User password',
+        example: 'password123',
+        minLength: 6,
+    })
     @IsNotEmpty({ message: 'Пароль обязательно для заполнения' })
     @IsString({ message: 'Пароль должен быть строкой' })
     @MinLength(6, { message: 'Пароль должен быть не менее 6 символов' })
     @MaxLength(100, { message: 'Пароль должен быть не более 100 символов' })
-    @IsStrongPassword({
-        minLength: 6,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-    }, { message: 'Пароль должен содержать хотя бы одну большую букву, одну маленькую букву, одну цифру и один специальный символ' })
+    @IsStrongPassword(
+        {
+            minLength: 6,
+            minLowercase: 1,
+            minUppercase: 1,
+            minNumbers: 1,
+            minSymbols: 1,
+        },
+        {
+            message:
+                'Пароль должен содержать хотя бы одну большую букву, одну маленькую букву, одну цифру и один специальный символ',
+        },
+    )
     password: string;
-
 
     @ApiProperty({ description: 'Domain', example: 'example.com' })
     @IsNotEmpty()
@@ -55,15 +75,16 @@ export class LoginDto {
     @IsEmail()
     email: string;
 
-    @ApiProperty({ description: 'User password', example: 'password123', minLength: 6 })
+    @ApiProperty({
+        description: 'User password',
+        example: 'password123',
+        minLength: 6,
+    })
     @IsNotEmpty()
     @IsString()
     @MinLength(6)
     @IsString()
     password: string;
-
-
-
 
     @ApiProperty({ description: 'Domain', example: 'example.bitrix24.com' })
     @IsNotEmpty()
@@ -92,8 +113,6 @@ export class LoginResponseCookieDto {
 }
 
 export class MeResponseDto {
-
-
     @ApiProperty({ description: 'User', example: 'User' })
     @IsNotEmpty()
     @IsObject()
@@ -107,14 +126,9 @@ export class MeResponseDto {
     @ValidateNested()
     @Type(() => ClientDto)
     client: ClientDto;
-
-
-
 }
 
 export class LoginResponseDto extends MeResponseDto {
-
-
     // @ApiProperty({ description: 'User', example: 'User' })
     // @IsNotEmpty()
     // @IsObject()
@@ -129,7 +143,6 @@ export class LoginResponseDto extends MeResponseDto {
     // @Type(() => ClientDto)
     // client: ClientDto;
 
-
     @ApiProperty({ description: 'Token', example: 'token123' })
     @IsNotEmpty()
     @IsString()
@@ -141,24 +154,28 @@ export class ClientAuthResponseDto {
     @IsNumber()
     id: number;
 
-    @ApiProperty({ description: 'Message', example: 'Client registered, please confirm email' })
+    @ApiProperty({
+        description: 'Message',
+        example: 'Client registered, please confirm email',
+    })
     @IsNotEmpty()
     @IsString()
     message: string;
 
     @ApiProperty({ description: 'Client', example: 'Client' })
-
     @IsObject()
     @ValidateNested()
     @Type(() => ClientDto)
     client: ClientDto;
 
-    @ApiProperty({ description: 'Owner', example: 'Owner', type: UserResponseDto })
-
+    @ApiProperty({
+        description: 'Owner',
+        example: 'Owner',
+        type: UserResponseDto,
+    })
     @IsObject()
     @ValidateNested()
     @Type(() => UserResponseDto)
-
     owner: UserResponseDto | null;
 }
 

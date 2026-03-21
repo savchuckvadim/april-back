@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import {
+    IsString,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+    IsArray,
+    ValidateNested,
+    IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateBitrixFieldItemDto } from './create-bitrixfield-item.dto';
 import { BitrixFieldEntityType } from '../enums/bitrixfield-entity-type.enum';
@@ -88,4 +96,3 @@ export class CreateBitrixFieldDto {
     @IsOptional()
     items?: CreateBitrixFieldItemDto[];
 }
-

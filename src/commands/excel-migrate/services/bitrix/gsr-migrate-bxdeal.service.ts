@@ -14,7 +14,9 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
         dealCommandCode: string,
         contactCommands: string[],
     ) {
-        const pDealCategory = this.portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
+        const pDealCategory = this.portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.service_base,
+        );
         const dealComment = this.getDealComment(element);
         const pDealContractEndField = this.portal.getDealFieldBitrixIdByCode(
             'ork_current_contract_fin_date',
@@ -50,7 +52,9 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
         element: MigrateToBxDto,
         companyId: string,
     ): Promise<string> {
-        const pDealCategory = this.portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
+        const pDealCategory = this.portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.service_base,
+        );
         const dealComment = this.getDealComment(element);
         const pDealContractEndField = this.portal.getDealFieldBitrixIdByCode(
             'ork_current_contract_fin_date',
@@ -62,7 +66,9 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
         const pDealContractTypeField =
             this.portal.getDealFieldBitrixIdByCode('contract_type');
 
-        const armIds = element.products.map(p => p?.id?.toString() || p?.armId || '');
+        const armIds = element.products.map(
+            p => p?.id?.toString() || p?.armId || '',
+        );
         const name = element.company;
         let title = name ? name.replace(/[\r\n]+/g, ' ') : '';
         title = title ? title.slice(0, 79) : '';
@@ -84,7 +90,6 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
         return resultResponse.result.toString();
     }
 
-
     getDealUpdateCommand(contactCommands: string[], dealCommandCode: string) {
         const contactIds = contactCommands.map(cmd => `$result[${cmd}]`);
         console.log('getDealUpdateCommand');
@@ -104,7 +109,7 @@ export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
             `${dealId}`,
             contactIds,
         );
-        await this.bitrix.api.callBatchWithConcurrency()
+        await this.bitrix.api.callBatchWithConcurrency();
     }
     private getDealComment(element: MigrateToBxDto) {
         const comment =

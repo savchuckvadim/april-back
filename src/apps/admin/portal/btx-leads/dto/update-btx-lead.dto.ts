@@ -34,4 +34,3 @@ export class UpdateBtxLeadDto {
     @IsOptional()
     portal_id?: number;
 }
-

@@ -8,7 +8,7 @@ import {
 import { IBXCompany } from '../interface/bx-company.interface';
 
 export class BxCompanyRepository {
-    constructor(private readonly bxApi: BitrixBaseApi) { }
+    constructor(private readonly bxApi: BitrixBaseApi) {}
 
     async get(companyId: number) {
         return this.bxApi.callType(
@@ -19,7 +19,11 @@ export class BxCompanyRepository {
         );
     }
 
-    async getBtch(cmdCode: string, companyId: number | string, select?: string[]) {
+    async getBtch(
+        cmdCode: string,
+        companyId: number | string,
+        select?: string[],
+    ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -29,7 +33,11 @@ export class BxCompanyRepository {
         );
     }
 
-    async getList(filter: Partial<IBXCompany>, select?: string[], order?: { [key in keyof IBXCompany]?: 'asc' | 'desc' | 'ASC' | 'DESC' }) {
+    async getList(
+        filter: Partial<IBXCompany>,
+        select?: string[],
+        order?: { [key in keyof IBXCompany]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+    ) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,

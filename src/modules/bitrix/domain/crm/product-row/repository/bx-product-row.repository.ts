@@ -5,7 +5,10 @@ import {
     EBxNamespace,
 } from '../../../../core/domain/consts/bitrix-api.enum';
 import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
-import { IBXProductRow, IBXProductRowRow } from '../interface/bx-product-row.interface';
+import {
+    IBXProductRow,
+    IBXProductRowRow,
+} from '../interface/bx-product-row.interface';
 import { ListProductRowDto } from '../dto/list-product-row.sto';
 
 export class BxProductRowRepository {

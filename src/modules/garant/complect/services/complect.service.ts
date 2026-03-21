@@ -21,11 +21,15 @@ export class ComplectService {
     }
 
     async findAll(): Promise<ComplectEntity[] | null> {
-        return this.complectRepository.findMany();
+        return await this.complectRepository.findMany();
     }
 
     async findById(id: string): Promise<ComplectEntity | null> {
-        return this.complectRepository.findById(id);
+        return await this.complectRepository.findById(id);
+    }
+
+    async findByCode(code: string): Promise<ComplectEntity | null> {
+        return await this.complectRepository.findByCode(code);
     }
 
     async update(
@@ -34,7 +38,7 @@ export class ComplectService {
     ): Promise<ComplectEntity | null> {
         const complect = new ComplectEntity();
         Object.assign(complect, { id, ...updateComplectDto });
-        return this.complectRepository.update(complect);
+        return await this.complectRepository.update(complect);
     }
 
     async getAvailableInfoblocks(
@@ -49,6 +53,46 @@ export class ComplectService {
         }
         return complect.infoblocks.map(infoblock =>
             getLightFromEntity(infoblock),
+        );
+    }
+
+    async addInfoblocks(
+        complectId: string,
+        infoblockIds: string[],
+    ): Promise<ComplectEntity | null> {
+        return await this.complectRepository.addInfoblocks(
+            complectId,
+            infoblockIds,
+        );
+    }
+
+    async removeInfoblocks(
+        complectId: string,
+        infoblockIds: string[],
+    ): Promise<ComplectEntity | null> {
+        return await this.complectRepository.removeInfoblocks(
+            complectId,
+            infoblockIds,
+        );
+    }
+
+    async removeInfoblock(
+        complectId: string,
+        infoblockId: string,
+    ): Promise<ComplectEntity | null> {
+        return await this.complectRepository.removeInfoblock(
+            complectId,
+            infoblockId,
+        );
+    }
+
+    async setInfoblocks(
+        complectId: string,
+        infoblockIds: string[],
+    ): Promise<ComplectEntity | null> {
+        return await this.complectRepository.setInfoblocks(
+            complectId,
+            infoblockIds,
         );
     }
 }

@@ -61,4 +61,3 @@ export class BtxStageResponseDto {
     })
     updated_at?: Date | null;
 }
-

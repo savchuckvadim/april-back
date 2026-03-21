@@ -59,7 +59,9 @@ function getCellValue(cell: ExcelJS.Cell | null | undefined): string {
     if (typeof value === 'number') {
         // Проверяем, это дата или число
         if (cell.type === ExcelJS.ValueType.Date) {
-            return dayjs(new Date((value - 25569) * 86400 * 1000)).format('YYYY-MM-DD');
+            return dayjs(new Date((value - 25569) * 86400 * 1000)).format(
+                'YYYY-MM-DD',
+            );
         }
         // Обычное число
         return String(value);
@@ -78,11 +80,14 @@ function getCellValue(cell: ExcelJS.Cell | null | undefined): string {
     if (typeof value === 'object') {
         // Обработка richText
         if ('richText' in value && Array.isArray(value.richText)) {
-            return value.richText.map((rt: any) => {
-                if (typeof rt === 'string') return rt;
-                if (typeof rt === 'object' && rt.text) return rt.text;
-                return '';
-            }).join('').trim();
+            return value.richText
+                .map((rt: any) => {
+                    if (typeof rt === 'string') return rt;
+                    if (typeof rt === 'object' && rt.text) return rt.text;
+                    return '';
+                })
+                .join('')
+                .trim();
         }
 
         // Обработка формул
@@ -143,7 +148,9 @@ function parseDate(value: any): string {
     }
 
     if (typeof value === 'number') {
-        return dayjs(new Date((value - 25569) * 86400 * 1000)).format('YYYY-MM-DD');
+        return dayjs(new Date((value - 25569) * 86400 * 1000)).format(
+            'YYYY-MM-DD',
+        );
     }
 
     if (typeof value === 'string') {
@@ -223,7 +230,10 @@ function detectSheetStructure(sheet: ExcelJS.Worksheet): {
         if (cellValue.includes('id') && !cellValue.includes('клиент')) {
             productIdColumn = col;
         }
-        if (cellValue.includes('название комплекта') || cellValue.includes('комплект')) {
+        if (
+            cellValue.includes('название комплекта') ||
+            cellValue.includes('комплект')
+        ) {
             productNameColumn = col;
         }
         if (cellValue.includes('сетевидность') || cellValue.includes('од')) {
@@ -239,7 +249,10 @@ function detectSheetStructure(sheet: ExcelJS.Worksheet): {
         if (cellValue.includes('количество месяцев')) {
             monthsColumn = col;
         }
-        if (cellValue.includes('дата окончания') || cellValue.includes('окончания обслуживания')) {
+        if (
+            cellValue.includes('дата окончания') ||
+            cellValue.includes('окончания обслуживания')
+        ) {
             contractEndDateColumn = col;
         }
         if (cellValue.includes('вид') && cellValue.includes('договор')) {
@@ -258,13 +271,20 @@ function detectSheetStructure(sheet: ExcelJS.Worksheet): {
             if (cellValue.includes('фио') || cellValue.includes('имя')) {
                 contactNameColumn = col;
             }
-            if (cellValue.includes('должность') || cellValue.includes('отдел')) {
+            if (
+                cellValue.includes('должность') ||
+                cellValue.includes('отдел')
+            ) {
                 contactPositionColumn = col;
             }
             if (cellValue.includes('телефон')) {
                 contactPhoneColumn = col;
             }
-            if (cellValue.includes('@') || cellValue.includes('почта') || cellValue.includes('email')) {
+            if (
+                cellValue.includes('@') ||
+                cellValue.includes('почта') ||
+                cellValue.includes('email')
+            ) {
                 contactEmailColumn = col;
             }
         }
@@ -309,7 +329,10 @@ function detectSheetStructure(sheet: ExcelJS.Worksheet): {
 }
 
 // Функция для парсинга одного листа
-async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise<SheetData> {
+async function parseSheet(
+    sheet: ExcelJS.Worksheet,
+    sheetIndex: number,
+): Promise<SheetData> {
     const sheetItem: SheetData = {
         sheetId: sheetIndex,
         companyName: sheet.name.trim(),
@@ -360,7 +383,11 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
                 let clientName = '';
                 for (let col = 2; col <= 6; col++) {
                     const val = getCellValue(row.getCell(col));
-                    if (val && !val.toLowerCase().includes('клиент') && val.length > 3) {
+                    if (
+                        val &&
+                        !val.toLowerCase().includes('клиент') &&
+                        val.length > 3
+                    ) {
                         clientName = val;
                         break;
                     }
@@ -373,7 +400,11 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
                 let address = '';
                 for (let col = 2; col <= 6; col++) {
                     const val = getCellValue(row.getCell(col));
-                    if (val && !val.toLowerCase().includes('адрес') && val.length > 5) {
+                    if (
+                        val &&
+                        !val.toLowerCase().includes('адрес') &&
+                        val.length > 5
+                    ) {
                         address = val;
                         break;
                     }
@@ -384,25 +415,46 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
                 const armIdCell = row.getCell(structure.armIdColumn);
                 const armIdValue = getCellValue(armIdCell);
                 if (armIdValue) {
-                    sheetItem.company.armId = extractArmId(armIdValue) || armIdValue;
+                    sheetItem.company.armId =
+                        extractArmId(armIdValue) || armIdValue;
                 }
 
                 // Первый продукт
-                const productId = getCellValue(row.getCell(structure.productIdColumn));
-                const productName = getCellValue(row.getCell(structure.productNameColumn));
-                const network = getCellValue(row.getCell(structure.networkColumn));
-                const months = getCellValue(row.getCell(structure.monthsColumn)); // Количество месяцев
-                const monthSum = getCellValue(row.getCell(structure.monthSumColumn)) || getCellValue(row.getCell(structure.priceColumn));
-                const contractEndDate = parseDate(getCellValue(row.getCell(structure.contractEndDateColumn)));
-                const contractType = getCellValue(row.getCell(structure.contractTypeColumn));
-                const contractPrepayment = parseQuantity(getCellValue(row.getCell(structure.contractPrepaymentColumn)));
+                const productId = getCellValue(
+                    row.getCell(structure.productIdColumn),
+                );
+                const productName = getCellValue(
+                    row.getCell(structure.productNameColumn),
+                );
+                const network = getCellValue(
+                    row.getCell(structure.networkColumn),
+                );
+                const months = getCellValue(
+                    row.getCell(structure.monthsColumn),
+                ); // Количество месяцев
+                const monthSum =
+                    getCellValue(row.getCell(structure.monthSumColumn)) ||
+                    getCellValue(row.getCell(structure.priceColumn));
+                const contractEndDate = parseDate(
+                    getCellValue(row.getCell(structure.contractEndDateColumn)),
+                );
+                const contractType = getCellValue(
+                    row.getCell(structure.contractTypeColumn),
+                );
+                const contractPrepayment = parseQuantity(
+                    getCellValue(
+                        row.getCell(structure.contractPrepaymentColumn),
+                    ),
+                );
 
                 if (productName) {
                     // Объединяем название продукта с сетевидностью (например: "Гарант-Офис+ 5ОД")
                     let fullProductName = productName.trim();
                     if (network) {
                         // Убираем пробелы между числом и "ОД" для единообразия
-                        const networkFormatted = network.replace(/\s+ОД/, 'ОД').trim();
+                        const networkFormatted = network
+                            .replace(/\s+ОД/, 'ОД')
+                            .trim();
                         fullProductName = `${fullProductName} ${networkFormatted}`;
                     }
 
@@ -428,20 +480,44 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
             }
             case 3: {
                 // Возможно, второй продукт
-                const productId = getCellValue(row.getCell(structure.productIdColumn));
-                const productName = getCellValue(row.getCell(structure.productNameColumn));
-                const network = getCellValue(row.getCell(structure.networkColumn));
-                const months = getCellValue(row.getCell(structure.monthsColumn)); // Количество месяцев
-                const monthSum = getCellValue(row.getCell(structure.monthSumColumn)) || getCellValue(row.getCell(structure.priceColumn));
-                const contractEndDate = parseDate(getCellValue(row.getCell(structure.contractEndDateColumn)));
-                const contractType = getCellValue(row.getCell(structure.contractTypeColumn));
-                const contractPrepayment = parseQuantity(getCellValue(row.getCell(structure.contractPrepaymentColumn)));
+                const productId = getCellValue(
+                    row.getCell(structure.productIdColumn),
+                );
+                const productName = getCellValue(
+                    row.getCell(structure.productNameColumn),
+                );
+                const network = getCellValue(
+                    row.getCell(structure.networkColumn),
+                );
+                const months = getCellValue(
+                    row.getCell(structure.monthsColumn),
+                ); // Количество месяцев
+                const monthSum =
+                    getCellValue(row.getCell(structure.monthSumColumn)) ||
+                    getCellValue(row.getCell(structure.priceColumn));
+                const contractEndDate = parseDate(
+                    getCellValue(row.getCell(structure.contractEndDateColumn)),
+                );
+                const contractType = getCellValue(
+                    row.getCell(structure.contractTypeColumn),
+                );
+                const contractPrepayment = parseQuantity(
+                    getCellValue(
+                        row.getCell(structure.contractPrepaymentColumn),
+                    ),
+                );
 
-                if (productName && productName.length > 2 && !productName.toLowerCase().includes('complectname')) {
+                if (
+                    productName &&
+                    productName.length > 2 &&
+                    !productName.toLowerCase().includes('complectname')
+                ) {
                     // Объединяем название продукта с сетевидностью
                     let fullProductName = productName.trim();
                     if (network) {
-                        const networkFormatted = network.replace(/\s+ОД/, 'ОД').trim();
+                        const networkFormatted = network
+                            .replace(/\s+ОД/, 'ОД')
+                            .trim();
                         fullProductName = `${fullProductName} ${networkFormatted}`;
                     }
 
@@ -467,27 +543,52 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
                     const armIdCell = row.getCell(structure.armIdColumn);
                     const armIdValue = getCellValue(armIdCell);
                     if (armIdValue && !sheetItem.company.armId) {
-                        sheetItem.company.armId = extractArmId(armIdValue) || armIdValue;
+                        sheetItem.company.armId =
+                            extractArmId(armIdValue) || armIdValue;
                     }
                 }
                 break;
             }
             case 4: {
                 // Возможно, третий продукт или цена
-                const productId = getCellValue(row.getCell(structure.productIdColumn));
-                const productName = getCellValue(row.getCell(structure.productNameColumn));
-                const network = getCellValue(row.getCell(structure.networkColumn));
-                const months = getCellValue(row.getCell(structure.monthsColumn)); // Количество месяцев
-                const monthSum = getCellValue(row.getCell(structure.monthSumColumn)) || getCellValue(row.getCell(structure.priceColumn));
-                const contractEndDate = parseDate(getCellValue(row.getCell(structure.contractEndDateColumn)));
-                const contractType = getCellValue(row.getCell(structure.contractTypeColumn));
-                const contractPrepayment = parseQuantity(getCellValue(row.getCell(structure.contractPrepaymentColumn)));
+                const productId = getCellValue(
+                    row.getCell(structure.productIdColumn),
+                );
+                const productName = getCellValue(
+                    row.getCell(structure.productNameColumn),
+                );
+                const network = getCellValue(
+                    row.getCell(structure.networkColumn),
+                );
+                const months = getCellValue(
+                    row.getCell(structure.monthsColumn),
+                ); // Количество месяцев
+                const monthSum =
+                    getCellValue(row.getCell(structure.monthSumColumn)) ||
+                    getCellValue(row.getCell(structure.priceColumn));
+                const contractEndDate = parseDate(
+                    getCellValue(row.getCell(structure.contractEndDateColumn)),
+                );
+                const contractType = getCellValue(
+                    row.getCell(structure.contractTypeColumn),
+                );
+                const contractPrepayment = parseQuantity(
+                    getCellValue(
+                        row.getCell(structure.contractPrepaymentColumn),
+                    ),
+                );
 
-                if (productName && productName.length > 2 && !productName.toLowerCase().includes('price')) {
+                if (
+                    productName &&
+                    productName.length > 2 &&
+                    !productName.toLowerCase().includes('price')
+                ) {
                     // Объединяем название продукта с сетевидностью
                     let fullProductName = productName.trim();
                     if (network) {
-                        const networkFormatted = network.replace(/\s+ОД/, 'ОД').trim();
+                        const networkFormatted = network
+                            .replace(/\s+ОД/, 'ОД')
+                            .trim();
                         fullProductName = `${fullProductName} ${networkFormatted}`;
                     }
 
@@ -504,7 +605,9 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
                     sheetItem.company.products.push(product);
                 } else {
                     // Возможно, это цена
-                    const priceValue = getCellValue(row.getCell(2)) || getCellValue(row.getCell(1));
+                    const priceValue =
+                        getCellValue(row.getCell(2)) ||
+                        getCellValue(row.getCell(1));
                     if (priceValue && /[\d\s]/.test(priceValue)) {
                         sheetItem.company.price = priceValue.trim();
                     }
@@ -526,7 +629,9 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
             }
             case 6: {
                 // complectBlocks (обычно пусто)
-                const blocks = getCellValue(row.getCell(2)) || getCellValue(row.getCell(1));
+                const blocks =
+                    getCellValue(row.getCell(2)) ||
+                    getCellValue(row.getCell(1));
                 sheetItem.company.complectBlocks = blocks.trim();
                 break;
             }
@@ -535,7 +640,11 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
                 let manager = '';
                 for (let col = 2; col <= 6; col++) {
                     const val = getCellValue(row.getCell(col));
-                    if (val && !val.toLowerCase().includes('руководитель') && val.length > 3) {
+                    if (
+                        val &&
+                        !val.toLowerCase().includes('руководитель') &&
+                        val.length > 3
+                    ) {
                         manager = val;
                         break;
                     }
@@ -558,7 +667,12 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
             const row = sheet.getRow(rowNum);
             for (let col = 1; col <= 15; col++) {
                 const val = getCellValue(row.getCell(col));
-                if (val && /[\d\s]{4,}/.test(val) && !val.includes('-') && !val.includes('@')) {
+                if (
+                    val &&
+                    /[\d\s]{4,}/.test(val) &&
+                    !val.includes('-') &&
+                    !val.includes('@')
+                ) {
                     const numVal = val.replace(/\s/g, '');
                     if (numVal.length >= 4 && /^\d+$/.test(numVal)) {
                         sheetItem.company.price = val.trim();
@@ -594,15 +708,22 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
         // Пропускаем пустые строки и заголовки
         if (rowData.length === 0) return;
         const firstCell = getCellValue(row.getCell(1)).toLowerCase();
-        if (firstCell.includes('пользователи') || firstCell.includes('фио') ||
-            firstCell.includes('телефон') || firstCell.includes('должность') ||
-            firstCell.includes('отдел') || firstCell.includes('почта') ||
-            firstCell.includes('email')) {
+        if (
+            firstCell.includes('пользователи') ||
+            firstCell.includes('фио') ||
+            firstCell.includes('телефон') ||
+            firstCell.includes('должность') ||
+            firstCell.includes('отдел') ||
+            firstCell.includes('почта') ||
+            firstCell.includes('email')
+        ) {
             return; // Пропускаем заголовки
         }
 
         // Определяем структуру контакта
-        let position = getCellValue(row.getCell(structure.contactPositionColumn));
+        let position = getCellValue(
+            row.getCell(structure.contactPositionColumn),
+        );
         let name = getCellValue(row.getCell(structure.contactNameColumn));
         let phone = getCellValue(row.getCell(structure.contactPhoneColumn));
         let email = getCellValue(row.getCell(structure.contactEmailColumn));
@@ -612,9 +733,16 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
             // Ищем имя в других колонках (обычно это длинная строка без цифр и @)
             for (let col = 1; col <= 10; col++) {
                 const val = getCellValue(row.getCell(col));
-                if (val && val.length > 5 && !val.includes('@') && !/[\d\s\-\(\)\+]{7,}/.test(val) &&
-                    !val.toLowerCase().includes('должность') && !val.toLowerCase().includes('отдел') &&
-                    !val.toLowerCase().includes('пользователи') && !val.toLowerCase().includes('фио')) {
+                if (
+                    val &&
+                    val.length > 5 &&
+                    !val.includes('@') &&
+                    !/[\d\s\-\(\)\+]{7,}/.test(val) &&
+                    !val.toLowerCase().includes('должность') &&
+                    !val.toLowerCase().includes('отдел') &&
+                    !val.toLowerCase().includes('пользователи') &&
+                    !val.toLowerCase().includes('фио')
+                ) {
                     // Проверяем, что это похоже на имя (содержит пробелы и буквы)
                     if (/[А-Яа-яЁё]/.test(val) && val.split(' ').length >= 2) {
                         name = val;
@@ -628,8 +756,13 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
             // Ищем телефон (паттерн с цифрами, дефисами, скобками)
             for (let col = 1; col <= 10; col++) {
                 const val = getCellValue(row.getCell(col));
-                if (val && /[\d\s\-\(\)\+]{7,}/.test(val) && !val.includes('@') &&
-                    !val.toLowerCase().includes('доб') && !val.toLowerCase().includes('тел')) {
+                if (
+                    val &&
+                    /[\d\s\-\(\)\+]{7,}/.test(val) &&
+                    !val.includes('@') &&
+                    !val.toLowerCase().includes('доб') &&
+                    !val.toLowerCase().includes('тел')
+                ) {
                     phone = val;
                     break;
                 }
@@ -640,7 +773,11 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
         if (phone) {
             const phoneCol = structure.contactPhoneColumn;
             const nextColVal = getCellValue(row.getCell(phoneCol + 1));
-            if (nextColVal && /[\d\s\-\(\)\+]{7,}/.test(nextColVal) && !nextColVal.includes('@')) {
+            if (
+                nextColVal &&
+                /[\d\s\-\(\)\+]{7,}/.test(nextColVal) &&
+                !nextColVal.includes('@')
+            ) {
                 phone = phone + '#' + nextColVal;
             }
         }
@@ -660,11 +797,14 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
             // Ищем должность в других колонках
             for (let col = 1; col <= 10; col++) {
                 const val = getCellValue(row.getCell(col));
-                if (val && (val.toLowerCase().includes('директор') ||
-                    val.toLowerCase().includes('бухгалтер') ||
-                    val.toLowerCase().includes('юрист') ||
-                    val.toLowerCase().includes('менеджер') ||
-                    val.toLowerCase().includes('администратор'))) {
+                if (
+                    val &&
+                    (val.toLowerCase().includes('директор') ||
+                        val.toLowerCase().includes('бухгалтер') ||
+                        val.toLowerCase().includes('юрист') ||
+                        val.toLowerCase().includes('менеджер') ||
+                        val.toLowerCase().includes('администратор'))
+                ) {
                     position = val;
                     break;
                 }
@@ -690,13 +830,23 @@ async function parseSheet(sheet: ExcelJS.Worksheet, sheetIndex: number): Promise
     sheetItem.company.complectName = sheetItem.company.complectName.trim();
 
     // Если products пустые, но есть complectName, создаем продукт
-    if (sheetItem.company.products.length === 0 && sheetItem.company.complectName) {
-        const complectParts = sheetItem.company.complectName.split(/\s+/).filter(p => p && p.length > 2);
+    if (
+        sheetItem.company.products.length === 0 &&
+        sheetItem.company.complectName
+    ) {
+        const complectParts = sheetItem.company.complectName
+            .split(/\s+/)
+            .filter(p => p && p.length > 2);
         const quantity = parseQuantity(sheetItem.company.complectName);
-        const monthSum = sheetItem.company.price.replace(/[^\d\s]/g, '').trim() || '0';
+        const monthSum =
+            sheetItem.company.price.replace(/[^\d\s]/g, '').trim() || '0';
 
         complectParts.forEach(part => {
-            if (part.length > 2 && !/^\d+$/.test(part) && !part.toLowerCase().includes('од')) {
+            if (
+                part.length > 2 &&
+                !/^\d+$/.test(part) &&
+                !part.toLowerCase().includes('од')
+            ) {
                 sheetItem.company.products.push({
                     name: part,
                     quantity: quantity || 1,
@@ -728,11 +878,16 @@ export async function parseExcelToJson(
 
     for (let i = 0; i < sheets.length; i += batchSize) {
         const batch = sheets.slice(i, i + batchSize);
-        console.log(`Обработка листов ${i + 1}-${Math.min(i + batchSize, sheets.length)} из ${sheets.length}`);
+        console.log(
+            `Обработка листов ${i + 1}-${Math.min(i + batchSize, sheets.length)} из ${sheets.length}`,
+        );
 
         const batchPromises = batch.map((sheet, index) =>
-            parseSheet(sheet, i + index).catch((error) => {
-                console.error(`Ошибка при обработке листа ${i + index + 1} (${sheet.name}):`, error.message);
+            parseSheet(sheet, i + index).catch(error => {
+                console.error(
+                    `Ошибка при обработке листа ${i + index + 1} (${sheet.name}):`,
+                    error.message,
+                );
                 // Возвращаем пустую структуру при ошибке
                 return {
                     sheetId: i + index,
@@ -752,7 +907,7 @@ export async function parseExcelToJson(
                         products: [],
                     },
                 } as SheetData;
-            })
+            }),
         );
 
         const batchResults = await Promise.all(batchPromises);
@@ -768,15 +923,21 @@ export async function parseExcelToJson(
 
 // Если запускается напрямую
 if (require.main === module) {
-    const inputFile = path.join(__dirname, '../../../uploads/NEW_мигрция_sheets_1.xlsx');
-    const outputFile = path.join(__dirname, '../../../uploads/gsr.last-migrate.json');
+    const inputFile = path.join(
+        __dirname,
+        '../../../uploads/NEW_мигрция_sheets_1.xlsx',
+    );
+    const outputFile = path.join(
+        __dirname,
+        '../../../uploads/gsr.last-migrate.json',
+    );
 
     parseExcelToJson(inputFile, outputFile)
         .then(() => {
             console.log('Парсинг завершен успешно!');
             process.exit(0);
         })
-        .catch((error) => {
+        .catch(error => {
             console.error('Ошибка при парсинге:', error);
             process.exit(1);
         });

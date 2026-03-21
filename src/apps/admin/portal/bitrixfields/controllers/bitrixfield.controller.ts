@@ -18,7 +18,7 @@ import { CreateBitrixFieldsBulkDto } from '../dto/create-bitrixfields-bulk.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Bitrix Fields Management')
-@Controller('admin/portals/bitrixfields')
+@Controller('admin/pbx/bitrixfields')
 export class BitrixFieldController {
     constructor(private readonly fieldService: BitrixFieldService) {}
 
@@ -29,12 +29,11 @@ export class BitrixFieldController {
         type: BitrixFieldResponseDto,
     })
     @Post()
-    async createField(@Body() createFieldDto: CreateBitrixFieldDto): Promise<SuccessResponseDto> {
+    async createField(
+        @Body() createFieldDto: CreateBitrixFieldDto,
+    ): Promise<BitrixFieldResponseDto> {
         const field = await this.fieldService.create(createFieldDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: field,
-        };
+        return field;
     }
 
     @ApiOperation({ summary: 'Create multiple fields with items in bulk' })
@@ -44,12 +43,11 @@ export class BitrixFieldController {
         type: [BitrixFieldResponseDto],
     })
     @Post('bulk')
-    async createFieldsBulk(@Body() createFieldsBulkDto: CreateBitrixFieldsBulkDto): Promise<SuccessResponseDto> {
+    async createFieldsBulk(
+        @Body() createFieldsBulkDto: CreateBitrixFieldsBulkDto,
+    ): Promise<BitrixFieldResponseDto[]> {
         const fields = await this.fieldService.createBulk(createFieldsBulkDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: fields,
-        };
+        return fields;
     }
 
     @ApiOperation({ summary: 'Get field by ID' })
@@ -59,12 +57,11 @@ export class BitrixFieldController {
         type: BitrixFieldResponseDto,
     })
     @Get(':id')
-    async getFieldById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getFieldById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BitrixFieldResponseDto> {
         const field = await this.fieldService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: field,
-        };
+        return field;
     }
 
     @ApiOperation({ summary: 'Get all fields' })
@@ -78,20 +75,24 @@ export class BitrixFieldController {
         @Query('entity_type') entityType?: string,
         @Query('entity_id') entityId?: string,
         @Query('parent_type') parentType?: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BitrixFieldResponseDto[]> {
         let fields;
         if (entityType && entityId && parentType) {
-            fields = await this.fieldService.findByEntityAndParentType(entityType, Number(entityId), parentType);
+            fields = await this.fieldService.findByEntityAndParentType(
+                entityType,
+                Number(entityId),
+                parentType,
+            );
         } else if (entityType && entityId) {
-            fields = await this.fieldService.findByEntity(entityType, Number(entityId));
+            fields = await this.fieldService.findByEntity(
+                entityType,
+                Number(entityId),
+            );
         } else {
             fields = await this.fieldService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: fields,
-        };
+        return fields;
     }
 
     @ApiOperation({ summary: 'Update field' })
@@ -104,12 +105,9 @@ export class BitrixFieldController {
     async updateField(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateFieldDto: UpdateBitrixFieldDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BitrixFieldResponseDto> {
         const field = await this.fieldService.update(id, updateFieldDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: field,
-        };
+        return field;
     }
 
     @ApiOperation({ summary: 'Delete field' })
@@ -118,12 +116,8 @@ export class BitrixFieldController {
         description: 'Field deleted successfully',
     })
     @Delete(':id')
-    async deleteField(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteField(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.fieldService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

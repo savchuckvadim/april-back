@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { timezones } from 'generated/prisma';
 import { TimezoneRepository } from '../repositories/timezone.repository';
 import { CreateTimezoneDto } from '../dto/create-timezone.dto';
@@ -7,7 +11,7 @@ import { TimezoneResponseDto } from '../dto/timezone-response.dto';
 
 @Injectable()
 export class TimezoneService {
-    constructor(private readonly repository: TimezoneRepository) { }
+    constructor(private readonly repository: TimezoneRepository) {}
 
     async create(dto: CreateTimezoneDto): Promise<TimezoneResponseDto> {
         try {
@@ -54,7 +58,10 @@ export class TimezoneService {
         return timezones.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateTimezoneDto): Promise<TimezoneResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateTimezoneDto,
+    ): Promise<TimezoneResponseDto> {
         const timezone = await this.repository.findById(id);
         if (!timezone) {
             throw new NotFoundException(`Timezone with id ${id} not found`);
@@ -65,11 +72,15 @@ export class TimezoneService {
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.value !== undefined) updateData.value = dto.value;
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
             if (dto.type !== undefined) updateData.type = dto.type;
             if (dto.offset !== undefined) updateData.offset = dto.offset;
 
-            const updatedTimezone = await this.repository.update(id, updateData);
+            const updatedTimezone = await this.repository.update(
+                id,
+                updateData,
+            );
             if (!updatedTimezone) {
                 throw new BadRequestException('Failed to update timezone');
             }
@@ -100,4 +111,3 @@ export class TimezoneService {
         };
     }
 }
-

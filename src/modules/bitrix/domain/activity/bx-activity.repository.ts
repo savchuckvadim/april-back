@@ -14,7 +14,7 @@ import {
 import { delay } from '@/lib';
 
 export class BxActivityRepository {
-    constructor(private readonly bitrixService: BitrixBaseApi) { }
+    constructor(private readonly bitrixService: BitrixBaseApi) {}
 
     async get(id: number) {
         return this.bitrixService.callType(
@@ -68,7 +68,7 @@ export class BxActivityRepository {
     async getAll(
         filter: Partial<BXActivityRequestFields>,
         select?: string[],
-        limit?: number
+        limit?: number,
     ): Promise<{
         activities: IBXActivity[];
         total: number;
@@ -88,7 +88,7 @@ export class BxActivityRepository {
                         '>ID': lastId,
                     },
                     order: { ID: 'ASC' },
-                    start: -1
+                    start: -1,
                 },
             );
             if (result && result.result) {
@@ -98,7 +98,10 @@ export class BxActivityRepository {
                 });
             }
 
-            if (result.result.length < 50 || (limit && results.length >= limit)) {
+            if (
+                result.result.length < 50 ||
+                (limit && results.length >= limit)
+            ) {
                 condition = false;
             }
             await delay(1000);
@@ -111,7 +114,7 @@ export class BxActivityRepository {
     async getAllFresh(
         filter: Partial<BXActivityRequestFields>,
         select?: string[],
-        limit?: number
+        limit?: number,
     ): Promise<{
         activities: IBXActivity[];
         total: number;
@@ -120,9 +123,8 @@ export class BxActivityRepository {
         const results = [] as IBXActivity[];
         let lastId = undefined as undefined | number | string;
         while (condition) {
-            const filterWithId = lastId !== undefined
-                ? { ...filter, '<ID': lastId }
-                : filter;
+            const filterWithId =
+                lastId !== undefined ? { ...filter, '<ID': lastId } : filter;
 
             const result = await this.bitrixService.callType(
                 EBxNamespace.CRM,
@@ -132,7 +134,7 @@ export class BxActivityRepository {
                     select,
                     filter: filterWithId,
                     order: { ID: 'DESC' },
-                    start: -1
+                    start: -1,
                 },
             );
             if (result && result.result && result.result.length > 0) {

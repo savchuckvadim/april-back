@@ -1,5 +1,4 @@
-import { Client, Portal, User } from "generated/prisma";
-
+import { Client, Portal, User } from 'generated/prisma';
 
 export abstract class ClientRepository {
     abstract create(client: Partial<Client>): Promise<Client | null>;
@@ -10,6 +9,9 @@ export abstract class ClientRepository {
     abstract findByIsActive(isActive: boolean): Promise<Client[] | null>;
     abstract findByPortalId(portalId: number): Promise<Client[] | null>;
     abstract findByUserId(userId: number): Promise<Client[] | null>;
-    abstract update(id: number, client: Partial<Client>): Promise<Client | null>;
+    abstract update(
+        id: number,
+        client: Partial<Client>,
+    ): Promise<Client | null>;
     abstract delete(id: number): Promise<boolean>;
 }

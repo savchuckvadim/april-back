@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ContractBitrixPushService {
-    constructor(private readonly pbx: PBXService) { }
+    constructor(private readonly pbx: PBXService) {}
 
     public async setInBitrix(
         dto: ContractGenerateDto,

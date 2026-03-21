@@ -33,8 +33,6 @@ export enum BITRIX_APP_GROUPS {
 export enum BITRIX_APP_CODES {
     SALES = 'sales_full',
     SERVICE = 'service_full',
-
-
 }
 
 export enum API_ENDPOINTS {
@@ -54,7 +52,7 @@ export enum HTTP_STATUS_CODES {
     FORBIDDEN = 403,
     NOT_FOUND = 404,
     INTERNAL_SERVER_ERROR = 500,
-};
+}
 
 export enum ERROR_MESSAGES {
     APP_NOT_FOUND = 'Bitrix App not found',
@@ -73,9 +71,12 @@ export enum SUCCESS_MESSAGES {
 }
 
 // Типы для TypeScript
-export type BitrixAppType = typeof BITRIX_APP_TYPES[keyof typeof BITRIX_APP_TYPES];
-export type BitrixAppStatus = typeof BITRIX_APP_STATUSES[keyof typeof BITRIX_APP_STATUSES];
-export type BitrixAppGroup = typeof BITRIX_APP_GROUPS[keyof typeof BITRIX_APP_GROUPS];
+export type BitrixAppType =
+    (typeof BITRIX_APP_TYPES)[keyof typeof BITRIX_APP_TYPES];
+export type BitrixAppStatus =
+    (typeof BITRIX_APP_STATUSES)[keyof typeof BITRIX_APP_STATUSES];
+export type BitrixAppGroup =
+    (typeof BITRIX_APP_GROUPS)[keyof typeof BITRIX_APP_GROUPS];
 
 // Валидационные массивы
 export const VALID_APP_TYPES = Object.values(BITRIX_APP_TYPES);

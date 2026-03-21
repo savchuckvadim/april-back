@@ -7,9 +7,7 @@ import { BitrixSecretPrismaRepository } from './repositories/bitrix-secret.prism
 
 @Module({
     imports: [],
-    controllers: [
-        BitrixSecretController,
-    ],
+    controllers: [BitrixSecretController],
     providers: [
         BitrixSecretService,
         {
@@ -18,9 +16,6 @@ import { BitrixSecretPrismaRepository } from './repositories/bitrix-secret.prism
         },
         PrismaService,
     ],
-    exports: [
-        BitrixSecretService,
-        BitrixSecretRepository,
-    ],
+    exports: [BitrixSecretService, BitrixSecretRepository],
 })
-export class SecretModule { }
+export class SecretModule {}

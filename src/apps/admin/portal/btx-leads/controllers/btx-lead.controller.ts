@@ -17,9 +17,9 @@ import { BtxLeadResponseDto } from '../dto/btx-lead-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Leads Management')
-@Controller('admin/portals/btx-leads')
+@Controller('admin/pbx/btx-leads')
 export class BtxLeadController {
-    constructor(private readonly leadService: BtxLeadService) { }
+    constructor(private readonly leadService: BtxLeadService) {}
 
     @ApiOperation({ summary: 'Create a new btx lead' })
     @ApiResponse({
@@ -28,12 +28,11 @@ export class BtxLeadController {
         type: BtxLeadResponseDto,
     })
     @Post()
-    async createLead(@Body() createLeadDto: CreateBtxLeadDto): Promise<SuccessResponseDto> {
+    async createLead(
+        @Body() createLeadDto: CreateBtxLeadDto,
+    ): Promise<BtxLeadResponseDto> {
         const lead = await this.leadService.create(createLeadDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: lead,
-        };
+        return lead;
     }
 
     @ApiOperation({ summary: 'Get lead by ID' })
@@ -43,12 +42,11 @@ export class BtxLeadController {
         type: BtxLeadResponseDto,
     })
     @Get(':id')
-    async getLeadById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getLeadById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BtxLeadResponseDto> {
         const lead = await this.leadService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: lead,
-        };
+        return lead;
     }
 
     @ApiOperation({ summary: 'Get all leads' })
@@ -58,7 +56,9 @@ export class BtxLeadController {
         type: [BtxLeadResponseDto],
     })
     @Get()
-    async getAllLeads(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllLeads(
+        @Query('portal_id') portalId?: string,
+    ): Promise<BtxLeadResponseDto[]> {
         let leads;
         if (portalId) {
             leads = await this.leadService.findByPortalId(Number(portalId));
@@ -66,10 +66,7 @@ export class BtxLeadController {
             leads = await this.leadService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: leads,
-        };
+        return leads;
     }
 
     @ApiOperation({ summary: 'Update lead' })
@@ -82,12 +79,9 @@ export class BtxLeadController {
     async updateLead(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateLeadDto: UpdateBtxLeadDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxLeadResponseDto> {
         const lead = await this.leadService.update(id, updateLeadDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: lead,
-        };
+        return lead;
     }
 
     @ApiOperation({ summary: 'Delete lead' })
@@ -96,12 +90,8 @@ export class BtxLeadController {
         description: 'Lead deleted successfully',
     })
     @Delete(':id')
-    async deleteLead(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteLead(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.leadService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

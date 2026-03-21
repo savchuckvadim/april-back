@@ -17,9 +17,9 @@ import { BxRqResponseDto } from '../dto/bx-rq-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Bx RQs Management')
-@Controller('admin/portals/bx-rqs')
+@Controller('admin/pbx/bx-rqs')
 export class BxRqController {
-    constructor(private readonly rqService: BxRqService) { }
+    constructor(private readonly rqService: BxRqService) {}
 
     @ApiOperation({ summary: 'Create a new bx RQ' })
     @ApiResponse({
@@ -28,12 +28,11 @@ export class BxRqController {
         type: BxRqResponseDto,
     })
     @Post()
-    async createRq(@Body() createRqDto: CreateBxRqDto): Promise<SuccessResponseDto> {
+    async createRq(
+        @Body() createRqDto: CreateBxRqDto,
+    ): Promise<BxRqResponseDto> {
         const rq = await this.rqService.create(createRqDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rq,
-        };
+        return rq;
     }
 
     @ApiOperation({ summary: 'Get RQ by ID' })
@@ -43,12 +42,11 @@ export class BxRqController {
         type: BxRqResponseDto,
     })
     @Get(':id')
-    async getRqById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getRqById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BxRqResponseDto> {
         const rq = await this.rqService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rq,
-        };
+        return rq;
     }
 
     @ApiOperation({ summary: 'Get all RQs' })
@@ -58,7 +56,9 @@ export class BxRqController {
         type: [BxRqResponseDto],
     })
     @Get()
-    async getAllRqs(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllRqs(
+        @Query('portal_id') portalId?: string,
+    ): Promise<BxRqResponseDto[]> {
         let rqs;
         if (portalId) {
             rqs = await this.rqService.findByPortalId(Number(portalId));
@@ -66,10 +66,7 @@ export class BxRqController {
             rqs = await this.rqService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rqs,
-        };
+        return rqs;
     }
 
     @ApiOperation({ summary: 'Update RQ' })
@@ -82,12 +79,9 @@ export class BxRqController {
     async updateRq(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateRqDto: UpdateBxRqDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BxRqResponseDto> {
         const rq = await this.rqService.update(id, updateRqDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: rq,
-        };
+        return rq;
     }
 
     @ApiOperation({ summary: 'Delete RQ' })
@@ -96,12 +90,8 @@ export class BxRqController {
         description: 'RQ deleted successfully',
     })
     @Delete(':id')
-    async deleteRq(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteRq(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
         await this.rqService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

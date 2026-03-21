@@ -29,7 +29,7 @@ export class GsrBitrixService {
         private readonly dealService: GsrMigrateBitrixDealService,
         private readonly productRowService: GsrMigrateBitrixProductRowService,
         private readonly contactService: GsrMigrateBitrixContactService,
-    ) { }
+    ) {}
 
     async migrateToBitrix(
         domain: string,
@@ -53,26 +53,31 @@ export class GsrBitrixService {
         // chunk.
 
         for (const element of data) {
-            const companyId = await this.companyService.getCompanyResutId(element);
+            const companyId =
+                await this.companyService.getCompanyResutId(element);
             console.log(companyId);
 
-            const contactIds = await this.contactService.getContactSetContactsByCompanyId(
-                element,
-                companyId.toString(),
-            );
+            const contactIds =
+                await this.contactService.getContactSetContactsByCompanyId(
+                    element,
+                    companyId.toString(),
+                );
 
             const dealId = await this.dealService.getDealSet(
                 element,
-                companyId.toString()
-
+                companyId.toString(),
             );
-            await this.productRowService.getProductRowSetByDealId(element, dealId);
-            await this.dealService.getDealUpdateWithContactIds(dealId, contactIds);
+            await this.productRowService.getProductRowSetByDealId(
+                element,
+                dealId,
+            );
+            await this.dealService.getDealUpdateWithContactIds(
+                dealId,
+                contactIds,
+            );
 
-            await delay(3000)
-
+            await delay(3000);
         }
-
 
         const result = await this.bitrix.api.callBatchWithConcurrency(1);
         console.log(result);
@@ -136,8 +141,6 @@ export class GsrBitrixService {
             this.dealService.getDealUpdateCommand(cntcCmds, dealCmd);
 
             // }
-
-
         });
 
         const result = await this.bitrix.api.callBatchWithConcurrency(1);
@@ -209,7 +212,9 @@ export class GsrBitrixService {
         const pDealContractEndField2 =
             this.portal.getDealFieldBitrixIdByCode('contract_end');
 
-        const pDealCategory = this.portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.service_base);
+        const pDealCategory = this.portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.service_base,
+        );
 
         this.productRowService.setContext(this.bitrix, this.portal, userId);
 

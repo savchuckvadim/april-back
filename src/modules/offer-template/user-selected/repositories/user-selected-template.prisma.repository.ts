@@ -5,24 +5,27 @@ import { UserSelectedTemplate } from '../entities/user-selected-template.entity'
 
 @Injectable()
 export class UserSelectedTemplatePrismaRepository
-    implements UserSelectedTemplateRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    implements UserSelectedTemplateRepository
+{
+    constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: bigint): Promise<UserSelectedTemplate | null> {
-        const result = (await this.prisma.userSelectedTemplate.findUnique({
+        const result = await this.prisma.userSelectedTemplate.findUnique({
             where: { id },
             include: {
                 offerTemplate: true,
             },
-        }));
+        });
         if (!result) return null;
         const entity = {
             ...result,
             id: String(result.id),
-            offerTemplate: result.offerTemplate ? {
-                ...result.offerTemplate,
-                id: String(result.offerTemplate.id),
-            } : undefined,
+            offerTemplate: result.offerTemplate
+                ? {
+                      ...result.offerTemplate,
+                      id: String(result.offerTemplate.id),
+                  }
+                : undefined,
         } as Partial<UserSelectedTemplate>;
 
         return new UserSelectedTemplate(entity);
@@ -62,27 +65,32 @@ export class UserSelectedTemplatePrismaRepository
             where.is_active = filters.is_active;
         }
 
-        const results = (await this.prisma.userSelectedTemplate.findMany({
+        const results = await this.prisma.userSelectedTemplate.findMany({
             where,
             include: {
                 offerTemplate: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
-        const entities = results.map(result => ({
-            ...result,
-            id: String(result.id),
-            offerTemplate: result.offerTemplate ? {
-                ...result.offerTemplate,
-                id: String(result.offerTemplate.id),
-            } : undefined,
-        } as Partial<UserSelectedTemplate>));
+        });
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    id: String(result.id),
+                    offerTemplate: result.offerTemplate
+                        ? {
+                              ...result.offerTemplate,
+                              id: String(result.offerTemplate.id),
+                          }
+                        : undefined,
+                }) as Partial<UserSelectedTemplate>,
+        );
 
         return entities.map(entity => new UserSelectedTemplate(entity));
     }
 
     async findWithRelations(id: bigint): Promise<UserSelectedTemplate | null> {
-        const result = (await this.prisma.userSelectedTemplate.findUnique({
+        const result = await this.prisma.userSelectedTemplate.findUnique({
             where: { id },
             include: {
                 offerTemplate: {
@@ -105,15 +113,17 @@ export class UserSelectedTemplatePrismaRepository
                     },
                 },
             },
-        }));
+        });
         if (!result) return null;
         const entity = {
             ...result,
             id: String(result.id),
-            offerTemplate: result.offerTemplate ? {
-                ...result.offerTemplate,
-                id: String(result.offerTemplate.id),
-            } : undefined,
+            offerTemplate: result.offerTemplate
+                ? {
+                      ...result.offerTemplate,
+                      id: String(result.offerTemplate.id),
+                  }
+                : undefined,
         } as Partial<UserSelectedTemplate>;
 
         return new UserSelectedTemplate(entity);
@@ -122,7 +132,7 @@ export class UserSelectedTemplatePrismaRepository
     async create(
         data: Partial<UserSelectedTemplate>,
     ): Promise<UserSelectedTemplate> {
-        const result = (await this.prisma.userSelectedTemplate.create({
+        const result = await this.prisma.userSelectedTemplate.create({
             data: {
                 bitrix_user_id: data.bitrix_user_id!,
                 portal_id: data.portal_id!,
@@ -139,7 +149,7 @@ export class UserSelectedTemplatePrismaRepository
                 sale_text_4: data.sale_text_4,
                 sale_text_5: data.sale_text_5,
             },
-        }));
+        });
         const entity = {
             ...result,
             id: String(result.id),
@@ -151,7 +161,7 @@ export class UserSelectedTemplatePrismaRepository
         id: bigint,
         data: Partial<UserSelectedTemplate>,
     ): Promise<UserSelectedTemplate> {
-        const result = (await this.prisma.userSelectedTemplate.update({
+        const result = await this.prisma.userSelectedTemplate.update({
             where: { id },
             data: {
                 ...(data.bitrix_user_id && {
@@ -195,7 +205,7 @@ export class UserSelectedTemplatePrismaRepository
                     sale_text_5: data.sale_text_5,
                 }),
             },
-        }));
+        });
         const entity = {
             ...result,
             id: String(result.id),
@@ -213,7 +223,7 @@ export class UserSelectedTemplatePrismaRepository
         user_id: bigint,
         portal_id: bigint,
     ): Promise<UserSelectedTemplate[]> {
-        const results = (await this.prisma.userSelectedTemplate.findMany({
+        const results = await this.prisma.userSelectedTemplate.findMany({
             where: {
                 bitrix_user_id: user_id,
                 portal_id,
@@ -222,15 +232,20 @@ export class UserSelectedTemplatePrismaRepository
                 offerTemplate: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
-        const entities = results.map(result => ({
-            ...result,
-            id: String(result.id),
-            offerTemplate: result.offerTemplate ? {
-                ...result.offerTemplate,
-                id: String(result.offerTemplate.id),
-            } : undefined,
-        } as Partial<UserSelectedTemplate>));
+        });
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    id: String(result.id),
+                    offerTemplate: result.offerTemplate
+                        ? {
+                              ...result.offerTemplate,
+                              id: String(result.offerTemplate.id),
+                          }
+                        : undefined,
+                }) as Partial<UserSelectedTemplate>,
+        );
         return entities.map(entity => new UserSelectedTemplate(entity));
     }
 
@@ -239,7 +254,7 @@ export class UserSelectedTemplatePrismaRepository
         portal_id: bigint,
         template_id: bigint,
     ): Promise<UserSelectedTemplate | null> {
-        const result = (await this.prisma.userSelectedTemplate.findFirst({
+        const result = await this.prisma.userSelectedTemplate.findFirst({
             where: {
                 bitrix_user_id: user_id,
                 portal_id: portal_id,
@@ -248,15 +263,17 @@ export class UserSelectedTemplatePrismaRepository
             include: {
                 offerTemplate: true,
             },
-        }));
+        });
         if (!result) return null;
         const entity = {
             ...result,
             id: String(result.id),
-            offerTemplate: result.offerTemplate ? {
-                ...result.offerTemplate,
-                id: String(result.offerTemplate.id),
-            } : undefined,
+            offerTemplate: result.offerTemplate
+                ? {
+                      ...result.offerTemplate,
+                      id: String(result.offerTemplate.id),
+                  }
+                : undefined,
         } as Partial<UserSelectedTemplate>;
 
         return new UserSelectedTemplate(entity);
@@ -284,7 +301,7 @@ export class UserSelectedTemplatePrismaRepository
         user_id: bigint,
         portal_id: bigint,
     ): Promise<UserSelectedTemplate[]> {
-        const results = (await this.prisma.userSelectedTemplate.findMany({
+        const results = await this.prisma.userSelectedTemplate.findMany({
             where: {
                 bitrix_user_id: user_id,
                 portal_id,
@@ -294,16 +311,20 @@ export class UserSelectedTemplatePrismaRepository
                 offerTemplate: true,
             },
             orderBy: { created_at: 'desc' },
-        }));
-        const entities = results.map(result => ({
-            ...result,
-            id: String(result.id),
-            offerTemplate: result.offerTemplate ? {
-                ...result.offerTemplate,
-                id: String(result.offerTemplate.id),
-            } : undefined,
-        } as Partial<UserSelectedTemplate>));
-
+        });
+        const entities = results.map(
+            result =>
+                ({
+                    ...result,
+                    id: String(result.id),
+                    offerTemplate: result.offerTemplate
+                        ? {
+                              ...result.offerTemplate,
+                              id: String(result.offerTemplate.id),
+                          }
+                        : undefined,
+                }) as Partial<UserSelectedTemplate>,
+        );
 
         return entities.map(entity => new UserSelectedTemplate(entity));
     }

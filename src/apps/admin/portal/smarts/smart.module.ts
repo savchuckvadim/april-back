@@ -18,4 +18,3 @@ import { SmartController } from './controllers/smart.controller';
     exports: [SmartService, SmartRepository],
 })
 export class SmartModule {}
-

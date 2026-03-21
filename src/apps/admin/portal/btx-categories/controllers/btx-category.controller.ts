@@ -17,9 +17,9 @@ import { BtxCategoryResponseDto } from '../dto/btx-category-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Categories Management')
-@Controller('admin/portals/btx-categories')
+@Controller('admin/pbx/btx-categories')
 export class BtxCategoryController {
-    constructor(private readonly categoryService: BtxCategoryService) { }
+    constructor(private readonly categoryService: BtxCategoryService) {}
 
     @ApiOperation({ summary: 'Create a new btx category with optional stages' })
     @ApiResponse({
@@ -28,12 +28,11 @@ export class BtxCategoryController {
         type: BtxCategoryResponseDto,
     })
     @Post()
-    async createCategory(@Body() createCategoryDto: CreateBtxCategoryDto): Promise<SuccessResponseDto> {
+    async createCategory(
+        @Body() createCategoryDto: CreateBtxCategoryDto,
+    ): Promise<BtxCategoryResponseDto> {
         const category = await this.categoryService.create(createCategoryDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: category,
-        };
+        return category;
     }
 
     @ApiOperation({ summary: 'Get category by ID' })
@@ -43,12 +42,11 @@ export class BtxCategoryController {
         type: BtxCategoryResponseDto,
     })
     @Get(':id')
-    async getCategoryById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getCategoryById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<BtxCategoryResponseDto> {
         const category = await this.categoryService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: category,
-        };
+        return category;
     }
 
     @ApiOperation({ summary: 'Get all categories' })
@@ -62,20 +60,24 @@ export class BtxCategoryController {
         @Query('entity_type') entityType?: string,
         @Query('entity_id') entityId?: string,
         @Query('parent_type') parentType?: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCategoryResponseDto[]> {
         let categories;
         if (entityType && entityId && parentType) {
-            categories = await this.categoryService.findByEntityAndParentType(entityType, Number(entityId), parentType);
+            categories = await this.categoryService.findByEntityAndParentType(
+                entityType,
+                Number(entityId),
+                parentType,
+            );
         } else if (entityType && entityId) {
-            categories = await this.categoryService.findByEntity(entityType, Number(entityId));
+            categories = await this.categoryService.findByEntity(
+                entityType,
+                Number(entityId),
+            );
         } else {
             categories = await this.categoryService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: categories,
-        };
+        return categories;
     }
 
     @ApiOperation({ summary: 'Update category' })
@@ -88,12 +90,12 @@ export class BtxCategoryController {
     async updateCategory(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateCategoryDto: UpdateBtxCategoryDto,
-    ): Promise<SuccessResponseDto> {
-        const category = await this.categoryService.update(id, updateCategoryDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: category,
-        };
+    ): Promise<BtxCategoryResponseDto> {
+        const category = await this.categoryService.update(
+            id,
+            updateCategoryDto,
+        );
+        return category;
     }
 
     @ApiOperation({ summary: 'Delete category' })
@@ -102,12 +104,10 @@ export class BtxCategoryController {
         description: 'Category deleted successfully',
     })
     @Delete(':id')
-    async deleteCategory(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteCategory(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<boolean> {
         await this.categoryService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }
-

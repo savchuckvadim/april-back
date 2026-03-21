@@ -1,7 +1,7 @@
 import { PrismaService } from '@/core/prisma';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PbxFieldService } from '@/modules/pbx-domain/field/pbx-field.service';
-import { PbxFieldEntityType } from '@/modules/pbx-domain/field/pbx-field.entity';
+import { PbxFieldService } from '@/modules/pbx-domain/field/';
+import { PbxFieldEntityType } from '@/modules/pbx-domain/field/entity/pbx-field.entity';
 import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 
@@ -15,7 +15,7 @@ export class PortalSmartService {
         private readonly prisma: PrismaService,
         private readonly pbxFieldService: PbxFieldService,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
     async getSmartByPortalAndName(domain: string, smartName: SmartNameEnum) {
         const portal = await this.portalService.getPortalByDomain(domain);

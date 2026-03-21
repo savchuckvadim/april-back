@@ -16,7 +16,7 @@ export class TranscriptionService {
         private readonly streamingTranscriptionService: StreamingTranscriptionService,
         private readonly onlineClient: OnlineTranscriptionService,
         private readonly transcriptionStoreService: TranscriptionStoreService,
-    ) { }
+    ) {}
 
     async transcribe(
         fileUrl: string,
@@ -38,25 +38,26 @@ export class TranscriptionService {
         try {
             await this.updateStatus(taskId, 'processing');
 
-            const transcriptionOnline = await this.transcriptionStoreService.create({
-                userName: userName,
-                app: appName,
-                activityId: activityId,
-                fileId: fileId,
-                duration: duration,
-                department: department,
-                domain: domain,
-                userId: userId,
-                entityType: entityType,
-                entityId: entityId,
-                entityName: entityName,
-                status: 'processing',
-                symbolsCount: '0',
-                price: '0',
-                text: '',
-                provider: 'yandex',
-                inComment: false,
-            });
+            const transcriptionOnline =
+                await this.transcriptionStoreService.create({
+                    userName: userName,
+                    app: appName,
+                    activityId: activityId,
+                    fileId: fileId,
+                    duration: duration,
+                    department: department,
+                    domain: domain,
+                    userId: userId,
+                    entityType: entityType,
+                    entityId: entityId,
+                    entityName: entityName,
+                    status: 'processing',
+                    symbolsCount: '0',
+                    price: '0',
+                    text: '',
+                    provider: 'yandex',
+                    inComment: false,
+                });
             // await this.onlineClient.sendTranscription({
             //     user_name: userName,
             //     app: appName,
@@ -146,9 +147,8 @@ export class TranscriptionService {
                             symbolsCount: text.length.toString(),
                             price: '0',
                             text: text,
-
-                        }
-                    )
+                        },
+                    );
                 }
                 return text;
             }
@@ -178,9 +178,8 @@ export class TranscriptionService {
                         symbolsCount: text.length.toString(),
                         price: '0',
                         text: text,
-
-                    }
-                )
+                    },
+                );
             }
 
             return null;

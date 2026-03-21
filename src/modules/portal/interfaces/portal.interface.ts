@@ -241,16 +241,12 @@ export type PMeasureCode =
     | 'abonYear'
     | 'abonTwoYears';
 
-
 export interface IPCallingTasksGroup {
     id: number;
-    type: "sales" | "service" | "tmc";
-    group: "sales" | "service" | "tmc";
+    type: 'sales' | 'service' | 'tmc';
+    group: 'sales' | 'service' | 'tmc';
     name: string;
     title: string;
     bitrixId: number;
-    portal_id: number
+    portal_id: number;
 }
-
-
-

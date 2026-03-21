@@ -1,4 +1,12 @@
-import { IsDate, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+    IsDate,
+    IsEmail,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+    IsString,
+    MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -16,7 +24,11 @@ export class CreateUserDto {
     @IsEmail()
     email: string;
 
-    @ApiProperty({ description: 'User password', example: 'password123', minLength: 6 })
+    @ApiProperty({
+        description: 'User password',
+        example: 'password123',
+        minLength: 6,
+    })
     @IsNotEmpty()
     @IsString()
     @MinLength(6)
@@ -27,7 +39,10 @@ export class CreateUserDto {
     @IsNumber()
     client_id: number;
 
-    @ApiPropertyOptional({ description: 'User photo URL', example: 'https://example.com/photo.jpg' })
+    @ApiPropertyOptional({
+        description: 'User photo URL',
+        example: 'https://example.com/photo.jpg',
+    })
     @IsOptional()
     @IsString()
     photo?: string;
@@ -42,7 +57,10 @@ export class CreateUserDto {
     @IsNumber()
     role_id?: number | undefined;
 
-    @ApiPropertyOptional({ description: 'Email verified at', example: '2024-01-01T00:00:00.000Z' })
+    @ApiPropertyOptional({
+        description: 'Email verified at',
+        example: '2024-01-01T00:00:00.000Z',
+    })
     @IsOptional()
     @IsDate()
     email_verified_at?: Date;

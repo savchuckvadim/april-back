@@ -7,7 +7,7 @@ import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
 import { IBXRecentListRequest } from '../interface/bx-recent.interface';
 
 export class BxRecentRepository {
-    constructor(private readonly bxApi: BitrixBaseApi) { }
+    constructor(private readonly bxApi: BitrixBaseApi) {}
 
     async getList(params?: IBXRecentListRequest) {
         return await this.bxApi.callType(
@@ -28,4 +28,3 @@ export class BxRecentRepository {
         );
     }
 }
-

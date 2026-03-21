@@ -1,5 +1,11 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import {
+    IsArray,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+    IsString,
+} from 'class-validator';
 
 export class BxRecordsByCompanyRequestDto {
     @ApiProperty({
@@ -18,12 +24,11 @@ export class BxRecordsByCompanyRequestDto {
     @IsNotEmpty()
     companyId: number;
 
-
     @ApiProperty({
         description: 'ids of relations contacts',
-        example: [1, 2, 3]
+        example: [1, 2, 3],
     })
     @IsOptional()
     @IsArray()
-    contactIds: number[]
+    contactIds: number[];
 }

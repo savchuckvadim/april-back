@@ -8,9 +8,7 @@ import { BitrixPlacementPrismaRepository } from './repositories/bitrix-placement
 
 @Module({
     imports: [],
-    controllers: [
-        BitrixPlacementController,
-    ],
+    controllers: [BitrixPlacementController],
     providers: [
         BitrixPlacementService,
         {
@@ -19,9 +17,6 @@ import { BitrixPlacementPrismaRepository } from './repositories/bitrix-placement
         },
         PrismaService,
     ],
-    exports: [
-        BitrixPlacementService,
-        BitrixPlacementRepository,
-    ],
+    exports: [BitrixPlacementService, BitrixPlacementRepository],
 })
-export class PlacementModule { }
+export class PlacementModule {}

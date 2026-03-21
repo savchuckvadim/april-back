@@ -18,14 +18,14 @@ import { OfferTemplateFont } from '../entities/offer-template-font.entity';
 import { OfferTemplateFontQueryDto } from '../dtos/offer-template-font-request.dto';
 import {
     OfferTemplateFontIdParamsDto,
-    OfferTemplateFontTemplateIdParamsDto
+    OfferTemplateFontTemplateIdParamsDto,
 } from '../dtos/offer-template-font-params.dto';
 
 @Controller('offer-template-fonts')
 export class OfferTemplateFontController {
     constructor(
         private readonly offerTemplateFontService: OfferTemplateFontService,
-    ) { }
+    ) {}
 
     @Post()
     async create(
@@ -67,7 +67,9 @@ export class OfferTemplateFontController {
     async findOneWithRelations(
         @Param() params: OfferTemplateFontIdParamsDto,
     ): Promise<OfferTemplateFont> {
-        return this.offerTemplateFontService.findWithRelations(BigInt(params.id));
+        return this.offerTemplateFontService.findWithRelations(
+            BigInt(params.id),
+        );
     }
 
     @Patch(':id')

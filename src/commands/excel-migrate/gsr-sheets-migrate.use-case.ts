@@ -7,7 +7,7 @@ import * as ExcelJS from 'exceljs';
 export class GsrSheetsMigrateUseCase {
     constructor(
         private readonly parseService: GsrParseService,
-        private readonly bitrixService: GsrBitrixService
+        private readonly bitrixService: GsrBitrixService,
     ) {}
 
     async migrate(domain: string, userId: string, filePath: string) {

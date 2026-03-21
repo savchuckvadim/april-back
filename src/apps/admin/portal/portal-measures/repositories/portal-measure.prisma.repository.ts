@@ -7,7 +7,9 @@ import { PortalMeasureRepository } from './portal-measure.repository';
 export class PortalMeasurePrismaRepository implements PortalMeasureRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(portalMeasure: Partial<portal_measure>): Promise<portal_measure | null> {
+    async create(
+        portalMeasure: Partial<portal_measure>,
+    ): Promise<portal_measure | null> {
         const result = await this.prisma.portal_measure.create({
             data: {
                 measure_id: BigInt(portalMeasure.measure_id!),
@@ -68,14 +70,23 @@ export class PortalMeasurePrismaRepository implements PortalMeasureRepository {
         return result;
     }
 
-    async update(id: number, portalMeasure: Partial<portal_measure>): Promise<portal_measure | null> {
+    async update(
+        id: number,
+        portalMeasure: Partial<portal_measure>,
+    ): Promise<portal_measure | null> {
         const updateData: any = {};
-        if (portalMeasure.measure_id !== undefined) updateData.measure_id = BigInt(portalMeasure.measure_id);
-        if (portalMeasure.portal_id !== undefined) updateData.portal_id = BigInt(portalMeasure.portal_id);
-        if (portalMeasure.bitrixId !== undefined) updateData.bitrixId = portalMeasure.bitrixId;
-        if (portalMeasure.name !== undefined) updateData.name = portalMeasure.name;
-        if (portalMeasure.shortName !== undefined) updateData.shortName = portalMeasure.shortName;
-        if (portalMeasure.fullName !== undefined) updateData.fullName = portalMeasure.fullName;
+        if (portalMeasure.measure_id !== undefined)
+            updateData.measure_id = BigInt(portalMeasure.measure_id);
+        if (portalMeasure.portal_id !== undefined)
+            updateData.portal_id = BigInt(portalMeasure.portal_id);
+        if (portalMeasure.bitrixId !== undefined)
+            updateData.bitrixId = portalMeasure.bitrixId;
+        if (portalMeasure.name !== undefined)
+            updateData.name = portalMeasure.name;
+        if (portalMeasure.shortName !== undefined)
+            updateData.shortName = portalMeasure.shortName;
+        if (portalMeasure.fullName !== undefined)
+            updateData.fullName = portalMeasure.fullName;
 
         const result = await this.prisma.portal_measure.update({
             where: { id: BigInt(id) },
@@ -95,4 +106,3 @@ export class PortalMeasurePrismaRepository implements PortalMeasureRepository {
         return result ? true : false;
     }
 }
-

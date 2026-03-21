@@ -14,12 +14,8 @@ import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
         HttpModule,
         // BitrixSetupAppModule,
     ],
-    providers: [
-        BitrixApiFactoryService,
-    ],
-    exports: [
-        BitrixApiFactoryService,
-    ],
+    providers: [BitrixApiFactoryService],
+    exports: [BitrixApiFactoryService],
     //     // {
     //     //     provide: BitrixAuthService,
     //     //     useFactory: (http: HttpService, bitrixAppService: BitrixAppService, bitrixTokenService: BitrixTokenService) => {
@@ -33,14 +29,13 @@ import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
     //     // forwardRef(() => BitrixApiFactoryService), BitrixTokenService],
     //     // },
 
-
     // ],
     // exports: [
     //     // BitrixRequestApiService,
     //     BitrixApiFactoryService
     // ],
 })
-export class BitrixCoreModule { }
+export class BitrixCoreModule {}
 
 // В HTTP В любом Controller или Service просто инжектируешь bitrixApi: BitrixApiService — он уже готов.
 // В очередях BitrixContext

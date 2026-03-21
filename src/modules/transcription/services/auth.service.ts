@@ -21,20 +21,18 @@ export class AuthService {
             this.keyJsonPath = path.join(process.cwd(), 'keys', 'key.json');
         } catch (error) {
             this.logger.error('Error initializing AuthService:', error);
-
         }
-
 
         this.logger.log(`Key JSON path: ${this.keyJsonPath}`);
 
         if (!fs.existsSync(this.keyJsonPath)) {
             this.logger.error(`Key file not found: ${this.keyJsonPath}`);
             // throw new Error(`Key file not found: ${this.keyJsonPath}`);
-        }else {
-            this.keyData = JSON.parse(fs.readFileSync(this.keyJsonPath, 'utf8'));
-
+        } else {
+            this.keyData = JSON.parse(
+                fs.readFileSync(this.keyJsonPath, 'utf8'),
+            );
         }
-
     }
 
     async getIamToken(): Promise<string | null> {

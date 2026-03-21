@@ -94,4 +94,3 @@ export class BtxCategoryResponseDto {
     })
     updated_at?: Date | null;
 }
-

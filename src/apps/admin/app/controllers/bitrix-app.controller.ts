@@ -11,15 +11,19 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
-import { CreateBitrixAppDto, UpdateBitrixAppDto, GetBitrixAppDto, BitrixAppDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import {
+    CreateBitrixAppDto,
+    UpdateBitrixAppDto,
+    GetBitrixAppDto,
+    BitrixAppDto,
+} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { toBitrixAppDto } from '@/modules/bitrix-setup/app/lib/bx-app-dto.mapper';
 import { EnabledAppDto } from '@/modules/bitrix-setup/app/dto/enaled-app.dto';
-
 
 @ApiTags('Admin Bitrix App Management')
 @Controller('admin/bitrix-apps')
 export class AdminBitrixAppController {
-    constructor(private readonly bitrixAppService: BitrixAppService) { }
+    constructor(private readonly bitrixAppService: BitrixAppService) {}
 
     @ApiOperation({ summary: 'Create or update a Bitrix app' })
     @ApiResponse({
@@ -27,9 +31,10 @@ export class AdminBitrixAppController {
         description: 'Bitrix app created or updated successfully',
         type: BitrixAppDto,
     })
-  
     @Post('store-or-update')
-    async storeOrUpdateApp(@Body() dto: CreateBitrixAppDto): Promise<BitrixAppDto> {
+    async storeOrUpdateApp(
+        @Body() dto: CreateBitrixAppDto,
+    ): Promise<BitrixAppDto> {
         const result = await this.bitrixAppService.storeOrUpdateApp(dto);
         return result.app;
     }
@@ -69,7 +74,9 @@ export class AdminBitrixAppController {
         type: [BitrixAppDto],
     })
     @Get('portal/:domain')
-    async getAppsByPortal(@Param('domain') domain: string): Promise<BitrixAppDto[]> {
+    async getAppsByPortal(
+        @Param('domain') domain: string,
+    ): Promise<BitrixAppDto[]> {
         const apps = await this.bitrixAppService.getAppsByPortal(domain);
         return apps.map(app => toBitrixAppDto(app));
     }
@@ -77,11 +84,13 @@ export class AdminBitrixAppController {
     @ApiOperation({ summary: 'Get Bitrix apps by portal ID' })
     @ApiResponse({
         status: 200,
-        description: 'Bitrix apps found',   
+        description: 'Bitrix apps found',
         type: [BitrixAppDto],
     })
     @Get('portal-id/:portalId')
-    async getAppsByPortalId(@Param('portalId', ParseIntPipe) portalId: number): Promise<BitrixAppDto[]> {
+    async getAppsByPortalId(
+        @Param('portalId', ParseIntPipe) portalId: number,
+    ): Promise<BitrixAppDto[]> {
         const apps = await this.bitrixAppService.getAppsByPortalId(portalId);
         return apps.map(app => toBitrixAppDto(app));
     }
@@ -101,7 +110,7 @@ export class AdminBitrixAppController {
     @ApiOperation({ summary: 'Update Bitrix app' })
     @ApiResponse({
         status: 200,
-        description: 'Bitrix app updated successfully', 
+        description: 'Bitrix app updated successfully',
         type: BitrixAppDto,
     })
     @ApiResponse({
@@ -133,4 +142,3 @@ export class AdminBitrixAppController {
         return result;
     }
 }
-

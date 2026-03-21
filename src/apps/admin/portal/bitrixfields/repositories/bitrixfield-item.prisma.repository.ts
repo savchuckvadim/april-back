@@ -4,10 +4,14 @@ import { PrismaService } from '@/core/prisma';
 import { BitrixFieldItemRepository } from './bitrixfield-item.repository';
 
 @Injectable()
-export class BitrixFieldItemPrismaRepository implements BitrixFieldItemRepository {
+export class BitrixFieldItemPrismaRepository
+    implements BitrixFieldItemRepository
+{
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(item: Partial<bitrixfield_items>): Promise<bitrixfield_items | null> {
+    async create(
+        item: Partial<bitrixfield_items>,
+    ): Promise<bitrixfield_items | null> {
         const result = await this.prisma.bitrixfield_items.create({
             data: {
                 bitrixfield_id: BigInt(item.bitrixfield_id!),
@@ -47,7 +51,10 @@ export class BitrixFieldItemPrismaRepository implements BitrixFieldItemRepositor
         return result;
     }
 
-    async update(id: number, item: Partial<bitrixfield_items>): Promise<bitrixfield_items | null> {
+    async update(
+        id: number,
+        item: Partial<bitrixfield_items>,
+    ): Promise<bitrixfield_items | null> {
         const updateData: any = {};
         if (item.name !== undefined) updateData.name = item.name;
         if (item.title !== undefined) updateData.title = item.title;
@@ -75,4 +82,3 @@ export class BitrixFieldItemPrismaRepository implements BitrixFieldItemRepositor
         return result.count;
     }
 }
-

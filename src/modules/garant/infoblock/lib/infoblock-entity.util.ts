@@ -3,9 +3,7 @@ import { InfoblockEntity, InfoblockLightEntity } from '../infoblock.entity';
 import { Infoblock } from 'generated/prisma';
 
 export function createInfoblockEntityFromPrisma(
-    data: NonNullable<
-        Awaited<Infoblock>
-    >,
+    data: NonNullable<Awaited<Infoblock>>,
 ): InfoblockEntity {
     const entity = new InfoblockEntity();
     entity.id = data.id.toString();
@@ -18,7 +16,7 @@ export function createInfoblockEntityFromPrisma(
     entity.weight = data.weight;
     entity.code = data.code;
     entity.inGroupId = data.inGroupId?.toString() ?? null;
-    entity.group_id = (data.group_id || BigInt(0)).toString();
+    entity.group_id = data.group_id?.toString() ?? null;
     entity.isLa = data.isLa;
     entity.isFree = data.isFree;
     entity.isShowing = data.isShowing;

@@ -1,30 +1,17 @@
-import {
-    IsString,
-    IsOptional,
-    IsBoolean,
-    IsEnum,
-} from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OfferTemplateVisibility } from './create-offer-template.dto';
 
-
-
-
 export class OfferTemplateQueryDto {
-
-
-
-
     @ApiPropertyOptional({
         description: 'The visibility of the offer template',
         enum: OfferTemplateVisibility,
         enumName: 'OfferTemplateVisibility',
-        required: false,  // 👈 обязательно!
+        required: false, // 👈 обязательно!
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
     visibility?: OfferTemplateVisibility = OfferTemplateVisibility.USER;
-
 
     @ApiPropertyOptional({
         description: 'The portal id of the offer template',
@@ -53,4 +40,3 @@ export class OfferTemplateQueryDto {
     @IsOptional()
     search?: string;
 }
-

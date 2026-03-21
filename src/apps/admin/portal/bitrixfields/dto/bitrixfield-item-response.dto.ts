@@ -49,4 +49,3 @@ export class BitrixFieldItemResponseDto {
     })
     updated_at?: Date | null;
 }
-

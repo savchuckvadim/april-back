@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { InfogroupController } from './infogroup.controller';
-import { InfogroupService } from './infogroup.service';
-import { InfogroupRepository } from './infogroup.repository';
-import { InfogroupPrismaRepository } from './infogroup.prisma.repository';
+import { InfogroupController } from './controllers/infogroup.controller';
+import { InfogroupService } from './services/infogroup.service';
+import { InfogroupRepository } from './repositories/infogroup.repository';
+import { InfogroupPrismaRepository } from './repositories/infogroup.prisma.repository';
 
 @Module({
     controllers: [InfogroupController],

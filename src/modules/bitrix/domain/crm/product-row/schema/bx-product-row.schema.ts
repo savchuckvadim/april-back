@@ -1,5 +1,8 @@
 import { EBxMethod } from 'src/modules/bitrix/core';
-import { IBXProductRow, IBXProductRowRow } from '../interface/bx-product-row.interface';
+import {
+    IBXProductRow,
+    IBXProductRowRow,
+} from '../interface/bx-product-row.interface';
 import {
     ListProductRowDto,
     ListProductRowResponseDto,

@@ -18,4 +18,3 @@ import { BtxContactController } from './controllers/btx-contact.controller';
     exports: [BtxContactService, BtxContactRepository],
 })
 export class BtxContactModule {}
-

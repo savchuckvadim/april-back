@@ -18,4 +18,3 @@ import { PortalContractController } from './controllers/portal-contract.controll
     exports: [PortalContractService, PortalContractRepository],
 })
 export class PortalContractModule {}
-

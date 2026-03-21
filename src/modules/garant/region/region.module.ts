@@ -24,4 +24,4 @@ import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-st
     ],
     exports: [RegionService],
 })
-export class RegionModule { }
+export class RegionModule {}

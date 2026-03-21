@@ -8,7 +8,10 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { CreateOfferTemplatePageRequestDto, CreateOfferTemplatePageResponseDto } from '../../page';
+import {
+    CreateOfferTemplatePageRequestDto,
+    CreateOfferTemplatePageResponseDto,
+} from '../../page';
 import { Type } from 'class-transformer';
 import { CreateOfferTemplateFontDto } from '../../font';
 import { OfferTemplate } from '../entities/offer-template.entity';
@@ -20,12 +23,9 @@ export enum OfferTemplateVisibility {
 }
 
 export class CreateOfferTemplateResponseDto implements OfferTemplate {
-
     constructor(partial: Partial<CreateOfferTemplateResponseDto>) {
         Object.assign(this, partial);
     }
-
-
 
     @ApiProperty({ description: 'The name of the offer template' })
     @IsString()
@@ -38,7 +38,7 @@ export class CreateOfferTemplateResponseDto implements OfferTemplate {
     @ApiProperty({
         description: 'The visibility of the offer template',
         enum: OfferTemplateVisibility,
-        enumName: 'OfferTemplateVisibility'
+        enumName: 'OfferTemplateVisibility',
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
@@ -73,7 +73,9 @@ export class CreateOfferTemplateResponseDto implements OfferTemplate {
     @IsOptional()
     price_settings?: string;
 
-    @ApiProperty({ description: 'The infoblock settings of the offer template' })
+    @ApiProperty({
+        description: 'The infoblock settings of the offer template',
+    })
     @IsString()
     @IsOptional()
     infoblock_settings?: string;
@@ -142,14 +144,20 @@ export class CreateOfferTemplateResponseDto implements OfferTemplate {
     @IsOptional()
     counter: number = 0;
 
-    @ApiProperty({ description: 'The pages of the offer template', type: [CreateOfferTemplatePageRequestDto] })
+    @ApiProperty({
+        description: 'The pages of the offer template',
+        type: [CreateOfferTemplatePageRequestDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplatePageResponseDto)
     @IsOptional()
     pages?: CreateOfferTemplatePageResponseDto[];
 
-    @ApiProperty({ description: 'The fonts of the offer template', type: [CreateOfferTemplateFontDto] })
+    @ApiProperty({
+        description: 'The fonts of the offer template',
+        type: [CreateOfferTemplateFontDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplateFontDto)
@@ -158,9 +166,6 @@ export class CreateOfferTemplateResponseDto implements OfferTemplate {
 }
 
 export class CreateOfferTemplateRequestDto {
-
-
-
     @ApiProperty({ description: 'The name of the offer template' })
     @IsString()
     domain: string;
@@ -172,7 +177,7 @@ export class CreateOfferTemplateRequestDto {
     @ApiProperty({
         description: 'The visibility of the offer template',
         enum: OfferTemplateVisibility,
-        enumName: 'OfferTemplateVisibility'
+        enumName: 'OfferTemplateVisibility',
     })
     @IsEnum(OfferTemplateVisibility)
     @IsOptional()
@@ -207,7 +212,9 @@ export class CreateOfferTemplateRequestDto {
     @IsOptional()
     price_settings?: string;
 
-    @ApiProperty({ description: 'The infoblock settings of the offer template' })
+    @ApiProperty({
+        description: 'The infoblock settings of the offer template',
+    })
     @IsString()
     @IsOptional()
     infoblock_settings?: string;
@@ -276,14 +283,20 @@ export class CreateOfferTemplateRequestDto {
     @IsOptional()
     counter?: number = 0;
 
-    @ApiProperty({ description: 'The pages of the offer template', type: [CreateOfferTemplatePageRequestDto] })
+    @ApiProperty({
+        description: 'The pages of the offer template',
+        type: [CreateOfferTemplatePageRequestDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplatePageRequestDto)
     @IsOptional()
     pages?: CreateOfferTemplatePageRequestDto[];
 
-    @ApiProperty({ description: 'The fonts of the offer template', type: [CreateOfferTemplateFontDto] })
+    @ApiProperty({
+        description: 'The fonts of the offer template',
+        type: [CreateOfferTemplateFontDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateOfferTemplateFontDto)

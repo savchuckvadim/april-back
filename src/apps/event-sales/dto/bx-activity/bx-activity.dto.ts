@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
+import {
+    IsString,
+    IsNumber,
+    IsNotEmpty,
+    IsOptional,
+    IsArray,
+} from 'class-validator';
 
 export class BxActivityDto {
     @ApiProperty({
@@ -18,4 +24,3 @@ export class BxActivityDto {
     @IsNotEmpty()
     leadId: number;
 }
-

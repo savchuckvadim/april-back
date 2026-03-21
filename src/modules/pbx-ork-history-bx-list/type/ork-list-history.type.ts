@@ -3,8 +3,17 @@
 // Компания	calling	crm	ork_crm_company
 // Дата	calling	datetime	ork_event_date
 
-import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFailReason, EnumOrkFieldCode, EnumOrkForecast, EnumOrkResultStatus, EnumOrkWorkStatus } from "./ork-list-history.enum";
-
+import {
+    EnumOrkEventAction,
+    EnumOrkEventCommunication,
+    EnumOrkEventInitiative,
+    EnumOrkEventType,
+    EnumOrkFailReason,
+    EnumOrkFieldCode,
+    EnumOrkForecast,
+    EnumOrkResultStatus,
+    EnumOrkWorkStatus,
+} from './ork-list-history.enum';
 
 // Тип События	calling	enumeration	ork_event_type
 // Событие	calling	enumeration	ork_event_action
@@ -60,8 +69,6 @@ import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, 
 // Отказ	ork_event_type	et_ork_fail
 // Возврат	ork_event_type	et_ork_return
 
-
-
 // Создан	ork_event_action	ea_ork_act_create
 // Запланирован	ork_event_action	ea_ork_plan
 // Просрочен	ork_event_action	ea_ork_expired
@@ -75,17 +82,14 @@ import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, 
 // Сдан	ork_event_action	ea_ork_act_in_office
 // Оплачен	ork_event_action	ea_ork_act_pay
 
-
 // Звонок	event_communication	ec_ork_call
 // Выезд	event_communication	ec_ork_face
 // Письмо	event_communication	ec_ork_mail
 // ЭДО	event_communication	ec_ork_edo
 // СС	event_communication	ec_ork_signal
 
-
 // Входящий	ork_event_initiative	ei_ork_incoming
 // Исходящий	ork_event_initiative	ei_ork_outgoing
-
 
 // Новый	ork_work_status	ork_work_status_new
 // Поставка	ork_work_status	ork_work_status_supply
@@ -136,7 +140,6 @@ import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, 
 // Не интересует, до свидания	ork_noresult_reason	bay
 // По телефону отвечает не та организация	ork_noresult_reason	wrong
 // Автоответчик	ork_noresult_reason	auto
-
 
 export const OrkFields = {
     ork_event_type: {
@@ -650,8 +653,8 @@ export type OrkFieldsType = typeof OrkFields;
 export type OrkFieldsCode = keyof OrkFieldsType;
 export type OrkFieldValue<K extends keyof OrkFieldsType> =
     OrkFieldsType[K] extends { items: Record<string, { code: infer C }> }
-    ? C
-    : string;
+        ? C
+        : string;
 type OrkFieldItem = {
     name: string;
     code: string;
@@ -666,10 +669,10 @@ type OrkField = {
 export type OrkFieldCode = keyof typeof OrkFields;
 export type OrkItemCode<T extends OrkFieldCode> =
     T extends keyof typeof OrkFields
-    ? (typeof OrkFields)[T] extends { items: Record<string, OrkFieldItem> }
-    ? keyof (typeof OrkFields)[T]['items']
-    : never
-    : never;
+        ? (typeof OrkFields)[T] extends { items: Record<string, OrkFieldItem> }
+            ? keyof (typeof OrkFields)[T]['items']
+            : never
+        : never;
 
 // Helper types for field metadata
 export type OrkFieldType =
@@ -821,7 +824,6 @@ export const OrkFieldsMetadata: Record<string, OrkFieldMetadata> = {
     },
 } as const;
 
-
 export const OrkReport = {
     [OrkFields.ork_event_action.items.ea_ork_plan.code]: {
         types: [
@@ -832,7 +834,7 @@ export const OrkReport = {
             OrkFields.ork_event_type.items.et_ork_call_collect.code,
             OrkFields.ork_event_type.items.et_ork_info_garant.code,
             OrkFields.ork_event_type.items.et_ork_presentation.code,
-        ]
+        ],
     },
     [OrkFields.ork_event_action.items.ea_ork_done.code]: {
         types: [
@@ -843,10 +845,9 @@ export const OrkReport = {
             OrkFields.ork_event_type.items.et_ork_call_collect.code,
             OrkFields.ork_event_type.items.et_ork_info_garant.code,
             OrkFields.ork_event_type.items.et_ork_presentation.code,
-        ]
-    }
+        ],
+    },
 } as const;
-
 
 export const OrkCallingTypes = [
     OrkFields.ork_event_type.items.et_ork_signal.code,
@@ -863,5 +864,4 @@ export const OrkCallingTypes = [
     OrkFields.ork_event_type.items.et_ork_seminar.code,
     OrkFields.ork_event_type.items.et_ork_complect_up_work.code,
     OrkFields.ork_event_type.items.et_ork_pere_contract.code,
-]
-
+];

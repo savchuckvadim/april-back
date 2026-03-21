@@ -18,4 +18,3 @@ import { BtxCompanyController } from './controllers/btx-company.controller';
     exports: [BtxCompanyService, BtxCompanyRepository],
 })
 export class BtxCompanyModule {}
-

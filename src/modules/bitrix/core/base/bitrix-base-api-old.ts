@@ -25,7 +25,6 @@ export class BitrixBaseApiOld {
         protected readonly telegramBot: TelegramService,
         protected readonly httpService: HttpService,
     ) {
-
         this.logger.log('BitrixBaseApi initialized');
         this.domain = '';
         this.apiKey = '';

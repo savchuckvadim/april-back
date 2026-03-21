@@ -1,17 +1,14 @@
-import { PlanDto } from "../../dto/event-sale-flow/plan.dto";
-import { EnumTaskEventType, EventTaskDto } from "../../dto/event-sale-flow/task.dto";
-import { EnumEventPlanCode } from "../../types/plan-types";
+import { PlanDto } from '../../dto/event-sale-flow/plan.dto';
+import {
+    EnumTaskEventType,
+    EventTaskDto,
+} from '../../dto/event-sale-flow/task.dto';
+import { EnumEventPlanCode } from '../../types/plan-types';
 
 export class EventTitleService {
-    constructor(
+    constructor() {}
 
-    ) { }
-
-
-
-    public getReportEventName(
-        currentTask?: EventTaskDto,
-    ) {
+    public getReportEventName(currentTask?: EventTaskDto) {
         let eventType = 'new';
         let typeName = '';
         let currentTaskTitle = '';
@@ -52,11 +49,7 @@ export class EventTitleService {
         };
     }
 
-
-    public getPlanEventName(
-        plan: PlanDto,
-    ) {
-
+    public getPlanEventName(plan: PlanDto) {
         let emoji = '';
         let color = '';
         let title = '';
@@ -108,6 +101,4 @@ export class EventTitleService {
             title, // typeName + эмоджи
         };
     }
-
-
 }

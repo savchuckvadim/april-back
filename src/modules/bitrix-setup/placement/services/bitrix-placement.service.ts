@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { BitrixPlacementRepository } from '../repositories/bitrix-placement.repository';
 import { BitrixPlacementEntity } from '../model/bitrix-placement.model';
 import { CreateBitrixPlacementDto } from '../dto/bitrix-placement.dto';
@@ -9,10 +13,12 @@ export class BitrixPlacementService {
     constructor(
         private readonly repository: BitrixPlacementRepository,
         private readonly prisma: PrismaService,
-    ) { }
+    ) {}
 
     // BitrixPlacement methods
-    async storePlacements(dto: CreateBitrixPlacementDto): Promise<{ message: string; app_id: bigint }> {
+    async storePlacements(
+        dto: CreateBitrixPlacementDto,
+    ): Promise<{ message: string; app_id: bigint }> {
         try {
             // Find portal by domain
             const portal = await this.prisma.portal.findFirst({
@@ -20,7 +26,9 @@ export class BitrixPlacementService {
             });
 
             if (!portal) {
-                throw new NotFoundException(`Portal with domain ${dto.domain} not found`);
+                throw new NotFoundException(
+                    `Portal with domain ${dto.domain} not found`,
+                );
             }
 
             // Find app
@@ -32,10 +40,15 @@ export class BitrixPlacementService {
             });
 
             if (!app) {
-                throw new NotFoundException(`App with code ${dto.code} and domain ${dto.domain} not found`);
+                throw new NotFoundException(
+                    `App with code ${dto.code} and domain ${dto.domain} not found`,
+                );
             }
 
-            const placements = await this.repository.storePlacements(app.id, dto.placements);
+            const placements = await this.repository.storePlacements(
+                app.id,
+                dto.placements,
+            );
             if (!placements.length) {
                 throw new BadRequestException('Failed to create placements');
             }
@@ -45,11 +58,15 @@ export class BitrixPlacementService {
                 app_id: app.id,
             };
         } catch (error) {
-            throw new BadRequestException(`Failed to store placements: ${error.message}`);
+            throw new BadRequestException(
+                `Failed to store placements: ${error.message}`,
+            );
         }
     }
 
-    async getPlacementsByAppId(appId: bigint): Promise<BitrixPlacementEntity[]> {
+    async getPlacementsByAppId(
+        appId: bigint,
+    ): Promise<BitrixPlacementEntity[]> {
         return await this.repository.findByAppId(appId);
     }
 

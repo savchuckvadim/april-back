@@ -1,7 +1,12 @@
-import { Transcription } from "generated/prisma";
-import { TranscriptionBaseDto, TranscriptionStoreDto } from "../dto/transcription.store.dto";
+import { Transcription } from 'generated/prisma';
+import {
+    TranscriptionBaseDto,
+    TranscriptionStoreDto,
+} from '../dto/transcription.store.dto';
 
-export function createTranscriptionResponseDtoFromPrisma(transcription: Transcription): TranscriptionStoreDto {
+export function createTranscriptionResponseDtoFromPrisma(
+    transcription: Transcription,
+): TranscriptionStoreDto {
     return {
         id: transcription.id.toString(),
         created_at: transcription.created_at ?? undefined,
@@ -27,12 +32,13 @@ export function createTranscriptionResponseDtoFromPrisma(transcription: Transcri
     } as TranscriptionStoreDto;
 }
 
-
-export function createTranscriptionEntityFromDto(transcription: Partial<TranscriptionBaseDto>): Partial<Transcription> {
+export function createTranscriptionEntityFromDto(
+    transcription: Partial<TranscriptionBaseDto>,
+): Partial<Transcription> {
     const data = {
-
-
-        user_result: transcription.userResult ? JSON.parse(transcription.userResult as string) : null,
+        user_result: transcription.userResult
+            ? JSON.parse(transcription.userResult as string)
+            : null,
     } as Transcription;
 
     if (transcription.entityId) {

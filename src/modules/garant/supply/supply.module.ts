@@ -5,6 +5,7 @@ import { SupplyRepository } from './supply.repository';
 import { SupplyPrismaRepository } from './supply.prisma.repository';
 import { SupplyParseService } from './services/update/parse.service';
 import { SupplyUpdateService } from './services/update/supply-update.service';
+import { SupplyExcelService } from './services/supply-excel.service';
 import { StorageModule } from 'src/core/storage/storage.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { StorageModule } from 'src/core/storage/storage.module';
         SupplyService,
         SupplyParseService,
         SupplyUpdateService,
+        SupplyExcelService,
         {
             provide: SupplyRepository,
             useClass: SupplyPrismaRepository,

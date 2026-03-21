@@ -102,4 +102,3 @@ export class CreateSmartDto {
     @IsOptional()
     crm?: string;
 }
-

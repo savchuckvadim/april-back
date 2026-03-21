@@ -1,27 +1,33 @@
-import {
-    Controller,
-    Post,
-    Body,
-    Req,
-    Res,
-    HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ErrorResponseDto, SuccessResponseDto } from 'src/core';
 import { BitrixAppService } from '../../app/services/bitrix-app.service';
-import {  CreateBitrixAppWithTokenDto } from '../../app/dto/bitrix-app.dto';
+import { CreateBitrixAppWithTokenDto } from '../../app/dto/bitrix-app.dto';
 import { BitrixTokenDto } from '../../token/dto/bitrix-token.dto';
-import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES } from '../../app/enums/bitrix-app.enum';
+import {
+    BITRIX_APP_CODES,
+    BITRIX_APP_GROUPS,
+    BITRIX_APP_STATUSES,
+    BITRIX_APP_TYPES,
+} from '../../app/enums/bitrix-app.enum';
 
 @ApiTags('Bitrix Setup Install')
 @Controller('bitrix-setup-install')
 export class BitrixSetupInstallController {
-    constructor(private readonly bitrixAppService: BitrixAppService) { }
+    constructor(private readonly bitrixAppService: BitrixAppService) {}
 
     @ApiOperation({ summary: 'Install Bitrix' })
-    @ApiResponse({ status: 200, description: 'Bitrix installed', type: SuccessResponseDto })
-    @ApiResponse({ status: 400, description: 'Bitrix not installed', type: ErrorResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Bitrix installed',
+        type: SuccessResponseDto,
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Bitrix not installed',
+        type: ErrorResponseDto,
+    })
     @Post('install')
     async install(@Req() req: Request, @Res() res: Response) {
         try {
@@ -65,11 +71,16 @@ export class BitrixSetupInstallController {
             }
 
             let installStatus: 'success' | 'fail' = 'fail';
-            if (tokenPayload.access_token && tokenPayload.refresh_token && tokenPayload.domain) {
+            if (
+                tokenPayload.access_token &&
+                tokenPayload.refresh_token &&
+                tokenPayload.domain
+            ) {
                 installStatus = install ? 'success' : 'fail';
 
-                const expiresAt = new Date(Date.now() + (tokenPayload.expires_in ?? 3600) * 1000)
-                    .toISOString();
+                const expiresAt = new Date(
+                    Date.now() + (tokenPayload.expires_in ?? 3600) * 1000,
+                ).toISOString();
 
                 const data: CreateBitrixAppWithTokenDto = {
                     code: BITRIX_APP_CODES.SALES,
@@ -88,7 +99,8 @@ export class BitrixSetupInstallController {
 
                 //todo: отправить в ui на страницу авторизации чтобы из нее  отпрвить метод
                 // в битрикс app install/
-                const app = await this.bitrixAppService.storeOrUpdateAppWithToken(data);
+                const app =
+                    await this.bitrixAppService.storeOrUpdateAppWithToken(data);
                 if (app) {
                     installStatus = 'success';
                 }
@@ -98,7 +110,10 @@ export class BitrixSetupInstallController {
             return res.redirect(HttpStatus.FOUND, redirectUrl);
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return res.redirect(HttpStatus.FOUND, `https://april-bitrix-main.vercel.app/install?install=fail`);
+            return res.redirect(
+                HttpStatus.FOUND,
+                `https://april-bitrix-main.vercel.app/install?install=fail`,
+            );
         }
     }
 }

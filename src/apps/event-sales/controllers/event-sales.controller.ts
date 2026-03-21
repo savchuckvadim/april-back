@@ -11,7 +11,7 @@ export class EventSalesController {
         // private readonly bitrixContext: BitrixContextService,
         // private readonly bitrixApi: BitrixRequestApiService,
         private readonly flowService: EventSalesFlowUseCase,
-    ) { }
+    ) {}
 
     @Post('flow')
     @HttpCode(200)

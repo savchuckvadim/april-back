@@ -5,7 +5,7 @@ import { BtxLeadRepository } from './btx-lead.repository';
 
 @Injectable()
 export class BtxLeadPrismaRepository implements BtxLeadRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(lead: Partial<btx_leads>): Promise<btx_leads | null> {
         const result = await this.prisma.btx_leads.create({
@@ -48,12 +48,16 @@ export class BtxLeadPrismaRepository implements BtxLeadRepository {
         return result;
     }
 
-    async update(id: number, lead: Partial<btx_leads>): Promise<btx_leads | null> {
+    async update(
+        id: number,
+        lead: Partial<btx_leads>,
+    ): Promise<btx_leads | null> {
         const updateData: any = {};
         if (lead.name !== undefined) updateData.name = lead.name;
         if (lead.title !== undefined) updateData.title = lead.title;
         if (lead.code !== undefined) updateData.code = lead.code;
-        if (lead.portal_id !== undefined) updateData.portal_id = BigInt(lead.portal_id);
+        if (lead.portal_id !== undefined)
+            updateData.portal_id = BigInt(lead.portal_id);
 
         const result = await this.prisma.btx_leads.update({
             where: { id: BigInt(id) },
@@ -69,4 +73,3 @@ export class BtxLeadPrismaRepository implements BtxLeadRepository {
         return result ? true : false;
     }
 }
-

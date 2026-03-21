@@ -6,7 +6,7 @@ import {
     PbxFieldItem,
     PbxFieldItemEntity,
     PbxFieldWithItems,
-} from '../pbx-field.entity';
+} from '../entity/pbx-field.entity';
 import { EUserFieldType } from '@/modules/bitrix';
 
 export class FieldDataHelper {
@@ -63,10 +63,7 @@ export class FieldDataHelper {
         entity.name = field.name;
         entity.title = field.title;
         entity.code = field.code;
-        entity.type = field.type as
-            | BitrixFieldType
-            | EUserFieldType
-            | 'multiple';
+        entity.type = field.type as EUserFieldType | 'multiple';
         entity.bitrixCamelId = field.bitrixCamelId;
         entity.bitrixId = field.bitrixId;
         entity.entity_id = field.entity_id;

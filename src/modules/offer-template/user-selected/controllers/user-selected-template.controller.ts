@@ -21,7 +21,7 @@ import { UserSelectedTemplateIdParamsDto } from '../dtos/user-selected-template-
 export class UserSelectedTemplateController {
     constructor(
         private readonly userSelectedTemplateService: UserSelectedTemplateService,
-    ) { }
+    ) {}
 
     @Post()
     async createUserSelectedTemplate(
@@ -127,7 +127,9 @@ export class UserSelectedTemplateController {
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async remove(@Param() params: UserSelectedTemplateIdParamsDto): Promise<void> {
+    async remove(
+        @Param() params: UserSelectedTemplateIdParamsDto,
+    ): Promise<void> {
         return this.userSelectedTemplateService.delete(BigInt(params.id));
     }
 

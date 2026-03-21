@@ -10,7 +10,7 @@ export enum UserRole {
     USER = 'user',
     MANAGER = 'manager',
     DEVELOPER = 'developer',
-    OTHER = 'other'
+    OTHER = 'other',
 }
 
 export interface CreateUserData {

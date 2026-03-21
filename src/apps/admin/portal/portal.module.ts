@@ -17,5 +17,4 @@ import { AdminPortalController } from './controllers/portal.controller';
     controllers: [AdminPortalController],
     exports: [AdminPortalService, AdminPortalRepository],
 })
-export class AdminPortalModule { }
-
+export class AdminPortalModule {}

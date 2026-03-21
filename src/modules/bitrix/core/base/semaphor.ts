@@ -1,4 +1,3 @@
-
 // Простая реализация семафора (ограничение параллельных запросов)
 export class Semaphore {
     private semaphore: number;

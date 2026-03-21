@@ -1,11 +1,8 @@
-import { BitrixService, IBXContact, IBXDeal } from "@/modules/bitrix";
-import { IBXLead } from "@/modules/bitrix/domain/interfaces/bitrix.interface";
+import { BitrixService, IBXContact, IBXDeal } from '@/modules/bitrix';
+import { IBXLead } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 
 export class CompanyRelationsService {
-
-    constructor(
-        private readonly bitrix: BitrixService
-    ) { }
+    constructor(private readonly bitrix: BitrixService) {}
 
     /**
      * Получает все связанные ID (сделки, лиды, контакты) для компании
@@ -17,16 +14,18 @@ export class CompanyRelationsService {
         // Если контакты не переданы, получаем их из компании
         if (!contactsIds || contactsIds.length === 0) {
             const contacts = await this.getContacts(companyId);
-            contactsIds = contacts && contacts.length > 0 ? contacts
-                .filter(contact => contact.ID)
-                .map(contact => Number(contact.ID))
-                : [];
+            contactsIds =
+                contacts && contacts.length > 0
+                    ? contacts
+                          .filter(contact => contact.ID)
+                          .map(contact => Number(contact.ID))
+                    : [];
         }
 
         return {
             dealsIds,
             leadsIds,
-            contactsIds: contactsIds || []
+            contactsIds: contactsIds || [],
         };
     }
 
@@ -44,7 +43,16 @@ export class CompanyRelationsService {
             COMPANY_ID: companyId,
         };
 
-        const select = ['ID', 'NAME', 'SECOND_NAME', 'LAST_NAME', 'POST', 'COMMENTS', 'PHONE', 'HAS_PHONE'];
+        const select = [
+            'ID',
+            'NAME',
+            'SECOND_NAME',
+            'LAST_NAME',
+            'POST',
+            'COMMENTS',
+            'PHONE',
+            'HAS_PHONE',
+        ];
         const order = { ID: 'DESC' as const };
 
         try {
@@ -53,7 +61,11 @@ export class CompanyRelationsService {
             const response = await this.bitrix.contact.getList(filter, select);
 
             // Если response имеет структуру { result: [...] }, извлекаем result
-            if (response && 'result' in response && Array.isArray(response.result)) {
+            if (
+                response &&
+                'result' in response &&
+                Array.isArray(response.result)
+            ) {
                 return response.result as IBXContact[];
             }
 
@@ -87,7 +99,11 @@ export class CompanyRelationsService {
         const order = { ID: 'DESC' as const };
 
         try {
-            const response = await this.bitrix.deal.getList(filter, select, order);
+            const response = await this.bitrix.deal.getList(
+                filter,
+                select,
+                order,
+            );
 
             // Извлекаем result из ответа
             const deals = response?.result || [];

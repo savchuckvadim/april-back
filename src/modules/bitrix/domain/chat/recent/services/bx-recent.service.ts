@@ -19,4 +19,3 @@ export class BxRecentService {
         return await this.repo.getList(params);
     }
 }
-

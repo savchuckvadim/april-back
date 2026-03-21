@@ -7,7 +7,7 @@ import { createPortalEntityFromPrisma } from '@/modules/portal-konstructor/porta
 
 @Injectable()
 export class ClientPrismaRepository implements ClientRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(client: Partial<Client>): Promise<Client | null> {
         const result = await this.prisma.client.create({
@@ -27,7 +27,6 @@ export class ClientPrismaRepository implements ClientRepository {
             include: {
                 users: true,
                 portals: true,
-
             },
         });
 
@@ -35,7 +34,9 @@ export class ClientPrismaRepository implements ClientRepository {
         return result;
     }
 
-    async findByIdWithRelations(id: number): Promise<ClientWithRelations | null> {
+    async findByIdWithRelations(
+        id: number,
+    ): Promise<ClientWithRelations | null> {
         const result = await this.prisma.client.findUnique({
             where: { id: BigInt(id) },
             include: {
@@ -54,7 +55,6 @@ export class ClientPrismaRepository implements ClientRepository {
         });
         return { ...result, portal };
     }
-
 
     async findMany(): Promise<Client[] | null> {
         const result = await this.prisma.client.findMany({
@@ -117,4 +117,3 @@ export class ClientPrismaRepository implements ClientRepository {
         return result ? true : false;
     }
 }
-

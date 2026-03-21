@@ -14,13 +14,16 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ClientService } from '@/modules/client/services/client.service';
 import { CreateClientDto } from '@/modules/client/dto/create-client.dto';
 import { UpdateClientDto } from '@/modules/client/dto/update-client.dto';
-import { ClientResponseDto, ClientWithRelationsResponseDto } from '@/modules/client/dto/client-response.dto';
+import {
+    ClientResponseDto,
+    ClientWithRelationsResponseDto,
+} from '@/modules/client/dto/client-response.dto';
 import { SuccessResponseDto, EResultCode, ErrorResponseDto } from '@/core';
 
 @ApiTags('Admin Client Management')
 @Controller('admin/clients')
 export class AdminClientController {
-    constructor(private readonly clientService: ClientService) { }
+    constructor(private readonly clientService: ClientService) {}
 
     @ApiOperation({ summary: 'Create a new client' })
     @ApiResponse({
@@ -34,7 +37,9 @@ export class AdminClientController {
         type: ErrorResponseDto,
     })
     @Post()
-    async createClient(@Body() createClientDto: CreateClientDto): Promise<ClientResponseDto> {
+    async createClient(
+        @Body() createClientDto: CreateClientDto,
+    ): Promise<ClientResponseDto> {
         const client = await this.clientService.create(createClientDto);
         return client;
     }
@@ -51,7 +56,9 @@ export class AdminClientController {
         type: ErrorResponseDto,
     })
     @Get(':id')
-    async getClientById(@Param('id', ParseIntPipe) id: number): Promise<ClientWithRelationsResponseDto> {
+    async getClientById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<ClientWithRelationsResponseDto> {
         const client = await this.clientService.findByIdWithRelations(id);
         return client;
     }
@@ -71,7 +78,9 @@ export class AdminClientController {
         if (status) {
             clients = await this.clientService.findByStatus(status);
         } else if (isActive !== undefined) {
-            clients = await this.clientService.findByIsActive(isActive === 'true');
+            clients = await this.clientService.findByIsActive(
+                isActive === 'true',
+            );
         } else {
             clients = await this.clientService.findMany();
         }
@@ -90,18 +99,14 @@ export class AdminClientController {
         description: 'Client not found',
     })
     @Get('email/:email')
-    async getClientByEmail(@Param('email') email: string): Promise<SuccessResponseDto> {
+    async getClientByEmail(
+        @Param('email') email: string,
+    ): Promise<ClientResponseDto | null> {
         const client = await this.clientService.findByEmail(email);
         if (!client) {
-            return {
-                resultCode: EResultCode.ERROR,
-                data: null,
-            };
+            return null;
         }
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: client,
-        };
+        return client;
     }
 
     @ApiOperation({ summary: 'Update client' })
@@ -139,9 +144,10 @@ export class AdminClientController {
         description: 'Client not found',
     })
     @Delete(':id')
-    async deleteClient(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+    async deleteClient(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<boolean> {
         await this.clientService.delete(id);
         return true;
     }
 }
-

@@ -79,4 +79,3 @@ export class BxRqResponseDto {
     })
     updated_at?: Date | null;
 }
-

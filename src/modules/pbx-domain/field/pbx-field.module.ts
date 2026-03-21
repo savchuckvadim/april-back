@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { PbxFieldPrismaRepository } from './pbx-field.prisma.repository';
-import { PbxFieldService } from './pbx-field.service';
-import { PbxFieldRepository } from './pbx-field.repositry';
-import { PbxFieldEntityInstallService } from './services/pbx-field-entity-install.service';
-import { PbxFieldSmartInstallService } from './services/pbx-field-smart-install.service';
+import { PbxFieldPrismaRepository } from './repositories/pbx-field.prisma.repository';
+import { PbxFieldService } from './services/field/pbx-field.service';
+import { PbxFieldRepository } from './repositories/pbx-field.repositry';
+import { PbxFieldEntityInstallService } from './services/install/pbx-field-entity-install.service';
+import { PbxFieldSmartInstallService } from './services/install/pbx-field-smart-install.service';
 import { PbxFieldInstallController } from './controllers/pbx-field.install.controller';
 import { PBXModule } from '@/modules/pbx/pbx.module';
 
@@ -25,4 +25,4 @@ import { PBXModule } from '@/modules/pbx/pbx.module';
         PbxFieldSmartInstallService,
     ],
 })
-export class PbxFieldModule { }
+export class PbxFieldModule {}

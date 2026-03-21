@@ -21,4 +21,3 @@ export class BxMessageBatchService {
         return this.repo.addBtch(cmdCode, data);
     }
 }
-

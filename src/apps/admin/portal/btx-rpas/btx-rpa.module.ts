@@ -17,5 +17,4 @@ import { BtxRpaController } from './controllers/btx-rpa.controller';
     controllers: [BtxRpaController],
     exports: [BtxRpaService, BtxRpaRepository],
 })
-export class BtxRpaModule { }
-
+export class BtxRpaModule {}

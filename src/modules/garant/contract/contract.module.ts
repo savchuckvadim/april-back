@@ -15,8 +15,7 @@ import { PrismaModule } from '@/core/prisma/prisma.module';
             provide: ContractRepository,
             useClass: ContractPrismaRepository,
         },
-
     ],
     exports: [ContractService],
 })
-export class ContractModule { }
+export class ContractModule {}

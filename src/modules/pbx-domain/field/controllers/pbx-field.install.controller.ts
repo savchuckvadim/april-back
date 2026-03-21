@@ -15,8 +15,8 @@ import {
     ApiBadRequestResponse,
     ApiCreatedResponse,
 } from '@nestjs/swagger';
-import { PbxFieldEntityInstallService } from '../services/pbx-field-entity-install.service';
-import { PbxFieldSmartInstallService } from '../services/pbx-field-smart-install.service';
+import { PbxFieldEntityInstallService } from '../services/install/pbx-field-entity-install.service';
+import { PbxFieldSmartInstallService } from '../services/install/pbx-field-smart-install.service';
 import {
     InstallEntityFieldsDto,
     InstallSmartFieldsDto,
@@ -29,7 +29,7 @@ export class PbxFieldInstallController {
     constructor(
         private readonly pbxFieldEntityInstallService: PbxFieldEntityInstallService,
         private readonly pbxFieldSmartInstallService: PbxFieldSmartInstallService,
-    ) { }
+    ) {}
 
     @Post('entity')
     @UsePipes(new ValidationPipe({ transform: true }))

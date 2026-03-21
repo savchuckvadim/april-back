@@ -5,31 +5,33 @@ import {
     Req,
     Res,
     Get,
-    Body
+    Body,
 } from '@nestjs/common';
 import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/bitrix-app.service';
 import { Request, Response } from 'express';
 
-import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
-
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SuccessResponseDto, ErrorResponseDto } from 'src/core';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { JwtService } from '@nestjs/jwt';
 import { BitrixClientService } from '@/apps/bitrix-app-client/client/services/bitrix-client.service';
-import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES, } from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
+import {
+    BITRIX_APP_CODES,
+    BITRIX_APP_GROUPS,
+    BITRIX_APP_STATUSES,
+    BITRIX_APP_TYPES,
+} from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
 import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator';
 import { ConfigService } from '@nestjs/config';
 import { PBXService } from '@/modules/pbx';
 import { BxAuthType } from '@/modules/bitrix/bitrix-service.factory';
-import { CreateBitrixAppDto, CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import {
+    CreateBitrixAppDto,
+    CreateBitrixAppWithTokenDto,
+} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { BitrixTokenDto } from '@/modules/bitrix-setup/token';
 import { getExpiresAt } from '@/lib';
 import { InstallAppFromPortalResponseDto } from '../dto/install-app.response.dto';
-
 
 @ApiTags('Bitrix Setup App UI Install')
 @Controller('bitrix-app-install')
@@ -43,34 +45,37 @@ export class BitrixAppInstallController {
         private readonly configService: ConfigService,
         private readonly pbxService: PBXService,
     ) {
-        this.FRONT_BASE_URL = this.configService.get('CLIENT_CABINET_URL') || 'https://';
+        this.FRONT_BASE_URL =
+            this.configService.get('CLIENT_CABINET_URL') || 'https://';
     }
 
     @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
-    @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: InstallAppFromPortalResponseDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Sales Manager App for Bitrix',
+        type: InstallAppFromPortalResponseDto,
+    })
     @Post('sales-manager')
     @SetAuthCookie()
-    async salesManagerInstall(
-        @Body() dto: CreateBitrixAppWithTokenDto
-    ) {
+    async salesManagerInstall(@Body() dto: CreateBitrixAppWithTokenDto) {
         try {
             //front отправляет перед installFinish
             const { domain } = dto;
-
-
 
             let installStatus = 'fail';
             let signedJwtToken: string | null = null;
             const portal = await this.portalService.getPortalByDomain(domain);
             if (portal) {
-
-
-                const clientDta = await this.clientService.findByIdWithOwnerUser(portal?.clientId ?? 0);
+                const clientDta =
+                    await this.clientService.findByIdWithOwnerUser(
+                        portal?.clientId ?? 0,
+                    );
                 if (clientDta) {
                     const { client, ownerUser } = clientDta;
-                    signedJwtToken = this.jwtService.sign({ sub: ownerUser.id, client_id: client.id });
-
-
+                    signedJwtToken = this.jwtService.sign({
+                        sub: ownerUser.id,
+                        client_id: client.id,
+                    });
 
                     let bxApp = await this.bitrixAppService.getApp({
                         domain: domain,
@@ -78,18 +83,16 @@ export class BitrixAppInstallController {
                     });
                     console.log('bxApp sales manager app install', bxApp);
 
-
-
-                    const app = await this.bitrixAppService.storeOrUpdateAppWithToken(dto, bxApp?.id ? BigInt(bxApp.id) : undefined);
+                    const app =
+                        await this.bitrixAppService.storeOrUpdateAppWithToken(
+                            dto,
+                            bxApp?.id ? BigInt(bxApp.id) : undefined,
+                        );
                     bxApp = app.app;
                     console.log('app sales manager app install post', app);
-
                 }
             }
             installStatus = 'success';
-
-
-
 
             return { token: signedJwtToken, status: installStatus };
         } catch (error) {
@@ -164,7 +167,6 @@ export class BitrixAppInstallController {
     //                 });
     //                 console.log('bxApp sales manager app install', bxApp);
 
-
     //                 const data: CreateBitrixAppWithTokenDto = {
     //                     code: BITRIX_APP_CODES.SALES,
     //                     domain: tokenPayload.domain,
@@ -194,7 +196,6 @@ export class BitrixAppInstallController {
     //         // const appInfo = await bitrix.api.call('app.info', {});
     //         // console.log('BX APP INFO sales manager app install from bx POST', appInfo);
 
-
     //         redirectUrl = `${this.FRONT_BASE_URL}/install?install=${memberId || installStatus}`;
     //         return res.redirect(HttpStatus.FOUND, redirectUrl);
     //     } catch (error) {
@@ -202,7 +203,6 @@ export class BitrixAppInstallController {
     //         return res.redirect(HttpStatus.FOUND, `${this.FRONT_BASE_URL}/install?install=fail`);
     //     }
     // }
-
 
     // @ApiOperation({ summary: 'Sales Manager App for Bitrix' })
     // @ApiResponse({ status: 200, description: 'Sales Manager App for Bitrix', type: SuccessResponseDto })
@@ -269,7 +269,6 @@ export class BitrixAppInstallController {
     //                     code: BITRIX_APP_CODES.SALES,
     //                 });
     //                 console.log('bxApp sales manager app install', bxApp);
-
 
     //                 const data: CreateBitrixAppWithTokenDto = {
     //                     code: BITRIX_APP_CODES.SALES,

@@ -34,4 +34,3 @@ export class UpdateBtxCompanyDto {
     @IsOptional()
     portal_id?: number;
 }
-
