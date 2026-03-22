@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export enum EnumTelegramApp {
     KPI_SALES = 'kpi_sales',
@@ -7,10 +7,9 @@ export enum EnumTelegramApp {
 }
 
 export class TelegramSendMessageDto {
-    @ApiProperty({ enum: EnumTelegramApp })
-    @IsEnum(EnumTelegramApp)
-    @IsNotEmpty()
-    app: EnumTelegramApp;
+    @ApiProperty({ description: 'Application name', type: String })
+    @IsString()
+    app: string;
 
     @ApiProperty({ description: 'Text message' })
     @IsString()
