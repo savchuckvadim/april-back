@@ -23,7 +23,7 @@ export class PbxInstallSmartService {
         private readonly pbxService: PBXService,
         private readonly saveSmartService: SaveSmartService,
         private readonly saveSmartFieldsService: SaveSmartFieldsService,
-    ) { }
+    ) {}
 
     async installSmart(dto: InstallSmartDto) {
         const { bitrix } = await this.pbxService.init(dto.domain);

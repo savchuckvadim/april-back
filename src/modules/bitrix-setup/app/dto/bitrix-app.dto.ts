@@ -1,12 +1,27 @@
-import { IsString, IsOptional, IsNotEmpty, IsIn, ValidateNested, IsEnum, IsNumber } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsNotEmpty,
+    IsIn,
+    ValidateNested,
+    IsEnum,
+    IsNumber,
+} from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BitrixTokenDto, BitrixTokenEntity } from '../../token';
 import { Type } from 'class-transformer';
-import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_STATUSES, BITRIX_APP_TYPES, VALID_APP_STATUSES, VALID_APP_TYPES } from '../enums/bitrix-app.enum';
+import {
+    BITRIX_APP_CODES,
+    BITRIX_APP_GROUPS,
+    BITRIX_APP_STATUSES,
+    BITRIX_APP_TYPES,
+    VALID_APP_STATUSES,
+    VALID_APP_TYPES,
+} from '../enums/bitrix-app.enum';
 import { CreateBitrixSecretDto } from '../../secret/dto/bitrix-secret.dto';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
-import { PortalDto, } from '@/modules/portal-konstructor/portal/portal.entity';
+import { PortalDto } from '@/modules/portal-konstructor/portal/portal.entity';
 
 export class CreateBitrixAppBaseDto {
     @ApiProperty({
@@ -50,10 +65,6 @@ export class CreateBitrixAppBaseDto {
     })
     @IsEnum(BITRIX_APP_STATUSES)
     status: BITRIX_APP_STATUSES;
-
-
-
-
 }
 export class CreateBitrixAppSecretDto {
     @ApiProperty({
@@ -73,7 +84,6 @@ export class CreateBitrixAppSecretDto {
     client_secret: string;
 }
 export class CreateBitrixAppDto extends CreateBitrixAppBaseDto {
-
     @ApiProperty({
         description: 'Секреты приложения',
         type: CreateBitrixAppSecretDto,
@@ -81,13 +91,9 @@ export class CreateBitrixAppDto extends CreateBitrixAppBaseDto {
     @ValidateNested()
     @Type(() => CreateBitrixAppSecretDto)
     secret: CreateBitrixAppSecretDto;
-
-
 }
 
 export class CreateBitrixAppWithTokenDto extends CreateBitrixAppBaseDto {
-
-
     @ApiProperty({
         description: 'Токен приложения',
         type: BitrixTokenDto,
@@ -174,7 +180,7 @@ export class BitrixAppDto {
         this.type = app.type as BITRIX_APP_TYPES;
         this.code = app.code as BITRIX_APP_CODES;
         this.status = app.status as BITRIX_APP_STATUSES;
-        this.portal = portal as PortalDto ;
+        this.portal = portal as PortalDto;
         // this.token = app.bitrix_tokens as BitrixTokenEntity;
         // this.placements = app.placements;
         // this.settings = app.settings;
@@ -184,7 +190,6 @@ export class BitrixAppDto {
         example: '1',
         type: String,
     })
-
     @IsString()
     id: string;
 
@@ -245,7 +250,7 @@ export class BitrixAppDto {
         description: 'Информация о портале',
         type: PortalDto,
     })
-    portal?: PortalDto ;
+    portal?: PortalDto;
 
     @ApiPropertyOptional({
         description: 'Токены приложения',
@@ -265,7 +270,3 @@ export class BitrixAppDto {
     })
     settings?: any[];
 }
-
-
-
-

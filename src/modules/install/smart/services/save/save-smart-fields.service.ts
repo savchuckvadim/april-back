@@ -35,7 +35,7 @@ export class SaveSmartFieldsService {
         private readonly portalService: PortalStoreService,
         private readonly saveSmartService: SaveSmartService,
         private readonly pbxFieldService: PbxFieldService,
-    ) { }
+    ) {}
 
     public async installFields(dto: SaveSmartFieldsDto) {
         const { domain, fields, bxFields, type, group } = dto;

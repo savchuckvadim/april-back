@@ -32,4 +32,4 @@ import { BitrixChatDomainModule } from './chat/bx-chat-domain.module';
         BitrixChatDomainModule,
     ],
 })
-export class BitrixDomainModule { }
+export class BitrixDomainModule {}

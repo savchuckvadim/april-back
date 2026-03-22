@@ -7,7 +7,10 @@ import { BxAuthType } from '../../bitrix-service.factory';
 import { CallApiService } from './call-api.service';
 import { BatchApiService } from './batch-api.service';
 import { BXApiSchema, TBXRequest, TBXResponse } from '../domain';
-import { IBitrixBatchResponseResult, IBitrixResponse } from '../interface/bitrix-api-http.intterface';
+import {
+    IBitrixBatchResponseResult,
+    IBitrixResponse,
+} from '../interface/bitrix-api-http.intterface';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 
 export class BitrixBaseApi {
@@ -23,10 +26,16 @@ export class BitrixBaseApi {
         domain: string,
         apiKey: string,
         token: string | null,
-        authType: BxAuthType
+        authType: BxAuthType,
     ) {
         const http = axios.create({ timeout: 25000 });
-        this.core = new BitrixCore(telegramBot, authType,domain, token, apiKey);
+        this.core = new BitrixCore(
+            telegramBot,
+            authType,
+            domain,
+            token,
+            apiKey,
+        );
         this.callApi = new CallApiService(this.core, http);
         this.batchApi = new BatchApiService(this.core, http);
         this.domain = domain;
@@ -81,7 +90,13 @@ export class BitrixBaseApi {
         method: METHOD,
         data: TBXRequest<NAMESPACE, ENTITY, METHOD>,
     ) {
-        return this.batchApi.addCmdBatchType(cmd, namespace, entity, method, data);
+        return this.batchApi.addCmdBatchType(
+            cmd,
+            namespace,
+            entity,
+            method,
+            data,
+        );
     }
 
     getCmdBatch(): Record<string, string> {
@@ -91,5 +106,4 @@ export class BitrixBaseApi {
     clearResult(result: IBitrixBatchResponseResult[]) {
         return this.batchApi.clearResult(result);
     }
-
 }

@@ -102,4 +102,3 @@ export class CreateWordTemplateResponseDto {
     @ApiProperty({ required: false })
     updated_at?: Date;
 }
-

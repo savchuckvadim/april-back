@@ -50,4 +50,3 @@ export class CreatePortalMeasureDto {
     @IsOptional()
     fullName?: string;
 }
-

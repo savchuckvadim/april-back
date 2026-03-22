@@ -19,7 +19,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Bx RQs Management')
 @Controller('admin/portals/bx-rqs')
 export class BxRqController {
-    constructor(private readonly rqService: BxRqService) { }
+    constructor(private readonly rqService: BxRqService) {}
 
     @ApiOperation({ summary: 'Create a new bx RQ' })
     @ApiResponse({
@@ -28,7 +28,9 @@ export class BxRqController {
         type: BxRqResponseDto,
     })
     @Post()
-    async createRq(@Body() createRqDto: CreateBxRqDto): Promise<SuccessResponseDto> {
+    async createRq(
+        @Body() createRqDto: CreateBxRqDto,
+    ): Promise<SuccessResponseDto> {
         const rq = await this.rqService.create(createRqDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class BxRqController {
         type: BxRqResponseDto,
     })
     @Get(':id')
-    async getRqById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getRqById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const rq = await this.rqService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,7 +62,9 @@ export class BxRqController {
         type: [BxRqResponseDto],
     })
     @Get()
-    async getAllRqs(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllRqs(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let rqs;
         if (portalId) {
             rqs = await this.rqService.findByPortalId(Number(portalId));
@@ -96,7 +102,9 @@ export class BxRqController {
         description: 'RQ deleted successfully',
     })
     @Delete(':id')
-    async deleteRq(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteRq(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.rqService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +112,3 @@ export class BxRqController {
         };
     }
 }
-

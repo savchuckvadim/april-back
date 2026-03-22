@@ -18,7 +18,13 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { ApiOperation, ApiResponse, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+    ApiConsumes,
+    ApiBody,
+} from '@nestjs/swagger';
 import { WordTemplateService } from '../services/word-template.service';
 import { StorageService } from '../../../../core/storage/storage.service';
 import {
@@ -40,8 +46,6 @@ import {
 import { UserSelectedTemplate } from 'generated/prisma';
 import { randomUUID } from 'crypto';
 
-
-
 /**
  * set default
  * default может установить для шаблонов public только суперюзер
@@ -57,7 +61,7 @@ export class WordTemplateController {
     constructor(
         private readonly wordTemplateService: WordTemplateService,
         private readonly storageService: StorageService,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Create word template',
@@ -79,14 +83,16 @@ export class WordTemplateController {
         @Body() createDto: CreateWordTemplateRequestDto,
     ): Promise<CreateWordTemplateResponseDto> {
         try {
-
             const uuid = randomUUID();
 
-            const code =  `offer-word-${uuid}`;
-            const result = await this.wordTemplateService.create({
-                ...createDto,
-                code,
-            }, file);
+            const code = `offer-word-${uuid}`;
+            const result = await this.wordTemplateService.create(
+                {
+                    ...createDto,
+                    code,
+                },
+                file,
+            );
             return {
                 id: String(result.id!), // Преобразуем BigInt в string
                 name: result.name,
@@ -105,7 +111,9 @@ export class WordTemplateController {
             };
         } catch (error) {
             console.error(error);
-            throw new BadRequestException(error.message || 'Failed to create word template');
+            throw new BadRequestException(
+                error.message || 'Failed to create word template',
+            );
         }
     }
 
@@ -145,7 +153,9 @@ export class WordTemplateController {
             }));
         } catch (error) {
             console.error(error);
-            throw new BadRequestException(error.message || 'Failed to get word templates');
+            throw new BadRequestException(
+                error.message || 'Failed to get word templates',
+            );
         }
     }
 
@@ -207,8 +217,8 @@ export class WordTemplateController {
 
     @ApiOperation({
         summary: 'Get user word templates',
-        description: 'Get all word templates available for a specific user in a portal',
-
+        description:
+            'Get all word templates available for a specific user in a portal',
     })
     @ApiResponse({
         status: 200,
@@ -239,7 +249,9 @@ export class WordTemplateController {
                 template_url: t.template_url,
                 created_at: t.created_at,
             })),
-            selected: templates.selected.map(t => new UserSelectedTemplateSummaryDto(t)),
+            selected: templates.selected.map(
+                t => new UserSelectedTemplateSummaryDto(t),
+            ),
         };
         return result;
     }
@@ -280,12 +292,13 @@ export class WordTemplateController {
         status: 200,
         description: 'File download',
         content: {
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
-                schema: {
-                    type: 'string',
-                    format: 'binary',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                {
+                    schema: {
+                        type: 'string',
+                        format: 'binary',
+                    },
                 },
-            },
         },
     })
     @Get(':id/download')
@@ -434,4 +447,3 @@ export class WordTemplateController {
         return template as WordTemplateDto;
     }
 }
-

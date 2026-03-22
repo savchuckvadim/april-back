@@ -18,4 +18,3 @@ import { TimezoneController } from './controllers/timezone.controller';
     exports: [TimezoneService, TimezoneRepository],
 })
 export class TimezoneModule {}
-

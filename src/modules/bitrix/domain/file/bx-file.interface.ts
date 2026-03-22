@@ -19,11 +19,8 @@ export interface IBXFile {
     //     "DETAIL_URL": "https://test.bitrix24.com/workgroups/group/3/disk/file/2511.jpg"
 }
 
-
 export interface IBXFileItemField {
     id: number;
     showUrl: string;
     downloadUrl: string;
-
 }
-

@@ -124,7 +124,6 @@ import { AdminModule } from './apps/admin/admin.module';
         BxDepartmentModule,
         OfferWordModule,
 
-
         HelperModule,
 
         BitrixSetupModule,
@@ -136,4 +135,4 @@ import { AdminModule } from './apps/admin/admin.module';
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],
 })
-export class AppModule { }
+export class AppModule {}

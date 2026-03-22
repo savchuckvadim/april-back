@@ -7,27 +7,25 @@ import { BxAuthType } from '../../bitrix-service.factory';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
 import { BitrixAuthService } from '../../auth/bitrix-auth.service';
 
-
 @Injectable()
 export class BitrixApiFactoryService {
-    constructor(
-        private readonly telegram: TelegramService,
-
-    ) {
-
-    }
+    constructor(private readonly telegram: TelegramService) {}
 
     //NEW//
-    public async create(portal: IPortal, authType: BxAuthType = BxAuthType.HOOK, token?: string): Promise<BitrixBaseApi> {
+    public async create(
+        portal: IPortal,
+        authType: BxAuthType = BxAuthType.HOOK,
+        token?: string,
+    ): Promise<BitrixBaseApi> {
         // const token = authType === BxAuthType.TOKEN ? await this.authService.getFreshToken(portal.domain) : null;
         const api = new BitrixBaseApi(
             this.telegram,
             portal.domain,
             portal.key,
             token || null,
-            authType
+            authType,
         );
-        api.init(portal)
+        api.init(portal);
         return api;
     }
 
@@ -43,8 +41,6 @@ export class BitrixApiFactoryService {
     //     api.init(portal)
     //     return api;
     // }
-
-
 
     //OLD//
 

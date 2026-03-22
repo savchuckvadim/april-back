@@ -38,5 +38,4 @@ import { PortalContractModule } from './portal/portal-contracts/portal-contract.
         PortalContractModule,
     ],
 })
-export class AdminModule { }
-
+export class AdminModule {}

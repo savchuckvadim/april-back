@@ -114,7 +114,6 @@ export class BXUserDto {
     @IsOptional()
     LAST_NAME?: string;
 
-
     @ApiProperty()
     @IsString()
     @IsOptional()
@@ -127,10 +126,6 @@ export class BXUserDto {
 
     @ApiProperty()
     PERSONAL_PHOTO?: any;
-
-
-
-
 }
 export class ReportGetFiltersDto {
     @ApiProperty()

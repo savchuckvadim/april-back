@@ -28,7 +28,9 @@ export class BtxCompanyController {
         type: BtxCompanyResponseDto,
     })
     @Post()
-    async createCompany(@Body() createCompanyDto: CreateBtxCompanyDto): Promise<SuccessResponseDto> {
+    async createCompany(
+        @Body() createCompanyDto: CreateBtxCompanyDto,
+    ): Promise<SuccessResponseDto> {
         const company = await this.companyService.create(createCompanyDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class BtxCompanyController {
         type: BtxCompanyResponseDto,
     })
     @Get(':id')
-    async getCompanyById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getCompanyById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const company = await this.companyService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,10 +62,14 @@ export class BtxCompanyController {
         type: [BtxCompanyResponseDto],
     })
     @Get()
-    async getAllCompanies(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllCompanies(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let companies;
         if (portalId) {
-            companies = await this.companyService.findByPortalId(Number(portalId));
+            companies = await this.companyService.findByPortalId(
+                Number(portalId),
+            );
         } else {
             companies = await this.companyService.findMany();
         }
@@ -96,7 +104,9 @@ export class BtxCompanyController {
         description: 'Company deleted successfully',
     })
     @Delete(':id')
-    async deleteCompany(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteCompany(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.companyService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +114,3 @@ export class BtxCompanyController {
         };
     }
 }
-

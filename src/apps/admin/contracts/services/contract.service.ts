@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { contracts } from 'generated/prisma';
 import { ContractRepository } from '../repositories/contract.repository';
 import { CreateContractDto } from '../dto/create-contract.dto';
@@ -7,7 +11,7 @@ import { ContractResponseDto } from '../dto/contract-response.dto';
 
 @Injectable()
 export class ContractService {
-    constructor(private readonly repository: ContractRepository) { }
+    constructor(private readonly repository: ContractRepository) {}
 
     async create(dto: CreateContractDto): Promise<ContractResponseDto> {
         try {
@@ -58,7 +62,10 @@ export class ContractService {
         return contracts.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateContractDto): Promise<ContractResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateContractDto,
+    ): Promise<ContractResponseDto> {
         const contract = await this.repository.findById(id);
         if (!contract) {
             throw new NotFoundException(`Contract with id ${id} not found`);
@@ -71,21 +78,29 @@ export class ContractService {
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.code !== undefined) updateData.code = dto.code;
             if (dto.type !== undefined) updateData.type = dto.type;
-            if (dto.withPrepayment !== undefined) updateData.withPrepayment = dto.withPrepayment;
+            if (dto.withPrepayment !== undefined)
+                updateData.withPrepayment = dto.withPrepayment;
             if (dto.template !== undefined) updateData.template = dto.template;
             if (dto.order !== undefined) updateData.order = dto.order;
-            if (dto.coefficient !== undefined) updateData.coefficient = dto.coefficient;
-            if (dto.prepayment !== undefined) updateData.prepayment = dto.prepayment;
+            if (dto.coefficient !== undefined)
+                updateData.coefficient = dto.coefficient;
+            if (dto.prepayment !== undefined)
+                updateData.prepayment = dto.prepayment;
             if (dto.discount !== undefined) updateData.discount = dto.discount;
-            if (dto.productName !== undefined) updateData.productName = dto.productName;
+            if (dto.productName !== undefined)
+                updateData.productName = dto.productName;
             if (dto.product !== undefined) updateData.product = dto.product;
             if (dto.service !== undefined) updateData.service = dto.service;
-            if (dto.description !== undefined) updateData.description = dto.description;
+            if (dto.description !== undefined)
+                updateData.description = dto.description;
             if (dto.comment !== undefined) updateData.comment = dto.comment;
             if (dto.comment1 !== undefined) updateData.comment1 = dto.comment1;
             if (dto.comment2 !== undefined) updateData.comment2 = dto.comment2;
 
-            const updatedContract = await this.repository.update(id, updateData);
+            const updatedContract = await this.repository.update(
+                id,
+                updateData,
+            );
             if (!updatedContract) {
                 throw new BadRequestException('Failed to update contract');
             }
@@ -130,4 +145,3 @@ export class ContractService {
         };
     }
 }
-

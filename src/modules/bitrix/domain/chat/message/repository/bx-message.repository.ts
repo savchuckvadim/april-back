@@ -7,7 +7,7 @@ import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
 import { IBXMessageAddRequest } from '../interface/bx-message.interface';
 
 export class BxMessageRepository {
-    constructor(private readonly bxApi: BitrixBaseApi) { }
+    constructor(private readonly bxApi: BitrixBaseApi) {}
 
     async add(data: IBXMessageAddRequest) {
         return await this.bxApi.callType(
@@ -28,4 +28,3 @@ export class BxMessageRepository {
         );
     }
 }
-

@@ -8,9 +8,7 @@ import {
 import { PrismaService } from 'src/core/prisma';
 
 export function createTemplateBaseEntityFromPrisma(
-    data: NonNullable<
-        Awaited<Template>
-    >,
+    data: NonNullable<Awaited<Template>>,
 ): TemplateBaseEntity {
     const entity = new TemplateBaseEntity();
     entity.id = data.id.toString();
@@ -35,9 +33,7 @@ export function createTemplateBaseLightEntityFromEntity(
 }
 
 export function createTemplateBasePortalEntityFromPrisma(
-    data: NonNullable<
-        Awaited<Template>
-    >,
+    data: NonNullable<Awaited<Template>>,
     fields: NonNullable<
         Awaited<ReturnType<PrismaService['field']['findUnique']>>
     >[],

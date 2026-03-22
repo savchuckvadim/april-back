@@ -127,4 +127,3 @@ export class ContractResponseDto {
     })
     updated_at?: Date | null;
 }
-

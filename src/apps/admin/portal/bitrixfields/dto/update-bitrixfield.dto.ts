@@ -58,4 +58,3 @@ export class UpdateBitrixFieldDto {
     @IsOptional()
     code?: string;
 }
-

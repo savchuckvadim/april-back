@@ -7,11 +7,14 @@ import { BitrixCore } from './bitrix-core.service';
 import { AxiosInstance } from 'axios';
 
 export class CallApiService {
-    constructor(private readonly core: BitrixCore, private readonly http: AxiosInstance) { }
+    constructor(
+        private readonly core: BitrixCore,
+        private readonly http: AxiosInstance,
+    ) {}
 
     /**
-      * Универсальный метод вызова
-      */
+     * Универсальный метод вызова
+     */
     async call<T = any>(method: string, data: Record<string, any>): Promise<T> {
         const response = await this.core.request<T>(method, data);
         return response.data;

@@ -1,4 +1,10 @@
-import { IsOptional, IsEnum, IsBoolean, IsString, IsNumberString } from 'class-validator';
+import {
+    IsOptional,
+    IsEnum,
+    IsBoolean,
+    IsString,
+    IsNumberString,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { OfferTemplateVisibility } from '../../offer-template/dtos/create-offer-template.dto';
 
@@ -23,4 +29,3 @@ export class WordTemplateQueryDto {
     @IsOptional()
     search?: string;
 }
-

@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsEnum, IsString } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsString } from 'class-validator';
 
 export enum InstallAppStatus {
     SUCCESS = 'success',
@@ -11,8 +11,14 @@ export class InstallAppFromPortalResponseDto {
     @IsString()
     token: string;
 
-    @ApiProperty({ description: 'Status', example: 'success', enum: ['success', 'fail'] })
-    @IsEnum(InstallAppStatus, { message: 'Status must be either success or fail' })
+    @ApiProperty({
+        description: 'Status',
+        example: 'success',
+        enum: ['success', 'fail'],
+    })
+    @IsEnum(InstallAppStatus, {
+        message: 'Status must be either success or fail',
+    })
     status: InstallAppStatus;
 
     @ApiPropertyOptional({ description: 'Message', example: 'Message text' })

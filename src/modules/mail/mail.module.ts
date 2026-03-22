@@ -23,4 +23,4 @@ import { BullModule } from '@nestjs/bull';
 
     controllers: [MailController],
 })
-export class MailModule { }
+export class MailModule {}

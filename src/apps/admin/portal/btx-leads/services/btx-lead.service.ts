@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { btx_leads } from 'generated/prisma';
 import { BtxLeadRepository } from '../repositories/btx-lead.repository';
 import { CreateBtxLeadDto } from '../dto/create-btx-lead.dto';
@@ -7,7 +11,7 @@ import { BtxLeadResponseDto } from '../dto/btx-lead-response.dto';
 
 @Injectable()
 export class BtxLeadService {
-    constructor(private readonly repository: BtxLeadRepository) { }
+    constructor(private readonly repository: BtxLeadRepository) {}
 
     async create(dto: CreateBtxLeadDto): Promise<BtxLeadResponseDto> {
         try {
@@ -52,7 +56,10 @@ export class BtxLeadService {
         return leads.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateBtxLeadDto): Promise<BtxLeadResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateBtxLeadDto,
+    ): Promise<BtxLeadResponseDto> {
         const lead = await this.repository.findById(id);
         if (!lead) {
             throw new NotFoundException(`Lead with id ${id} not found`);
@@ -63,7 +70,8 @@ export class BtxLeadService {
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
 
             const updatedLead = await this.repository.update(id, updateData);
             if (!updatedLead) {
@@ -96,4 +104,3 @@ export class BtxLeadService {
         };
     }
 }
-

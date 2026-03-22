@@ -5,7 +5,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 @ApiTags('Alfa Smart')
 @Controller('alfa-smart')
 export class AlfaSmartController {
-    constructor(private readonly testSmartService: TestSmartService) { }
+    constructor(private readonly testSmartService: TestSmartService) {}
 
     @ApiOperation({ summary: 'Get smarts' })
     @Get('get-smarts')

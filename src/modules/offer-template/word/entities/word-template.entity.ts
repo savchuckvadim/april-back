@@ -72,7 +72,6 @@ export class WordTemplate {
             tags: this.tags,
             is_active: this.is_active,
             counter: this.counter,
-
         };
     }
 }
@@ -99,4 +98,3 @@ export class WordTemplateSummary {
         });
     }
 }
-

@@ -74,4 +74,3 @@ export class UpdatePortalContractDto {
     @IsOptional()
     description?: string;
 }
-

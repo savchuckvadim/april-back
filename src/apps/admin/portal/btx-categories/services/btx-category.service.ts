@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { btx_categories } from 'generated/prisma';
 import { BtxCategoryRepository } from '../repositories/btx-category.repository';
 import { BtxStageRepository } from '../repositories/btx-stage.repository';
@@ -11,7 +15,7 @@ export class BtxCategoryService {
     constructor(
         private readonly repository: BtxCategoryRepository,
         private readonly stageRepository: BtxStageRepository,
-    ) { }
+    ) {}
 
     async create(dto: CreateBtxCategoryDto): Promise<BtxCategoryResponseDto> {
         try {
@@ -49,7 +53,9 @@ export class BtxCategoryService {
             }
 
             // Fetch category with stages
-            const categoryWithStages = await this.repository.findById(Number(category.id));
+            const categoryWithStages = await this.repository.findById(
+                Number(category.id),
+            );
             return this.mapToResponseDto(categoryWithStages!);
         } catch (error) {
             throw error;
@@ -72,23 +78,40 @@ export class BtxCategoryService {
         return categories.map(this.mapToResponseDto);
     }
 
-    async findByEntity(entityType: string, entityId: number): Promise<BtxCategoryResponseDto[]> {
-        const categories = await this.repository.findByEntity(entityType, entityId);
+    async findByEntity(
+        entityType: string,
+        entityId: number,
+    ): Promise<BtxCategoryResponseDto[]> {
+        const categories = await this.repository.findByEntity(
+            entityType,
+            entityId,
+        );
         if (!categories) {
             return [];
         }
         return categories.map(this.mapToResponseDto);
     }
 
-    async findByEntityAndParentType(entityType: string, entityId: number, parentType: string): Promise<BtxCategoryResponseDto[]> {
-        const categories = await this.repository.findByEntityAndParentType(entityType, entityId, parentType);
+    async findByEntityAndParentType(
+        entityType: string,
+        entityId: number,
+        parentType: string,
+    ): Promise<BtxCategoryResponseDto[]> {
+        const categories = await this.repository.findByEntityAndParentType(
+            entityType,
+            entityId,
+            parentType,
+        );
         if (!categories) {
             return [];
         }
         return categories.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateBtxCategoryDto): Promise<BtxCategoryResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateBtxCategoryDto,
+    ): Promise<BtxCategoryResponseDto> {
         const category = await this.repository.findById(id);
         if (!category) {
             throw new NotFoundException(`Category with id ${id} not found`);
@@ -96,17 +119,22 @@ export class BtxCategoryService {
 
         try {
             const updateData: Partial<btx_categories> = {};
-            if (dto.parent_type !== undefined) updateData.parent_type = dto.parent_type;
+            if (dto.parent_type !== undefined)
+                updateData.parent_type = dto.parent_type;
             if (dto.type !== undefined) updateData.type = dto.type;
             if (dto.group !== undefined) updateData.group = dto.group;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId;
-            if (dto.bitrixCamelId !== undefined) updateData.bitrixCamelId = dto.bitrixCamelId;
+            if (dto.bitrixCamelId !== undefined)
+                updateData.bitrixCamelId = dto.bitrixCamelId;
             if (dto.code !== undefined) updateData.code = dto.code;
             if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
-            const updatedCategory = await this.repository.update(id, updateData);
+            const updatedCategory = await this.repository.update(
+                id,
+                updateData,
+            );
             if (!updatedCategory) {
                 throw new BadRequestException('Failed to update category');
             }
@@ -141,21 +169,21 @@ export class BtxCategoryService {
             bitrixCamelId: category.bitrixCamelId,
             code: category.code,
             isActive: category.isActive,
-            stages: (category as any).btx_stages?.map((stage: any) => ({
-                id: Number(stage.id),
-                btx_category_id: Number(stage.btx_category_id),
-                name: stage.name,
-                title: stage.title,
-                code: stage.code,
-                bitrixId: stage.bitrixId,
-                color: stage.color,
-                isActive: stage.isActive,
-                created_at: stage.created_at,
-                updated_at: stage.updated_at,
-            })) || [],
+            stages:
+                (category as any).btx_stages?.map((stage: any) => ({
+                    id: Number(stage.id),
+                    btx_category_id: Number(stage.btx_category_id),
+                    name: stage.name,
+                    title: stage.title,
+                    code: stage.code,
+                    bitrixId: stage.bitrixId,
+                    color: stage.color,
+                    isActive: stage.isActive,
+                    created_at: stage.created_at,
+                    updated_at: stage.updated_at,
+                })) || [],
             created_at: category.created_at,
             updated_at: category.updated_at,
         };
     }
 }
-

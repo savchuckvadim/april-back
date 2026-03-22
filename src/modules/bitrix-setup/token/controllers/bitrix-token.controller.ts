@@ -7,20 +7,24 @@ import {
     HttpException,
     HttpStatus,
     ValidationPipe,
-    UsePipes
+    UsePipes,
 } from '@nestjs/common';
 import { BitrixTokenService } from '../services/bitrix-token.service';
-import { CreateBitrixTokenDto, GetBitrixTokenDto } from '../dto/bitrix-token.dto';
+import {
+    CreateBitrixTokenDto,
+    GetBitrixTokenDto,
+} from '../dto/bitrix-token.dto';
 
 @Controller('bitrix-token')
 export class BitrixTokenController {
-    constructor(private readonly bitrixTokenService: BitrixTokenService) { }
+    constructor(private readonly bitrixTokenService: BitrixTokenService) {}
 
     @Post('store-or-update')
     @UsePipes(new ValidationPipe({ transform: true }))
     async storeOrUpdate(@Body() dto: CreateBitrixTokenDto) {
         try {
-            const result = await this.bitrixTokenService.storeOrUpdateToken(dto);
+            const result =
+                await this.bitrixTokenService.storeOrUpdateToken(dto);
 
             return {
                 success: true,
@@ -29,19 +33,22 @@ export class BitrixTokenController {
                     token_id: result.token.id,
                     token: result.token,
                     domain: dto.domain,
-                }
+                },
             };
         } catch (error) {
-            throw new HttpException({
-                success: false,
-                error: 'Bitrix Token failed',
-                details: {
-                    domain: dto.domain,
-                    request: dto,
-                    message: error.message,
-                    stack: error.stack,
-                }
-            }, HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+                {
+                    success: false,
+                    error: 'Bitrix Token failed',
+                    details: {
+                        domain: dto.domain,
+                        request: dto,
+                        message: error.message,
+                        stack: error.stack,
+                    },
+                },
+                HttpStatus.BAD_REQUEST,
+            );
         }
     }
 
@@ -53,19 +60,22 @@ export class BitrixTokenController {
 
             return {
                 success: true,
-                result: token
+                result: token,
             };
         } catch (error) {
-            throw new HttpException({
-                success: false,
-                error: 'Bitrix Token not found',
-                details: {
-                    domain: dto.domain,
-                    request: dto,
-                    message: error.message,
-                    stack: error.stack,
-                }
-            }, HttpStatus.NOT_FOUND);
+            throw new HttpException(
+                {
+                    success: false,
+                    error: 'Bitrix Token not found',
+                    details: {
+                        domain: dto.domain,
+                        request: dto,
+                        message: error.message,
+                        stack: error.stack,
+                    },
+                },
+                HttpStatus.NOT_FOUND,
+            );
         }
     }
 }

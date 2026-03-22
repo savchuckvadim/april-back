@@ -7,7 +7,9 @@ import { BtxCompanyRepository } from './btx-company.repository';
 export class BtxCompanyPrismaRepository implements BtxCompanyRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(company: Partial<btx_companies>): Promise<btx_companies | null> {
+    async create(
+        company: Partial<btx_companies>,
+    ): Promise<btx_companies | null> {
         const result = await this.prisma.btx_companies.create({
             data: {
                 name: company.name!,
@@ -48,12 +50,16 @@ export class BtxCompanyPrismaRepository implements BtxCompanyRepository {
         return result;
     }
 
-    async update(id: number, company: Partial<btx_companies>): Promise<btx_companies | null> {
+    async update(
+        id: number,
+        company: Partial<btx_companies>,
+    ): Promise<btx_companies | null> {
         const updateData: any = {};
         if (company.name !== undefined) updateData.name = company.name;
         if (company.title !== undefined) updateData.title = company.title;
         if (company.code !== undefined) updateData.code = company.code;
-        if (company.portal_id !== undefined) updateData.portal_id = BigInt(company.portal_id);
+        if (company.portal_id !== undefined)
+            updateData.portal_id = BigInt(company.portal_id);
 
         const result = await this.prisma.btx_companies.update({
             where: { id: BigInt(id) },
@@ -69,4 +75,3 @@ export class BtxCompanyPrismaRepository implements BtxCompanyRepository {
         return result ? true : false;
     }
 }
-

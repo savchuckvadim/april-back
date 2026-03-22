@@ -8,7 +8,6 @@ import {
     Delete,
     Query,
     ParseIntPipe,
-
     HttpCode,
     HttpStatus,
     BadRequestException,
@@ -24,39 +23,46 @@ import { OfferTemplateQueryDto } from '../dtos/find-all-offer-template.dto';
 import {
     OfferTemplateIdParamsDto,
     OfferTemplatePortalIdParamsDto,
-    OfferTemplateUserPortalParamsDto
+    OfferTemplateUserPortalParamsDto,
 } from '../dtos/offer-template-params.dto';
-import { OfferTemplateDto, OfferTemplateSummaryDto } from '../dtos/offer-template.dto';
+import {
+    OfferTemplateDto,
+    OfferTemplateSummaryDto,
+} from '../dtos/offer-template.dto';
 import { templateResponseMap } from '../lib/offer-template.mapper';
-import { CreateOfferTemplateRequestDto, CreateOfferTemplateResponseDto, OfferTemplateVisibility } from '../dtos/create-offer-template.dto';
+import {
+    CreateOfferTemplateRequestDto,
+    CreateOfferTemplateResponseDto,
+    OfferTemplateVisibility,
+} from '../dtos/create-offer-template.dto';
 import { randomUUID } from 'crypto';
-
 
 @ApiTags('Konstructor Offer Template')
 @Controller('offer-templates')
 export class OfferTemplateController {
-    constructor(
-        private readonly offerTemplateService: OfferTemplateService
+    constructor(private readonly offerTemplateService: OfferTemplateService) {}
 
-    ) { }
-
-
-    @ApiOperation({ summary: 'Create offer template', description: 'Create a new offer template', })
-    @ApiResponse({ status: 200, description: 'Create offer template', type: CreateOfferTemplateResponseDto })
+    @ApiOperation({
+        summary: 'Create offer template',
+        description: 'Create a new offer template',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Create offer template',
+        type: CreateOfferTemplateResponseDto,
+    })
     @Post()
     async createOfferTemplate(
         @Body() createOfferTemplateDto: CreateOfferTemplateRequestDto,
     ): Promise<CreateOfferTemplateResponseDto> {
-
         const uuid = randomUUID();
 
         const code = createOfferTemplateDto.code || `offer-${uuid}`;
 
- 
         const data = {
             ...createOfferTemplateDto,
             code: code,
-        }
+        };
         const result = await this.offerTemplateService.create(data);
 
         const templte = {
@@ -67,14 +73,19 @@ export class OfferTemplateController {
         return templte;
     }
 
-    @ApiOperation({ summary: 'Get all offer template summaries', description: 'Get all offer template summaries' })
-    @ApiResponse({ status: 200, description: 'Get all offer template summaries', type: [OfferTemplateSummaryDto] })
+    @ApiOperation({
+        summary: 'Get all offer template summaries',
+        description: 'Get all offer template summaries',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Get all offer template summaries',
+        type: [OfferTemplateSummaryDto],
+    })
     @Get()
     async findAllOfferTemplate(
         @Query() query?: OfferTemplateQueryDto,
-
     ): Promise<OfferTemplateSummaryDto[]> {
-
         try {
             const filters: any = {};
             const { visibility, portal_id, is_active, search } = query || {};
@@ -82,7 +93,6 @@ export class OfferTemplateController {
             if (portal_id) filters.portal_id = BigInt(portal_id);
             if (is_active !== undefined) filters.is_active = is_active === true;
             if (search) filters.search = search;
-
 
             const templates = await this.offerTemplateService.findMany();
 
@@ -117,23 +127,33 @@ export class OfferTemplateController {
         );
     }
 
-    @ApiOperation({ summary: 'Get offer template by id', description: 'Get offer template by id' })
-    @ApiResponse({ status: 200, description: 'Get offer template by id', type: OfferTemplateDto })
+    @ApiOperation({
+        summary: 'Get offer template by id',
+        description: 'Get offer template by id',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Get offer template by id',
+        type: OfferTemplateDto,
+    })
     @Get(':id')
     async findOne(
         @Param() params: OfferTemplateIdParamsDto,
     ): Promise<OfferTemplateDto> {
-        const template = await this.offerTemplateService.findById(BigInt(params.id));
+        const template = await this.offerTemplateService.findById(
+            BigInt(params.id),
+        );
         const result = new OfferTemplateDto(template);
         return result;
-
     }
 
     @Get(':id/full')
     async findOneWithRelations(
         @Param() params: OfferTemplateIdParamsDto,
     ): Promise<OfferTemplate> {
-        return this.offerTemplateService.findByIdWithRelations(BigInt(params.id));
+        return this.offerTemplateService.findByIdWithRelations(
+            BigInt(params.id),
+        );
     }
 
     @Patch(':id')
@@ -165,7 +185,10 @@ export class OfferTemplateController {
         @Param() params: OfferTemplateIdParamsDto,
         @Body('is_active') is_active: boolean,
     ): Promise<OfferTemplate> {
-        return this.offerTemplateService.setActive(BigInt(params.id), is_active);
+        return this.offerTemplateService.setActive(
+            BigInt(params.id),
+            is_active,
+        );
     }
 
     @Patch(':id/default')
@@ -173,6 +196,9 @@ export class OfferTemplateController {
         @Param() params: OfferTemplateIdParamsDto,
         @Body('is_default') is_default: boolean,
     ): Promise<OfferTemplate> {
-        return this.offerTemplateService.setDefault(BigInt(params.id), is_default);
+        return this.offerTemplateService.setDefault(
+            BigInt(params.id),
+            is_default,
+        );
     }
 }

@@ -17,7 +17,7 @@ export class OfferTemplateImageQueryDto {
     @ApiPropertyOptional({
         enum: StorageType,
         description: 'Тип хранения',
-        enumName: 'StorageType'
+        enumName: 'StorageType',
     })
     @IsEnum(StorageType)
     @IsOptional()
@@ -26,7 +26,7 @@ export class OfferTemplateImageQueryDto {
     @ApiPropertyOptional({
         enum: ImageParent,
         description: 'Родитель',
-        enumName: 'ImageParent'
+        enumName: 'ImageParent',
     })
     @IsEnum(ImageParent)
     @IsOptional()

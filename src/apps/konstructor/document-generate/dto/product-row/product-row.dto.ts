@@ -28,7 +28,6 @@ export class ProductRowSupplyDto {
     @IsNumber() number: number;
     @IsString() type: 'internet' | 'proxima';
 
-
     @IsOptional()
     @IsString()
     defaultName?: string;
@@ -55,7 +54,6 @@ export class ProductRowDto {
     @IsString()
     alternativeShortName?: string;
 
-
     @IsString() type: string;
 
     @IsNumber() id: number;
@@ -63,8 +61,12 @@ export class ProductRowDto {
     @IsBoolean() isUpdating: boolean;
     @IsOptional() @IsEnum(ProductTypeEnum) productType?: ProductTypeEnum;
     @ValidateNested() @Type(() => RowComplectDto) complect: RowComplectDto;
-    @ValidateNested() @Type(() => ProductRowContractDto) contract: ProductRowContractDto;
-    @ValidateNested() @Type(() => ProductRowSupplyDto) supply: ProductRowSupplyDto;
+    @ValidateNested()
+    @Type(() => ProductRowContractDto)
+    contract: ProductRowContractDto;
+    @ValidateNested()
+    @Type(() => ProductRowSupplyDto)
+    supply: ProductRowSupplyDto;
     @ValidateNested() @Type(() => RowPriceDto) price: RowPriceDto;
     @ValidateNested() @Type(() => ProductDto) product: ProductDto;
     @ValidateNested() @Type(() => SupplyDto) currentSupply: SupplyDto;

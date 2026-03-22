@@ -18,4 +18,3 @@ import { MeasureController } from './controllers/measure.controller';
     exports: [MeasureService, MeasureRepository],
 })
 export class MeasureModule {}
-

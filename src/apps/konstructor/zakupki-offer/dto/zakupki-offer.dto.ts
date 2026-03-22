@@ -15,7 +15,6 @@ import {
     ProductRowsItemsDto,
     ProductRowSetDto,
     RecipientDto,
-
     PriceDto,
     RegionDto,
     RegionsDto,

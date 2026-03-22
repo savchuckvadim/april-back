@@ -19,7 +19,7 @@ import { RedisModule } from '@/core/redis/redis.module';
         OrkHistoryBxListModule,
         QueueModule,
         WsModule,
-        RedisModule
+        RedisModule,
     ],
     controllers: [
         KpiController,
@@ -31,7 +31,7 @@ import { RedisModule } from '@/core/redis/redis.module';
         KpiReportOrkEventService,
         OrkDealsReportService,
         OrkUserReportService,
-        OrkUserReportQueueProcessor
+        OrkUserReportQueueProcessor,
     ],
 })
-export class KpiReportOrkModule { }
+export class KpiReportOrkModule {}

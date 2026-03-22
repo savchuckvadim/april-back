@@ -6,5 +6,4 @@ import { AdminClientController } from './controllers/client.controller';
     imports: [ClientModule],
     controllers: [AdminClientController],
 })
-export class AdminClientModule { }
-
+export class AdminClientModule {}

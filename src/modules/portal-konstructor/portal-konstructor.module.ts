@@ -22,4 +22,4 @@ import { ProviderModule } from './provider';
         ProviderModule,
     ],
 })
-export class PortalKonstructorModule { }
+export class PortalKonstructorModule {}

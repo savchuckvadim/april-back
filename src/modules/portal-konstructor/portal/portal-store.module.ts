@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { PortalPrismaRepository } from './portal.prisma.repository';
 import { PortalRepository } from './portal.repository';
 import { PortalController } from './portal.controller';
-import {  PortalStoreService } from './portal-store.service';
+import { PortalStoreService } from './portal-store.service';
 import { PortalOuterService } from './outer/portal-outer.service';
 import { PortalOuterController } from './outer/portal-outer.controller';
 import { APIOnlineClient } from '../../../clients/online';
@@ -30,4 +30,4 @@ import { OnlineModule } from '../../../clients/online/client/online/api-online.m
     ],
     exports: [PortalRepository, PortalStoreService],
 })
-export class PortalStoreModule { }
+export class PortalStoreModule {}

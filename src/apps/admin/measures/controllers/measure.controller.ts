@@ -18,7 +18,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Measures Management')
 @Controller('admin/measures')
 export class MeasureController {
-    constructor(private readonly measureService: MeasureService) { }
+    constructor(private readonly measureService: MeasureService) {}
 
     @ApiOperation({ summary: 'Create a new measure' })
     @ApiResponse({
@@ -27,7 +27,9 @@ export class MeasureController {
         type: MeasureResponseDto,
     })
     @Post()
-    async createMeasure(@Body() createMeasureDto: CreateMeasureDto): Promise<SuccessResponseDto> {
+    async createMeasure(
+        @Body() createMeasureDto: CreateMeasureDto,
+    ): Promise<SuccessResponseDto> {
         const measure = await this.measureService.create(createMeasureDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -42,7 +44,9 @@ export class MeasureController {
         type: MeasureResponseDto,
     })
     @Get(':id')
-    async getMeasureById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getMeasureById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const measure = await this.measureService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -89,7 +93,9 @@ export class MeasureController {
         description: 'Measure deleted successfully',
     })
     @Delete(':id')
-    async deleteMeasure(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteMeasure(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.measureService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -97,4 +103,3 @@ export class MeasureController {
         };
     }
 }
-

@@ -1,17 +1,21 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { BitrixSettingRepository } from '../repositories/bitrix-setting.repository';
 import { BitrixSettingEntity } from '../model/bitrix-setting.model';
-import { CreateBitrixSettingDto, UpdateBitrixSettingDto } from '../dto/bitrix-setting.dto';
+import {
+    CreateBitrixSettingDto,
+    UpdateBitrixSettingDto,
+} from '../dto/bitrix-setting.dto';
 import { BitrixSettingType } from '../enums/bitrix-setting-type.enum';
 
 @Injectable()
 export class BitrixSettingService {
-    constructor(
-        private readonly repository: BitrixSettingRepository,
-    ) { }
+    constructor(private readonly repository: BitrixSettingRepository) {}
 
     // BitrixSetting methods
-    async storeSetting(dto: CreateBitrixSettingDto, settingableId: bigint): Promise<BitrixSettingEntity> {
+    async storeSetting(
+        dto: CreateBitrixSettingDto,
+        settingableId: bigint,
+    ): Promise<BitrixSettingEntity> {
         const processedValue = this.processSettingValue(dto.value, dto.type);
 
         const setting = await this.repository.store({
@@ -32,18 +36,32 @@ export class BitrixSettingService {
         return setting;
     }
 
-    async getSettingsBySettingable(settingableId: bigint, settingableType: string): Promise<BitrixSettingEntity[]> {
-        const settings = await this.repository.findBySettingable(settingableId, settingableType);
+    async getSettingsBySettingable(
+        settingableId: bigint,
+        settingableType: string,
+    ): Promise<BitrixSettingEntity[]> {
+        const settings = await this.repository.findBySettingable(
+            settingableId,
+            settingableType,
+        );
 
         // Process values based on type
         return settings.map(setting => ({
             ...setting,
-            value: this.processSettingValueForResponse(setting.value, setting.type),
+            value: this.processSettingValueForResponse(
+                setting.value,
+                setting.type,
+            ),
         }));
     }
 
-    async updateSetting(id: bigint, dto: UpdateBitrixSettingDto): Promise<BitrixSettingEntity> {
-        const processedValue = dto.value ? this.processSettingValue(dto.value, dto.type) : undefined;
+    async updateSetting(
+        id: bigint,
+        dto: UpdateBitrixSettingDto,
+    ): Promise<BitrixSettingEntity> {
+        const processedValue = dto.value
+            ? this.processSettingValue(dto.value, dto.type)
+            : undefined;
 
         const setting = await this.repository.update(id, {
             type: dto.type,
@@ -59,7 +77,10 @@ export class BitrixSettingService {
 
         return {
             ...setting,
-            value: this.processSettingValueForResponse(setting.value, setting.type),
+            value: this.processSettingValueForResponse(
+                setting.value,
+                setting.type,
+            ),
         };
     }
 
@@ -68,7 +89,10 @@ export class BitrixSettingService {
     }
 
     // Helper methods for setting value processing
-    private processSettingValue(value: string | undefined, type?: string): string | undefined {
+    private processSettingValue(
+        value: string | undefined,
+        type?: string,
+    ): string | undefined {
         if (!value) return undefined;
 
         switch (type) {
@@ -87,7 +111,10 @@ export class BitrixSettingService {
         }
     }
 
-    private processSettingValueForResponse(value: string | undefined, type?: string): any {
+    private processSettingValueForResponse(
+        value: string | undefined,
+        type?: string,
+    ): any {
         if (!value) return undefined;
 
         switch (type) {

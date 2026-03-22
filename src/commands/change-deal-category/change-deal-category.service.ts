@@ -7,7 +7,7 @@ import { PBXService } from '@/modules/pbx/pbx.service';
 export class ChangeDealCategoryService {
     private bitrix: BitrixService;
 
-    constructor(private readonly pbx: PBXService) { }
+    constructor(private readonly pbx: PBXService) {}
 
     async getDeals(dto: GetDealsDto) {
         const { bitrix, portal, PortalModel } = await this.pbx.init(dto.domain);

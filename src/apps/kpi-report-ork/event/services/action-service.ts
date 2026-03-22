@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 import { OrkKpiFilter } from '../dto/kpi.dto';
-import { EnumOrkFilterCode, EnumOrkFilterInnerCode } from '../type/ork-report-event.type';
-import { EnumOrkEventAction, EnumOrkEventType } from '@/modules/pbx-ork-history-bx-list';
-
+import {
+    EnumOrkFilterCode,
+    EnumOrkFilterInnerCode,
+} from '../type/ork-report-event.type';
+import {
+    EnumOrkEventAction,
+    EnumOrkEventType,
+} from '@/modules/pbx-ork-history-bx-list';
 
 @Injectable()
 export class ActionOrkEventService {
-    getActionWithTypeData(actionType: IFieldItem, action: IFieldItem): OrkKpiFilter {
+    getActionWithTypeData(
+        actionType: IFieldItem,
+        action: IFieldItem,
+    ): OrkKpiFilter {
         const result: Record<string, any> = {};
 
         const atCode = actionType.code as EnumOrkEventType;
@@ -30,37 +38,50 @@ export class ActionOrkEventService {
                     ].includes(atCode)
                 ) {
                     result.innerCode = `${atCode}_${acCode}`;
-                    result.name = atCode === EnumOrkEventType.et_ork_call_collect
-                        ? `Звонок по задолженности`
-                        : atCode === EnumOrkEventType.et_ork_info
-                            ? `Информация` : atCode === EnumOrkEventType.et_ork_info_garant
+                    result.name =
+                        atCode === EnumOrkEventType.et_ork_call_collect
+                            ? `Звонок по задолженности`
+                            : atCode === EnumOrkEventType.et_ork_info
+                              ? `Информация`
+                              : atCode === EnumOrkEventType.et_ork_info_garant
                                 ? `Инфоповод Гарант`
                                 : atCode === EnumOrkEventType.et_ork_call_money
-                                    ? `Звонок по оплате`
-                                    : atCode === EnumOrkEventType.et_ork_edu
-                                        ? `Обучение`
-                                        : atCode === EnumOrkEventType.et_ork_edu_uniq
-                                            ? `Обучение(уникальное)`
-                                            : atCode === EnumOrkEventType.et_ork_edu_first ? `Обучение первичное`
-                                                : atCode === EnumOrkEventType.et_ork_call_doc
-                                                    ? `Звонок по документам`
-                                                    : `Звонок`;
+                                  ? `Звонок по оплате`
+                                  : atCode === EnumOrkEventType.et_ork_edu
+                                    ? `Обучение`
+                                    : atCode ===
+                                        EnumOrkEventType.et_ork_edu_uniq
+                                      ? `Обучение(уникальное)`
+                                      : atCode ===
+                                          EnumOrkEventType.et_ork_edu_first
+                                        ? `Обучение первичное`
+                                        : atCode ===
+                                            EnumOrkEventType.et_ork_call_doc
+                                          ? `Звонок по документам`
+                                          : `Звонок`;
                 } else if (
                     [
                         EnumOrkEventType.et_ork_presentation,
                         EnumOrkEventType.et_ork_presentation_uniq,
-
                     ].includes(atCode)
                 ) {
-                    result.innerCode = `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
-                    const { actionTypeName } = atCode === EnumOrkEventType.et_ork_presentation_uniq ? { actionTypeName: 'През. уникальная' } : { actionTypeName: 'Презентация' }
+                    result.innerCode =
+                        `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
+                    const { actionTypeName } =
+                        atCode === EnumOrkEventType.et_ork_presentation_uniq
+                            ? { actionTypeName: 'През. уникальная' }
+                            : { actionTypeName: 'Презентация' };
                     // this.getFeminineActionTypeForm(atCode);
                     result.name = ` ${actionTypeName}`;
                 } else if (
-                    [EnumOrkEventType.ev_success, EnumOrkEventType.et_ork_fail].includes(atCode) &&
+                    [
+                        EnumOrkEventType.ev_success,
+                        EnumOrkEventType.et_ork_fail,
+                    ].includes(atCode) &&
                     acCode !== EnumOrkEventAction.ea_ork_plan
                 ) {
-                    result.innerCode = `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
+                    result.innerCode =
+                        `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
                     result.name = actionType.name;
                 } else {
                     break;
@@ -85,7 +106,8 @@ export class ActionOrkEventService {
                     ].includes(atCode)
                 ) {
                     result.code = `${atCode}_${acCode}` as EnumOrkFilterCode;
-                    result.innerCode = `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
+                    result.innerCode =
+                        `${atCode}_${acCode}` as EnumOrkFilterInnerCode;
 
                     result.name = actionType.name;
 
@@ -103,7 +125,9 @@ export class ActionOrkEventService {
             default:
                 break;
         }
-        result.order = this.getActionOrder(result.innerCode as EnumOrkFilterInnerCode);
+        result.order = this.getActionOrder(
+            result.innerCode as EnumOrkFilterInnerCode,
+        );
         return result as OrkKpiFilter;
     }
 

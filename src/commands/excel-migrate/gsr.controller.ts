@@ -40,7 +40,7 @@ export class GsrServiceController {
         private readonly taskUseCase: TaskUseCase,
         private readonly sheetsMigrateUseCase: GsrSheetsMigrateUseCase,
         private readonly bitrixService: GsrBitrixService,
-    ) { }
+    ) {}
 
     @Post('parse')
     @UseInterceptors(
@@ -167,7 +167,8 @@ export class GsrServiceController {
         @Res() res: Response,
     ) {
         // По умолчанию используем gsr.last-migrate.json, если путь не указан
-        const jsonFilePath = body.jsonFilePath || 'uploads/gsr.last-migrate.json';
+        const jsonFilePath =
+            body.jsonFilePath || 'uploads/gsr.last-migrate.json';
 
         const result = await this.bitrixService.loadAndMigrateFromJson(
             body.domain,

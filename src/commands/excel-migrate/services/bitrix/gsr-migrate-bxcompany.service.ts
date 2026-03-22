@@ -24,16 +24,12 @@ export class GsrMigrateBitrixCompanyService extends GsrMigrateBitrixAbstract {
         const name = element.company;
         const title = name ? name.replace(/[\r\n]+/g, ' ') : '';
 
-        const response = await this.bitrix.company.set(
-
-
-            {
-                ASSIGNED_BY_ID: this.userId,
-                TITLE: title,
-                UF_CRM_USER_CARDNUM: element.id as string,
-                COMMENTS: element.company,
-            },
-        );
+        const response = await this.bitrix.company.set({
+            ASSIGNED_BY_ID: this.userId,
+            TITLE: title,
+            UF_CRM_USER_CARDNUM: element.id as string,
+            COMMENTS: element.company,
+        });
 
         return response.result;
     }

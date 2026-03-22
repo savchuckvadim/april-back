@@ -74,4 +74,3 @@ export class UpdateBtxCategoryDto {
     @IsOptional()
     isActive?: boolean;
 }
-

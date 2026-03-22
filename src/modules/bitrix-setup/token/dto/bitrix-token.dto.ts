@@ -1,8 +1,13 @@
-import { IsString, IsOptional, IsDateString, IsEnum, IsNumber } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsDateString,
+    IsEnum,
+    IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { BITRIX_APP_CODES } from 'src/modules/bitrix-setup/app/enums/bitrix-app.enum';
-
 
 export class GetBitrixTokenDto {
     @ApiProperty({
@@ -13,7 +18,6 @@ export class GetBitrixTokenDto {
     @IsString()
     domain: string;
 
-
     @ApiProperty({
         description: 'Code',
         example: BITRIX_APP_CODES.SALES,
@@ -22,7 +26,6 @@ export class GetBitrixTokenDto {
     @IsEnum(BITRIX_APP_CODES)
     code: BITRIX_APP_CODES;
 }
-
 
 export class BitrixTokenDto {
     @ApiProperty({
@@ -67,8 +70,6 @@ export class BitrixTokenDto {
 }
 
 export class CreateBitrixTokenDto extends GetBitrixTokenDto {
-
-
     @ApiProperty({
         description: 'Token',
         type: BitrixTokenDto,
@@ -77,12 +78,7 @@ export class CreateBitrixTokenDto extends GetBitrixTokenDto {
     token: BitrixTokenDto;
 }
 
-
-
-
-
 export class SetBitrixSecretDto {
-
     // @ApiProperty({
     //     description: 'App id',
     //     example: 1,
@@ -107,4 +103,3 @@ export class SetBitrixSecretDto {
     @IsString()
     clientSecret: string;
 }
-

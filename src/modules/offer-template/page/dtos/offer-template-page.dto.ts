@@ -1,11 +1,16 @@
-    import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsBoolean, IsNumber, IsString, ValidateNested } from "class-validator";
-import { OfferTemplatePage } from "../entities/offer-template-page.entity";
-import { Type } from "class-transformer";
-import { OfferTemplatePageBlockDto } from "../../page-block/";
+import { ApiProperty } from '@nestjs/swagger';
+import {
+    IsArray,
+    IsBoolean,
+    IsNumber,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
+import { OfferTemplatePage } from '../entities/offer-template-page.entity';
+import { Type } from 'class-transformer';
+import { OfferTemplatePageBlockDto } from '../../page-block/';
 
 export class OfferTemplatePageDto extends OfferTemplatePage {
-
     @ApiProperty({ description: 'The id of the offer template page' })
     @IsString()
     declare id: string;
@@ -28,7 +33,14 @@ export class OfferTemplatePageDto extends OfferTemplatePage {
 
     @ApiProperty({ description: 'The type of the offer template page' })
     @IsString()
-    declare type: "description" | "default" | "letter" | "infoblocks" | "price" | "lt" | "other";
+    declare type:
+        | 'description'
+        | 'default'
+        | 'letter'
+        | 'infoblocks'
+        | 'price'
+        | 'lt'
+        | 'other';
 
     @ApiProperty({ description: 'The is active of the offer template page' })
     @IsBoolean()
@@ -54,7 +66,10 @@ export class OfferTemplatePageDto extends OfferTemplatePage {
     @IsString()
     declare fonts: string;
 
-    @ApiProperty({ description: 'The blocks of the offer template page', type: [OfferTemplatePageBlockDto] })
+    @ApiProperty({
+        description: 'The blocks of the offer template page',
+        type: [OfferTemplatePageBlockDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => OfferTemplatePageBlockDto)

@@ -24,4 +24,3 @@ import { BtxCategoryController } from './controllers/btx-category.controller';
     exports: [BtxCategoryService, BtxCategoryRepository, BtxStageRepository],
 })
 export class BtxCategoryModule {}
-

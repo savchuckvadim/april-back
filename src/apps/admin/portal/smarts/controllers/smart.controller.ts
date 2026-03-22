@@ -19,7 +19,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Smarts Management')
 @Controller('admin/portals/smarts')
 export class SmartController {
-    constructor(private readonly smartService: SmartService) { }
+    constructor(private readonly smartService: SmartService) {}
 
     @ApiOperation({ summary: 'Create a new smart' })
     @ApiResponse({
@@ -28,7 +28,9 @@ export class SmartController {
         type: SmartResponseDto,
     })
     @Post()
-    async createSmart(@Body() createSmartDto: CreateSmartDto): Promise<SuccessResponseDto> {
+    async createSmart(
+        @Body() createSmartDto: CreateSmartDto,
+    ): Promise<SuccessResponseDto> {
         const smart = await this.smartService.create(createSmartDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class SmartController {
         type: SmartResponseDto,
     })
     @Get(':id')
-    async getSmartById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getSmartById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const smart = await this.smartService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,7 +62,9 @@ export class SmartController {
         type: [SmartResponseDto],
     })
     @Get()
-    async getAllSmarts(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllSmarts(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let smarts;
         if (portalId) {
             smarts = await this.smartService.findByPortalId(Number(portalId));
@@ -96,7 +102,9 @@ export class SmartController {
         description: 'Smart deleted successfully',
     })
     @Delete(':id')
-    async deleteSmart(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteSmart(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.smartService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +112,3 @@ export class SmartController {
         };
     }
 }
-

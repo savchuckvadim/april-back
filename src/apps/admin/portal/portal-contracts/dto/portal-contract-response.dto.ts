@@ -18,7 +18,6 @@ export class PortalContractResponseDto {
         this.updated_at = portalContract.updated_at;
     }
 
-
     @ApiProperty({
         description: 'Portal Contract ID',
         example: 1,
@@ -91,4 +90,3 @@ export class PortalContractResponseDto {
     })
     updated_at?: Date | null;
 }
-

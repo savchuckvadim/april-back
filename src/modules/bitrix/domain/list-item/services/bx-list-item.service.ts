@@ -1,7 +1,7 @@
-import { BitrixBaseApi } from "@/modules/bitrix";
-import { BxListItemRepository } from "../repositories/bx-list-item.repository";
-import { BxListItemGetRequestDto } from "../dto/bx-list-item.dto";
-import { delay } from "@/lib";
+import { BitrixBaseApi } from '@/modules/bitrix';
+import { BxListItemRepository } from '../repositories/bx-list-item.repository';
+import { BxListItemGetRequestDto } from '../dto/bx-list-item.dto';
+import { delay } from '@/lib';
 
 export class BxListItemService {
     private repo: BxListItemRepository;

@@ -5,7 +5,6 @@ import {
     Body,
     Res,
     UseInterceptors,
-
 } from '@nestjs/common';
 // import { ExcelReportService } from './services/kpi-report/kpi-report.service';
 import { ReportGetRequestDto } from './dto/kpi-report-request.dto';
@@ -23,7 +22,7 @@ export class KpiReportController {
         private readonly pbx: PBXService,
         // private readonly reportKpiUseCase: ReportKpiUseCase,
         // private readonly callingStatisticUseCase: CallingStatisticUseCase,
-    ) { }
+    ) {}
 
     @Post('get')
     @HttpCode(200)

@@ -12,8 +12,16 @@ import { OrkReportKpiData, OrkKpiFilter, KPIOrk } from '../dto/kpi.dto';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { ReportGetFiltersDto } from '../dto/get-report-request.dto';
 import { BXUserDto } from '../dto/get-report-request.dto';
-import { EnumOrkEventAction, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/pbx-ork-history-bx-list';
-import { EnumOrkFilterInnerCode, EnumOrkFilterCode, OrkReportEventActionItems } from '../type/ork-report-event.type';
+import {
+    EnumOrkEventAction,
+    EnumOrkEventType,
+    EnumOrkFieldCode,
+} from '@/modules/pbx-ork-history-bx-list';
+import {
+    EnumOrkFilterInnerCode,
+    EnumOrkFilterCode,
+    OrkReportEventActionItems,
+} from '../type/ork-report-event.type';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, BitrixService } from '@/modules/bitrix';
 
@@ -26,15 +34,10 @@ export class ReportKpiUseCase {
     private bitrix: BitrixService;
     private bitrixApi: BitrixBaseApi;
 
-    constructor(
-
-        private readonly pbx: PBXService,
-    ) { }
+    constructor(private readonly pbx: PBXService) {}
 
     async init(domain: string) {
-
         const { portal, PortalModel, bitrix } = await this.pbx.init(domain);
-
 
         if (!portal) throw new Error('Portal not found');
 
@@ -46,11 +49,15 @@ export class ReportKpiUseCase {
         this.portal = portal;
         this.hook = PortalModel.getHook();
 
-        this.portalKPIList = this.portalModel.getListByCode('service_ork_history');
-
+        this.portalKPIList = this.portalModel.getListByCode(
+            'service_ork_history',
+        );
     }
 
-    async generateKpiReport(domain: string, dto: ReportGetFiltersDto): Promise<OrkReportKpiData[]> {
+    async generateKpiReport(
+        domain: string,
+        dto: ReportGetFiltersDto,
+    ): Promise<OrkReportKpiData[]> {
         // const bitrixApi = this.bitrixContext.getApi();
         await this.init(domain);
         const departament = dto.departament;
@@ -128,7 +135,6 @@ export class ReportKpiUseCase {
                 const action = EnumOrkFieldCode.ork_event_action;
                 const actionType = EnumOrkFieldCode.ork_event_type;
                 switch (plField.code as EnumOrkFieldCode) {
-
                     case EnumOrkFieldCode.ork_event_action:
                         eventActionField = plField as IField;
                         actionFieldId = plField.bitrixCamelId;
@@ -187,14 +193,15 @@ export class ReportKpiUseCase {
                     // if (actionData?.actionTypeItem && actionData?.actionItem) {
                     //     currentActionsData.push(actionData);
                     // }
-                    const eventActionInitDataItems = OrkReportEventActionItems[actionCode];
+                    const eventActionInitDataItems =
+                        OrkReportEventActionItems[actionCode];
                     if (!eventActionInitDataItems) continue;
 
                     console.log(eventActionInitDataItems);
                     console.log(eventActionInitDataItems[actionTypeCode]);
-                    const initDataItem = eventActionInitDataItems[actionTypeCode]
+                    const initDataItem =
+                        eventActionInitDataItems[actionTypeCode];
                     if (!initDataItem) continue;
-
 
                     const item: OrkKpiFilter = {
                         code: initDataItem.code,
@@ -202,8 +209,8 @@ export class ReportKpiUseCase {
                         name: initDataItem.name,
                         actionItem: action,
                         actionTypeItem: actionType,
-                        order: initDataItem.order
-                    }
+                        order: initDataItem.order,
+                    };
                     currentActionsData.push(item);
                 }
             }
@@ -231,11 +238,13 @@ export class ReportKpiUseCase {
                 const innerCode = action.innerCode;
 
                 // если это обычный звонок, не результативный и не нерезультативный
-                const isCommunicationResult = innerCode.includes(
-                    'et_ork_call',
+                const isCommunicationResult = innerCode.includes('et_ork_call');
+                const isNoResult = innerCode.includes(
+                    'noresult_communication' as EnumOrkFilterInnerCode,
                 );
-                const isNoResult = innerCode.includes('noresult_communication' as EnumOrkFilterInnerCode);
-                const isCall = innerCode.includes('call' as EnumOrkFilterInnerCode);
+                const isCall = innerCode.includes(
+                    'call' as EnumOrkFilterInnerCode,
+                );
 
                 if (!isCommunicationResult && !isNoResult && isCall) {
                     const actionValuebitrixId = action.actionItem.bitrixId;
@@ -260,29 +269,40 @@ export class ReportKpiUseCase {
 
                         for (const callPlanAction of currentActionsData) {
                             if (
-                                callPlanAction.code == 'et_ork_call_collect_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_call_doc_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_call_money_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_edu_ea_ork_plan' ||
-
-                                callPlanAction.code == 'et_ork_complect_up_work_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_pere_contract_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_complect_up_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_complect_down_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_fail_prevention_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_fail_work_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_threat_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_fail_work_success_ea_ork_plan' ||
-                                callPlanAction.code == 'et_ork_presentation_ea_ork_plan'
-
+                                callPlanAction.code ==
+                                    'et_ork_call_collect_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_call_doc_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_call_money_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_edu_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_complect_up_work_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_pere_contract_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_complect_up_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_complect_down_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_fail_prevention_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_fail_work_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_threat_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_fail_work_success_ea_ork_plan' ||
+                                callPlanAction.code ==
+                                    'et_ork_presentation_ea_ork_plan'
                             ) {
                                 const actionTypeArray = getListData.filter[
                                     `${actionTypeFieldId}`
                                 ] as (string | number)[];
                                 actionTypeArray.push(
                                     callPlanAction.actionTypeItem.bitrixId as
-                                    | string
-                                    | number,
+                                        | string
+                                        | number,
                                 );
                             }
                         }
@@ -312,32 +332,45 @@ export class ReportKpiUseCase {
 
                         for (const callDoneAction of currentActionsData) {
                             if (
-                                callDoneAction.code == 'et_ork_call_doc_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_call_money_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_call_collect_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_info_garant_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_presentation_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_edu_ea_ork_done' ||
-
-                                callDoneAction.code == 'et_ork_complect_up_work_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_pere_contract_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_complect_up_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_complect_down_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_fail_prevention_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_fail_work_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_threat_ea_ork_done' ||
-                                callDoneAction.code == 'et_ork_fail_work_success_ea_ork_done' ||
-                                callDoneAction.code == EnumOrkFilterCode.supply_done ||
+                                callDoneAction.code ==
+                                    'et_ork_call_doc_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_call_money_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_call_collect_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_info_garant_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_presentation_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_edu_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_complect_up_work_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_pere_contract_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_complect_up_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_complect_down_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_fail_prevention_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_fail_work_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_threat_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    'et_ork_fail_work_success_ea_ork_done' ||
+                                callDoneAction.code ==
+                                    EnumOrkFilterCode.supply_done ||
                                 callDoneAction.code == EnumOrkFilterCode.fail
-
                             ) {
                                 const actionTypeArray = getListData.filter[
                                     `${actionTypeFieldId}`
                                 ] as (string | number)[];
                                 actionTypeArray.push(
                                     callDoneAction.actionTypeItem.bitrixId as
-                                    | string
-                                    | number,
+                                        | string
+                                        | number,
                                 );
                             }
                         }
@@ -400,10 +433,12 @@ export class ReportKpiUseCase {
         reportData.kpi.forEach(kpi => {
             const isOriginalPlan =
                 kpi.action.innerCode === EnumOrkFilterInnerCode.call_plan ||
-                kpi.action.innerCode === EnumOrkFilterInnerCode.presentation_plan;
+                kpi.action.innerCode ===
+                    EnumOrkFilterInnerCode.presentation_plan;
             const isOriginalDone =
                 kpi.action.innerCode === EnumOrkFilterInnerCode.call_done ||
-                kpi.action.innerCode === EnumOrkFilterInnerCode.presentation_done;
+                kpi.action.innerCode ===
+                    EnumOrkFilterInnerCode.presentation_done;
 
             if (isOriginalPlan) {
                 targetKpiItemResultPlan.count += kpi.count;
@@ -415,12 +450,14 @@ export class ReportKpiUseCase {
                 targetKpiItemResultPlan.action = { ...kpi.action };
                 targetKpiItemResultPlan.action.name = 'План';
 
-                targetKpiItemResultPlan.action.innerCode = EnumOrkFilterInnerCode.call_plan;
+                targetKpiItemResultPlan.action.innerCode =
+                    EnumOrkFilterInnerCode.call_plan;
             }
             if (kpi.action.innerCode === 'et_ork_call_ea_ork_done') {
                 targetKpiItemResultDone.action = { ...kpi.action };
                 targetKpiItemResultDone.action.name = 'Результативные';
-                targetKpiItemResultDone.action.innerCode = EnumOrkFilterInnerCode.call_done;
+                targetKpiItemResultDone.action.innerCode =
+                    EnumOrkFilterInnerCode.call_done;
             }
         });
         // reportData.kpi.unshift(

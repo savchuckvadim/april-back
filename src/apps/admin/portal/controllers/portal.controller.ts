@@ -13,13 +13,16 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminPortalService } from '../services/portal.service';
 import { CreatePortalDto } from '../dto/create-portal.dto';
 import { UpdatePortalDto } from '../dto/update-portal.dto';
-import { AdminPortalResponseDto, AdminPortalWithRelationsResponseDto} from '../dto/portal-response.dto';
+import {
+    AdminPortalResponseDto,
+    AdminPortalWithRelationsResponseDto,
+} from '../dto/portal-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Portal Management')
 @Controller('admin/portals')
 export class AdminPortalController {
-    constructor(private readonly portalService: AdminPortalService) { }
+    constructor(private readonly portalService: AdminPortalService) {}
 
     @ApiOperation({ summary: 'Create a new portal' })
     @ApiResponse({
@@ -32,7 +35,9 @@ export class AdminPortalController {
         description: 'Bad request - validation error',
     })
     @Post()
-    async createPortal(@Body() createPortalDto: CreatePortalDto): Promise<SuccessResponseDto> {
+    async createPortal(
+        @Body() createPortalDto: CreatePortalDto,
+    ): Promise<SuccessResponseDto> {
         const portal = await this.portalService.create(createPortalDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -51,7 +56,9 @@ export class AdminPortalController {
         description: 'Portal not found',
     })
     @Get(':id')
-    async getPortalById(@Param('id', ParseIntPipe) id: number): Promise<AdminPortalWithRelationsResponseDto> {
+    async getPortalById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<AdminPortalWithRelationsResponseDto> {
         const portal = await this.portalService.findById(id);
         return portal;
     }
@@ -91,9 +98,11 @@ export class AdminPortalController {
         description: 'Portal not found',
     })
     @Get('domain/:domain')
-    async getPortalByDomain(@Param('domain') domain: string): Promise<AdminPortalResponseDto | null> {
+    async getPortalByDomain(
+        @Param('domain') domain: string,
+    ): Promise<AdminPortalResponseDto | null> {
         const portal = await this.portalService.findByDomain(domain);
-       
+
         return portal;
     }
 
@@ -117,7 +126,7 @@ export class AdminPortalController {
         @Body() updatePortalDto: UpdatePortalDto,
     ): Promise<AdminPortalResponseDto> {
         const portal = await this.portalService.update(id, updatePortalDto);
-        return portal
+        return portal;
     }
 
     @ApiOperation({ summary: 'Delete portal' })
@@ -131,9 +140,10 @@ export class AdminPortalController {
         description: 'Portal not found',
     })
     @Delete(':id')
-    async deletePortal(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+    async deletePortal(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<boolean> {
         await this.portalService.delete(id);
         return true;
     }
 }
-

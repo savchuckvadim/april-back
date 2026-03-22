@@ -3,7 +3,15 @@
 // Компания	calling	crm	ork_crm_company
 // Дата	calling	datetime	ork_event_date
 
-import { EnumSalesKpiEventAction, EnumSalesKpiEventType, EnumSalesKpiFieldCode, EnumSalesKpiOpFailReason, EnumSalesKpiOpNoresultReason, EnumSalesKpiOpResultStatus, EnumSalesKpiOpWorkStatus, } from "./pbx-sales-kpi-list.enum";
+import {
+    EnumSalesKpiEventAction,
+    EnumSalesKpiEventType,
+    EnumSalesKpiFieldCode,
+    EnumSalesKpiOpFailReason,
+    EnumSalesKpiOpNoresultReason,
+    EnumSalesKpiOpResultStatus,
+    EnumSalesKpiOpWorkStatus,
+} from './pbx-sales-kpi-list.enum';
 
 // crm_company
 // event_date
@@ -300,17 +308,16 @@ export const SalesKpiFields = {
             [EnumSalesKpiOpFailReason.fail_off]: {
                 name: 'Не хотят общаться',
                 code: EnumSalesKpiOpFailReason.fail_off,
-            }
+            },
         },
     },
-
 } as const;
 export type SalesKpiFieldsType = typeof SalesKpiFields;
 export type SalesKpiFieldsCode = keyof SalesKpiFieldsType;
 export type SalesKpiFieldValue<K extends keyof SalesKpiFieldsType> =
     SalesKpiFieldsType[K] extends { items: Record<string, { code: infer C }> }
-    ? C
-    : string;
+        ? C
+        : string;
 type SalesKpiFieldItem = {
     name: string;
     code: string;
@@ -325,10 +332,12 @@ type SalesKpiField = {
 export type SalesKpiFieldCode = keyof typeof SalesKpiFields;
 export type SalesKpiItemCode<T extends SalesKpiFieldCode> =
     T extends keyof typeof SalesKpiFields
-    ? (typeof SalesKpiFields)[T] extends { items: Record<string, SalesKpiFieldItem> }
-    ? keyof (typeof SalesKpiFields)[T]['items']
-    : never
-    : never;
+        ? (typeof SalesKpiFields)[T] extends {
+              items: Record<string, SalesKpiFieldItem>;
+          }
+            ? keyof (typeof SalesKpiFields)[T]['items']
+            : never
+        : never;
 
 // Helper types for field metadata
 export type FieldType =
@@ -419,9 +428,7 @@ export const SalesKpiFieldsMetadata: Record<string, SalesKpiFieldMetadata> = {
         type: 'enumeration',
         field_code: EnumSalesKpiFieldCode.op_fail_reason,
     },
-
 } as const;
-
 
 export const SalesKpiReport = {
     [EnumSalesKpiEventAction.plan]: {
@@ -436,7 +443,7 @@ export const SalesKpiReport = {
             EnumSalesKpiEventType.presentation_uniq,
             EnumSalesKpiEventType.presentation_contact_uniq,
             EnumSalesKpiEventType.seminar,
-        ]
+        ],
     },
     [EnumSalesKpiEventAction.done]: {
         types: [
@@ -450,10 +457,9 @@ export const SalesKpiReport = {
             EnumSalesKpiEventType.presentation_uniq,
             EnumSalesKpiEventType.presentation_contact_uniq,
             EnumSalesKpiEventType.seminar,
-        ]
-    }
+        ],
+    },
 } as const;
-
 
 export const SalesKpiCallingTypes = [
     EnumSalesKpiEventType.xo,
@@ -465,5 +471,4 @@ export const SalesKpiCallingTypes = [
     EnumSalesKpiEventType.presentation,
     EnumSalesKpiEventType.presentation_uniq,
     EnumSalesKpiEventType.seminar,
-]
-
+];

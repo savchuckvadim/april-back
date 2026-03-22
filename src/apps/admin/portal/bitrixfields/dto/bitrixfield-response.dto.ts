@@ -82,4 +82,3 @@ export class BitrixFieldResponseDto {
     })
     updated_at?: Date | null;
 }
-

@@ -19,7 +19,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Portal Measures Management')
 @Controller('admin/portals/portal-measures')
 export class PortalMeasureController {
-    constructor(private readonly portalMeasureService: PortalMeasureService) { }
+    constructor(private readonly portalMeasureService: PortalMeasureService) {}
 
     @ApiOperation({ summary: 'Create a new portal measure' })
     @ApiResponse({
@@ -28,8 +28,12 @@ export class PortalMeasureController {
         type: PortalMeasureResponseDto,
     })
     @Post()
-    async createPortalMeasure(@Body() createPortalMeasureDto: CreatePortalMeasureDto): Promise<SuccessResponseDto> {
-        const portalMeasure = await this.portalMeasureService.create(createPortalMeasureDto);
+    async createPortalMeasure(
+        @Body() createPortalMeasureDto: CreatePortalMeasureDto,
+    ): Promise<SuccessResponseDto> {
+        const portalMeasure = await this.portalMeasureService.create(
+            createPortalMeasureDto,
+        );
         return {
             resultCode: EResultCode.SUCCESS,
             data: portalMeasure,
@@ -43,7 +47,9 @@ export class PortalMeasureController {
         type: PortalMeasureResponseDto,
     })
     @Get(':id')
-    async getPortalMeasureById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getPortalMeasureById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const portalMeasure = await this.portalMeasureService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -64,9 +70,13 @@ export class PortalMeasureController {
     ): Promise<SuccessResponseDto> {
         let portalMeasures;
         if (portalId) {
-            portalMeasures = await this.portalMeasureService.findByPortalId(Number(portalId));
+            portalMeasures = await this.portalMeasureService.findByPortalId(
+                Number(portalId),
+            );
         } else if (measureId) {
-            portalMeasures = await this.portalMeasureService.findByMeasureId(Number(measureId));
+            portalMeasures = await this.portalMeasureService.findByMeasureId(
+                Number(measureId),
+            );
         } else {
             portalMeasures = await this.portalMeasureService.findMany();
         }
@@ -88,7 +98,10 @@ export class PortalMeasureController {
         @Param('id', ParseIntPipe) id: number,
         @Body() updatePortalMeasureDto: UpdatePortalMeasureDto,
     ): Promise<SuccessResponseDto> {
-        const portalMeasure = await this.portalMeasureService.update(id, updatePortalMeasureDto);
+        const portalMeasure = await this.portalMeasureService.update(
+            id,
+            updatePortalMeasureDto,
+        );
         return {
             resultCode: EResultCode.SUCCESS,
             data: portalMeasure,
@@ -101,7 +114,9 @@ export class PortalMeasureController {
         description: 'Portal measure deleted successfully',
     })
     @Delete(':id')
-    async deletePortalMeasure(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deletePortalMeasure(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.portalMeasureService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -109,4 +124,3 @@ export class PortalMeasureController {
         };
     }
 }
-

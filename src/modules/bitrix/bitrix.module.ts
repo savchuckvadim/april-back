@@ -23,7 +23,7 @@ import { BitrixSetupModule } from '../bitrix-setup/bitrix-setup.module';
         RedisModule,
         // forwardRef(() => PortalModule),
         BitrixCoreModule,
-        BitrixSetupModule
+        BitrixSetupModule,
         // BitrixDomainModule,
         // BitrixEndpointsModule,
     ],
@@ -44,7 +44,7 @@ import { BitrixSetupModule } from '../bitrix-setup/bitrix-setup.module';
         BitrixServiceFactory,
     ],
 })
-export class BitrixModule { }
+export class BitrixModule {}
 
 // src/modules/bitrix/
 // ├── core/

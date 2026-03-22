@@ -19,13 +19,10 @@ export enum EDownloadType {
     PDF = 'pdf',
 }
 export class DownloadReportKpiItemDto {
-
     @ApiProperty({ description: 'KPI ID' })
     @IsOptional()
     @IsString()
-
     id?: string;
-
 
     @ApiProperty({ description: 'KPI action' })
     @IsString()
@@ -36,8 +33,6 @@ export class DownloadReportKpiItemDto {
     @IsOptional()
     count: number;
 }
-
-
 
 export class DownloadKpiReportItemDto implements IExcelReport {
     @ApiProperty({ description: 'Report ID - user id' })
@@ -57,19 +52,18 @@ export class DownloadKpiReportItemDto implements IExcelReport {
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => DownloadReportKpiItemDto)
-
     kpi: DownloadReportKpiItemDto[];
 }
 
 export class DownLoadKpiReportDto {
-
-
-
     @ApiProperty({ description: 'Download type', enum: EDownloadType })
     @IsEnum(EDownloadType)
     type: EDownloadType;
 
-    @ApiProperty({ description: 'Report data', type: [DownloadKpiReportItemDto] })
+    @ApiProperty({
+        description: 'Report data',
+        type: [DownloadKpiReportItemDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => DownloadKpiReportItemDto)

@@ -20,7 +20,7 @@ export class OfferTemplateImageParentParamsDto {
     @ApiProperty({
         description: 'The parent type',
         enum: ImageParent,
-        example: 'template'
+        example: 'template',
     })
     @IsEnum(ImageParent)
     parent: ImageParent;
@@ -30,7 +30,7 @@ export class OfferTemplateImageStorageTypeParamsDto {
     @ApiProperty({
         description: 'The storage type',
         enum: StorageType,
-        example: 'app'
+        example: 'app',
     })
     @IsEnum(StorageType)
     storage_type: StorageType;

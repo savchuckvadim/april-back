@@ -6,13 +6,8 @@ import { QueuePingUseCase } from './use-cases/queue-ping.use-case';
 import { QueuePingDispatchService } from './queue/queue-ping.dispatch.service';
 import { QueuePingQueueProcessor } from './queue/queue-ping.processor';
 
-
 @Module({
-    imports: [
-
-        PBXModule,
-        QueueModule,
-    ],
+    imports: [PBXModule, QueueModule],
     controllers: [QueuePingController],
     providers: [
         QueuePingQueueProcessor,

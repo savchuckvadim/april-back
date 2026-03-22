@@ -28,7 +28,9 @@ export class BtxContactController {
         type: BtxContactResponseDto,
     })
     @Post()
-    async createContact(@Body() createContactDto: CreateBtxContactDto): Promise<SuccessResponseDto> {
+    async createContact(
+        @Body() createContactDto: CreateBtxContactDto,
+    ): Promise<SuccessResponseDto> {
         const contact = await this.contactService.create(createContactDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class BtxContactController {
         type: BtxContactResponseDto,
     })
     @Get(':id')
-    async getContactById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getContactById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const contact = await this.contactService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,10 +62,14 @@ export class BtxContactController {
         type: [BtxContactResponseDto],
     })
     @Get()
-    async getAllContacts(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllContacts(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let contacts;
         if (portalId) {
-            contacts = await this.contactService.findByPortalId(Number(portalId));
+            contacts = await this.contactService.findByPortalId(
+                Number(portalId),
+            );
         } else {
             contacts = await this.contactService.findMany();
         }
@@ -96,7 +104,9 @@ export class BtxContactController {
         description: 'Contact deleted successfully',
     })
     @Delete(':id')
-    async deleteContact(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteContact(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.contactService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +114,3 @@ export class BtxContactController {
         };
     }
 }
-

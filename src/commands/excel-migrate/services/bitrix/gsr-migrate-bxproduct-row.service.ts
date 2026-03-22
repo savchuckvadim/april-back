@@ -71,7 +71,7 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
         });
 
         this.bitrix.batch.productRow.set(productRowCommandCode, productTotal);
-        await this.bitrix.api.callBatchWithConcurrency()
+        await this.bitrix.api.callBatchWithConcurrency();
     }
     getProductRowCommandById(element: MigrateToBxDto, dealId: string) {
         const pMeasure = this.portal.getMeasureByCode(

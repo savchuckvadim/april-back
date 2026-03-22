@@ -8,11 +8,7 @@ import { PBXModule } from '@/modules/pbx/pbx.module';
 import { DealsScheduleController } from './controllers/deals-schedule.controller';
 
 @Module({
-    imports: [
-        PBXModule,
-        TelegramModule,
-        QueueModule,
-    ],
+    imports: [PBXModule, TelegramModule, QueueModule],
     controllers: [DealsScheduleController],
     providers: [
         SchedulerService,

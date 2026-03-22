@@ -42,4 +42,3 @@ export class CreateMeasureDto {
     @IsOptional()
     type?: string;
 }
-

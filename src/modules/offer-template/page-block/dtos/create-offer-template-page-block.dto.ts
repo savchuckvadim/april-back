@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, IsEnum, IsJSON,  } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsNumber,
+    IsEnum,
+    IsJSON,
+} from 'class-validator';
 
 export enum BlockType {
     BACKGROUND = 'background',
@@ -26,8 +32,6 @@ export enum BlockType {
 }
 
 export class CreateOfferTemplatePageBlockRequestDto {
-
-
     @ApiProperty({ description: 'The order of the offer template page block' })
     @IsNumber()
     order: number;
@@ -44,28 +48,36 @@ export class CreateOfferTemplatePageBlockRequestDto {
     @ApiProperty({
         description: 'The type of the offer template page block',
         enum: BlockType,
-        enumName: 'BlockType'
+        enumName: 'BlockType',
     })
     @IsEnum(BlockType)
     @IsOptional()
     type?: BlockType = BlockType.DEFAULT;
 
-    @ApiProperty({ description: 'The content of the offer template page block' })
+    @ApiProperty({
+        description: 'The content of the offer template page block',
+    })
     @IsJSON()
     @IsOptional()
     content?: string;
 
-    @ApiProperty({ description: 'The settings of the offer template page block' })
+    @ApiProperty({
+        description: 'The settings of the offer template page block',
+    })
     @IsString()
     @IsOptional()
     settings?: string;
 
-    @ApiProperty({ description: 'The stickers of the offer template page block' })
+    @ApiProperty({
+        description: 'The stickers of the offer template page block',
+    })
     @IsString()
     @IsOptional()
     stickers?: string;
 
-    @ApiProperty({ description: 'The background of the offer template page block' })
+    @ApiProperty({
+        description: 'The background of the offer template page block',
+    })
     @IsString()
     @IsOptional()
     background?: string;
@@ -74,8 +86,6 @@ export class CreateOfferTemplatePageBlockRequestDto {
     @IsString()
     @IsOptional()
     colors?: string;
-
-
 }
 
 export class CreateOfferTemplatePageBlockDto extends CreateOfferTemplatePageBlockRequestDto {
@@ -83,8 +93,9 @@ export class CreateOfferTemplatePageBlockDto extends CreateOfferTemplatePageBloc
     @IsNumber()
     offer_template_page_id: number | bigint;
 
-   
-    @ApiProperty({ description: 'The image id of the offer template page block' })
+    @ApiProperty({
+        description: 'The image id of the offer template page block',
+    })
     @IsNumber()
     @IsOptional()
     image_id?: number | bigint;

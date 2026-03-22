@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { measures } from 'generated/prisma';
 import { MeasureRepository } from '../repositories/measure.repository';
 import { CreateMeasureDto } from '../dto/create-measure.dto';
@@ -7,7 +11,7 @@ import { MeasureResponseDto } from '../dto/measure-response.dto';
 
 @Injectable()
 export class MeasureService {
-    constructor(private readonly repository: MeasureRepository) { }
+    constructor(private readonly repository: MeasureRepository) {}
 
     async create(dto: CreateMeasureDto): Promise<MeasureResponseDto> {
         try {
@@ -45,7 +49,10 @@ export class MeasureService {
         return measures.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateMeasureDto): Promise<MeasureResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateMeasureDto,
+    ): Promise<MeasureResponseDto> {
         const measure = await this.repository.findById(id);
         if (!measure) {
             throw new NotFoundException(`Measure with id ${id} not found`);
@@ -54,7 +61,8 @@ export class MeasureService {
         try {
             const updateData: Partial<measures> = {};
             if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.shortName !== undefined) updateData.shortName = dto.shortName;
+            if (dto.shortName !== undefined)
+                updateData.shortName = dto.shortName;
             if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
             if (dto.code !== undefined) updateData.code = dto.code;
             if (dto.type !== undefined) updateData.type = dto.type;
@@ -91,4 +99,3 @@ export class MeasureService {
         };
     }
 }
-

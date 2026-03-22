@@ -40,4 +40,4 @@ import { AlfaParseService } from './alfa/services/alfa-parse.service';
         AlfaParseService,
     ],
 })
-export class GsrModule { }
+export class GsrModule {}

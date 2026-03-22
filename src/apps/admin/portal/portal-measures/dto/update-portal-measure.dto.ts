@@ -50,4 +50,3 @@ export class UpdatePortalMeasureDto {
     @IsOptional()
     fullName?: string;
 }
-

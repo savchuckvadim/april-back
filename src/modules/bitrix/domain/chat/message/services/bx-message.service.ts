@@ -19,4 +19,3 @@ export class BxMessageService {
         return await this.repo.add(data);
     }
 }
-

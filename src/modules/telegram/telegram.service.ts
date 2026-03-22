@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Global, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { TelegramSendMessageDto } from './telegram.dto';
+import { TelegramSendMessagePublicDto } from './telegram.dto';
 
 @Global()
 @Injectable()
@@ -21,7 +21,7 @@ export class TelegramService {
             'TELEGRAM_ADMIN_CHAT_ID',
         ) as string;
     }
-    public async sendPublicMessage(dto: TelegramSendMessageDto) {
+    public async sendPublicMessage(dto: TelegramSendMessagePublicDto) {
         const text = `\n💥 App:  ${dto.app}\n🌍 Domain:   ${dto.domain}\n🧭 UserId: ${dto.userId}\n\n ⚠️ Text:  ${dto.text}`;
         const cleanText = this.cleanText(text);
 
@@ -35,7 +35,7 @@ export class TelegramService {
         try {
             await firstValueFrom(this.httpService.post(url, payload));
         } catch (error) {
-            console.error('Telegram error:', error.message);
+            console.error('Telegram error:', error);
         }
         return cleanText;
     }
@@ -53,7 +53,7 @@ export class TelegramService {
         try {
             await firstValueFrom(this.httpService.post(url, payload));
         } catch (error) {
-            console.error('Telegram error:', error.message);
+            console.error('Telegram error:', error);
         }
     }
     async sendMessageAdminError(message: string) {
@@ -69,7 +69,7 @@ export class TelegramService {
         try {
             await firstValueFrom(this.httpService.post(url, payload));
         } catch (error) {
-            console.error('Telegram error:', error.message);
+            console.error('Telegram error:', error);
         }
     }
 

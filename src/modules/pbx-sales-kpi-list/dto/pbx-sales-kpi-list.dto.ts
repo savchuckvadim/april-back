@@ -1,8 +1,8 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsOptional, IsString, ValidateNested } from "class-validator";
-import { EnumSalesKpiFieldCode } from "../type/pbx-sales-kpi-list.enum";
-import { IBXCompany, IBXContact } from "@/modules/bitrix";
-import { Type } from "class-transformer";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { EnumSalesKpiFieldCode } from '../type/pbx-sales-kpi-list.enum';
+import { IBXCompany, IBXContact } from '@/modules/bitrix';
+import { Type } from 'class-transformer';
 
 export class PbxSalesKpiListDto {
     responsible: string;
@@ -12,31 +12,30 @@ export class PbxSalesKpiListDto {
 
 export class PbxSalesKpiFieldItemValueDto {
     @ApiProperty({ description: 'ID' })
-    id: number
+    id: number;
     @ApiProperty({ description: 'Bitrix ID' })
-    bitrixId: number
+    bitrixId: number;
     @ApiProperty({ description: 'Name' })
-    name: string
+    name: string;
 
     @ApiProperty({ description: 'Value' })
     @IsOptional()
     @IsString()
-    value?: string
-
+    value?: string;
 
     @ApiProperty({ description: 'Code' })
-    code: string
+    code: string;
 }
 
 export class PbxSalesKpiFieldValueDto {
     @ApiProperty({ description: 'Field Name' })
-    fieldName: string
+    fieldName: string;
     @ApiProperty({ description: 'Field Code' })
-    fieldCode: string
+    fieldCode: string;
     @ApiProperty({ description: 'Bitrix ID' })
-    bitrixId: string
+    bitrixId: string;
     @ApiProperty({ description: 'Value', type: PbxSalesKpiFieldItemValueDto })
-    value: PbxSalesKpiFieldItemValueDto | string
+    value: PbxSalesKpiFieldItemValueDto | string;
 }
 
 export class PbxSalesKpiContactDto {
@@ -45,14 +44,13 @@ export class PbxSalesKpiContactDto {
     }
 
     @ApiProperty({ description: 'Name' })
-    NAME: string
+    NAME: string;
     @ApiProperty({ description: 'Last Name' })
-    LAST_NAME: string
+    LAST_NAME: string;
     @ApiProperty({ description: 'Second Name' })
-    SECOND_NAME: string
+    SECOND_NAME: string;
     @ApiProperty({ description: 'Post' })
-    POST: string
-
+    POST: string;
 }
 
 export class PbxSalesKpiCompanyDto implements IBXCompany {
@@ -61,25 +59,24 @@ export class PbxSalesKpiCompanyDto implements IBXCompany {
         this.color = color;
     }
     @ApiProperty({ description: 'Assigned By ID' })
-    ASSIGNED_BY_ID: string
+    ASSIGNED_BY_ID: string;
     @ApiProperty({ description: 'ID' })
-    ID: number
+    ID: number;
     @ApiProperty({ description: 'Title' })
-    TITLE: string
+    TITLE: string;
     @ApiProperty({ description: 'UF_CRM_PRES_COUNT' })
-    UF_CRM_PRES_COUNT: number
+    UF_CRM_PRES_COUNT: number;
     @ApiProperty({ description: 'UF_CRM_USER_CARDNUM' })
-    UF_CRM_USER_CARDNUM: string
+    UF_CRM_USER_CARDNUM: string;
     @ApiProperty({ description: 'Comments' })
-    COMMENTS: string
+    COMMENTS: string;
     @ApiProperty({ description: 'Цвет' })
-    UF_CRM_OP_PROSPECTS: string
+    UF_CRM_OP_PROSPECTS: string;
     @ApiProperty({ description: 'История' })
-    UF_CRM_OP_MHISTORY: string[]
+    UF_CRM_OP_MHISTORY: string[];
 
     @ApiProperty({ description: 'Цвет code' })
     color: string;
-
 }
 
 export class PbxSalesKpiListItemDto {
@@ -87,21 +84,15 @@ export class PbxSalesKpiListItemDto {
         Object.assign(this, data);
     }
 
-
-
-
-
     @ApiProperty({ description: 'ID' })
-    id: number
+    id: number;
     @ApiProperty({ description: 'Title' })
-    title: string
+    title: string;
     @ApiProperty({ description: 'Date' })
-    date: string
-
+    date: string;
 
     @ApiProperty({ description: 'Responsible' })
     [EnumSalesKpiFieldCode.responsible]?: PbxSalesKpiFieldValueDto;
-
 
     @ApiProperty({ description: 'Action', type: PbxSalesKpiFieldValueDto })
     [EnumSalesKpiFieldCode.event_action]?: PbxSalesKpiFieldValueDto;
@@ -110,14 +101,11 @@ export class PbxSalesKpiListItemDto {
     @ApiProperty({ description: 'CRM', type: PbxSalesKpiFieldValueDto })
     [EnumSalesKpiFieldCode.crm]?: PbxSalesKpiFieldValueDto;
 
-
     @ApiProperty({ description: 'Contact ID' })
     [EnumSalesKpiFieldCode.crm_contact]?: PbxSalesKpiFieldValueDto;
 
-
     @ApiProperty({ description: 'Comment', type: PbxSalesKpiFieldValueDto })
     [EnumSalesKpiFieldCode.manager_comment]?: PbxSalesKpiFieldValueDto;
-
 
     @ApiProperty({ description: 'Event Date', type: PbxSalesKpiFieldValueDto })
     [EnumSalesKpiFieldCode.event_date]?: PbxSalesKpiFieldValueDto;
@@ -125,22 +113,17 @@ export class PbxSalesKpiListItemDto {
     @ApiProperty({ description: 'Plan Date', type: PbxSalesKpiFieldValueDto })
     [EnumSalesKpiFieldCode.plan_date]?: PbxSalesKpiFieldValueDto;
 
-
-
     @ApiProperty({ description: 'Company', type: PbxSalesKpiFieldValueDto })
     [EnumSalesKpiFieldCode.crm_company]?: PbxSalesKpiFieldValueDto;
     @ApiProperty({ description: 'Company ID' })
-    companyId: number
-
+    companyId: number;
 
     @ApiProperty({ description: 'Contact ID' })
-    contactId: number
-
+    contactId: number;
 
     @ApiProperty({ description: 'Company', type: PbxSalesKpiCompanyDto })
     @IsOptional()
     company?: PbxSalesKpiCompanyDto;
-
 
     @ApiProperty({ description: 'Contacts', type: PbxSalesKpiContactDto })
     @IsOptional()
@@ -148,10 +131,4 @@ export class PbxSalesKpiListItemDto {
     @ValidateNested({ each: true })
     @Type(() => PbxSalesKpiContactDto)
     contacts?: PbxSalesKpiContactDto[];
-
-
-
 }
-
-
-

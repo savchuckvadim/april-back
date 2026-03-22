@@ -1,12 +1,18 @@
 // services/batch-api.service.ts
 import { BXApiSchema, EBxNamespace, TBXRequest } from '..';
-import { IBitrixBatchResponse, IBitrixBatchResponseResult } from '../interface/bitrix-api-http.intterface';
+import {
+    IBitrixBatchResponse,
+    IBitrixBatchResponseResult,
+} from '../interface/bitrix-api-http.intterface';
 import { BitrixCore } from './bitrix-core.service';
 import { AxiosInstance } from 'axios';
 
 export class BatchApiService {
     private cmdBatch: Record<string, string> = {};
-    constructor(private readonly core: BitrixCore, private readonly http: AxiosInstance) {
+    constructor(
+        private readonly core: BitrixCore,
+        private readonly http: AxiosInstance,
+    ) {
         this.cmdBatch = {};
     }
 
@@ -51,7 +57,6 @@ export class BatchApiService {
     }
 
     addCmdBatch(cmd: string, method: string, query: Record<string, any>) {
-
         const url = this.dictToQueryString(method, query);
         if (!this.cmdBatch[cmd]) {
             this.cmdBatch[cmd] = url;
@@ -113,12 +118,17 @@ export class BatchApiService {
                 // const response: AxiosResponse<any> = await firstValueFrom(
                 //     this.httpService.post(url, batchPayload, this.axiosOptions),
                 // );
-                const response = await this.core.request<any>('batch', batchPayload);
+                const response = await this.core.request<any>(
+                    'batch',
+                    batchPayload,
+                );
                 // this.logger.log(`Batch request successful: ${JSON.stringify(response.data)}`);
                 results.push(response.data.result);
                 await this.sleep(100);
             } catch (error) {
-                this.core.logger.error(`Batch request failed: ${error.message}`);
+                this.core.logger.error(
+                    `Batch request failed: ${error.message}`,
+                );
                 await this.core.telegramBot.sendMessageAdminError(`Batch error:
           callBatch
           ${this.core.domain}
@@ -153,7 +163,10 @@ export class BatchApiService {
     async callBatchWithConcurrency(
         limit = 3,
     ): Promise<IBitrixBatchResponseResult[]> {
-        this.core.logger.log('Calling batch async with concurrency limit:', limit);
+        this.core.logger.log(
+            'Calling batch async with concurrency limit:',
+            limit,
+        );
 
         const commands = Object.entries(this.cmdBatch);
         const results: IBitrixBatchResponseResult[] = [];
@@ -174,7 +187,9 @@ export class BatchApiService {
                 ) {
                     results.push(result);
                 } else {
-                    this.core.logger.warn(`Skipping failed batch at index ${start}`);
+                    this.core.logger.warn(
+                        `Skipping failed batch at index ${start}`,
+                    );
                 }
                 // 💤 Задержка между вызовами
                 await this.sleep(100);
@@ -203,11 +218,16 @@ export class BatchApiService {
         // const url = `https://${this.domain}/${this.apiKey}/batch`;
 
         try {
-            this.core.logger.log(`Making batch request to: ${this.core.domain}`);
+            this.core.logger.log(
+                `Making batch request to: ${this.core.domain}`,
+            );
             // const response = (await firstValueFrom(
             //     this.httpService.post(url, payload, this.axiosOptions),
             // )) as AxiosResponse<IBitrixBatchResponse>;
-            const response = await this.core.request<IBitrixBatchResponse>('batch', payload);
+            const response = await this.core.request<IBitrixBatchResponse>(
+                'batch',
+                payload,
+            );
             const result = response.data.result as IBitrixBatchResponseResult;
             // this.logger.log(`Batch request successful: ${JSON.stringify(result)}`);
             // this.logger.log(`Domain: ${this.domain}`);
@@ -260,6 +280,4 @@ export class BatchApiService {
     protected async sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-
-
 }

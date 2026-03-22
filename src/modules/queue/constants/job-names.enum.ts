@@ -2,7 +2,6 @@ export enum JobNames {
     //event sales
     EVENT_COLD_CALL = 'cold-call',
 
-
     //konstructor sales
     DOCUMENT_SUPPLY_REPORT = 'generate-supply-report',
 

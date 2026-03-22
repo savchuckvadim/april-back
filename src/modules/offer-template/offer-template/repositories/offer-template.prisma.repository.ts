@@ -5,7 +5,7 @@ import { OfferTemplate, OfferTemplateSummary } from '../';
 
 @Injectable()
 export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async findById(id: bigint): Promise<OfferTemplate | null> {
         const result = (await this.prisma.offerTemplate.findUnique({
@@ -118,9 +118,8 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     }
 
     async create(data: Partial<OfferTemplate>): Promise<OfferTemplate> {
-        const result = (await this.prisma.offerTemplate.create({
+        const result = await this.prisma.offerTemplate.create({
             data: {
-
                 name: data.name!,
                 visibility: data.visibility!,
                 is_default: data.is_default!,
@@ -144,7 +143,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: data.is_active!,
                 counter: data.counter!,
             },
-        }));
+        });
         const entity = {
             ...result,
             id: String(result.id),
@@ -156,7 +155,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
         id: bigint,
         data: Partial<OfferTemplate>,
     ): Promise<OfferTemplate> {
-        const result = (await this.prisma.offerTemplate.update({
+        const result = await this.prisma.offerTemplate.update({
             where: { id },
             data: {
                 ...(data.name && { name: data.name }),
@@ -206,7 +205,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 }),
                 ...(data.counter !== undefined && { counter: data.counter }),
             },
-        }));
+        });
         const entity = {
             ...result,
             id: String(result.id),
@@ -314,7 +313,6 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
         const results = (await this.prisma.offerTemplate.findMany({
             where: {
                 OR: [
-
                     { visibility: 'user' },
                     {
                         userSelectedTemplates: {
@@ -345,9 +343,12 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
 
-        return results.map(result => new OfferTemplate({
-            ...result,
-            id: String(result.id),
-        }));
+        return results.map(
+            result =>
+                new OfferTemplate({
+                    ...result,
+                    id: String(result.id),
+                }),
+        );
     }
 }

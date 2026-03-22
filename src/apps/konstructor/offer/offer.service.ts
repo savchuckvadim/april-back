@@ -58,7 +58,6 @@ export class OfferService {
         } catch (error) {
             this.logger.error('Error initializing OfferService:', error);
         }
-
     }
     private getDocTemplater() {
         try {
@@ -79,9 +78,11 @@ export class OfferService {
                 },
             );
         } catch (error) {
-            this.logger.error('Error getting DocTemplater getDocTemplater:', error);
+            this.logger.error(
+                'Error getting DocTemplater getDocTemplater:',
+                error,
+            );
         }
-
     }
     async createOffer(
         dto: OfferDto,

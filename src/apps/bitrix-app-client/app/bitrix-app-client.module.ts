@@ -23,16 +23,15 @@ import { PBXModule } from '@/modules/pbx';
         CookieModule,
         PBXModule,
     ],
-    controllers: [BitrixAppClientController, BitrixAppUiController, BitrixAppInstallController],
-    providers: [BitrixAppClientService],
-    exports: [
-        UserModule,
-        ClientModule,
-        AuthModule,
+    controllers: [
+        BitrixAppClientController,
+        BitrixAppUiController,
+        BitrixAppInstallController,
     ],
+    providers: [BitrixAppClientService],
+    exports: [UserModule, ClientModule, AuthModule],
 })
-
-export class BitrixAppClientModule { }
+export class BitrixAppClientModule {}
 
 /**
  * Bitrix App Client Module

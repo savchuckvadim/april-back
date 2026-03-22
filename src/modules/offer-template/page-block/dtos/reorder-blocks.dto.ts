@@ -19,7 +19,7 @@ export class ReorderBlocksDto {
 
     @ApiProperty({
         description: 'The block orders',
-        type: [BlockOrderDto]
+        type: [BlockOrderDto],
     })
     @IsArray()
     @ValidateNested({ each: true })

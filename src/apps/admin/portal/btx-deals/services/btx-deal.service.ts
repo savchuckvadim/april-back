@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { btx_deals } from 'generated/prisma';
 import { BtxDealRepository } from '../repositories/btx-deal.repository';
 import { CreateBtxDealDto } from '../dto/create-btx-deal.dto';
@@ -7,7 +11,7 @@ import { BtxDealResponseDto } from '../dto/btx-deal-response.dto';
 
 @Injectable()
 export class BtxDealService {
-    constructor(private readonly repository: BtxDealRepository) { }
+    constructor(private readonly repository: BtxDealRepository) {}
 
     async create(dto: CreateBtxDealDto): Promise<BtxDealResponseDto> {
         try {
@@ -52,7 +56,10 @@ export class BtxDealService {
         return deals.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateBtxDealDto): Promise<BtxDealResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateBtxDealDto,
+    ): Promise<BtxDealResponseDto> {
         const deal = await this.repository.findById(id);
         if (!deal) {
             throw new NotFoundException(`Deal with id ${id} not found`);
@@ -63,7 +70,8 @@ export class BtxDealService {
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
 
             const updatedDeal = await this.repository.update(id, updateData);
             if (!updatedDeal) {
@@ -96,4 +104,3 @@ export class BtxDealService {
         };
     }
 }
-

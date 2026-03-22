@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { bitrixfields } from 'generated/prisma';
 import { BitrixFieldRepository } from '../repositories/bitrixfield.repository';
 import { BitrixFieldItemRepository } from '../repositories/bitrixfield-item.repository';
@@ -47,14 +51,18 @@ export class BitrixFieldService {
             }
 
             // Fetch field with items
-            const fieldWithItems = await this.repository.findById(Number(field.id));
+            const fieldWithItems = await this.repository.findById(
+                Number(field.id),
+            );
             return this.mapToResponseDto(fieldWithItems!);
         } catch (error) {
             throw error;
         }
     }
 
-    async createBulk(dto: CreateBitrixFieldsBulkDto): Promise<BitrixFieldResponseDto[]> {
+    async createBulk(
+        dto: CreateBitrixFieldsBulkDto,
+    ): Promise<BitrixFieldResponseDto[]> {
         const results: BitrixFieldResponseDto[] = [];
 
         for (const fieldDto of dto.fields) {
@@ -81,7 +89,10 @@ export class BitrixFieldService {
         return fields.map(this.mapToResponseDto);
     }
 
-    async findByEntity(entityType: string, entityId: number): Promise<BitrixFieldResponseDto[]> {
+    async findByEntity(
+        entityType: string,
+        entityId: number,
+    ): Promise<BitrixFieldResponseDto[]> {
         const fields = await this.repository.findByEntity(entityType, entityId);
         if (!fields) {
             return [];
@@ -89,15 +100,26 @@ export class BitrixFieldService {
         return fields.map(this.mapToResponseDto);
     }
 
-    async findByEntityAndParentType(entityType: string, entityId: number, parentType: string): Promise<BitrixFieldResponseDto[]> {
-        const fields = await this.repository.findByEntityAndParentType(entityType, entityId, parentType);
+    async findByEntityAndParentType(
+        entityType: string,
+        entityId: number,
+        parentType: string,
+    ): Promise<BitrixFieldResponseDto[]> {
+        const fields = await this.repository.findByEntityAndParentType(
+            entityType,
+            entityId,
+            parentType,
+        );
         if (!fields) {
             return [];
         }
         return fields.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateBitrixFieldDto): Promise<BitrixFieldResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateBitrixFieldDto,
+    ): Promise<BitrixFieldResponseDto> {
         const field = await this.repository.findById(id);
         if (!field) {
             throw new NotFoundException(`Field with id ${id} not found`);
@@ -105,12 +127,14 @@ export class BitrixFieldService {
 
         try {
             const updateData: Partial<bitrixfields> = {};
-            if (dto.parent_type !== undefined) updateData.parent_type = dto.parent_type;
+            if (dto.parent_type !== undefined)
+                updateData.parent_type = dto.parent_type;
             if (dto.type !== undefined) updateData.type = dto.type;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId;
-            if (dto.bitrixCamelId !== undefined) updateData.bitrixCamelId = dto.bitrixCamelId;
+            if (dto.bitrixCamelId !== undefined)
+                updateData.bitrixCamelId = dto.bitrixCamelId;
             if (dto.code !== undefined) updateData.code = dto.code;
 
             const updatedField = await this.repository.update(id, updateData);
@@ -146,19 +170,19 @@ export class BitrixFieldService {
             bitrixId: field.bitrixId,
             bitrixCamelId: field.bitrixCamelId,
             code: field.code,
-            items: (field as any).bitrixfield_items?.map((item: any) => ({
-                id: Number(item.id),
-                bitrixfield_id: Number(item.bitrixfield_id),
-                name: item.name,
-                title: item.title,
-                code: item.code,
-                bitrixId: item.bitrixId,
-                created_at: item.created_at,
-                updated_at: item.updated_at,
-            })) || [],
+            items:
+                (field as any).bitrixfield_items?.map((item: any) => ({
+                    id: Number(item.id),
+                    bitrixfield_id: Number(item.bitrixfield_id),
+                    name: item.name,
+                    title: item.title,
+                    code: item.code,
+                    bitrixId: item.bitrixId,
+                    created_at: item.created_at,
+                    updated_at: item.updated_at,
+                })) || [],
             created_at: field.created_at,
             updated_at: field.updated_at,
         };
     }
 }
-

@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
+import {
+    IsEnum,
+    IsString,
+    IsOptional,
+    IsArray,
+    IsNumber,
+} from 'class-validator';
 import { PbxFieldEntityType } from '../pbx-field.entity';
 import { PbxSalesEventFieldCode } from '../type/sales/event/pbx-sales-event-field.type';
 import { PbxSalesKonstructorFieldCode } from '../type/sales/konstructor/pbx-sales-konstructor-field.type';
@@ -43,7 +49,8 @@ export class InstallEntityFieldsDto {
     entities?: PbxFieldEntityType[];
 
     @ApiPropertyOptional({
-        description: 'Список кодов полей для установки. Если не указан, устанавливаются все поля',
+        description:
+            'Список кодов полей для установки. Если не указан, устанавливаются все поля',
         type: [String],
         example: ['xo_name', 'xo_date'],
     })
@@ -88,7 +95,8 @@ export class InstallSmartFieldsDto {
     entityTypeIds?: number[];
 
     @ApiPropertyOptional({
-        description: 'Список кодов полей для установки. Если не указан, устанавливаются все поля',
+        description:
+            'Список кодов полей для установки. Если не указан, устанавливаются все поля',
         type: [String],
         example: ['xo_name', 'xo_date'],
     })
@@ -113,4 +121,3 @@ export class InstallResultDto {
     })
     failed: string[];
 }
-

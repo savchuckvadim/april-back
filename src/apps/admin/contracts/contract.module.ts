@@ -18,4 +18,3 @@ import { ContractController } from './controllers/contract.controller';
     exports: [ContractService, ContractRepository],
 })
 export class ContractModule {}
-

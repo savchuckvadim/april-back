@@ -13,7 +13,7 @@ import {
 } from './interfaces/bx-activity.interface';
 
 export class BxActivityRepository {
-    constructor(private readonly bitrixService: BitrixBaseApi) { }
+    constructor(private readonly bitrixService: BitrixBaseApi) {}
 
     async get(id: number) {
         return this.bitrixService.callType(

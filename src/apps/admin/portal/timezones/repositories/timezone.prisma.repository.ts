@@ -50,12 +50,16 @@ export class TimezonePrismaRepository implements TimezoneRepository {
         return result;
     }
 
-    async update(id: number, timezone: Partial<timezones>): Promise<timezones | null> {
+    async update(
+        id: number,
+        timezone: Partial<timezones>,
+    ): Promise<timezones | null> {
         const updateData: any = {};
         if (timezone.name !== undefined) updateData.name = timezone.name;
         if (timezone.title !== undefined) updateData.title = timezone.title;
         if (timezone.value !== undefined) updateData.value = timezone.value;
-        if (timezone.portal_id !== undefined) updateData.portal_id = BigInt(timezone.portal_id);
+        if (timezone.portal_id !== undefined)
+            updateData.portal_id = BigInt(timezone.portal_id);
         if (timezone.type !== undefined) updateData.type = timezone.type;
         if (timezone.offset !== undefined) updateData.offset = timezone.offset;
 
@@ -73,4 +77,3 @@ export class TimezonePrismaRepository implements TimezoneRepository {
         return result ? true : false;
     }
 }
-

@@ -20,13 +20,13 @@ export class MailService {
     constructor(
         private readonly mailerService: MailerService,
         @InjectQueue('mail') private readonly queue: Queue,
-        private readonly storageService: StorageService
-    ) { }
+        private readonly storageService: StorageService,
+    ) {}
 
     public async sendTestEmail(dto: SendEmailRequestDto) {
         const html = await render(
-            TestTemplate({ userName: 'John Doe', text: 'Это тестовое письмо' })
-        )
+            TestTemplate({ userName: 'John Doe', text: 'Это тестовое письмо' }),
+        );
 
         await this.sendEmail({
             subject: dto.subject,
@@ -35,13 +35,12 @@ export class MailService {
                 name: 'Jhon Doe',
             },
             to: [dto.email],
-        })
-        return html
+        });
+        return html;
     }
 
     public async sendOfferEmail(dto: SendEmailOfferRequestDto) {
         // Читаем логотип из storage
-
 
         // Читаем PDF из storage
         let pdfBuffer: Buffer | null = null;
@@ -49,21 +48,17 @@ export class MailService {
             pdfBuffer = await this.storageService.readFileByType(
                 StorageType.APP,
                 'bitrix-app/offer',
-                'offer.pdf'
+                'offer.pdf',
             );
         } catch (error) {
             this.logger.warn('Не удалось загрузить PDF:', error);
         }
 
         // Используем CID для логотипа (встроенное изображение) - работает в Gmail
-        const html = await render(
-            EmailOfferTemplate()
-        )
+        const html = await render(EmailOfferTemplate());
 
         // Формируем attachments
         const attachments: any[] = [];
-
-
 
         // Добавляем PDF как вложение
         if (pdfBuffer) {
@@ -82,11 +77,11 @@ export class MailService {
             },
             to: [dto.email],
             attachments: attachments.length > 0 ? attachments : undefined,
-        })
-        return html
+        });
+        return html;
     }
     public async sendEmailVerification(user: User, token: string) {
-        const html = await render(EmailVerificationTemplate({ user, token }))
+        const html = await render(EmailVerificationTemplate({ user, token }));
 
         // await this.queue.add(
         //     'send-email',
@@ -101,12 +96,12 @@ export class MailService {
             context: {
                 name: user.name,
             },
-        })
-        return true
+        });
+        return true;
     }
 
     public async sendPasswordReset(user: User, token: string) {
-        const html = await render(ResetPasswordTemplate({ user, token }))
+        const html = await render(ResetPasswordTemplate({ user, token }));
 
         // await this.queue.add(
         // 	'send-email',
@@ -114,17 +109,15 @@ export class MailService {
         // 	{ removeOnComplete: true }
         // )
 
-        return true
+        return true;
     }
 
     public async sendRestrictionEmail(
         user: User,
         // restriction: Restriction,
-        violations: number
+        violations: number,
     ) {
-        const html = await render(
-            RestrictionTemplate({ user, violations })
-        )
+        const html = await render(RestrictionTemplate({ user, violations }));
 
         // await this.queue.add(
         // 	'send-email',
@@ -132,13 +125,13 @@ export class MailService {
         // 	{ removeOnComplete: true }
         // )
 
-        return true
+        return true;
     }
 
     public async sendRestrictionLiftedEmail(user: User, violations: number) {
         const html = await render(
-            RestrictionLiftedTemplate({ user, violations })
-        )
+            RestrictionLiftedTemplate({ user, violations }),
+        );
 
         // await this.queue.add(
         // 	'send-email',
@@ -146,7 +139,7 @@ export class MailService {
         // 	{ removeOnComplete: true }
         // )
 
-        return true
+        return true;
     }
     async sendEmail(params: {
         subject: string;
@@ -161,7 +154,7 @@ export class MailService {
         }>;
     }) {
         try {
-            const from = `"April App" <${process.env.SMTP_FROM || 'manager@april-app.ru'}>`
+            const from = `"April App" <${process.env.SMTP_FROM || 'manager@april-app.ru'}>`;
 
             const emailsList: string[] = params.to;
 

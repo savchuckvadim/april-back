@@ -58,4 +58,3 @@ export class CreatePortalDto {
     @IsOptional()
     number?: number;
 }
-

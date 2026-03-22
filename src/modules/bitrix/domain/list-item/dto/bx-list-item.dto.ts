@@ -1,8 +1,7 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsObject, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class BxListItemGetRequestDto {
-
     @ApiProperty({ description: 'Код инфоблока' })
     @IsString()
     IBLOCK_CODE?:

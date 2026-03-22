@@ -4,7 +4,6 @@ import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXProductRow } from '../interface/bx-product-row.interface';
 import { ListProductRowDto } from '../dto/list-product-row.sto';
 
-
 export class BxProductRowService {
     private repo: BxProductRowRepository;
     constructor() {}

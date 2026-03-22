@@ -32,7 +32,7 @@ export class DepartmentResolverService {
         const fromCache = await this.redis.get(sessionKey);
         if (fromCache) return JSON.parse(fromCache);
 
-        const portal = PortalModel
+        const portal = PortalModel;
         const baseDepartmentBitrix = portal.getDepartamentIdByCode(group);
 
         const baseDepartmentBitrixId = baseDepartmentBitrix?.bitrixId;

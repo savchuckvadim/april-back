@@ -34,7 +34,6 @@ import { BxRecentBatchService } from './domain/chat/recent/services/bx-recent.ba
 import { BxMessageService } from './domain/chat/message/services/bx-message.service';
 import { BxMessageBatchService } from './domain/chat/message/services/bx-message.batch.service';
 
-
 // @Injectable()
 export class BitrixService {
     public api: BitrixBaseApi;
@@ -175,6 +174,4 @@ export class BitrixService {
         this.message = this.cloner.clone(BxMessageService, this.api);
         this.batch.message = this.cloner.clone(BxMessageBatchService, this.api);
     }
-
-
 }

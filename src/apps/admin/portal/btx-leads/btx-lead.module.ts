@@ -18,4 +18,3 @@ import { BtxLeadController } from './controllers/btx-lead.controller';
     exports: [BtxLeadService, BtxLeadRepository],
 })
 export class BtxLeadModule {}
-

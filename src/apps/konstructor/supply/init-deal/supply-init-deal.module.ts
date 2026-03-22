@@ -10,9 +10,15 @@ import { InitDealProcessor } from './processor/init-deal.processor';
 import { OrkHistoryBxListModule } from '@/modules/pbx-ork-history-bx-list';
 
 @Module({
-    imports: [PBXModule, OnlineModule, TelegramModule, QueueModule, OrkHistoryBxListModule],
+    imports: [
+        PBXModule,
+        OnlineModule,
+        TelegramModule,
+        QueueModule,
+        OrkHistoryBxListModule,
+    ],
     controllers: [InitDealController],
     providers: [InitDealUseCase, CopyInnerDealService, InitDealProcessor],
     exports: [],
 })
-export class SupplyInitDealModule { }
+export class SupplyInitDealModule {}

@@ -23,7 +23,6 @@ export class KpiReportDownloadController {
     ) {}
 
     @ApiOperation({ summary: 'Download KPI Sales Report' })
-
     @Post('download')
     @HttpCode(200)
     @UseInterceptors()

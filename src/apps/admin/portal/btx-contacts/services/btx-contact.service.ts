@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { btx_contacts } from 'generated/prisma';
 import { BtxContactRepository } from '../repositories/btx-contact.repository';
 import { CreateBtxContactDto } from '../dto/create-btx-contact.dto';
@@ -52,7 +56,10 @@ export class BtxContactService {
         return contacts.map(this.mapToResponseDto);
     }
 
-    async update(id: number, dto: UpdateBtxContactDto): Promise<BtxContactResponseDto> {
+    async update(
+        id: number,
+        dto: UpdateBtxContactDto,
+    ): Promise<BtxContactResponseDto> {
         const contact = await this.repository.findById(id);
         if (!contact) {
             throw new NotFoundException(`Contact with id ${id} not found`);
@@ -63,7 +70,8 @@ export class BtxContactService {
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.title !== undefined) updateData.title = dto.title;
             if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined) updateData.portal_id = BigInt(dto.portal_id);
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = BigInt(dto.portal_id);
 
             const updatedContact = await this.repository.update(id, updateData);
             if (!updatedContact) {
@@ -96,4 +104,3 @@ export class BtxContactService {
         };
     }
 }
-

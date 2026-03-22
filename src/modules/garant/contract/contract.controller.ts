@@ -10,11 +10,14 @@ import {
 import { ContractService } from './contract.service';
 import { ContractEntity } from './contract.entity';
 import { PortalContractEntity } from './portal-contract.entity';
-import { ContractIdParamsDto, ContractPortalIdParamsDto } from './dtos/contract-params.dto';
+import {
+    ContractIdParamsDto,
+    ContractPortalIdParamsDto,
+} from './dtos/contract-params.dto';
 
 @Controller('contracts')
 export class ContractController {
-    constructor(private readonly contractService: ContractService) { }
+    constructor(private readonly contractService: ContractService) {}
 
     @Post()
     async create(

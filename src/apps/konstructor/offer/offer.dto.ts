@@ -10,7 +10,6 @@ import { TemplateDto } from './dto/template.dto';
 import { PlacementDto } from 'src/apps/event-sales/dto/event-sale-flow/placement.dto';
 import {
     ComplectDto,
-
     PriceDto,
     RecipientDto,
     RegionDto,
@@ -34,7 +33,9 @@ export class OfferDto {
     @Type(() => ComplectDto)
     complect: ComplectDto[];
 
-    @ValidateNested() @Type(() => ProductRowSupplyDto) supply: ProductRowSupplyDto;
+    @ValidateNested()
+    @Type(() => ProductRowSupplyDto)
+    supply: ProductRowSupplyDto;
 
     @ValidateNested() @Type(() => ContractDto) contract: ContractDto;
     @ValidateNested() @Type(() => RegionDto) region: RegionDto;

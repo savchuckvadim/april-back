@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { bx_rqs } from 'generated/prisma';
 import { BxRqRepository } from '../repositories/bx-rq.repository';
 import { CreateBxRqDto } from '../dto/create-bx-rq.dto';
@@ -7,7 +11,7 @@ import { BxRqResponseDto } from '../dto/bx-rq-response.dto';
 
 @Injectable()
 export class BxRqService {
-    constructor(private readonly repository: BxRqRepository) { }
+    constructor(private readonly repository: BxRqRepository) {}
 
     async create(dto: CreateBxRqDto): Promise<BxRqResponseDto> {
         try {
@@ -66,15 +70,22 @@ export class BxRqService {
 
         try {
             const updateData: Partial<bx_rqs> = {};
-            if (dto.portal_id !== undefined) updateData.portal_id = dto.portal_id ? BigInt(dto.portal_id) : null;
+            if (dto.portal_id !== undefined)
+                updateData.portal_id = dto.portal_id
+                    ? BigInt(dto.portal_id)
+                    : null;
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.code !== undefined) updateData.code = dto.code;
             if (dto.type !== undefined) updateData.type = dto.type;
-            if (dto.bitrix_id !== undefined) updateData.bitrix_id = dto.bitrix_id;
+            if (dto.bitrix_id !== undefined)
+                updateData.bitrix_id = dto.bitrix_id;
             if (dto.xml_id !== undefined) updateData.xml_id = dto.xml_id;
-            if (dto.entity_type_id !== undefined) updateData.entity_type_id = dto.entity_type_id;
-            if (dto.country_id !== undefined) updateData.country_id = dto.country_id;
-            if (dto.is_active !== undefined) updateData.is_active = dto.is_active;
+            if (dto.entity_type_id !== undefined)
+                updateData.entity_type_id = dto.entity_type_id;
+            if (dto.country_id !== undefined)
+                updateData.country_id = dto.country_id;
+            if (dto.is_active !== undefined)
+                updateData.is_active = dto.is_active;
             if (dto.sort !== undefined) updateData.sort = dto.sort;
 
             const updatedRq = await this.repository.update(id, updateData);
@@ -114,4 +125,3 @@ export class BxRqService {
         };
     }
 }
-

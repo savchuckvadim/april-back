@@ -34,4 +34,3 @@ export class CreateBtxCompanyDto {
     @IsNotEmpty()
     portal_id: number;
 }
-

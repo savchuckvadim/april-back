@@ -1,23 +1,28 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
-import { ReportGetFiltersDto } from "../../dto/kpi-report-request.dto";
-import { Type } from "class-transformer";
-import { FieldItem } from "../../dto/kpi.dto";
-
+import { ApiProperty } from '@nestjs/swagger';
+import {
+    IsArray,
+    IsBoolean,
+    IsNumber,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
+import { ReportGetFiltersDto } from '../../dto/kpi-report-request.dto';
+import { Type } from 'class-transformer';
+import { FieldItem } from '../../dto/kpi.dto';
 
 export class SalesUserReportActionFilterDto {
-
     @ApiProperty({ description: 'Код' })
     @IsString()
-    code: string
+    code: string;
 
     @ApiProperty({ description: 'Внутренний код' })
     @IsString()
-    innerCode: string
+    innerCode: string;
 
     @ApiProperty({ description: 'Название' })
     @IsString()
-    name: string
+    name: string;
 
     // @ApiProperty({ description: 'Порядок' })
     // @IsNumber()
@@ -27,16 +32,13 @@ export class SalesUserReportActionFilterDto {
     @ApiProperty({ description: 'Действие', type: FieldItem })
     @ValidateNested()
     @Type(() => FieldItem)
-    actionItem: FieldItem
+    actionItem: FieldItem;
 
     @ApiProperty({ description: 'Тип действия', type: FieldItem })
     @ValidateNested()
     @Type(() => FieldItem)
-    actionTypeItem: FieldItem
-
-
+    actionTypeItem: FieldItem;
 }
-
 
 export class SalesUserReportFiltersDto {
     @ApiProperty({ description: 'Дата начала периода' })
@@ -47,16 +49,22 @@ export class SalesUserReportFiltersDto {
     @IsString()
     dateTo: string;
 
-    @ApiProperty({ description: 'Действия', type: [SalesUserReportActionFilterDto] })
+    @ApiProperty({
+        description: 'Действия',
+        type: [SalesUserReportActionFilterDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => SalesUserReportActionFilterDto)
     actions: SalesUserReportActionFilterDto[];
-
-
 }
 export class SalesUserReportStartResponseDto {
-    constructor(operationId: string, listId: number, message: string, success: boolean) {
+    constructor(
+        operationId: string,
+        listId: number,
+        message: string,
+        success: boolean,
+    ) {
         this.operationId = operationId;
         this.listId = listId;
         this.message = message;
@@ -79,7 +87,6 @@ export class SalesUserReportStartResponseDto {
     listId: number;
 }
 export class SalesUserReportGetRequestDto {
-
     @ApiProperty({ description: 'Домен' })
     @IsString()
     domain: string;
@@ -92,9 +99,11 @@ export class SalesUserReportGetRequestDto {
     @IsNumber()
     userId: number;
 
-
-
-    @ApiProperty({ description: 'Фильтры отчета KPI (действия) если приходят пустые то будет выгрузка всех действий', type: SalesUserReportFiltersDto })
+    @ApiProperty({
+        description:
+            'Фильтры отчета KPI (действия) если приходят пустые то будет выгрузка всех действий',
+        type: SalesUserReportFiltersDto,
+    })
     @IsOptional()
     @ValidateNested()
     @Type(() => SalesUserReportFiltersDto)
@@ -105,5 +114,4 @@ export class SalesUserReportJobDataDto extends SalesUserReportGetRequestDto {
     @ApiProperty({ description: 'Хэш' })
     @IsString()
     _hash: string;
-
 }

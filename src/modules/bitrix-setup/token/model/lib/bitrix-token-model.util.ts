@@ -1,10 +1,12 @@
-import { PrismaService } from "@/core/prisma";
-import { BitrixTokenEntity } from "../bitrix-token.model";
-import { decrypt } from "@/lib/utils/crypt.util";
+import { PrismaService } from '@/core/prisma';
+import { BitrixTokenEntity } from '../bitrix-token.model';
+import { decrypt } from '@/lib/utils/crypt.util';
 
-export const createBitrixTokenEntityFromPrisma = (token: NonNullable<
-    Awaited<ReturnType<PrismaService['bitrix_tokens']['findUnique']>>
->): BitrixTokenEntity => {
+export const createBitrixTokenEntityFromPrisma = (
+    token: NonNullable<
+        Awaited<ReturnType<PrismaService['bitrix_tokens']['findUnique']>>
+    >,
+): BitrixTokenEntity => {
     const entity = new BitrixTokenEntity();
     entity.id = `${token.id}`;
     entity.created_at = token.created_at || undefined;
@@ -16,7 +18,9 @@ export const createBitrixTokenEntityFromPrisma = (token: NonNullable<
     entity.refresh_token = decrypt(token.refresh_token);
     entity.expires_at = token.expires_at || undefined;
     entity.member_id = token.member_id ? decrypt(token.member_id) : undefined;
-    entity.application_token = token.application_token ? decrypt(token.application_token) : undefined;
+    entity.application_token = token.application_token
+        ? decrypt(token.application_token)
+        : undefined;
 
     return entity;
 };

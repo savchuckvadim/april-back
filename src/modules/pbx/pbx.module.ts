@@ -9,7 +9,7 @@ import { PBXService } from './pbx.service';
     providers: [PBXService],
     exports: [PortalModule, BitrixModule, PBXService],
 })
-export class PBXModule { }
+export class PBXModule {}
 
 //   src/
 // ├── modules/

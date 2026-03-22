@@ -19,7 +19,9 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Portal Contracts Management')
 @Controller('admin/portals/portal-contracts')
 export class PortalContractController {
-    constructor(private readonly portalContractService: PortalContractService) { }
+    constructor(
+        private readonly portalContractService: PortalContractService,
+    ) {}
 
     @ApiOperation({ summary: 'Create a new portal contract' })
     @ApiResponse({
@@ -28,8 +30,12 @@ export class PortalContractController {
         type: PortalContractResponseDto,
     })
     @Post()
-    async createPortalContract(@Body() createPortalContractDto: CreatePortalContractDto): Promise<SuccessResponseDto> {
-        const portalContract = await this.portalContractService.create(createPortalContractDto);
+    async createPortalContract(
+        @Body() createPortalContractDto: CreatePortalContractDto,
+    ): Promise<SuccessResponseDto> {
+        const portalContract = await this.portalContractService.create(
+            createPortalContractDto,
+        );
         return {
             resultCode: EResultCode.SUCCESS,
             data: portalContract,
@@ -43,7 +49,9 @@ export class PortalContractController {
         type: PortalContractResponseDto,
     })
     @Get(':id')
-    async getPortalContractById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getPortalContractById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const portalContract = await this.portalContractService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -64,9 +72,13 @@ export class PortalContractController {
     ): Promise<SuccessResponseDto> {
         let portalContracts;
         if (portalId) {
-            portalContracts = await this.portalContractService.findByPortalId(Number(portalId));
+            portalContracts = await this.portalContractService.findByPortalId(
+                Number(portalId),
+            );
         } else if (contractId) {
-            portalContracts = await this.portalContractService.findByContractId(Number(contractId));
+            portalContracts = await this.portalContractService.findByContractId(
+                Number(contractId),
+            );
         } else {
             portalContracts = await this.portalContractService.findMany();
         }
@@ -88,7 +100,10 @@ export class PortalContractController {
         @Param('id', ParseIntPipe) id: number,
         @Body() updatePortalContractDto: UpdatePortalContractDto,
     ): Promise<SuccessResponseDto> {
-        const portalContract = await this.portalContractService.update(id, updatePortalContractDto);
+        const portalContract = await this.portalContractService.update(
+            id,
+            updatePortalContractDto,
+        );
         return {
             resultCode: EResultCode.SUCCESS,
             data: portalContract,
@@ -101,7 +116,9 @@ export class PortalContractController {
         description: 'Portal contract deleted successfully',
     })
     @Delete(':id')
-    async deletePortalContract(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deletePortalContract(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.portalContractService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -109,4 +126,3 @@ export class PortalContractController {
         };
     }
 }
-

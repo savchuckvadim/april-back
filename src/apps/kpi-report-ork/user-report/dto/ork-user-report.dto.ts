@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsDate, IsNumber, IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsDate, IsNumber, IsString } from 'class-validator';
 export class OrkUserReportStartResponseDto {
     constructor(operationId: string, message: string, success: boolean) {
         this.operationId = operationId;
@@ -19,7 +19,6 @@ export class OrkUserReportStartResponseDto {
     success: boolean;
 }
 export class OrkUserReportGetRequestDto {
-
     @ApiProperty({ description: 'Домен' })
     @IsString()
     domain: string;
@@ -45,5 +44,4 @@ export class OrkUserReportJobDataDto extends OrkUserReportGetRequestDto {
     @ApiProperty({ description: 'Хэш' })
     @IsString()
     _hash: string;
-
 }

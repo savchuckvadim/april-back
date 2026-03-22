@@ -4,7 +4,6 @@ import { createProviderEntityFromPrisma } from '../../provider/lib/provider-enti
 import { createTemplateBaseEntityFromPrisma } from '../../template-base/lib/template-base-entity.util';
 import { Client } from 'generated/prisma';
 
-
 export type PortalWithRelations = NonNullable<
     Awaited<ReturnType<PrismaService['portal']['findUnique']>>
 > & {
@@ -16,7 +15,6 @@ export type PortalWithRelations = NonNullable<
 export const createPortalEntityFromPrisma = (
     portal: PortalWithRelations,
 ): PortalEntity => {
-
     const clientId = portal.clients?.id ? Number(portal.clients?.id) : null;
     console.log('clientId', clientId);
     const result = new PortalEntity(
@@ -30,12 +28,11 @@ export const createPortalEntityFromPrisma = (
         portal.C_REST_WEB_HOOK_URL,
         portal.number,
         portal.agents?.map(agent => createProviderEntityFromPrisma(agent)) ??
-        null,
+            null,
         portal.templates?.map(template =>
             createTemplateBaseEntityFromPrisma(template),
         ) ?? null,
         clientId,
-
     );
     return result as unknown as PortalEntity;
 };

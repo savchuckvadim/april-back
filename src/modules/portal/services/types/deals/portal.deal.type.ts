@@ -93,7 +93,7 @@ export const PortalDealServiceStages = [
         name: 'service_double',
         code: PortalDealServiceStageCodeEnum.double,
     },
-]
+];
 export const PortalDealSalesBaseStages = [
     {
         name: 'sales_new',
@@ -119,7 +119,7 @@ export const PortalDealSalesBaseStages = [
         name: 'sales_money_await',
         code: PortalDealSalesBaseStageCodeEnum.money_await,
     },
-]
+];
 export const PortalDealSalesPresentationStages = [
     {
         name: 'sales_presentation_new',
@@ -145,7 +145,7 @@ export const PortalDealSalesPresentationStages = [
         name: 'sales_presentation_money_await',
         code: PortalDealSalesPresentationStageCodeEnum.money_await,
     },
-]
+];
 export const PortalDealTmcStages = [
     {
         name: 'tmc_base_new',
@@ -171,7 +171,7 @@ export const PortalDealTmcStages = [
         name: 'tmc_base_money_await',
         code: PortalDealTmcBaseStageCodeEnum.money_await,
     },
-]
+];
 export const PbxDealsData = {
     [PbxDealCategoryCodeEnum.service_base]: {
         stages: PortalDealServiceStages,
@@ -188,8 +188,7 @@ export const PbxDealsData = {
 } as const;
 // 5️⃣ Автоматически выводим тип для каждой категории
 export type CategoryToStageMap = {
-    [K in keyof typeof PbxDealsData]:
-    (typeof PbxDealsData)[K]['stages'][number]['code'];
+    [K in keyof typeof PbxDealsData]: (typeof PbxDealsData)[K]['stages'][number]['code'];
 };
 
 export interface IPbxDataStage {

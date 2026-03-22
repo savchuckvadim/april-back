@@ -45,26 +45,41 @@ export class ContractPrismaRepository implements ContractRepository {
         return result;
     }
 
-    async update(id: number, contract: Partial<contracts>): Promise<contracts | null> {
+    async update(
+        id: number,
+        contract: Partial<contracts>,
+    ): Promise<contracts | null> {
         const updateData: any = {};
         if (contract.name !== undefined) updateData.name = contract.name;
         if (contract.number !== undefined) updateData.number = contract.number;
         if (contract.title !== undefined) updateData.title = contract.title;
         if (contract.code !== undefined) updateData.code = contract.code;
         if (contract.type !== undefined) updateData.type = contract.type;
-        if (contract.withPrepayment !== undefined) updateData.withPrepayment = contract.withPrepayment;
-        if (contract.template !== undefined) updateData.template = contract.template;
+        if (contract.withPrepayment !== undefined)
+            updateData.withPrepayment = contract.withPrepayment;
+        if (contract.template !== undefined)
+            updateData.template = contract.template;
         if (contract.order !== undefined) updateData.order = contract.order;
-        if (contract.coefficient !== undefined) updateData.coefficient = contract.coefficient;
-        if (contract.prepayment !== undefined) updateData.prepayment = contract.prepayment;
-        if (contract.discount !== undefined) updateData.discount = contract.discount;
-        if (contract.productName !== undefined) updateData.productName = contract.productName;
-        if (contract.product !== undefined) updateData.product = contract.product;
-        if (contract.service !== undefined) updateData.service = contract.service;
-        if (contract.description !== undefined) updateData.description = contract.description;
-        if (contract.comment !== undefined) updateData.comment = contract.comment;
-        if (contract.comment1 !== undefined) updateData.comment1 = contract.comment1;
-        if (contract.comment2 !== undefined) updateData.comment2 = contract.comment2;
+        if (contract.coefficient !== undefined)
+            updateData.coefficient = contract.coefficient;
+        if (contract.prepayment !== undefined)
+            updateData.prepayment = contract.prepayment;
+        if (contract.discount !== undefined)
+            updateData.discount = contract.discount;
+        if (contract.productName !== undefined)
+            updateData.productName = contract.productName;
+        if (contract.product !== undefined)
+            updateData.product = contract.product;
+        if (contract.service !== undefined)
+            updateData.service = contract.service;
+        if (contract.description !== undefined)
+            updateData.description = contract.description;
+        if (contract.comment !== undefined)
+            updateData.comment = contract.comment;
+        if (contract.comment1 !== undefined)
+            updateData.comment1 = contract.comment1;
+        if (contract.comment2 !== undefined)
+            updateData.comment2 = contract.comment2;
 
         const result = await this.prisma.contracts.update({
             where: { id: BigInt(id) },
@@ -80,4 +95,3 @@ export class ContractPrismaRepository implements ContractRepository {
         return result ? true : false;
     }
 }
-

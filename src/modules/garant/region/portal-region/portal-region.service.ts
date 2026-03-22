@@ -14,7 +14,7 @@ export class PortalRegionService {
     constructor(
         private readonly repo: RegionRepository,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
     async getPortalRegions(domain: string): Promise<RegionEntity[] | null> {
         const portalId = await this.getPortalId(domain);

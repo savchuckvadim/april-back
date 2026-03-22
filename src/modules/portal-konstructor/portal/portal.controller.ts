@@ -7,7 +7,7 @@ import { UpdateWebhookDto } from './dtos/update-webhook.dto';
 @ApiTags('Portal Konstructor')
 @Controller('portal')
 export class PortalController {
-    constructor(private readonly service: PortalStoreService) { }
+    constructor(private readonly service: PortalStoreService) {}
     @ApiOperation({ summary: 'Get portal by id' })
     @Get(':id')
     async getPortal(@Param('id') id: number): Promise<PortalEntity | null> {

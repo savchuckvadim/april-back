@@ -1,9 +1,12 @@
-import { IBXCompany } from "@/modules/bitrix";
-import { IBXDeal } from "@/modules/bitrix/domain/crm/deal/interface/bx-deal.interface";
-import { IBXFile, IBXFileItemField } from "@/modules/bitrix/domain/file/bx-file.interface";
-import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { IsArray, ValidateNested } from "class-validator";
+import { IBXCompany } from '@/modules/bitrix';
+import { IBXDeal } from '@/modules/bitrix/domain/crm/deal/interface/bx-deal.interface';
+import {
+    IBXFile,
+    IBXFileItemField,
+} from '@/modules/bitrix/domain/file/bx-file.interface';
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsArray, ValidateNested } from 'class-validator';
 
 export class OrkReportDealItemDto {
     // constructor(deal: IBXDeal) {
@@ -50,9 +53,6 @@ export class OrkReportDealItemDto {
     @ApiProperty({ description: 'Deal duration' })
     duration: number;
 
-
-
-
     @ApiProperty({ description: 'Deal create date' })
     createDate: string;
     @ApiProperty({ description: 'Deal closed date' })
@@ -77,16 +77,12 @@ export class OrkReportDealItemDto {
     supply: string;
     @ApiProperty({ description: 'Deal current contract' })
     currentContract: IBXFileItemField | undefined = undefined;
-
-
 }
 export class OrkReportCompanyItemDto {
-
     @ApiProperty({ description: 'Company id' })
     id: number;
     @ApiProperty({ description: 'Company title' })
     title: string;
-
 
     @ApiProperty({ description: 'Company assigned by id' })
     assignedById: string;
@@ -96,8 +92,7 @@ export class OrkReportCompanyItemDto {
     armInfo: string;
 
     @ApiProperty({ description: 'Is active client' })
-    isActiveClient: boolean
-
+    isActiveClient: boolean;
 }
 // export class OrkReportCompanyResponseDto implements Partial<IBXCompany> {
 //     constructor(company: IBXCompany) {
@@ -117,11 +112,11 @@ export class OrkReportCompanyItemDto {
 //     UF_CRM_USER_CARDNUM: string;
 // }
 
-
-
-
 export class OrkReportDealsByCompaniesDto {
-    constructor(deals: OrkReportDealItemDto[], company: OrkReportCompanyItemDto) {
+    constructor(
+        deals: OrkReportDealItemDto[],
+        company: OrkReportCompanyItemDto,
+    ) {
         this.deals = deals;
         this.company = company;
     }
@@ -135,19 +130,17 @@ export class OrkReportDealsByCompaniesDto {
     @ValidateNested()
     @Type(() => OrkReportCompanyItemDto)
     company: OrkReportCompanyItemDto;
-
-
 }
-
 
 export class OrkReportDealsResponseDto {
     constructor(companies: OrkReportDealsByCompaniesDto[]) {
-
         this.companies = companies;
     }
 
-
-    @ApiProperty({ description: 'Companies', type: [OrkReportDealsByCompaniesDto] })
+    @ApiProperty({
+        description: 'Companies',
+        type: [OrkReportDealsByCompaniesDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => OrkReportDealsByCompaniesDto)

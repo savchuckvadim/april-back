@@ -34,4 +34,3 @@ export class CreateBtxContactDto {
     @IsNotEmpty()
     portal_id: number;
 }
-

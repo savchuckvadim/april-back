@@ -1,4 +1,3 @@
-
 import {
     CanActivate,
     ExecutionContext,
@@ -12,12 +11,10 @@ import * as cookieParser from 'cookie-parser';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor(private jwtService: JwtService) { }
+    constructor(private jwtService: JwtService) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
-
-
 
         const token = this.extractToken(request);
         console.log('token', token);
@@ -25,12 +22,9 @@ export class AuthGuard implements CanActivate {
             throw new UnauthorizedException();
         }
         try {
-            const payload = await this.jwtService.verifyAsync(
-                token,
-                {
-                    secret: jwtConstants.secret
-                }
-            );
+            const payload = await this.jwtService.verifyAsync(token, {
+                secret: jwtConstants.secret,
+            });
             console.log('payload', payload);
             // 💡 We're assigning the payload to the request object here
             // so that we can access it in our route handlers

@@ -11,14 +11,13 @@ import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { BitrixBaseApi } from '@/modules/bitrix';
 
-
 export class CallingStatisticUseCase {
     // private bitrixApi: BitrixApiService;
 
     constructor(
         private readonly bitrixApi: BitrixBaseApi,
         // private readonly portalContext: PortalContextService,
-    ) { }
+    ) {}
 
     // async init(
     //     // domain: string

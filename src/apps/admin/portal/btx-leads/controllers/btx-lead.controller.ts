@@ -19,7 +19,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Btx Leads Management')
 @Controller('admin/portals/btx-leads')
 export class BtxLeadController {
-    constructor(private readonly leadService: BtxLeadService) { }
+    constructor(private readonly leadService: BtxLeadService) {}
 
     @ApiOperation({ summary: 'Create a new btx lead' })
     @ApiResponse({
@@ -28,7 +28,9 @@ export class BtxLeadController {
         type: BtxLeadResponseDto,
     })
     @Post()
-    async createLead(@Body() createLeadDto: CreateBtxLeadDto): Promise<SuccessResponseDto> {
+    async createLead(
+        @Body() createLeadDto: CreateBtxLeadDto,
+    ): Promise<SuccessResponseDto> {
         const lead = await this.leadService.create(createLeadDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class BtxLeadController {
         type: BtxLeadResponseDto,
     })
     @Get(':id')
-    async getLeadById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getLeadById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const lead = await this.leadService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,7 +62,9 @@ export class BtxLeadController {
         type: [BtxLeadResponseDto],
     })
     @Get()
-    async getAllLeads(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllLeads(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let leads;
         if (portalId) {
             leads = await this.leadService.findByPortalId(Number(portalId));
@@ -96,7 +102,9 @@ export class BtxLeadController {
         description: 'Lead deleted successfully',
     })
     @Delete(':id')
-    async deleteLead(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteLead(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.leadService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +112,3 @@ export class BtxLeadController {
         };
     }
 }
-

@@ -9,10 +9,20 @@ import {
 import { PortalModel } from 'src/modules/portal/services/portal.model';
 
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { EnumOrkEventAction, EnumOrkEventCommunication, EnumOrkEventInitiative, EnumOrkEventType, EnumOrkFieldCode } from '@/modules/pbx-ork-history-bx-list';
+import {
+    EnumOrkEventAction,
+    EnumOrkEventCommunication,
+    EnumOrkEventInitiative,
+    EnumOrkEventType,
+    EnumOrkFieldCode,
+} from '@/modules/pbx-ork-history-bx-list';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi, BitrixService } from '@/modules/bitrix';
-import { CommunicationsReportData, FilterCommunication, KPICommunication } from '../dto/communications.dto';
+import {
+    CommunicationsReportData,
+    FilterCommunication,
+    KPICommunication,
+} from '../dto/communications.dto';
 import { OrkReportCommunicationItems } from '../type/ork-report-communications.type';
 import { BXUserDto } from '../../event/dto/get-report-request.dto';
 import { ReportGetCommunicationsFiltersDto } from '../dto/get-report-communications-request.dto';
@@ -26,15 +36,10 @@ export class ReportCommunicationsUseCase {
     private bitrix: BitrixService;
     private bitrixApi: BitrixBaseApi;
 
-    constructor(
-
-        private readonly pbx: PBXService,
-    ) { }
+    constructor(private readonly pbx: PBXService) {}
 
     async init(domain: string) {
-
         const { portal, PortalModel, bitrix } = await this.pbx.init(domain);
-
 
         if (!portal) throw new Error('Portal not found');
 
@@ -46,11 +51,15 @@ export class ReportCommunicationsUseCase {
         this.portal = portal;
         this.hook = PortalModel.getHook();
 
-        this.portalKPIList = this.portalModel.getListByCode('service_ork_history');
-
+        this.portalKPIList = this.portalModel.getListByCode(
+            'service_ork_history',
+        );
     }
 
-    async generateKpiReport(domain: string, dto: ReportGetCommunicationsFiltersDto): Promise<CommunicationsReportData[]> {
+    async generateKpiReport(
+        domain: string,
+        dto: ReportGetCommunicationsFiltersDto,
+    ): Promise<CommunicationsReportData[]> {
         // const bitrixApi = this.bitrixContext.getApi();
         await this.init(domain);
         const departament = dto.departament;
@@ -137,7 +146,6 @@ export class ReportCommunicationsUseCase {
                 const action = EnumOrkFieldCode.ork_event_action;
                 const actionType = EnumOrkFieldCode.ork_event_type;
                 switch (plField.code as EnumOrkFieldCode) {
-
                     case EnumOrkFieldCode.ork_event_action:
                         eventActionField = plField as IField;
                         actionFieldId = plField.bitrixCamelId;
@@ -193,22 +201,29 @@ export class ReportCommunicationsUseCase {
             return currentActionsData;
         }
         let order = 0;
-        if (communicationItemItems.length && actionItems.length && initiativeItemItems.length) {
+        if (
+            communicationItemItems.length &&
+            actionItems.length &&
+            initiativeItemItems.length
+        ) {
             for (const communicationItem of communicationItemItems) {
                 for (const initiativeItem of initiativeItemItems) {
                     for (const action of actionItems) {
-
                         const actionCode = action.code as EnumOrkEventAction;
-                        const incomingCode = initiativeItem.code as EnumOrkEventInitiative;
-                        const communicationCode = communicationItem.code as EnumOrkEventCommunication;
+                        const incomingCode =
+                            initiativeItem.code as EnumOrkEventInitiative;
+                        const communicationCode =
+                            communicationItem.code as EnumOrkEventCommunication;
 
-                        const communicationSctionItems = OrkReportCommunicationItems[actionCode]
+                        const communicationSctionItems =
+                            OrkReportCommunicationItems[actionCode];
                         if (!communicationSctionItems) continue;
-                        const communicationInitiativeItems = communicationSctionItems[incomingCode];
+                        const communicationInitiativeItems =
+                            communicationSctionItems[incomingCode];
                         if (!communicationInitiativeItems) continue;
-                        const initDataItem = communicationInitiativeItems[communicationCode];
+                        const initDataItem =
+                            communicationInitiativeItems[communicationCode];
                         if (!initDataItem) continue;
-
 
                         order++;
                         const item: FilterCommunication = {
@@ -218,8 +233,8 @@ export class ReportCommunicationsUseCase {
                             actionItem: action,
                             communicationItem: communicationItem,
                             initiativeItem: initiativeItem,
-                            order
-                        }
+                            order,
+                        };
                         currentActionsData.push(item);
                     }
                 }
@@ -228,7 +243,7 @@ export class ReportCommunicationsUseCase {
             return currentActionsData.sort((a, b) => a.order - b.order);
         }
         return currentActionsData;
-    }
+    };
     private generateBatchCommands = (
         departament: BXUserDto[],
         currentActionsData: FilterCommunication[],
@@ -245,8 +260,6 @@ export class ReportCommunicationsUseCase {
     ): void => {
         for (const user of departament) {
             const userId = user.ID;
-
-
 
             for (const action of currentActionsData) {
                 const innerCode = action.innerCode;
@@ -267,7 +280,8 @@ export class ReportCommunicationsUseCase {
                         filter: {
                             [`${eventResponsibleFieldId}`]: userId,
                             [`${actionFieldId}`]: actionValuebitrixId,
-                            [`${communicationFieldId}`]: communicationValuebitrixId,
+                            [`${communicationFieldId}`]:
+                                communicationValuebitrixId,
                             [`${initiativeFieldId}`]: initiativeValuebitrixId,
 
                             [`${dateFieldForHookFrom}`]: dateFrom,
@@ -285,7 +299,6 @@ export class ReportCommunicationsUseCase {
             }
         }
     };
-
 
     private getCalculateResults = (
         results: IBitrixBatchResponseResult[],

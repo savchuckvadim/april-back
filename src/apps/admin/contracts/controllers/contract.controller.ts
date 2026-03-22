@@ -18,7 +18,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Contracts Management')
 @Controller('admin/contracts')
 export class ContractController {
-    constructor(private readonly contractService: ContractService) { }
+    constructor(private readonly contractService: ContractService) {}
 
     @ApiOperation({ summary: 'Create a new contract' })
     @ApiResponse({
@@ -27,7 +27,9 @@ export class ContractController {
         type: ContractResponseDto,
     })
     @Post()
-    async createContract(@Body() createContractDto: CreateContractDto): Promise<SuccessResponseDto> {
+    async createContract(
+        @Body() createContractDto: CreateContractDto,
+    ): Promise<SuccessResponseDto> {
         const contract = await this.contractService.create(createContractDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -42,7 +44,9 @@ export class ContractController {
         type: ContractResponseDto,
     })
     @Get(':id')
-    async getContractById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getContractById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const contract = await this.contractService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -76,7 +80,10 @@ export class ContractController {
         @Param('id', ParseIntPipe) id: number,
         @Body() updateContractDto: UpdateContractDto,
     ): Promise<SuccessResponseDto> {
-        const contract = await this.contractService.update(id, updateContractDto);
+        const contract = await this.contractService.update(
+            id,
+            updateContractDto,
+        );
         return {
             resultCode: EResultCode.SUCCESS,
             data: contract,
@@ -89,7 +96,9 @@ export class ContractController {
         description: 'Contract deleted successfully',
     })
     @Delete(':id')
-    async deleteContract(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteContract(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.contractService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -97,4 +106,3 @@ export class ContractController {
         };
     }
 }
-

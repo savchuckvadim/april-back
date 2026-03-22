@@ -146,4 +146,3 @@ export class UpdateContractDto {
     @IsOptional()
     comment2?: string;
 }
-

@@ -19,10 +19,8 @@ export class YandexAuthService {
         try {
             this.tokensUrl = 'https://iam.api.cloud.yandex.net/iam/v1/tokens';
             this.keyJsonPath = path.join(process.cwd(), 'keys', 'key.json');
-
         } catch (error) {
             this.logger.error('Error initializing YandexAuthService:', error);
-
         }
 
         this.logger.log(`Key JSON path: ${this.keyJsonPath}`);
@@ -31,10 +29,10 @@ export class YandexAuthService {
             this.logger.error(`Key file not found: ${this.keyJsonPath}`);
             // throw new Error(`Key file not found: ${this.keyJsonPath}`);
         } else {
-            this.keyData = JSON.parse(fs.readFileSync(this.keyJsonPath, 'utf8'));
-
+            this.keyData = JSON.parse(
+                fs.readFileSync(this.keyJsonPath, 'utf8'),
+            );
         }
-
     }
 
     async getIamToken(): Promise<string | null> {

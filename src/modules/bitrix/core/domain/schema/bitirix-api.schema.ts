@@ -105,7 +105,6 @@ export type BXApiSchema = {
     };
     [EBxNamespace.LISTS]: {
         [EBXEntity.ELEMENT]: BxListItemSchema;
-
     };
     [EBxNamespace.CATALOG]: {
         [EBXEntity.PRODUCT]: BxCatalogSchema;

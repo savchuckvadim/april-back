@@ -17,9 +17,15 @@ import {
 import { BitrixDealBatchFlowService } from '../services/deal-flow/bitrix-deal-batch-flow.service';
 import { BitrixBatchService } from '../services/general/bitrix-batch.service';
 import { PBXService } from '@/modules/pbx';
-import { TaskFlowDto, TaskFlowService } from '../services/task-flow/task-flow.service';
+import {
+    TaskFlowDto,
+    TaskFlowService,
+} from '../services/task-flow/task-flow.service';
 import { PlacementDto } from '../dto/event-sale-flow/placement.dto';
-import { EnumEventItemResultType, EnumWorkStatusCode } from '../types/report-types';
+import {
+    EnumEventItemResultType,
+    EnumWorkStatusCode,
+} from '../types/report-types';
 import { IBXCompany, IBXContact, IBXDeal } from '@/modules/bitrix';
 import { EnumEventPlanCode } from '../types/plan-types';
 import { IBXLead } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
@@ -105,18 +111,12 @@ export class EventSalesFlowUseCase {
     constructor(
         private readonly portalService: PortalService,
         private readonly pbx: PBXService,
-    ) { }
+    ) {}
 
-
-
-    async getFlow(
-
-        dto: EventSalesFlowDto,
-    ): Promise<any> {
+    async getFlow(dto: EventSalesFlowDto): Promise<any> {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
         const {
             isSuccessSale,
-
 
             isExpired,
             planContactId,
@@ -141,16 +141,12 @@ export class EventSalesFlowUseCase {
             nowDate,
         } = this.getFlowData(dto);
 
-
         let company: IBXCompany | null = null;
         let companyId: number | null = null;
         let lead: IBXLead | null = null;
         let leadId: number | null = null;
 
-
-        const entityResult = await bitrix[entityType].get(
-            entityId
-        );
+        const entityResult = await bitrix[entityType].get(entityId);
         const entity = entityResult.result;
         if (entityType === 'company') {
             company = entity as IBXCompany;
@@ -168,10 +164,9 @@ export class EventSalesFlowUseCase {
             entityId,
             isExpired,
             isPlanned: dto.plan?.isPlanned ?? false,
-        }
+        };
 
         const createTaskDto: CreateTaskDto = {
-
             responsibleId: dto.plan?.responsibility?.ID ?? 0,
             isPriority: false,
             type: dto.plan?.type.current.code as EnumEventPlanCode,
@@ -190,8 +185,7 @@ export class EventSalesFlowUseCase {
             currentTaskId: undefined,
             isNeedCompleteOtherTasks: false,
             isXO: false,
-        }
-
+        };
 
         await taskFlowService.flow(taskFlowDto, createTaskDto);
 
@@ -246,11 +240,15 @@ export class EventSalesFlowUseCase {
             // nowDate
         );
 
-        return { result: true, error: '', data: null, dealFlowResult: dealFlowResult };
+        return {
+            result: true,
+            error: '',
+            data: null,
+            dealFlowResult: dealFlowResult,
+        };
     }
 
     private getFlowData(dto: EventSalesFlowDto) {
-
         const isPlanActive = dto.plan?.isActive ?? false;
         const isPlanned = dto.plan?.isPlanned && isPlanActive;
         const isExpired = this.getIsExpired(dto.report, dto.plan, isPlanActive);
@@ -281,30 +279,35 @@ export class EventSalesFlowUseCase {
         const isSuccessSale = workStatus === EnumWorkStatusCode.success;
         const isFail = workStatus === EnumWorkStatusCode.fail;
         const isPresentationDone = dto.presentation.isPresentationDone ?? false;
-        const isUnplannedPresentation = this.getIsUnplannedPresentation(isPresentationDone, dto.currentTask);
+        const isUnplannedPresentation = this.getIsUnplannedPresentation(
+            isPresentationDone,
+            dto.currentTask,
+        );
         const isNeedReturnToTmc = dto.returnToTmc?.isActive ?? false;
-
 
         const planCreatedId = dto.plan?.createdBy?.ID ?? null;
 
         // const planTmcId = dto.plan?.tmc?.ID ?? null;
         const planDeadline = dto.plan?.deadline ?? null;
         const eventTitleService = new EventTitleService();
-        const { type: planEventType,
+        const {
+            type: planEventType,
             typeName: planEventTypeName,
             name: planEventName,
             emoji: planEventEmoji,
             color: planEventColor,
-            title: planEventTitle
+            title: planEventTitle,
         } = eventTitleService.getPlanEventName(dto.plan);
         const {
             eventType: reportEventType,
             typeName: reportEventTypeName,
-            currentTaskTitle: reportEventTitle
-
+            currentTaskTitle: reportEventTitle,
         } = eventTitleService.getReportEventName(dto.currentTask);
 
-        const relationSalePresDeal = isSuccessSale && dto.sale ? this.getRelationSalePresDeal(isSuccessSale, dto.sale) : null;
+        const relationSalePresDeal =
+            isSuccessSale && dto.sale
+                ? this.getRelationSalePresDeal(isSuccessSale, dto.sale)
+                : null;
         return {
             isSuccessSale,
             isPlanned,
@@ -346,14 +349,19 @@ export class EventSalesFlowUseCase {
         };
     }
 
-
-    protected getIsExpired(report: ReportDto, plan: PlanDto, isPlanActive: boolean) {
+    protected getIsExpired(
+        report: ReportDto,
+        plan: PlanDto,
+        isPlanActive: boolean,
+    ) {
         const resultStatus = report.resultStatus;
         const isPlanned = plan.isPlanned;
-        return resultStatus !== EnumEventItemResultType.RESULT &&
+        return (
+            resultStatus !== EnumEventItemResultType.RESULT &&
             resultStatus !== EnumEventItemResultType.NEW &&
             !isPlanned &&
-            isPlanActive;
+            isPlanActive
+        );
     }
     protected getEntityInfo(placement: PlacementDto) {
         let entityType: 'lead' | 'company' = 'lead';
@@ -387,7 +395,6 @@ export class EventSalesFlowUseCase {
                 entityType = 'lead';
                 entityId = placement.placement['ID'];
             }
-
         }
         return {
             entityType,
@@ -395,20 +402,24 @@ export class EventSalesFlowUseCase {
         };
     }
 
-
     protected getIsUnplannedPresentation(
         isPresentationDone: boolean,
         currentTask?: EventTaskDto,
     ) {
         let isUnplannedPresentation = false;
-        if (isPresentationDone && (currentTask?.eventType !== 'presentation' || !currentTask)) {
+        if (
+            isPresentationDone &&
+            (currentTask?.eventType !== 'presentation' || !currentTask)
+        ) {
             isUnplannedPresentation = true;
         }
         return isUnplannedPresentation;
     }
 
-
-    protected getRelationSalePresDeal(isSuccessSale: boolean, sale: SaleDto | null): IBXDeal | null {
+    protected getRelationSalePresDeal(
+        isSuccessSale: boolean,
+        sale: SaleDto | null,
+    ): IBXDeal | null {
         let relationSalePresDeal: IBXDeal | null = null;
         if (isSuccessSale && sale) {
             relationSalePresDeal = sale.relationSalePresDeal ?? null;
@@ -807,5 +818,4 @@ export class EventSalesFlowUseCase {
     //         commands: resultBatchCommands,
     //     };
     // }
-
 }

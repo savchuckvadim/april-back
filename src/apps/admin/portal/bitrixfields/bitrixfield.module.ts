@@ -21,7 +21,10 @@ import { BitrixFieldController } from './controllers/bitrixfield.controller';
         },
     ],
     controllers: [BitrixFieldController],
-    exports: [BitrixFieldService, BitrixFieldRepository, BitrixFieldItemRepository],
+    exports: [
+        BitrixFieldService,
+        BitrixFieldRepository,
+        BitrixFieldItemRepository,
+    ],
 })
 export class BitrixFieldModule {}
-

@@ -19,7 +19,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Btx Deals Management')
 @Controller('admin/portals/btx-deals')
 export class BtxDealController {
-    constructor(private readonly dealService: BtxDealService) { }
+    constructor(private readonly dealService: BtxDealService) {}
 
     @ApiOperation({ summary: 'Create a new btx deal' })
     @ApiResponse({
@@ -28,7 +28,9 @@ export class BtxDealController {
         type: BtxDealResponseDto,
     })
     @Post()
-    async createDeal(@Body() createDealDto: CreateBtxDealDto): Promise<SuccessResponseDto> {
+    async createDeal(
+        @Body() createDealDto: CreateBtxDealDto,
+    ): Promise<SuccessResponseDto> {
         const deal = await this.dealService.create(createDealDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class BtxDealController {
         type: BtxDealResponseDto,
     })
     @Get(':id')
-    async getDealById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getDealById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const deal = await this.dealService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,7 +62,9 @@ export class BtxDealController {
         type: [BtxDealResponseDto],
     })
     @Get()
-    async getAllDeals(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllDeals(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let deals;
         if (portalId) {
             deals = await this.dealService.findByPortalId(Number(portalId));
@@ -96,7 +102,9 @@ export class BtxDealController {
         description: 'Deal deleted successfully',
     })
     @Delete(':id')
-    async deleteDeal(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteDeal(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.dealService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +112,3 @@ export class BtxDealController {
         };
     }
 }
-

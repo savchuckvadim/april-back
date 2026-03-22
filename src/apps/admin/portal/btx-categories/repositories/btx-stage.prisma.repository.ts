@@ -51,7 +51,10 @@ export class BtxStagePrismaRepository implements BtxStageRepository {
         return result;
     }
 
-    async update(id: number, stage: Partial<btx_stages>): Promise<btx_stages | null> {
+    async update(
+        id: number,
+        stage: Partial<btx_stages>,
+    ): Promise<btx_stages | null> {
         const updateData: any = {};
         if (stage.name !== undefined) updateData.name = stage.name;
         if (stage.title !== undefined) updateData.title = stage.title;
@@ -81,4 +84,3 @@ export class BtxStagePrismaRepository implements BtxStageRepository {
         return result.count;
     }
 }
-

@@ -15,8 +15,11 @@ import {
     IStage,
 } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
-import { CategoryToStageMap, PbxDealCategoryCodeEnum, PbxDealsData } from './types/deals/portal.deal.type';
-
+import {
+    CategoryToStageMap,
+    PbxDealCategoryCodeEnum,
+    PbxDealsData,
+} from './types/deals/portal.deal.type';
 
 // @Injectable()
 export class PortalModel {
@@ -25,7 +28,7 @@ export class PortalModel {
     constructor(
         private readonly portal: IPortal,
         private readonly telegramService: TelegramService,
-    ) { }
+    ) {}
 
     getPortal(): IPortal {
         return this.portal;
@@ -38,7 +41,6 @@ export class PortalModel {
         portal: IPortal,
         departament: EDepartamentGroup,
     ): IPDepartment | undefined {
-
         return portal.departament?.group === departament
             ? portal.departament
             : undefined;
@@ -53,7 +55,11 @@ export class PortalModel {
     }
 
     getListByCode(
-        code: 'sales_kpi' | 'sales_history' | 'presentation' | 'service_ork_history',
+        code:
+            | 'sales_kpi'
+            | 'sales_history'
+            | 'presentation'
+            | 'service_ork_history',
     ): IPBXList | undefined {
         let result = this.portal.lists?.find(
             list => `${list.group}_${list.type}` === code,
@@ -104,12 +110,9 @@ export class PortalModel {
     }
     getDealStageByCode<
         C extends keyof CategoryToStageMap,
-        S extends CategoryToStageMap[C]
-    >(
-        categoryCode: C,
-        stageCode: S
-    ): IStage | undefined {
-        const category = this.getDealCategoryByCode(categoryCode)
+        S extends CategoryToStageMap[C],
+    >(categoryCode: C, stageCode: S): IStage | undefined {
+        const category = this.getDealCategoryByCode(categoryCode);
         return category?.stages.find(st => st.code === stageCode);
     }
     getDealFields(): IField[] {

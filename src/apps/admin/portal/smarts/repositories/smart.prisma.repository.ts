@@ -18,7 +18,9 @@ export class SmartPrismaRepository implements SmartRepository {
                 portal_id: BigInt(smart.portal_id!),
                 bitrixId: smart.bitrixId ? BigInt(smart.bitrixId) : null,
                 forStageId: smart.forStageId ? BigInt(smart.forStageId) : null,
-                forFilterId: smart.forFilterId ? BigInt(smart.forFilterId) : null,
+                forFilterId: smart.forFilterId
+                    ? BigInt(smart.forFilterId)
+                    : null,
                 crmId: smart.crmId ? BigInt(smart.crmId) : null,
                 forStage: smart.forStage,
                 forFilter: smart.forFilter,
@@ -63,14 +65,27 @@ export class SmartPrismaRepository implements SmartRepository {
         if (smart.group !== undefined) updateData.group = smart.group;
         if (smart.name !== undefined) updateData.name = smart.name;
         if (smart.title !== undefined) updateData.title = smart.title;
-        if (smart.entityTypeId !== undefined) updateData.entityTypeId = BigInt(smart.entityTypeId);
-        if (smart.portal_id !== undefined) updateData.portal_id = BigInt(smart.portal_id);
-        if (smart.bitrixId !== undefined) updateData.bitrixId = smart.bitrixId ? BigInt(smart.bitrixId) : null;
-        if (smart.forStageId !== undefined) updateData.forStageId = smart.forStageId ? BigInt(smart.forStageId) : null;
-        if (smart.forFilterId !== undefined) updateData.forFilterId = smart.forFilterId ? BigInt(smart.forFilterId) : null;
-        if (smart.crmId !== undefined) updateData.crmId = smart.crmId ? BigInt(smart.crmId) : null;
+        if (smart.entityTypeId !== undefined)
+            updateData.entityTypeId = BigInt(smart.entityTypeId);
+        if (smart.portal_id !== undefined)
+            updateData.portal_id = BigInt(smart.portal_id);
+        if (smart.bitrixId !== undefined)
+            updateData.bitrixId = smart.bitrixId
+                ? BigInt(smart.bitrixId)
+                : null;
+        if (smart.forStageId !== undefined)
+            updateData.forStageId = smart.forStageId
+                ? BigInt(smart.forStageId)
+                : null;
+        if (smart.forFilterId !== undefined)
+            updateData.forFilterId = smart.forFilterId
+                ? BigInt(smart.forFilterId)
+                : null;
+        if (smart.crmId !== undefined)
+            updateData.crmId = smart.crmId ? BigInt(smart.crmId) : null;
         if (smart.forStage !== undefined) updateData.forStage = smart.forStage;
-        if (smart.forFilter !== undefined) updateData.forFilter = smart.forFilter;
+        if (smart.forFilter !== undefined)
+            updateData.forFilter = smart.forFilter;
         if (smart.crm !== undefined) updateData.crm = smart.crm;
 
         const result = await this.prisma.smarts.update({
@@ -87,4 +102,3 @@ export class SmartPrismaRepository implements SmartRepository {
         return result ? true : false;
     }
 }
-

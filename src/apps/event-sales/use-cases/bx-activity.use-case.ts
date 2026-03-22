@@ -23,10 +23,7 @@ export type ResultActivityFile = {
 export class EventSalesActivityUseCase {
     private bitrixApi: BitrixBaseApi;
 
-    constructor(
-
-        private readonly pbx: PBXService,
-    ) {}
+    constructor(private readonly pbx: PBXService) {}
 
     async init(domain: string) {
         const { bitrix, portal, PortalModel } = await this.pbx.init(domain);

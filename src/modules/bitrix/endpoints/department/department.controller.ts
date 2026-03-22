@@ -1,18 +1,8 @@
-import {
-    Body,
-    Controller,
-    HttpCode,
-
-    Post,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { DepartmentResolverService } from './services/department-resolver-bitrxi.service';
 import { DomainDto } from './dto/domain.dto';
-import {
-    EDepartamentGroup,
-
-} from 'src/modules/portal/interfaces/portal.interface';
+import { EDepartamentGroup } from 'src/modules/portal/interfaces/portal.interface';
 import { ApiTags } from '@nestjs/swagger';
-
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\department.controller.ts
 
@@ -33,12 +23,12 @@ export class DepartmentEndpointController {
 
         // const { portal, PortalModel } = await this.pbx.init(dto.domain);
         // if (portal && PortalModel) {
-            // this.bitrixApi.initFromPortal(portal);
+        // this.bitrixApi.initFromPortal(portal);
 
-            return this.resolver.getFullDepartment(
-                dto.domain,
-                EDepartamentGroup.sales,
-            );
+        return this.resolver.getFullDepartment(
+            dto.domain,
+            EDepartamentGroup.sales,
+        );
         // }
         // throw new HttpException(
         //     'portal not found for domain:' + dto.domain,

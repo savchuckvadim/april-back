@@ -29,7 +29,9 @@ export class BitrixFieldController {
         type: BitrixFieldResponseDto,
     })
     @Post()
-    async createField(@Body() createFieldDto: CreateBitrixFieldDto): Promise<SuccessResponseDto> {
+    async createField(
+        @Body() createFieldDto: CreateBitrixFieldDto,
+    ): Promise<SuccessResponseDto> {
         const field = await this.fieldService.create(createFieldDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -44,7 +46,9 @@ export class BitrixFieldController {
         type: [BitrixFieldResponseDto],
     })
     @Post('bulk')
-    async createFieldsBulk(@Body() createFieldsBulkDto: CreateBitrixFieldsBulkDto): Promise<SuccessResponseDto> {
+    async createFieldsBulk(
+        @Body() createFieldsBulkDto: CreateBitrixFieldsBulkDto,
+    ): Promise<SuccessResponseDto> {
         const fields = await this.fieldService.createBulk(createFieldsBulkDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -59,7 +63,9 @@ export class BitrixFieldController {
         type: BitrixFieldResponseDto,
     })
     @Get(':id')
-    async getFieldById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getFieldById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const field = await this.fieldService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -81,9 +87,16 @@ export class BitrixFieldController {
     ): Promise<SuccessResponseDto> {
         let fields;
         if (entityType && entityId && parentType) {
-            fields = await this.fieldService.findByEntityAndParentType(entityType, Number(entityId), parentType);
+            fields = await this.fieldService.findByEntityAndParentType(
+                entityType,
+                Number(entityId),
+                parentType,
+            );
         } else if (entityType && entityId) {
-            fields = await this.fieldService.findByEntity(entityType, Number(entityId));
+            fields = await this.fieldService.findByEntity(
+                entityType,
+                Number(entityId),
+            );
         } else {
             fields = await this.fieldService.findMany();
         }
@@ -118,7 +131,9 @@ export class BitrixFieldController {
         description: 'Field deleted successfully',
     })
     @Delete(':id')
-    async deleteField(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteField(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.fieldService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -126,4 +141,3 @@ export class BitrixFieldController {
         };
     }
 }
-

@@ -5,5 +5,4 @@ import { BxRecentBatchService } from './services/bx-recent.batch.service';
 @Module({
     exports: [BxRecentService, BxRecentBatchService],
 })
-export class BitrixRecentDomainModule { }
-
+export class BitrixRecentDomainModule {}

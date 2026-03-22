@@ -13,17 +13,11 @@ import { SalesUserReportService } from './user-report/services/sales-user-report
 import { SalesUserReportQueueProcessor } from './user-report/queue/sales-user-report.processor';
 import { RedisModule } from '@/core/redis/redis.module';
 @Module({
-    imports: [
-        PBXModule,
-        QueueModule,
-        RedisModule
-    ],
+    imports: [PBXModule, QueueModule, RedisModule],
     controllers: [
         KpiReportController,
         KpiReportDownloadController,
         SalesUserReportController,
-
-
     ],
     providers: [
         ExcelReportService,
@@ -31,7 +25,6 @@ import { RedisModule } from '@/core/redis/redis.module';
         // CallingStatisticUseCase,
 
         SalesKpiReportQueueProcessor,
-
 
         SalesUserReportQueueProcessor,
         SalesUserReportService,

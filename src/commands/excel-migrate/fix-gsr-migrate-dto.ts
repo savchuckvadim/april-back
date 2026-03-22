@@ -29,7 +29,13 @@ function processFile() {
 
         // Парсим продукты из блока
         const productRegex = /\{\s*([^}]+)\}/g;
-        const products: Array<{ full: string; name: string; monthSum: string; startIndex: number; endIndex: number }> = [];
+        const products: Array<{
+            full: string;
+            name: string;
+            monthSum: string;
+            startIndex: number;
+            endIndex: number;
+        }> = [];
         let productMatch;
 
         while ((productMatch = productRegex.exec(productsBlock)) !== null) {
@@ -74,28 +80,53 @@ function processFile() {
                         const newPrice = '"0"';
                         const productText = ltProduct.full;
                         const newProductText = productText.replace(
-                            new RegExp(`monthSum:\\s*"${oldPrice.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`),
-                            `monthSum: ${newPrice}`
+                            new RegExp(
+                                `monthSum:\\s*"${oldPrice.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`,
+                            ),
+                            `monthSum: ${newPrice}`,
                         );
 
                         // Заменяем в content
-                        const absoluteIndex = matchIndex + match[0].indexOf(productsBlock) + ltProduct.startIndex;
+                        const absoluteIndex =
+                            matchIndex +
+                            match[0].indexOf(productsBlock) +
+                            ltProduct.startIndex;
                         const oldFull = ltProduct.full;
-                        const newFull = oldFull.replace(ltProduct.full, newProductText);
+                        const newFull = oldFull.replace(
+                            ltProduct.full,
+                            newProductText,
+                        );
 
                         // Находим точную позицию для замены
                         const beforeProducts = content.substring(0, matchIndex);
-                        const inProducts = content.substring(matchIndex, matchIndex + fullMatch.length);
-                        const afterProducts = content.substring(matchIndex + fullMatch.length);
+                        const inProducts = content.substring(
+                            matchIndex,
+                            matchIndex + fullMatch.length,
+                        );
+                        const afterProducts = content.substring(
+                            matchIndex + fullMatch.length,
+                        );
 
-                        const productIndexInBlock = inProducts.indexOf(ltProduct.full, inProducts.indexOf('products:'));
+                        const productIndexInBlock = inProducts.indexOf(
+                            ltProduct.full,
+                            inProducts.indexOf('products:'),
+                        );
                         if (productIndexInBlock !== -1) {
-                            const beforeProduct = inProducts.substring(0, productIndexInBlock);
-                            const afterProduct = inProducts.substring(productIndexInBlock + oldFull.length);
-                            const newInProducts = beforeProduct + newProductText + afterProduct;
-                            content = beforeProducts + newInProducts + afterProducts;
+                            const beforeProduct = inProducts.substring(
+                                0,
+                                productIndexInBlock,
+                            );
+                            const afterProduct = inProducts.substring(
+                                productIndexInBlock + oldFull.length,
+                            );
+                            const newInProducts =
+                                beforeProduct + newProductText + afterProduct;
+                            content =
+                                beforeProducts + newInProducts + afterProducts;
                             changesCount++;
-                            console.log(`Исправлена цена для товара "${ltProduct.name}": "${oldPrice}" -> "0"`);
+                            console.log(
+                                `Исправлена цена для товара "${ltProduct.name}": "${oldPrice}" -> "0"`,
+                            );
                         }
                     });
                 }
@@ -106,27 +137,47 @@ function processFile() {
         products.forEach(product => {
             if (/LT/i.test(product.name) && /ОД/i.test(product.name)) {
                 const oldName = product.name;
-                const newName = oldName.replace(/\s*\d*\s*ОД\s*/gi, ' ').trim() + ' ';
+                const newName =
+                    oldName.replace(/\s*\d*\s*ОД\s*/gi, ' ').trim() + ' ';
 
                 if (oldName !== newName) {
                     const productText = product.full;
                     const newProductText = productText.replace(
-                        new RegExp(`name:\\s*"${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`),
-                        `name: "${newName}"`
+                        new RegExp(
+                            `name:\\s*"${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`,
+                        ),
+                        `name: "${newName}"`,
                     );
 
                     const beforeProducts = content.substring(0, matchIndex);
-                    const inProducts = content.substring(matchIndex, matchIndex + fullMatch.length);
-                    const afterProducts = content.substring(matchIndex + fullMatch.length);
+                    const inProducts = content.substring(
+                        matchIndex,
+                        matchIndex + fullMatch.length,
+                    );
+                    const afterProducts = content.substring(
+                        matchIndex + fullMatch.length,
+                    );
 
-                    const productIndexInBlock = inProducts.indexOf(product.full, inProducts.indexOf('products:'));
+                    const productIndexInBlock = inProducts.indexOf(
+                        product.full,
+                        inProducts.indexOf('products:'),
+                    );
                     if (productIndexInBlock !== -1) {
-                        const beforeProduct = inProducts.substring(0, productIndexInBlock);
-                        const afterProduct = inProducts.substring(productIndexInBlock + product.full.length);
-                        const newInProducts = beforeProduct + newProductText + afterProduct;
-                        content = beforeProducts + newInProducts + afterProducts;
+                        const beforeProduct = inProducts.substring(
+                            0,
+                            productIndexInBlock,
+                        );
+                        const afterProduct = inProducts.substring(
+                            productIndexInBlock + product.full.length,
+                        );
+                        const newInProducts =
+                            beforeProduct + newProductText + afterProduct;
+                        content =
+                            beforeProducts + newInProducts + afterProducts;
                         changesCount++;
-                        console.log(`Исправлено название: "${oldName}" -> "${newName}"`);
+                        console.log(
+                            `Исправлено название: "${oldName}" -> "${newName}"`,
+                        );
                     }
                 }
             }
@@ -153,7 +204,8 @@ async function processDataDirectly() {
     let changesCount = 0;
 
     // Обрабатываем каждую компанию
-    const companyRegex = /\{\s*id:\s*"[^"]+",[\s\S]*?products:\s*\[([\s\S]*?)\]/g;
+    const companyRegex =
+        /\{\s*id:\s*"[^"]+",[\s\S]*?products:\s*\[([\s\S]*?)\]/g;
     let companyMatch;
 
     while ((companyMatch = companyRegex.exec(content)) !== null) {
@@ -162,7 +214,13 @@ async function processDataDirectly() {
         const companyIndex = companyMatch.index;
 
         // Находим все продукты
-        const productMatches: Array<{ full: string; name: string; monthSum: string; hasLT: boolean; index: number }> = [];
+        const productMatches: Array<{
+            full: string;
+            name: string;
+            monthSum: string;
+            hasLT: boolean;
+            index: number;
+        }> = [];
         const productRegex = /\{\s*([^}]+)\}/g;
         let productMatch;
         let productIndex = 0;
@@ -212,18 +270,24 @@ async function processDataDirectly() {
                         const oldText = ltProduct.full;
                         const newText = oldText.replace(
                             /monthSum:\s*"[^"]+"/,
-                            'monthSum: "0"'
+                            'monthSum: "0"',
                         );
 
                         if (oldText !== newText) {
                             // Находим позицию в content
-                            const blockStart = companyIndex + fullCompanyBlock.indexOf(productsBlock);
+                            const blockStart =
+                                companyIndex +
+                                fullCompanyBlock.indexOf(productsBlock);
                             const productStart = blockStart + ltProduct.index;
                             const before = content.substring(0, productStart);
-                            const after = content.substring(productStart + oldText.length);
+                            const after = content.substring(
+                                productStart + oldText.length,
+                            );
                             content = before + newText + after;
                             changesCount++;
-                            console.log(`Цена исправлена: "${ltProduct.name}" -> "0"`);
+                            console.log(
+                                `Цена исправлена: "${ltProduct.name}" -> "0"`,
+                            );
                         }
                     });
                 }
@@ -234,23 +298,32 @@ async function processDataDirectly() {
         productMatches.forEach(product => {
             if (product.hasLT && /ОД/i.test(product.name)) {
                 const oldName = product.name;
-                const newName = oldName.replace(/\s*\d*\s*ОД\s*/gi, ' ').trim() + ' ';
+                const newName =
+                    oldName.replace(/\s*\d*\s*ОД\s*/gi, ' ').trim() + ' ';
 
                 if (oldName !== newName) {
                     const oldText = product.full;
                     const newText = oldText.replace(
-                        new RegExp(`name:\\s*"${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`),
-                        `name: "${newName}"`
+                        new RegExp(
+                            `name:\\s*"${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`,
+                        ),
+                        `name: "${newName}"`,
                     );
 
                     if (oldText !== newText) {
-                        const blockStart = companyIndex + fullCompanyBlock.indexOf(productsBlock);
+                        const blockStart =
+                            companyIndex +
+                            fullCompanyBlock.indexOf(productsBlock);
                         const productStart = blockStart + product.index;
                         const before = content.substring(0, productStart);
-                        const after = content.substring(productStart + oldText.length);
+                        const after = content.substring(
+                            productStart + oldText.length,
+                        );
                         content = before + newText + after;
                         changesCount++;
-                        console.log(`Название исправлено: "${oldName}" -> "${newName}"`);
+                        console.log(
+                            `Название исправлено: "${oldName}" -> "${newName}"`,
+                        );
                     }
                 }
             }
@@ -268,4 +341,3 @@ async function processDataDirectly() {
 
 // Запуск
 processDataDirectly().catch(console.error);
-

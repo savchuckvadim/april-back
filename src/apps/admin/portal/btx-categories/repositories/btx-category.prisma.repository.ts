@@ -7,7 +7,9 @@ import { BtxCategoryRepository } from './btx-category.repository';
 export class BtxCategoryPrismaRepository implements BtxCategoryRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(category: Partial<btx_categories>): Promise<btx_categories | null> {
+    async create(
+        category: Partial<btx_categories>,
+    ): Promise<btx_categories | null> {
         const result = await this.prisma.btx_categories.create({
             data: {
                 entity_type: category.entity_type!,
@@ -48,7 +50,10 @@ export class BtxCategoryPrismaRepository implements BtxCategoryRepository {
         return result;
     }
 
-    async findByEntity(entityType: string, entityId: number): Promise<btx_categories[] | null> {
+    async findByEntity(
+        entityType: string,
+        entityId: number,
+    ): Promise<btx_categories[] | null> {
         const result = await this.prisma.btx_categories.findMany({
             where: {
                 entity_type: entityType,
@@ -61,7 +66,11 @@ export class BtxCategoryPrismaRepository implements BtxCategoryRepository {
         return result;
     }
 
-    async findByEntityAndParentType(entityType: string, entityId: number, parentType: string): Promise<btx_categories[] | null> {
+    async findByEntityAndParentType(
+        entityType: string,
+        entityId: number,
+        parentType: string,
+    ): Promise<btx_categories[] | null> {
         const result = await this.prisma.btx_categories.findMany({
             where: {
                 entity_type: entityType,
@@ -75,19 +84,28 @@ export class BtxCategoryPrismaRepository implements BtxCategoryRepository {
         return result;
     }
 
-    async update(id: number, category: Partial<btx_categories>): Promise<btx_categories | null> {
+    async update(
+        id: number,
+        category: Partial<btx_categories>,
+    ): Promise<btx_categories | null> {
         const updateData: any = {};
-        if (category.entity_type !== undefined) updateData.entity_type = category.entity_type;
-        if (category.entity_id !== undefined) updateData.entity_id = BigInt(category.entity_id);
-        if (category.parent_type !== undefined) updateData.parent_type = category.parent_type;
+        if (category.entity_type !== undefined)
+            updateData.entity_type = category.entity_type;
+        if (category.entity_id !== undefined)
+            updateData.entity_id = BigInt(category.entity_id);
+        if (category.parent_type !== undefined)
+            updateData.parent_type = category.parent_type;
         if (category.type !== undefined) updateData.type = category.type;
         if (category.group !== undefined) updateData.group = category.group;
         if (category.title !== undefined) updateData.title = category.title;
         if (category.name !== undefined) updateData.name = category.name;
-        if (category.bitrixId !== undefined) updateData.bitrixId = category.bitrixId;
-        if (category.bitrixCamelId !== undefined) updateData.bitrixCamelId = category.bitrixCamelId;
+        if (category.bitrixId !== undefined)
+            updateData.bitrixId = category.bitrixId;
+        if (category.bitrixCamelId !== undefined)
+            updateData.bitrixCamelId = category.bitrixCamelId;
         if (category.code !== undefined) updateData.code = category.code;
-        if (category.isActive !== undefined) updateData.isActive = category.isActive;
+        if (category.isActive !== undefined)
+            updateData.isActive = category.isActive;
 
         const result = await this.prisma.btx_categories.update({
             where: { id: BigInt(id) },
@@ -106,4 +124,3 @@ export class BtxCategoryPrismaRepository implements BtxCategoryRepository {
         return result ? true : false;
     }
 }
-

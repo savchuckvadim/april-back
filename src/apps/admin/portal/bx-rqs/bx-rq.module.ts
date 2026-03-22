@@ -18,4 +18,3 @@ import { BxRqController } from './controllers/bx-rq.controller';
     exports: [BxRqService, BxRqRepository],
 })
 export class BxRqModule {}
-

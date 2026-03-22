@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { SetSecretDto } from '../dto/set-secret.dto';
-import { BitrixAppDto, GetBitrixAppDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import {
+    BitrixAppDto,
+    GetBitrixAppDto,
+} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
 import { BitrixTokenService } from '@/modules/bitrix-setup/token/services/bitrix-token.service';
 import { BitrixSettingService } from '@/modules/bitrix-setup/setting/services/bitrix-setting.service';
@@ -14,8 +17,7 @@ export class BitrixAppClientService {
         private readonly bitrixAppService: BitrixAppService,
         private readonly bitrixTokenService: BitrixTokenService,
         private readonly bitrixSettingService: BitrixSettingService,
-    ) { }
-
+    ) {}
 
     async getApp(dto: GetBitrixAppDto) {
         const app = await this.bitrixAppService.getApp(dto);
@@ -30,7 +32,9 @@ export class BitrixAppClientService {
     // }
 
     async getPortalApps(dto: GetPortalAppsDto): Promise<BitrixAppDto[]> {
-        const apps = await this.bitrixAppService.getAppsByPortalId(dto.portalId);
+        const apps = await this.bitrixAppService.getAppsByPortalId(
+            dto.portalId,
+        );
         return apps.map(app => toBitrixAppDto(app));
     }
 

@@ -6,7 +6,7 @@ import * as bodyParser from 'body-parser';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { getSwaggerConfig } from './core/config/swagger/swagger.config';
 import { cors } from './core/config/cors/cors.config';
-import {  ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -68,7 +68,6 @@ async function bootstrap() {
 
     //documentation
     getSwaggerConfig(app);
-
 
     app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
     app.use(cookieParser());

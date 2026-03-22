@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsBoolean } from 'class-validator';
+import {
+    IsString,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+    IsBoolean,
+} from 'class-validator';
 
 export class CreateContractDto {
     @ApiProperty({
@@ -149,4 +155,3 @@ export class CreateContractDto {
     @IsOptional()
     comment2?: string;
 }
-

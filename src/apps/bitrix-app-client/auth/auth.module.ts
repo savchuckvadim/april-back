@@ -24,13 +24,7 @@ import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-st
         }),
     ],
     controllers: [AuthController],
-    providers: [
-
-        AuthService,
-        MailConfirmationService
-    ],
-    exports: [
-        AuthService,
-    ],
+    providers: [AuthService, MailConfirmationService],
+    exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

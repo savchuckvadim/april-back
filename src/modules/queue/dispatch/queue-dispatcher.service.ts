@@ -15,11 +15,16 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT) private readonly eventQueue: Queue,
         @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
         @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
-        @InjectQueue(QueueNames.SALES_KPI_REPORT) private readonly salesKpiReportQueue: Queue,
-        @InjectQueue(QueueNames.TRANSCRIBE_AUDIO) private readonly transcribeAudioQueue: Queue,
-        @InjectQueue(QueueNames.SERVICE_DEALS_SCHEDULE) private readonly serviceDealsScheduleQueue: Queue,
-        @InjectQueue(QueueNames.SERVICE_DEALS) private readonly serviceDealsQueue: Queue,
-        @InjectQueue(QueueNames.ORK_KPI_REPORT) private readonly orkKpiReportQueue: Queue,
+        @InjectQueue(QueueNames.SALES_KPI_REPORT)
+        private readonly salesKpiReportQueue: Queue,
+        @InjectQueue(QueueNames.TRANSCRIBE_AUDIO)
+        private readonly transcribeAudioQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_DEALS_SCHEDULE)
+        private readonly serviceDealsScheduleQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_DEALS)
+        private readonly serviceDealsQueue: Queue,
+        @InjectQueue(QueueNames.ORK_KPI_REPORT)
+        private readonly orkKpiReportQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }

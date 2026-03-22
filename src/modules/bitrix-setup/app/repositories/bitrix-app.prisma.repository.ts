@@ -2,16 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
 import { BitrixAppRepository } from './bitrix-app.repository';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
-import { createBitrixAppEntityFromPrisma, getRelations } from '../model/lib/bitrix-app.helper';
-
-
+import {
+    createBitrixAppEntityFromPrisma,
+    getRelations,
+} from '../model/lib/bitrix-app.helper';
 
 @Injectable()
 export class BitrixAppPrismaRepository implements BitrixAppRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     // BitrixApp methods
-    async storeOrUpdate(app: Partial<BitrixAppEntity>): Promise<BitrixAppEntity | null> {
+    async storeOrUpdate(
+        app: Partial<BitrixAppEntity>,
+    ): Promise<BitrixAppEntity | null> {
         try {
             // First try to find existing app
             const existingApp = await this.prisma.bitrix_apps.findFirst({
@@ -21,7 +24,9 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
                 },
             });
 
-            let result: NonNullable<Awaited<ReturnType<PrismaService['bitrix_apps']['update']>>>;
+            let result: NonNullable<
+                Awaited<ReturnType<PrismaService['bitrix_apps']['update']>>
+            >;
             if (existingApp) {
                 // Update existing app
                 result = await this.prisma.bitrix_apps.update({
@@ -67,14 +72,24 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             // const portals = await this.prisma.portals.findFirst({
             //     where: { id: result.portal_id },
             // }) || undefined;
-            const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, result.id, result.portal_id);
-            return createBitrixAppEntityFromPrisma(result, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal);
+            const {
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            } = await getRelations(this.prisma, result.id, result.portal_id);
+            return createBitrixAppEntityFromPrisma(
+                result,
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            );
         } catch (error) {
             console.error('Error in storeOrUpdate:', error);
             return null;
         }
     }
-
 
     async findById(id: bigint): Promise<BitrixAppEntity | null> {
         try {
@@ -89,9 +104,20 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             if (!result) {
                 return null;
             }
-            const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, result.id, result.portal_id);
+            const {
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            } = await getRelations(this.prisma, result.id, result.portal_id);
 
-            return createBitrixAppEntityFromPrisma(result, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal);
+            return createBitrixAppEntityFromPrisma(
+                result,
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            );
         } catch (error) {
             console.error('Error in findById:', error);
             return null;
@@ -110,8 +136,21 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             const fullResult: BitrixAppEntity[] = [];
 
             for (const app of result) {
-                const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, app.id, app.portal_id);
-                fullResult.push(createBitrixAppEntityFromPrisma(app, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal));
+                const {
+                    bitrix_tokens,
+                    bitrix_app_placements,
+                    bitrix_settings,
+                    portal,
+                } = await getRelations(this.prisma, app.id, app.portal_id);
+                fullResult.push(
+                    createBitrixAppEntityFromPrisma(
+                        app,
+                        bitrix_tokens,
+                        bitrix_app_placements,
+                        bitrix_settings,
+                        portal,
+                    ),
+                );
             }
 
             return fullResult;
@@ -134,15 +173,29 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             if (!result) {
                 return null;
             }
-            const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, result.id, result.portal_id);
-            return createBitrixAppEntityFromPrisma(result, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal);
+            const {
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            } = await getRelations(this.prisma, result.id, result.portal_id);
+            return createBitrixAppEntityFromPrisma(
+                result,
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            );
         } catch (error) {
             console.error('Error in findByCode:', error);
             return null;
         }
     }
 
-    async findByCodeAndDomain(code: string, domain: string): Promise<BitrixAppEntity | null> {
+    async findByCodeAndDomain(
+        code: string,
+        domain: string,
+    ): Promise<BitrixAppEntity | null> {
         try {
             const result = await this.prisma.bitrix_apps.findFirst({
                 where: {
@@ -155,14 +208,24 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
                     portals: true,
                     bitrix_tokens: true,
                     bitrix_app_placements: true,
-                    
                 },
             });
             if (!result) {
                 return null;
             }
-            const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, result.id, result.portal_id);
-            return createBitrixAppEntityFromPrisma(result, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal);
+            const {
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            } = await getRelations(this.prisma, result.id, result.portal_id);
+            return createBitrixAppEntityFromPrisma(
+                result,
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            );
         } catch (error) {
             console.error('Error in findByCodeAndDomain:', error);
             return null;
@@ -186,8 +249,21 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             const fullResult: BitrixAppEntity[] = [];
 
             for (const app of result) {
-                const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, app.id, app.portal_id);
-                fullResult.push(createBitrixAppEntityFromPrisma(app, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal));
+                const {
+                    bitrix_tokens,
+                    bitrix_app_placements,
+                    bitrix_settings,
+                    portal,
+                } = await getRelations(this.prisma, app.id, app.portal_id);
+                fullResult.push(
+                    createBitrixAppEntityFromPrisma(
+                        app,
+                        bitrix_tokens,
+                        bitrix_app_placements,
+                        bitrix_settings,
+                        portal,
+                    ),
+                );
             }
 
             return fullResult;
@@ -203,8 +279,21 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             });
             const fullResult: BitrixAppEntity[] = [];
             for (const app of result) {
-                const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, app.id, app.portal_id);
-                fullResult.push(createBitrixAppEntityFromPrisma(app, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal));
+                const {
+                    bitrix_tokens,
+                    bitrix_app_placements,
+                    bitrix_settings,
+                    portal,
+                } = await getRelations(this.prisma, app.id, app.portal_id);
+                fullResult.push(
+                    createBitrixAppEntityFromPrisma(
+                        app,
+                        bitrix_tokens,
+                        bitrix_app_placements,
+                        bitrix_settings,
+                        portal,
+                    ),
+                );
             }
             return fullResult;
         } catch (error) {
@@ -212,7 +301,10 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             return null;
         }
     }
-    async update(id: bigint, data: Partial<BitrixAppEntity>): Promise<BitrixAppEntity> {
+    async update(
+        id: bigint,
+        data: Partial<BitrixAppEntity>,
+    ): Promise<BitrixAppEntity> {
         try {
             const result = await this.prisma.bitrix_apps.update({
                 where: { id },
@@ -228,8 +320,19 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
                     bitrix_app_placements: true,
                 },
             });
-            const { bitrix_tokens, bitrix_app_placements, bitrix_settings, portal } = await getRelations(this.prisma, result.id, result.portal_id);
-            return createBitrixAppEntityFromPrisma(result, bitrix_tokens, bitrix_app_placements, bitrix_settings, portal);
+            const {
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            } = await getRelations(this.prisma, result.id, result.portal_id);
+            return createBitrixAppEntityFromPrisma(
+                result,
+                bitrix_tokens,
+                bitrix_app_placements,
+                bitrix_settings,
+                portal,
+            );
         } catch (error) {
             console.error('Error in update:', error);
             throw error;

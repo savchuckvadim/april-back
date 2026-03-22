@@ -21,7 +21,7 @@ import { ReorderStickersDto } from '../dtos/reorder-stickers.dto';
 export class OfferTemplatePageStickerController {
     constructor(
         private readonly offerTemplatePageStickerService: OfferTemplatePageStickerService,
-    ) { }
+    ) {}
 
     @Post()
     async create(
@@ -91,7 +91,9 @@ export class OfferTemplatePageStickerController {
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async remove(@Param() params: OfferTemplatePageStickerIdParamsDto): Promise<void> {
+    async remove(
+        @Param() params: OfferTemplatePageStickerIdParamsDto,
+    ): Promise<void> {
         return this.offerTemplatePageStickerService.delete(BigInt(params.id));
     }
 

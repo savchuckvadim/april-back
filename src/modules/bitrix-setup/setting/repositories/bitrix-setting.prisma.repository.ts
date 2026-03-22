@@ -5,10 +5,12 @@ import { BitrixSettingEntity } from '../model/bitrix-setting.model';
 
 @Injectable()
 export class BitrixSettingPrismaRepository implements BitrixSettingRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     // BitrixSetting methods
-    async store(setting: Partial<BitrixSettingEntity>): Promise<BitrixSettingEntity | null> {
+    async store(
+        setting: Partial<BitrixSettingEntity>,
+    ): Promise<BitrixSettingEntity | null> {
         try {
             const result = await this.prisma.bitrix_settings.create({
                 data: {
@@ -41,7 +43,10 @@ export class BitrixSettingPrismaRepository implements BitrixSettingRepository {
         }
     }
 
-    async findBySettingable(settingableId: bigint, settingableType: string): Promise<BitrixSettingEntity[]> {
+    async findBySettingable(
+        settingableId: bigint,
+        settingableType: string,
+    ): Promise<BitrixSettingEntity[]> {
         try {
             const result = await this.prisma.bitrix_settings.findMany({
                 where: {
@@ -56,7 +61,10 @@ export class BitrixSettingPrismaRepository implements BitrixSettingRepository {
         }
     }
 
-    async update(id: bigint, setting: Partial<BitrixSettingEntity>): Promise<BitrixSettingEntity | null> {
+    async update(
+        id: bigint,
+        setting: Partial<BitrixSettingEntity>,
+    ): Promise<BitrixSettingEntity | null> {
         try {
             const result = await this.prisma.bitrix_settings.update({
                 where: { id },

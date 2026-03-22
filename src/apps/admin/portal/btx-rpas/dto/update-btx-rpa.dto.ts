@@ -106,4 +106,3 @@ export class UpdateBtxRpaDto {
     @IsOptional()
     crmId?: number;
 }
-

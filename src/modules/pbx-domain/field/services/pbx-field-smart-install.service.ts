@@ -39,7 +39,7 @@ export class PbxFieldSmartInstallService {
     constructor(
         private readonly pbxFieldService: PbxFieldService,
         private readonly pbxService: PBXService,
-    ) { }
+    ) {}
 
     async install(
         domain: string,
@@ -50,12 +50,15 @@ export class PbxFieldSmartInstallService {
         const { bitrix, portal } = await this.pbxService.init(domain);
 
         // Получаем поля в зависимости от group и appType
-        const fields: readonly (PbxSalesEventField | PbxSalesKonstructorField)[] =
+        const fields: readonly (
+            | PbxSalesEventField
+            | PbxSalesKonstructorField
+        )[] =
             group === 'sales' && appType === 'event'
                 ? PBX_SALES_EVENT_FIELDS
                 : group === 'sales' && appType === 'konstructor'
-                    ? PBX_SALES_KONSTRUCTOR_FIELDS
-                    : [];
+                  ? PBX_SALES_KONSTRUCTOR_FIELDS
+                  : [];
 
         if (fields.length === 0) {
             return { success: [], failed: [] };
@@ -65,18 +68,23 @@ export class PbxFieldSmartInstallService {
         // TypeScript гарантирует, что коды типизированы правильно
         const filteredFields = options.fieldCodes
             ? fields.filter(f =>
-                options.fieldCodes!.includes(
-                    f.code as PbxSalesEventFieldCode | PbxSalesKonstructorFieldCode,
-                ),
-            )
+                  options.fieldCodes!.includes(
+                      f.code as
+                          | PbxSalesEventFieldCode
+                          | PbxSalesKonstructorFieldCode,
+                  ),
+              )
             : fields;
 
         // Получаем smart сущности из портала
-        const smartEntities = portal?.smarts?.filter(s => s.group === group) || [];
+        const smartEntities =
+            portal?.smarts?.filter(s => s.group === group) || [];
 
         // Фильтруем по entityTypeIds, если указаны
         const entitiesToProcess = options.entityTypeIds
-            ? smartEntities.filter(s => options.entityTypeIds!.includes(s.entityTypeId))
+            ? smartEntities.filter(s =>
+                  options.entityTypeIds!.includes(s.entityTypeId),
+              )
             : smartEntities;
 
         if (entitiesToProcess.length === 0) {
@@ -108,7 +116,10 @@ export class PbxFieldSmartInstallService {
                 bitrix,
                 portal,
                 results.failed,
-                filteredFields as (PbxSalesEventField | PbxSalesKonstructorField)[],
+                filteredFields as (
+                    | PbxSalesEventField
+                    | PbxSalesKonstructorField
+                )[],
                 appType,
                 entitiesToProcess.map(s => s.entityTypeId),
             );
@@ -125,8 +136,8 @@ export class PbxFieldSmartInstallService {
             entitiesToProcess.map(s => s.entityTypeId),
         );
 
-        results.success = results.success.filter(
-            code => verificationResults.verified.includes(code),
+        results.success = results.success.filter(code =>
+            verificationResults.verified.includes(code),
         );
         results.failed.push(
             ...verificationResults.failed.filter(
@@ -326,18 +337,21 @@ export class PbxFieldSmartInstallService {
         fieldEntity.entity_type = PbxFieldEntityType.SMART;
         fieldEntity.parent_type = '';
         fieldEntity.isPlural = field.isMultiple;
-        fieldEntity.items = ((field[itemKey] || []) as Array<{
-            code: string;
-            name?: string;
-            title?: string;
-            bitrixId?: string | number;
-        }>).map(item => ({
+        fieldEntity.items = (
+            (field[itemKey] || []) as Array<{
+                code: string;
+                name?: string;
+                title?: string;
+                bitrixId?: string | number;
+            }>
+        ).map(item => ({
             name: item.name || item.code,
             title: item.title || item.code,
             code: item.code,
-            bitrixId: typeof item.bitrixId === 'number'
-                ? item.bitrixId
-                : parseInt(item.bitrixId || '0', 10),
+            bitrixId:
+                typeof item.bitrixId === 'number'
+                    ? item.bitrixId
+                    : parseInt(item.bitrixId || '0', 10),
             bitrixfield_id: BigInt(0),
         }));
 
@@ -434,4 +448,3 @@ export class PbxFieldSmartInstallService {
         return { verified, failed };
     }
 }
-

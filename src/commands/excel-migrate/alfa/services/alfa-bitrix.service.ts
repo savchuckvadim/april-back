@@ -22,7 +22,7 @@ export class AlfaBitrixService {
 
         private readonly companyService: AlfaMigrateBitrixCompanyService,
         private readonly storageService: StorageService,
-    ) { }
+    ) {}
 
     async migrateToBitrix(domain: string, data: IAlfaParse[]) {
         const { bitrix, PortalModel } = await this.pbx.init(domain);

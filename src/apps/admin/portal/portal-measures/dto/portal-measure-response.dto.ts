@@ -68,4 +68,3 @@ export class PortalMeasureResponseDto {
     })
     updated_at?: Date | null;
 }
-

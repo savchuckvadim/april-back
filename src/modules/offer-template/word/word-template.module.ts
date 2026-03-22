@@ -50,5 +50,4 @@ import { WordTemplateController } from './controllers/word-template.controller';
         WordTemplateService,
     ],
 })
-export class WordTemplateModule { }
-
+export class WordTemplateModule {}

@@ -8,4 +8,3 @@ export abstract class SmartRepository {
     abstract update(id: number, smart: Partial<smarts>): Promise<smarts | null>;
     abstract delete(id: number): Promise<boolean>;
 }
-

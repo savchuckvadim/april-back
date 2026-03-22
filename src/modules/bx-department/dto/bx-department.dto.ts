@@ -45,15 +45,12 @@ export class BxDepartmentRequestDto {
     department?: EDepartamentGroup;
 }
 
-
-
 export class BxDepartmentDto implements IBXDepartment {
     @ApiProperty({
         description: 'Department ID',
         example: 1,
         required: true,
     })
-
     ID: number;
 
     @ApiProperty({
@@ -61,7 +58,6 @@ export class BxDepartmentDto implements IBXDepartment {
         example: 'Sales',
         required: true,
     })
-
     NAME: string;
 
     @ApiProperty({
@@ -69,7 +65,6 @@ export class BxDepartmentDto implements IBXDepartment {
         example: 1,
         required: true,
     })
-
     PARENT: string;
 
     @ApiProperty({
@@ -77,7 +72,6 @@ export class BxDepartmentDto implements IBXDepartment {
         example: 1,
         required: true,
     })
-
     SORT: number;
 
     @ApiProperty({
@@ -85,7 +79,6 @@ export class BxDepartmentDto implements IBXDepartment {
         example: [BXUserDto],
         required: true,
     })
-
     USERS: BXUserDto[];
 
     @ApiProperty({
@@ -93,12 +86,9 @@ export class BxDepartmentDto implements IBXDepartment {
         example: 1,
         required: true,
     })
-
     UF_HEAD?: number | undefined;
-
 }
 export class BxDepartmentDataDto {
-
     @ApiProperty({
         description: 'Department ID',
         example: 1,
@@ -109,7 +99,8 @@ export class BxDepartmentDataDto {
     @ApiProperty({
         description: 'General department',
         example: [BxDepartmentDto],
-        required: true, type: [BxDepartmentDto],
+        required: true,
+        type: [BxDepartmentDto],
     })
     generalDepartment: BxDepartmentDto[];
 
@@ -128,9 +119,7 @@ export class BxDepartmentDataDto {
         type: [BXUserDto],
     })
     allUsers: BXUserDto[];
-
 }
-
 
 export class BxDepartmentResponseDto {
     @ApiProperty({

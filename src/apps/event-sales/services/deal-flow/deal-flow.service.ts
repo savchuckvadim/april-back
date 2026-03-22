@@ -1,15 +1,13 @@
-import { BitrixService, IBXDeal } from "@/modules/bitrix";
-import { BitrixDealService } from "./bitrix-deal.service";
-import { PortalModel } from "@/modules/portal/services/portal.model";
-import { Logger } from "@nestjs/common";
+import { BitrixService, IBXDeal } from '@/modules/bitrix';
+import { BitrixDealService } from './bitrix-deal.service';
+import { PortalModel } from '@/modules/portal/services/portal.model';
+import { Logger } from '@nestjs/common';
 
 export class DealFlowService {
     private bitrixDealService: BitrixDealService;
     private bitrix: BitrixService;
     private logger: Logger;
-    constructor(
-        bitrix: BitrixService
-    ) {
+    constructor(bitrix: BitrixService) {
         this.bitrixDealService = new BitrixDealService(bitrix);
         this.bitrix = bitrix;
         this.logger = new Logger(DealFlowService.name);
@@ -17,8 +15,6 @@ export class DealFlowService {
     }
 
     async getDealFlow(
-
-
         currentBaseDeal: IBXDeal | null,
         currentPresDeal: IBXDeal | null,
         currentColdDeal: IBXDeal | null,
@@ -62,9 +58,7 @@ export class DealFlowService {
             isPresentationDone && currentReportEventType !== 'presentation';
         let unplannedPresDeal = null as string | null;
         let newPresDeal = null as string | null;
-        const portalDealData = portal.getDeal()
-
-
+        const portalDealData = portal.getDeal();
 
         if (!isPostSale) {
             if (!currentBtxDeals) {
@@ -76,14 +70,12 @@ export class DealFlowService {
                     ASSIGNED_BY_ID: planResponsibleId.toString(),
                 };
 
-                currentDealId = await this.bitrixDealService.setDeal(
-
-                    setNewDealData,
-                );
+                currentDealId =
+                    await this.bitrixDealService.setDeal(setNewDealData);
 
                 if (currentDealId && !currentBaseDeal) {
                     const newBaseDeal = await this.bitrixDealService.getDeal(
-                        Number(currentDealId)
+                        Number(currentDealId),
                     );
                     currentBaseDeal = newBaseDeal;
                     currentBtxDeals = [newBaseDeal as IBXDeal];
@@ -147,7 +139,11 @@ export class DealFlowService {
                         // );
                         const key = `update_${category.code}_${currentDealId}`;
                         // resultBatchCommands[key] = batchCommand;
-                        this.bitrix.batch.deal.update(key, Number(currentDealId), fieldsData);
+                        this.bitrix.batch.deal.update(
+                            key,
+                            Number(currentDealId),
+                            fieldsData,
+                        );
                     } else {
                         // const batchCommand =
                         //     this.bitrixDealBatchFlowService.getBatchCommand(
@@ -161,9 +157,7 @@ export class DealFlowService {
                         currentDealId = `$result[${key}]`;
                     }
 
-
                     //todo entity command
-
 
                     // const entityCommand = this.getEntityBatchFlowCommand(
                     //     true,
@@ -210,8 +204,11 @@ export class DealFlowService {
                             //     );
                             const key = `update_${category.code}_${xoDealId}`;
                             // resultBatchCommands[key] = batchCommand;
-                            this.bitrix.batch.deal.update(key, Number(xoDealId), fieldsData);
-
+                            this.bitrix.batch.deal.update(
+                                key,
+                                Number(xoDealId),
+                                fieldsData,
+                            );
                         }
                     }
                     break;
@@ -242,8 +239,11 @@ export class DealFlowService {
                                 //     );
                                 const key = `update_${category.code}_${reportPresDealId}`;
                                 // resultBatchCommands[key] = batchCommand;
-                                this.bitrix.batch.deal.update(key, Number(reportPresDealId), fieldsData);
-
+                                this.bitrix.batch.deal.update(
+                                    key,
+                                    Number(reportPresDealId),
+                                    fieldsData,
+                                );
 
                                 //TODO ENTITY FLOW COMMAND
                                 // const entityCommand =
@@ -287,12 +287,9 @@ export class DealFlowService {
                             //     );
                             const key = `set_${category.code}`;
 
-
                             this.bitrix.batch.deal.set(key, fieldsData);
                             // resultBatchCommands[key] = batchCommand;
                             newPresDeal = `$result[${key}]`;
-
-
 
                             //TODO ENTITY FLOW COMMAND
                             // const entityCommand =
@@ -337,7 +334,6 @@ export class DealFlowService {
                             this.bitrix.batch.deal.set(key, fieldsData);
                             unplannedPresDeal = `$result[${key}]`;
 
-
                             //TODO ENTITY FLOW COMMAND
                             // const entityCommand =
                             //     this.getEntityBatchFlowCommandFromIdForNewDeal(
@@ -378,8 +374,10 @@ export class DealFlowService {
                             const fieldsData = {
                                 CATEGORY_ID: categoryId,
                                 STAGE_ID: `C${categoryId}:PRES_PLAN`,
-                                UF_CRM_TO_BASE_SALES: currentBaseDeal?.ID.toString(),
-                                UF_CRM_TO_PRESENTATION_SALES: newPresDeal as string,
+                                UF_CRM_TO_BASE_SALES:
+                                    currentBaseDeal?.ID.toString(),
+                                UF_CRM_TO_PRESENTATION_SALES:
+                                    newPresDeal as string,
                                 UF_CRM_LAST_PRES_DONE_RESPONSIBLE:
                                     planResponsibleId.toString(),
                                 UF_CRM_MANAGER_OP: planResponsibleId.toString(),
@@ -393,14 +391,17 @@ export class DealFlowService {
                             //     );
                             const key = `update_${category.code}_${currentTMCDeal.ID}`;
                             // resultBatchCommands[key] = batchCommand;
-                            this.bitrix.batch.deal.update(key, Number(currentTMCDeal.ID), fieldsData);
+                            this.bitrix.batch.deal.update(
+                                key,
+                                Number(currentTMCDeal.ID),
+                                fieldsData,
+                            );
                         }
                     }
                     break;
                 }
             }
         }
-
 
         //TODO ENTITY FLOW COMMAND
         // if (currentPresDeal) {
@@ -419,11 +420,9 @@ export class DealFlowService {
         // const key = 'entity_company';
         // resultBatchCommands[key] = companyCommand;
 
-
-
         //отправка batch запроса
-       const batchResult = await this.bitrix.api.callBatchAsync();
-       console.log(batchResult);
+        const batchResult = await this.bitrix.api.callBatchAsync();
+        console.log(batchResult);
         return {
             dealIds: ['$result'],
             planDeals,
@@ -434,16 +433,8 @@ export class DealFlowService {
         };
     }
 
-    private baseDealFlow(){
-
-    }
-    private xoDealFlow(){
-
-    }
-    private presentationDealFlow(){
-
-    }
-    private tmcDealFlow(){
-
-    }
+    private baseDealFlow() {}
+    private xoDealFlow() {}
+    private presentationDealFlow() {}
+    private tmcDealFlow() {}
 }

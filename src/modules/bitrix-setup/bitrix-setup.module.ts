@@ -25,4 +25,4 @@ import { BitrixSetupInstallModule } from './install/bitrix-setup-install.module'
         BitrixSetupInstallModule,
     ],
 })
-export class BitrixSetupModule { }
+export class BitrixSetupModule {}

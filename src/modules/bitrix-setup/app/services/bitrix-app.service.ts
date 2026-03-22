@@ -1,6 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 
-import { BitrixAppDto, CreateBitrixAppDto, CreateBitrixAppWithTokenDto, GetBitrixAppDto } from '../dto/bitrix-app.dto';
+import {
+    BitrixAppDto,
+    CreateBitrixAppDto,
+    CreateBitrixAppWithTokenDto,
+    GetBitrixAppDto,
+} from '../dto/bitrix-app.dto';
 import { PrismaService } from 'src/core/prisma';
 
 import { BitrixAppRepository } from '../repositories/bitrix-app.repository';
@@ -9,7 +18,11 @@ import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-s
 import { PortalEntity } from '@/modules/portal-konstructor/portal/portal.entity';
 import { BitrixTokenService } from '../../token/services/bitrix-token.service';
 import { BitrixTokenEntity, SetBitrixSecretDto } from '../../token';
-import { BITRIX_APP_CODES, BITRIX_APP_GROUPS, BITRIX_APP_TYPES } from '../enums/bitrix-app.enum';
+import {
+    BITRIX_APP_CODES,
+    BITRIX_APP_GROUPS,
+    BITRIX_APP_TYPES,
+} from '../enums/bitrix-app.enum';
 import { EnabledAppDto } from '../dto/enaled-app.dto';
 import { BitrixSecretService } from '../../secret/services/bitrix-secret.service';
 import { toBitrixAppDto } from '../lib/bx-app-dto.mapper';
@@ -22,8 +35,7 @@ export class BitrixAppService {
         private readonly portalService: PortalStoreService,
         private readonly tokenService: BitrixTokenService,
         private readonly secretService: BitrixSecretService, //секреты записываются в токен
-    ) { }
-
+    ) {}
 
     async getEnabledApps(): Promise<EnabledAppDto[]> {
         const app: EnabledAppDto = {
@@ -34,26 +46,23 @@ export class BitrixAppService {
                 {
                     type: BITRIX_APP_TYPES.KONSTRUCTOR,
                     title: 'Конструктор Коммерческих Предложений',
-                    description: 'Встраиваемый виджет Конструктор Коммерческих Предложений',
+                    description:
+                        'Встраиваемый виджет Конструктор Коммерческих Предложений',
                     value: 'Встраиваемый виджет Конструктор Коммерческих Предложений',
-
                 },
                 {
                     type: BITRIX_APP_TYPES.EVENT,
                     title: 'Приложение звонки',
                     description: 'Встраиваемый виджет Приложение звонки',
                     value: 'Встраиваемый виджет Приложение звонки',
-
                 },
                 {
                     type: BITRIX_APP_TYPES.WEBHOOK,
                     title: 'Webhook Холодный обзвон',
                     description: 'Встраиваемый виджет Webhook Холодный обзвон',
                     value: 'Встраиваемый виджет Webhook Холодный обзвон',
-
                 },
             ],
-
         };
         return [app];
     }
@@ -63,11 +72,11 @@ export class BitrixAppService {
     async storeOrUpdateApp(dto: CreateBitrixAppDto): Promise<{
         app: BitrixAppDto;
         secrets: BitrixTokenEntity | null;
-        message: string
+        message: string;
     }> {
         try {
-
-            let portal: PortalEntity | null = await this.portalService.getPortalByDomain(dto.domain);
+            let portal: PortalEntity | null =
+                await this.portalService.getPortalByDomain(dto.domain);
             if (!portal) {
                 portal = await this.portalService.create({
                     domain: dto.domain,
@@ -81,14 +90,20 @@ export class BitrixAppService {
                 type: dto.type,
                 code: dto.code,
                 status: dto.status,
-
             });
 
             if (!app) {
                 throw new BadRequestException('Failed to create or update app');
             }
-            let savedSecrets: { token: BitrixTokenEntity | null; message: string } | null = null;
-            if (dto.secret && dto.secret.client_id && dto.secret.client_secret) {
+            let savedSecrets: {
+                token: BitrixTokenEntity | null;
+                message: string;
+            } | null = null;
+            if (
+                dto.secret &&
+                dto.secret.client_id &&
+                dto.secret.client_secret
+            ) {
                 savedSecrets = await this.setSecret(dto.domain, dto.code, {
                     clientId: dto.secret.client_id,
                     clientSecret: dto.secret.client_secret,
@@ -105,19 +120,23 @@ export class BitrixAppService {
 
             return result;
         } catch (error) {
-            throw new BadRequestException(`Failed to store or update app: ${error.message}`);
+            throw new BadRequestException(
+                `Failed to store or update app: ${error.message}`,
+            );
         }
     }
 
-
-    async storeOrUpdateAppWithToken(dto: CreateBitrixAppWithTokenDto, appId?: bigint): Promise<{
+    async storeOrUpdateAppWithToken(
+        dto: CreateBitrixAppWithTokenDto,
+        appId?: bigint,
+    ): Promise<{
         app: BitrixAppEntity;
         token: BitrixTokenEntity;
-        message: string
+        message: string;
     }> {
         try {
-
-            let portal: PortalEntity | null = await this.portalService.getPortalByDomain(dto.domain);
+            let portal: PortalEntity | null =
+                await this.portalService.getPortalByDomain(dto.domain);
             if (!portal) {
                 portal = await this.portalService.create({
                     domain: dto.domain,
@@ -129,18 +148,23 @@ export class BitrixAppService {
                 type: dto.type,
                 code: dto.code,
                 status: dto.status,
-            }
+            };
             // Create without appId
             if (appId) {
                 dataForCreateOrUpdateApp.id = appId;
             }
-            const app = await this.repository.storeOrUpdate(dataForCreateOrUpdateApp);
+            const app = await this.repository.storeOrUpdate(
+                dataForCreateOrUpdateApp,
+            );
             if (!app) {
                 throw new BadRequestException('Failed to create or update app');
             }
 
             // Create or update token
-            const token = await this.tokenService.storeOrUpdateAppToken(app.id, dto.token);
+            const token = await this.tokenService.storeOrUpdateAppToken(
+                app.id,
+                dto.token,
+            );
 
             return {
                 app,
@@ -148,15 +172,20 @@ export class BitrixAppService {
                 message: 'Bitrix App saved and token created',
             };
         } catch (error) {
-            throw new BadRequestException(`Failed to store or update app: ${error.message}`);
+            throw new BadRequestException(
+                `Failed to store or update app: ${error.message}`,
+            );
         }
     }
 
-    private async setSecret(domain: string, code: BITRIX_APP_CODES, dto: SetBitrixSecretDto): Promise<{
+    private async setSecret(
+        domain: string,
+        code: BITRIX_APP_CODES,
+        dto: SetBitrixSecretDto,
+    ): Promise<{
         token: BitrixTokenEntity | null;
         message: string;
     }> {
-
         /*
         сохраняет или создaёn client_id и client_secret для app
         при создании или редактировании app из формы
@@ -170,13 +199,17 @@ export class BitrixAppService {
         }
 
         return await this.tokenService.storeOrUpdateAppSecret(app.id, dto);
-
     }
 
     async getApp(dto: GetBitrixAppDto): Promise<BitrixAppEntity> {
-        const app = await this.repository.findByCodeAndDomain(dto.code, dto.domain);
+        const app = await this.repository.findByCodeAndDomain(
+            dto.code,
+            dto.domain,
+        );
         if (!app) {
-            throw new NotFoundException(`App with code ${dto.code} and domain ${dto.domain} not found`);
+            throw new NotFoundException(
+                `App with code ${dto.code} and domain ${dto.domain} not found`,
+            );
         }
 
         return app;
@@ -208,7 +241,10 @@ export class BitrixAppService {
         return apps;
     }
 
-    async updateApp(id: number, dto: Partial<BitrixAppEntity>): Promise<BitrixAppEntity> {
+    async updateApp(
+        id: number,
+        dto: Partial<BitrixAppEntity>,
+    ): Promise<BitrixAppEntity> {
         const app = await this.repository.findById(BigInt(id));
         if (!app) {
             throw new NotFoundException(`App with id ${id} not found`);

@@ -10,12 +10,18 @@ import {
 } from './services/init-infoblock.service';
 import { InitRegionService } from './services/init.region.service';
 import { RegionEntity, SupplyService } from '@/modules/garant';
-import { ComplectsDto, ContractsDto, InfoblockDto, InfoGroupsDto, KonstructorInitDataDto, RegionInitDto } from './dto/response-init-data.dto';
+import {
+    ComplectsDto,
+    ContractsDto,
+    InfoblockDto,
+    InfoGroupsDto,
+    KonstructorInitDataDto,
+    RegionInitDto,
+} from './dto/response-init-data.dto';
 import { ContractService } from '@/modules/garant/contract/contract.service';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { ContractDto } from '../dto/contract.dto';
 import { PortalContractEntity } from '@/modules/garant/contract/portal-contract.entity';
-
 
 export interface IKonstruktorInit {
     complects: IComplects | null;
@@ -32,7 +38,7 @@ export class KonstructorInitUseCase {
         private readonly contract: ContractService,
         private readonly portalStoreService: PortalStoreService,
         private readonly supplyService: SupplyService,
-    ) { }
+    ) {}
 
     async init(domain: string): Promise<KonstructorInitDataDto> {
         const portal = await this.portalStoreService.getPortalByDomain(domain);
@@ -42,16 +48,22 @@ export class KonstructorInitUseCase {
         const complects = await this.complect.get();
         const infoblocks = await this.infoblock.get();
         const regions = await this.region.get();
-        const contracts = await this.contract.findByPortalId(Number(portal?.id));
+        const contracts = await this.contract.findByPortalId(
+            Number(portal?.id),
+        );
         const supplies = await this.supplyService.findMany();
 
         return {
-            complects: this.getComplectsDto(complects || { prof: [], universal: [] }),
+            complects: this.getComplectsDto(
+                complects || { prof: [], universal: [] },
+            ),
             infoblocks: this.getInfogroups(infoblocks || []),
             regions: this.getRegions(regions || []),
             contracts: {
                 current: contracts?.map(contract => Number(contract.id)) || [],
-                items: contracts?.map(contract => this.getContract(contract)) || [],
+                items:
+                    contracts?.map(contract => this.getContract(contract)) ||
+                    [],
             },
         };
     }
@@ -63,8 +75,12 @@ export class KonstructorInitUseCase {
                 name: contract.contract?.name || '',
                 shortName: contract.portal_measure?.shortName || '',
                 fullName: contract.portal_measure?.fullName || '',
-                created_at: contract.contract?.created_at ? contract.contract?.created_at.toISOString() : '',
-                updated_at: contract.contract?.updated_at ? contract.contract?.updated_at.toISOString() : null,
+                created_at: contract.contract?.created_at
+                    ? contract.contract?.created_at.toISOString()
+                    : '',
+                updated_at: contract.contract?.updated_at
+                    ? contract.contract?.updated_at.toISOString()
+                    : null,
             },
             code: contract.contract?.code || '',
             shortName: contract.portal_measure?.shortName || '',
@@ -83,8 +99,12 @@ export class KonstructorInitUseCase {
                 name: contract.portal_measure?.name || '',
                 shortName: contract.portal_measure?.shortName || '',
                 fullName: contract.portal_measure?.fullName || '',
-                created_at: contract.portal_measure?.created_at ? contract.portal_measure?.created_at.toISOString() : '',
-                updated_at: contract.portal_measure?.updated_at ? contract.portal_measure?.updated_at.toISOString() : '',
+                created_at: contract.portal_measure?.created_at
+                    ? contract.portal_measure?.created_at.toISOString()
+                    : '',
+                updated_at: contract.portal_measure?.updated_at
+                    ? contract.portal_measure?.updated_at.toISOString()
+                    : '',
                 measure: contract.portal_measure?.measure || null,
             },
             measureCode: Number(contract.portal_measure?.measure?.code) || 0,
@@ -121,7 +141,6 @@ export class KonstructorInitUseCase {
             value: this.getInfoblocks(group.value),
         } as InfoGroupsDto;
     }
-
 
     private getInfoblocks(infoblocks: IInfoblock[]): InfoblockDto[] {
         return infoblocks.map(infoblock => this.getInfoblock(infoblock));

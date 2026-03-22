@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ProviderEntity } from '../provider/provider.entity';
 import { TemplateBaseEntity } from '../template-base';
 
-
 export class PortalEntity {
     constructor(
         public readonly id: string,
@@ -20,7 +19,6 @@ export class PortalEntity {
     ) {}
 }
 
-
 export class PortalDto {
     constructor(portal: PortalEntity) {
         this.id = String(portal?.id) || '';
@@ -31,7 +29,6 @@ export class PortalDto {
         this.cRestClientSecret = portal.cRestClientSecret || '';
 
         this.number = portal.number;
-
     }
     @ApiProperty({
         description: 'ID портала',
@@ -65,7 +62,6 @@ export class PortalDto {
     })
     number?: number;
 
-
     @ApiProperty({
         description: 'ID клиента',
         example: '1234567890',
@@ -78,5 +74,4 @@ export class PortalDto {
         type: String,
     })
     cRestClientSecret?: string;
-
 }

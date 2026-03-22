@@ -7,9 +7,7 @@ import { BitrixSettingPrismaRepository } from './repositories/bitrix-setting.pri
 
 @Module({
     imports: [],
-    controllers: [
-        BitrixSettingController,
-    ],
+    controllers: [BitrixSettingController],
     providers: [
         BitrixSettingService,
         {
@@ -18,9 +16,6 @@ import { BitrixSettingPrismaRepository } from './repositories/bitrix-setting.pri
         },
         PrismaService,
     ],
-    exports: [
-        BitrixSettingService,
-        BitrixSettingRepository,
-    ],
+    exports: [BitrixSettingService, BitrixSettingRepository],
 })
-export class SettingModule { }
+export class SettingModule {}

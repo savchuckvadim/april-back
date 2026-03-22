@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    ConflictException,
+    BadRequestException,
+} from '@nestjs/common';
 import { UserRepository } from '../repositories/user.repository';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -9,13 +14,15 @@ import { User } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
-    constructor(
-        private readonly userRepository: UserRepository,
-    ) { }
+    constructor(private readonly userRepository: UserRepository) {}
 
-    async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto | null> {
+    async createUser(
+        createUserDto: CreateUserDto,
+    ): Promise<UserResponseDto | null> {
         // Проверяем, существует ли пользователь с таким email
-        const existingUser = await this.userRepository.findByEmail(createUserDto.email);
+        const existingUser = await this.userRepository.findByEmail(
+            createUserDto.email,
+        );
         if (existingUser) {
             throw new ConflictException('User with this email already exists');
         }
@@ -29,7 +36,9 @@ export class UserService {
             client_id: BigInt(createUserDto.client_id),
             photo: createUserDto.photo,
             bitrix_id: createUserDto.bitrix_id,
-            role_id: createUserDto.role_id ? BigInt(createUserDto.role_id) : BigInt(1), // По умолчанию роль user
+            role_id: createUserDto.role_id
+                ? BigInt(createUserDto.role_id)
+                : BigInt(1), // По умолчанию роль user
         });
 
         if (!user) {
@@ -38,7 +47,10 @@ export class UserService {
         return this.mapToResponseDto(user);
     }
 
-    async createOwnerUser(clientId: number, userData: Omit<CreateUserDto, 'client_id'>): Promise<User | null> {
+    async createOwnerUser(
+        clientId: number,
+        userData: Omit<CreateUserDto, 'client_id'>,
+    ): Promise<User | null> {
         // Создаем пользователя-владельца при регистрации клиента
         const user = await this.userRepository.create({
             name: userData.name,
@@ -102,7 +114,9 @@ export class UserService {
         return users.map(user => this.mapToResponseDto(user));
     }
 
-    async findUserByBitrixId(bitrixId: string): Promise<UserResponseDto | null> {
+    async findUserByBitrixId(
+        bitrixId: string,
+    ): Promise<UserResponseDto | null> {
         const user = await this.userRepository.findByBitrixId(bitrixId);
         if (!user) {
             return null;
@@ -118,7 +132,10 @@ export class UserService {
         return users.map(user => this.mapToResponseDto(user));
     }
 
-    async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+    async updateUser(
+        id: number,
+        updateUserDto: UpdateUserDto,
+    ): Promise<UserResponseDto> {
         // Проверяем, существует ли пользователь
         const existingUser = await this.userRepository.findById(id);
         if (!existingUser) {
@@ -127,9 +144,13 @@ export class UserService {
 
         // Если обновляется email, проверяем, что он не занят другим пользователем
         if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
-            const userWithEmail = await this.userRepository.findByEmail(updateUserDto.email);
+            const userWithEmail = await this.userRepository.findByEmail(
+                updateUserDto.email,
+            );
             if (userWithEmail && userWithEmail.id !== BigInt(id)) {
-                throw new ConflictException('User with this email already exists');
+                throw new ConflictException(
+                    'User with this email already exists',
+                );
             }
         }
 
@@ -140,7 +161,9 @@ export class UserService {
             password: updateUserDto.password,
             photo: updateUserDto.photo,
             bitrix_id: updateUserDto.bitrix_id,
-            role_id: updateUserDto.role_id ? BigInt(updateUserDto.role_id) : undefined,
+            role_id: updateUserDto.role_id
+                ? BigInt(updateUserDto.role_id)
+                : undefined,
         });
 
         if (!updatedUser) {
@@ -150,12 +173,21 @@ export class UserService {
         return this.mapToResponseDto(updatedUser);
     }
 
-    async updateUserByEmail(email: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+    async updateUserByEmail(
+        email: string,
+        updateUserDto: UpdateUserDto,
+    ): Promise<UserResponseDto> {
         const updatedUser = await this.userRepository.updateByEmail(email, {
             ...updateUserDto,
-            password: updateUserDto.password ? encrypt(updateUserDto.password) : undefined,
-            role_id: updateUserDto.role_id ? BigInt(updateUserDto.role_id) : undefined,
-            client_id: updateUserDto.client_id ? BigInt(updateUserDto.client_id) : undefined,
+            password: updateUserDto.password
+                ? encrypt(updateUserDto.password)
+                : undefined,
+            role_id: updateUserDto.role_id
+                ? BigInt(updateUserDto.role_id)
+                : undefined,
+            client_id: updateUserDto.client_id
+                ? BigInt(updateUserDto.client_id)
+                : undefined,
         });
         if (!updatedUser) {
             throw new BadRequestException('Failed to update user');
@@ -178,7 +210,9 @@ export class UserService {
     async findOwnerByClientId(clientId: number): Promise<UserResponseDto> {
         const owner = await this.userRepository.findOwnerByClientId(clientId);
         if (!owner) {
-            throw new NotFoundException(`Owner for client ${clientId} not found`);
+            throw new NotFoundException(
+                `Owner for client ${clientId} not found`,
+            );
         }
         return this.mapToResponseDto(owner);
     }
@@ -191,15 +225,21 @@ export class UserService {
         return users.map(user => this.mapToResponseDto(user));
     }
 
-    async findActiveUsersByClientId(clientId: number): Promise<UserResponseDto[]> {
-        const users = await this.userRepository.findActiveUsersByClientId(clientId);
+    async findActiveUsersByClientId(
+        clientId: number,
+    ): Promise<UserResponseDto[]> {
+        const users =
+            await this.userRepository.findActiveUsersByClientId(clientId);
         if (!users) {
             return [];
         }
         return users.map(user => this.mapToResponseDto(user));
     }
 
-    async validateUserCredentials(email: string, password: string): Promise<UserResponseDto | null> {
+    async validateUserCredentials(
+        email: string,
+        password: string,
+    ): Promise<UserResponseDto | null> {
         const user = await this.userRepository.findByEmail(email);
         if (!user) {
             return null;

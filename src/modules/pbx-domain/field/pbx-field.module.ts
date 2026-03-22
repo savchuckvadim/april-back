@@ -25,4 +25,4 @@ import { PBXModule } from '@/modules/pbx/pbx.module';
         PbxFieldSmartInstallService,
     ],
 })
-export class PbxFieldModule { }
+export class PbxFieldModule {}

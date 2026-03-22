@@ -43,4 +43,3 @@ export class BtxContactResponseDto {
     })
     updated_at?: Date | null;
 }
-

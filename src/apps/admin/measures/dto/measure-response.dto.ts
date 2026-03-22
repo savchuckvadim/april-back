@@ -49,4 +49,3 @@ export class MeasureResponseDto {
     })
     updated_at?: Date | null;
 }
-

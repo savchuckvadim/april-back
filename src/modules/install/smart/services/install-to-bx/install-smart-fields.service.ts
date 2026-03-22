@@ -8,7 +8,7 @@ import { EUserFieldType } from '@/modules/bitrix/domain/userfieldconfig/interfac
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 
 export class InstallSmartFieldsService {
-    public constructor(private readonly bitrix: BitrixService) { }
+    public constructor(private readonly bitrix: BitrixService) {}
 
     public async installFields(
         fields: Field[],

@@ -158,11 +158,9 @@ export class DateRangeDto {
     to: string;
 }
 export class ReportData {
-
     @ApiProperty({ description: 'User ID' })
     @IsNumber()
     id: number;
-
 
     @ApiProperty({ description: 'User data' })
     @ValidateNested()

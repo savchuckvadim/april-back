@@ -15,7 +15,7 @@ export class PortalSmartService {
         private readonly prisma: PrismaService,
         private readonly pbxFieldService: PbxFieldService,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
     async getSmartByPortalAndName(domain: string, smartName: SmartNameEnum) {
         const portal = await this.portalService.getPortalByDomain(domain);

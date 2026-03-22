@@ -45,13 +45,14 @@ export function validateDocxFile(
     const fileExtension = file.originalname
         .toLowerCase()
         .substring(file.originalname.lastIndexOf('.'));
-    const isValidExtension = allowedExtensions.some(ext =>
-        fileExtension === ext.toLowerCase(),
+    const isValidExtension = allowedExtensions.some(
+        ext => fileExtension === ext.toLowerCase(),
     );
 
     // Проверка типа файла по MIME типу
-    const isValidMimeType = allowedMimeTypes.some(mimeType =>
-        file.mimetype.includes(mimeType) || file.mimetype === mimeType,
+    const isValidMimeType = allowedMimeTypes.some(
+        mimeType =>
+            file.mimetype.includes(mimeType) || file.mimetype === mimeType,
     );
 
     // Проверка магических байтов для DOCX (DOCX файлы начинаются с PK, так как это ZIP)
@@ -75,4 +76,3 @@ export function validateDocxFile(
         );
     }
 }
-

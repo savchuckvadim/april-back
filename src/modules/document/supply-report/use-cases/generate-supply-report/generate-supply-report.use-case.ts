@@ -7,8 +7,7 @@ import { GenerateSupplyReportDto } from '../../dto/generate-supply-report.dto';
 
 @Injectable()
 export class GenerateSupplyReportUseCase {
-    constructor() // private readonly libreOfficeService: LibreOfficeService, // private readonly docxService: DocxTemplateService,
-    // private readonly bitrixGateway: BitrixGateway,
+    constructor() // private readonly bitrixGateway: BitrixGateway, // private readonly libreOfficeService: LibreOfficeService, // private readonly docxService: DocxTemplateService,
     {}
 
     async execute(dto: GenerateSupplyReportDto) {

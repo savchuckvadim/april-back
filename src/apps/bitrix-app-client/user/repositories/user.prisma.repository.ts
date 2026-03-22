@@ -4,10 +4,9 @@ import { PrismaService } from 'src/core/prisma';
 import { UserRepository } from './user.repository';
 import { decrypt, encrypt } from '@/lib/utils/crypt.util';
 
-
 @Injectable()
 export class UserPrismaRepository implements UserRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(user: Partial<User>): Promise<User | null> {
         try {
@@ -137,7 +136,10 @@ export class UserPrismaRepository implements UserRepository {
         }
     }
 
-    async updateByEmail(email: string, user: Partial<User>): Promise<User | null> {
+    async updateByEmail(
+        email: string,
+        user: Partial<User>,
+    ): Promise<User | null> {
         let result: User | null = null;
         try {
             result = await this.prisma.user.update({
@@ -170,7 +172,7 @@ export class UserPrismaRepository implements UserRepository {
                     client_id: BigInt(clientId),
                     // Здесь нужно будет добавить логику для определения роли owner
                     // Пока ищем по role_id = 1, но это нужно будет настроить
-                    role_id: BigInt(1)
+                    role_id: BigInt(1),
                 },
                 include: {
                     clients: true,
@@ -204,7 +206,7 @@ export class UserPrismaRepository implements UserRepository {
             const result = await this.prisma.user.findMany({
                 where: {
                     client_id: BigInt(clientId),
-                    email_verified_at: { not: null }
+                    email_verified_at: { not: null },
                 },
                 include: {
                     clients: true,

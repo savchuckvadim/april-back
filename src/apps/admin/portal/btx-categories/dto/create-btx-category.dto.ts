@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, ValidateNested, IsEnum, IsBoolean } from 'class-validator';
+import {
+    IsString,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+    IsArray,
+    ValidateNested,
+    IsEnum,
+    IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { BitrixFieldEntityType } from '../../bitrixfields/enums/bitrixfield-entity-type.enum';
 import { CreateBtxStageDto } from './create-btx-stage.dto';
@@ -104,4 +113,3 @@ export class CreateBtxCategoryDto {
     @IsOptional()
     stages?: CreateBtxStageDto[];
 }
-

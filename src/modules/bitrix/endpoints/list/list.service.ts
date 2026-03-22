@@ -27,7 +27,7 @@ export class ListService {
         Logger.log('getListFields domain from bx api');
         const { bitrix } = await this.pbx.init(domain);
         const repository = new BxListRepository(bitrix.api);
-        const {PortalModel } = await this.pbx.init(domain);
+        const { PortalModel } = await this.pbx.init(domain);
         const portal = PortalModel;
         const kpiPList = PortalModel.getListByCode('sales_kpi');
         let kpiListField: IField | undefined;

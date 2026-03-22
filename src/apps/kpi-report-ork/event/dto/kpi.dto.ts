@@ -12,7 +12,10 @@ import {
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
-import { EnumOrkFilterCode, EnumOrkFilterInnerCode } from '../type/ork-report-event.type';
+import {
+    EnumOrkFilterCode,
+    EnumOrkFilterInnerCode,
+} from '../type/ork-report-event.type';
 
 // Wrapper classes for external interfaces
 export class BitrixUser implements IBXUser {
@@ -158,7 +161,6 @@ export class DateRangeDto {
     to: string;
 }
 
-
 export class OrkKpiAction {
     @ApiProperty()
     @IsNumber()
@@ -168,7 +170,6 @@ export class OrkKpiAction {
     @IsString()
     name: string;
 }
-
 
 export class OrkKpiFilter {
     @ApiProperty()
@@ -198,7 +199,6 @@ export class OrkKpiFilter {
     code: EnumOrkFilterCode;
 }
 
-
 export class KPIOrk {
     @ApiProperty()
     @IsString()
@@ -219,7 +219,6 @@ export class KPIOrk {
     // list?: Array<KPIListItem>;
 }
 
-
 export class OrkReportKpiData {
     @ApiProperty()
     @ValidateNested()
@@ -236,8 +235,6 @@ export class OrkReportKpiData {
     @Type(() => KPIOrk)
     kpi: KPIOrk[];
 }
-
-
 
 export class KpiReportDto {
     @ApiProperty()

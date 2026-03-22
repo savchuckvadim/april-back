@@ -32,11 +32,16 @@ export class MeasurePrismaRepository implements MeasureRepository {
         return result;
     }
 
-    async update(id: number, measure: Partial<measures>): Promise<measures | null> {
+    async update(
+        id: number,
+        measure: Partial<measures>,
+    ): Promise<measures | null> {
         const updateData: any = {};
         if (measure.name !== undefined) updateData.name = measure.name;
-        if (measure.shortName !== undefined) updateData.shortName = measure.shortName;
-        if (measure.fullName !== undefined) updateData.fullName = measure.fullName;
+        if (measure.shortName !== undefined)
+            updateData.shortName = measure.shortName;
+        if (measure.fullName !== undefined)
+            updateData.fullName = measure.fullName;
         if (measure.code !== undefined) updateData.code = measure.code;
         if (measure.type !== undefined) updateData.type = measure.type;
 
@@ -54,4 +59,3 @@ export class MeasurePrismaRepository implements MeasureRepository {
         return result ? true : false;
     }
 }
-

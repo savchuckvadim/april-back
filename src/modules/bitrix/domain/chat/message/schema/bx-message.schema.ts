@@ -1,5 +1,8 @@
 import { EBxMethod } from 'src/modules/bitrix/core';
-import { IBXMessageAddRequest, IBXMessageAddResponse } from '../interface/bx-message.interface';
+import {
+    IBXMessageAddRequest,
+    IBXMessageAddResponse,
+} from '../interface/bx-message.interface';
 
 export type MessageSchema = {
     [EBxMethod.ADD]: {
@@ -7,4 +10,3 @@ export type MessageSchema = {
         response: IBXMessageAddResponse;
     };
 };
-

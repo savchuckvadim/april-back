@@ -10,7 +10,7 @@ import { TBXResponse } from '../../core';
 import { IBitrixResponse } from '../../core/interface/bitrix-api-http.intterface';
 
 export class BxTasksRepository {
-    constructor(private readonly bitrixService: BitrixBaseApi) { }
+    constructor(private readonly bitrixService: BitrixBaseApi) {}
 
     async get(taskId: number) {
         return this.bitrixService.callType(

@@ -46,13 +46,15 @@ export class BxRqPrismaRepository implements BxRqRepository {
 
     async update(id: number, rq: Partial<bx_rqs>): Promise<bx_rqs | null> {
         const updateData: any = {};
-        if (rq.portal_id !== undefined) updateData.portal_id = rq.portal_id ? BigInt(rq.portal_id) : null;
+        if (rq.portal_id !== undefined)
+            updateData.portal_id = rq.portal_id ? BigInt(rq.portal_id) : null;
         if (rq.name !== undefined) updateData.name = rq.name;
         if (rq.code !== undefined) updateData.code = rq.code;
         if (rq.type !== undefined) updateData.type = rq.type;
         if (rq.bitrix_id !== undefined) updateData.bitrix_id = rq.bitrix_id;
         if (rq.xml_id !== undefined) updateData.xml_id = rq.xml_id;
-        if (rq.entity_type_id !== undefined) updateData.entity_type_id = rq.entity_type_id;
+        if (rq.entity_type_id !== undefined)
+            updateData.entity_type_id = rq.entity_type_id;
         if (rq.country_id !== undefined) updateData.country_id = rq.country_id;
         if (rq.is_active !== undefined) updateData.is_active = rq.is_active;
         if (rq.sort !== undefined) updateData.sort = rq.sort;
@@ -71,4 +73,3 @@ export class BxRqPrismaRepository implements BxRqRepository {
         return result ? true : false;
     }
 }
-

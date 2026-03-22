@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as https from 'https';
@@ -22,7 +22,7 @@ export class BitrixCore {
         authType: BxAuthType,
         domain: string,
         token: string | null,
-        apiKey: string = ''
+        apiKey: string = '',
     ) {
         this.semaphore = new Semaphore(10);
         this.domain = domain;
@@ -40,8 +40,7 @@ export class BitrixCore {
     protected getUrl(method: string): string {
         return this.authType === BxAuthType.TOKEN && this.token
             ? `https://${this.domain}/rest/${method}`
-            : `https://${this.domain}/${this.apiKey}/${method}`
-
+            : `https://${this.domain}/${this.apiKey}/${method}`;
     }
 
     // init(domain: string, apiKey: string): void {
@@ -91,8 +90,8 @@ export class BitrixCore {
 
         // Retry для таймаута
         if (
-            (message.includes('timeout') || error.code === 'ECONNABORTED')
-            && retries > 0
+            (message.includes('timeout') || error.code === 'ECONNABORTED') &&
+            retries > 0
         ) {
             this.logger.warn(`Timeout on ${method}, retrying in 3s...`);
             await delay(30000);
@@ -100,16 +99,23 @@ export class BitrixCore {
         }
 
         // Ошибка квоты Bitrix
-        if (typeof responseText === 'string' && responseText.includes('QUERY_LIMIT_EXCEEDED')) {
+        if (
+            typeof responseText === 'string' &&
+            responseText.includes('QUERY_LIMIT_EXCEEDED')
+        ) {
             console.log('Bitrix query limit exceeded for ', method);
-            this.logger.warn(`Bitrix query limit exceeded for ${method}, waiting...`);
+            this.logger.warn(
+                `Bitrix query limit exceeded for ${method}, waiting...`,
+            );
             await new Promise(res => setTimeout(res, 35000));
             return this.request<T>(method, data, retries - 1);
         }
 
         // Если Bitrix вернул 503 — подождать и повторить
         if (error.response?.status === 503 && retries > 0) {
-            this.logger.warn(`Bitrix 503 Service Unavailable on ${method}, retrying in 10s...`);
+            this.logger.warn(
+                `Bitrix 503 Service Unavailable on ${method}, retrying in 10s...`,
+            );
             await delay(10000);
             return this.request<T>(method, data, retries - 1);
         }

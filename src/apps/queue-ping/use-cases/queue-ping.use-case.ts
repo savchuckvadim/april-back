@@ -1,4 +1,3 @@
-
 import { QueuePingDto } from '../dto/queue.dto';
 
 import {
@@ -29,8 +28,6 @@ export class QueuePingUseCase {
 
             Logger.log('[queuePbxInit] called with domain: ' + domain);
 
-
-
             // this.portalModel = PortalModel;
 
             // // const portal = this.portalModel.getPortal();
@@ -58,18 +55,17 @@ export class QueuePingUseCase {
     async case(dto: QueuePingDto) {
         // await this.init(dto.domain)
         try {
-            const { portal, PortalModel, bitrix } = await this.pbx.init(dto.domain);
+            const { portal, PortalModel, bitrix } = await this.pbx.init(
+                dto.domain,
+            );
             Logger.log('PING QUEUE USE');
             Logger.log(dto);
 
             const domainFromPortal = portal.domain;
             const portalId = portal.id;
-            const bxResponse = await bitrix.api.call<IBXUser[]>(
-                'user.get',
-                {
-                    ID: dto.userId,
-                },
-            );
+            const bxResponse = await bitrix.api.call<IBXUser[]>('user.get', {
+                ID: dto.userId,
+            });
             const user = bxResponse?.result[0]?.NAME || 'user not found';
             const result = {
                 user,
@@ -86,5 +82,4 @@ export class QueuePingUseCase {
     // onModuleInit() {
     //     console.log('[QueuePingUseCase] initialized');
     // }
-
 }

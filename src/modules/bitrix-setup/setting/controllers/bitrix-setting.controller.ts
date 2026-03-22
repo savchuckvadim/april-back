@@ -10,67 +10,83 @@ import {
     HttpException,
     HttpStatus,
     ValidationPipe,
-    UsePipes
+    UsePipes,
 } from '@nestjs/common';
 import { BitrixSettingService } from '../services/bitrix-setting.service';
-import { CreateBitrixSettingDto, UpdateBitrixSettingDto } from '../dto/bitrix-setting.dto';
+import {
+    CreateBitrixSettingDto,
+    UpdateBitrixSettingDto,
+} from '../dto/bitrix-setting.dto';
 
 @Controller('bitrix-setting')
 export class BitrixSettingController {
-    constructor(private readonly bitrixSettingService: BitrixSettingService) { }
+    constructor(private readonly bitrixSettingService: BitrixSettingService) {}
 
     @Post('store')
     @UsePipes(new ValidationPipe({ transform: true }))
-    async store(@Body() dto: CreateBitrixSettingDto, @Query('settingable_id') settingableId: string) {
+    async store(
+        @Body() dto: CreateBitrixSettingDto,
+        @Query('settingable_id') settingableId: string,
+    ) {
         try {
-            const setting = await this.bitrixSettingService.storeSetting(dto, BigInt(settingableId));
+            const setting = await this.bitrixSettingService.storeSetting(
+                dto,
+                BigInt(settingableId),
+            );
 
             return {
                 success: true,
                 result: {
                     message: 'Bitrix Setting saved',
-                    setting: setting
-                }
+                    setting: setting,
+                },
             };
         } catch (error) {
-            throw new HttpException({
-                success: false,
-                error: 'Bitrix Setting failed',
-                details: {
-                    request: dto,
-                    message: error.message,
-                    stack: error.stack,
-                }
-            }, HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+                {
+                    success: false,
+                    error: 'Bitrix Setting failed',
+                    details: {
+                        request: dto,
+                        message: error.message,
+                        stack: error.stack,
+                    },
+                },
+                HttpStatus.BAD_REQUEST,
+            );
         }
     }
 
     @Get('get-by-settingable')
     async getBySettingable(
         @Query('settingable_id') settingableId: string,
-        @Query('settingable_type') settingableType: string
+        @Query('settingable_type') settingableType: string,
     ) {
         try {
-            const settings = await this.bitrixSettingService.getSettingsBySettingable(
-                BigInt(settingableId),
-                settingableType
-            );
+            const settings =
+                await this.bitrixSettingService.getSettingsBySettingable(
+                    BigInt(settingableId),
+                    settingableType,
+                );
 
             return {
                 success: true,
-                result: settings
+                result: settings,
             };
         } catch (error) {
-            throw new HttpException({
-                success: false,
-                error: 'Bitrix Settings not found',
-                details: {
-                    settingable_id: settingableId,
-                    settingable_type: settingableType,
-                    message: error.message,
-                    stack: error.stack,
-                }
-            }, HttpStatus.NOT_FOUND);
+            throw new HttpException(
+                {
+                    success: false,
+                    error: 'Bitrix Settings not found',
+                    details: {
+                        settingable_id: settingableId,
+                        settingable_type: settingableType,
+                        message: error.message,
+                        stack: error.stack,
+                    },
+                },
+                HttpStatus.NOT_FOUND,
+            );
         }
     }
 
@@ -78,51 +94,62 @@ export class BitrixSettingController {
     @UsePipes(new ValidationPipe({ transform: true }))
     async update(@Param('id') id: string, @Body() dto: UpdateBitrixSettingDto) {
         try {
-            const setting = await this.bitrixSettingService.updateSetting(BigInt(id), dto);
+            const setting = await this.bitrixSettingService.updateSetting(
+                BigInt(id),
+                dto,
+            );
 
             return {
                 success: true,
                 result: {
                     message: 'Bitrix Setting updated',
-                    setting: setting
-                }
+                    setting: setting,
+                },
             };
         } catch (error) {
-            throw new HttpException({
-                success: false,
-                error: 'Bitrix Setting update failed',
-                details: {
-                    id: id,
-                    request: dto,
-                    message: error.message,
-                    stack: error.stack,
-                }
-            }, HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+                {
+                    success: false,
+                    error: 'Bitrix Setting update failed',
+                    details: {
+                        id: id,
+                        request: dto,
+                        message: error.message,
+                        stack: error.stack,
+                    },
+                },
+                HttpStatus.BAD_REQUEST,
+            );
         }
     }
 
     @Delete('delete/:id')
     async delete(@Param('id') id: string) {
         try {
-            const result = await this.bitrixSettingService.deleteSetting(BigInt(id));
+            const result = await this.bitrixSettingService.deleteSetting(
+                BigInt(id),
+            );
 
             return {
                 success: true,
                 result: {
                     message: 'Bitrix Setting deleted',
-                    deleted: result
-                }
+                    deleted: result,
+                },
             };
         } catch (error) {
-            throw new HttpException({
-                success: false,
-                error: 'Bitrix Setting delete failed',
-                details: {
-                    id: id,
-                    message: error.message,
-                    stack: error.stack,
-                }
-            }, HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+                {
+                    success: false,
+                    error: 'Bitrix Setting delete failed',
+                    details: {
+                        id: id,
+                        message: error.message,
+                        stack: error.stack,
+                    },
+                },
+                HttpStatus.BAD_REQUEST,
+            );
         }
     }
 }

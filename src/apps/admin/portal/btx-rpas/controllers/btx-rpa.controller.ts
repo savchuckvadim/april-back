@@ -19,7 +19,7 @@ import { SuccessResponseDto, EResultCode } from '@/core';
 @ApiTags('Admin Btx RPAs Management')
 @Controller('admin/portals/btx-rpas')
 export class BtxRpaController {
-    constructor(private readonly rpaService: BtxRpaService) { }
+    constructor(private readonly rpaService: BtxRpaService) {}
 
     @ApiOperation({ summary: 'Create a new btx RPA' })
     @ApiResponse({
@@ -28,7 +28,9 @@ export class BtxRpaController {
         type: BtxRpaResponseDto,
     })
     @Post()
-    async createRpa(@Body() createRpaDto: CreateBtxRpaDto): Promise<SuccessResponseDto> {
+    async createRpa(
+        @Body() createRpaDto: CreateBtxRpaDto,
+    ): Promise<SuccessResponseDto> {
         const rpa = await this.rpaService.create(createRpaDto);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -43,7 +45,9 @@ export class BtxRpaController {
         type: BtxRpaResponseDto,
     })
     @Get(':id')
-    async getRpaById(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async getRpaById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         const rpa = await this.rpaService.findById(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -58,7 +62,9 @@ export class BtxRpaController {
         type: [BtxRpaResponseDto],
     })
     @Get()
-    async getAllRpas(@Query('portal_id') portalId?: string): Promise<SuccessResponseDto> {
+    async getAllRpas(
+        @Query('portal_id') portalId?: string,
+    ): Promise<SuccessResponseDto> {
         let rpas;
         if (portalId) {
             rpas = await this.rpaService.findByPortalId(Number(portalId));
@@ -96,7 +102,9 @@ export class BtxRpaController {
         description: 'RPA deleted successfully',
     })
     @Delete(':id')
-    async deleteRpa(@Param('id', ParseIntPipe) id: number): Promise<SuccessResponseDto> {
+    async deleteRpa(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SuccessResponseDto> {
         await this.rpaService.delete(id);
         return {
             resultCode: EResultCode.SUCCESS,
@@ -104,4 +112,3 @@ export class BtxRpaController {
         };
     }
 }
-

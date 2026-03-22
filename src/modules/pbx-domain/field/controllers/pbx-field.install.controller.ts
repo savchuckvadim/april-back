@@ -29,7 +29,7 @@ export class PbxFieldInstallController {
     constructor(
         private readonly pbxFieldEntityInstallService: PbxFieldEntityInstallService,
         private readonly pbxFieldSmartInstallService: PbxFieldSmartInstallService,
-    ) { }
+    ) {}
 
     @Post('entity')
     @UsePipes(new ValidationPipe({ transform: true }))

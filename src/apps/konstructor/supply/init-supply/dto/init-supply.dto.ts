@@ -19,7 +19,10 @@ import { PbxCompanyDto } from './pbx-company.dto';
 import { SupplyReportDto } from './supply-fields/supply-fields.dto';
 import { ClientTypeEnum } from '@/apps/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from '@/apps/konstructor/document-generate/type/contract.type';
-import { ProductRowDto, ProductRowSupplyDto } from '@/apps/konstructor/document-generate';
+import {
+    ProductRowDto,
+    ProductRowSupplyDto,
+} from '@/apps/konstructor/document-generate';
 import { SupplyDto } from '@/apps/konstructor/dto';
 
 export class ClientTypeDto {

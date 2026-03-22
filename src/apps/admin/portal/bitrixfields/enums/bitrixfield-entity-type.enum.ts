@@ -8,4 +8,3 @@ export enum BitrixFieldEntityType {
     BX_RQ = 'App\\Models\\BxRq',
     BITRIX_LIST = 'App\\Models\\BitrixList',
 }
-

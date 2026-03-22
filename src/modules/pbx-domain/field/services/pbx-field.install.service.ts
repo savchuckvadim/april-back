@@ -32,7 +32,7 @@ export class PbxFieldInstallService {
     constructor(
         private readonly pbxFieldService: PbxFieldService,
         private readonly pbxService: PBXService,
-    ) { }
+    ) {}
 
     async install(
         domain: string,
@@ -40,14 +40,17 @@ export class PbxFieldInstallService {
         appType: AppType,
     ): Promise<InstallResult> {
         const { bitrix, portal } = await this.pbxService.init(domain);
-        
+
         // Получаем поля в зависимости от group и appType
-        const fields: readonly (PbxSalesEventField | PbxSalesKonstructorField)[] =
+        const fields: readonly (
+            | PbxSalesEventField
+            | PbxSalesKonstructorField
+        )[] =
             group === 'sales' && appType === 'event'
                 ? PBX_SALES_EVENT_FIELDS
                 : group === 'sales' && appType === 'konstructor'
-                    ? PBX_SALES_KONSTRUCTOR_FIELDS
-                    : [];
+                  ? PBX_SALES_KONSTRUCTOR_FIELDS
+                  : [];
 
         if (fields.length === 0) {
             return { success: [], failed: [] };
@@ -93,8 +96,8 @@ export class PbxFieldInstallService {
         );
 
         // Удаляем из success те, которые не прошли проверку
-        results.success = results.success.filter(
-            code => verificationResults.verified.includes(code),
+        results.success = results.success.filter(code =>
+            verificationResults.verified.includes(code),
         );
         // Добавляем в failed те, которые не прошли проверку
         results.failed.push(
@@ -118,9 +121,21 @@ export class PbxFieldInstallService {
 
         // Обрабатываем каждую сущность (lead, company, deal, smart)
         const entities = [
-            { key: 'lead' as const, entityId: 'CRM_LEAD' as const, dbEntityId: BigInt(1) },
-            { key: 'company' as const, entityId: 'CRM_COMPANY' as const, dbEntityId: BigInt(4) },
-            { key: 'deal' as const, entityId: 'CRM_DEAL' as const, dbEntityId: BigInt(2) },
+            {
+                key: 'lead' as const,
+                entityId: 'CRM_LEAD' as const,
+                dbEntityId: BigInt(1),
+            },
+            {
+                key: 'company' as const,
+                entityId: 'CRM_COMPANY' as const,
+                dbEntityId: BigInt(4),
+            },
+            {
+                key: 'deal' as const,
+                entityId: 'CRM_DEAL' as const,
+                dbEntityId: BigInt(2),
+            },
         ];
 
         for (const entity of entities) {
@@ -128,11 +143,18 @@ export class PbxFieldInstallService {
             if (!bitrixFieldId) continue;
 
             try {
-                const entityTypeId = this.getEntityTypeId(portal, field, entity.key, group);
+                const entityTypeId = this.getEntityTypeId(
+                    portal,
+                    field,
+                    entity.key,
+                    group,
+                );
                 const bitrixEntityId = entityTypeId
                     ? `CRM_${entityTypeId}`
                     : entity.entityId;
-                const dbEntityId = entityTypeId ? BigInt(entityTypeId) : entity.dbEntityId;
+                const dbEntityId = entityTypeId
+                    ? BigInt(entityTypeId)
+                    : entity.dbEntityId;
 
                 // Проверяем существование поля в Bitrix
                 const existingField = await this.findFieldInBitrix(
@@ -260,9 +282,7 @@ export class PbxFieldInstallService {
         return config;
     }
 
-    private mapFieldTypeToBitrixType(
-        type: string,
-    ): EUserFieldType {
+    private mapFieldTypeToBitrixType(type: string): EUserFieldType {
         const typeMap: Record<string, EUserFieldType> = {
             string: EUserFieldType.STRING,
             integer: EUserFieldType.INTEGER,
@@ -326,19 +346,22 @@ export class PbxFieldInstallService {
         fieldEntity.entity_type = entityType;
         fieldEntity.parent_type = '';
         fieldEntity.isPlural = field.isMultiple;
-        fieldEntity.items = ((field[itemKey] || []) as Array<{
-            code: string;
-            name?: string;
-            title?: string;
-            bitrixId?: string | number;
-        }>).map(item => {
+        fieldEntity.items = (
+            (field[itemKey] || []) as Array<{
+                code: string;
+                name?: string;
+                title?: string;
+                bitrixId?: string | number;
+            }>
+        ).map(item => {
             const itemEntity = {
                 name: item.name || item.code,
                 title: item.title || item.code,
                 code: item.code,
-                bitrixId: typeof item.bitrixId === 'number'
-                    ? item.bitrixId
-                    : parseInt(item.bitrixId || '0', 10),
+                bitrixId:
+                    typeof item.bitrixId === 'number'
+                        ? item.bitrixId
+                        : parseInt(item.bitrixId || '0', 10),
                 bitrixfield_id: BigInt(0), // Будет установлено при сохранении
             };
             return itemEntity;
@@ -443,6 +466,4 @@ export class PbxFieldInstallService {
 
         return { verified, failed };
     }
-
-
 }
