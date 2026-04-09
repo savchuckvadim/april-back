@@ -40,6 +40,15 @@ services:
     networks:
       - app-network
 
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    ports:
+      - "33030:3000"
+    networks:
+      - app-network
+    restart: unless-stopped
+
   # prometheus:
   #   image: prom/prometheus
   #   container_name: ${PROM_CONTAINER_NAME}
