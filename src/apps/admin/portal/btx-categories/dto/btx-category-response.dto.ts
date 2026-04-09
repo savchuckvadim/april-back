@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BtxStageResponseDto } from './btx-stage-response.dto';
-import { BitrixFieldEntityType } from '../../bitrixfields/enums/bitrixfield-entity-type.enum';
+import { PbxEntityType } from '../../pbx-shared';
 
 export class BtxCategoryResponseDto {
     @ApiProperty({
@@ -11,10 +11,10 @@ export class BtxCategoryResponseDto {
 
     @ApiProperty({
         description: 'Entity type',
-        example: BitrixFieldEntityType.DEAL,
-        enum: BitrixFieldEntityType,
+        example: PbxEntityType.DEAL,
+        enum: PbxEntityType,
     })
-    entity_type: BitrixFieldEntityType | string;
+    entity_type: PbxEntityType | string;
 
     @ApiProperty({
         description: 'Entity ID',

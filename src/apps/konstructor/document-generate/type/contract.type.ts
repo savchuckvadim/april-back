@@ -41,7 +41,6 @@ export type ContractNamesType =
     | 'Абонентский 2 года'
     | 'Лицензионный 2 года'
     | 'Абонентский'
-    | 'Лицензионный'
     | 'Передача ключа доступа';
 
 export enum CONTRACT_CODE {

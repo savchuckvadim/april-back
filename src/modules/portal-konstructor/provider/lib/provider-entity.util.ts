@@ -22,6 +22,7 @@ export function createProviderEntityFromPrisma(
 }
 export function createRqEntity(
     rq: NonNullable<Awaited<ReturnType<PrismaService['rqs']['findUnique']>>>,
+    withTax: boolean,
 ): RqEntity {
     const rqEntity = new RqEntity();
     if (rq) {
@@ -58,6 +59,7 @@ export function createRqEntity(
         rqEntity.bik = String(rq.bik || '');
         rqEntity.rs = String(rq.rs || '');
         rqEntity.ks = String(rq.ks || '');
+        rqEntity.withTax = withTax;
     }
     return rqEntity;
 }
@@ -79,6 +81,6 @@ export function createProviderEntityWithRqFromPrisma(
     entity.name = providerEntity.name;
     entity.domain = providerEntity.domain;
     entity.withTax = providerEntity.withTax;
-    entity.rq = createRqEntity(rq);
+    entity.rq = createRqEntity(rq, provider.withTax);
     return entity;
 }

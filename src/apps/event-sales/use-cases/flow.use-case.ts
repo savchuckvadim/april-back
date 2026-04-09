@@ -1,4 +1,4 @@
-import { Injectable, Logger, Scope } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { FailDto } from '../dto/event-sale-flow/fail.dto';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { ReportDto } from '../dto/event-sale-flow/report.dto';
@@ -111,7 +111,7 @@ export class EventSalesFlowUseCase {
     constructor(
         private readonly portalService: PortalService,
         private readonly pbx: PBXService,
-    ) {}
+    ) { }
 
     async getFlow(dto: EventSalesFlowDto): Promise<any> {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
@@ -169,7 +169,7 @@ export class EventSalesFlowUseCase {
         const createTaskDto: CreateTaskDto = {
             responsibleId: dto.plan?.responsibility?.ID ?? 0,
             isPriority: false,
-            type: dto.plan?.type.current.code as EnumEventPlanCode,
+            type: dto.plan?.type.current.code,
             stringType: dto.plan?.type.current.name,
             company: company as IBXCompany,
             companyId: companyId ?? 0,

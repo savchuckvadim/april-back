@@ -49,7 +49,7 @@ export class SalesUserReportController {
         const { domain } = body;
 
         const { PortalModel } = await this.pbx.init(domain);
-        let portalKPIList = PortalModel.getListByCode('sales_kpi');
+        const portalKPIList = PortalModel.getListByCode('sales_kpi');
         if (!portalKPIList) throw new Error('Portal KPI list not found');
         const listId = Number(portalKPIList.bitrixId);
         if (
@@ -142,7 +142,7 @@ export class SalesUserReportController {
     async getReportWithoutWs(
         @Body() body: SalesUserReportGetRequestDto,
     ): Promise<PbxSalesKpiListItemDto[]> {
-        let list: PbxSalesKpiListItemDto[] = [];
+        const list: PbxSalesKpiListItemDto[] = [];
         for await (const batch of this.service.getReport(body)) {
             list.push(...batch);
         }

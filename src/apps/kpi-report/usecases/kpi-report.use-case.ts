@@ -24,10 +24,7 @@ export class ReportKpiUseCase {
     private portalModel: PortalModel;
     private bitrixApi: BitrixBaseApi;
 
-    constructor() // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST // private readonly portalContext: PortalContextService,
-    // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE
-    // private readonly pbx: PBXService,
-    {}
+    constructor() {} // private readonly pbx: PBXService, // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST // private readonly portalContext: PortalContextService,
 
     async init(domain: string, pbx: PBXService) {
         // this.domain = domain;
@@ -75,7 +72,7 @@ export class ReportKpiUseCase {
         const currentActionsData = this.getActionsData(
             eventAction.items,
             eventActionType.items,
-        ) as Filter[];
+        );
 
         this.generateBatchCommands(
             departament,
@@ -129,7 +126,7 @@ export class ReportKpiUseCase {
             for (const plField of listFields) {
                 switch (plField.code) {
                     case 'sales_kpi_event_action':
-                        eventActionField = plField as IField;
+                        eventActionField = plField;
                         actionFieldId = plField.bitrixCamelId;
                         break;
 
@@ -438,9 +435,7 @@ export class ReportKpiUseCase {
                     }
                 }
             }
-            userReport = this.proccesResultCommunications(
-                userReport,
-            ) as ReportData;
+            userReport = this.proccesResultCommunications(userReport);
             report.push(userReport);
         }
         return report;

@@ -64,12 +64,7 @@ export interface Product {
     contractSupplyProp1:
         | null
         | 'переносной жесткий диск HDD'
-        | 'переносной flash-накопитель'
-        | 'переносной жесткий диск HDD'
-        | 'переносной жесткий диск HDD'
-        | 'переносной жесткий диск HDD'
-        | 'переносной жесткий диск HDD'
-        | 'переносной жесткий диск HDD';
+        | 'переносной flash-накопитель';
 
     contractSupplyProp2: string;
     contractSupplyPropComment: string;

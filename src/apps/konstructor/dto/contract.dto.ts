@@ -4,6 +4,7 @@ import { IsOptional, ValidateNested } from 'class-validator';
 import { IsObject } from 'class-validator';
 import { IsString } from 'class-validator';
 import { IsNumber } from 'class-validator';
+import { CONTRACT_CODE } from '../document-generate/type/contract.type';
 
 class ContractMeasureDto {
     @ApiProperty({ description: 'ID of the measure' })
@@ -71,6 +72,11 @@ export class ContracPortaltDto {
     @IsOptional()
     @IsString({ message: 'ContracPortaltDto updated_at must be a string' })
     updated_at: string | null;
+
+    @ApiProperty({ description: 'Product name of the contract' })
+    @IsString({ message: 'ContracPortaltDto productName must be a string' })
+    @IsOptional()
+    productName?: string;
 }
 export class ContractDto {
     @ApiProperty({ description: 'ID of the contract' })
@@ -86,7 +92,7 @@ export class ContractDto {
 
     @ApiProperty({ description: 'Code of the contract' })
     @IsString({ message: 'code must be a string' })
-    code: string;
+    code: CONTRACT_CODE;
 
     @ApiProperty({ description: 'Short name of the contract' })
     @IsString({ message: 'shortName must be a string' })

@@ -10,17 +10,17 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateBitrixFieldItemDto } from './create-bitrixfield-item.dto';
-import { BitrixFieldEntityType } from '../enums/bitrixfield-entity-type.enum';
+import { PbxEntityType } from '../../pbx-shared';
 
 export class CreateBitrixFieldDto {
     @ApiProperty({
         description: 'Entity type (polymorphic relation)',
-        example: BitrixFieldEntityType.SMART,
-        enum: BitrixFieldEntityType,
+        example: PbxEntityType.SMART,
+        enum: PbxEntityType,
     })
-    @IsEnum(BitrixFieldEntityType)
+    @IsEnum(PbxEntityType)
     @IsNotEmpty()
-    entity_type: BitrixFieldEntityType;
+    entity_type: PbxEntityType;
 
     @ApiProperty({
         description: 'Entity ID (polymorphic relation)',

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { OfferTemplateRepository } from './offer-template.repository';
 import { OfferTemplate, OfferTemplateSummary } from '../';
+import { Prisma } from 'generated/prisma';
+import type { OfferTemplateFilters } from '../types/offer-template-filters.type';
 
 @Injectable()
 export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
@@ -30,17 +32,14 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 userSelectedTemplates: true,
             },
         })) as Partial<OfferTemplate> | null;
-
-        return result ? new OfferTemplate(result) : null;
+        const entity = await this.prepareToEntityWithPortalId(result);
+        return entity ? new OfferTemplate(entity) : null;
     }
 
-    async findMany(filters?: {
-        visibility?: 'public' | 'private' | 'user';
-        portal_id?: bigint;
-        is_active?: boolean;
-        search?: string;
-    }): Promise<OfferTemplateSummary[]> {
-        const where: any = {};
+    async findMany(
+        filters?: OfferTemplateFilters,
+    ): Promise<OfferTemplateSummary[]> {
+        const where: Prisma.OfferTemplateWhereInput = {};
 
         if (filters?.visibility) {
             where.visibility = filters.visibility;
@@ -72,6 +71,9 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 id: true,
                 name: true,
                 visibility: true,
+                creator_bitrix_user_id: true,
+                is_archived: true,
+                archived_at: true,
                 is_default: true,
                 type: true,
                 style: true,
@@ -80,11 +82,23 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: true,
                 counter: true,
                 created_at: true,
+                tags: true,
             },
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
-
-        return results.map(result => new OfferTemplateSummary(result));
+        const resultEntities: (OfferTemplateSummary | undefined)[] = [];
+        for (const result of results) {
+            // const portalId = await this.getPortalIdByTemplateId(
+            //     BigInt(!result.id),
+            // );
+            // console.log(portalId, 'portalId');
+            const entity =
+                await this.prepareToEntitySummaryWithPortalId(result);
+            resultEntities.push(
+                entity ? new OfferTemplateSummary(entity) : undefined,
+            );
+        }
+        return resultEntities.filter(entity => entity !== undefined);
     }
 
     async findWithRelations(id: bigint): Promise<OfferTemplate | null> {
@@ -118,6 +132,8 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     }
 
     async create(data: Partial<OfferTemplate>): Promise<OfferTemplate> {
+        console.log('OFFER TEMPLATE CREATE');
+        console.log(data, 'data');
         const result = await this.prisma.offerTemplate.create({
             data: {
                 name: data.name!,
@@ -142,8 +158,11 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 tags: data.tags,
                 is_active: data.is_active!,
                 counter: data.counter!,
+                creator_bitrix_user_id: data.creator_bitrix_user_id,
+                created_at: new Date(),
             },
         });
+        console.log(result, 'OFFER TEMPLATE CREATE result');
         const entity = {
             ...result,
             id: String(result.id),
@@ -204,6 +223,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                     is_active: data.is_active,
                 }),
                 ...(data.counter !== undefined && { counter: data.counter }),
+                updated_at: new Date(),
             },
         });
         const entity = {
@@ -222,6 +242,9 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     async findByPortal(portal_id: bigint): Promise<OfferTemplateSummary[]> {
         const results = (await this.prisma.offerTemplate.findMany({
             where: {
+                visibility: 'private',
+                is_active: true,
+                is_archived: false,
                 offerTemplatePortal: {
                     some: {
                         portal_id,
@@ -237,14 +260,31 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 style: true,
                 color: true,
                 code: true,
+                tags: true,
+                creator_bitrix_user_id: true,
+                is_archived: true,
+                archived_at: true,
                 is_active: true,
                 counter: true,
                 created_at: true,
+                offerTemplatePortal: {
+                    select: {
+                        portal_id: true,
+                    },
+                },
             },
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
 
-        return results.map(result => new OfferTemplateSummary(result));
+        const resultEntities: (OfferTemplateSummary | undefined)[] = [];
+        for (const result of results) {
+            const entity =
+                await this.prepareToEntitySummaryWithPortalId(result);
+            resultEntities.push(
+                entity ? new OfferTemplateSummary(entity) : undefined,
+            );
+        }
+        return resultEntities.filter(entity => entity !== undefined);
     }
 
     async findPublic(): Promise<OfferTemplateSummary[]> {
@@ -262,9 +302,18 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 style: true,
                 color: true,
                 code: true,
+                tags: true,
+                creator_bitrix_user_id: true,
+                is_archived: true,
+                archived_at: true,
                 is_active: true,
                 counter: true,
                 created_at: true,
+                offerTemplatePortal: {
+                    select: {
+                        portal_id: true,
+                    },
+                },
             },
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
@@ -280,9 +329,10 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
             where: {
                 visibility: 'user',
                 is_active: true,
-                userSelectedTemplates: {
+                is_archived: false,
+                creator_bitrix_user_id: user_id,
+                offerTemplatePortal: {
                     some: {
-                        bitrix_user_id: user_id,
                         portal_id: portal_id,
                     },
                 },
@@ -296,14 +346,31 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 style: true,
                 color: true,
                 code: true,
+                tags: true,
+                creator_bitrix_user_id: true,
+                is_archived: true,
+                archived_at: true,
                 is_active: true,
                 counter: true,
                 created_at: true,
+                offerTemplatePortal: {
+                    select: {
+                        portal_id: true,
+                    },
+                },
             },
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
 
-        return results.map(result => new OfferTemplateSummary(result));
+        const resultEntities: (OfferTemplateSummary | undefined)[] = [];
+        for (const result of results) {
+            const entity =
+                await this.prepareToEntitySummaryWithPortalId(result);
+            resultEntities.push(
+                entity ? new OfferTemplateSummary(entity) : undefined,
+            );
+        }
+        return resultEntities.filter(entity => entity !== undefined);
     }
 
     async findFullUserTemplates(
@@ -312,18 +379,15 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     ): Promise<OfferTemplate[]> {
         const results = (await this.prisma.offerTemplate.findMany({
             where: {
-                OR: [
-                    { visibility: 'user' },
-                    {
-                        userSelectedTemplates: {
-                            some: {
-                                bitrix_user_id: user_id,
-                                portal_id,
-                            },
-                        },
+                creator_bitrix_user_id: user_id,
+                offerTemplatePortal: {
+                    some: {
+                        portal_id: portal_id,
                     },
-                ],
+                },
+                visibility: 'user',
                 is_active: true,
+                is_archived: false,
             },
 
             select: {
@@ -335,20 +399,73 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 style: true,
                 color: true,
                 code: true,
+                creator_bitrix_user_id: true,
+                is_archived: true,
+                archived_at: true,
+
+                tags: true,
                 is_active: true,
                 counter: true,
                 created_at: true,
-                offerTemplateFonts: true,
+                offerTemplatePortal: true,
             },
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
 
-        return results.map(
-            result =>
+        const resultEntities: OfferTemplate[] = [];
+        for (const result of results) {
+            const portalId = await this.getPortalIdByTemplateId(
+                BigInt(!result.id),
+            );
+            console.log(portalId, 'portalId');
+            resultEntities.push(
                 new OfferTemplate({
                     ...result,
-                    id: String(result.id),
-                }),
-        );
+                    portal_id: portalId,
+                } as Partial<OfferTemplate>),
+            );
+        }
+        return resultEntities;
+    }
+    private async prepareToEntityWithPortalId(
+        result: Partial<OfferTemplate> | null,
+    ): Promise<Partial<OfferTemplate> | null> {
+        if (!result) {
+            return null;
+        }
+        const portalId = await this.getPortalIdByTemplateId(BigInt(!result.id));
+        return portalId
+            ? {
+                  ...result,
+                  portal_id: portalId,
+              }
+            : result;
+    }
+
+    private async prepareToEntitySummaryWithPortalId(
+        result: Partial<OfferTemplateSummary> | null,
+    ): Promise<Partial<OfferTemplateSummary> | null> {
+        if (!result) {
+            return null;
+        }
+        const portalId = await this.getPortalIdByTemplateId(BigInt(!result.id));
+        return portalId
+            ? {
+                  ...result,
+                  portal_id: portalId,
+              }
+            : result;
+    }
+    private async getPortalIdByTemplateId(
+        templateId: bigint,
+    ): Promise<number | undefined> {
+        const portalTemplate = await this.prisma.offerTemplatePortal.findFirst({
+            where: {
+                offer_template_id: templateId,
+            },
+        });
+        return portalTemplate
+            ? Number(portalTemplate.portal_id.toString())
+            : undefined;
     }
 }

@@ -24,4 +24,7 @@ export enum EBXEntity {
     USER = 'user',
     CHAT = 'chat',
     DIALOG = 'dialog',
+    FOLDER = 'folder',
+    STORAGE = 'storage',
+    WORKFLOW = 'workflow',
 }

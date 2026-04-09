@@ -1088,7 +1088,10 @@ exports.Prisma.OfferTemplateScalarFieldEnum = {
   is_active: 'is_active',
   counter: 'counter',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  creator_bitrix_user_id: 'creator_bitrix_user_id',
+  is_archived: 'is_archived',
+  archived_at: 'archived_at'
 };
 
 exports.Prisma.Offer_zakupki_settingsScalarFieldEnum = {
@@ -1362,6 +1365,27 @@ exports.Prisma.BtxUserScalarFieldEnum = {
   updated_at: 'updated_at',
   code: 'code',
   portal_id: 'portal_id'
+};
+
+exports.Prisma.InvoiceTemplateScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  visibility: 'visibility',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  type: 'type',
+  name: 'name',
+  code: 'code',
+  counter: 'counter',
+  description: 'description',
+  is_default: 'is_default',
+  is_active: 'is_active',
+  is_archived: 'is_archived',
+  archived_at: 'archived_at',
+  portal_id: 'portal_id',
+  agent_id: 'agent_id',
+  creator_bitrix_user_id: 'creator_bitrix_user_id'
 };
 
 exports.Prisma.SortOrder = {
@@ -2139,11 +2163,19 @@ exports.Prisma.rolesOrderByRelevanceFieldEnum = {
 exports.Prisma.BtxUserOrderByRelevanceFieldEnum = {
   code: 'code'
 };
+
+exports.Prisma.InvoiceTemplateOrderByRelevanceFieldEnum = {
+  id: 'id',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  name: 'name',
+  code: 'code',
+  description: 'description'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
-  user: 'user',
-  portal: 'portal'
+  user: 'user'
 };
 
 exports.offer_template_images_storage_type = exports.$Enums.offer_template_images_storage_type = {
@@ -2192,6 +2224,20 @@ exports.offer_template_pages_type = exports.$Enums.offer_template_pages_type = {
   lt: 'lt',
   other: 'other',
   default: 'default'
+};
+
+exports.invoice_templates_visibility = exports.$Enums.invoice_templates_visibility = {
+  public: 'public',
+  portal: 'portal',
+  provider: 'provider'
+};
+
+exports.invoice_templates_type = exports.$Enums.invoice_templates_type = {
+  word: 'word',
+  excel: 'excel',
+  pdf: 'pdf',
+  html: 'html',
+  other: 'other'
 };
 
 exports.Prisma.ModelName = {
@@ -2274,7 +2320,8 @@ exports.Prisma.ModelName = {
   OfferTemplatePageSticker: 'OfferTemplatePageSticker',
   OfferTemplatePage: 'OfferTemplatePage',
   roles: 'roles',
-  BtxUser: 'BtxUser'
+  BtxUser: 'BtxUser',
+  InvoiceTemplate: 'InvoiceTemplate'
 };
 
 /**

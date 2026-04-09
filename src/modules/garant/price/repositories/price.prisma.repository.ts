@@ -23,15 +23,15 @@ export class PricePrismaRepository implements PriceRepository {
 
     private async getPriceData(price: PriceCreateType) {
         const complect = price.complectCode
-            ? await this.complectService.findByCode(price.complectCode!)
+            ? await this.complectService.findByCode(price.complectCode)
             : null;
         const garantPackage = price.garantPackageCode
             ? await this.garantPackageService.findByCode(
-                  price.garantPackageCode!,
+                  price.garantPackageCode,
               )
             : null;
         const supply = price.supplyCode
-            ? await this.supplyService.findByCode(price.supplyCode!)
+            ? await this.supplyService.findByCode(price.supplyCode)
             : null;
         const complectId = complect ? BigInt(complect.id.toString()) : null;
         const garantPackageId = garantPackage

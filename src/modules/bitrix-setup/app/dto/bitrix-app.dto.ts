@@ -180,7 +180,7 @@ export class BitrixAppDto {
         this.type = app.type as BITRIX_APP_TYPES;
         this.code = app.code as BITRIX_APP_CODES;
         this.status = app.status as BITRIX_APP_STATUSES;
-        this.portal = portal as PortalDto;
+        this.portal = portal;
         // this.token = app.bitrix_tokens as BitrixTokenEntity;
         // this.placements = app.placements;
         // this.settings = app.settings;

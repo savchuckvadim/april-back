@@ -101,7 +101,7 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
                 : []; // ← пустой массив, Bitrix проглоти
 
             if (contact.phone.length < 200) {
-                let addContactData = {
+                const addContactData = {
                     ASSIGNED_BY_ID: this.userId,
                     COMPANY_ID: companyId,
                     NAME: contact.name,

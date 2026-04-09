@@ -83,7 +83,7 @@ export class PortalService {
             this.logger.log('Portal data retrieved successfully');
             return {
                 success: true,
-                data: portal as IPortal,
+                data: portal,
             };
         } catch (error) {
             this.logger.error(`Error getting portal data: ${error.message}`);

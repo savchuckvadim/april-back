@@ -11,7 +11,6 @@ import {
     ClientAuthResponseDto,
     LoginDto,
     LoginResponseCookieDto,
-    LoginResponseDto,
 } from '../dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailConfirmationService } from './mail.service';
@@ -74,13 +73,13 @@ export class AuthService {
             { email: dto.email },
             { expiresIn: '24h' },
         );
-        await this.mailer.sendEmailConfirmation(owner as User, token);
+        await this.mailer.sendEmailConfirmation(owner, token);
 
         return {
             id: Number(client.client.id),
             message: 'Client registered, please confirm email',
             client: client.clientDto,
-            owner: this.userService.getUserDto(owner as User) ?? null,
+            owner: this.userService.getUserDto(owner) ?? null,
         };
     }
 

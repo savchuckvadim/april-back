@@ -8,6 +8,11 @@ import { getSwaggerConfig } from './core/config/swagger/swagger.config';
 import { cors } from './core/config/cors/cors.config';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+dayjs.extend(localizedFormat);
+dayjs.locale('ru');
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
@@ -75,4 +80,4 @@ async function bootstrap() {
 
     await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+bootstrap().catch(console.error);

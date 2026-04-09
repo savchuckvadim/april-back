@@ -4,7 +4,6 @@ import {
     EBxNamespace,
 } from '../../core/domain/consts/bitrix-api.enum';
 import { EBXEntity } from '../../core/domain/consts/bitrix-entities.enum';
-import { IBXTask } from '../interfaces/bitrix.interface';
 import { TBXResponse } from '../../core';
 import { IBitrixResponse } from '../../core/interface/bitrix-api-http.intterface';
 import {
@@ -25,7 +24,7 @@ export class BxActivityRepository {
         );
     }
 
-    async getBtch(cmdCode: string, activityId: number | string) {
+    getBtch(cmdCode: string, activityId: number | string) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -51,7 +50,7 @@ export class BxActivityRepository {
         );
     }
 
-    async getListBtch(
+    getListBtch(
         cmdCode: string,
         filter: Partial<BXActivityRequestFields>,
         select?: string[],
@@ -93,7 +92,7 @@ export class BxActivityRepository {
             );
             if (result && result.result) {
                 result.result.map(t => {
-                    lastId = t.id;
+                    lastId = Number(t.ID);
                     results.push(t);
                 });
             }
@@ -139,7 +138,7 @@ export class BxActivityRepository {
             );
             if (result && result.result && result.result.length > 0) {
                 result.result.map(t => {
-                    lastId = t.id;
+                    lastId = Number(t.ID);
                     results.push(t);
                 });
             }
@@ -174,7 +173,7 @@ export class BxActivityRepository {
         );
     }
 
-    async deleteBtch(cmdCode: string, activityId: number | string) {
+    deleteBtch(cmdCode: string, activityId: number | string) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -224,7 +223,7 @@ export class BxActivityRepository {
             { fields: data },
         );
     }
-    async createBtch(cmdCode: string, data: Partial<IBXActivity>) {
+    createBtch(cmdCode: string, data: Partial<IBXActivity>) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -242,7 +241,7 @@ export class BxActivityRepository {
         );
     }
 
-    async updateBtch(
+    updateBtch(
         cmdCode: string,
         id: number | string,
         data: Partial<IBXActivity>,

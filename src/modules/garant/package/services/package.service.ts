@@ -46,6 +46,6 @@ export class PackageService {
     async findByCode(code: string): Promise<PackageEntityDto | null> {
         const packageEntity = await this.packageRepository.findByCode(code);
         if (!packageEntity) return null;
-        return new PackageEntityDto(packageEntity as PackageEntity);
+        return new PackageEntityDto(packageEntity);
     }
 }

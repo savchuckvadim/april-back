@@ -64,7 +64,7 @@ export class PbxFieldEntityDto {
         this.name = field.name;
         this.title = field.title;
         this.code = field.code;
-        this.type = field.type as EUserFieldType | 'multiple';
+        this.type = field.type;
         this.isPlural = field.isPlural;
         this.bitrixId = field.bitrixId;
         this.bitrixCamelId = field.bitrixCamelId;

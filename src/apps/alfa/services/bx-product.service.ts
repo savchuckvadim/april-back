@@ -26,7 +26,7 @@ export class BxProductService {
                         {
                             '=active': 'Y',
                             iblockId: 24,
-                            '%name': prefix as string,
+                            '%name': prefix,
                             [`=${bxProductData.SEMINAR_TOPIC.bitrixId}`]:
                                 value.value as string,
                             // [`=${bxProductData.PREFIX.bitrixId}`]: (prefix as string)

@@ -4,12 +4,9 @@ import { ParseSmartService } from '../parse/parse-service';
 import { InstallSmartDto } from '../../dto/install-smart.dto';
 import { PBXService } from '@/modules/pbx';
 import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
-import { IBXSmartType } from '@/modules/bitrix/domain/crm/smart-type';
+// import { IBXSmartType } from '@/modules/bitrix/domain/crm/smart-type';
 import { InstallSmartFieldsService } from './install-smart-fields.service';
-import {
-    EUserFieldType,
-    IUserFieldConfig,
-} from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface';
+import {IUserFieldConfig} from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface';
 import { IBXItem } from '@/modules/bitrix/domain/crm/item/interface/item.interface';
 import { SaveSmartService } from '../save/save-smart.service';
 import { SaveSmartFieldsService } from '../save/save-smart-fields.service';

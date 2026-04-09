@@ -40,6 +40,11 @@ import { BxFileBatchService } from './domain/file/bx-file.batch.service';
 import { BxUserService } from './domain/user/services/bx-user.service';
 import { BxUserBatchService } from './domain/user/services/bx-user.batch.service';
 import { BxDialogBatchService, BxDialogService } from './domain/chat/dialog';
+import {
+    BxDiskFileService,
+    BxDiskFolderService,
+    BxDiskStorageService,
+} from './domain/disk';
 
 // @Injectable()
 export class BitrixService {
@@ -65,6 +70,11 @@ export class BitrixService {
     public task: BxTaskService;
     public activity: ActivityService;
     public user: BxUserService;
+    public disk: {
+        file: BxDiskFileService;
+        storage: BxDiskStorageService;
+        folder: BxDiskFolderService;
+    };
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -92,6 +102,7 @@ export class BitrixService {
         this.api = bxApi;
     }
     init(portal: IPortal) {
+        console.log('init BitrixService', portal.domain);
         // this.api = this.bitrixApiFactoryService.create(portal);
         this.initDeal();
         this.initCompany();
@@ -114,6 +125,7 @@ export class BitrixService {
         this.initiActivities();
         this.initUser();
         this.initDialog();
+        this.initDisk();
     }
 
     private initDeal() {
@@ -214,5 +226,12 @@ export class BitrixService {
     private initUser() {
         this.user = this.cloner.clone(BxUserService, this.api);
         this.batch.user = this.cloner.clone(BxUserBatchService, this.api);
+    }
+    private initDisk() {
+        this.disk = {
+            file: this.cloner.clone(BxDiskFileService, this.api),
+            storage: this.cloner.clone(BxDiskStorageService, this.api),
+            folder: this.cloner.clone(BxDiskFolderService, this.api),
+        };
     }
 }

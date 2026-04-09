@@ -10,18 +10,18 @@ import {
     IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BitrixFieldEntityType } from '../../bitrixfields/enums/bitrixfield-entity-type.enum';
+import { PbxEntityType } from '../../pbx-shared';
 import { CreateBtxStageDto } from './create-btx-stage.dto';
 
 export class CreateBtxCategoryDto {
     @ApiProperty({
         description: 'Entity type (polymorphic relation)',
-        example: BitrixFieldEntityType.DEAL,
-        enum: BitrixFieldEntityType,
+        example: PbxEntityType.DEAL,
+        enum: PbxEntityType,
     })
-    @IsEnum(BitrixFieldEntityType)
+    @IsEnum(PbxEntityType)
     @IsNotEmpty()
-    entity_type: BitrixFieldEntityType;
+    entity_type: PbxEntityType;
 
     @ApiProperty({
         description: 'Entity ID (polymorphic relation)',

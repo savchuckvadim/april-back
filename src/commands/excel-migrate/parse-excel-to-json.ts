@@ -354,7 +354,7 @@ async function parseSheet(
 
     const structure = detectSheetStructure(sheet);
     let allSheetText = '';
-    let rowNumber = 0;
+    const rowNumber = 0;
 
     // Собираем все данные из первых 7 строк
     const headerRows: string[][] = [];

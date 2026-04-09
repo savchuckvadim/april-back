@@ -41,6 +41,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 ? exception.getStatus()
                 : HttpStatus.INTERNAL_SERVER_ERROR;
 
+        // For streamed/binary responses (file downloads), headers/body may already be sent.
+        // In this case we must not attempt to write a JSON error response.
+        if (response.headersSent) {
+            this.logger.warn(
+                `Headers already sent, skip error response: ${request.method} ${request.url}`,
+            );
+            return;
+        }
+
         const error =
             exception instanceof Error
                 ? exception
@@ -85,10 +94,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         const ip =
             request.headers['x-forwarded-for'] || request.socket.remoteAddress;
-        const userAgent = request.headers['user-agent'] || 'unknown';
-        const referer = request.headers['referer'] || 'n/a';
+        const userAgent = this.headerToString(request.headers['user-agent']);
+        const referer = this.headerToString(request.headers['referer'], 'n/a');
+        const ipText = this.headerToString(ip, 'unknown');
 
-        const message = `⚠️ Ошибка: ${error.name}\n\n📄 Файл: ${file}\n🔢 Строка: ${line}\n🔧 Функция: ${func}\n\n💥 Код: ${code}\n\n📬 Сообщение: ${error.message}\n\n📍 URL: ${request.method} ${request.url}\n🧭 User-Agent: ${userAgent}\n🌍 IP: ${ip}\n🔗 Referer: ${referer}
+        const message = `⚠️ Ошибка: ${error.name}\n\n📄 Файл: ${file}\n🔢 Строка: ${line}\n🔧 Функция: ${func}\n\n💥 Код: ${code}\n\n📬 Сообщение: ${error.message}\n\n📍 URL: ${request.method} ${request.url}\n🧭 User-Agent: ${userAgent}\n🌍 IP: ${ipText}\n🔗 Referer: ${referer}
         `;
         await this.telegram.sendMessage(message);
         console.log(message);
@@ -104,16 +114,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         request: Request,
         response: Response,
     ) {
+        if (response.headersSent) {
+            this.logger.warn(
+                `Headers already sent, skip validation response: ${request.method} ${request.url}`,
+            );
+            return;
+        }
+
         const res = exception.getResponse();
 
         // const details = typeof res === 'object'
         //     ? JSON.stringify(res, null, 2)
         //     : res;
 
-        const messageArray =
-            typeof res === 'object' && res !== null && 'message' in res
-                ? (res as any).message
-                : [];
+        const messageArray = this.getValidationMessages(res);
 
         const validationMessages = Array.isArray(messageArray)
             ? messageArray.join('\n- ')
@@ -128,5 +142,29 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             message: 'Validation failed',
             errors: messageArray,
         });
+    }
+
+    private headerToString(
+        value: string | string[] | undefined,
+        fallback = 'unknown',
+    ): string {
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) return value.join(', ');
+        return fallback;
+    }
+
+    private getValidationMessages(res: unknown): string[] {
+        if (typeof res !== 'object' || res === null || !('message' in res)) {
+            return [];
+        }
+
+        const maybeMessage = (res as { message: unknown }).message;
+        if (Array.isArray(maybeMessage)) {
+            return maybeMessage.map(item => String(item));
+        }
+        if (typeof maybeMessage === 'string') {
+            return [maybeMessage];
+        }
+        return [String(maybeMessage)];
     }
 }

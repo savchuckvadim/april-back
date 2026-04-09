@@ -27,6 +27,10 @@ export class RecordsByCompanyUseCase {
             dealsIds,
         );
         const records = await recordsService.getRecords(activities);
-        return records;
+
+        const orderedRecords = records.sort(
+            (a, b) => b.activityId - a.activityId,
+        );
+        return orderedRecords;
     }
 }

@@ -10,10 +10,10 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ContractDto } from './contract.dto';
 import { ProductDto } from './product.dto';
 import { RowDto } from './row.dto';
 import { ProductRowSupplyDto } from '@/apps/konstructor/document-generate';
+import { ContractDto } from '@/apps/konstructor/dto/contract.dto';
 
 export class GenerateSupplyReportDto {
     @IsString()

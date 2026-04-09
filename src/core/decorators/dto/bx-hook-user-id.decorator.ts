@@ -20,9 +20,9 @@ export function IsBxHookUserId(validationOptions?: ValidationOptions) {
     return applyDecorators(
         Transform(({ value }) => {
             if (value === null || value === undefined || value === '') {
-                return value;
+                return value as string;
             }
-            const splitedValue = value.split('_')[1];
+            const splitedValue = (value as string).split('_')[1];
             if (
                 splitedValue === null ||
                 splitedValue === undefined ||
@@ -63,7 +63,7 @@ export function IsBxHookUserIdCustom(validationOptions?: ValidationOptions) {
                 ...validationOptions,
             },
             validator: {
-                validate(value: any, args: ValidationArguments) {
+                validate(value: any) {
                     if (value === null || value === undefined || value === '') {
                         return true; // или false, в зависимости от требований
                     }

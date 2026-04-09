@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { bitrixfields } from 'generated/prisma';
 import { PrismaService } from '@/core/prisma';
 import { BitrixFieldRepository } from './bitrixfield.repository';
+import { PbxEntityTypePrisma } from '../../pbx-shared';
 
 @Injectable()
 export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
@@ -39,6 +40,7 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
 
     async findMany(): Promise<bitrixfields[] | null> {
         const result = await this.prisma.bitrixfields.findMany({
+            take: 100,
             include: {
                 bitrixfield_items: true,
             },
@@ -47,7 +49,7 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
     }
 
     async findByEntity(
-        entityType: string,
+        entityType: PbxEntityTypePrisma,
         entityId: number,
     ): Promise<bitrixfields[] | null> {
         const result = await this.prisma.bitrixfields.findMany({
@@ -84,9 +86,9 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
         id: number,
         field: Partial<bitrixfields>,
     ): Promise<bitrixfields | null> {
-        const updateData: any = {};
+        const updateData: Partial<bitrixfields> = {};
         if (field.entity_type !== undefined)
-            updateData.entity_type = field.entity_type;
+            updateData.entity_type = field.entity_type as PbxEntityTypePrisma;
         if (field.entity_id !== undefined)
             updateData.entity_id = BigInt(field.entity_id);
         if (field.parent_type !== undefined)

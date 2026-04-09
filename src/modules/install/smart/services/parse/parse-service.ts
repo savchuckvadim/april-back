@@ -117,7 +117,7 @@ export class ParseSmartService {
                 isActive,
                 smartOrder,
                 smartIsDefault,
-            ] = values as any[];
+            ] = values;
 
             const smart: Smart = {
                 id: smartId,

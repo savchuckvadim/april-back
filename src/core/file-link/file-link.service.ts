@@ -13,7 +13,6 @@ export class FileLinkService {
      * Сохраняет файл с псевдоименем и возвращает публичную ссылку
      */
     async createPublicLink(
-        // buffer: Buffer,
         domain: string,
         userId: number,
         app: 'konstructor' | 'transcription',
@@ -25,7 +24,8 @@ export class FileLinkService {
             | 'provider/logo'
             | 'offer-word'
             | 'contract'
-            | 'supply',
+            | 'supply'
+            | 'invoice-document',
         year: string,
         fileName: string,
     ): Promise<string> {

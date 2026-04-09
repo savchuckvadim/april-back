@@ -59,8 +59,10 @@ export class GarantPricesParseService {
                     od30,
                     od50,
                 ] = values;
-                let proximaSupplyNumbers = [10, 11, 12, 13, 14, 15, 16, 17, 18];
-                let internetSupplyNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                const proximaSupplyNumbers = [
+                    10, 11, 12, 13, 14, 15, 16, 17, 18,
+                ];
+                const internetSupplyNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
                 values.forEach((value, index) => {
                     if (complectName && index > 2) {
@@ -71,13 +73,13 @@ export class GarantPricesParseService {
                             ?.toString()
                             .replace('р.', '')
                             .replace(',', '');
-                        let internetPriceNum = parseFloat(cleanPrice || '0'); // Конвертируем строку в число
+                        const internetPriceNum = parseFloat(cleanPrice || '0'); // Конвертируем строку в число
 
                         const price = {
                             number: count,
                             name: complectName?.toString() || '',
                             code: code?.toString() || '',
-                            supplyCode: `${index - 2}` as string,
+                            supplyCode: `${index - 2}`,
                             complectNumber: complectNumber?.toString() || '',
                             supplyNumber: internetSupplyNumbers[index],
                             price: internetPriceNum,
@@ -109,14 +111,14 @@ export class GarantPricesParseService {
                             ?.toString()
                             .replace('р.', '')
                             .replace(',', '');
-                        let proximaPriceNum = parseFloat(cleanPrice || '0'); // Конвертируем строку в число
+                        const proximaPriceNum = parseFloat(cleanPrice || '0'); // Конвертируем строку в число
 
                         if (supI === 0) {
-                            let flashPrice = {
+                            const flashPrice = {
                                 number: count,
                                 name: complectName?.toString() || '',
                                 code: code?.toString() || '',
-                                supplyCode: `${supI - 2}` as string,
+                                supplyCode: `${supI - 2}`,
                                 complectNumber:
                                     complectNumber?.toString() || '',
                                 supplyNumber: proximaSupplyNumbers[supI],
@@ -128,11 +130,11 @@ export class GarantPricesParseService {
                             prices.push(flashPrice);
                             count++;
 
-                            let price = {
+                            const price = {
                                 number: count,
                                 name: complectName?.toString() || '',
                                 code: code?.toString() || '',
-                                supplyCode: `${supI - 2}` as string,
+                                supplyCode: `${supI - 2}`,
                                 complectNumber:
                                     complectNumber?.toString() || '',
                                 supplyNumber: proximaSupplyNumbers[supI + 1],
@@ -144,11 +146,11 @@ export class GarantPricesParseService {
                             prices.push(price);
                             count++;
                         } else {
-                            let price = {
+                            const price = {
                                 number: count,
                                 name: complectName?.toString() || '',
                                 code: code?.toString() || '',
-                                supplyCode: `${supI - 2}` as string,
+                                supplyCode: `${supI - 2}`,
                                 complectNumber:
                                     complectNumber?.toString() || '',
                                 supplyNumber: proximaSupplyNumbers[supI + 1],

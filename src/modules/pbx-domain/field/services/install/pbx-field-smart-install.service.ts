@@ -70,13 +70,7 @@ export class PbxFieldSmartInstallService {
         // Фильтруем поля по fieldCodes, если указаны
         // TypeScript гарантирует, что коды типизированы правильно
         const filteredFields = options.fieldCodes
-            ? fields.filter(f =>
-                  options.fieldCodes!.includes(
-                      f.code as
-                          | PbxSalesEventFieldCode
-                          | PbxSalesKonstructorFieldCode,
-                  ),
-              )
+            ? fields.filter(f => options.fieldCodes!.includes(f.code))
             : fields;
 
         // Получаем smart сущности из портала
@@ -262,7 +256,7 @@ export class PbxFieldSmartInstallService {
         }>;
 
         const config: Partial<IUserFieldConfig> = {
-            entityId: entityId as IUserFieldConfig['entityId'],
+            entityId: entityId,
             fieldName,
             userTypeId,
             multiple: field.isMultiple ? 'Y' : 'N',

@@ -6,7 +6,7 @@ export interface FileValidationOptions {
     allowedExtensions?: string[];
 }
 
-const DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const DEFAULT_MAX_SIZE = 30 * 1024 * 1024; // 30 MB
 const DEFAULT_DOCX_MIME_TYPES = [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/zip', // DOCX файлы технически являются ZIP архивами

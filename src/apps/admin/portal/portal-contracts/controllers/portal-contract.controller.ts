@@ -14,7 +14,6 @@ import { PortalContractService } from '../services/portal-contract.service';
 import { CreatePortalContractDto } from '../dto/create-portal-contract.dto';
 import { UpdatePortalContractDto } from '../dto/update-portal-contract.dto';
 import { PortalContractResponseDto } from '../dto/portal-contract-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 import { GetPortalContractsQueryDto } from '../dto/get-portal-contracts-query.dto';
 
 @ApiTags('Admin Portal Contracts Management')

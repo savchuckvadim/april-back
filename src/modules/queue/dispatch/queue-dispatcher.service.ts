@@ -25,6 +25,12 @@ export class QueueDispatcherService {
         private readonly serviceDealsQueue: Queue,
         @InjectQueue(QueueNames.ORK_KPI_REPORT)
         private readonly orkKpiReportQueue: Queue,
+        @InjectQueue(QueueNames.OFFER_WORD_EPHEMERAL_PDF)
+        private readonly offerWordEphemeralPdfQueue: Queue,
+        @InjectQueue(QueueNames.ZAKUPKI_OFFER)
+        private readonly zakupkiOfferQueue: Queue,
+        @InjectQueue(QueueNames.KONSTRUCTOR)
+        private readonly konstructorQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -37,7 +43,7 @@ export class QueueDispatcherService {
     ): Promise<Job<T>> {
         const queue = this.getQueue(queueName);
         this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
-        this.logger.log(`Job data: ${JSON.stringify(data)}`);
+        // this.logger.log(`Job data: ${JSON.stringify(data)}`);
         const job = jobId
             ? await queue.add(jobName, data, { jobId })
             : await queue.add(jobName, data);
@@ -46,7 +52,7 @@ export class QueueDispatcherService {
     }
 
     getQueue(name: QueueNames): Queue {
-        this.logger.log(`Getting queue: ${name}`);
+        this.logger.debug(`Getting queue: ${name}`);
         switch (name) {
             case QueueNames.EVENT:
                 return this.eventQueue;
@@ -64,10 +70,17 @@ export class QueueDispatcherService {
                 return this.serviceDealsQueue;
             case QueueNames.ORK_KPI_REPORT:
                 return this.orkKpiReportQueue;
-            default:
+            case QueueNames.OFFER_WORD_EPHEMERAL_PDF:
+                return this.offerWordEphemeralPdfQueue;
+            case QueueNames.ZAKUPKI_OFFER:
+                return this.zakupkiOfferQueue;
+            case QueueNames.KONSTRUCTOR:
+                return this.konstructorQueue;
+            default: {
                 const error = `Unknown queue name: ${name}`;
                 this.logger.error(error);
                 throw new Error(error);
+            }
         }
     }
 

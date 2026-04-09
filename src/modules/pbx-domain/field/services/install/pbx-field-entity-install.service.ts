@@ -66,13 +66,7 @@ export class PbxFieldEntityInstallService {
         // Фильтруем поля по fieldCodes, если указаны
         // TypeScript гарантирует, что коды типизированы правильно
         const filteredFields = options.fieldCodes
-            ? fields.filter(f =>
-                  options.fieldCodes!.includes(
-                      f.code as
-                          | PbxSalesEventFieldCode
-                          | PbxSalesKonstructorFieldCode,
-                  ),
-              )
+            ? fields.filter(f => options.fieldCodes!.includes(f.code))
             : fields;
 
         const results: InstallResult = { success: [], failed: [] };

@@ -7,7 +7,6 @@ import {
     Param,
     Delete,
     Query,
-    ParseIntPipe,
     HttpCode,
     HttpStatus,
     BadRequestException,
@@ -36,6 +35,7 @@ import {
     OfferTemplateVisibility,
 } from '../dtos/create-offer-template.dto';
 import { randomUUID } from 'crypto';
+import { offer_templates_visibility } from 'generated/prisma';
 
 @ApiTags('Konstructor Offer Template')
 @Controller('offer-templates')
@@ -87,12 +87,25 @@ export class OfferTemplateController {
         @Query() query?: OfferTemplateQueryDto,
     ): Promise<OfferTemplateSummaryDto[]> {
         try {
-            const filters: any = {};
+            const filters: {
+                visibility?: offer_templates_visibility;
+                portal_id?: bigint;
+                is_active?: boolean;
+                search?: string;
+            } = {};
             const { visibility, portal_id, is_active, search } = query || {};
-            if (visibility) filters.visibility = visibility;
-            if (portal_id) filters.portal_id = BigInt(portal_id);
-            if (is_active !== undefined) filters.is_active = is_active === true;
-            if (search) filters.search = search;
+            if (visibility) {
+                filters.visibility = visibility as offer_templates_visibility;
+            }
+            if (portal_id) {
+                filters.portal_id = BigInt(portal_id);
+            }
+            if (is_active !== undefined) {
+                filters.is_active = is_active === true;
+            }
+            if (search) {
+                filters.search = search;
+            }
 
             const templates = await this.offerTemplateService.findMany();
 

@@ -24,10 +24,14 @@ export class OfferTemplateSummaryDto extends OfferTemplateSummary {
     @IsNumber()
     declare id: string;
 
-    @ApiProperty({ description: 'The portal id of the offer template' })
-    @IsString()
+    @ApiProperty({
+        description: 'The portal id of the offer template',
+        type: Number,
+        required: false,
+    })
+    @IsNumber()
     @IsOptional()
-    portal_id?: string;
+    declare portal_id?: number;
 
     @ApiProperty({ description: 'The is active of the offer template' })
     @IsBoolean()
@@ -239,10 +243,14 @@ export class OfferTemplateDto extends OfferTemplate {
     @Type(() => OfferTemplateFontDto)
     fonts: OfferTemplateFontDto[];
 
-    @ApiProperty({ description: 'The portal id of the offer template' })
+    @ApiProperty({
+        description: 'The portal id of the offer template',
+        type: Number,
+        required: false,
+    })
     @IsString()
     @IsOptional()
-    portal_id?: string;
+    declare portal_id?: number;
 
     @ApiProperty({ description: 'The is active of the offer template' })
     @IsBoolean()

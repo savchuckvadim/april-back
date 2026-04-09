@@ -33,7 +33,7 @@ export class BxDealService {
         return comment;
     }
     getParticipants(dealValues: DealValue[]) {
-        let participants = {} as Record<string, string>;
+        const participants = {} as Record<string, string>;
         dealValues.forEach(value => {
             if (
                 value.name.includes('Участник') &&

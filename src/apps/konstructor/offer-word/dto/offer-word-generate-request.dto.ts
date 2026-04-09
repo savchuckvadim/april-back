@@ -5,7 +5,6 @@ import {
     IsBoolean,
     IsEnum,
     IsNumber,
-    IsObject,
     IsOptional,
     IsString,
     ValidateNested,
@@ -13,23 +12,89 @@ import {
 import {
     ProductRowDto,
     ProductRowSetDto,
-    ProductRowSupplyDto,
-    PriceDto,
-    RegionDto,
-    RegionsDto,
     ComplectDto,
 } from 'src/apps/konstructor/document-generate';
 import { ClientTypeEnum } from '../../document-generate/type/client.type';
 import { ContractDto } from '../../dto/contract.dto';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
-import { PlacementDto } from '@/apps/event-sales/dto/event-sale-flow/placement.dto';
 import { SupplyDto } from '../../dto';
-//
 
+export class InvoiceDataDto {
+    @ApiProperty({ description: 'Need general invoice' })
+    @IsBoolean()
+    needGeneralInvoice: boolean;
+    @ApiProperty({ description: 'Need many invoices' })
+    @IsBoolean()
+    needManyInvoices: boolean;
+    @ApiProperty({ description: 'Is by presentation invoices' })
+    @IsBoolean()
+    isByPresentationInvoices: boolean;
+    @ApiProperty({ description: 'Invoice date' })
+    @IsString()
+    @IsOptional()
+    invoiceDate: string;
+    @ApiProperty({ description: 'Invoice number' })
+    @IsString()
+    @IsOptional()
+    invoiceNumber?: string;
+}
+export class IOfferWordGenerateRecipientDto {
+    @ApiProperty({ description: 'Name of the recipient' })
+    @IsString()
+    @IsOptional()
+    name?: string;
+    @ApiProperty({ description: 'INN of the recipient' })
+    @IsString()
+    @IsOptional()
+    inn?: string;
+    @ApiProperty({ description: 'Company name of the recipient' })
+    @IsString()
+    @IsOptional()
+    companyName?: string;
+    @ApiProperty({ description: 'Position of the recipient' })
+    @IsString()
+    @IsOptional()
+    position?: string;
+}
+export class IOfferWordGenerateManagerDto {
+    @ApiProperty({ description: 'Name of the manager' })
+    @IsString()
+    @IsOptional()
+    name?: string;
+    @ApiProperty({ description: 'Email of the manager' })
+    @IsString()
+    @IsOptional()
+    email?: string;
+    @ApiProperty({ description: 'Phone of the manager' })
+    @IsString()
+    @IsOptional()
+    phone?: string;
+    @ApiProperty({ description: 'Position of the manager' })
+    @IsString()
+    @IsOptional()
+    position?: string;
+}
+
+export class ProductRowFullSetsDto {
+    @ApiProperty({ description: 'General set of the product rows' })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ProductRowSetDto)
+    general: ProductRowSetDto[];
+    @ApiProperty({ description: 'Alternative set of the product rows' })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ProductRowSetDto)
+    alternative: ProductRowSetDto[];
+}
 export class OfferWordByTemplateGenerateDto {
     @ApiProperty({ description: 'ID of the template' })
     @IsString()
     templateId: string;
+
+    @ApiProperty({ description: 'ID of the invoice template' })
+    @IsString()
+    invoiceTemplateId: string;
 
     @ApiProperty({ description: 'Domain of the company' })
     @IsString()
@@ -72,25 +137,10 @@ export class OfferWordByTemplateGenerateDto {
     @Type(() => SupplyDto)
     supply: SupplyDto;
 
-    @ApiProperty({ description: 'Price of the contract', type: PriceDto })
-    @ValidateNested()
-    @Type(() => PriceDto)
-    price: PriceDto;
-
     @ApiProperty({ description: 'Contract of the contract', type: ContractDto })
     @ValidateNested()
     @Type(() => ContractDto)
     contract: ContractDto;
-
-    @ApiProperty({ description: 'Regions of the contract', type: RegionsDto })
-    @ValidateNested()
-    @Type(() => RegionsDto)
-    regions: RegionsDto;
-
-    @ApiProperty({ description: 'Region of the contract', type: RegionDto })
-    @ValidateNested()
-    @Type(() => RegionDto)
-    region: RegionDto;
 
     @ApiProperty({ description: 'Rows of the contract', type: [ProductRowDto] })
     @IsArray()
@@ -98,18 +148,18 @@ export class OfferWordByTemplateGenerateDto {
     @Type(() => ProductRowDto)
     rows: ProductRowDto[];
 
+    @ApiProperty({
+        description: 'Product set of the contract',
+        type: ProductRowFullSetsDto,
+    })
+    @ValidateNested()
+    @Type(() => ProductRowFullSetsDto)
+    sets: ProductRowFullSetsDto;
+
     @ApiProperty({ description: 'Total of the contract', type: ProductRowDto })
     @ValidateNested()
     @Type(() => ProductRowDto)
     total: ProductRowDto;
-
-    @ApiProperty({
-        description: 'Product set of the contract',
-        type: ProductRowSetDto,
-    })
-    @ValidateNested()
-    @Type(() => ProductRowSetDto)
-    productSet: ProductRowSetDto;
 
     @ApiProperty({
         description: 'Client type of the contract',
@@ -117,4 +167,40 @@ export class OfferWordByTemplateGenerateDto {
     })
     @IsEnum(ClientTypeEnum)
     clientType: ClientTypeEnum;
+
+    @ApiProperty({
+        required: false,
+        default: false,
+        description:
+            'true — в ответе link ведёт на PDF (DOCX сохраняется и конвертируется); false или не передавать — link на DOCX',
+    })
+    @IsOptional()
+    @IsBoolean()
+    isWord?: boolean;
+
+    @ApiProperty({
+        description: 'Recipient of the contract',
+        type: IOfferWordGenerateRecipientDto,
+    })
+    @ValidateNested()
+    @Type(() => IOfferWordGenerateRecipientDto)
+    recipient: IOfferWordGenerateRecipientDto;
+
+    @ApiProperty({
+        description: 'Manager of the contract',
+        type: IOfferWordGenerateManagerDto,
+    })
+    @ValidateNested()
+    @Type(() => IOfferWordGenerateManagerDto)
+    manager: IOfferWordGenerateManagerDto;
+
+    @ApiProperty({ description: 'Invoice data', type: InvoiceDataDto })
+    @ValidateNested()
+    @Type(() => InvoiceDataDto)
+    invoice: InvoiceDataDto;
+
+    @ApiProperty({ description: 'Without queue' })
+    @IsBoolean()
+    @IsOptional()
+    withoutQueue?: boolean;
 }

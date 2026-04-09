@@ -46,7 +46,7 @@ export class BitrixClientService {
         );
 
         //for test
-        let rootClientPortal = portalId
+        const rootClientPortal = portalId
             ? await this.portalService.update({
                   id: portalId.toString(),
                   domain: dto.domain,

@@ -112,7 +112,10 @@ export class FileStorageService {
                     );
                     break;
                 } catch (error) {
-                    if (error.code === 'EBUSY') {
+                    if (
+                        (error as { code?: string })?.['code'] === 'EBUSY' ||
+                        (error as Error)?.message === 'EBUSY'
+                    ) {
                         if (i === this.maxRetries - 1) throw error;
                         this.logger.warn(
                             `Retry ${i + 1}/${this.maxRetries} saving file (EBUSY)`,

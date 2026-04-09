@@ -12,6 +12,7 @@ export enum ProductTypeEnum {
     lt = 'lt',
     consalting = 'consalting',
     star = 'star',
+    academy = 'academy',
 }
 
 export class ProductDto {
@@ -34,10 +35,11 @@ export class ProductDto {
     @Type(() => ContractDto)
     contract: ContractDto;
 
+    @IsOptional()
     @ValidateIf(o => o.supply !== false)
     @ValidateNested()
     @Type(() => SupplyDto)
-    supply: SupplyDto | false;
+    supply: SupplyDto | false | null;
 
     @IsEnum(ProductTypeEnum) type: ProductTypeEnum;
     // остальные поля по аналогии (можно расширить)

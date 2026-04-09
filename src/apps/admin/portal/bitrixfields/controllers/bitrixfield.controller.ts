@@ -6,7 +6,6 @@ import {
     Delete,
     Body,
     Param,
-    Query,
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -15,7 +14,7 @@ import { CreateBitrixFieldDto } from '../dto/create-bitrixfield.dto';
 import { UpdateBitrixFieldDto } from '../dto/update-bitrixfield.dto';
 import { BitrixFieldResponseDto } from '../dto/bitrixfield-response.dto';
 import { CreateBitrixFieldsBulkDto } from '../dto/create-bitrixfields-bulk.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
+import { GetChildrenByPbxEntityDto } from '../../pbx-shared';
 
 @ApiTags('Admin Bitrix Fields Management')
 @Controller('admin/pbx/bitrixfields')
@@ -70,29 +69,25 @@ export class BitrixFieldController {
         description: 'Fields found',
         type: [BitrixFieldResponseDto],
     })
-    @Get()
-    async getAllFields(
-        @Query('entity_type') entityType?: string,
-        @Query('entity_id') entityId?: string,
-        @Query('parent_type') parentType?: string,
+    @Post('get-by-entity')
+    async getFieldsByEntity(
+        @Body() requestDto: GetChildrenByPbxEntityDto,
     ): Promise<BitrixFieldResponseDto[]> {
-        let fields;
-        if (entityType && entityId && parentType) {
-            fields = await this.fieldService.findByEntityAndParentType(
-                entityType,
-                Number(entityId),
-                parentType,
-            );
-        } else if (entityType && entityId) {
-            fields = await this.fieldService.findByEntity(
-                entityType,
-                Number(entityId),
-            );
-        } else {
-            fields = await this.fieldService.findMany();
-        }
+        return await this.fieldService.findByEntity(
+            requestDto.entityType,
+            requestDto.entityId,
+        );
+    }
 
-        return fields;
+    @ApiOperation({ summary: 'Get all fields' })
+    @ApiResponse({
+        status: 200,
+        description: 'Fields found',
+        type: [BitrixFieldResponseDto],
+    })
+    @Get('')
+    async getAll(): Promise<BitrixFieldResponseDto[]> {
+        return await this.fieldService.findMany();
     }
 
     @ApiOperation({ summary: 'Update field' })

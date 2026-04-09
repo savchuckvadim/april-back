@@ -7,10 +7,14 @@ import { UserSelectedTemplateRepository } from '../repositories/user-selected-te
 import { UserSelectedTemplate } from '../entities/user-selected-template.entity';
 import { CreateUserSelectedTemplateDto } from '../dtos/create-user-selected-template.dto';
 import { UpdateUserSelectedTemplateDto } from '../dtos/update-user-selected-template.dto';
+import { UserSelectedTemplateFiltersType } from '../types/user-selected.type';
+import { UserSelectedTemplateEntityDto } from '../dtos/user-selected-entity.dto';
+import { OfferTemplateRepository } from '../../offer-template';
 
 @Injectable()
 export class UserSelectedTemplateService {
     constructor(
+        private readonly offerTemplateRepository: OfferTemplateRepository,
         private readonly userSelectedTemplateRepository: UserSelectedTemplateRepository,
     ) {}
 
@@ -24,15 +28,10 @@ export class UserSelectedTemplateService {
         return template;
     }
 
-    async findMany(filters?: {
-        bitrix_user_id?: bigint;
-        portal_id?: bigint;
-        offer_template_id?: bigint;
-        is_current?: boolean;
-        is_favorite?: boolean;
-        is_active?: boolean;
-    }): Promise<UserSelectedTemplate[]> {
-        return this.userSelectedTemplateRepository.findMany(filters);
+    async findMany(
+        filters?: UserSelectedTemplateFiltersType,
+    ): Promise<UserSelectedTemplate[]> {
+        return await this.userSelectedTemplateRepository.findMany(filters);
     }
 
     async findWithRelations(id: bigint): Promise<UserSelectedTemplate> {
@@ -66,6 +65,28 @@ export class UserSelectedTemplateService {
             portal_id,
             template_id,
         );
+    }
+
+    // находит или создает связь шаблона  и пользователя из портала
+    async findOrCreateByUserPortalAndTemplate(
+        user_id: bigint,
+        portal_id: bigint,
+        template_id: bigint,
+    ): Promise<UserSelectedTemplate> {
+        let templateRelation: UserSelectedTemplate | null =
+            await this.userSelectedTemplateRepository.findByUserAndTemplate(
+                user_id,
+                portal_id,
+                template_id,
+            );
+        if (!templateRelation) {
+            templateRelation = await this.create({
+                bitrix_user_id: Number(user_id),
+                portal_id: Number(portal_id),
+                offer_template_id: Number(template_id),
+            });
+        }
+        return templateRelation;
     }
 
     async findCurrentByUser(
@@ -205,43 +226,117 @@ export class UserSelectedTemplateService {
         await this.userSelectedTemplateRepository.delete(id);
     }
 
-    async setCurrent(id: bigint): Promise<UserSelectedTemplate> {
-        const template = await this.findById(id);
-
-        // Unset other current templates for this user
-        const currentTemplate =
-            await this.userSelectedTemplateRepository.findCurrentByUser(
-                template.bitrix_user_id,
-                template.portal_id,
-            );
-
-        if (currentTemplate && currentTemplate.id !== String(id)) {
-            await this.userSelectedTemplateRepository.update(
-                BigInt(currentTemplate.id),
-                {
-                    is_current: false,
-                },
+    async setCurrentByPortalUserTemplate(
+        dto: CreateUserSelectedTemplateDto,
+    ): Promise<UserSelectedTemplate | boolean> {
+        const { bitrix_user_id, portal_id, offer_template_id } = dto;
+        const templateId = BigInt(offer_template_id);
+        // находим шаблон по id
+        const template =
+            await this.offerTemplateRepository.findById(templateId);
+        if (!template) {
+            throw new NotFoundException(
+                `Offer template with ID ${templateId} not found`,
             );
         }
+        // находит или создает связь шаблона  и пользователя из портала
+        //такая связь всегда одна шаблон-юзер
+        const templateRelation: UserSelectedTemplate =
+            await this.findOrCreateByUserPortalAndTemplate(
+                BigInt(bitrix_user_id),
+                BigInt(portal_id),
+                BigInt(templateId),
+            );
 
-        return this.userSelectedTemplateRepository.update(id, {
+        // находим связь с флагом current юзер-current
+        // возможно это та же связь,
+        const currentRelationByCurrentFlag =
+            await this.userSelectedTemplateRepository.findCurrentByUser(
+                BigInt(bitrix_user_id),
+                BigInt(portal_id),
+            );
+
+        if (currentRelationByCurrentFlag) {
+            // есть связь с флагом current
+            if (
+                currentRelationByCurrentFlag.id !== String(templateRelation.id)
+            ) {
+                // если это другая связь, то нужно сбросить флаг current у этой связи и присвоить другой
+                const isFavorite = currentRelationByCurrentFlag.is_favorite;
+                if (!isFavorite) {
+                    await this.userSelectedTemplateRepository.delete(
+                        BigInt(currentRelationByCurrentFlag.id),
+                    );
+                } else {
+                    await this.userSelectedTemplateRepository.update(
+                        BigInt(currentRelationByCurrentFlag.id),
+                        {
+                            is_current: false,
+                        },
+                    );
+                }
+            } else {
+                // это та же самая
+            }
+        }
+
+        return this.setCurrent(BigInt(templateRelation.id));
+    }
+
+    async setCurrent(relationId: bigint): Promise<UserSelectedTemplate> {
+        return this.userSelectedTemplateRepository.update(relationId, {
             is_current: true,
         });
     }
 
-    async setFavorite(
-        id: bigint,
+    async setFavoriteByPortalUserTemplate(
+        dto: CreateUserSelectedTemplateDto,
         is_favorite: boolean,
-    ): Promise<UserSelectedTemplate> {
-        const template = await this.findById(id);
-        return this.userSelectedTemplateRepository.update(id, { is_favorite });
+    ): Promise<UserSelectedTemplateEntityDto | boolean> {
+        const { bitrix_user_id, portal_id, offer_template_id } = dto;
+        // находит или создает связь шаблона  и пользователя из портала
+        const templateRelation: UserSelectedTemplate =
+            await this.findOrCreateByUserPortalAndTemplate(
+                BigInt(bitrix_user_id),
+                BigInt(portal_id),
+                BigInt(offer_template_id),
+            );
+
+        //избранных может быть много, но если сейчас признак избранности отжимается
+        // и в текущей связи кроме этого не остается других флагов - is_current - false, то нужно удалить эту связь
+        // устанавливает флаг favorite для связи шаблона  и пользователя из портала
+
+        if (!is_favorite && !templateRelation.is_current) {
+            await this.userSelectedTemplateRepository.delete(
+                BigInt(templateRelation.id),
+            );
+            return true;
+        }
+
+        const updatedTemplate =
+            await this.userSelectedTemplateRepository.update(
+                BigInt(templateRelation.id),
+                { is_favorite },
+            );
+        if (updatedTemplate) {
+            return new UserSelectedTemplateEntityDto(updatedTemplate);
+        }
+        return true;
     }
 
-    async setActive(
-        id: bigint,
+    async setActiveByPortalUserTemplate(
+        dto: CreateUserSelectedTemplateDto,
         is_active: boolean,
     ): Promise<UserSelectedTemplate> {
-        const template = await this.findById(id);
+        const { bitrix_user_id, portal_id, offer_template_id } = dto;
+        const templateRelation: UserSelectedTemplate =
+            await this.findOrCreateByUserPortalAndTemplate(
+                BigInt(bitrix_user_id),
+                BigInt(portal_id),
+                BigInt(offer_template_id),
+            );
+
+        const id = BigInt(templateRelation.id);
         return this.userSelectedTemplateRepository.update(id, { is_active });
     }
 }

@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BxActivityDto } from '../dto/bx-activity/bx-activity.dto';
 import { BxActivityRepository } from 'src/modules/bitrix/domain/activity/bx-activity.repository';
 import { BitrixOwnerTypeId } from 'src/modules/bitrix/domain/enums/bitrix-constants.enum';
-import {
-    BXActivityFile,
-    IBXActivity,
-} from 'src/modules/bitrix/domain/activity/interfaces/bx-activity.interface';
+import { IBXActivity } from 'src/modules/bitrix/domain/activity/interfaces/bx-activity.interface';
 import { BxFileRepository } from 'src/modules/bitrix/domain/file/bx-file.repository';
 import { IBXFile } from 'src/modules/bitrix/domain/file/bx-file.interface';
 import { PBXService } from '@/modules/pbx/pbx.service';
@@ -26,7 +23,7 @@ export class EventSalesActivityUseCase {
     constructor(private readonly pbx: PBXService) {}
 
     async init(domain: string) {
-        const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
+        const { bitrix } = await this.pbx.init(domain);
         // this.portalModel = PortalModel;
         this.bitrixApi = bitrix.api;
     }

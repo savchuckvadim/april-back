@@ -45,16 +45,13 @@ export class BtxDealController {
     async getAllDeals(
         @Query() query: GetBtxDealsQueryDto,
     ): Promise<BtxDealResponseDto[]> {
-        let deals;
         if (query.portal_id) {
-            deals = await this.dealService.findByPortalId(
+            return await this.dealService.findByPortalId(
                 Number(query.portal_id),
             );
         } else {
-            deals = await this.dealService.findMany();
+            return await this.dealService.findMany();
         }
-        deals = await this.dealService.findMany();
-        return deals;
     }
 
     @ApiOperation({ summary: 'Get deal by ID' })

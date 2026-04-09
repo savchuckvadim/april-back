@@ -103,7 +103,7 @@ export class TaskBitrixService {
         }
 
         // Build CRM items array
-        let crmItems: string[] = [...tasksCrmRelations];
+        const crmItems: string[] = [...tasksCrmRelations];
 
         // Convert deadline to Moscow time
         const moscowTime = this.getTaskMoscowDeadline(dto.deadline, domain);
@@ -289,7 +289,7 @@ export class TaskBitrixService {
         companyId?: number,
         dealIds?: number[],
     ): Promise<void> {
-        let crmRelations: string[] = [];
+        const crmRelations: string[] = [];
         if (leadId) {
             crmRelations.push(`L_${leadId}`);
         }

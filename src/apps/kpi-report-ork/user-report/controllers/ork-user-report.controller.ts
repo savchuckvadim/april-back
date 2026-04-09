@@ -128,7 +128,7 @@ export class UserReportController {
     async getReportWithoutWs(
         @Body() body: OrkUserReportGetRequestDto,
     ): Promise<OrkListHistoryItemDto[]> {
-        let list: OrkListHistoryItemDto[] = [];
+        const list: OrkListHistoryItemDto[] = [];
         for await (const batch of this.orkUserReportService.getReport(body)) {
             list.push(...batch);
         }

@@ -1,65 +1,68 @@
-import React from 'react'
+import React from 'react';
 
 import {
-	Body,
-	Container,
-	Font,
-	Head,
-	Heading,
-	Html,
-	Img,
-	Preview,
-	Section,
-	Tailwind,
-	Text
-} from '@react-email/components'
-import { User } from 'generated/prisma'
+    Body,
+    Container,
+    Font,
+    Head,
+    Heading,
+    Html,
+    Img,
+    Preview,
+    Section,
+    Tailwind,
+    Text,
+} from '@react-email/components';
+import { User } from 'generated/prisma';
 
 interface RestrictionTemplateProps {
-	user: User
-	// restriction: Restriction
-	violations: number
+    user: User;
+    // restriction: Restriction
+    violations: number;
 }
 
-const baseUrl = process.env['SITE_URL']
+const baseUrl = process.env['SITE_URL'];
 
-export function RestrictionTemplate({ user,  violations }: RestrictionTemplateProps) {
-	const logo = `${baseUrl}/touch-icons/512x512.png`
+export function RestrictionTemplate({
+    user,
+    violations,
+}: RestrictionTemplateProps) {
+    const logo = `${baseUrl}/touch-icons/512x512.png`;
 
-	// const isUsernameBan = restriction.reason === RestrictionReason.INAPPROPRIATE_USERNAME;
+    // const isUsernameBan = restriction.reason === RestrictionReason.INAPPROPRIATE_USERNAME;
 
-	// const isPermanentBan = isUsernameBan || !restriction.until;
-	// const remainingTime = isPermanentBan ? 'навсегда' : `до ${new Date(restriction.until).toLocaleDateString('ru-RU', { timeZone: 'UTC' })}`;
+    // const isPermanentBan = isUsernameBan || !restriction.until;
+    // const remainingTime = isPermanentBan ? 'навсегда' : `до ${new Date(restriction.until).toLocaleDateString('ru-RU', { timeZone: 'UTC' })}`;
 
-	// const getReasonText = (reason: string) => {
-	// 	switch (reason) {
-	// 	  case RestrictionReason.INAPPROPRIATE_USERNAME:
-	// 		return 'неподобающие имя пользователя';
-	// 	  case RestrictionReason.SPAM:
-	// 		return 'распространение спама';
-	// 	  case RestrictionReason.OFFENSIVE_BEHAVIOR:
-	// 		return 'неприемлемое поведение';
-	// 	  default:
-	// 		return 'причина неизвестна';
-	// 	}
-	// }
+    // const getReasonText = (reason: string) => {
+    // 	switch (reason) {
+    // 	  case RestrictionReason.INAPPROPRIATE_USERNAME:
+    // 		return 'неподобающие имя пользователя';
+    // 	  case RestrictionReason.SPAM:
+    // 		return 'распространение спама';
+    // 	  case RestrictionReason.OFFENSIVE_BEHAVIOR:
+    // 		return 'неприемлемое поведение';
+    // 	  default:
+    // 		return 'причина неизвестна';
+    // 	}
+    // }
 
-	return (
-		<Html>
-			<Head>
-				<Font
-					fontFamily='Geist'
-					fallbackFontFamily='Arial'
-					webFont={{
-						url: 'https://fonts.googleapis.com/css2?family=Geist:wght@300;500;700&display=swap',
-						format: 'woff2'
-					}}
-				/>
-			</Head>
-			<Tailwind>
-				<Body>
-					<Preview>Ваш аккаунт был ограничен</Preview>
-					{/* <Container className='mx-auto my-10 max-w-[500px] rounded-lg bg-white p-8 shadow-lg'>
+    return (
+        <Html>
+            <Head>
+                <Font
+                    fontFamily="Geist"
+                    fallbackFontFamily="Arial"
+                    webFont={{
+                        url: 'https://fonts.googleapis.com/css2?family=Geist:wght@300;500;700&display=swap',
+                        format: 'woff2',
+                    }}
+                />
+            </Head>
+            <Tailwind>
+                <Body>
+                    <Preview>Ваш аккаунт был ограничен</Preview>
+                    {/* <Container className='mx-auto my-10 max-w-[500px] rounded-lg bg-white p-8 shadow-lg'>
 						<Section className='text-center'>
 							<Img
 								src={logo}
@@ -141,8 +144,8 @@ export function RestrictionTemplate({ user,  violations }: RestrictionTemplatePr
 							</Text>
 						</Section>
 					</Container> */}
-				</Body>
-			</Tailwind>
-		</Html>
-	)
+                </Body>
+            </Tailwind>
+        </Html>
+    );
 }

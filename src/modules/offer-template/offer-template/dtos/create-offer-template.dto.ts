@@ -18,7 +18,7 @@ import { OfferTemplate } from '../entities/offer-template.entity';
 
 export enum OfferTemplateVisibility {
     PUBLIC = 'public',
-    PORTAL = 'portal',
+    PORTAL = 'private',
     USER = 'user',
 }
 

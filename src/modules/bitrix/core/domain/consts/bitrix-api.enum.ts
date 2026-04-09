@@ -9,6 +9,7 @@ export enum EBxNamespace {
     RPA = 'rpa',
     IM = 'im',
     USER = 'user',
+    BIZPROC = 'bizproc',
 }
 
 export enum EBxMethod {
@@ -30,7 +31,7 @@ export enum EBxMethod {
     FIELD_GET = 'field.get',
     FIELDS = 'fields',
     GET_BY_ENTITY_TYPE_ID = 'getByEntityTypeId',
-
+    GET_LIST = 'getlist',
     FILES_ATTACH = 'files.attach',
     DELEGATE = 'delegate',
     COUNTERS_GET = 'counters.get',
@@ -53,4 +54,23 @@ export enum EBxMethod {
     SEARCH = 'search',
     CURRENT = 'current',
     DIALOG_GET = 'dialog.get',
+
+    MOVE_TO = 'moveto',
+    RESTORE = 'restore',
+    GET_TYPES = 'gettypes',
+    GET_CHILDREN = 'getchildren',
+    GET_VERSIONS = 'getVersions',
+    MARK_DELETED = 'markdeleted',
+    COPY_TO = 'copyto',
+    GET_EXTERNAL_LINK = 'getExternalLink',
+    GET_EXTERNAL_LINK_LOWER = 'getexternallink',
+    RENAME = 'rename',
+    UPLOAD_FILE = 'uploadfile',
+    UPLOAD_VERSION = 'uploadversion',
+    RESTORE_FROM_VERSION = 'restoreFromVersion',
+    ADD_FOLDER = 'addfolder',
+    ADD_SUBFOLDER = 'addsubfolder',
+    SHARE_TO_USER = 'sharetouser',
+    DELETE_TREE = 'deletetree',
+    PIN = 'pin',
 }

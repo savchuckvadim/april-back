@@ -25,9 +25,7 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
     }
 
     getProductRowCommand(element: MigrateToBxDto, dealCommandCode: string) {
-        const pMeasure = this.portal.getMeasureByCode(
-            'month',
-        ) as IPPortalMeasure;
+        const pMeasure = this.portal.getMeasureByCode('month');
 
         const productRowCommandCode = `${EBxNamespace.CRM_ITEM}.${EBXEntity.PRODUCT_ROW}.${EBxMethod.SET}.${element.id}`;
         const productTotal = {
@@ -49,9 +47,7 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
         this.bitrix.batch.productRow.set(productRowCommandCode, productTotal);
     }
     async getProductRowSetByDealId(element: MigrateToBxDto, dealId: string) {
-        const pMeasure = this.portal.getMeasureByCode(
-            'month',
-        ) as IPPortalMeasure;
+        const pMeasure = this.portal.getMeasureByCode('month');
 
         const productRowCommandCode = `${EBxNamespace.CRM_ITEM}.${EBXEntity.PRODUCT_ROW}.${EBxMethod.SET}.${element.id}`;
         const productTotal = {
@@ -74,9 +70,7 @@ export class GsrMigrateBitrixProductRowService extends GsrMigrateBitrixAbstract 
         await this.bitrix.api.callBatchWithConcurrency();
     }
     getProductRowCommandById(element: MigrateToBxDto, dealId: string) {
-        const pMeasure = this.portal.getMeasureByCode(
-            'month',
-        ) as IPPortalMeasure;
+        const pMeasure = this.portal.getMeasureByCode('month');
 
         const productRowCommandCode = `${EBxNamespace.CRM_ITEM}.${EBXEntity.PRODUCT_ROW}.${EBxMethod.SET}.${element.id}`;
         const productTotal = {

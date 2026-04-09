@@ -197,7 +197,7 @@ export class EventReportListFlowService {
                 props.currentBaseDeal?.ID || null;
 
             // PHP: $planDeadline = $this->planDeadline;
-            let planDeadlineForLogic = props.planDeadline; // Format: DD.MM.YYYY HH:MI:SS
+            const planDeadlineForLogic = props.planDeadline; // Format: DD.MM.YYYY HH:MI:SS
 
             // PHP: Timezone conversion for planDeadline
             if (planDeadlineForLogic) {
@@ -461,7 +461,7 @@ export class EventReportListFlowService {
             // PHP: if ($this->isPlanned && $this->isPlanActive == true && $planEventType)
             // Assuming isPlanActive is implicitly true if an event is planned
             if (props.isPlanned && planEventTypeForLogic) {
-                let deadlineForPlanCall = planDeadlineForLogic;
+                const deadlineForPlanCall = planDeadlineForLogic;
 
                 // finalPlanEventType, finalPlanEventTypeName, finalPlanComment are derived from earlier logic
                 // based on isExpired, currentReportEvent, and currentPlanEvent.

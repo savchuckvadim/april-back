@@ -66,7 +66,7 @@ export class CompanyRelationsService {
                 'result' in response &&
                 Array.isArray(response.result)
             ) {
-                return response.result as IBXContact[];
+                return response.result;
             }
 
             // Если response уже массив

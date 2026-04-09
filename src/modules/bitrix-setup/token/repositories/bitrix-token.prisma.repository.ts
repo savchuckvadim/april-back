@@ -17,7 +17,7 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
         try {
             // First try to find existing token
             const existingToken = await this.prisma.bitrix_tokens.findFirst({
-                where: { bitrix_app_id: BigInt(token.bitrix_app_id!)! },
+                where: { bitrix_app_id: BigInt(token.bitrix_app_id!) },
             });
 
             const cleanData = Object.fromEntries(
@@ -139,9 +139,9 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                 // Create new token with pending tokens
                 result = await this.prisma.bitrix_tokens.create({
                     data: {
-                        bitrix_app_id: bitrix_app_id!,
-                        client_id: client_id!,
-                        client_secret: client_secret!,
+                        bitrix_app_id: bitrix_app_id,
+                        client_id: client_id,
+                        client_secret: client_secret,
                         access_token: encrypt('__PENDING__'),
                         refresh_token: encrypt('__PENDING__'),
                         created_at: new Date(),
@@ -194,7 +194,7 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                 // Create new token with pending tokens
                 result = await this.prisma.bitrix_tokens.create({
                     data: {
-                        bitrix_app_id: bitrix_app_id!,
+                        bitrix_app_id: bitrix_app_id,
                         client_id: encrypt('__PENDING__'),
                         client_secret: encrypt('__PENDING__'),
                         access_token: access_token,

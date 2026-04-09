@@ -64,9 +64,11 @@ export class ProductRowDto {
     @ValidateNested()
     @Type(() => ProductRowContractDto)
     contract: ProductRowContractDto;
+
     @ValidateNested()
+    @IsOptional()
     @Type(() => ProductRowSupplyDto)
-    supply: ProductRowSupplyDto;
+    supply?: ProductRowSupplyDto;
     @ValidateNested() @Type(() => RowPriceDto) price: RowPriceDto;
     @ValidateNested() @Type(() => ProductDto) product: ProductDto;
     @ValidateNested() @Type(() => SupplyDto) currentSupply: SupplyDto;

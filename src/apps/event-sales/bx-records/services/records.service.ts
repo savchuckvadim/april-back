@@ -40,12 +40,13 @@ export class RecordsService {
             }
         }
         for (const fileId in files) {
-            this.bitrix.batch.file.get(`${fileId}`, fileId as string);
+            this.bitrix.batch.file.get(`${fileId}`, fileId);
         }
         const responses = await this.bitrix.api.callBatchWithConcurrency(3);
         for (const response of responses) {
             for (const fileId in response.result) {
-                files[fileId].url = response.result[fileId].DOWNLOAD_URL;
+                files[fileId].url = response.result[fileId]
+                    .DOWNLOAD_URL as string;
             }
         }
         return Object.values(files) || [];

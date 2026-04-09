@@ -270,10 +270,10 @@ export class RegionPrismaRepository implements RegionRepository {
 
     private getRegionEntityMergedByPortalRegion(
         region: regions | RegionEntity,
-        portalRegion?: portal_region | undefined,
+        portalRegion?: portal_region,
     ): RegionEntity {
         const isRegionEntity = region instanceof RegionEntity;
-        let regionEntity = isRegionEntity
+        const regionEntity = isRegionEntity
             ? region
             : createRegionEntityFromPrisma(region);
 

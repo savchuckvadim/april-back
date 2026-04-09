@@ -1,15 +1,11 @@
 import { UserSelectedTemplate } from '../entities/user-selected-template.entity';
+import { UserSelectedTemplateFiltersType } from '../types/user-selected.type';
 
 export abstract class UserSelectedTemplateRepository {
     abstract findById(id: bigint): Promise<UserSelectedTemplate | null>;
-    abstract findMany(filters?: {
-        bitrix_user_id?: bigint;
-        portal_id?: bigint;
-        offer_template_id?: bigint;
-        is_current?: boolean;
-        is_favorite?: boolean;
-        is_active?: boolean;
-    }): Promise<UserSelectedTemplate[]>;
+    abstract findMany(
+        filters?: UserSelectedTemplateFiltersType,
+    ): Promise<UserSelectedTemplate[]>;
     abstract findWithRelations(
         id: bigint,
     ): Promise<UserSelectedTemplate | null>;

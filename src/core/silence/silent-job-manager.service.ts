@@ -18,6 +18,14 @@ export class SilentJobManagerService {
         this.logger.log('SilentJobManagerService initialized');
     }
 
+    private parseJsonRecord<T>(raw: string): Record<string, T> {
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed !== 'object' || parsed === null) {
+            return {};
+        }
+        return parsed as Record<string, T>;
+    }
+
     async handle<T extends keyof HandlerMap>(
         keyPrefix: string,
         ttlMs: number,
@@ -35,7 +43,11 @@ export class SilentJobManagerService {
 
         const id = Date.now();
         const existingRaw = await redis.get(key);
-        const current = existingRaw ? JSON.parse(existingRaw) : {};
+        const current = existingRaw
+            ? this.parseJsonRecord<HandlerMap[T]['collected'][string]>(
+                  existingRaw,
+              )
+            : {};
         current[id] = data;
 
         // this.logger.log(`Current data: ${JSON.stringify(current)}`);
@@ -92,7 +104,7 @@ export class SilentJobManagerService {
             return {};
         }
         await redis.del(key);
-        const data = JSON.parse(raw);
+        const data = this.parseJsonRecord<T>(raw);
         this.logger.log(`Collected data: ${JSON.stringify(data)}`);
         return data;
     }

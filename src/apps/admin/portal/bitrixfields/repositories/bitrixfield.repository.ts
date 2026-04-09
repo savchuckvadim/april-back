@@ -1,11 +1,12 @@
 import { bitrixfields } from 'generated/prisma';
+import { PbxEntityTypePrisma } from '../../pbx-shared';
 
 export abstract class BitrixFieldRepository {
     abstract create(field: Partial<bitrixfields>): Promise<bitrixfields | null>;
     abstract findById(id: number): Promise<bitrixfields | null>;
     abstract findMany(): Promise<bitrixfields[] | null>;
     abstract findByEntity(
-        entityType: string,
+        entityType: PbxEntityTypePrisma,
         entityId: number,
     ): Promise<bitrixfields[] | null>;
     abstract findByEntityAndParentType(

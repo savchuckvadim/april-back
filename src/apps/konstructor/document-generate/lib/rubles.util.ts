@@ -1,13 +1,29 @@
-import { rubles } from 'rubles';
-// import { convert as convertNumberToWordsRu } from 'number-to-words-ru'
-//todo https://www.npmjs.com/package/number-to-words-ru
+import { convert as convertNumberToWordsRu } from 'number-to-words-ru';
+
 export const formatRuble = (value: number): string => {
-    // return new Intl.NumberFormat('ru-RU', {
-    //     style: 'currency',
-    //     currency: 'RUB',
-    //     minimumFractionDigits: 0,
-    // }).format(value);
-    return rubles(value);
+    return convertNumberToWordsRu(value, {
+        currency: 'rub',
+        declension: 'nominative',
+        roundNumber: -1,
+        convertMinusSignToWord: true,
+        showNumberParts: {
+            integer: true,
+            fractional: true,
+        },
+    });
+};
+
+export const getCaseMonthes = (monthQuantity: number): string => {
+    if (monthQuantity % 10 === 1 && monthQuantity % 100 !== 11) {
+        return 'месяц';
+    } else if (monthQuantity % 10 === 2 && monthQuantity % 100 !== 12) {
+        return 'месяца';
+    } else if (monthQuantity % 10 === 3 && monthQuantity % 100 !== 13) {
+        return 'месяцев';
+    } else {
+        return 'месяцев';
+    }
+    return 'месяцев';
 };
 
 // Использование без опций
@@ -16,20 +32,40 @@ export const formatRuble = (value: number): string => {
 
 // // или с опциями
 // convertNumberToWordsRu('-4201512.21', {
-//   currency: 'rub',
-//   declension: 'nominative',
-//   roundNumber: -1,
-//   convertMinusSignToWord: true,
-//   showNumberParts: {
-//     integer: true,
-//     fractional: true,
-//   },
-//   convertNumberToWords: {
-//     integer: true,
-//     fractional: false,
-//   },
-//   showCurrency: {
-//     integer: true,
-//     fractional: true,
-//   },
-// })
+//     currency: 'rub',
+//     declension: 'nominative',
+//     roundNumber: -1,
+//     convertMinusSignToWord: true,
+//     showNumberParts: {
+//         integer: true,
+//         fractional: true,
+//     },
+//     convertNumberToWords: {
+//         integer: true,
+//         fractional: false,
+//     },
+//     showCurrency: {
+//         integer: true,
+//         fractional: true,
+//     },
+// });
+// console.log(
+//     convertNumberToWordsRu('-4201512.21', {
+//         currency: 'rub',
+//         declension: 'nominative',
+//         roundNumber: -1,
+//         convertMinusSignToWord: true,
+//         showNumberParts: {
+//             integer: true,
+//             fractional: true,
+//         },
+//         convertNumberToWords: {
+//             integer: true,
+//             fractional: false,
+//         },
+//         showCurrency: {
+//             integer: true,
+//             fractional: true,
+//         },
+//     }),
+// );

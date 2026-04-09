@@ -1,7 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { UserSelectedTemplateRepository } from '../repositories/user-selected-template.repository';
 import { UserSelectedTemplate } from '../entities/user-selected-template.entity';
+import { UserSelectedTemplateFiltersType } from '../types/user-selected.type';
+import { Prisma } from 'generated/prisma';
+
+type UserSelectedWithOfferTemplate = Prisma.UserSelectedTemplateGetPayload<{
+    include: { offerTemplate: true };
+}>;
 
 @Injectable()
 export class UserSelectedTemplatePrismaRepository
@@ -31,47 +37,43 @@ export class UserSelectedTemplatePrismaRepository
         return new UserSelectedTemplate(entity);
     }
 
-    async findMany(filters?: {
-        bitrix_user_id?: bigint;
-        portal_id?: bigint;
-        offer_template_id?: bigint;
-        is_current?: boolean;
-        is_favorite?: boolean;
-        is_active?: boolean;
-    }): Promise<UserSelectedTemplate[]> {
-        const where: any = {};
+    async findMany(
+        filters?: UserSelectedTemplateFiltersType,
+    ): Promise<UserSelectedTemplate[]> {
+        const where: Prisma.UserSelectedTemplateWhereInput = {};
+        const f: UserSelectedTemplateFiltersType | undefined = filters;
 
-        if (filters?.bitrix_user_id) {
-            where.bitrix_user_id = filters.bitrix_user_id;
+        if (f?.bitrix_user_id !== undefined) {
+            where.bitrix_user_id = f.bitrix_user_id;
         }
 
-        if (filters?.portal_id) {
-            where.portal_id = filters.portal_id;
+        if (f?.portal_id !== undefined) {
+            where.portal_id = f.portal_id;
         }
 
-        if (filters?.offer_template_id) {
-            where.offer_template_id = filters.offer_template_id;
+        if (f?.offer_template_id !== undefined) {
+            where.offer_template_id = f.offer_template_id;
         }
 
-        if (filters?.is_current !== undefined) {
-            where.is_current = filters.is_current;
+        if (f?.is_current !== undefined) {
+            where.is_current = f.is_current;
         }
 
-        if (filters?.is_favorite !== undefined) {
-            where.is_favorite = filters.is_favorite;
+        if (f?.is_favorite !== undefined) {
+            where.is_favorite = f.is_favorite;
         }
 
-        if (filters?.is_active !== undefined) {
-            where.is_active = filters.is_active;
+        if (f?.is_active !== undefined) {
+            where.is_active = f.is_active;
         }
 
-        const results = await this.prisma.userSelectedTemplate.findMany({
+        const results = (await this.prisma.userSelectedTemplate.findMany({
             where,
             include: {
                 offerTemplate: true,
             },
             orderBy: { created_at: 'desc' },
-        });
+        })) as UserSelectedWithOfferTemplate[];
         const entities = results.map(
             result =>
                 ({
@@ -161,6 +163,17 @@ export class UserSelectedTemplatePrismaRepository
         id: bigint,
         data: Partial<UserSelectedTemplate>,
     ): Promise<UserSelectedTemplate> {
+        console.log(id, 'id');
+        console.log(data, 'data');
+        const check = await this.prisma.userSelectedTemplate.findUnique({
+            where: { id },
+        });
+        console.log(check, 'check');
+        if (!check) {
+            throw new NotFoundException(
+                `User selected template with ID ${id} not found`,
+            );
+        }
         const result = await this.prisma.userSelectedTemplate.update({
             where: { id },
             data: {
@@ -206,10 +219,12 @@ export class UserSelectedTemplatePrismaRepository
                 }),
             },
         });
+        console.log(result, 'result');
         const entity = {
             ...result,
             id: String(result.id),
         } as Partial<UserSelectedTemplate>;
+        console.log(entity, 'entity');
         return new UserSelectedTemplate(entity);
     }
 
@@ -223,7 +238,7 @@ export class UserSelectedTemplatePrismaRepository
         user_id: bigint,
         portal_id: bigint,
     ): Promise<UserSelectedTemplate[]> {
-        const results = await this.prisma.userSelectedTemplate.findMany({
+        const results = (await this.prisma.userSelectedTemplate.findMany({
             where: {
                 bitrix_user_id: user_id,
                 portal_id,
@@ -232,7 +247,7 @@ export class UserSelectedTemplatePrismaRepository
                 offerTemplate: true,
             },
             orderBy: { created_at: 'desc' },
-        });
+        })) as UserSelectedWithOfferTemplate[];
         const entities = results.map(
             result =>
                 ({
@@ -301,7 +316,7 @@ export class UserSelectedTemplatePrismaRepository
         user_id: bigint,
         portal_id: bigint,
     ): Promise<UserSelectedTemplate[]> {
-        const results = await this.prisma.userSelectedTemplate.findMany({
+        const results = (await this.prisma.userSelectedTemplate.findMany({
             where: {
                 bitrix_user_id: user_id,
                 portal_id,
@@ -311,7 +326,7 @@ export class UserSelectedTemplatePrismaRepository
                 offerTemplate: true,
             },
             orderBy: { created_at: 'desc' },
-        });
+        })) as UserSelectedWithOfferTemplate[];
         const entities = results.map(
             result =>
                 ({

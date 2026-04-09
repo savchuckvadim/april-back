@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ComplectDto, RegionsDto } from '../dto';
+import { getRegionInfoblockData } from './utils/region-infoblock.util';
 
 @Injectable()
 export class DocumentInfoblockService {
@@ -16,13 +17,20 @@ export class DocumentInfoblockService {
         const infoblocksLeft: string[] = [];
         const infoblocksRight: string[] = [];
         const infoblocks: string[] = [];
+        let isRegionProcessed = false;
+        const { hasRootRegion } = getRegionInfoblockData(complect);
         complect.forEach(iData => {
-            iData.value.forEach(iBlock => {
-                if (iBlock.code === 'reg') {
+            iData.value.forEach((iBlock, index) => {
+                if (
+                    iBlock.code === 'reg' ||
+                    (!isRegionProcessed && !hasRootRegion && index === 0)
+                ) {
                     regions.map(regionName => infoblocks.push(regionName));
+                    isRegionProcessed = true;
                 } else {
-                    iBlock.checked &&
+                    if (iBlock.checked) {
                         infoblocks.push(iBlock.title || iBlock.name);
+                    }
                 }
             });
         });

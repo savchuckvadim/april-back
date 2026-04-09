@@ -16,7 +16,7 @@ import {
  * own_abs?: string | null;
  */
 export function IsDecimal(validationOptions?: ValidationOptions) {
-    return function (object: Object, propertyName: string) {
+    return function (object: object, propertyName: string) {
         // Регистрируем кастомный валидатор
         registerDecorator({
             name: 'isDecimal',

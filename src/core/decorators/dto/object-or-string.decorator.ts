@@ -6,7 +6,7 @@ import {
 
 // Кастомный валидатор для поля которое может быть объектом, строкой или null
 export function IsObjectOrStringOrNull(validationOptions?: ValidationOptions) {
-    return function (object: Object, propertyName: string) {
+    return function (object: object, propertyName: string) {
         registerDecorator({
             name: 'isObjectOrStringOrNull',
             target: object.constructor,

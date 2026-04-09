@@ -55,7 +55,7 @@ export class SaveSmartFieldsService {
             savingField.name = bxField.field.editFormLabel?.ru || '';
             savingField.title = bxField.field.editFormLabel?.ru || '';
             savingField.code = bxField.code;
-            savingField.type = bxField.field.userTypeId as EUserFieldType;
+            savingField.type = bxField.field.userTypeId;
             savingField.bitrixId = bxField.field.fieldName?.toString() || '';
             savingField.bitrixCamelId = this.getCamelCase(
                 bxField.field.fieldName,
@@ -67,7 +67,7 @@ export class SaveSmartFieldsService {
             const items = bxField.field.enum
                 ? await this.getItems(bxField.field.enum, savingField.id || '')
                 : [];
-            savingField.items = items as PbxFieldItemEntity[];
+            savingField.items = items;
             savingFields.push(savingField);
         }
 
@@ -96,7 +96,7 @@ export class SaveSmartFieldsService {
 
     private getCamelCase(str: string) {
         // Удаляем только префикс UF_CRM_ но сохраняем цифры и добавляем ufCrm
-        let cleanStr = str.replace(/^UF_CRM_/, '');
+        const cleanStr = str.replace(/^UF_CRM_/, '');
 
         // Разбиваем по подчеркиваниям и преобразуем в camelCase
         const camelCase = cleanStr

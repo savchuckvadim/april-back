@@ -14,7 +14,7 @@ export class ContractSpecificationService {
         let supplyContract = '';
         let licLong = '';
         let loginsQuantity = '';
-        let contractInternetEmail =
+        const contractInternetEmail =
             '_____________________________________________________';
         let supplyComment = '';
         let specification_pk = '';

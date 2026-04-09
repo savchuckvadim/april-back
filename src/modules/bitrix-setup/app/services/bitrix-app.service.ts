@@ -85,7 +85,7 @@ export class BitrixAppService {
 
             // Create or update app
             const app = await this.repository.storeOrUpdate({
-                portal_id: BigInt(portal!.id!),
+                portal_id: BigInt(portal!.id),
                 group: dto.group,
                 type: dto.type,
                 code: dto.code,
@@ -142,8 +142,8 @@ export class BitrixAppService {
                     domain: dto.domain,
                 });
             }
-            let dataForCreateOrUpdateApp: Partial<BitrixAppEntity> = {
-                portal_id: BigInt(portal!.id!),
+            const dataForCreateOrUpdateApp: Partial<BitrixAppEntity> = {
+                portal_id: BigInt(portal!.id),
                 group: dto.group,
                 type: dto.type,
                 code: dto.code,

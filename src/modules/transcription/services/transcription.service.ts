@@ -188,7 +188,7 @@ export class TranscriptionService {
             await this.updateStatus(
                 taskId,
                 'error',
-                error.message,
+                (error as Error)?.message || 'Transcription error',
                 transcriptionId,
             );
             return null;
@@ -209,7 +209,7 @@ export class TranscriptionService {
         if (transcriptionId) {
             await redis.set(
                 `${key}:transcriptionId`,
-                transcriptionId as string,
+                transcriptionId,
                 'EX',
                 3600,
             );

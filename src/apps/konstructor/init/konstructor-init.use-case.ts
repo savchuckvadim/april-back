@@ -22,6 +22,7 @@ import { ContractService } from '@/modules/garant/contract/contract.service';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { ContractDto } from '../dto/contract.dto';
 import { PortalContractEntity } from '@/modules/garant/contract/portal-contract.entity';
+import { CONTRACT_CODE } from '../document-generate/type/contract.type';
 
 export interface IKonstruktorInit {
     complects: IComplects | null;
@@ -51,7 +52,7 @@ export class KonstructorInitUseCase {
         const contracts = await this.contract.findByPortalId(
             Number(portal?.id),
         );
-        const supplies = await this.supplyService.findMany();
+        // const supplies = await this.supplyService.findMany();
 
         return {
             complects: this.getComplectsDto(
@@ -68,6 +69,9 @@ export class KonstructorInitUseCase {
         };
     }
     private getContract(contract: PortalContractEntity): ContractDto {
+        const code =
+            (contract.contract?.code as CONTRACT_CODE) ||
+            (CONTRACT_CODE.INTERNET as CONTRACT_CODE);
         return {
             id: Number(contract.id),
             contract: {
@@ -82,7 +86,7 @@ export class KonstructorInitUseCase {
                     ? contract.contract?.updated_at.toISOString()
                     : null,
             },
-            code: contract.contract?.code || '',
+            code: code,
             shortName: contract.portal_measure?.shortName || '',
             number: contract.order || 0,
             aprilName: contract.contract?.name || '',

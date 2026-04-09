@@ -52,7 +52,7 @@ export class BitrixDealBatchFlowService {
         const reportDeals: string[] = [];
         const planDeals: string[] = [];
         const unplannedPresDeals: string[] = [];
-        let newPresDeal: string | null = null;
+        const newPresDeal: string | null = null;
         const groupped: any[] = [];
         const resultGroupped: any[] = [];
 

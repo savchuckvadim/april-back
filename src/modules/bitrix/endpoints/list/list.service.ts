@@ -32,10 +32,7 @@ export class ListService {
         const kpiPList = PortalModel.getListByCode('sales_kpi');
         let kpiListField: IField | undefined;
         if (kpiPList) {
-            kpiListField = portal.getIdByCodeFieldList(
-                kpiPList as IPBXList,
-                'event_type',
-            );
+            kpiListField = portal.getIdByCodeFieldList(kpiPList, 'event_type');
 
             if (kpiListField) {
                 const bxResult = await repository.getListField(

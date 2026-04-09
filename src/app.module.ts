@@ -46,6 +46,8 @@ import { AdminModule } from './apps/admin/admin.module';
 import { OrkDocumentsModule } from './apps/ork-documents/ork-documents.module';
 import { EventSalesBxRecordsModule } from './apps/event-sales/bx-records/bx-records.module';
 import { DocumentSupplyReportModule } from './apps/konstructor/document-supply-report/document-supply-report.module';
+import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
+import { InvoiceTemplateModule } from './modules/invoice-template/invoice-template.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -132,6 +134,8 @@ import { DocumentSupplyReportModule } from './apps/konstructor/document-supply-r
         OrkDocumentsModule,
 
         EventSalesBxRecordsModule,
+        InnerDealModule,
+        InvoiceTemplateModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],

@@ -30,6 +30,10 @@ export class OfferTemplate {
     counter: number;
     created_at?: Date;
     updated_at?: Date;
+    creator_bitrix_user_id?: bigint;
+    portal_id?: number;
+    is_archived?: boolean;
+    archived_at?: Date;
 
     // Relations
     offerTemplateFonts?: OfferTemplateFont[];
@@ -40,12 +44,14 @@ export class OfferTemplate {
     constructor(partial: Partial<OfferTemplate>) {
         Object.assign(this, {
             ...partial,
+            creator_bitrix_user_id: partial.creator_bitrix_user_id,
             created_at: partial.created_at || undefined,
             updated_at: partial.updated_at || undefined,
             color: partial.color || undefined,
             style: partial.style || undefined,
             tags: partial.tags || undefined,
             demo_path: partial.demo_path || undefined,
+            portal_id: partial.portal_id || undefined,
             offerTemplateFonts: partial.offerTemplateFonts || undefined,
             offerTemplatePages: partial.offerTemplatePages || undefined,
             offerTemplatePortal: partial.offerTemplatePortal || undefined,
@@ -66,7 +72,7 @@ export class OfferTemplateSummary {
     is_active: boolean;
     counter: number;
     created_at?: Date;
-
+    portal_id?: number;
     constructor(partial: Partial<OfferTemplateSummary>) {
         Object.assign(this, {
             ...partial,

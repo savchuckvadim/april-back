@@ -230,7 +230,7 @@ export class OrkUserReportService {
                             currentCommentStringValue =
                                 currentCommentStringValue
                                     .toString()
-                                    .replace(/\D/g, '') as string;
+                                    .replace(/\D/g, '');
                         }
                     }
 
@@ -243,7 +243,7 @@ export class OrkUserReportService {
                             bitrixId: 0,
                             name: '',
                             code: '',
-                            value: currentCommentStringValue as string,
+                            value: currentCommentStringValue,
                         } as OrkHistoryFieldItemValueDto,
                     } as OrkHistoryFieldValueDto;
                 } else if (
@@ -255,10 +255,7 @@ export class OrkUserReportService {
                     if (typeof currentValue === 'string') {
                         continue;
                     }
-                    for (const key in currentValue as Record<
-                        string,
-                        string | number
-                    >) {
+                    for (const key in currentValue) {
                         const pItem = pField.items?.find(
                             item =>
                                 Number(item.bitrixId) ===

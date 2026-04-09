@@ -30,7 +30,7 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
                 entity_name: transcription.entityName,
                 department: transcription.department,
                 user_result: transcription.userResult
-                    ? JSON.parse(transcription.userResult as string)
+                    ? JSON.parse(transcription.userResult)
                     : null,
                 provider: transcription.provider,
                 created_at: new Date(),

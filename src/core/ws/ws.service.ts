@@ -25,8 +25,8 @@ export class WsService {
         Logger.log(`sendToClient ${socketId}`);
         if (client) {
             Logger.log(`sendToClient client+ ${socketId}`);
-            Logger.log(`sendToClient client+ ${payload.event}`);
-            client.emit(payload.event, payload.data);
+            Logger.log(`sendToClient client+ ${payload?.event}`);
+            client.emit(payload?.event, payload?.data);
         }
     }
 

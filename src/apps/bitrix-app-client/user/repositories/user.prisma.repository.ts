@@ -119,7 +119,7 @@ export class UserPrismaRepository implements UserRepository {
 
             // Если пароль предоставлен, хешируем его
             if (user.password) {
-                updateData.password = encrypt(user.password as string);
+                updateData.password = encrypt(user.password);
             }
 
             const result = await this.prisma.user.update({

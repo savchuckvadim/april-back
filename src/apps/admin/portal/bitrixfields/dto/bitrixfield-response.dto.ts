@@ -1,8 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BitrixFieldItemResponseDto } from './bitrixfield-item-response.dto';
-import { BitrixFieldEntityType } from '../enums/bitrixfield-entity-type.enum';
+import { PbxEntityType } from '../../pbx-shared';
+import { bitrixfields } from 'generated/prisma';
 
 export class BitrixFieldResponseDto {
+    constructor(field: bitrixfields) {
+        this.id = Number(field.id);
+        this.entity_type = field.entity_type as PbxEntityType;
+        this.entity_id = Number(field.entity_id);
+        this.parent_type = field.parent_type;
+        this.type = field.type;
+        this.title = field.title;
+    }
     @ApiProperty({
         description: 'Field ID',
         example: 1,
@@ -11,10 +20,10 @@ export class BitrixFieldResponseDto {
 
     @ApiProperty({
         description: 'Entity type',
-        example: BitrixFieldEntityType.SMART,
-        enum: BitrixFieldEntityType,
+        example: PbxEntityType.SMART,
+        enum: PbxEntityType,
     })
-    entity_type: BitrixFieldEntityType | string;
+    entity_type: PbxEntityType | string;
 
     @ApiProperty({
         description: 'Entity ID',

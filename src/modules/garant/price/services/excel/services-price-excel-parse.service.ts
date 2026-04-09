@@ -76,10 +76,10 @@ export class ServicesPriceExcelParseService {
 
             if (Number(mskValue) > 0 || Number(regionValue) > 0) {
                 prices.push({
-                    code: `${type}_${number}` as string,
+                    code: `${type}_${number}`,
                     region_type: '0' as '0' | '1',
                     garantPackageCode: packageCode as 'lt' | 'star',
-                    value: Number(mskValue) as number,
+                    value: Number(mskValue),
 
                     discount: null,
                     isSpecial: false,
@@ -89,10 +89,10 @@ export class ServicesPriceExcelParseService {
                     supplyType: null,
                 });
                 prices.push({
-                    code: `${type}_${number}` as string,
+                    code: `${type}_${number}`,
                     region_type: '1' as '0' | '1',
                     garantPackageCode: packageCode as 'lt' | 'star',
-                    value: Number(regionValue) as number,
+                    value: Number(regionValue),
                     discount: null,
 
                     isSpecial: false,

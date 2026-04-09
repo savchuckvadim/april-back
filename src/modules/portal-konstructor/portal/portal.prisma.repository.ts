@@ -58,7 +58,7 @@ export class PortalPrismaRepository implements PortalRepository {
         if (portal.clientId) {
             data.clients = {
                 connect: {
-                    id: BigInt(portal.clientId!),
+                    id: BigInt(portal.clientId),
                 },
             };
         }

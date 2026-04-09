@@ -332,7 +332,7 @@ export class BitrixDealService {
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
-        let stagePrephicks = 'sales';
+        const stagePrephicks = 'sales';
 
         const eventOrders: EventOrder[] = [
             {
@@ -372,8 +372,8 @@ export class BitrixDealService {
             },
         ];
 
-        let planOrder = 0;
-        let reportOrder = 0;
+        const planOrder = 0;
+        const reportOrder = 0;
 
         const codesToFilter: string[] = [];
 
@@ -427,9 +427,9 @@ export class BitrixDealService {
         currentBtxDeal: Deal | null,
         currentCategoryData: IPCategory,
     ): string | null {
-        let targetStageBtxId: string | null = null;
-        let stageSuphicks = 'plan';
-        let stagePrephicks = 'sales';
+        const targetStageBtxId: string | null = null;
+        const stageSuphicks = 'plan';
+        const stagePrephicks = 'sales';
 
         const eventOrders: EventOrder[] = [
             {
@@ -503,7 +503,7 @@ export class BitrixDealService {
         isExpired: boolean,
     ): string | null {
         let stageSuphicks = 'plan';
-        let stagePrephicks = 'sales_tmc';
+        const stagePrephicks = 'sales_tmc';
         let targetStageBtxId: string | null = null;
 
         const eventOrders: EventOrder[] = [
@@ -612,8 +612,8 @@ export class BitrixDealService {
         currentBtxDeal: Deal | null,
         currentCategoryData: IPCategory,
     ): string | null {
-        let stageSuphicks = 'plan';
-        let stagePrephicks = 'sales_tmc';
+        const stageSuphicks = 'plan';
+        const stagePrephicks = 'sales_tmc';
         let currentEventOrder: string | null = null;
 
         const eventOrders: EventOrder[] = [
@@ -690,7 +690,7 @@ export class BitrixDealService {
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = '';
-        let stagePrephicks = 'cold';
+        const stagePrephicks = 'cold';
 
         if (reportEventType === 'xo' || reportEventType === 'cold') {
             if (isExpired) {
@@ -729,7 +729,7 @@ export class BitrixDealService {
     ): string | null {
         let targetStageBtxId: string | null = null;
         let stageSuphicks = 'plan';
-        let stagePrephicks = 'spres';
+        const stagePrephicks = 'spres';
 
         if (eventAction === 'done' || eventAction === 'success') {
             stageSuphicks = 'success';

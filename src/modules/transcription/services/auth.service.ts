@@ -91,6 +91,7 @@ export class AuthService {
             const endPrivateKey =
                 privateKey.indexOf('-----END PRIVATE KEY-----') +
                 '-----END PRIVATE KEY-----'.length;
+
             const privateKeyPEM = privateKey.substring(
                 startPrivateKey,
                 endPrivateKey,

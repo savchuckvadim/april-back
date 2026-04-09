@@ -2,6 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { YandexAuthService } from 'src/clients/yandex/yandex-auth.service';
 
+export interface IYAChanks {
+    alternatives?: { text?: string }[];
+}
+
+export interface IYAResponse {
+    done?: boolean;
+    response?: { chunks?: IYAChanks[] };
+}
+
 @Injectable()
 export class StreamingTranscriptionService {
     private readonly logger = new Logger(StreamingTranscriptionService.name);
@@ -65,10 +74,10 @@ export class StreamingTranscriptionService {
                 );
             }
 
-            const data = await response.json();
+            const data = (await response.json()) as { id?: string };
             this.logger.debug('Transcription response:', data);
 
-            if (!data.id) {
+            if (!data?.id) {
                 throw new Error('No operation ID in response');
             }
 
@@ -108,10 +117,10 @@ export class StreamingTranscriptionService {
                     );
                 }
 
-                const data = await response.json();
+                const data = (await response.json()) as IYAResponse;
                 this.logger.debug('Transcription result response:', data);
 
-                if (data.done) {
+                if (data?.done) {
                     if (
                         !data.response ||
                         !data.response.chunks ||
@@ -127,7 +136,7 @@ export class StreamingTranscriptionService {
                     }
 
                     const transcription = data.response.chunks
-                        .map(chunk => chunk.alternatives[0].text)
+                        .map(chunk => chunk.alternatives?.[0]?.text)
                         .join(' ');
 
                     if (!transcription.trim()) {
@@ -144,9 +153,9 @@ export class StreamingTranscriptionService {
             throw new Error('Transcription timeout');
         } catch (error) {
             this.logger.error('Error getting transcription result:', {
-                error: error.message,
+                error: (error as Error)?.message || 'Unknown error',
                 operationId,
-                stack: error.stack,
+                stack: (error as Error)?.stack || 'Unknown stack',
             });
             throw error;
         }

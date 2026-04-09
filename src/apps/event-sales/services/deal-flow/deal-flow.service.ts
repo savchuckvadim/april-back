@@ -48,8 +48,8 @@ export class DealFlowService {
         };
 
         let currentDealId = currentBaseDeal?.ID || (null as string | null);
-        let xoDealId = currentColdDeal?.ID || (null as string | null);
-        let reportPresDealId = currentPresDeal?.ID || (null as string | null);
+        const xoDealId = currentColdDeal?.ID || (null as string | null);
+        const reportPresDealId = currentPresDeal?.ID || (null as string | null);
 
         const reportDeals: string[] = [];
         const planDeals: string[] = [];

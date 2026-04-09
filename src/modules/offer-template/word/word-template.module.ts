@@ -18,9 +18,12 @@ import {
 
 // Services
 import { WordTemplateService } from './services/word-template.service';
+import { DownloadTemplateService } from './services/download-template.service';
+import { DocumentTagsFileService } from './services/document-tags-file.service';
 
 // Controllers
 import { WordTemplateController } from './controllers/word-template.controller';
+import { WordTemplateTagsController } from './controllers/word-template-tags.controller';
 
 @Module({
     imports: [StorageModule],
@@ -43,11 +46,15 @@ import { WordTemplateController } from './controllers/word-template.controller';
 
         // Services
         WordTemplateService,
+        DownloadTemplateService,
+        DocumentTagsFileService,
     ],
-    controllers: [WordTemplateController],
+    controllers: [WordTemplateController, WordTemplateTagsController],
     exports: [
         // Export services for use in other modules
         WordTemplateService,
+        DownloadTemplateService,
+        DocumentTagsFileService,
     ],
 })
 export class WordTemplateModule {}

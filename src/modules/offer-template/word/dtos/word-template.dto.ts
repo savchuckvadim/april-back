@@ -40,6 +40,12 @@ export class WordTemplateDto extends WordTemplate {
     declare is_active: boolean;
 
     @ApiProperty()
+    declare is_archived: boolean;
+
+    @ApiProperty({ required: false })
+    declare user_id?: number;
+
+    @ApiProperty()
     declare counter: number;
 
     @ApiProperty({ required: false })
@@ -53,35 +59,50 @@ export class WordTemplateDto extends WordTemplate {
 }
 
 export class WordTemplateSummaryDto extends WordTemplateSummary {
-    @ApiProperty()
+    constructor(partial: Partial<WordTemplateSummary>) {
+        super(partial);
+    }
+    @ApiProperty({ type: String })
     declare id: string;
 
-    @ApiProperty()
+    @ApiProperty({ type: String })
     declare name: string;
+
+    @ApiProperty({ required: false, type: String })
+    declare tags?: string;
 
     @ApiProperty({ enum: OfferTemplateVisibility })
     declare visibility: OfferTemplateVisibility;
 
-    @ApiProperty()
+    @ApiProperty({ type: Boolean })
     declare is_default: boolean;
 
-    @ApiProperty()
+    @ApiProperty({ type: String })
     declare type: string;
 
-    @ApiProperty()
+    @ApiProperty({ type: String })
     declare code: string;
 
-    @ApiProperty()
+    @ApiProperty({ type: Boolean })
     declare is_active: boolean;
 
-    @ApiProperty()
-    declare counter: number;
+    @ApiProperty({ required: false, type: Boolean })
+    declare is_archived?: boolean;
 
     @ApiProperty({ required: false })
+    declare user_id?: number;
+
+    @ApiProperty({ type: Number })
+    declare counter: number;
+
+    @ApiProperty({ required: false, type: String })
     declare template_url?: string;
 
     @ApiProperty({ required: false })
     declare created_at?: Date;
+
+    @ApiProperty({ required: false, type: Number })
+    declare portal_id?: number;
 }
 
 export class UserSelectedTemplateSummaryDto {

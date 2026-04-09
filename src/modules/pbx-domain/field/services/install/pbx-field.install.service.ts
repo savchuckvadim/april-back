@@ -253,7 +253,7 @@ export class PbxFieldInstallService {
         }>;
 
         const config: Partial<IUserFieldConfig> = {
-            entityId: entityId as IUserFieldConfig['entityId'],
+            entityId: entityId,
             fieldName,
             userTypeId,
             multiple: field.isMultiple ? 'Y' : 'N',

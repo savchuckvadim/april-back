@@ -199,8 +199,8 @@ export class SalesUserReportService {
         listItems: Record<string, any>[],
         bitrix: BitrixService,
     ): Promise<PbxSalesKpiListItemDto[]> {
-        let companiesIds: number[] = [];
-        let contactsIds: number[] = [];
+        const companiesIds: number[] = [];
+        const contactsIds: number[] = [];
 
         const result = listItems.map(item => {
             const resultItem = {
@@ -247,15 +247,13 @@ export class SalesUserReportService {
                             currentCommentStringValue =
                                 currentCommentStringValue
                                     .toString()
-                                    .replace(/\D/g, '') as string;
+                                    .replace(/\D/g, '');
                             companiesIds.push(
-                                Number(currentCommentStringValue) as number,
+                                Number(currentCommentStringValue),
                             );
                         }
                         if (pField.code === EnumSalesKpiFieldCode.crm_contact) {
-                            contactsIds.push(
-                                Number(currentCommentStringValue) as number,
-                            );
+                            contactsIds.push(Number(currentCommentStringValue));
                         }
 
                         if (
@@ -274,7 +272,7 @@ export class SalesUserReportService {
                             bitrixId: 0,
                             name: '',
                             code: '',
-                            value: currentCommentStringValue as string,
+                            value: currentCommentStringValue,
                         } as PbxSalesKpiFieldItemValueDto,
                     } as PbxSalesKpiFieldValueDto;
                 } else if (
@@ -284,10 +282,7 @@ export class SalesUserReportService {
                     if (typeof currentValue === 'string') {
                         continue;
                     }
-                    for (const key in currentValue as Record<
-                        string,
-                        string | number
-                    >) {
+                    for (const key in currentValue) {
                         const pItem = pField.items?.find(
                             item =>
                                 Number(item.bitrixId) ===
@@ -329,9 +324,9 @@ export class SalesUserReportService {
                 return (
                     item[EnumSalesKpiFieldCode.crm_company]
                         ?.value as PbxSalesKpiFieldItemValueDto
-                )?.value as string | undefined;
+                )?.value;
             })
-            .filter(id => id !== undefined) as string[];
+            .filter(id => id !== undefined);
         const companies = await bitrix.company.all(
             {
                 '@ID': companiesIds,
@@ -351,7 +346,7 @@ export class SalesUserReportService {
             const companyId = (
                 item[EnumSalesKpiFieldCode.crm_company]
                     ?.value as PbxSalesKpiFieldItemValueDto
-            )?.value as string | undefined;
+            )?.value;
             if (!companyId) {
                 return item;
             }
@@ -391,13 +386,13 @@ export class SalesUserReportService {
         }
         const pFieldBitrixId = portalColorField.bitrixId;
 
-        const currentItemId = Number(company.UF_CRM_OP_PROSPECTS) as number;
+        const currentItemId = Number(company.UF_CRM_OP_PROSPECTS);
 
         if (currentItemId) {
             const colorCode = portalColorField.items?.find(
                 item => Number(item.bitrixId) === currentItemId,
             )?.code as string;
-            return (colorCode as string) ?? '';
+            return colorCode ?? '';
         }
         return '';
     }

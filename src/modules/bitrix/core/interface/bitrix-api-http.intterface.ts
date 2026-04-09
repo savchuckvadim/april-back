@@ -3,13 +3,13 @@ export interface IBitrixBatchResponse {
 }
 export interface IBitrixBatchResponseResult {
     result: {
-        [key: string]: any;
+        [key: string]: any; // здесь реально может оказаться что угодно, поэтому any
     };
     result_error:
-        | {
-              [key: string]: IBitrixBatchError;
-          }
-        | [];
+    | {
+        [key: string]: IBitrixBatchError;
+    }
+    | [];
     result_total: {
         [key: string]: any;
     }[];
