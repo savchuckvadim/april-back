@@ -30,6 +30,8 @@ import { InvoiceWordCoreGenerateService } from './services/invoice-word-core/inv
 import { InvoiceRenderDataService } from './services/render-data-services/invoice-render-data.service';
 import { InvoiceTemplateModule } from '@/modules/invoice-template';
 import { OfferGenerateProcessor } from './queue/offer-generate.processor';
+import { OfferBxTimelineService } from './services/bitrix/offer-bx-timeline.service';
+import { PBXModule } from '@/modules/pbx';
 
 @Module({
     imports: [
@@ -45,6 +47,7 @@ import { OfferGenerateProcessor } from './queue/offer-generate.processor';
         LibreOfficeModule,
         InnerDealModule,
         InvoiceTemplateModule,
+        PBXModule,
     ],
     controllers: [OfferWordGenerateController, OfferWordPdfPreviewController],
     providers: [
@@ -65,6 +68,7 @@ import { OfferGenerateProcessor } from './queue/offer-generate.processor';
         OfferGenerateQueueService,
         InvoiceWordCoreGenerateService,
         InvoiceRenderDataService,
+        OfferBxTimelineService,
     ],
 })
 export class OfferWordModule {}

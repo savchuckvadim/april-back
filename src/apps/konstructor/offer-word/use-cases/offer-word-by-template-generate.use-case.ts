@@ -7,6 +7,10 @@ import { OfferWordCoreGenerateResult } from '../types/offer-word-core-generate.t
 import dayjs from 'dayjs';
 import { OfferWordCoreGenerateService } from '../services/offer-word-core/offer-word-core-generate.service';
 import { InvoiceWordCoreGenerateService } from '../services/invoice-word-core/invoice-word-core-generate.service';
+import { IResultDocumentLink } from '../interface/document.interface';
+import { OfferBxTimelineService } from '../services/bitrix/offer-bx-timeline.service';
+import { getInvoiceDocumentProductName } from '../lib/get-invoice-document-product-name';
+import { getOfferDocumentProductName } from '../lib/get-offer-document-product-name.util';
 
 /**
  * Синхронный сценарий «как generateOfferWord»: ядро пишет DOCX (+ссылка),
@@ -19,40 +23,34 @@ export class OfferWordByTemplateGenerateUseCase {
         private readonly offerWordPdfExportService: OfferWordPdfExportService,
         private readonly innerDealService: InnerDealService,
         private readonly invoiceGenerateService: InvoiceWordCoreGenerateService,
+        private readonly timelineService: OfferBxTimelineService,
     ) {}
 
     async execute(dto: OfferWordByTemplateGenerateDto): Promise<{
         template: WordTemplate;
-        link: string;
+        link: IResultDocumentLink;
         renderData: OfferWordCoreGenerateResult['renderData'];
-        invoiceLinks: string[];
+        invoiceLinks: IResultDocumentLink[];
     }> {
         const dealId = Number(dto.dealId);
         const domain = dto.domain;
         const userId = dto.userId;
         const templateId = BigInt(dto.templateId);
         const isPdf = !dto.isWord;
-
         const core = await this.offerWordCoreGenerate.execute(dto, {
             publishDocxLink: true,
         });
-
         const year = dayjs().format('YYYY');
-        let link: string;
-        let invoiceLinks: string[] = [];
-        if (isPdf) {
-            link = await this.offerWordPdfExportService.buildPublicPdfLink({
-                docxAbsolutePath: core.docxPath,
-                docxFileName: core.resultFileName,
-                domain: dto.domain,
-                userId: userId,
-                year,
-            });
-            // DOCX уже прочитан конвертером; для сценария «нужен только PDF» файл не храним.
-            await this.offerWordCoreGenerate.removeSavedDocx(core.docxPath);
-        } else {
-            link = core.docxLink as string;
-        }
+        const offerLink: IResultDocumentLink = await this.prepareOfferLink(
+            dto,
+            core,
+            domain,
+            userId,
+            year,
+            isPdf,
+        );
+        let invoiceLinks: IResultDocumentLink[] = [];
+
         if (dto.invoice.needGeneralInvoice || dto.invoice.needManyInvoices) {
             try {
                 invoiceLinks = await this.getInvoiceLinks(dto, year, isPdf);
@@ -71,45 +69,101 @@ export class OfferWordByTemplateGenerateUseCase {
             console.error('Error in setOfferTemplateByDomainAndDealId:', error);
         }
 
+        await this.timelineService.sendDocumentToBitrix({
+            domain: domain,
+            companyId: dto.companyId,
+            userId: userId,
+            documents: [offerLink, ...invoiceLinks],
+            dealId: dealId.toString(),
+        });
+
         return {
             template: core.template,
-            link,
+            link: offerLink,
             renderData: core.renderData,
             invoiceLinks,
         };
     }
 
+    private async prepareOfferLink(
+        dto: OfferWordByTemplateGenerateDto,
+        core: OfferWordCoreGenerateResult,
+        domain: string,
+        userId: number,
+        year: string,
+        isPdf: boolean,
+    ): Promise<IResultDocumentLink> {
+        const documentName = getOfferDocumentProductName(dto);
+        console.log('documentName', documentName);
+        let link: string;
+        if (isPdf) {
+            link = await this.offerWordPdfExportService.buildPublicPdfLink({
+                docxAbsolutePath: core.docxPath,
+                docxFileName: core.resultFileName,
+                domain: domain,
+                userId: userId,
+                year,
+            });
+            // DOCX уже прочитан конвертером; для сценария «нужен только PDF» файл не храним.
+            await this.offerWordCoreGenerate.removeSavedDocx(core.docxPath);
+        } else {
+            link = core.docxLink as string;
+        }
+
+        return {
+            link,
+            name: documentName,
+            type: 'offer',
+        };
+    }
     protected async getInvoiceLinks(
         dto: OfferWordByTemplateGenerateDto,
         year: string,
         isPdf: boolean,
-    ): Promise<string[]> {
+    ): Promise<IResultDocumentLink[]> {
         const domain = dto.domain;
         const userId = dto.userId;
         const invoiceCoreResult =
             await this.invoiceGenerateService.execute(dto);
         const savedResults = invoiceCoreResult.savedResults;
-        const invoiceLinks: string[] = [];
-        if (isPdf) {
-            for (const result of savedResults) {
-                const link =
-                    await this.offerWordPdfExportService.buildPublicPdfLink({
-                        docxAbsolutePath: result.docxPath,
-                        docxFileName: result.resultFileName,
-                        domain: domain,
-                        userId: userId,
-                        year,
-                    });
+        const invoiceLinks: IResultDocumentLink[] = [];
+        let isAlternative = false;
+        let invoiceCount = 0;
+        for (const result of savedResults) {
+            // берем name из результатов
+            // берем link из результатов docx - если не нужен pdf, то используем docxLink
+            let link: string = result.docxLink;
 
-                invoiceLinks.push(link);
+            if (isPdf) {
+                // если нужен pdf, то генерируем pdf и используем link из pdf
+                link = await this.offerWordPdfExportService.buildPublicPdfLink({
+                    docxAbsolutePath: result.docxPath,
+                    docxFileName: result.resultFileName,
+                    domain: domain,
+                    userId: userId,
+                    year,
+                });
+                // удаляем docx после генерации pdf
                 await this.invoiceGenerateService.removeSavedDocx(
                     result.docxPath,
                 );
             }
-        } else {
-            for (const result of savedResults) {
-                invoiceLinks.push(result.docxLink);
-            }
+
+            // вне зависимости от того, нужен ли pdf, добавляем в массив ссылки на документы
+            // и имя документа
+            const invoiceName = getInvoiceDocumentProductName(
+                dto,
+                isAlternative,
+                invoiceCount,
+            );
+            invoiceLinks.push({
+                link,
+                name: invoiceName,
+                type: 'invoice',
+            });
+
+            isAlternative = true;
+            invoiceCount++;
         }
         return invoiceLinks;
     }

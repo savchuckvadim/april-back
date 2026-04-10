@@ -5,7 +5,7 @@ import { BitrixEntityType } from '@/modules/bitrix/domain/enums/bitrix-constants
 export interface IBxTimelinePusherDto {
     companyId: string;
     dealId?: string;
-    userId: string;
+    userId: number | string;
     message: string;
 }
 export class BxTimelinePusherService {
@@ -15,14 +15,14 @@ export class BxTimelinePusherService {
         const { companyId, dealId, userId, message } = dto;
         const uuid = randomUUID();
         await delay(1000);
-        console.log('BitrixEntityType.COMPANY', BitrixEntityType.COMPANY);
+
         this.bitrix.batch.timeline.addTimelineComment(
             `${uuid}_add_timeline_company_${dto.companyId}`,
             {
                 ENTITY_ID: companyId,
                 ENTITY_TYPE: BitrixEntityType.COMPANY,
                 COMMENT: message,
-                AUTHOR_ID: userId,
+                AUTHOR_ID: userId.toString(),
             },
         );
 
@@ -33,7 +33,7 @@ export class BxTimelinePusherService {
                     ENTITY_ID: dealId,
                     ENTITY_TYPE: BitrixEntityType.DEAL,
                     COMMENT: message,
-                    AUTHOR_ID: userId,
+                    AUTHOR_ID: userId.toString(),
                 },
             );
         }
