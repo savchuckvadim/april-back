@@ -55,6 +55,15 @@ export class IOfferWordGenerateRecipientDto {
     @IsString()
     @IsOptional()
     position?: string;
+    @ApiProperty({ description: 'Position case of the recipient' })
+    @IsString()
+    @IsOptional()
+    positionCase?: string;
+
+    @ApiProperty({ description: 'Name case of the recipient' })
+    @IsString()
+    @IsOptional()
+    nameCase?: string;
 }
 export class IOfferWordGenerateManagerDto {
     @ApiProperty({ description: 'Name of the manager' })

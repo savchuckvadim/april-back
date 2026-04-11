@@ -21,8 +21,8 @@ export class OfferRenderRecipientService {
         return {
             RecipientName: dto.name ?? '',
             RecipientPosition: dto.position ?? '',
-            RecipientNameCase: dto.name ?? '',
-            RecipientPositionCase: dto.position ?? '',
+            RecipientNameCase: dto.nameCase ?? '',
+            RecipientPositionCase: dto.positionCase ?? '',
             RecipientCompanyName: dto.companyName ?? '',
             RecipientInn: dto.inn ?? '',
             RecipientInvoiceRq: this.getInvoiceRq(dto),

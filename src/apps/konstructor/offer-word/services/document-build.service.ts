@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
 import { OfferWordCoreGenerateService } from './offer-word-core/offer-word-core-generate.service';
@@ -19,6 +19,8 @@ export interface IDocumentBuildResult {
 
 @Injectable()
 export class DocumentBuildService {
+    private readonly logger = new Logger(DocumentBuildService.name);
+
     constructor(
         private readonly offerWordCoreGenerate: OfferWordCoreGenerateService,
         private readonly invoiceGenerateService: InvoiceWordCoreGenerateService,
@@ -37,8 +39,15 @@ export class DocumentBuildService {
         const offer = await this.buildOfferDocument(dto, core, year, isPdf);
 
         let invoices: IPreparedDocument[] = [];
-        if (dto.invoice.needGeneralInvoice || dto.invoice.needManyInvoices) {
-            invoices = await this.buildInvoiceDocuments(dto, year, isPdf);
+        try {
+            if (
+                dto.invoice.needGeneralInvoice ||
+                dto.invoice.needManyInvoices
+            ) {
+                invoices = await this.buildInvoiceDocuments(dto, year, isPdf);
+            }
+        } catch (error) {
+            console.error('Error in buildInvoiceDocuments:', error);
         }
 
         return {
@@ -60,15 +69,24 @@ export class DocumentBuildService {
         let absolutePath: string;
 
         if (isPdf) {
-            serverLink = await this.pdfExportService.buildPublicPdfLink({
-                docxAbsolutePath: core.docxPath,
-                docxFileName: core.resultFileName,
-                domain: dto.domain,
-                userId: dto.userId,
-                year,
-                type: 'offer',
-            });
-            absolutePath = core.docxPath.replace(/\.docx$/i, '.pdf');
+            try {
+                serverLink = await this.pdfExportService.buildPublicPdfLink({
+                    docxAbsolutePath: core.docxPath,
+                    docxFileName: core.resultFileName,
+                    domain: dto.domain,
+                    userId: dto.userId,
+                    year,
+                    type: 'offer',
+                });
+                absolutePath = core.docxPath.replace(/\.docx$/i, '.pdf');
+            } catch (error) {
+                this.logger.warn(
+                    'PDF conversion failed, falling back to DOCX',
+                    (error as Error)?.message,
+                );
+                serverLink = core.docxLink as string;
+                absolutePath = core.docxPath;
+            }
         } else {
             serverLink = core.docxLink as string;
             absolutePath = core.docxPath;
@@ -98,15 +116,23 @@ export class DocumentBuildService {
             let absolutePath: string = saved.docxPath;
 
             if (isPdf) {
-                serverLink = await this.pdfExportService.buildPublicPdfLink({
-                    docxAbsolutePath: saved.docxPath,
-                    docxFileName: saved.resultFileName,
-                    domain: dto.domain,
-                    userId: dto.userId,
-                    year,
-                    type: 'invoice',
-                });
-                absolutePath = saved.docxPath.replace(/\.docx$/i, '.pdf');
+                try {
+                    serverLink =
+                        await this.pdfExportService.buildPublicPdfLink({
+                            docxAbsolutePath: saved.docxPath,
+                            docxFileName: saved.resultFileName,
+                            domain: dto.domain,
+                            userId: dto.userId,
+                            year,
+                            type: 'invoice',
+                        });
+                    absolutePath = saved.docxPath.replace(/\.docx$/i, '.pdf');
+                } catch (error) {
+                    this.logger.warn(
+                        'PDF invoice conversion failed, falling back to DOCX',
+                        (error as Error)?.message,
+                    );
+                }
             }
 
             const displayName = getInvoiceDocumentProductName(
