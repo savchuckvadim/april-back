@@ -81,7 +81,7 @@ jobs:
                         sleep 5
                         elapsed=$((elapsed + 5))
                       done
-                      docker image prune -f || true
+                      docker system prune -a || true
                       docker compose ps
                       docker logs nest-api --tail 100 || true
 
