@@ -203,4 +203,14 @@ export class OfferWordByTemplateGenerateDto {
     @IsBoolean()
     @IsOptional()
     withoutQueue?: boolean;
+
+    @ApiProperty({
+        required: false,
+        default: false,
+        description:
+            'true — сохранять документы только в Bitrix Disk; false или не передавать — сохранять и на сервере, и в Bitrix',
+    })
+    @IsOptional()
+    @IsBoolean()
+    onlyBitrixSave?: boolean;
 }

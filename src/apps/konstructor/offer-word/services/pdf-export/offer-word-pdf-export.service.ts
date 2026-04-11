@@ -9,6 +9,7 @@ export type OfferWordPdfExportParams = {
     domain: string;
     userId: number;
     year: string;
+    type: 'offer' | 'invoice';
 };
 
 /**
@@ -39,7 +40,7 @@ export class OfferWordPdfExportService {
             params.domain,
             params.userId,
             'konstructor',
-            'offer-word',
+            params.type === 'offer' ? 'offer-word' : 'invoice-document',
             params.year,
             pdfFileName,
         );

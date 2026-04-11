@@ -7,6 +7,7 @@ import { INFOBLOCK_GROUP_TYPE } from '../dto/complect/complect.type';
 
 export interface IInfblockRenderData {
     name: string;
+    infoblock: string;
     smallDescription: string;
     mediumDescription: string;
     bigDescription: string;
@@ -139,6 +140,13 @@ export class InfoblocksRenderDataService {
                     infoblock => infoblock.code === value.code,
                 );
                 const resultInfoblock = {
+                    infoblock:
+                        infoblock?.name === 'Региональное законодательство'
+                            ? infoblock?.shortDescription || ''
+                            : infoblock?.name ||
+                              value.title ||
+                              value.name ||
+                              '',
                     name: infoblock?.name || value.title || value.name || '',
                     smallDescription:
                         infoblock?.shortDescription || value.description || '',
@@ -204,6 +212,10 @@ export class InfoblocksRenderDataService {
                 );
                 infoblocksData.push({
                     name: infoblock?.name || '',
+                    infoblock:
+                        infoblock?.name === 'Региональное законодательство'
+                            ? infoblock?.shortDescription || ''
+                            : infoblock?.name || '',
                     smallDescription: infoblock?.shortDescription || '',
                     mediumDescription: infoblock?.descriptionForSale || '',
                     bigDescription: infoblock?.description || '',

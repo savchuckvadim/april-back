@@ -8,7 +8,6 @@ import { UserRepository } from '../repositories/user.repository';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
-import { UserRole } from '../entities/user.entity';
 import { encrypt, decrypt } from '@/lib/utils/crypt.util';
 import { User } from 'generated/prisma';
 

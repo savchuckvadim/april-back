@@ -1,6 +1,7 @@
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 import { BxDiskStorageRepository } from '../repository/bx-disk-storage.repository';
 import {
+    IBXDiskStorage,
     IBXDiskStorageAddFolderRequest,
     IBXDiskStorageGetChildrenRequest,
     IBXDiskStorageGetRequest,
@@ -20,8 +21,8 @@ export class BxDiskStorageService {
         this.repo = new BxDiskStorageRepository(api);
     }
 
-    async getlist() {
-        return await this.repo.getlist();
+    async getlist(filter?: Partial<IBXDiskStorage>) {
+        return await this.repo.getlist(filter);
     }
 
     async gettypes() {

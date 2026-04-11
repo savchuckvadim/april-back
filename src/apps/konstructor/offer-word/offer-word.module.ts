@@ -32,6 +32,8 @@ import { InvoiceTemplateModule } from '@/modules/invoice-template';
 import { OfferGenerateProcessor } from './queue/offer-generate.processor';
 import { OfferBxTimelineService } from './services/bitrix/offer-bx-timeline.service';
 import { PBXModule } from '@/modules/pbx';
+import { BitrixDocumentSaveFlowService } from './services/bitrix/bitrix-document-save-flow.service';
+import { DocumentBuildService } from './services/document-build.service';
 
 @Module({
     imports: [
@@ -69,6 +71,8 @@ import { PBXModule } from '@/modules/pbx';
         InvoiceWordCoreGenerateService,
         InvoiceRenderDataService,
         OfferBxTimelineService,
+        BitrixDocumentSaveFlowService,
+        DocumentBuildService,
     ],
 })
 export class OfferWordModule {}

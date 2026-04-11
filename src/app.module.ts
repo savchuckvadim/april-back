@@ -17,7 +17,7 @@ import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
 import { EventServiceAppModule } from './apps/event-service';
 import { KonstructorModule } from './apps/konstructor/konstructor.module';
 import { MetricsModule } from './core/metrics/metrics.module';
-import { AlfaModule } from './apps/alfa/alfa.module';
+
 import { TranscriptionModule } from './modules/transcription/transcription.module';
 import { AiModule } from './modules/ai/ai.module';
 import { StorageModule } from './core/storage/storage.module';
@@ -101,7 +101,7 @@ import { InvoiceTemplateModule } from './modules/invoice-template/invoice-templa
 
         QueuePingModule,
         KonstructorModule,
-        AlfaModule,
+
         // EventServiceModule
 
         TranscriptionModule,

@@ -10,7 +10,7 @@ import {
     ClientRegistrationRequestDto,
     ClientAuthResponseDto,
     LoginDto,
-    LoginResponseCookieDto,
+    AuthResponseDto,
 } from '../dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailConfirmationService } from './mail.service';
@@ -20,6 +20,8 @@ import { CookieService } from '@/core/cookie/cookie.service';
 import { Response } from 'express';
 import { User } from 'generated/prisma';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { TokenService } from '../token/token.service';
+import { jwtConstants } from '../constants/jwt.constants';
 
 @Injectable()
 export class AuthService {
@@ -30,19 +32,17 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly mailer: MailConfirmationService,
         private readonly cookieService: CookieService,
+        private readonly tokenService: TokenService,
     ) {}
 
     async registerClient(
         dto: ClientRegistrationRequestDto,
     ): Promise<ClientAuthResponseDto> {
-        // 1️⃣ Проверка, существует ли email
         const existingEmail = await this.clientService.findByEmail(dto.email);
-
         if (existingEmail)
             throw new BadRequestException('Email already registered');
 
         const existingUser = await this.userService.findUserByEmail(dto.email);
-
         if (existingUser)
             throw new BadRequestException(
                 'User with this email already registered',
@@ -52,26 +52,18 @@ export class AuthService {
             dto.domain,
         );
 
-        //for prod
-        // if (existingPortal) throw new BadRequestException('Portal with Domain already registered');
         const portalId = existingPortal?.id;
-        // 2️⃣ Создаём клиента
         const client = await this.clientService.registrationClient(
             dto,
             Number(portalId),
         );
-        // const owner = await this.userService.createOwnerUser(Number(client.client.id), {
-        //     name: dto.userName,
-        //     surname: dto.userSurname,
-        //     email: dto.email,
-        //     password: dto.password,
-        // });
+
         const owner = client.ownerUser;
         if (!owner) throw new BadRequestException('Owner did not created');
-        // 3️⃣ Отправляем письмо подтверждения
+
         const token = this.jwtService.sign(
             { email: dto.email },
-            { expiresIn: '24h' },
+            { secret: jwtConstants.accessSecret, expiresIn: '24h' },
         );
         await this.mailer.sendEmailConfirmation(owner, token);
 
@@ -84,9 +76,11 @@ export class AuthService {
     }
 
     async confirmClientEmail(token: string) {
-        const { email } = this.jwtService.verify(token);
-        const user = await this.userService.findUserByEmail(email);
-        await this.userService.updateUserByEmail(email, {
+        const payload = this.jwtService.verify<{ email: string }>(token, {
+            secret: jwtConstants.accessSecret,
+        });
+        const user = await this.userService.findUserByEmail(payload.email);
+        await this.userService.updateUserByEmail(payload.email, {
             email_verified_at: new Date(),
         });
         await this.clientService.update(Number(user?.client_id ?? 0), {
@@ -97,41 +91,71 @@ export class AuthService {
     }
 
     async confirmUserEmail(token: string) {
-        const { email } = this.jwtService.verify(token);
-
-        await this.userService.updateUserByEmail(email, {
+        const payload = this.jwtService.verify<{ email: string }>(token, {
+            secret: jwtConstants.accessSecret,
+        });
+        await this.userService.updateUserByEmail(payload.email, {
             email_verified_at: new Date(),
         });
-
         return { message: 'Email confirmed successfully' };
     }
 
-    async login(dto: LoginDto): Promise<LoginResponseCookieDto> {
+    async login(dto: LoginDto, res: Response): Promise<AuthResponseDto> {
         const user = await this.userService.findUserByEmail(dto.email);
         const userDto = this.userService.getUserDto(user as User);
         if (!userDto) throw new UnauthorizedException('Invalid credentials');
+
         const valid = compare(dto.password, user?.password ?? '');
         if (!valid) throw new UnauthorizedException('Invalid credentials');
+
         const client = await this.clientService.findById(userDto.client_id);
         if (!client) throw new ForbiddenException('Client not found');
         if (!client?.is_active)
             throw new ForbiddenException('Client is inactive');
 
-        const token = this.jwtService.sign({
-            sub: userDto.id,
-            client_id: userDto.client_id,
-        });
-        return { token, user: userDto, client };
+        await this.issueTokens(res, userDto.id, userDto.client_id);
+
+        return { user: userDto, client };
     }
 
-    async logout(user: any, res: Response) {
-        // Если используем JWT — клиент просто забывает токен
-        this.cookieService.clearAuthCookie(res);
+    async refresh(
+        jwtPayload: { sub: number; client_id: number },
+        oldRefreshToken: string,
+        res: Response,
+    ): Promise<AuthResponseDto> {
+        await this.tokenService.revokeRefreshToken(oldRefreshToken);
+
+        const userDto = await this.userService.findUserById(jwtPayload.sub);
+        // const userDto = this.userService.getUserDto(user as User);
+        if (!userDto) throw new UnauthorizedException('User not found');
+
+        const client = await this.clientService.findById(jwtPayload.client_id);
+        if (!client) throw new ForbiddenException('Client not found');
+
+        await this.issueTokens(res, userDto.id, userDto.client_id);
+
+        return { user: userDto, client };
+    }
+
+    async logout(
+        user: { sub: number },
+        refreshToken: string | undefined,
+        res: Response,
+    ) {
+        if (refreshToken) {
+            await this.tokenService.revokeRefreshToken(refreshToken);
+        } else {
+            await this.tokenService.revokeAllUserTokens(user.sub);
+        }
+        this.cookieService.clearAuthCookies(res);
         return { message: 'Logged out' };
     }
 
     async resendConfirmation(email: string) {
-        const token = this.jwtService.sign({ email }, { expiresIn: '24h' });
+        const token = this.jwtService.sign(
+            { email },
+            { secret: jwtConstants.accessSecret, expiresIn: '24h' },
+        );
         const user = await this.userService.findUserByEmail(email);
         if (!user) throw new NotFoundException('User not found');
 
@@ -140,12 +164,16 @@ export class AuthService {
     }
 
     generateToken(userId: number, clientId: number) {
-        return this.jwtService.sign({ sub: userId, client_id: clientId });
+        return this.generateAccessToken(userId, clientId);
     }
 
-    verifyToken(token: string) {
-        return this.jwtService.verify(token);
+    verifyToken(token: string): { sub: number; client_id: number } {
+        return this.jwtService.verify<{ sub: number; client_id: number }>(
+            token,
+            { secret: jwtConstants.accessSecret },
+        );
     }
+
     async validateUserById(userId: number) {
         return await this.userService.findUserById(userId);
     }
@@ -168,5 +196,42 @@ export class AuthService {
 
     async getClientsUsers(clientId: number) {
         return await this.userService.findUsersByClientId(clientId);
+    }
+
+    private generateAccessToken(userId: number, clientId: number): string {
+        return this.jwtService.sign(
+            { sub: userId, client_id: clientId },
+            {
+                secret: jwtConstants.accessSecret,
+                expiresIn: jwtConstants.accessExpiresIn,
+            },
+        );
+    }
+
+    private generateRefreshJwt(userId: number, clientId: number): string {
+        return this.jwtService.sign(
+            { sub: userId, client_id: clientId },
+            {
+                secret: jwtConstants.refreshSecret,
+                expiresIn: jwtConstants.refreshExpiresIn,
+            },
+        );
+    }
+
+    private async issueTokens(
+        res: Response,
+        userId: number,
+        clientId: number,
+    ): Promise<void> {
+        const accessToken = this.generateAccessToken(userId, clientId);
+        const refreshJwt = this.generateRefreshJwt(userId, clientId);
+
+        await this.tokenService.saveRefreshToken(
+            userId,
+            refreshJwt,
+            jwtConstants.refreshTtlDays,
+        );
+
+        this.cookieService.setAuthCookies(res, accessToken, refreshJwt);
     }
 }

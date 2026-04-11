@@ -91,8 +91,8 @@ export class StreamingTranscriptionService {
     async getTranscriptionResult(operationId: string): Promise<string> {
         try {
             const iamToken = await this.yandexAuthService.getIamToken();
-            const maxAttempts = 30;
-            const delayMs = 2000;
+            const maxAttempts = 700;
+            const delayMs = 3000;
 
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
                 const response = await fetch(

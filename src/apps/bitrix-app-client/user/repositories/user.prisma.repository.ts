@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { User } from 'generated/prisma';
 import { PrismaService } from 'src/core/prisma';
 import { UserRepository } from './user.repository';
-import { decrypt, encrypt } from '@/lib/utils/crypt.util';
+import { encrypt } from '@/lib/utils/crypt.util';
 
 @Injectable()
 export class UserPrismaRepository implements UserRepository {
@@ -108,7 +108,7 @@ export class UserPrismaRepository implements UserRepository {
 
     async update(id: number, user: Partial<User>): Promise<User | null> {
         try {
-            const updateData: any = {
+            const updateData: Partial<User> = {
                 name: user.name,
                 surname: user.surname,
                 email: user.email,
@@ -117,7 +117,6 @@ export class UserPrismaRepository implements UserRepository {
                 role_id: user.role_id,
             };
 
-            // Если пароль предоставлен, хешируем его
             if (user.password) {
                 updateData.password = encrypt(user.password);
             }

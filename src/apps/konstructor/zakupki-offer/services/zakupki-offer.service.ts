@@ -102,15 +102,11 @@ export class ZakupkiOfferCreateService {
                 dto.complect,
                 2,
             );
-        const infoblocksLeft = infoblocksRenderData[0].map(infoblock =>
-            infoblock.name == 'Региональное законодательство'
-                ? infoblock.smallDescription
-                : infoblock.name,
+        const infoblocksLeft = infoblocksRenderData[0].map(
+            infoblock => infoblock.infoblock,
         );
-        const infoblocksRight = infoblocksRenderData[1].map(infoblock =>
-            infoblock.name == 'Региональное законодательство'
-                ? infoblock.smallDescription
-                : infoblock.name,
+        const infoblocksRight = infoblocksRenderData[1].map(
+            infoblock => infoblock.infoblock,
         );
         // const regionsNames = this.getRegions(dto.regions);
         // const { infoblocksLeft, infoblocksRight } =

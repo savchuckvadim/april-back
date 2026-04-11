@@ -12,6 +12,7 @@ export const getRegionsWithDescriptionData = (
 
     return {
         name: 'Региональное законодательство',
+        infoblock: regionsDescription,
         smallDescription: regionsDescription,
         mediumDescription: regionsDescription,
         bigDescription: regionsDescription,

@@ -1,7 +1,6 @@
 import {
     BadRequestException,
     Controller,
-    Get,
     Post,
     Body,
     Param,
@@ -47,7 +46,7 @@ export class UserSelectedTemplateController {
             await this.userSelectedTemplateService.setCurrentByPortalUserTemplate(
                 createUserSelectedTemplateDto,
             );
-        console.log(templateRelation, 'templateRelation');
+
         if (templateRelation instanceof UserSelectedTemplate) {
             return new UserSelectedTemplateEntityDto(templateRelation);
         } else {

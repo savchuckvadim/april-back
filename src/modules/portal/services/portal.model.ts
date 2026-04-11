@@ -288,11 +288,11 @@ export class PortalModel {
         return field.items.find(item => item.code === itemCode);
     }
 
-    getSalesTaskGroupId = (portal: IPortal): number => {
+    getSalesTaskGroupId = (): number => {
         let result = 41;
-        if (portal) {
-            if (portal.bitrixCallingTasksGroup) {
-                result = portal.bitrixCallingTasksGroup.bitrixId;
+        if (this.portal) {
+            if (this.portal.bitrixCallingTasksGroup) {
+                result = this.portal.bitrixCallingTasksGroup.bitrixId;
             }
         }
         return result;

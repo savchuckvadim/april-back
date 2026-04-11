@@ -11,7 +11,9 @@ import {
 
 export type BxDiskStorageSchema = {
     [EBxMethod.GET_LIST]: {
-        request: Record<string, never>;
+        request: {
+            filter?: Partial<IBXDiskStorage>;
+        };
         response: IBXDiskStorage[];
     };
     [EBxMethod.GET_TYPES]: {

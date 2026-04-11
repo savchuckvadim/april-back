@@ -7,6 +7,7 @@ import {
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { tap } from 'rxjs/operators';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
@@ -16,13 +17,13 @@ export class MetricsInterceptor implements NestInterceptor {
     ) {}
 
     intercept(context: ExecutionContext, next: CallHandler) {
-        const req = context.switchToHttp().getRequest();
+        const req = context.switchToHttp().getRequest<Request>();
 
         return next.handle().pipe(
             tap(() => {
-                const status = context.switchToHttp().getResponse().statusCode;
+                const res = context.switchToHttp().getResponse<Response>();
                 this.counter
-                    .labels(req.method, req.url, status.toString())
+                    .labels(req.method, req.url, String(res.statusCode))
                     .inc();
             }),
         );

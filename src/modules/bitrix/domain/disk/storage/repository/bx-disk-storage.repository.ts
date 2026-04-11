@@ -1,6 +1,7 @@
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 import { EBXEntity, EBxMethod, EBxNamespace } from '@/modules/bitrix/core';
 import {
+    IBXDiskStorage,
     IBXDiskStorageAddFolderRequest,
     IBXDiskStorageGetChildrenRequest,
     IBXDiskStorageGetRequest,
@@ -10,12 +11,12 @@ import {
 export class BxDiskStorageRepository {
     constructor(private readonly bxApi: BitrixBaseApi) {}
 
-    async getlist() {
+    async getlist(filter?: Partial<IBXDiskStorage>) {
         return await this.bxApi.callType(
             EBxNamespace.DISK,
             EBXEntity.STORAGE,
             EBxMethod.GET_LIST,
-            {},
+            { filter },
         );
     }
 

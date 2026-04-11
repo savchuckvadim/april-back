@@ -6,12 +6,10 @@ import {
     IsObject,
     IsString,
     IsStrongPassword,
-    Matches,
     MaxLength,
     MinLength,
     ValidateNested,
 } from 'class-validator';
-import { Client } from 'generated/prisma';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
 import { Type } from 'class-transformer';
 import { ClientDto } from '../../client/dto/client-registration.dto';
@@ -128,26 +126,15 @@ export class MeResponseDto {
     client: ClientDto;
 }
 
+/** @deprecated use AuthResponseDto */
 export class LoginResponseDto extends MeResponseDto {
-    // @ApiProperty({ description: 'User', example: 'User' })
-    // @IsNotEmpty()
-    // @IsObject()
-    // @ValidateNested()
-    // @Type(() => UserResponseDto)
-    // user: UserResponseDto;
-
-    // @ApiProperty({ description: 'Client', example: 'Client' })
-    // @IsNotEmpty()
-    // @IsObject()
-    // @ValidateNested()
-    // @Type(() => ClientDto)
-    // client: ClientDto;
-
     @ApiProperty({ description: 'Token', example: 'token123' })
     @IsNotEmpty()
     @IsString()
     token: string;
 }
+
+export class AuthResponseDto extends MeResponseDto {}
 export class ClientAuthResponseDto {
     @ApiProperty({ description: 'Client ID', example: 1 })
     @IsNotEmpty()

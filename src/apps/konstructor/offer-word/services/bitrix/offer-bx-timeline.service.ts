@@ -9,10 +9,12 @@ export interface ITimeLineSendData {
     userId: number;
     documents: IResultDocumentLink[];
     dealId?: string;
+    files?: [string, string][];
 }
 @Injectable()
 export class OfferBxTimelineService {
     constructor(private readonly pbx: PBXService) {}
+
     public async sendDocumentToBitrix(data: ITimeLineSendData) {
         const { bitrix } = await this.pbx.init(data.domain);
         const commentMessage = this.getCommentMessage(data.documents);
@@ -22,6 +24,7 @@ export class OfferBxTimelineService {
             userId: data.userId,
             message: commentMessage,
             dealId: data.dealId,
+            files: data.files,
         });
     }
 
@@ -34,16 +37,15 @@ export class OfferBxTimelineService {
                     document.type,
                 ),
             )
-            .join(' ');
+            .join('%0A'); // разрыв строки в Bitrix batch
     }
+
     private getDocumentMessage(
         link: string,
         documentName: string,
         type: 'offer' | 'invoice',
     ) {
         const icon = type === 'offer' ? '📝' : '🧾';
-
-        const message = `${icon} <a href="${link}" target="_blank">${documentName}</a> \n`;
-        return message;
+        return `${icon} <a href="${link}" target="_blank">${documentName}</a>`;
     }
 }

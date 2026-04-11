@@ -7,6 +7,9 @@ import { WordTemplate } from '@/modules/offer-template/word';
 import { IInfblockGroupsRenderData } from '../../document-generate/infoblocks/infoblock-render-data.service';
 
 export class InfoblockDto {
+    @ApiProperty({ description: 'Infoblock' })
+    @IsString()
+    infoblock: string;
     @ApiProperty({ description: 'Name of the infoblock' })
     @IsString()
     name: string;

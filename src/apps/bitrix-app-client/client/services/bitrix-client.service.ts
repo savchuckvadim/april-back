@@ -6,7 +6,7 @@ import {
 } from '../dto/client-registration.dto';
 import { ClientRepository } from '../repositories/client.repository';
 import { UserService } from '../../user/services/user.service';
-import { Client, User } from 'generated/prisma';
+import { Client } from 'generated/prisma';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
 
@@ -115,7 +115,7 @@ export class BitrixClientService {
         if (!clients) {
             return [];
         }
-        return clients.map(this.mapToResponseDto);
+        return clients.map(c => this.mapToResponseDto(c));
     }
 
     async findByStatus(status: string): Promise<ClientDto[]> {
@@ -123,7 +123,7 @@ export class BitrixClientService {
         if (!clients) {
             return [];
         }
-        return clients.map(this.mapToResponseDto);
+        return clients.map(c => this.mapToResponseDto(c));
     }
 
     async findByIsActive(isActive: boolean): Promise<ClientDto[]> {
@@ -131,7 +131,7 @@ export class BitrixClientService {
         if (!clients) {
             return [];
         }
-        return clients.map(this.mapToResponseDto);
+        return clients.map(c => this.mapToResponseDto(c));
     }
 
     async findByUserId(userId: number): Promise<ClientDto[]> {
@@ -139,7 +139,7 @@ export class BitrixClientService {
         if (!clients) {
             return [];
         }
-        return clients.map(this.mapToResponseDto);
+        return clients.map(c => this.mapToResponseDto(c));
     }
 
     async findByPortalId(portalId: number): Promise<ClientDto[]> {
@@ -147,7 +147,7 @@ export class BitrixClientService {
         if (!clients) {
             return [];
         }
-        return clients.map(this.mapToResponseDto);
+        return clients.map(c => this.mapToResponseDto(c));
     }
 
     async update(

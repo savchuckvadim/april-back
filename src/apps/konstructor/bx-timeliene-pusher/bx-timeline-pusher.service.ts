@@ -1,5 +1,5 @@
 import { delay } from '@/lib';
-import { BitrixService } from '@/modules/bitrix';
+import { BitrixService, IBXTimelineComment } from '@/modules/bitrix';
 import { randomUUID } from 'crypto';
 import { BitrixEntityType } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 export interface IBxTimelinePusherDto {
@@ -7,6 +7,7 @@ export interface IBxTimelinePusherDto {
     dealId?: string;
     userId: number | string;
     message: string;
+    files?: [string, string][]; // [['file name', 'file content'], ['file name', 'file content']];
 }
 export class BxTimelinePusherService {
     constructor(private readonly bitrix: BitrixService) {}
@@ -14,27 +15,28 @@ export class BxTimelinePusherService {
     public async push(dto: IBxTimelinePusherDto) {
         const { companyId, dealId, userId, message } = dto;
         const uuid = randomUUID();
-        await delay(1000);
+        await delay(250);
+        const data: IBXTimelineComment = {
+            ENTITY_ID: companyId,
+            ENTITY_TYPE: BitrixEntityType.COMPANY,
+            COMMENT: `${message}`,
+            AUTHOR_ID: userId.toString(),
+        };
 
+        if (dto.files) {
+            data.FILES = dto.files;
+        }
         this.bitrix.batch.timeline.addTimelineComment(
             `${uuid}_add_timeline_company_${dto.companyId}`,
-            {
-                ENTITY_ID: companyId,
-                ENTITY_TYPE: BitrixEntityType.COMPANY,
-                COMMENT: message,
-                AUTHOR_ID: userId.toString(),
-            },
+            data,
         );
 
         if (dealId) {
+            data.ENTITY_ID = dealId;
+            data.ENTITY_TYPE = BitrixEntityType.DEAL;
             this.bitrix.batch.timeline.addTimelineComment(
                 `${uuid}_add_timeline_deal_${dto.dealId}`,
-                {
-                    ENTITY_ID: dealId,
-                    ENTITY_TYPE: BitrixEntityType.DEAL,
-                    COMMENT: message,
-                    AUTHOR_ID: userId.toString(),
-                },
+                data,
             );
         }
         await this.bitrix.api.callBatchWithConcurrency(1);

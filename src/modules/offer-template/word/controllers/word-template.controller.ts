@@ -221,8 +221,7 @@ export class WordTemplateController {
         const template = await this.wordTemplateService.findById(
             BigInt(params.id),
         );
-        console.log('template');
-        console.log(template);
+
         return template as WordTemplateDto;
     }
 

@@ -6,9 +6,6 @@ import {
     CreateBitrixAppDto,
     GetBitrixAppDto,
 } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
-import { SetSecretDto } from '../dto/set-secret.dto';
-
-import { BitrixAppEntity } from '@/modules/bitrix-setup/app/model/bitrix-app.model';
 import { GetPortalAppsDto } from '../dto/get-app.dto';
 import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
 import { EnabledAppDto } from '@/modules/bitrix-setup/app/dto/enaled-app.dto';

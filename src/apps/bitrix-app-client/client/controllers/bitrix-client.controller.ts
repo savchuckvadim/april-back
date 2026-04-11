@@ -1,4 +1,4 @@
-import { Controller, Post, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SuccessResponseDto } from '@/core';
 

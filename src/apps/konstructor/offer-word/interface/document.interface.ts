@@ -3,3 +3,7 @@ export interface IResultDocumentLink {
     name: string;
     type: 'offer' | 'invoice';
 }
+
+export interface IPreparedDocument extends IResultDocumentLink {
+    absolutePath: string;
+}

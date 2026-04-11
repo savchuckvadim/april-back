@@ -1,4 +1,3 @@
-// auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './services/auth.service';
@@ -9,6 +8,7 @@ import { AuthController } from './controllers/auth.controller';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { MailModule } from '@/modules/mail/mail.module';
 import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
+import { TokenModule } from './token/token.module';
 
 @Module({
     imports: [
@@ -17,11 +17,8 @@ import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-st
         UserModule,
         MailModule,
         PortalStoreModule,
-        JwtModule.register({
-            global: true,
-            secret: process.env.APP_SECRET_KEY || 'super-secret', // секрет для подписи
-            signOptions: { expiresIn: '24h' }, // || '24h' токен живёт 24 часа 60s
-        }),
+        TokenModule,
+        JwtModule.register({ global: true }),
     ],
     controllers: [AuthController],
     providers: [AuthService, MailConfirmationService],

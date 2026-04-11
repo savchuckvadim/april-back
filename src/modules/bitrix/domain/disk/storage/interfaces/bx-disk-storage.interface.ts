@@ -4,9 +4,9 @@ export interface IBXDiskStorage {
     ID: string;
     NAME: string;
     CODE: string | null;
-    MODULE_ID: string;
-    ENTITY_TYPE: string;
-    ENTITY_ID: string;
+    MODULE_ID: 'disk' | 'crm';
+    ENTITY_TYPE: 'group';
+    ENTITY_ID: number;
     ROOT_OBJECT_ID: string;
 }
 

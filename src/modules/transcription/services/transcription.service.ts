@@ -157,6 +157,7 @@ export class TranscriptionService {
                 taskId,
                 'error',
                 'Transcription failed',
+                undefined,
                 transcriptionId,
             );
 
@@ -189,6 +190,7 @@ export class TranscriptionService {
                 taskId,
                 'error',
                 (error as Error)?.message || 'Transcription error',
+                undefined,
                 transcriptionId,
             );
             return null;

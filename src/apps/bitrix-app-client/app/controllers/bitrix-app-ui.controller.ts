@@ -1,26 +1,11 @@
-import {
-    Controller,
-    Post,
-    HttpStatus,
-    Req,
-    Res,
-    Get,
-    Body,
-} from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/bitrix-app.service';
-import { Request, Response } from 'express';
-
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { JwtService } from '@nestjs/jwt';
 import { BitrixClientService } from '@/apps/bitrix-app-client/client/services/bitrix-client.service';
-import {
-    BITRIX_APP_CODES,
-    BITRIX_APP_GROUPS,
-    BITRIX_APP_STATUSES,
-    BITRIX_APP_TYPES,
-} from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
+import { BITRIX_APP_CODES } from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
 import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator';
 import { ConfigService } from '@nestjs/config';
 import { CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
@@ -89,7 +74,11 @@ export class BitrixAppUiController {
             return { token: signedJwtToken, status: installStatus };
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return { token: null, message: error.message, status: 'fail' };
+            return {
+                token: null,
+                message: (error as Error).message,
+                status: 'fail',
+            };
         }
     }
 
