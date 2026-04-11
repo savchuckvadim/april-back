@@ -8,6 +8,7 @@ import { OfferBxTimelineService } from '../services/bitrix/offer-bx-timeline.ser
 import { BitrixDocumentSaveFlowService } from '../services/bitrix/bitrix-document-save-flow.service';
 import { DocumentBuildService } from '../services/document-build.service';
 import { OfferWordCoreGenerateService } from '../services/offer-word-core/offer-word-core-generate.service';
+import { OfferTemplateService } from '@/modules/offer-template/offer-template';
 
 @Injectable()
 export class OfferWordByTemplateGenerateUseCase {
@@ -17,6 +18,7 @@ export class OfferWordByTemplateGenerateUseCase {
         private readonly timelineService: OfferBxTimelineService,
         private readonly bxDocumentSaveFlowService: BitrixDocumentSaveFlowService,
         private readonly offerWordCoreGenerate: OfferWordCoreGenerateService,
+        private readonly offerTemplateService: OfferTemplateService, // для инкремента счетчика шаблона
     ) {}
 
     async execute(dto: OfferWordByTemplateGenerateDto): Promise<{
@@ -62,6 +64,10 @@ export class OfferWordByTemplateGenerateUseCase {
             buildResult.offer;
         const finalInvoices = saveResult.documents.filter(
             d => d.type === 'invoice',
+        );
+
+        await this.offerTemplateService.incrementTemplateCounter(
+            BigInt(dto.templateId),
         );
 
         return {

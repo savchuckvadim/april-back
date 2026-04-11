@@ -68,7 +68,7 @@ export class OfferTemplateController {
         const templte = {
             ...result,
 
-            visibility: result.visibility as OfferTemplateVisibility,
+            visibility: result?.visibility as OfferTemplateVisibility,
         } as CreateOfferTemplateResponseDto;
         return templte;
     }

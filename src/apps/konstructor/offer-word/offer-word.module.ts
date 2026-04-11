@@ -34,12 +34,14 @@ import { OfferBxTimelineService } from './services/bitrix/offer-bx-timeline.serv
 import { PBXModule } from '@/modules/pbx';
 import { BitrixDocumentSaveFlowService } from './services/bitrix/bitrix-document-save-flow.service';
 import { DocumentBuildService } from './services/document-build.service';
+import { OfferTemplateModule } from '@/modules/offer-template/offer-template.module';
 
 @Module({
     imports: [
         QueueModule,
         RedisModule,
         WordTemplateModule,
+        OfferTemplateModule,
         GarantModule,
         PortalKonstructorModule,
         ProviderModule,
