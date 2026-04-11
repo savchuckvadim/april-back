@@ -10,8 +10,7 @@ import { CreateBitrixFieldDto } from '../dto/create-bitrixfield.dto';
 import { UpdateBitrixFieldDto } from '../dto/update-bitrixfield.dto';
 import { BitrixFieldResponseDto } from '../dto/bitrixfield-response.dto';
 import { CreateBitrixFieldsBulkDto } from '../dto/create-bitrixfields-bulk.dto';
-import { getPrismaEntityTypeByType } from '../../pbx-shared';
-import { PbxEntityType } from '../../pbx-shared/type/pbx-entity-type.enum';
+import { PbxEntityType, getPrismaEntityTypeByType } from '@/shared/enums';
 
 @Injectable()
 export class BitrixFieldService {

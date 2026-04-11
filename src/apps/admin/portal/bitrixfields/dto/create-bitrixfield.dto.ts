@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateBitrixFieldItemDto } from './create-bitrixfield-item.dto';
-import { PbxEntityType } from '../../pbx-shared';
+import { PbxEntityType } from '@/shared/enums';
 
 export class CreateBitrixFieldDto {
     @ApiProperty({

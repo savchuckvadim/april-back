@@ -10,7 +10,6 @@ import {
 import {
     ApiTags,
     ApiOperation,
-    ApiResponse,
     ApiBody,
     ApiBadRequestResponse,
     ApiCreatedResponse,
@@ -23,6 +22,9 @@ import {
     InstallResultDto,
 } from '../dto/pbx-field-install.dto';
 
+/**
+ * @deprecated Use PbxInstallController from '@/apps/admin/portal/pbx-install' instead.
+ */
 @ApiTags('PBX Field Install')
 @Controller('pbx-field-install')
 export class PbxFieldInstallController {
@@ -65,7 +67,8 @@ export class PbxFieldInstallController {
             );
 
             return result;
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as Error;
             throw new HttpException(
                 {
                     success: false,
@@ -117,7 +120,8 @@ export class PbxFieldInstallController {
             );
 
             return result;
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as Error;
             throw new HttpException(
                 {
                     success: false,

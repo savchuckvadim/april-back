@@ -12,13 +12,12 @@ import {
     PbxSalesKonstructorField,
     PbxSalesKonstructorFieldCode,
 } from '../../type/sales/konstructor/pbx-sales-konstructor-field.type';
-import {
-    PbxFieldEntity,
-    PbxFieldEntityType,
-} from '../../entity/pbx-field.entity';
+import { PbxFieldEntity } from '../../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { delay } from '@/lib';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 import { IBXField } from '@/modules/bitrix/domain/crm/fields/bx-field.interface';
+import { EUserFieldType } from '@/modules/bitrix';
 
 type FieldGroup = 'sales' | 'service';
 type AppType = 'event' | 'konstructor';
@@ -29,10 +28,35 @@ interface InstallResult {
 }
 
 interface InstallOptions {
-    entities?: PbxFieldEntityType[];
+    entities?: PbxEntityTypePrisma[];
     fieldCodes?: (PbxSalesEventFieldCode | PbxSalesKonstructorFieldCode)[];
 }
 
+interface EntityInstallConfig {
+    service: {
+        addField?: (data: Partial<IBXField>) => Promise<unknown>;
+        getFieldsList?: (data: Record<string, unknown>) => Promise<{
+            result?: IBXField[];
+        }>;
+    } | null;
+    entityId: string;
+    dbEntityId: bigint;
+    useUserFieldConfig: boolean;
+}
+
+interface EntityVerifyConfig {
+    service: {
+        getFieldsList?: (data: Record<string, unknown>) => Promise<{
+            result?: IBXField[];
+        }>;
+    } | null;
+    entityId: string;
+    useUserFieldConfig: boolean;
+}
+
+/**
+ * @deprecated Use PbxFieldInstallerService + PbxInstallOrchestratorService from '@/modules/pbx-registry' instead.
+ */
 @Injectable()
 export class PbxFieldEntityInstallService {
     constructor(
@@ -72,13 +96,13 @@ export class PbxFieldEntityInstallService {
         const results: InstallResult = { success: [], failed: [] };
 
         // Определяем, какие сущности обрабатывать
-        const entitiesToProcess: PbxFieldEntityType[] =
+        const entitiesToProcess: PbxEntityTypePrisma[] =
             options.entities && options.entities.length
                 ? options.entities
                 : [
-                      PbxFieldEntityType.LEAD,
-                      PbxFieldEntityType.COMPANY,
-                      PbxFieldEntityType.DEAL,
+                      PbxEntityTypePrisma.LEAD,
+                      PbxEntityTypePrisma.BTX_COMPANY,
+                      PbxEntityTypePrisma.DEAL,
                   ];
 
         // Устанавливаем поля для каждой сущности
@@ -142,35 +166,36 @@ export class PbxFieldEntityInstallService {
         field: PbxSalesEventField | PbxSalesKonstructorField,
         appType: AppType,
         group: FieldGroup,
-        entitiesToProcess: PbxFieldEntityType[],
+        entitiesToProcess: PbxEntityTypePrisma[],
     ): Promise<InstallResult> {
         const results: InstallResult = { success: [], failed: [] };
         const itemKey = appType === 'event' ? 'items' : 'list';
 
-        // Маппинг сущностей на методы Bitrix и entityId для БД
-        const entityMap = {
-            [PbxFieldEntityType.LEAD]: {
-                service: null, // lead не имеет методов для работы с полями в Bitrix API
+        const entityMap: Partial<
+            Record<PbxEntityTypePrisma, EntityInstallConfig>
+        > = {
+            [PbxEntityTypePrisma.LEAD]: {
+                service: null,
                 entityId: 'CRM_LEAD',
-                dbEntityId: BigInt(1), //переделать брать id сущности а не  хардеодить как сейчас
-                useUserFieldConfig: true, // используем userFieldConfig для lead
+                dbEntityId: BigInt(1),
+                useUserFieldConfig: true,
             },
-            [PbxFieldEntityType.COMPANY]: {
-                service: bitrix.company,
+            [PbxEntityTypePrisma.BTX_COMPANY]: {
+                service: bitrix.company as EntityInstallConfig['service'],
                 entityId: 'CRM_COMPANY',
-                dbEntityId: BigInt(4), //переделать брать id сущности а не  хардеодить как сейчас
+                dbEntityId: BigInt(4),
                 useUserFieldConfig: false,
             },
-            [PbxFieldEntityType.DEAL]: {
-                service: bitrix.deal,
+            [PbxEntityTypePrisma.DEAL]: {
+                service: bitrix.deal as EntityInstallConfig['service'],
                 entityId: 'CRM_DEAL',
-                dbEntityId: BigInt(2), //переделать брать id сущности а не  хардеодить как сейчас
+                dbEntityId: BigInt(2),
                 useUserFieldConfig: false,
             },
-            [PbxFieldEntityType.USER]: {
-                service: bitrix.user,
+            [PbxEntityTypePrisma.USER]: {
+                service: bitrix.user as EntityInstallConfig['service'],
                 entityId: 'USER',
-                dbEntityId: BigInt(3), //переделать брать id сущности а не  хардеодить как сейчас
+                dbEntityId: BigInt(3),
                 useUserFieldConfig: true,
             },
         };
@@ -194,10 +219,12 @@ export class PbxFieldEntityInstallService {
                     itemKey,
                 );
 
-                let existingField: any = null;
+                let existingField: {
+                    id?: string | number;
+                    ID?: string | number;
+                } | null = null;
 
                 if (entityConfig.useUserFieldConfig) {
-                    // Для lead используем userFieldConfig
                     existingField =
                         await this.findFieldInBitrixViaUserFieldConfig(
                             bitrix,
@@ -205,7 +232,6 @@ export class PbxFieldEntityInstallService {
                             bitrixFieldId,
                         );
                 } else {
-                    // Для company и deal используем методы сущностей
                     existingField = await this.findFieldInBitrix(
                         entityConfig.service,
                         bitrixFieldId,
@@ -213,28 +239,24 @@ export class PbxFieldEntityInstallService {
                 }
 
                 if (existingField) {
-                    // Обновляем существующее поле
                     if (entityConfig.useUserFieldConfig) {
                         await bitrix.userFieldConfig.update({
                             moduleId: 'crm',
-                            id: existingField.id,
+                            id: existingField.id ?? existingField.ID ?? 0,
                             field: this.convertToUserFieldConfig(fieldConfig),
                         });
                     } else {
-                        // Для обновления используем userFieldConfig (так как нет метода update в entity service)
                         await bitrix.userFieldConfig.update({
                             moduleId: 'crm',
-                            id: existingField.ID,
+                            id: existingField.ID ?? existingField.id ?? 0,
                             field: this.convertToUserFieldConfig(fieldConfig),
                         });
                     }
                 } else {
-                    // Создаем новое поле
                     if (
                         entityConfig.useUserFieldConfig ||
                         !entityConfig.service?.addField
                     ) {
-                        // Используем userFieldConfig для lead или если нет метода addField
                         const response = await bitrix.userFieldConfig.add({
                             moduleId: 'crm',
                             field: this.convertToUserFieldConfig(fieldConfig),
@@ -245,7 +267,6 @@ export class PbxFieldEntityInstallService {
                             continue;
                         }
                     } else {
-                        // Используем метод сущности для company
                         await entityConfig.service.addField(fieldConfig);
                     }
                 }
@@ -273,7 +294,7 @@ export class PbxFieldEntityInstallService {
     }
 
     private async findFieldInBitrix(
-        service: any,
+        service: EntityInstallConfig['service'],
         bitrixFieldId: string | number,
     ): Promise<IBXField | null> {
         try {
@@ -282,13 +303,13 @@ export class PbxFieldEntityInstallService {
             }
 
             const response = await service.getFieldsList({});
-            const fields = response?.result || [];
+            const fields: IBXField[] = response?.result ?? [];
             const fieldName = `UF_CRM_${bitrixFieldId}`;
 
             return (
-                fields.find((f: IBXField) => f.FIELD_NAME === fieldName) || null
+                fields.find((f: IBXField) => f.FIELD_NAME === fieldName) ?? null
             );
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -297,7 +318,7 @@ export class PbxFieldEntityInstallService {
         bitrix: BitrixService,
         entityId: string,
         bitrixFieldId: string | number,
-    ) {
+    ): Promise<{ id?: string | number; ID?: string | number } | null> {
         try {
             const response = await bitrix.userFieldConfig.list({
                 moduleId: 'crm',
@@ -307,9 +328,16 @@ export class PbxFieldEntityInstallService {
                 },
             });
 
-            const fields = (response?.result as any)?.fields;
-            return fields?.[0] || null;
-        } catch (error) {
+            const result = response?.result as
+                | {
+                      fields?: Array<{
+                          id?: string | number;
+                          ID?: string | number;
+                      }>;
+                  }
+                | undefined;
+            return result?.fields?.[0] ?? null;
+        } catch {
             return null;
         }
     }
@@ -360,7 +388,9 @@ export class PbxFieldEntityInstallService {
         return config;
     }
 
-    private convertToUserFieldConfig(field: Partial<IBXField>): any {
+    private convertToUserFieldConfig(
+        field: Partial<IBXField>,
+    ): Record<string, unknown> {
         return {
             entityId: field.ENTITY_ID,
             fieldName: field.FIELD_NAME,
@@ -404,32 +434,36 @@ export class PbxFieldEntityInstallService {
         field: PbxSalesEventField | PbxSalesKonstructorField,
         entityKey: 'lead' | 'company' | 'deal' | 'smart' | 'user',
     ): string | number | null {
-        const value = field[entityKey];
+        const value = (field as Record<string, unknown>)[entityKey];
         if (!value) return null;
         if (typeof value === 'string' && value.trim() === '') return null;
-        return typeof value === 'number' ? value : value;
+        return typeof value === 'number' || typeof value === 'string'
+            ? value
+            : null;
     }
 
     private getEntityKey(
-        entityType: PbxFieldEntityType,
+        entityType: PbxEntityTypePrisma,
     ): 'lead' | 'company' | 'deal' | 'smart' | 'user' {
-        const map: Record<
-            PbxFieldEntityType,
-            'lead' | 'company' | 'deal' | 'smart' | 'user'
+        const map: Partial<
+            Record<
+                PbxEntityTypePrisma,
+                'lead' | 'company' | 'deal' | 'smart' | 'user'
+            >
         > = {
-            [PbxFieldEntityType.LEAD]: 'lead',
-            [PbxFieldEntityType.COMPANY]: 'company',
-            [PbxFieldEntityType.DEAL]: 'deal',
-            [PbxFieldEntityType.CONTACT]: 'lead', // fallback
-            [PbxFieldEntityType.SMART]: 'smart',
-            [PbxFieldEntityType.USER]: 'user',
+            [PbxEntityTypePrisma.LEAD]: 'lead',
+            [PbxEntityTypePrisma.BTX_COMPANY]: 'company',
+            [PbxEntityTypePrisma.DEAL]: 'deal',
+            [PbxEntityTypePrisma.BTX_CONTACT]: 'lead',
+            [PbxEntityTypePrisma.SMART]: 'smart',
+            [PbxEntityTypePrisma.USER]: 'user',
         };
-        return map[entityType] || 'lead';
+        return map[entityType] ?? 'lead';
     }
 
     private async saveFieldToDb(
         field: PbxSalesEventField | PbxSalesKonstructorField,
-        entityType: PbxFieldEntityType,
+        entityType: PbxEntityTypePrisma,
         bitrixFieldId: string | number,
         itemKey: 'items' | 'list',
         entityId: bigint, //переделать брать id сущности а не  хардеодить как сейчас
@@ -440,7 +474,9 @@ export class PbxFieldEntityInstallService {
         fieldEntity.name = field.name;
         fieldEntity.title = field.name;
         fieldEntity.code = field.code;
-        fieldEntity.type = this.mapFieldTypeToBitrixType(field.type) as any;
+        fieldEntity.type = this.mapFieldTypeToBitrixType(
+            field.type,
+        ) as EUserFieldType;
         fieldEntity.bitrixId = bitrixFieldIdStr;
         fieldEntity.bitrixCamelId = '';
         fieldEntity.entity_id = entityId; //переделать брать id сущности а не  хардеодить как сейчас
@@ -475,7 +511,7 @@ export class PbxFieldEntityInstallService {
         fields: (PbxSalesEventField | PbxSalesKonstructorField)[],
         appType: AppType,
         group: FieldGroup,
-        entitiesToProcess: PbxFieldEntityType[],
+        entitiesToProcess: PbxEntityTypePrisma[],
     ): Promise<InstallResult> {
         const results: InstallResult = { success: [], failed: [] };
 
@@ -510,29 +546,31 @@ export class PbxFieldEntityInstallService {
         successCodes: string[],
         fields: (PbxSalesEventField | PbxSalesKonstructorField)[],
         appType: AppType,
-        entitiesToProcess: PbxFieldEntityType[],
+        entitiesToProcess: PbxEntityTypePrisma[],
     ): Promise<{ verified: string[]; failed: string[] }> {
         const verified: string[] = [];
         const failed: string[] = [];
 
-        const entityMap = {
-            [PbxFieldEntityType.LEAD]: {
+        const entityMap: Partial<
+            Record<PbxEntityTypePrisma, EntityVerifyConfig>
+        > = {
+            [PbxEntityTypePrisma.LEAD]: {
                 service: null,
                 entityId: 'CRM_LEAD',
                 useUserFieldConfig: true,
             },
-            [PbxFieldEntityType.COMPANY]: {
-                service: bitrix.company,
+            [PbxEntityTypePrisma.BTX_COMPANY]: {
+                service: bitrix.company as EntityVerifyConfig['service'],
                 entityId: 'CRM_COMPANY',
                 useUserFieldConfig: false,
             },
-            [PbxFieldEntityType.DEAL]: {
-                service: bitrix.deal,
+            [PbxEntityTypePrisma.DEAL]: {
+                service: bitrix.deal as EntityVerifyConfig['service'],
                 entityId: 'CRM_DEAL',
                 useUserFieldConfig: false,
             },
-            [PbxFieldEntityType.USER]: {
-                service: bitrix.user,
+            [PbxEntityTypePrisma.USER]: {
+                service: bitrix.user as EntityVerifyConfig['service'],
                 entityId: 'USER',
                 useUserFieldConfig: true,
             },
@@ -556,7 +594,8 @@ export class PbxFieldEntityInstallService {
                 );
                 if (!bitrixFieldId) continue;
 
-                let existingField: any = null;
+                let existingField: IBXField | { id?: string | number } | null =
+                    null;
                 if (entityConfig.useUserFieldConfig) {
                     existingField =
                         await this.findFieldInBitrixViaUserFieldConfig(
@@ -566,7 +605,7 @@ export class PbxFieldEntityInstallService {
                         );
                 } else {
                     existingField = await this.findFieldInBitrix(
-                        entityConfig.service,
+                        entityConfig.service as EntityInstallConfig['service'],
                         bitrixFieldId,
                     );
                 }

@@ -4,11 +4,10 @@ import { PrismaService } from '@/core/prisma';
 import {
     PbxField,
     PbxFieldEntity,
-    PbxFieldEntityType,
     PbxFieldItem,
     PbxFieldItemEntity,
-    PbxFieldWithItems,
 } from '../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { FieldDataHelper } from '../lib/field-data.helper';
 
 @Injectable()
@@ -16,7 +15,7 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     async findByEntityId(
-        entity: PbxFieldEntityType,
+        entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<PbxFieldEntity[]> {
         const fields = await this.prisma.bitrixfields.findMany({
@@ -69,12 +68,6 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
                         data: itemsData,
                     });
 
-                    // Получаем созданные items
-                    const createdItems = await tx.bitrixfield_items.findMany({
-                        where: { bitrixfield_id: newField.id },
-                    });
-
-                    // Обновляем поле с items
                     const fieldWithItems = await tx.bitrixfields.findUnique({
                         where: { id: newField.id },
                         include: {
@@ -230,7 +223,7 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
     }
 
     async deleteFieldsByEntityId(
-        entity: PbxFieldEntityType,
+        entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<void> {
         await this.prisma.$transaction(async tx => {

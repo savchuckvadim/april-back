@@ -13,7 +13,7 @@ import { BtxCategoryService } from '../services/btx-category.service';
 import { CreateBtxCategoryDto } from '../dto/create-btx-category.dto';
 import { UpdateBtxCategoryDto } from '../dto/update-btx-category.dto';
 import { BtxCategoryResponseDto } from '../dto/btx-category-response.dto';
-import { GetChildrenByPbxEntityDto } from '../../pbx-shared';
+import { GetChildrenByPbxEntityDto } from '../../pbx-shared/dto/get-fields-by-entity.request.dto';
 
 @ApiTags('Admin Btx Categories Management')
 @Controller('admin/pbx/btx-categories')

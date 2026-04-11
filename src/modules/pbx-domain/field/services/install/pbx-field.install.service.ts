@@ -3,7 +3,6 @@ import { PBXService } from '@/modules/pbx/pbx.service';
 import { PbxFieldService } from '../field/pbx-field.service';
 import {
     IUserFieldConfig,
-    IUserFieldConfigEnumerationItem,
     EUserFieldType,
 } from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface';
 import { BitrixService } from '@/modules/bitrix/bitrix.service';
@@ -15,10 +14,8 @@ import {
     PBX_SALES_KONSTRUCTOR_FIELDS,
     PbxSalesKonstructorField,
 } from '../../type/sales/konstructor/pbx-sales-konstructor-field.type';
-import {
-    PbxFieldEntity,
-    PbxFieldEntityType,
-} from '../../entity/pbx-field.entity';
+import { PbxFieldEntity } from '../../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { delay } from '@/lib';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 
@@ -30,6 +27,9 @@ interface InstallResult {
     failed: string[];
 }
 
+/**
+ * @deprecated Use PbxFieldInstallerService + PbxInstallOrchestratorService from '@/modules/pbx-registry' instead.
+ */
 @Injectable()
 export class PbxFieldInstallService {
     constructor(
@@ -95,7 +95,6 @@ export class PbxFieldInstallService {
             bitrix,
             results.success,
             fields as (PbxSalesEventField | PbxSalesKonstructorField)[],
-            appType,
         );
 
         // Удаляем из success те, которые не прошли проверку
@@ -230,9 +229,11 @@ export class PbxFieldInstallService {
                 },
             });
 
-            const fields = (response?.result as any)?.fields;
-            return fields?.[0] || null;
-        } catch (error) {
+            const result = response?.result as
+                | { fields?: IUserFieldConfig[] }
+                | undefined;
+            return result?.fields?.[0] ?? null;
+        } catch {
             return null;
         }
     }
@@ -375,14 +376,14 @@ export class PbxFieldInstallService {
 
     private mapEntityKeyToEntityType(
         entityKey: 'lead' | 'company' | 'deal' | 'smart',
-    ): PbxFieldEntityType {
-        const map: Record<string, PbxFieldEntityType> = {
-            lead: PbxFieldEntityType.LEAD,
-            company: PbxFieldEntityType.COMPANY,
-            deal: PbxFieldEntityType.DEAL,
-            smart: PbxFieldEntityType.SMART,
+    ): PbxEntityTypePrisma {
+        const map: Record<string, PbxEntityTypePrisma> = {
+            lead: PbxEntityTypePrisma.LEAD,
+            company: PbxEntityTypePrisma.BTX_COMPANY,
+            deal: PbxEntityTypePrisma.DEAL,
+            smart: PbxEntityTypePrisma.SMART,
         };
-        return map[entityKey] || PbxFieldEntityType.SMART;
+        return map[entityKey] || PbxEntityTypePrisma.SMART;
     }
 
     private async retryFailedFields(
@@ -424,11 +425,9 @@ export class PbxFieldInstallService {
         bitrix: BitrixService,
         successCodes: string[],
         fields: (PbxSalesEventField | PbxSalesKonstructorField)[],
-        appType: AppType,
     ): Promise<{ verified: string[]; failed: string[] }> {
         const verified: string[] = [];
         const failed: string[] = [];
-        const itemKey = appType === 'event' ? 'items' : 'list';
 
         const entities = [
             { key: 'lead' as const, entityId: 'CRM_LEAD' as const },

@@ -1,14 +1,14 @@
 import {
     PbxField,
     PbxFieldEntity,
-    PbxFieldEntityType,
     PbxFieldItem,
     PbxFieldItemEntity,
 } from '../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 
 export abstract class PbxFieldRepository {
     abstract findByEntityId(
-        entity: PbxFieldEntityType,
+        entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<PbxFieldEntity[]>;
     abstract addField(field: PbxFieldEntity): Promise<PbxField>;
@@ -25,7 +25,7 @@ export abstract class PbxFieldRepository {
     abstract deleteField(fieldId: string): Promise<void>;
     abstract deleteFieldItem(fieldItemId: string): Promise<void>;
     abstract deleteFieldsByEntityId(
-        entity: PbxFieldEntityType,
+        entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<void>;
 }

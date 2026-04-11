@@ -6,7 +6,7 @@ import {
     IsArray,
     IsNumber,
 } from 'class-validator';
-import { PbxFieldEntityType } from '../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { PbxSalesEventFieldCode } from '../type/sales/event/pbx-sales-event-field.type';
 import { PbxSalesKonstructorFieldCode } from '../type/sales/konstructor/pbx-sales-konstructor-field.type';
 
@@ -39,14 +39,14 @@ export class InstallEntityFieldsDto {
 
     @ApiPropertyOptional({
         description: 'Список сущностей для установки полей',
-        enum: PbxFieldEntityType,
+        enum: PbxEntityTypePrisma,
         isArray: true,
-        example: [PbxFieldEntityType.COMPANY, PbxFieldEntityType.DEAL],
+        example: [PbxEntityTypePrisma.BTX_COMPANY, PbxEntityTypePrisma.DEAL],
     })
     @IsOptional()
     @IsArray()
-    @IsEnum(PbxFieldEntityType, { each: true })
-    entities?: PbxFieldEntityType[];
+    @IsEnum(PbxEntityTypePrisma, { each: true })
+    entities?: PbxEntityTypePrisma[];
 
     @ApiPropertyOptional({
         description:

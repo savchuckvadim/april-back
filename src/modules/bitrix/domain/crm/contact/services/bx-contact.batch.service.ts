@@ -1,6 +1,7 @@
 import { BxContactRepository } from '../repository/bx-contact.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXContact } from '../interface/bx-contact.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxContactBatchService {
     private repo: BxContactRepository;
@@ -37,5 +38,29 @@ export class BxContactBatchService {
 
     getField(cmdCode: string, id: number | string) {
         return this.repo.getFieldBtch(cmdCode, id);
+    }
+
+    getFieldList(
+        cmdCode: string,
+        filter: { [key: string]: any },
+        select?: string[],
+    ) {
+        return this.repo.getFieldListBtch(cmdCode, filter, select);
+    }
+
+    addField(cmdCode: string, fields: Partial<IBXField>) {
+        return this.repo.addFieldBtch(cmdCode, fields);
+    }
+
+    updateField(
+        cmdCode: string,
+        id: number | string,
+        fields: Partial<IBXField>,
+    ) {
+        return this.repo.updateFieldBtch(cmdCode, id, fields);
+    }
+
+    deleteField(cmdCode: string, id: number | string) {
+        return this.repo.deleteFieldBtch(cmdCode, id);
     }
 }

@@ -3,7 +3,6 @@ import { PBXService } from '@/modules/pbx/pbx.service';
 import { PbxFieldService } from '../field/pbx-field.service';
 import {
     IUserFieldConfig,
-    IUserFieldConfigEnumerationItem,
     EUserFieldType,
 } from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface';
 import { BitrixService } from '@/modules/bitrix/bitrix.service';
@@ -17,10 +16,8 @@ import {
     PbxSalesKonstructorField,
     PbxSalesKonstructorFieldCode,
 } from '../../type/sales/konstructor/pbx-sales-konstructor-field.type';
-import {
-    PbxFieldEntity,
-    PbxFieldEntityType,
-} from '../../entity/pbx-field.entity';
+import { PbxFieldEntity } from '../../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { delay } from '@/lib';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 
@@ -37,6 +34,9 @@ interface InstallOptions {
     fieldCodes?: (PbxSalesEventFieldCode | PbxSalesKonstructorFieldCode)[];
 }
 
+/**
+ * @deprecated Use PbxFieldInstallerService + PbxInstallOrchestratorService from '@/modules/pbx-registry' instead.
+ */
 @Injectable()
 export class PbxFieldSmartInstallService {
     constructor(
@@ -171,7 +171,6 @@ export class PbxFieldSmartInstallService {
                 bitrixFieldId,
             );
 
-            // Создаем конфигурацию поля
             const fieldConfig = this.createFieldConfig(
                 field,
                 bitrixEntityId,
@@ -179,8 +178,7 @@ export class PbxFieldSmartInstallService {
                 itemKey,
             );
 
-            if (existingField?.id) {
-                // Обновляем существующее поле
+            if (existingField?.id != null) {
                 await bitrix.userFieldConfig.update({
                     moduleId: 'crm',
                     id: existingField.id,
@@ -223,7 +221,7 @@ export class PbxFieldSmartInstallService {
         bitrix: BitrixService,
         entityId: string,
         bitrixFieldId: string | number,
-    ) {
+    ): Promise<Partial<IUserFieldConfig> | null> {
         try {
             const response = await bitrix.userFieldConfig.list({
                 moduleId: 'crm',
@@ -233,9 +231,11 @@ export class PbxFieldSmartInstallService {
                 },
             });
 
-            const fields = (response?.result as any)?.fields;
-            return fields?.[0] || null;
-        } catch (error) {
+            const result = response?.result as
+                | { fields?: Partial<IUserFieldConfig>[] }
+                | undefined;
+            return result?.fields?.[0] ?? null;
+        } catch {
             return null;
         }
     }
@@ -331,7 +331,7 @@ export class PbxFieldSmartInstallService {
         fieldEntity.bitrixId = bitrixFieldIdStr;
         fieldEntity.bitrixCamelId = '';
         fieldEntity.entity_id = entityId;
-        fieldEntity.entity_type = PbxFieldEntityType.SMART;
+        fieldEntity.entity_type = PbxEntityTypePrisma.SMART;
         fieldEntity.parent_type = '';
         fieldEntity.isPlural = field.isMultiple;
         fieldEntity.items = (

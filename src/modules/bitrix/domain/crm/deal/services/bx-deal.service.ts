@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
 import { BxDealRepository } from '../repository/bx-deal.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxDealService {
     private repo: BxDealRepository;
@@ -19,6 +19,7 @@ export class BxDealService {
     async get(dealId: number, select?: string[]) {
         return await this.repo.get(dealId, select);
     }
+
     async getList(
         filter: Partial<IBXDeal>,
         select?: string[],
@@ -26,41 +27,52 @@ export class BxDealService {
     ) {
         return await this.repo.getList(filter, select, order);
     }
+
     async all(filter: Partial<IBXDeal>, select?: string[]) {
         const deals: IBXDeal[] = [];
         let needMore = true;
         let nextId = 0;
         while (needMore) {
-            const fullFilter = {
-                ...filter,
-                '>ID': nextId,
-            };
+            const fullFilter = { ...filter, '>ID': nextId };
             const { result } = await this.repo.getList(fullFilter, select, {
                 ID: 'ASC',
             });
-            if (result.length === 0) {
-                break;
-            }
+            if (result.length === 0) break;
             nextId = result[result.length - 1]?.ID ?? 0;
-            if (nextId === 0) {
-                needMore = false;
-            }
+            if (nextId === 0) needMore = false;
             deals.push(...result);
         }
         return deals;
     }
+
     async set(data: Partial<IBXDeal>) {
         return await this.repo.set(data);
     }
+
     async update(dealId: number | string, data: Partial<IBXDeal>) {
         return await this.repo.update(dealId, data);
     }
+
     async getFieldsList(filter: { [key: string]: any }, select?: string[]) {
         return await this.repo.getFieldList(filter, select);
     }
+
     async getField(id: number | string) {
         return await this.repo.getField(id);
     }
+
+    async setField(fields: Partial<IBXField>) {
+        return await this.repo.setField(fields);
+    }
+
+    async updateField(id: number | string, fields: Partial<IBXField>) {
+        return await this.repo.updateField(id, fields);
+    }
+
+    async deleteField(id: number | string) {
+        return await this.repo.deleteField(id);
+    }
+
     async contactItemsSet(
         dealId: number | string,
         contactIds: number[] | string[],

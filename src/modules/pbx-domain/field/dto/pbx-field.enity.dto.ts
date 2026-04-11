@@ -5,11 +5,8 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
-import {
-    PbxFieldEntity,
-    PbxFieldEntityType,
-    PbxFieldItemEntity,
-} from '../entity/pbx-field.entity';
+import { PbxFieldEntity, PbxFieldItemEntity } from '../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { EUserFieldType } from '@/modules/bitrix';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -138,12 +135,12 @@ export class PbxFieldEntityDto {
     entity_id: string;
     @ApiProperty({
         description: 'Entity type',
-        example: PbxFieldEntityType.COMPANY,
-        enum: PbxFieldEntityType,
-        enumName: 'PbxFieldEntityType',
+        example: PbxEntityTypePrisma.BTX_COMPANY,
+        enum: PbxEntityTypePrisma,
+        enumName: 'PbxEntityTypePrisma',
     })
     @IsString()
-    entity_type: PbxFieldEntityType;
+    entity_type: PbxEntityTypePrisma;
     @ApiProperty({
         description: 'Parent type',
         example: 'list',

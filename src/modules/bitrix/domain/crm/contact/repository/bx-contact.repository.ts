@@ -5,6 +5,7 @@ import {
 } from '../../../../core/domain/consts/bitrix-api.enum';
 import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
 import { IBXContact } from '../interface/bx-contact.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxContactRepository {
     constructor(private readonly bxApi: BitrixBaseApi) {}
@@ -97,8 +98,22 @@ export class BxContactRepository {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: filter.ID || 0 },
+            EBxMethod.USER_FIELD_LIST,
+            { select, filter },
+        );
+    }
+
+    getFieldListBtch(
+        cmdCode: string,
+        filter: { [key: string]: any },
+        select?: string[],
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_LIST,
+            { select, filter },
         );
     }
 
@@ -106,8 +121,18 @@ export class BxContactRepository {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: id },
+            EBxMethod.USER_FIELD_GET,
+            {
+                id,
+                select: [
+                    'ID',
+                    'USER_TYPE_ID',
+                    'FIELD_NAME',
+                    'MULTIPLE',
+                    'EDIT_FORM_LABEL',
+                    'LIST',
+                ],
+            },
         );
     }
 
@@ -116,8 +141,79 @@ export class BxContactRepository {
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
-            EBxMethod.GET,
-            { ID: id },
+            EBxMethod.USER_FIELD_GET,
+            {
+                id,
+                select: [
+                    'ID',
+                    'USER_TYPE_ID',
+                    'FIELD_NAME',
+                    'MULTIPLE',
+                    'EDIT_FORM_LABEL',
+                    'LIST',
+                ],
+            },
+        );
+    }
+
+    async addField(fields: Partial<IBXField>) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_ADD,
+            { fields },
+        );
+    }
+
+    addFieldBtch(cmdCode: string, fields: Partial<IBXField>) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_ADD,
+            { fields },
+        );
+    }
+
+    async updateField(id: number | string, fields: Partial<IBXField>) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_UPDATE,
+            { id, fields },
+        );
+    }
+
+    updateFieldBtch(
+        cmdCode: string,
+        id: number | string,
+        fields: Partial<IBXField>,
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_UPDATE,
+            { id, fields },
+        );
+    }
+
+    async deleteField(id: number | string) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_DELETE,
+            { id },
+        );
+    }
+
+    deleteFieldBtch(cmdCode: string, id: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.CONTACT,
+            EBxMethod.USER_FIELD_DELETE,
+            { id },
         );
     }
 }

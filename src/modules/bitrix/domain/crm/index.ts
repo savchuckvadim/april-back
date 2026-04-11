@@ -8,6 +8,12 @@ export * from './deal/schema/bx-deal.schema';
 export * from './deal/services/bx-deal.batch.service';
 export * from './deal/services/bx-deal.service';
 
+//crm.lead
+export * from './lead/interface/bx-lead.interface';
+export * from './lead/schema/bx-lead.schema';
+export * from './lead/services/bx-lead.batch.service';
+export * from './lead/services/bx-lead.service';
+
 //crm.company
 export * from './company/interface/bx-company.interface';
 export * from './company/schema/bx-company.schema';
@@ -29,19 +35,27 @@ export * from './product-row/services/bx-product-row.service';
 //crm.category
 export * from './category/interface/bx-category.interface';
 export * from './category/schema/bx-category.schema';
-// export * from './category/services/bx-category.batch.service'
+export * from './category/services/bx-category.batch.service';
 export * from './category/services/bx-category.service';
 
 //crm.status
 export * from './status/interface/bx-status.interface';
 export * from './status/schema/bx-status.schema';
 export * from './status/services/bx-status.service';
+export * from './status/services/bx-status.batch.service';
+export * from './status/dto/status-entity.dto';
 
 //crm.item
 export * from './item/interface/item.interface';
 export * from './item/schema/bx-item.schema';
 export * from './item/services/bx-item.batch.service';
 export * from './item/services/bx-item.service';
+
+//crm.requisite
+export * from './requisite/interface/bx-requisite.interface';
+export * from './requisite/schema/bx-requisite.schema';
+export * from './requisite/services/bx-requisite.service';
+export * from './requisite/services/bx-requisite.batch.service';
 
 //crm.timeline
 export * from './timeline/interface/bx-timeline.interface';

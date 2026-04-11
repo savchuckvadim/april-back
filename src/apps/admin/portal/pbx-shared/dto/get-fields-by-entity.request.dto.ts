@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber } from 'class-validator';
-import { PbxEntityType } from '../type/pbx-entity-type.enum';
+import { PbxEntityType } from '@/shared/enums';
 
 export class GetChildrenByPbxEntityDto {
     @ApiProperty({

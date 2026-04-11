@@ -1,12 +1,10 @@
-import { BitrixFieldType } from '@/apps/konstructor/document-generate/dto/pbx-items.dto';
 import {
-    PbxField,
     PbxFieldEntity,
-    PbxFieldEntityType,
     PbxFieldItem,
     PbxFieldItemEntity,
     PbxFieldWithItems,
 } from '../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { EUserFieldType } from '@/modules/bitrix';
 
 export class FieldDataHelper {
@@ -67,7 +65,7 @@ export class FieldDataHelper {
         entity.bitrixCamelId = field.bitrixCamelId;
         entity.bitrixId = field.bitrixId;
         entity.entity_id = field.entity_id;
-        entity.entity_type = field.entity_type as PbxFieldEntityType;
+        entity.entity_type = field.entity_type as PbxEntityTypePrisma;
         entity.parent_type = field.parent_type;
         // entity.created_at = item.created_at?.toISOString() || '';
         // entity.updated_at = item.updated_at?.toISOString() || '';

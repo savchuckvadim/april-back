@@ -1,19 +1,10 @@
-import {
-    PbxField,
-    PbxFieldEntity,
-    PbxFieldEntityType,
-    PbxFieldItemEntity,
-} from '@/modules/pbx-domain/field/entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import {
     IsNotEmpty,
     IsObject,
     IsOptional,
     IsString,
     ValidateNested,
-    ValidateIf,
-    registerDecorator,
-    ValidationOptions,
-    ValidationArguments,
     IsBoolean,
     IsArray,
     IsNumber,
@@ -50,7 +41,7 @@ export class PbxFieldDto {
 
     @IsOptional()
     @IsString({ message: 'PbxFieldDto entity_type must be a string' })
-    entity_type: PbxFieldEntityType;
+    entity_type: PbxEntityTypePrisma;
 
     @IsString({ message: 'PbxFieldDto parent_type must be a string' })
     parent_type: string;
@@ -64,7 +55,7 @@ export class PbxFieldDto {
     items: PbxFieldItemDto[];
 
     @IsOptional()
-    bitrixfielditems?: {};
+    bitrixfielditems?: Record<string, any>;
 }
 
 export class PbxFieldItemDto {

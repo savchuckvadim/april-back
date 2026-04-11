@@ -4,6 +4,8 @@ import {
     BxCatalogSchema,
     BxListSchema,
     BxRpaItemSchema,
+    BxRpaTypeSchema,
+    BxRpaStageSchema,
     UserFieldConfigSchema,
     UserSchema,
 } from '@/modules/bitrix/';
@@ -11,6 +13,7 @@ import {
     CompanySchema,
     ContactSchema,
     DealSchema,
+    LeadSchema,
     ProductRowSchema,
     FieldsSchema,
     FieldsEnumerationSchema,
@@ -18,6 +21,7 @@ import {
     BxStatusSchema,
     BxItemSchema,
     TimelineCommentSchema,
+    RequisiteSchema,
 } from 'src/modules/bitrix/';
 
 import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
@@ -36,6 +40,7 @@ import {
 export type BXApiSchema = {
     [EBxNamespace.CRM]: {
         [EBXEntity.DEAL]: DealSchema;
+        [EBXEntity.LEAD]: LeadSchema;
         [EBXEntity.COMPANY]: CompanySchema;
         [EBXEntity.CONTACT]: ContactSchema;
         [EBXEntity.USER_FIELD]: FieldsSchema;
@@ -46,9 +51,12 @@ export type BXApiSchema = {
         [EBXEntity.ITEM]: BxItemSchema;
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;
+        [EBXEntity.REQUISITE]: RequisiteSchema;
     };
     [EBxNamespace.RPA]: {
         [EBXEntity.ITEM]: BxRpaItemSchema;
+        [EBXEntity.TYPE]: BxRpaTypeSchema;
+        [EBXEntity.STAGE]: BxRpaStageSchema;
     };
     [EBxNamespace.TASKS]: {
         [EBXEntity.TASK]: TaskSchema;

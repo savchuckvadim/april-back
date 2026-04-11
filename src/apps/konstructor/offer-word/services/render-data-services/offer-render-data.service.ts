@@ -23,12 +23,17 @@ import {
     IOfferRenderManagerData,
     OfferRenderManagerService,
 } from './offer-render-manager.service';
+import {
+    IGeneralProductRenderItemData,
+    OfferRenderGeneralProductService,
+} from './offer-render-general-product.service';
 
 type IOfferWordRenderData = IInfoblocksRenderData &
     IProductRenderData &
     IProviderRqRenderData &
     IOfferRenderRecipientData &
     IOfferRenderManagerData &
+    IGeneralProductRenderItemData &
     Partial<ITotalRowRenderData>;
 
 @Injectable()
@@ -37,6 +42,7 @@ export class OfferRenderDataService {
         private readonly providerService: ProviderService,
         private readonly offerRenderInfoblocksService: OfferRenderInfoblocksService,
         private readonly offerRenderPriceService: OfferRenderPriceService,
+        private readonly offerRenderGeneralProductService: OfferRenderGeneralProductService,
         private readonly offerRenderProviderRqService: OfferRenderProviderRqService,
         private readonly offerRenderRecipientService: OfferRenderRecipientService,
         private readonly offerRenderManagerService: OfferRenderManagerService,
@@ -61,6 +67,14 @@ export class OfferRenderDataService {
             dto.contract,
             dto.clientType,
         );
+        const generalProduct =
+            this.offerRenderGeneralProductService.renderTotalPrice(
+                dto.total,
+                dto.contract.aprilName || dto.contract.bitrixName,
+                dto.contract.prepayment,
+                dto.clientType,
+                provider?.withTax || false,
+            );
         const recipient = this.offerRenderRecipientService.getData(
             dto.recipient,
         );
@@ -77,6 +91,7 @@ export class OfferRenderDataService {
             providerRq,
             infoblocks,
             productPrices,
+            generalProduct,
             recipient,
             manager,
             totalPrice,
@@ -89,6 +104,7 @@ export class OfferRenderDataService {
         providerRq: IProviderRqRenderData,
         infoblocks: IInfoblocksRenderData,
         productPrices: IProductRenderData,
+        generalProduct: IGeneralProductRenderItemData,
         recipient: IOfferRenderRecipientData,
         manager: IOfferRenderManagerData,
         totalPrice: ITotalRowRenderData | null,
@@ -97,6 +113,7 @@ export class OfferRenderDataService {
             ...providerRq,
             ...infoblocks,
             ...productPrices,
+            ...generalProduct,
             ...recipient,
             ...manager,
             ...(totalPrice ?? {}),

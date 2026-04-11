@@ -14,7 +14,7 @@ import { CreateBitrixFieldDto } from '../dto/create-bitrixfield.dto';
 import { UpdateBitrixFieldDto } from '../dto/update-bitrixfield.dto';
 import { BitrixFieldResponseDto } from '../dto/bitrixfield-response.dto';
 import { CreateBitrixFieldsBulkDto } from '../dto/create-bitrixfields-bulk.dto';
-import { GetChildrenByPbxEntityDto } from '../../pbx-shared';
+import { GetChildrenByPbxEntityDto } from '../../pbx-shared/dto/get-fields-by-entity.request.dto';
 
 @ApiTags('Admin Bitrix Fields Management')
 @Controller('admin/pbx/bitrixfields')

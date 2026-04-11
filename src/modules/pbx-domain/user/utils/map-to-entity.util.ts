@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { BtxUser } from 'generated/prisma';
 import { PbxUserEntity } from '../entity/pbx-user.entity';
 import { PbxFieldEntity } from '../../field/entity/pbx-field.entity';
 
-type BtxUser = PrismaClient['btxUser'];
 export const mapToEntity = (
     user: BtxUser,
     fields: PbxFieldEntity[],

@@ -1,5 +1,5 @@
 import { bitrixfields } from 'generated/prisma';
-import { PbxEntityTypePrisma } from '../../pbx-shared';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 
 export abstract class BitrixFieldRepository {
     abstract create(field: Partial<bitrixfields>): Promise<bitrixfields | null>;

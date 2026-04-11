@@ -37,4 +37,12 @@ export type CompanySchema = {
         request: { fields: Partial<IBXField> };
         response: IBXField;
     };
+    [EBxMethod.USER_FIELD_UPDATE]: {
+        request: { id: number | string; fields: Partial<IBXField> };
+        response: boolean;
+    };
+    [EBxMethod.USER_FIELD_DELETE]: {
+        request: { id: number | string };
+        response: boolean;
+    };
 };

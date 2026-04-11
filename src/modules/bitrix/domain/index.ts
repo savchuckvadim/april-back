@@ -4,4 +4,6 @@ export * from './catalog';
 export * from './list';
 export * from './userfieldconfig';
 export * from './rpa/item';
+export * from './rpa/type';
+export * from './rpa/stage';
 export * from './user';

@@ -2,11 +2,8 @@ import { PrismaService } from '@/core';
 import { PbxUserRepository } from './pbx-user.repository';
 import { PbxUserEntity } from '../entity/pbx-user.entity';
 import { mapToEntity } from '../utils/map-to-entity.util';
-import {
-    PbxFieldEntity,
-    PbxFieldEntityType,
-    PbxFieldService,
-} from '../../field';
+import { PbxFieldEntity, PbxFieldService } from '../../field';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -17,10 +14,10 @@ export class PbxUserPrismaRepository implements PbxUserRepository {
     ) {}
     private async getFields(id: string): Promise<PbxFieldEntity[]> {
         return (
-            this.pbxFieldService.findByEntityId(
-                PbxFieldEntityType.USER,
+            (await this.pbxFieldService.findByEntityId(
+                PbxEntityTypePrisma.USER,
                 BigInt(id),
-            ) || []
+            )) || []
         );
     }
     async findById(id: string): Promise<PbxUserEntity | null> {

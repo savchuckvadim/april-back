@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BtxStageResponseDto } from './btx-stage-response.dto';
-import { PbxEntityType } from '../../pbx-shared';
+import { PbxEntityType } from '@/shared/enums';
 
 export class BtxCategoryResponseDto {
     @ApiProperty({

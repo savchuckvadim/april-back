@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BxDealRepository } from '../repository/bx-deal.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 @Injectable()
 export class BxDealBatchService {
@@ -16,6 +17,7 @@ export class BxDealBatchService {
     init(api: BitrixBaseApi) {
         this.repo = new BxDealRepository(api);
     }
+
     get(cmdCode: string, dealId: number | string) {
         return this.repo.getBtch(cmdCode, dealId);
     }
@@ -32,12 +34,31 @@ export class BxDealBatchService {
     set(cmdCode: string, data: Partial<IBXDeal>) {
         return this.repo.setBtch(cmdCode, data);
     }
+
     update(cmdCode: string, dealId: number | string, data: Partial<IBXDeal>) {
         return this.repo.updateBtch(cmdCode, dealId, data);
     }
+
     getField(cmdCode: string, id: number | string) {
         return this.repo.getFieldBtch(cmdCode, id);
     }
+
+    setField(cmdCode: string, fields: Partial<IBXField>) {
+        return this.repo.setFieldBtch(cmdCode, fields);
+    }
+
+    updateField(
+        cmdCode: string,
+        id: number | string,
+        fields: Partial<IBXField>,
+    ) {
+        return this.repo.updateFieldBtch(cmdCode, id, fields);
+    }
+
+    deleteField(cmdCode: string, id: number | string) {
+        return this.repo.deleteFieldBtch(cmdCode, id);
+    }
+
     contactItemsSet(
         cmdCode: string,
         dealId: number | string,

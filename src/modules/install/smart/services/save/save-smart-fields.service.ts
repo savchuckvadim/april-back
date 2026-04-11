@@ -10,10 +10,9 @@ import {
 import { PbxFieldService } from '@/modules/pbx-domain/field/';
 import {
     PbxFieldEntity,
-    PbxFieldEntityType,
     PbxFieldItemEntity,
 } from '@/modules/pbx-domain/field/entity/pbx-field.entity';
-import { EUserFieldType } from '@/modules/bitrix/domain/userfieldconfig/interface/userfieldconfig.interface';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 
 export class SaveSmartFieldsDto {
     domain: string;
@@ -38,7 +37,7 @@ export class SaveSmartFieldsService {
     ) {}
 
     public async installFields(dto: SaveSmartFieldsDto) {
-        const { domain, fields, bxFields, type, group } = dto;
+        const { domain, bxFields, type, group } = dto;
         const portal = await this.portalService.getPortalByDomain(domain);
         if (!portal) throw new Error('Portal not found');
         const portalId = BigInt(portal.id);
@@ -60,7 +59,7 @@ export class SaveSmartFieldsService {
             savingField.bitrixCamelId = this.getCamelCase(
                 bxField.field.fieldName,
             );
-            savingField.entity_type = PbxFieldEntityType.SMART;
+            savingField.entity_type = PbxEntityTypePrisma.SMART;
             savingField.entity_id = innerSmart.id;
             savingField.parent_type = `${group}_${type}`;
             savingField.items = [];

@@ -126,7 +126,7 @@ export class BxCompanyRepository {
     async getFieldList(filter: { [key: string]: any }, select?: string[]) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
-            EBXEntity.DEAL,
+            EBXEntity.COMPANY,
             EBxMethod.USER_FIELD_LIST,
             { select, filter },
         );
@@ -187,6 +187,48 @@ export class BxCompanyRepository {
             EBXEntity.COMPANY,
             EBxMethod.USER_FIELD_ADD,
             { fields },
+        );
+    }
+
+    async updateField(id: number | string, fields: Partial<IBXField>) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.USER_FIELD_UPDATE,
+            { id, fields },
+        );
+    }
+
+    updateFieldBtch(
+        cmdCode: string,
+        id: number | string,
+        fields: Partial<IBXField>,
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.USER_FIELD_UPDATE,
+            { id, fields },
+        );
+    }
+
+    async deleteField(id: number | string) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.USER_FIELD_DELETE,
+            { id },
+        );
+    }
+
+    deleteFieldBtch(cmdCode: string, id: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.USER_FIELD_DELETE,
+            { id },
         );
     }
 }

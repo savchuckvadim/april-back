@@ -1,18 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PbxFieldRepository } from '../../repositories/pbx-field.repositry';
-
-import {
-    PbxField,
-    PbxFieldEntity,
-    PbxFieldEntityType,
-} from '../../entity/pbx-field.entity';
+import { PbxField, PbxFieldEntity } from '../../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 
 @Injectable()
 export class PbxFieldService {
     constructor(private readonly pbxFieldRepository: PbxFieldRepository) {}
 
     async findByEntityId(
-        entity: PbxFieldEntityType,
+        entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<PbxFieldEntity[]> {
         return this.pbxFieldRepository.findByEntityId(entity, entityId);
@@ -45,7 +41,7 @@ export class PbxFieldService {
     }
 
     async deleteFieldsByEntityId(
-        entity: PbxFieldEntityType,
+        entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<void> {
         return this.pbxFieldRepository.deleteFieldsByEntityId(entity, entityId);

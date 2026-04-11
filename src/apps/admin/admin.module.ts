@@ -21,6 +21,7 @@ import { AdminGarantComplectModule } from './garant/complect/admin-garant-comple
 import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.module';
 import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
 import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
+import { PbxInstallModule } from './portal/pbx-install/pbx-install.module';
 
 @Module({
     imports: [
@@ -44,9 +45,9 @@ import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-info
         AdminGarantRegionModule,
         AdminGarantComplectModule,
         AdminGarantSupplyModule,
-
         AdminGarantInfogroupModule,
         AdminGarantInfoblockModule,
+        PbxInstallModule,
     ],
 })
 export class AdminModule {}

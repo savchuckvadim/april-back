@@ -10,7 +10,7 @@ import {
     IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PbxEntityType } from '../../pbx-shared';
+import { PbxEntityType } from '@/shared/enums';
 import { CreateBtxStageDto } from './create-btx-stage.dto';
 
 export class CreateBtxCategoryDto {

@@ -149,10 +149,10 @@ export class EventSalesFlowUseCase {
         const entityResult = await bitrix[entityType].get(entityId);
         const entity = entityResult.result;
         if (entityType === 'company') {
-            company = entity as IBXCompany;
+            company = entity as unknown as IBXCompany;
             companyId = entity.ID ?? 0;
         } else if (entityType === 'lead') {
-            lead = entity as IBXLead;
+            lead = entity as unknown as IBXLead;
             leadId = entity.ID ?? 0;
         }
 

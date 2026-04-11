@@ -25,13 +25,36 @@ export enum EBxMethod {
     USER_FIELD_DELETE = 'userfield.delete',
     LIST = 'list',
     DELETE = 'delete',
+
     CONTACT_ITEMS_SET = 'contact.items.set',
     CONTACT_ADD = 'contact.add',
     CONTACT_ITEMS_GET = 'contact.items.get',
+    CONTACT_ITEMS_DELETE = 'contact.items.delete',
+
     FIELD_GET = 'field.get',
     FIELDS = 'fields',
     GET_BY_ENTITY_TYPE_ID = 'getByEntityTypeId',
     GET_LIST = 'getlist',
+
+    // crm.status.entity.*
+    ENTITY_ITEMS = 'entity.items',
+    ENTITY_TYPES = 'entity.types',
+
+    // RPA stage methods (rpa.stage.*)
+    STAGE_ADD = 'stage.add',
+    STAGE_UPDATE = 'stage.update',
+    STAGE_LIST_FOR_TYPE = 'stage.listForType',
+
+    // Lists field methods (lists.field.*)
+    FIELD_ADD = 'field.add',
+    FIELD_UPDATE = 'field.update',
+    FIELD_DELETE = 'field.delete',
+    FIELD_GET_ALL = 'field.get',
+
+    // CRM enum
+    ENUM_OWNER_TYPE = 'enum.ownertype',
+
+    // Tasks
     FILES_ATTACH = 'files.attach',
     DELEGATE = 'delegate',
     COUNTERS_GET = 'counters.get',
@@ -55,6 +78,7 @@ export enum EBxMethod {
     CURRENT = 'current',
     DIALOG_GET = 'dialog.get',
 
+    // Disk
     MOVE_TO = 'moveto',
     RESTORE = 'restore',
     GET_TYPES = 'gettypes',

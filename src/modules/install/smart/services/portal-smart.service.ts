@@ -1,7 +1,7 @@
 import { PrismaService } from '@/core/prisma';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PbxFieldService } from '@/modules/pbx-domain/field/';
-import { PbxFieldEntityType } from '@/modules/pbx-domain/field/entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 
@@ -76,7 +76,7 @@ export class PortalSmartService {
 
     private async getSmartFields(smartId: bigint) {
         return await this.pbxFieldService.findByEntityId(
-            PbxFieldEntityType.SMART,
+            PbxEntityTypePrisma.SMART,
             smartId,
         );
     }
@@ -135,7 +135,7 @@ export class PortalSmartService {
             throw new Error('Smart not found');
         }
         await this.pbxFieldService.deleteFieldsByEntityId(
-            PbxFieldEntityType.SMART,
+            PbxEntityTypePrisma.SMART,
             smart.id,
         );
         await this.prisma.smarts.delete({

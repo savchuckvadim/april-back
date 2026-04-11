@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
 import { BxContactRepository } from '../repository/bx-contact.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXContact } from '../interface/bx-contact.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxContactService {
     private repo: BxContactRepository;
@@ -38,5 +38,17 @@ export class BxContactService {
 
     getField(id: number | string) {
         return this.repo.getField(id);
+    }
+
+    addField(fields: Partial<IBXField>) {
+        return this.repo.addField(fields);
+    }
+
+    updateField(id: number | string, fields: Partial<IBXField>) {
+        return this.repo.updateField(id, fields);
+    }
+
+    deleteField(id: number | string) {
+        return this.repo.deleteField(id);
     }
 }

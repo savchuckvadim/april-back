@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { bitrixfields } from 'generated/prisma';
 import { PrismaService } from '@/core/prisma';
 import { BitrixFieldRepository } from './bitrixfield.repository';
-import { PbxEntityTypePrisma } from '../../pbx-shared';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 
 @Injectable()
 export class BitrixFieldPrismaRepository implements BitrixFieldRepository {

@@ -6,7 +6,7 @@ import {
     ListFieldsGetRequestType,
     ListGetRequestType,
 } from '../schema/bx-list.schema';
-import { EBxListCode } from '../interface/bx-list.interface';
+import { EBxListCode, IBXList } from '../interface/bx-list.interface';
 
 export class BxListRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) {}
@@ -36,6 +36,14 @@ export class BxListRepository {
             EBxMethod.GET,
             params,
         );
+    }
+
+    async add(IBLOCK_CODE: string, fields: Partial<IBXList>) {
+        return await this.bitrixService.call('lists.add', {
+            IBLOCK_TYPE_ID: 'lists',
+            IBLOCK_CODE,
+            FIELDS: fields,
+        });
     }
 
     async getListField(code: EBxListCode, ID: string | number) {
@@ -96,5 +104,37 @@ export class BxListRepository {
             EBxMethod.FIELD_GET,
             params,
         );
+    }
+
+    async addField(
+        IBLOCK_CODE: string,
+        fields: Record<string, any>,
+    ) {
+        return await this.bitrixService.call('lists.field.add', {
+            IBLOCK_TYPE_ID: 'lists',
+            IBLOCK_CODE,
+            FIELDS: fields,
+        });
+    }
+
+    async updateField(
+        IBLOCK_CODE: string,
+        FIELD_ID: string | number,
+        fields: Record<string, any>,
+    ) {
+        return await this.bitrixService.call('lists.field.update', {
+            IBLOCK_TYPE_ID: 'lists',
+            IBLOCK_CODE,
+            FIELD_ID,
+            FIELDS: fields,
+        });
+    }
+
+    async deleteField(IBLOCK_CODE: string, FIELD_ID: string | number) {
+        return await this.bitrixService.call('lists.field.delete', {
+            IBLOCK_TYPE_ID: 'lists',
+            IBLOCK_CODE,
+            FIELD_ID,
+        });
     }
 }

@@ -9,8 +9,7 @@ import { BtxStageRepository } from '../repositories/btx-stage.repository';
 import { CreateBtxCategoryDto } from '../dto/create-btx-category.dto';
 import { UpdateBtxCategoryDto } from '../dto/update-btx-category.dto';
 import { BtxCategoryResponseDto } from '../dto/btx-category-response.dto';
-import { getPrismaEntityTypeByType } from '../../pbx-shared';
-import { PbxEntityType } from '../../pbx-shared/type/pbx-entity-type.enum';
+import { PbxEntityType, getPrismaEntityTypeByType } from '@/shared/enums';
 
 @Injectable()
 export class BtxCategoryService {

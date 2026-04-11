@@ -24,21 +24,28 @@ export class BxStatusService {
         return this.repo.getList(filter);
     }
 
-    /**
-     * Возвращает элементы справочника по его символьному идентификатору
-     * @param dto - DTO с entityId (например, 'DEAL_STAGE', 'SOURCE')
-     * @returns Массив элементов справочника
-     */
+    get(id: number | string) {
+        return this.repo.get(id);
+    }
+
+    add(fields: Partial<IBXStatus>) {
+        return this.repo.add(fields);
+    }
+
+    update(id: number | string, fields: Partial<IBXStatus>) {
+        return this.repo.update(id, fields);
+    }
+
+    delete(id: number | string) {
+        return this.repo.delete(id);
+    }
+
     async getEntityItems(
         dto: StatusEntityItemsRequestDto,
     ): Promise<StatusEntityItemsResponseDto> {
         return this.repo.getEntityItems(dto);
     }
 
-    /**
-     * Возвращает описание типов справочников
-     * @returns Массив объектов с описанием типов справочников
-     */
     async getEntityTypes(): Promise<StatusEntityTypesResponseDto> {
         return this.repo.getEntityTypes();
     }

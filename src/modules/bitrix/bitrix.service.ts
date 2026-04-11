@@ -6,14 +6,20 @@ import {
     BxContactBatchService,
     BxContactService,
     BxDealService,
+    BxLeadService,
+    BxLeadBatchService,
     BxProductRowBatchService,
     BxProductRowService,
     BxCategoryService,
+    BxCategoryBatchService,
     BxStatusService,
+    BxStatusBatchService,
     BxItemService,
     BxItemBatchService,
     BxTimelineService,
     BxTimelineBatchService,
+    BxRequisiteService,
+    BxRequisiteBatchService,
 } from './domain/crm/';
 
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
@@ -27,6 +33,8 @@ import {
 import { BxSmartTypeService } from './domain/crm/smart-type/services/bx-smart-type.service';
 import { BxRpaItemService } from './domain/rpa/item/services/bx-rpa-item.service';
 import { BxRpaItemBatchService } from './domain/rpa/item/services/bx-rpa-item.batch.service';
+import { BxRpaTypeService } from './domain/rpa/type/services/bx-rpa-type.service';
+import { BxRpaStageService } from './domain/rpa/stage/services/bx-rpa-stage.service';
 import { BxFileService } from './domain/file/bx-file.service';
 import { BxListItemService } from './domain/list-item';
 import { BxRecentService } from './domain/chat/recent/services/bx-recent.service';
@@ -50,6 +58,7 @@ import {
 export class BitrixService {
     public api: BitrixBaseApi;
     public deal: BxDealService;
+    public lead: BxLeadService;
     public company: BxCompanyService;
     public productRow: BxProductRowService;
     public contact: BxContactService;
@@ -57,12 +66,15 @@ export class BitrixService {
     public status: BxStatusService;
     public item: BxItemService;
     public timeline: BxTimelineService;
+    public requisite: BxRequisiteService;
     public list: BxListService;
     public listItem: BxListItemService;
     public product: BxProductService;
     public userFieldConfig: BxUserFieldConfigService;
     public smartType: BxSmartTypeService;
     public rpaItem: BxRpaItemService;
+    public rpaType: BxRpaTypeService;
+    public rpaStage: BxRpaStageService;
     public file: BxFileService;
     public dialog: BxDialogService;
     public recent: BxRecentService;
@@ -78,9 +90,13 @@ export class BitrixService {
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
+        lead: null as unknown as BxLeadBatchService,
         company: null as unknown as BxCompanyBatchService,
         productRow: null as unknown as BxProductRowBatchService,
         contact: null as unknown as BxContactBatchService,
+        category: null as unknown as BxCategoryBatchService,
+        status: null as unknown as BxStatusBatchService,
+        requisite: null as unknown as BxRequisiteBatchService,
         item: null as unknown as BxItemBatchService,
         timeline: null as unknown as BxTimelineBatchService,
         list: null as unknown as BxListBatchService,
@@ -105,6 +121,7 @@ export class BitrixService {
         console.log('init BitrixService', portal.domain);
         // this.api = this.bitrixApiFactoryService.create(portal);
         this.initDeal();
+        this.initLead();
         this.initCompany();
         this.initProductRow();
         this.initContact();
@@ -112,12 +129,15 @@ export class BitrixService {
         this.initStatus();
         this.initItem();
         this.initTimeline();
+        this.initRequisite();
         this.initList();
         this.initListItem();
         this.initProduct();
         this.initUserFieldConfig();
         this.initSmartType();
         this.initRpaItem();
+        this.initRpaType();
+        this.initRpaStage();
         this.initFile();
         this.initRecent();
         this.initMessage();
@@ -131,6 +151,11 @@ export class BitrixService {
     private initDeal() {
         this.deal = this.cloner.clone(BxDealService, this.api);
         this.batch.deal = this.cloner.clone(BxDealBatchService, this.api);
+    }
+
+    private initLead() {
+        this.lead = this.cloner.clone(BxLeadService, this.api);
+        this.batch.lead = this.cloner.clone(BxLeadBatchService, this.api);
     }
 
     private initCompany() {
@@ -150,9 +175,11 @@ export class BitrixService {
     }
     private initCategory() {
         this.category = this.cloner.clone(BxCategoryService, this.api);
+        this.batch.category = this.cloner.clone(BxCategoryBatchService, this.api);
     }
     private initStatus() {
         this.status = this.cloner.clone(BxStatusService, this.api);
+        this.batch.status = this.cloner.clone(BxStatusBatchService, this.api);
     }
     private initItem() {
         this.item = this.cloner.clone(BxItemService, this.api);
@@ -165,6 +192,11 @@ export class BitrixService {
             this.api,
         );
     }
+    private initRequisite() {
+        this.requisite = this.cloner.clone(BxRequisiteService, this.api);
+        this.batch.requisite = this.cloner.clone(BxRequisiteBatchService, this.api);
+    }
+
     private initList() {
         this.list = this.cloner.clone(BxListService, this.api);
         this.batch.list = this.cloner.clone(BxListBatchService, this.api);
@@ -192,6 +224,12 @@ export class BitrixService {
     private initRpaItem() {
         this.rpaItem = this.cloner.clone(BxRpaItemService, this.api);
         this.batch.rpaItem = this.cloner.clone(BxRpaItemBatchService, this.api);
+    }
+    private initRpaType() {
+        this.rpaType = this.cloner.clone(BxRpaTypeService, this.api);
+    }
+    private initRpaStage() {
+        this.rpaStage = this.cloner.clone(BxRpaStageService, this.api);
     }
     private initFile() {
         this.file = this.cloner.clone(BxFileService, this.api);

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BitrixFieldItemResponseDto } from './bitrixfield-item-response.dto';
-import { PbxEntityType } from '../../pbx-shared';
+import { PbxEntityType } from '@/shared/enums';
 import { bitrixfields } from 'generated/prisma';
 
 export class BitrixFieldResponseDto {
