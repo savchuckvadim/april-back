@@ -167,6 +167,7 @@ export class InfoblocksRenderDataService {
 
                 if (needRegionData) {
                     isRegionsProcessed = true;
+                    
                     infoblocksData.push(
                         getRegionsWithDescriptionData(complect),
                     );

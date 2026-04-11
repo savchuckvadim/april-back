@@ -14,7 +14,7 @@ export interface IRegionInfoblock {
 }
 
 export const REGION_INFOBLOCK_CODE = 'reg';
-
+const NPA_FROM_FRONT_GROUP_NAME = 'Нормативно-правовые акты';
 export const getRegionInfoblockData = (
     complect: ComplectDto[],
 ): IRegionInfoblock => {
@@ -25,8 +25,10 @@ export const getRegionInfoblockData = (
         iData.value.some(iBlock => iBlock.code === REGION_INFOBLOCK_CODE),
     );
 
-    const rootRegionGroup: ComplectDto | undefined = complect.find(iData =>
-        iData.value.some(iBlock => iBlock.code === REGION_INFOBLOCK_CODE),
+    const rootRegionGroup: ComplectDto | undefined = complect.find((iData, i) =>
+        iData.groupsName === NPA_FROM_FRONT_GROUP_NAME ||
+        i === 0,
+        // iData.value.some(iBlock => iBlock.code === REGION_INFOBLOCK_CODE),
     );
 
     const rootRegionInfoblockBlock = rootRegionGroup?.value.find(
@@ -90,10 +92,10 @@ export const getRegionInfoblockData = (
         const value =
             nonRegionBlocks.length > 0
                 ? [
-                      nonRegionBlocks[0],
-                      ...totalRegionsBlocks,
-                      ...nonRegionBlocks.slice(1),
-                  ]
+                    nonRegionBlocks[0],
+                    ...totalRegionsBlocks,
+                    ...nonRegionBlocks.slice(1),
+                ]
                 : [...totalRegionsBlocks];
         return {
             ...group,
