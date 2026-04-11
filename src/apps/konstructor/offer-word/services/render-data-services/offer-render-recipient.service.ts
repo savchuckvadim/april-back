@@ -4,6 +4,8 @@ import { IOfferWordGenerateRecipientDto } from '../../dto/offer-word-generate-re
 export interface IOfferRenderRecipientData {
     RecipientName: string;
     RecipientPosition: string;
+    RecipientNameCase: string;
+    RecipientPositionCase: string;
     RecipientCompanyName: string;
     RecipientInn: string;
     RecipientInvoiceRq: string;
@@ -19,6 +21,8 @@ export class OfferRenderRecipientService {
         return {
             RecipientName: dto.name ?? '',
             RecipientPosition: dto.position ?? '',
+            RecipientNameCase: dto.name ?? '',
+            RecipientPositionCase: dto.position ?? '',
             RecipientCompanyName: dto.companyName ?? '',
             RecipientInn: dto.inn ?? '',
             RecipientInvoiceRq: this.getInvoiceRq(dto),
