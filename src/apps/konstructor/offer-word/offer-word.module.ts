@@ -35,6 +35,7 @@ import { PBXModule } from '@/modules/pbx';
 import { BitrixDocumentSaveFlowService } from './services/bitrix/bitrix-document-save-flow.service';
 import { DocumentBuildService } from './services/document-build.service';
 import { OfferTemplateModule } from '@/modules/offer-template/offer-template.module';
+import { OfferRenderGeneralProductService } from './services/render-data-services/offer-render-general-product.service';
 
 @Module({
     imports: [
@@ -62,6 +63,7 @@ import { OfferTemplateModule } from '@/modules/offer-template/offer-template.mod
         OfferRenderInfoblocksService,
         InfoblocksRenderDataService,
         OfferRenderPriceService,
+        OfferRenderGeneralProductService,
         OfferRenderDataService,
         OfferRenderProviderRqService,
         OfferRenderRecipientService,
