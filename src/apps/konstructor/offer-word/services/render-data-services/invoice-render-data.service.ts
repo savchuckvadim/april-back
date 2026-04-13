@@ -37,6 +37,7 @@ export type IInvoiceRenderData = IOfferRenderRecipientData &
 export type IInvoiceRenderGeneralData = {
     InvoiceNumber: string;
     InvoiceDate: string;
+    InvoicePaymentDate: string;
 };
 export type IInvoiceSingleItemRenderData = IOfferRenderRecipientData &
     IProviderRqRenderData &
@@ -87,9 +88,11 @@ export class InvoiceRenderDataService {
         dto: OfferWordByTemplateGenerateDto,
     ): IInvoiceRenderGeneralData {
         const nowDate = dayjs().format('D MMMM YYYY [г.]');
+        const space = ' ';
         return {
             InvoiceNumber: dto.invoice.invoiceNumber ?? '',
-            InvoiceDate: dto.invoice.invoiceDate ?? nowDate,
+            InvoiceDate: nowDate,
+            InvoicePaymentDate: dto.invoice.invoiceDate ?? space,
         };
     }
 
