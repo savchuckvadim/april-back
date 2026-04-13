@@ -1,34 +1,34 @@
 import { ProductRowDto } from '../dto/product-row/product-row.dto';
 import { Injectable } from '@nestjs/common';
 import { ClientTypeEnum } from '../type/client.type';
-import { formatRuble, getCaseMonthes } from '../lib/rubles.util';
+import { formatRuble, formatMoney, getCaseMonthes } from '../lib/rubles.util';
 
 interface IContractTotalRowData {
     total_product_name: string;
-    total_month_sum: number;
+    total_month_sum: string;
     total_month_sum_string: string;
     total_measure: string;
 }
 export interface ITotalRowData extends IContractTotalRowData {
     total_prepayment_quantity: number;
     total_prepayment_quantity_string: string;
-    total_prepayment_sum: number;
+    total_prepayment_sum: string;
     total_prepayment_sum_string: string;
-    total_product_quantity: number; // общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
-    total_product_quantity_string: string; // общее количество продукта
-    total_month_quantity: number; // общее количество месяцев пользования (количество продукта * коэффициент контракта)
-    total_month_quantity_string: string; // общее количество месяцев пользования (количество продукта * коэффициент контракта)
-    contract_total_sum: number;
+    total_product_quantity: number;
+    total_product_quantity_string: string;
+    total_month_quantity: number;
+    total_month_quantity_string: string;
+    contract_total_sum: string;
     contract_total_sum_string: string;
     with_tax: boolean;
-    tax_sum: number;
+    tax_sum: string;
     tax_sum_string: string;
     total_full_string: string;
-    total_discount_sum: number;
+    total_discount_sum: string;
     total_discount_sum_string: string;
-    total_discount_sum_month: number;
+    total_discount_sum_month: string;
     total_discount_sum_month_string: string;
-    contract_total_sum_without_tax: number;
+    contract_total_sum_without_tax: string;
     contract_total_sum_without_tax_string: string;
 }
 interface IZofferTotalRowData {
@@ -77,8 +77,11 @@ export class DocumentTotalRowService {
         clientType: ClientTypeEnum,
         withTax: boolean,
     ): ITotalRowData {
-        const contractSum = Number(total.price.sum.toFixed(2));
-        const totalSumMonth = Number(total.price.current.toFixed(2));
+        const contractSumNum = Number(total.price.sum.toFixed(2));
+        const totalSumMonthNum = Number(total.price.current.toFixed(2));
+
+        const contractSum = formatMoney(contractSumNum);
+        const totalSumMonth = formatMoney(totalSumMonthNum);
 
         const productQuantity = total.price.quantity;
         const productQuantityString =
@@ -89,37 +92,41 @@ export class DocumentTotalRowService {
         const totalMonthQuantityString =
             this.getMonthWithTitleAccusative(totalMonthQuantity);
 
-        const contractSumString = `(${formatRuble(Number(contractSum))})`;
-        const totalSumMonthString = `(${formatRuble(Number(totalSumMonth))})`;
+        const contractSumString = `(${formatRuble(contractSumNum)})`;
+        const totalSumMonthString = `(${formatRuble(totalSumMonthNum)})`;
 
-        const taxSum = withTax
+        const taxSumNum = withTax
             ? Number(((Number(total.price.sum) * 5) / 105).toFixed(2))
-            : '';
-        const taxSumString = withTax ? `(${formatRuble(Number(taxSum))})` : '';
-        const contractSumWithoutTax = withTax
-            ? Number((contractSum - Number(taxSum)).toFixed(2))
-            : contractSum;
+            : 0;
+        const taxSum = withTax ? formatMoney(taxSumNum) : '';
+        const taxSumString = withTax ? `(${formatRuble(taxSumNum)})` : '';
+        const contractSumWithoutTaxNum = withTax
+            ? Number((contractSumNum - taxSumNum).toFixed(2))
+            : contractSumNum;
+        const contractSumWithoutTax = formatMoney(contractSumWithoutTaxNum);
 
         const contractSumWithoutTaxString = withTax
-            ? `(${formatRuble(Number(contractSumWithoutTax))})`
+            ? `(${formatRuble(contractSumWithoutTaxNum)})`
             : '';
 
         // precent — коэффициент цены после скидки к базе (0.8 → скидка = contractSum * (1/precent - 1)).
         const precent = total.price.discount.precent;
-        const totalDiscountSum =
+        const totalDiscountSumNum =
             precent > 0 && precent < 1
-                ? Number((contractSum * (1 / precent - 1)).toFixed(2))
+                ? Number((contractSumNum * (1 / precent - 1)).toFixed(2))
                 : 0;
-        const totalDiscountSumString = `(${formatRuble(Number(totalDiscountSum))})`;
+        const totalDiscountSum = formatMoney(totalDiscountSumNum);
+        const totalDiscountSumString = `(${formatRuble(totalDiscountSumNum)})`;
 
-        const totalDiscountSumMonth =
+        const totalDiscountSumMonthNum =
             precent > 0 && precent < 1
-                ? Number((totalSumMonth * (1 / precent - 1)).toFixed(2))
+                ? Number((totalSumMonthNum * (1 / precent - 1)).toFixed(2))
                 : 0;
-        const totalDiscountSumMonthString = `(${formatRuble(Number(totalDiscountSumMonth))})`;
+        const totalDiscountSumMonth = formatMoney(totalDiscountSumMonthNum);
+        const totalDiscountSumMonthString = `(${formatRuble(totalDiscountSumMonthNum)})`;
         const totalFullString = this.getTotalFullString(
-            contractSum,
-            taxSum,
+            contractSumNum,
+            taxSumNum,
             withTax,
         );
 
@@ -184,14 +191,16 @@ export class DocumentTotalRowService {
     }
 
     private getTotalFullString(
-        contractSum: number,
-        taxSum: number | '',
+        contractSumNum: number,
+        taxSumNum: number,
         withTax: boolean,
     ): string {
+        const contractSum = formatMoney(contractSumNum);
+        const taxSum = formatMoney(taxSumNum);
         if (withTax) {
-            return `${contractSum} руб. (${formatRuble(Number(contractSum))}), в том числе НДС 5% ${taxSum} (${formatRuble(Number(taxSum))}), на основании подпункта 1 пункта 8 статьи 164 НК РФ.`;
+            return `${contractSum} руб. (${formatRuble(contractSumNum)}), в том числе НДС 5% ${taxSum} (${formatRuble(taxSumNum)}), на основании подпункта 1 пункта 8 статьи 164 НК РФ.`;
         } else {
-            return `${contractSum} руб. (${formatRuble(Number(contractSum))})`;
+            return `${contractSum} руб. (${formatRuble(contractSumNum)})`;
         }
     }
 

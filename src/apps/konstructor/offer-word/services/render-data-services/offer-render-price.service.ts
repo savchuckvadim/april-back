@@ -35,27 +35,27 @@ export interface IProductRenderItemData {
 
 export interface ITotalRowItemRenderData {
     TotalProductName: string;
-    TotalMonthSum: number;
+    TotalMonthSum: string;
     TotalMonthSumString: string;
     TotalMeasure: string;
     TotalPrepaymentQuantity: number;
     TotalPrepaymentQuantityString: string;
-    TotalPrepaymentSum: number;
+    TotalPrepaymentSum: string;
     TotalPrepaymentSumString: string;
-    TotalSum: number; // вот это наверное будет использоваться в контракте для бюджетников там есть разница
-    TotalSumString: string; // вот это наверное будет использоваться в контракте для бюджетников там есть разница
+    TotalSum: string;
+    TotalSumString: string;
     TotalProductQuantity: number;
     TotalProductQuantityString: string;
     TotalMonthQuantity: number;
     TotalMonthQuantityString: string;
-    TaxSum: number;
+    TaxSum: string;
     TaxSumString: string;
-    TotalSumWithoutTax: number;
+    TotalSumWithoutTax: string;
     TotalSumWithoutTaxString: string;
     TotalFullString: string;
-    TotalDiscountSum: number;
+    TotalDiscountSum: string;
     TotalDiscountSumString: string;
-    TotalDiscountSumMonth: number;
+    TotalDiscountSumMonth: string;
     TotalDiscountSumMonthString: string;
     TotalTaxInvoiceInfo: string;
 }
@@ -186,17 +186,16 @@ export class OfferRenderPriceService {
                 ProductName: row.productName,
                 ProductQuantity: row.productQuantity.toString(),
                 ProductMeasure: row.productMeasure,
-                ProductPrice: row.productPrice.toString(),
-                ProductSum: row.productSum.toString(),
+                ProductPrice: row.productPrice,
+                ProductSum: row.productSum,
                 ProductSumString: row.productSumString,
-                ProductDiscountSum: row.productDiscountSum.toString(),
+                ProductDiscountSum: row.productDiscountSum,
                 ProductDiscountSumString: row.productDiscountSumString,
-                ProductMonthSum: row.productMonthSum.toString(),
-
+                ProductMonthSum: row.productMonthSum,
                 ProductMonthSumString: row.productMonthSumString,
-                ProductPriceDefault: row.productPriceDefault?.toString() || '',
+                ProductPriceDefault: row.productPriceDefault || '',
                 ProductDiscountPercent: row.discountPercent?.toString() || '',
-                ProductTaxSum: row.taxSum?.toString() || '',
+                ProductTaxSum: row.taxSum || '',
                 ProductTaxSumString: row.taxSumString || '',
                 QuantityString: row.quantityString,
                 ProductContractName: row.productContractName,

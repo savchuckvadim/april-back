@@ -1,5 +1,10 @@
 import { convert as convertNumberToWordsRu } from 'number-to-words-ru';
 
+/** Formats a number as a money string with exactly 2 decimal places: 5000 → "5000.00" */
+export const formatMoney = (value: number): string => {
+    return value.toFixed(2);
+};
+
 export const formatRuble = (value: number): string => {
     return convertNumberToWordsRu(value, {
         currency: 'rub',

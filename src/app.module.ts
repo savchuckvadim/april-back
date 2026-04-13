@@ -48,6 +48,7 @@ import { EventSalesBxRecordsModule } from './apps/event-sales/bx-records/bx-reco
 import { DocumentSupplyReportModule } from './apps/konstructor/document-supply-report/document-supply-report.module';
 import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { InvoiceTemplateModule } from './modules/invoice-template/invoice-template.module';
+import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -136,6 +137,7 @@ import { InvoiceTemplateModule } from './modules/invoice-template/invoice-templa
         EventSalesBxRecordsModule,
         InnerDealModule,
         InvoiceTemplateModule,
+        DocumentCounterModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],

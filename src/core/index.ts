@@ -1,3 +1,4 @@
+export * from './http/content-disposition.util';
 export * from './dto/app.dto';
 export * from './interfaces/response.interface';
 export * from './prisma';

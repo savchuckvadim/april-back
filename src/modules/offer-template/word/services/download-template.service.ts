@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
+import { buildContentDispositionAttachment } from '@/core/http/content-disposition.util';
 import { StorageService } from '../../../../core/storage/storage.service';
 import { WordTemplateService } from './word-template.service';
 
@@ -36,7 +37,7 @@ export class DownloadTemplateService {
         );
         res.setHeader(
             'Content-Disposition',
-            `attachment; filename=${fileName}`,
+            buildContentDispositionAttachment(fileName),
         );
         res.setHeader('Content-Length', fileBuffer.length.toString());
         res.end(fileBuffer);

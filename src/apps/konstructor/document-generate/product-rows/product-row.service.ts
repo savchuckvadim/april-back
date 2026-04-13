@@ -1,29 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { ProductRowDto } from '../dto/product-row/product-row.dto';
 import { ClientTypeEnum } from '../type/client.type';
-import { formatRuble, getCaseMonthes } from '../lib/rubles.util';
+import { formatRuble, formatMoney, getCaseMonthes } from '../lib/rubles.util';
 
 export interface Product {
     productNumber: number;
     productName: string;
     productQuantity: number;
     productMeasure: string;
-    productPrice: number | string;
-    productSum: number | string;
+    productPrice: string;
+    productSum: string;
     productSumString: string;
-    productMonthSum: number | string;
+    productMonthSum: string;
     productMonthSumString: string;
-    productDiscountSum: number | string;
+    productDiscountSum: string;
     productDiscountSumString: string;
-    productDiscountSumMonth: number | string;
+    productDiscountSumMonth: string;
     productDiscountSumStringMonth: string;
     complect_sup?: string;
     complectName?: string;
-    productPriceDefault?: number;
-    productSumDefault?: number;
+    productPriceDefault?: string;
+    productSumDefault?: string;
     discountPercent?: number;
     discountAmount?: number;
-    taxSum?: number;
+    taxSum?: string;
     taxSumString?: string;
     quantityString: string;
     productContractName: string;
@@ -57,39 +57,50 @@ export class DocumentProductRowService {
             const monthQuantity = productQuantity * contractCoefficient;
             const monthQuantityString = getCaseMonthes(monthQuantity);
 
-            const productSumDefault = Number(
+            const productSumDefaultNum = Number(
                 (row.price.default * row.price.quantity).toFixed(2),
-            ); //сумма товара по прайсу за все количество
+            );
+            const productSumDefault = formatMoney(productSumDefaultNum);
 
-            const productSum = Number(row.price.sum.toFixed(2));
-            const productSumString = formatRuble(Number(productSum));
-            const productMonthSum = Number(row.price.month.toFixed(2));
-            const productMonthSumString = formatRuble(Number(productMonthSum));
+            const productSumNum = Number(row.price.sum.toFixed(2));
+            const productSum = formatMoney(productSumNum);
+            const productSumString = formatRuble(productSumNum);
+            const productMonthSumNum = Number(row.price.month.toFixed(2));
+            const productMonthSum = formatMoney(productMonthSumNum);
+            const productMonthSumString = formatRuble(productMonthSumNum);
 
-            const productPriceDefault = Number(row.price.default.toFixed(2));
-            const productPrice = Number(row.price.current.toFixed(2));
+            const productPriceDefault = formatMoney(
+                Number(row.price.default.toFixed(2)),
+            );
+            const productPrice = formatMoney(
+                Number(row.price.current.toFixed(2)),
+            );
 
             const discountPercent = Number(
                 (100 - 100 * row.price.discount.precent).toFixed(2),
             );
-            const discountSumMonth =
+            const discountSumMonthNum =
                 discountPercent > 0 && discountPercent < 1
                     ? Number(
-                          (productMonthSum * (1 / discountPercent - 1)).toFixed(
-                              2,
-                          ),
+                          (
+                              productMonthSumNum *
+                              (1 / discountPercent - 1)
+                          ).toFixed(2),
                       )
                     : 0;
-            const discountSum = Number(
-                (discountSumMonth * monthQuantity).toFixed(2),
+            const discountSumNum = Number(
+                (discountSumMonthNum * monthQuantity).toFixed(2),
             );
-            const discountSumString = formatRuble(Number(discountSum));
-            const discountSumStringMonth = formatRuble(discountSumMonth);
+            const discountSum = formatMoney(discountSumNum);
+            const discountSumString = formatRuble(discountSumNum);
+            const discountSumMonth = formatMoney(discountSumMonthNum);
+            const discountSumStringMonth = formatRuble(discountSumMonthNum);
 
-            const taxSum = Number(
+            const taxSumNum = Number(
                 ((Number(row.price.sum) * 5) / 105).toFixed(2),
             );
-            const taxSumString = formatRuble(Number(taxSum));
+            const taxSum = formatMoney(taxSumNum);
+            const taxSumString = formatRuble(taxSumNum);
 
             const productContractName =
                 row.product.contract.contract?.productName || '';
@@ -103,7 +114,7 @@ export class DocumentProductRowService {
                 productName: row.name,
                 productQuantity: productQuantity,
                 productMeasure: row.price.measure.name,
-                productPrice: productPrice,
+                productPrice,
                 productSum,
                 productSumString,
                 productMonthSum,

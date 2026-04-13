@@ -160,10 +160,10 @@ export class InvoiceTemplateService {
 
         const id = randomUUID();
         const code = `invoice-${randomUUID()}`;
-        const fileName = `${Date.now()}_${file.originalname}`;
+        const storageFileName = this.buildStorageFileName(file.originalname);
         const filePath = await this.storageService.saveFile(
             file.buffer,
-            fileName,
+            storageFileName,
             StorageType.PUBLIC,
             STORAGE_SUBPATH,
         );
@@ -293,10 +293,12 @@ export class InvoiceTemplateService {
                     /* ignore */
                 }
             }
-            const fileName = `${Date.now()}_${file.originalname}`;
+            const storageFileName = this.buildStorageFileName(
+                file.originalname,
+            );
             updateData.file_path = await this.storageService.saveFile(
                 file.buffer,
-                fileName,
+                storageFileName,
                 StorageType.PUBLIC,
                 STORAGE_SUBPATH,
             );
@@ -448,6 +450,15 @@ export class InvoiceTemplateService {
             archived_at: null,
         });
         return this.toDto(updated);
+    }
+
+    /**
+     * Имя файла в хранилище: UUID + расширение из оригинала (без кириллицы в пути).
+     */
+    private buildStorageFileName(originalname: string): string {
+        const extMatch = originalname.match(/\.([a-zA-Z0-9]{1,10})$/);
+        const ext = extMatch ? `.${extMatch[1].toLowerCase()}` : '.docx';
+        return `${randomUUID()}${ext}`;
     }
 
     /** Для скачивания: сырой путь к файлу */

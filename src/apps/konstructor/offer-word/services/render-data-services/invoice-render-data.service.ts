@@ -88,11 +88,18 @@ export class InvoiceRenderDataService {
         dto: OfferWordByTemplateGenerateDto,
     ): IInvoiceRenderGeneralData {
         const nowDate = dayjs().format('D MMMM YYYY [г.]');
+        const invoicePaymentDate = new Date(dto.invoice.invoiceDate);
+        const invoicePaymentFormattedDate =
+            invoicePaymentDate.toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            });
         const space = ' ';
         return {
             InvoiceNumber: dto.invoice.invoiceNumber ?? '',
             InvoiceDate: nowDate,
-            InvoicePaymentDate: dto.invoice.invoiceDate ?? space,
+            InvoicePaymentDate: invoicePaymentFormattedDate || space,
         };
     }
 

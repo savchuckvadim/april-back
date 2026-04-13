@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
+import { buildContentDispositionAttachment } from '@/core/http/content-disposition.util';
 import { StorageService } from '@/core/storage/storage.service';
 import {
     InvoiceTemplateType,
@@ -37,7 +38,7 @@ export class InvoiceTemplateDownloadService {
         res.setHeader('Content-Type', mime);
         res.setHeader(
             'Content-Disposition',
-            `attachment; filename="${fileName}"`,
+            buildContentDispositionAttachment(fileName),
         );
         res.setHeader('Content-Length', String(buffer.length));
         res.end(buffer);
