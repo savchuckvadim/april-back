@@ -38,13 +38,15 @@ export class OfferRenderGeneralProductService {
             contractCoefficient,
             clientType,
         );
-        return {
+        const result: IGeneralProductRenderItemData = {
             GeneralProductName: totalData.total_product_name,
             GeneralProductContractName: totalRowData[0].productName,
             GeneralSupplyNameMarketing: totalRowData[0].supplyNameMarketing,
             GeneralSupplyNameString: totalRowData[0].supplyNameString,
             GeneralProductByContractName:
                 totalRowData[0].productWithContractName,
-        } as IGeneralProductRenderItemData;
+        };
+
+        return result;
     }
 }

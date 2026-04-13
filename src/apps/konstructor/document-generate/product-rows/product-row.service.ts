@@ -100,7 +100,7 @@ export class DocumentProductRowService {
 
             products.push({
                 productNumber: i + 1,
-                productName: row.product.name,
+                productName: row.name,
                 productQuantity: productQuantity,
                 productMeasure: row.price.measure.name,
                 productPrice: productPrice,

@@ -33,7 +33,7 @@ export class AuthService {
         private readonly mailer: MailConfirmationService,
         private readonly cookieService: CookieService,
         private readonly tokenService: TokenService,
-    ) {}
+    ) { }
 
     async registerClient(
         dto: ClientRegistrationRequestDto,
@@ -114,7 +114,8 @@ export class AuthService {
             throw new ForbiddenException('Client is inactive');
 
         await this.issueTokens(res, userDto.id, userDto.client_id);
-
+        console.log('userDto', userDto);
+        console.log('client', client);
         return { user: userDto, client };
     }
 

@@ -1,6 +1,6 @@
 
-install-data/**
-install-data
+# install-data/**
+# install-data
 
 # compiled output
 .vscode
