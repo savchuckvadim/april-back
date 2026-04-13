@@ -88,19 +88,27 @@ export class InvoiceRenderDataService {
         dto: OfferWordByTemplateGenerateDto,
     ): IInvoiceRenderGeneralData {
         const nowDate = dayjs().format('D MMMM YYYY [г.]');
-        const invoicePaymentDate = new Date(dto.invoice.invoiceDate);
+        const rawInvoicePaymentDate = dto.invoice.invoiceDate || '';
+        return {
+            InvoiceNumber: dto.invoice.invoiceNumber ?? '',
+            InvoiceDate: nowDate,
+            InvoicePaymentDate: this.getInvoicePaymentDate(
+                rawInvoicePaymentDate,
+            ),
+        };
+    }
+    private getInvoicePaymentDate(invoiceDate: string): string {
+        if (!invoiceDate) {
+            return '';
+        }
+        const invoicePaymentDate = new Date(invoiceDate);
         const invoicePaymentFormattedDate =
             invoicePaymentDate.toLocaleDateString('ru-RU', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
             });
-        const space = ' ';
-        return {
-            InvoiceNumber: dto.invoice.invoiceNumber ?? '',
-            InvoiceDate: nowDate,
-            InvoicePaymentDate: invoicePaymentFormattedDate || space,
-        };
+        return invoicePaymentFormattedDate;
     }
 
     private createRenderData(
