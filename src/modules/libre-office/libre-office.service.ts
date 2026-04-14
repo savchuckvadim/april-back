@@ -21,7 +21,7 @@ export class LibreOfficeService {
         const mode = this.configService
             .get<string>('LIBREOFFICE_MODE', 'exec')
             .toLowerCase()
-            .trim();
+            ?.trim();
         this.mode = mode === 'http' ? 'http' : 'exec';
         this.httpBaseUrl = this.configService
             .get<string>('LIBREOFFICE_HTTP_URL', 'http://127.0.0.1:33030')

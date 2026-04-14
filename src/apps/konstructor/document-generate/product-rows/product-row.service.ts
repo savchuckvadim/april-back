@@ -29,6 +29,7 @@ export interface Product {
     productContractName: string;
     supplyNameMarketing: string;
     supplyNameString: string;
+    supplyUsersCount: string;
     productWithContractName: string;
     monthQuantityString: string;
     contractFullName: string;
@@ -106,6 +107,9 @@ export class DocumentProductRowService {
                 row.product.contract.contract?.productName || '';
             const supplyNameMarketing = row.supply?.forkp || '';
             const supplyNameString = row.supply?.name || '';
+            const digits = supplyNameString.replace(/\D/g, ''); // "3" или "10"
+            const num = digits ? parseInt(digits, 10) : 1;
+            const supplyUsersCount = num.toString();
             const productWithContractName = `${productContractName} ${row.product.name} ${supplyNameMarketing}`;
             const quantityString = row.product.quantityForKp || '';
 
@@ -132,6 +136,7 @@ export class DocumentProductRowService {
                 productContractName,
                 supplyNameMarketing,
                 supplyNameString,
+                supplyUsersCount,
                 productWithContractName,
                 monthQuantityString,
                 contractFullName,

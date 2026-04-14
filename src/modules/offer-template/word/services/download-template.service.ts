@@ -51,7 +51,7 @@ export class DownloadTemplateService {
             .replace(/_+/g, '_')
             .replace(/^_+|_+$/g, '')
             .substring(0, 100)
-            .trim();
+            ?.trim();
 
         return sanitized || 'template';
     }

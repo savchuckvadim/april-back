@@ -86,7 +86,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 }
             }
 
-            func = stackLines[1]?.trim().split(' ')[1] || 'unknown';
+            func = stackLines[1]?.trim()?.split(' ')[1] || 'unknown';
             code = stackLines[1] || '';
         } catch (e) {
             console.warn('Stack trace parse failed', e);

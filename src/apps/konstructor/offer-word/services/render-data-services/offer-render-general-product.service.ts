@@ -7,9 +7,16 @@ import { DocumentProductRowService } from '../../../document-generate/product-ro
 export interface IGeneralProductRenderItemData {
     GeneralProductName: string;
     GeneralProductContractName: string;
+    GeneralSupplyUsersCount: string; //1,2,3,5
     GeneralSupplyNameMarketing: string;
     GeneralSupplyNameString: string;
     GeneralProductByContractName: string;
+    GeneralProductQuantity: number; // количество основного продукта 4 (мес или лиц12)
+
+    GeneralProductMonthQuantity: number; // количество месяцев основного продукта - то есть количество продукта * коэффициент контракта
+    GeneralProductSum: string; // сумма = цена * количество
+    GeneralProductMonthSum: string; // сумма в месяц = сумма / количество месяцев
+    GeneralProductYearSum: string; // сумма в год = сумма в месяц * 12
 }
 
 @Injectable()
@@ -41,10 +48,19 @@ export class OfferRenderGeneralProductService {
         const result: IGeneralProductRenderItemData = {
             GeneralProductName: totalData.total_product_name,
             GeneralProductContractName: totalRowData[0].productName,
+            GeneralSupplyUsersCount: totalRowData[0].supplyUsersCount,
             GeneralSupplyNameMarketing: totalRowData[0].supplyNameMarketing,
             GeneralSupplyNameString: totalRowData[0].supplyNameString,
             GeneralProductByContractName:
                 totalRowData[0].productWithContractName,
+
+            GeneralProductQuantity: totalData.total_product_quantity,
+            GeneralProductMonthQuantity: totalData.total_month_quantity,
+            GeneralProductSum: totalData.total_prepayment_sum,
+            GeneralProductMonthSum: totalData.total_month_sum,
+            GeneralProductYearSum: (
+                Number(totalData.total_month_sum) * 12
+            ).toFixed(2),
         };
 
         return result;
