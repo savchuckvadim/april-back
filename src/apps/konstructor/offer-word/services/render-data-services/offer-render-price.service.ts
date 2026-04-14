@@ -44,6 +44,8 @@ export interface ITotalRowItemRenderData {
     TotalPrepaymentSumString: string;
     TotalSum: string;
     TotalSumString: string;
+    TotalQuantity: number;
+    TotalQuantityString: string;
     TotalProductQuantity: number;
     TotalProductQuantityString: string;
     TotalMonthQuantity: number;
@@ -140,9 +142,12 @@ export class OfferRenderPriceService {
                         totalData.contract_total_sum_without_tax,
                     TotalSumWithoutTaxString:
                         totalData.contract_total_sum_without_tax_string,
-                    TotalProductQuantity: totalData.total_product_quantity, // общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
+                    TotalQuantity: totalData.total_product_quantity, // тоже самое что TotalProductQuantity общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
+                    TotalQuantityString:
+                        totalData.total_product_quantity_string, // тоже самое что TotalProductQuantityString общее количество продукта
+                    TotalProductQuantity: totalData.total_product_quantity, // тоже самое что TotalQuantity общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
                     TotalProductQuantityString:
-                        totalData.total_product_quantity_string, // общее количество продукта
+                        totalData.total_product_quantity_string, // тоже самое что TotalQuantityString общее количество продукта
 
                     TotalMonthQuantity: totalData.total_month_quantity, // общее количество месяцев пользования (количество продукта * коэффициент контракта)
                     TotalMonthQuantityString:
