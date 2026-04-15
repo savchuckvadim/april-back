@@ -16,7 +16,7 @@ import {
 } from '../../type/sales/konstructor/pbx-sales-konstructor-field.type';
 import { PbxFieldEntity } from '../../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 
 type FieldGroup = 'sales' | 'service';

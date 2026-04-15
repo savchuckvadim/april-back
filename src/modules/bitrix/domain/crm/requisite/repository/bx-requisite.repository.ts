@@ -32,7 +32,9 @@ export class BxRequisiteRepository {
     async getList(
         filter: Partial<IBXRequisite>,
         select?: string[],
-        order?: { [key in keyof IBXRequisite]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+        order?: {
+            [key in keyof IBXRequisite]?: 'asc' | 'desc' | 'ASC' | 'DESC';
+        },
     ) {
         return await this.bxApi.callType(
             EBxNamespace.CRM,

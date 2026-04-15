@@ -10,7 +10,7 @@ import {
     CreateBitrixAppWithTokenDto,
     GetBitrixAppDto,
 } from '../dto/bitrix-app.dto';
-import { PrismaService } from 'src/core/prisma';
+// import { PrismaService } from 'src/core/prisma';
 
 import { BitrixAppRepository } from '../repositories/bitrix-app.repository';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
@@ -24,20 +24,21 @@ import {
     BITRIX_APP_TYPES,
 } from '../enums/bitrix-app.enum';
 import { EnabledAppDto } from '../dto/enaled-app.dto';
-import { BitrixSecretService } from '../../secret/services/bitrix-secret.service';
+// import { BitrixSecretService } from '../../secret/services/bitrix-secret.service';
 import { toBitrixAppDto } from '../lib/bx-app-dto.mapper';
+import { getErrorString } from '@/shared';
 
 @Injectable()
 export class BitrixAppService {
     constructor(
         private readonly repository: BitrixAppRepository,
-        private readonly prisma: PrismaService,
+        // private readonly prisma: PrismaService,
         private readonly portalService: PortalStoreService,
         private readonly tokenService: BitrixTokenService,
-        private readonly secretService: BitrixSecretService, //секреты записываются в токен
+        // private readonly secretService: BitrixSecretService, //секреты записываются в токен
     ) {}
 
-    async getEnabledApps(): Promise<EnabledAppDto[]> {
+    getEnabledApps(): EnabledAppDto[] {
         const app: EnabledAppDto = {
             code: BITRIX_APP_CODES.SALES,
             group: BITRIX_APP_GROUPS.SALES,
@@ -121,7 +122,7 @@ export class BitrixAppService {
             return result;
         } catch (error) {
             throw new BadRequestException(
-                `Failed to store or update app: ${error.message}`,
+                `Failed to store or update app: ${getErrorString(error)}`,
             );
         }
     }
@@ -134,48 +135,42 @@ export class BitrixAppService {
         token: BitrixTokenEntity;
         message: string;
     }> {
-        try {
-            let portal: PortalEntity | null =
-                await this.portalService.getPortalByDomain(dto.domain);
-            if (!portal) {
-                portal = await this.portalService.create({
-                    domain: dto.domain,
-                });
-            }
-            const dataForCreateOrUpdateApp: Partial<BitrixAppEntity> = {
-                portal_id: BigInt(portal!.id),
-                group: dto.group,
-                type: dto.type,
-                code: dto.code,
-                status: dto.status,
-            };
-            // Create without appId
-            if (appId) {
-                dataForCreateOrUpdateApp.id = appId;
-            }
-            const app = await this.repository.storeOrUpdate(
-                dataForCreateOrUpdateApp,
-            );
-            if (!app) {
-                throw new BadRequestException('Failed to create or update app');
-            }
-
-            // Create or update token
-            const token = await this.tokenService.storeOrUpdateAppToken(
-                app.id,
-                dto.token,
-            );
-
-            return {
-                app,
-                token: token.token,
-                message: 'Bitrix App saved and token created',
-            };
-        } catch (error) {
-            throw new BadRequestException(
-                `Failed to store or update app: ${error.message}`,
-            );
+        let portal: PortalEntity | null =
+            await this.portalService.getPortalByDomain(dto.domain);
+        if (!portal) {
+            portal = await this.portalService.create({
+                domain: dto.domain,
+            });
         }
+        const dataForCreateOrUpdateApp: Partial<BitrixAppEntity> = {
+            portal_id: BigInt(portal!.id),
+            group: dto.group,
+            type: dto.type,
+            code: dto.code,
+            status: dto.status,
+        };
+        // Create without appId
+        if (appId) {
+            dataForCreateOrUpdateApp.id = appId;
+        }
+        const app = await this.repository.storeOrUpdate(
+            dataForCreateOrUpdateApp,
+        );
+        if (!app) {
+            throw new BadRequestException('Failed to create or update app');
+        }
+
+        // Create or update token
+        const token = await this.tokenService.storeOrUpdateAppToken(
+            app.id,
+            dto.token,
+        );
+
+        return {
+            app,
+            token: token.token,
+            message: 'Bitrix App saved and token created',
+        };
     }
 
     private async setSecret(

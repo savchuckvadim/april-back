@@ -15,6 +15,20 @@ export interface ITimeLineSendData {
 export class OfferBxTimelineService {
     constructor(private readonly pbx: PBXService) {}
 
+    public async sendErrorToBitrix(data: ITimeLineSendData) {
+        const { bitrix } = await this.pbx.init(data.domain);
+        const timelinePusher = new BxTimelinePusherService(bitrix);
+        await timelinePusher.push(
+            {
+                companyId: data.companyId,
+                userId: data.userId,
+                message: ' Ошибка при создании документа',
+                dealId: data.dealId,
+            },
+            true,
+        );
+    }
+
     public async sendDocumentToBitrix(data: ITimeLineSendData) {
         const { bitrix } = await this.pbx.init(data.domain);
         const commentMessage = this.getCommentMessage(data.documents);

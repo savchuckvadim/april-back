@@ -9,28 +9,30 @@ export interface IProductRenderData {
     ProductRows: IProductRenderItemData[];
 }
 export interface IProductRenderItemData {
-    ProductNumber: string;
-    ProductName: string;
-    ProductQuantity: string;
-    ProductMeasure: string;
-    ProductPrice: string;
-    ProductSum: string;
-    ProductSumString: string;
-    ProductDiscountSum: string;
-    ProductDiscountSumString: string;
-    ProductMonthSum: string;
-    ProductMonthSumString: string;
-    ProductPriceDefault: string;
-    ProductDiscountPercent: string;
-    ProductTaxSum: string;
-    ProductTaxSumString: string;
-    QuantityString: string;
-    ProductContractName: string;
-    SupplyNameMarketing: string;
-    SupplyNameString: string;
-    ProductByContractName: string;
-    MonthQuantityString: string;
-    ContractFullName: string;
+    ProductNumber: string; // номер товара
+    ProductName: string; // название товара Гарант-Предприятие
+    ProductQuantity: string; // количество товара
+    //TODO: ProductMonthQuantity: string; // количество товара в месяцах типа quantity* коэффициент контракта
+    ProductMeasure: string; // единица измерения товара
+    ProductPrice: string; // цена товара за 1 единицу измерения
+    ProductSum: string; // сумма товара
+    ProductSumString: string; // сумма товара  товара прописью
+    ProductDiscountSum: string; // сумма скидки товара за количество товара
+    ProductDiscountSumString: string; // сумма скидки товара  прописью
+    ProductMonthSum: string; // сумма товара в месяц
+    ProductMonthSumString: string; // сумма товара в месяц прописью
+    ProductPriceDefault: string; // цена товара по умолчанию за 1 единицу измерения без скидки (по прайсу)
+    ProductDiscountPercent: string; // процент скидки товара
+    ProductTaxSum: string; // сумма налога товара
+    ProductTaxSumString: string; // сумма налога товара прописью
+    QuantityString: string; // тоже самое что SupplyNameMarketing (убираю) название ОД развернуто (на 3 одновременных пользователей)
+    ProductContractName: string; // название договора полная формулировка услуги и товара из договора без названия самого товара
+
+    SupplyNameMarketing: string; // название ОД развернуто (на 3 одновременных пользователей)
+    SupplyNameString: string; // название ОД короткое (Интернет 1 ОД)
+    ProductByContractName: string; // название товара с договором (как для счета) ProductContractName + ProductName+ SupplyNameMarketing
+    MonthQuantityString: string; // просто написано "месяцев" без цифр - видимо типа просклоненное значение
+    ContractFullName: string; // полное название договора на самом деле что-то странное     Internet длительность 1 мес.// полное название договора можно изменить на Интернет/Проксима/Лицензия и тд
 }
 
 export interface ITotalRowItemRenderData {

@@ -23,7 +23,9 @@ export class BxRequisiteService {
     async getList(
         filter: Partial<IBXRequisite>,
         select?: string[],
-        order?: { [key in keyof IBXRequisite]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+        order?: {
+            [key in keyof IBXRequisite]?: 'asc' | 'desc' | 'ASC' | 'DESC';
+        },
     ) {
         return await this.repo.getList(filter, select, order);
     }

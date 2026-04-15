@@ -10,7 +10,7 @@ import { AlfaMigrateBitrixCompanyService } from './bitrix/alfa-migrate-bxcompany
 import { IAlfaParse } from './alfa-parse.service';
 import { Column, Workbook } from 'exceljs';
 import { StorageService, StorageType } from 'src/core/storage';
-import { delay } from 'src/lib/';
+import { delay } from '@/shared/lib';
 import { getCompanies, getDoubles, ICompany } from '../data/get-companies';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class AlfaBitrixService {
 
         private readonly companyService: AlfaMigrateBitrixCompanyService,
         private readonly storageService: StorageService,
-    ) {}
+    ) { }
 
     async migrateToBitrix(domain: string, data: IAlfaParse[]) {
         const { bitrix, PortalModel } = await this.pbx.init(domain);

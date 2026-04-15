@@ -8,12 +8,12 @@ import { UserRepository } from '../repositories/user.repository';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
-import { encrypt, decrypt } from '@/lib/utils/crypt.util';
+import { encrypt, decrypt } from '@/shared/lib/utils/crypt.util';
 import { User } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly userRepository: UserRepository) {}
+    constructor(private readonly userRepository: UserRepository) { }
 
     async createUser(
         createUserDto: CreateUserDto,

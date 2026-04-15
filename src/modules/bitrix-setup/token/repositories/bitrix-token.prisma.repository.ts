@@ -3,7 +3,7 @@ import { PrismaService } from 'src/core/prisma';
 import { BitrixTokenRepository } from './bitrix-token.repository';
 import { BitrixTokenEntity } from '../model/bitrix-token.model';
 import { bitrix_tokens } from 'generated/prisma';
-import { decrypt, encrypt } from '@/lib/utils/crypt.util';
+import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
 import { createBitrixTokenEntityFromPrisma } from '../model/lib/bitrix-token-model.util';
 
 @Injectable()

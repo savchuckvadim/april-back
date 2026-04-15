@@ -5,7 +5,7 @@ import * as https from 'https';
 import { TelegramService } from '../../../telegram/telegram.service';
 import { BxAuthType } from '../../bitrix-service.factory';
 import { Semaphore } from './semaphor';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 
 export class BitrixCore {
     public readonly logger = new Logger(BitrixCore.name);

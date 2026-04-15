@@ -10,7 +10,7 @@ import {
     GetBitrixSecretDto,
 } from '../dto/bitrix-secret.dto';
 import * as crypto from 'crypto';
-import { decrypt, encrypt } from '@/lib/utils/crypt.util';
+import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
 
 /**
  * Bitrix Secret Service

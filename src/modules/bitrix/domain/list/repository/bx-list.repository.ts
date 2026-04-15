@@ -106,10 +106,7 @@ export class BxListRepository {
         );
     }
 
-    async addField(
-        IBLOCK_CODE: string,
-        fields: Record<string, any>,
-    ) {
+    async addField(IBLOCK_CODE: string, fields: Record<string, any>) {
         return await this.bitrixService.call('lists.field.add', {
             IBLOCK_TYPE_ID: 'lists',
             IBLOCK_CODE,

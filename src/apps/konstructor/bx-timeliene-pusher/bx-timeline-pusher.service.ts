@@ -1,4 +1,3 @@
-import { delay } from '@/lib';
 import { BitrixService, IBXTimelineComment } from '@/modules/bitrix';
 import { randomUUID } from 'crypto';
 import { BitrixEntityType } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
@@ -12,25 +11,27 @@ export interface IBxTimelinePusherDto {
 export class BxTimelinePusherService {
     constructor(private readonly bitrix: BitrixService) {}
 
-    public async push(dto: IBxTimelinePusherDto) {
+    public async push(dto: IBxTimelinePusherDto, isError?: boolean) {
         const { companyId, dealId, userId, message } = dto;
         const uuid = randomUUID();
-        await delay(250);
+
         const data: IBXTimelineComment = {
             ENTITY_ID: companyId,
             ENTITY_TYPE: BitrixEntityType.COMPANY,
             COMMENT: `${message}`,
             AUTHOR_ID: userId.toString(),
         };
-
-        if (dto.files) {
-            data.FILES = dto.files;
+        if (isError) {
+            data.COMMENT = `❌ ${message}`;
+        } else {
+            if (dto.files) {
+                data.FILES = dto.files;
+            }
+            this.bitrix.batch.timeline.addTimelineComment(
+                `${uuid}_add_timeline_company_${dto.companyId}`,
+                data,
+            );
         }
-        this.bitrix.batch.timeline.addTimelineComment(
-            `${uuid}_add_timeline_company_${dto.companyId}`,
-            data,
-        );
-
         if (dealId) {
             data.ENTITY_ID = dealId;
             data.ENTITY_TYPE = BitrixEntityType.DEAL;

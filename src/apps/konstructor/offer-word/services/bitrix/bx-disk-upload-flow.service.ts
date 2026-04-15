@@ -1,4 +1,4 @@
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 import { BitrixService } from '@/modules/bitrix';
 import {
     IBXDiskFolderItem,
@@ -13,7 +13,7 @@ export class BxDiskUploadFlowService {
         private readonly portalModel: PortalModel,
         private readonly companyId: number | string,
         private readonly dealId?: number | string,
-    ) {}
+    ) { }
 
     public async upload(files: [string, string][]): Promise<{
         uploadedFiles: IBXDiskFolderItem[];

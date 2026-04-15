@@ -10,7 +10,7 @@ import {
     BXActivityRequestFields,
     IBXActivity,
 } from './interfaces/bx-activity.interface';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 
 export class BxActivityRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) {}

@@ -6,7 +6,7 @@ import { PbxEntityTypePrisma } from '@/shared/enums';
 
 @Injectable()
 export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
     async create(field: Partial<bitrixfields>): Promise<bitrixfields | null> {
         const result = await this.prisma.bitrixfields.create({
@@ -52,6 +52,7 @@ export class BitrixFieldPrismaRepository implements BitrixFieldRepository {
         entityType: PbxEntityTypePrisma,
         entityId: number,
     ): Promise<bitrixfields[] | null> {
+ 
         const result = await this.prisma.bitrixfields.findMany({
             where: {
                 entity_type: entityType,

@@ -38,10 +38,7 @@ export class BxCategoryRepository {
         );
     }
 
-    getListBtch(
-        cmdCode: string,
-        entityTypeId: BitrixOwnerTypeId | string,
-    ) {
+    getListBtch(cmdCode: string, entityTypeId: BitrixOwnerTypeId | string) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,

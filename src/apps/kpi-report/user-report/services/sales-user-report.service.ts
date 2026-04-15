@@ -6,7 +6,7 @@ import { IPBXList } from '@/modules/portal/interfaces/portal.interface';
 import { PortalModel } from '@/modules/portal/services/portal.model';
 // import { EnumOrkFieldCode, OrkFieldsType } from "@/modules/pbx-ork-history-bx-list";
 // import { OrkHistoryFieldItemValueDto, OrkHistoryFieldValueDto, OrkListHistoryItemDto } from "@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto";
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 import { BxListItemGetRequestDto } from '@/modules/bitrix/domain/list-item';
 import { EnumSalesKpiFieldCode } from '@/modules/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import { BitrixFieldType } from '@/apps/konstructor/document-generate/dto/pbx-items.dto';
@@ -21,7 +21,7 @@ import { IBXCompany } from '@/modules/bitrix';
 
 @Injectable()
 export class SalesUserReportService {
-    constructor(private readonly pbx: PBXService) {}
+    constructor(private readonly pbx: PBXService) { }
 
     public async *getReport(dto: SalesUserReportGetRequestDto) {
         const { domain, socketId, userId } = dto;

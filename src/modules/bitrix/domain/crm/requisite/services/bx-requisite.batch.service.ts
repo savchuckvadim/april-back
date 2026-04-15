@@ -20,11 +20,7 @@ export class BxRequisiteBatchService {
         return this.repo.getBtch(cmdCode, id, select);
     }
 
-    getList(
-        cmdCode: string,
-        filter: Partial<IBXRequisite>,
-        select?: string[],
-    ) {
+    getList(cmdCode: string, filter: Partial<IBXRequisite>, select?: string[]) {
         return this.repo.getListBtch(cmdCode, filter, select);
     }
 
@@ -32,11 +28,7 @@ export class BxRequisiteBatchService {
         return this.repo.addBtch(cmdCode, data);
     }
 
-    update(
-        cmdCode: string,
-        id: number | string,
-        data: Partial<IBXRequisite>,
-    ) {
+    update(cmdCode: string, id: number | string, data: Partial<IBXRequisite>) {
         return this.repo.updateBtch(cmdCode, id, data);
     }
 

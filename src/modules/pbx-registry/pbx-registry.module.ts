@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { StorageModule } from '@/core/storage/storage.module';
 import { PbxRegistryService } from './services/pbx-registry.service';
 import { PbxResolverService } from './services/pbx-resolver.service';
 import { PbxRegistryBootstrapService } from './services/pbx-registry-bootstrap.service';
@@ -8,6 +9,7 @@ import { PbxCategoryInstallerService } from './services/installers/pbx-category-
 import { PbxInstallOrchestratorService } from './services/installers/pbx-install-orchestrator.service';
 
 @Module({
+    imports: [StorageModule],
     providers: [
         PbxRegistryService,
         PbxResolverService,

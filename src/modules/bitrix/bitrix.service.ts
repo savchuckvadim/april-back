@@ -175,7 +175,10 @@ export class BitrixService {
     }
     private initCategory() {
         this.category = this.cloner.clone(BxCategoryService, this.api);
-        this.batch.category = this.cloner.clone(BxCategoryBatchService, this.api);
+        this.batch.category = this.cloner.clone(
+            BxCategoryBatchService,
+            this.api,
+        );
     }
     private initStatus() {
         this.status = this.cloner.clone(BxStatusService, this.api);
@@ -194,7 +197,10 @@ export class BitrixService {
     }
     private initRequisite() {
         this.requisite = this.cloner.clone(BxRequisiteService, this.api);
-        this.batch.requisite = this.cloner.clone(BxRequisiteBatchService, this.api);
+        this.batch.requisite = this.cloner.clone(
+            BxRequisiteBatchService,
+            this.api,
+        );
     }
 
     private initList() {

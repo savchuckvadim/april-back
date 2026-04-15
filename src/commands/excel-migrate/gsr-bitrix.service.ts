@@ -16,7 +16,7 @@ import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
 import { gsrMigrateDataDto } from './gsr.nigrate-dto';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 
 @Injectable()
 export class GsrBitrixService {
@@ -29,7 +29,7 @@ export class GsrBitrixService {
         private readonly dealService: GsrMigrateBitrixDealService,
         private readonly productRowService: GsrMigrateBitrixProductRowService,
         private readonly contactService: GsrMigrateBitrixContactService,
-    ) {}
+    ) { }
 
     async migrateToBitrix(
         domain: string,

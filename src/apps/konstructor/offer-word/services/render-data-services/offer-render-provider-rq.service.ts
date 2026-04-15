@@ -58,14 +58,12 @@ export class OfferRenderProviderRqService {
         }
 
         if (myCompanyINN) {
-            myCompanyInfoiceRq += myCompanyInfoiceRq
-                ? `, ${myCompanyINN}`
-                : `${myCompanyINN}`;
+            const inn = `ИНН: ${myCompanyINN}`;
+            myCompanyInfoiceRq += myCompanyInfoiceRq ? `, ${inn}` : `${inn}`;
         }
         if (myCompanyKPP) {
-            myCompanyInfoiceRq += myCompanyInfoiceRq
-                ? `, ${myCompanyKPP}`
-                : `${myCompanyKPP}`;
+            const kpp = `КПП: ${myCompanyKPP}`;
+            myCompanyInfoiceRq += myCompanyInfoiceRq ? `, ${kpp}` : `${kpp}`;
         }
         if (myCompanyAddress) {
             myCompanyInfoiceRq += myCompanyInfoiceRq

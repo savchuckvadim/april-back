@@ -32,53 +32,67 @@ export class OfferWordByTemplateGenerateUseCase {
         const domain = dto.domain;
         const onlyBitrixSave = Boolean(dto.onlyBitrixSave) || true;
 
-        const buildResult = await this.documentBuildService.build(dto);
-        const allDocuments = [buildResult.offer, ...buildResult.invoices];
+        try {
+            const buildResult = await this.documentBuildService.build(dto);
+            const allDocuments = [buildResult.offer, ...buildResult.invoices];
 
-        await this.saveTemplateInDeal(domain, dealId, dto.templateId);
+            await this.saveTemplateInDeal(domain, dealId, dto.templateId);
 
-        const saveResult = await this.bxDocumentSaveFlowService.saveDocuments({
-            domain,
-            companyId: dto.companyId,
-            userId: dto.userId,
-            dealId: dealId.toString(),
-            documents: allDocuments,
-            onlyBitrixSave,
-        });
+            const saveResult =
+                await this.bxDocumentSaveFlowService.saveDocuments({
+                    domain,
+                    companyId: dto.companyId,
+                    userId: dto.userId,
+                    dealId: dealId.toString(),
+                    documents: allDocuments,
+                    onlyBitrixSave,
+                });
 
-        await this.timelineService.sendDocumentToBitrix({
-            domain,
-            companyId: dto.companyId,
-            userId: dto.userId,
-            documents: saveResult.documents,
-            dealId: dealId.toString(),
-            // files: onlyBitrixSave ? saveResult.files : undefined,
-        });
+            await this.timelineService.sendDocumentToBitrix({
+                domain,
+                companyId: dto.companyId,
+                userId: dto.userId,
+                documents: saveResult.documents,
+                dealId: dealId.toString(),
+                // files: onlyBitrixSave ? saveResult.files : undefined,
+            });
 
-        if (onlyBitrixSave) {
-            await this.cleanupLocalFiles(allDocuments.map(d => d.absolutePath));
+            if (onlyBitrixSave) {
+                await this.cleanupLocalFiles(
+                    allDocuments.map(d => d.absolutePath),
+                );
+            }
+
+            const finalOffer =
+                saveResult.documents.find(d => d.type === 'offer') ||
+                buildResult.offer;
+            const finalInvoices = saveResult.documents.filter(
+                d => d.type === 'invoice',
+            );
+
+            await this.offerTemplateService.incrementTemplateCounter(
+                BigInt(dto.templateId),
+            );
+
+            return {
+                template: buildResult.template,
+                link: finalOffer,
+                renderData: buildResult.renderData,
+                invoiceLinks: finalInvoices,
+                portalFolderId: saveResult.portalFolderId || 0,
+            };
+        } catch (error) {
+            await this.timelineService.sendErrorToBitrix({
+                domain,
+                companyId: dto.companyId,
+                userId: dto.userId,
+                documents: [],
+                dealId: dealId.toString(),
+                // files: onlyBitrixSave ? saveResult.files : undefined,
+            });
+            throw error;
         }
-
-        const finalOffer =
-            saveResult.documents.find(d => d.type === 'offer') ||
-            buildResult.offer;
-        const finalInvoices = saveResult.documents.filter(
-            d => d.type === 'invoice',
-        );
-
-        await this.offerTemplateService.incrementTemplateCounter(
-            BigInt(dto.templateId),
-        );
-
-        return {
-            template: buildResult.template,
-            link: finalOffer,
-            renderData: buildResult.renderData,
-            invoiceLinks: finalInvoices,
-            portalFolderId: saveResult.portalFolderId || 0,
-        };
     }
-
     private async saveTemplateInDeal(
         domain: string,
         dealId: number,

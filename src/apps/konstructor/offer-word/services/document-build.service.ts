@@ -117,15 +117,16 @@ export class DocumentBuildService {
 
             if (isPdf) {
                 try {
-                    serverLink =
-                        await this.pdfExportService.buildPublicPdfLink({
+                    serverLink = await this.pdfExportService.buildPublicPdfLink(
+                        {
                             docxAbsolutePath: saved.docxPath,
                             docxFileName: saved.resultFileName,
                             domain: dto.domain,
                             userId: dto.userId,
                             year,
                             type: 'invoice',
-                        });
+                        },
+                    );
                     absolutePath = saved.docxPath.replace(/\.docx$/i, '.pdf');
                 } catch (error) {
                     this.logger.warn(

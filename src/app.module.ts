@@ -49,6 +49,7 @@ import { DocumentSupplyReportModule } from './apps/konstructor/document-supply-r
 import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { InvoiceTemplateModule } from './modules/invoice-template/invoice-template.module';
 import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
+import { PbxRegistryModule } from './modules/pbx-registry';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -138,6 +139,7 @@ import { DocumentCounterModule } from './modules/document-counter/document-count
         InnerDealModule,
         InvoiceTemplateModule,
         DocumentCounterModule,
+        PbxRegistryModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],
