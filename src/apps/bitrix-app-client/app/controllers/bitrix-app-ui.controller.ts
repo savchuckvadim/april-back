@@ -3,13 +3,13 @@ import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
-import { JwtService } from '@nestjs/jwt';
 import { BitrixClientService } from '@/apps/bitrix-app-client/client/services/bitrix-client.service';
 import { BITRIX_APP_CODES } from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
 import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator';
 import { ConfigService } from '@nestjs/config';
 import { CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { InstallAppFromPortalResponseDto } from '../dto/install-app.response.dto';
+import { AuthJwtService } from '../../auth/services/auth-jwt.service';
 
 @ApiTags('Bitrix Setup App UI')
 @Controller('bitrix-app-ui')
@@ -18,7 +18,7 @@ export class BitrixAppUiController {
     constructor(
         private readonly portalService: PortalStoreService,
         private readonly clientService: BitrixClientService,
-        private readonly jwtService: JwtService,
+        private readonly authJwtService: AuthJwtService,
         private readonly bitrixAppService: BitrixAppService,
         private readonly configService: ConfigService,
     ) {
@@ -49,10 +49,10 @@ export class BitrixAppUiController {
                     );
                 if (clientDta) {
                     const { client, ownerUser } = clientDta;
-                    signedJwtToken = this.jwtService.sign({
-                        sub: ownerUser.id,
-                        client_id: client.id,
-                    });
+                    signedJwtToken = this.authJwtService.signAccessToken(
+                        Number(ownerUser.id),
+                        Number(client.id),
+                    );
 
                     let bxApp = await this.bitrixAppService.getApp({
                         domain: domain,

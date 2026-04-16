@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PortalEntity } from './portal.entity';
+import { PortalDto, PortalEntity } from './portal.entity';
 import { PortalRepository } from './portal.repository';
 
 @Injectable()
@@ -36,6 +36,14 @@ export class PortalStoreService {
         clientId: number,
     ): Promise<PortalEntity[] | null> {
         return await this.portalRepository.findByClientId(clientId);
+    }
+
+    async getAuthRootPortalByClientId(
+        clientId: number,
+    ): Promise<PortalDto | null> {
+        const clientPortals = await this.getPortalsByClientId(clientId);
+        const rootPortal = clientPortals?.[0];
+        return rootPortal ? new PortalDto(rootPortal) : null;
     }
 
     async getPortalById(id: number): Promise<PortalEntity | null> {

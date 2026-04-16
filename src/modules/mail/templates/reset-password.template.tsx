@@ -21,37 +21,42 @@ interface ResetPasswordTemplateProps {
     token: string;
 }
 
-const baseUrl = process.env['SITE_URL'];
+const baseUrl =
+    process.env.CLIENT_CABINET_URL ||
+    (process.env.AUTH_COOKIE_SPA_DOMAIN
+        ? `https://${process.env.AUTH_COOKIE_SPA_DOMAIN}`
+        : process.env.SITE_URL || 'http://localhost:3000');
 
 export function ResetPasswordTemplate({
     user,
     token,
 }: ResetPasswordTemplateProps) {
     const logo = `${baseUrl}/touch-icons/512x512.png`;
-    const resetLink = `${baseUrl}/auth/recovery/${token}`;
+    const resetLink = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(token)}`;
 
     return (
-        <Html>
-            <Head>
-                <Font
-                    fontFamily="Geist"
-                    fallbackFontFamily="Arial"
-                    webFont={{
-                        url: 'https://fonts.googleapis.com/css2?family=Geist:wght@300;500;700&display=swap',
-                        format: 'woff2',
-                    }}
-                />
-            </Head>
-            <Tailwind>
+        <Tailwind>
+            <Html>
+                <Head>
+                    <Font
+                        fontFamily="Geist"
+                        fallbackFontFamily="Arial"
+                        webFont={{
+                            url: 'https://fonts.googleapis.com/css2?family=Geist:wght@300;500;700&display=swap',
+                            format: 'woff2',
+                        }}
+                    />
+                </Head>
+
                 <Body>
-                    <Preview>Сброс пароля на TeaCoder</Preview>
+                    <Preview>Сброс пароля на April</Preview>
                     <Container className="mx-auto my-10 max-w-[500px] rounded-lg bg-white p-8 shadow-lg">
                         <Section className="text-center">
                             <Img
                                 src={logo}
                                 width="100"
                                 height="100"
-                                alt="TeaCoder"
+                                alt="April"
                                 className="mx-auto mb-4"
                             />
                             <Heading
@@ -95,13 +100,13 @@ export function ResetPasswordTemplate({
                                 className="mt-6 text-sm text-gray-400"
                                 style={{ fontFamily: 'Geist, Arial' }}
                             >
-                                © {new Date().getFullYear()} TeaCoder. Все
-                                права защищены.
+                                © {new Date().getFullYear()} April. Все права
+                                защищены.
                             </Text>
                         </Section>
                     </Container>
                 </Body>
-            </Tailwind>
-        </Html>
+            </Html>
+        </Tailwind>
     );
 }

@@ -9,6 +9,7 @@ import {
 import { GetPortalAppsDto } from '../dto/get-app.dto';
 import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
 import { EnabledAppDto } from '@/modules/bitrix-setup/app/dto/enaled-app.dto';
+import { CreateAppResponseDto } from '../dto/create-app-response.dto';
 
 @ApiTags('Bitrix App Client App')
 @Controller('bitrix-app-client')
@@ -53,20 +54,26 @@ export class BitrixAppClientController {
         type: [EnabledAppDto],
     })
     @Get('enabled-apps')
-    async getEnabledApps() {
-        return await this.bitrixAppService.getEnabledApps();
+    getEnabledApps() {
+        return this.bitrixAppService.getEnabledApps();
     }
 
     @ApiOperation({ summary: 'Create app' })
     @ApiResponse({
         status: 200,
         description: 'App created',
-        type: BitrixAppDto,
+        type: CreateAppResponseDto,
     })
     @Post('create-app')
-    async createApp(@Body() dto: CreateBitrixAppDto) {
+    async createApp(
+        @Body() dto: CreateBitrixAppDto,
+    ): Promise<CreateAppResponseDto> {
         console.log('createApp dto', dto);
-
-        return await this.bitrixAppService.storeOrUpdateApp(dto);
+        const result = await this.bitrixAppService.storeOrUpdateApp(dto);
+        return new CreateAppResponseDto({
+            app: result.app,
+            secrets: result.secrets ?? null,
+            message: result.message,
+        });
     }
 }

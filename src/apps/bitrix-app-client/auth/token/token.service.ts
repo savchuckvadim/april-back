@@ -4,6 +4,10 @@ import { createHash, randomBytes } from 'crypto';
 
 @Injectable()
 export class TokenService {
+    private readonly userTokenableType = 'User';
+    private readonly refreshTokenName = 'refresh_token';
+    private readonly passwordResetTokenName = 'password_reset';
+
     constructor(private readonly prisma: PrismaService) {}
 
     hashToken(token: string): string {
@@ -12,6 +16,10 @@ export class TokenService {
 
     generateRefreshTokenString(): string {
         return randomBytes(64).toString('hex');
+    }
+
+    generatePasswordResetTokenString(): string {
+        return randomBytes(48).toString('hex');
     }
 
     async saveRefreshToken(
@@ -24,9 +32,9 @@ export class TokenService {
 
         await this.prisma.personal_access_tokens.create({
             data: {
-                tokenable_type: 'User',
+                tokenable_type: this.userTokenableType,
                 tokenable_id: BigInt(userId),
-                name: 'refresh_token',
+                name: this.refreshTokenName,
                 token: hash,
                 expires_at: expiresAt,
                 created_at: new Date(),
@@ -44,7 +52,7 @@ export class TokenService {
         const record = await this.prisma.personal_access_tokens.findFirst({
             where: {
                 token: hash,
-                tokenable_type: 'User',
+                tokenable_type: this.userTokenableType,
                 tokenable_id: BigInt(userId),
             },
         });
@@ -71,8 +79,8 @@ export class TokenService {
         await this.prisma.personal_access_tokens.deleteMany({
             where: {
                 token: hash,
-                tokenable_type: 'User',
-                name: 'refresh_token',
+                tokenable_type: this.userTokenableType,
+                name: this.refreshTokenName,
             },
         });
     }
@@ -80,10 +88,95 @@ export class TokenService {
     async revokeAllUserTokens(userId: number): Promise<void> {
         await this.prisma.personal_access_tokens.deleteMany({
             where: {
-                tokenable_type: 'User',
+                tokenable_type: this.userTokenableType,
                 tokenable_id: BigInt(userId),
-                name: 'refresh_token',
+                name: this.refreshTokenName,
             },
         });
+    }
+
+    async savePasswordResetToken(
+        userId: number,
+        passwordResetToken: string,
+        ttlMinutes = 60,
+    ): Promise<void> {
+        await this.revokeAllPasswordResetTokens(userId);
+
+        const hash = this.hashToken(passwordResetToken);
+        const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+
+        await this.prisma.personal_access_tokens.create({
+            data: {
+                tokenable_type: this.userTokenableType,
+                tokenable_id: BigInt(userId),
+                name: this.passwordResetTokenName,
+                token: hash,
+                expires_at: expiresAt,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    async validatePasswordResetToken(token: string): Promise<number | null> {
+        const record = await this.findValidTokenRecord(
+            token,
+            this.passwordResetTokenName,
+        );
+        if (!record) return null;
+
+        await this.prisma.personal_access_tokens.update({
+            where: { id: record.id },
+            data: { last_used_at: new Date() },
+        });
+
+        return Number(record.tokenable_id);
+    }
+
+    async consumePasswordResetToken(token: string): Promise<number | null> {
+        const record = await this.findValidTokenRecord(
+            token,
+            this.passwordResetTokenName,
+        );
+        if (!record) return null;
+
+        await this.prisma.personal_access_tokens.delete({
+            where: { id: record.id },
+        });
+
+        return Number(record.tokenable_id);
+    }
+
+    async revokeAllPasswordResetTokens(userId: number): Promise<void> {
+        await this.prisma.personal_access_tokens.deleteMany({
+            where: {
+                tokenable_type: this.userTokenableType,
+                tokenable_id: BigInt(userId),
+                name: this.passwordResetTokenName,
+            },
+        });
+    }
+
+    private async findValidTokenRecord(token: string, name: string) {
+        const hash = this.hashToken(token);
+
+        const record = await this.prisma.personal_access_tokens.findFirst({
+            where: {
+                token: hash,
+                tokenable_type: this.userTokenableType,
+                name,
+            },
+        });
+
+        if (!record) return null;
+
+        if (record.expires_at && record.expires_at < new Date()) {
+            await this.prisma.personal_access_tokens.delete({
+                where: { id: record.id },
+            });
+            return null;
+        }
+
+        return record;
     }
 }

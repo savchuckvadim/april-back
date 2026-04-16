@@ -11,10 +11,7 @@ import { Type } from 'class-transformer';
 import {
     BITRIX_APP_CODES,
     BITRIX_APP_GROUPS,
-    BITRIX_APP_STATUSES,
     BITRIX_APP_TYPES,
-    VALID_APP_STATUSES,
-    VALID_APP_TYPES,
 } from '../enums/bitrix-app.enum';
 
 export class EnabledAppPlacementDto {

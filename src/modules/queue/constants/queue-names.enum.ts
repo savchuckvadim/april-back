@@ -3,6 +3,7 @@ export enum QueueNames {
     EVENT = 'event',
     DOCUMENT = 'document',
     TELEGRAM = 'telegram',
+    MAIL = 'mail',
     SILENT = 'silent', // новая универсальная
     SALES_KPI_REPORT = 'sales-kpi-report',
     ORK_KPI_REPORT = 'ork-kpi-report',

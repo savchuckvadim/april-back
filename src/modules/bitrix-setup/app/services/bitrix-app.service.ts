@@ -83,7 +83,7 @@ export class BitrixAppService {
                     domain: dto.domain,
                 });
             }
-
+            console.log('storeOrUpdateApp portal', portal);
             // Create or update app
             const app = await this.repository.storeOrUpdate({
                 portal_id: BigInt(portal!.id),
@@ -142,6 +142,7 @@ export class BitrixAppService {
                 domain: dto.domain,
             });
         }
+        console.log('storeOrUpdateAppWithToken portal', portal);
         const dataForCreateOrUpdateApp: Partial<BitrixAppEntity> = {
             portal_id: BigInt(portal!.id),
             group: dto.group,
@@ -149,6 +150,10 @@ export class BitrixAppService {
             code: dto.code,
             status: dto.status,
         };
+        console.log(
+            'storeOrUpdateAppWithToken dataForCreateOrUpdateApp',
+            dataForCreateOrUpdateApp,
+        );
         // Create without appId
         if (appId) {
             dataForCreateOrUpdateApp.id = appId;
@@ -165,6 +170,7 @@ export class BitrixAppService {
             app.id,
             dto.token,
         );
+        console.log('storeOrUpdateAppWithToken token', token);
 
         return {
             app,
@@ -228,7 +234,9 @@ export class BitrixAppService {
         return apps;
     }
     async getAppsByPortalId(portalId: number): Promise<BitrixAppEntity[]> {
+        console.log('getAppsByPortalId portalId', portalId);
         const apps = await this.repository.findByPortalId(portalId);
+        console.log('getAppsByPortalId apps', apps);
         if (!apps) {
             return [];
         }

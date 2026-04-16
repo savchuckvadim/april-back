@@ -30,10 +30,10 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                     application_token: token.application_token,
                     member_id: token.member_id,
                     updated_at: new Date(),
-                }).filter(([_, v]) => v !== undefined),
+                }).filter(([, v]) => v !== undefined),
             );
 
-            let result;
+            let result: bitrix_tokens | null;
             if (existingToken) {
                 // Update existing token
                 result = await this.prisma.bitrix_tokens.update({
@@ -61,7 +61,7 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                     },
                 });
             }
-            return result as BitrixTokenEntity;
+            return result ? createBitrixTokenEntityFromPrisma(result) : null;
         } catch (error) {
             console.error('Error in storeOrUpdate:', error);
             return null;
@@ -121,7 +121,7 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                 where: { bitrix_app_id: bitrix_app_id },
             });
 
-            let result;
+            let result: bitrix_tokens | null;
             if (existingToken) {
                 // Update existing token
                 result = await this.prisma.bitrix_tokens.update({
@@ -146,6 +146,9 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                         refresh_token: encrypt('__PENDING__'),
                         created_at: new Date(),
                         updated_at: new Date(),
+                        expires_at: new Date(
+                            Date.now() + 1000 * 60 * 60 * 24 * 10, // 10 days
+                        ), // 10 days
                     },
                     include: {
                         bitrix_apps: true,
@@ -173,7 +176,7 @@ export class BitrixTokenPrismaRepository implements BitrixTokenRepository {
                 where: { bitrix_app_id: bitrix_app_id },
             });
 
-            let result;
+            let result: bitrix_tokens | null;
             if (existingToken) {
                 // Update existing token
                 result = await this.prisma.bitrix_tokens.update({

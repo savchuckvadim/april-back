@@ -12,4 +12,7 @@ export const jwtConstants = {
     refreshExpiresIn: (process.env.REFRESH_TOKEN_TTL ||
         '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`,
     refreshTtlDays: 7,
+    passwordResetTtlMinutes: Number(
+        process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES || 60,
+    ),
 };

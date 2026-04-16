@@ -13,7 +13,7 @@ import { User } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly userRepository: UserRepository) { }
+    constructor(private readonly userRepository: UserRepository) {}
 
     async createUser(
         createUserDto: CreateUserDto,

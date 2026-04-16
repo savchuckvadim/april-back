@@ -2,23 +2,21 @@ import React from 'react';
 
 import {
     Body,
-    Button,
     Container,
     Font,
     Head,
     Heading,
     Html,
-    Img,
     Preview,
     Section,
     Tailwind,
     Text,
 } from '@react-email/components';
 
-interface EmailOfferTemplateProps {
-    email: string;
-    hasLogo?: boolean;
-}
+// interface EmailOfferTemplateProps {
+//     email: string;
+//     hasLogo?: boolean;
+// }
 
 export function EmailOfferTemplate() {
     return (

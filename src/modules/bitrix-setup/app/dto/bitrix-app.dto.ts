@@ -2,24 +2,19 @@ import {
     IsString,
     IsOptional,
     IsNotEmpty,
-    IsIn,
     ValidateNested,
     IsEnum,
-    IsNumber,
 } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BitrixTokenDto, BitrixTokenEntity } from '../../token';
+import { BitrixTokenDto } from '../../token';
 import { Type } from 'class-transformer';
 import {
     BITRIX_APP_CODES,
     BITRIX_APP_GROUPS,
     BITRIX_APP_STATUSES,
     BITRIX_APP_TYPES,
-    VALID_APP_STATUSES,
-    VALID_APP_TYPES,
 } from '../enums/bitrix-app.enum';
-import { CreateBitrixSecretDto } from '../../secret/dto/bitrix-secret.dto';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
 import { PortalDto } from '@/modules/portal-konstructor/portal/portal.entity';
 
@@ -171,7 +166,7 @@ export class UpdateBitrixAppDto {
 }
 
 export class BitrixAppDto {
-    constructor(app: BitrixAppEntity, portal: PortalDto) {
+    constructor(app: BitrixAppEntity, portal: PortalDto | undefined) {
         this.id = String(app?.id) || '';
         this.created_at = app.created_at;
         this.updated_at = app.updated_at;

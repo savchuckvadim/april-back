@@ -2,6 +2,8 @@ import { Controller, Get, ParseEnumPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PbxRegistryService } from '@/modules/pbx-registry';
 import { PbxEntityType } from '@/shared/enums';
+import { BitrixFieldResponseDto } from '../dto/bitrixfield-response.dto';
+import { PbxFieldDefinitionDto } from '@/modules/pbx-registry/dto/pbx-definition.dto';
 
 /**
  * «Инициализационные» поля берутся из pbx-registry: для каждого поля в шаблоне
@@ -17,7 +19,11 @@ export class BitrixFieldInitDataController {
     @ApiOperation({
         summary: 'Список групп реестра (sales, service, rpa, …)',
     })
-    @ApiResponse({ status: 200, description: 'Группы с количеством полей' })
+    @ApiResponse({
+        status: 200,
+        description: 'Группы с количеством полей',
+        type: [BitrixFieldResponseDto],
+    })
     listRegistryGroups() {
         return this.registry.getAllGroups().map(g => ({
             group: g.group,
@@ -44,7 +50,11 @@ export class BitrixFieldInitDataController {
         description:
             'Опционально: только группа реестра (например sales-event). Без параметра — все группы.',
     })
-    @ApiResponse({ status: 200, description: 'Список определений полей' })
+    @ApiResponse({
+        status: 200,
+        description: 'Список определений полей',
+        type: [PbxFieldDefinitionDto],
+    })
     getInstallableFieldDefinitions(
         @Query('entityType', new ParseEnumPipe(PbxEntityType))
         entityType: PbxEntityType,

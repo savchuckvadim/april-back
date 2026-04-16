@@ -7,6 +7,7 @@ import { BitrixPlacementRepository } from '../repositories/bitrix-placement.repo
 import { BitrixPlacementEntity } from '../model/bitrix-placement.model';
 import { CreateBitrixPlacementDto } from '../dto/bitrix-placement.dto';
 import { PrismaService } from 'src/core/prisma';
+import { getErrorString } from '@/shared';
 
 @Injectable()
 export class BitrixPlacementService {
@@ -59,7 +60,7 @@ export class BitrixPlacementService {
             };
         } catch (error) {
             throw new BadRequestException(
-                `Failed to store placements: ${error.message}`,
+                `Failed to store placements: ${getErrorString(error)}`,
             );
         }
     }

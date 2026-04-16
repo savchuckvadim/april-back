@@ -1,6 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { BitrixSettingRepository } from '../repositories/bitrix-setting.repository';
-import { BitrixSettingEntity } from '../model/bitrix-setting.model';
+import {
+    BitrixSettingEntity,
+    BitrixSettingResponseEntity,
+    BitrixSettingResponseValue,
+} from '../model/bitrix-setting.model';
 import {
     CreateBitrixSettingDto,
     UpdateBitrixSettingDto,
@@ -39,7 +43,7 @@ export class BitrixSettingService {
     async getSettingsBySettingable(
         settingableId: bigint,
         settingableType: string,
-    ): Promise<BitrixSettingEntity[]> {
+    ): Promise<BitrixSettingResponseEntity[]> {
         const settings = await this.repository.findBySettingable(
             settingableId,
             settingableType,
@@ -58,7 +62,7 @@ export class BitrixSettingService {
     async updateSetting(
         id: bigint,
         dto: UpdateBitrixSettingDto,
-    ): Promise<BitrixSettingEntity> {
+    ): Promise<BitrixSettingResponseEntity> {
         const processedValue = dto.value
             ? this.processSettingValue(dto.value, dto.type)
             : undefined;
@@ -112,10 +116,11 @@ export class BitrixSettingService {
     }
 
     private processSettingValueForResponse(
-        value: string | undefined,
+        value: string | BitrixSettingResponseValue | undefined,
         type?: string,
-    ): any {
+    ): BitrixSettingResponseValue | undefined {
         if (!value) return undefined;
+        if (typeof value !== 'string') return value;
 
         switch (type) {
             case BitrixSettingType.CHECKBOX:
@@ -124,7 +129,7 @@ export class BitrixSettingService {
                 return isNaN(Number(value)) ? null : Number(value);
             case BitrixSettingType.JSON:
                 try {
-                    return JSON.parse(value);
+                    return JSON.parse(value) as BitrixSettingResponseValue;
                 } catch {
                     return value;
                 }

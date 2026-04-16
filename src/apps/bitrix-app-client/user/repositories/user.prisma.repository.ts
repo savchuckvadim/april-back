@@ -6,7 +6,7 @@ import { encrypt } from '@/shared/lib/utils/crypt.util';
 
 @Injectable()
 export class UserPrismaRepository implements UserRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(user: Partial<User>): Promise<User | null> {
         try {

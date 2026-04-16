@@ -34,6 +34,8 @@ export class BitrixAppClientService {
         const apps = await this.bitrixAppService.getAppsByPortalId(
             dto.portalId,
         );
+        console.log('getPortalApps dto', dto);
+        console.log('getPortalApps apps', apps);
         return apps.map(app => toBitrixAppDto(app));
     }
 

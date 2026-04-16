@@ -46,6 +46,9 @@ export class BitrixClientService {
         );
 
         //for test
+        //пока разработка если находит портал, то привязывается к нему
+        // в дальнейшем такое недопсустимо при регистрации
+        // при существо вании портала - будет ошибка такой портал уже зареган
         const rootClientPortal = portalId
             ? await this.portalService.update({
                   id: portalId.toString(),

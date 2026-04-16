@@ -9,8 +9,8 @@ import {
     CreateBitrixSecretDto,
     GetBitrixSecretDto,
 } from '../dto/bitrix-secret.dto';
-import * as crypto from 'crypto';
 import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
+import { getErrorString } from '@/shared';
 
 /**
  * Bitrix Secret Service
@@ -51,7 +51,7 @@ export class BitrixSecretService {
             };
         } catch (error) {
             throw new BadRequestException(
-                `Failed to store or update secret: ${error.message}`,
+                `Failed to store or update secret: ${getErrorString(error)}`,
             );
         }
     }

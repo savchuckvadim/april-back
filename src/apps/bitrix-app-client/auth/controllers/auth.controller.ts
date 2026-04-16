@@ -8,30 +8,29 @@ import {
     Post,
     Req,
     Res,
-    UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
     ClientRegistrationRequestDto,
     ClientAuthResponseDto,
+    ForgotPasswordDto,
     GetAllClientsUsersDto,
     LoginDto,
     AuthResponseDto,
     LogoutResponseDto,
     MeResponseDto,
+    ResendConfirmationDto,
+    ResetPasswordDto,
+    ResetPasswordTokenStatusDto,
 } from '../dto/auth.dto';
 import { AuthGuard } from '../guard/jwt-auth.guard';
 import { RefreshGuard } from '../guard/jwt-refresh.guard';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
 import { UserService } from '../../user/services/user.service';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
-
-interface AuthRequest extends Request {
-    user: { sub: number; client_id: number };
-    refreshToken?: string;
-}
+import { AuthRequest } from '../interfaces/auth-request.interface';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -119,7 +118,11 @@ export class AuthController {
         return this.authService.confirmClientEmail(token);
     }
 
-    @ApiOperation({ summary: 'Resend confirmation' })
+    @ApiOperation({
+        summary: 'Resend email confirmation link',
+        description:
+            'Повторно отправляет письмо с подтверждением email для пользователя, который еще не завершил подтверждение почты.',
+    })
     @ApiResponse({
         status: 200,
         description: 'Confirmation resent',
@@ -127,9 +130,48 @@ export class AuthController {
     })
     @Post('resend-confirmation')
     async resendConfirmation(
-        @Body('email') email: string,
+        @Body() dto: ResendConfirmationDto,
     ): Promise<LogoutResponseDto> {
-        return this.authService.resendConfirmation(email);
+        return this.authService.resendConfirmation(dto.email);
+    }
+
+    @ApiOperation({ summary: 'Request password reset email' })
+    @ApiResponse({
+        status: 200,
+        description: 'Password reset email requested',
+        type: LogoutResponseDto,
+    })
+    @Post('forgot-password')
+    async forgotPassword(
+        @Body() dto: ForgotPasswordDto,
+    ): Promise<LogoutResponseDto> {
+        return this.authService.requestPasswordReset(dto.email);
+    }
+
+    @ApiOperation({ summary: 'Validate password reset token' })
+    @ApiResponse({
+        status: 200,
+        description: 'Password reset token status',
+        type: ResetPasswordTokenStatusDto,
+    })
+    @Get('reset-password/validate/:token')
+    async validateResetPasswordToken(
+        @Param('token') token: string,
+    ): Promise<ResetPasswordTokenStatusDto> {
+        return this.authService.validatePasswordResetToken(token);
+    }
+
+    @ApiOperation({ summary: 'Reset password using token' })
+    @ApiResponse({
+        status: 200,
+        description: 'Password updated successfully',
+        type: LogoutResponseDto,
+    })
+    @Post('reset-password')
+    async resetPassword(
+        @Body() dto: ResetPasswordDto,
+    ): Promise<LogoutResponseDto> {
+        return this.authService.resetPassword(dto);
     }
 
     @ApiOperation({ summary: 'Get current user and client' })
@@ -141,13 +183,7 @@ export class AuthController {
     @Get('me')
     @UseGuards(AuthGuard)
     async me(@Req() req: AuthRequest): Promise<MeResponseDto> {
-        const user = await this.authService.validateUserById(req.user.sub);
-        if (!user) throw new UnauthorizedException('User not found');
-        const client = await this.authService.validateClientById(
-            req.user.client_id,
-        );
-        if (!client) throw new UnauthorizedException('Client not found');
-        return { user, client };
+        return await this.authService.getMe(req.user.sub, req.user.client_id);
     }
 
     @ApiOperation({ summary: 'Delete client' })

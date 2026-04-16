@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {
     Body,
     Button,
@@ -8,7 +6,6 @@ import {
     Head,
     Heading,
     Html,
-    Img,
     Preview,
     Section,
     Tailwind,
@@ -27,8 +24,6 @@ export function TestTemplate({
     userName,
     text,
 }: EmailVerificationTemplateProps) {
-    const logo = `${baseUrl}/touch-icons/512x512.png`;
-
     return (
         <Tailwind>
             <Html>

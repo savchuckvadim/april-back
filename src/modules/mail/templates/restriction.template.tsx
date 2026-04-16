@@ -1,33 +1,23 @@
-import React from 'react';
-
 import {
     Body,
-    Container,
     Font,
     Head,
-    Heading,
     Html,
-    Img,
     Preview,
-    Section,
     Tailwind,
-    Text,
 } from '@react-email/components';
-import { User } from 'generated/prisma';
+// import { User } from 'generated/prisma';
 
-interface RestrictionTemplateProps {
-    user: User;
-    // restriction: Restriction
-    violations: number;
-}
+// interface RestrictionTemplateProps {
+//     user: User;
+//     // restriction: Restriction
+//     violations: number;
+// }
 
-const baseUrl = process.env['SITE_URL'];
-
-export function RestrictionTemplate({
-    user,
-    violations,
-}: RestrictionTemplateProps) {
-    const logo = `${baseUrl}/touch-icons/512x512.png`;
+// const baseUrl = process.env['SITE_URL'];
+// оповещение о нарушениях
+export function RestrictionTemplate() {
+    // const logo = `${baseUrl}/touch-icons/512x512.png`;
 
     // const isUsernameBan = restriction.reason === RestrictionReason.INAPPROPRIATE_USERNAME;
 

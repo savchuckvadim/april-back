@@ -12,3 +12,15 @@ export interface BitrixSettingEntity {
     value?: string;
     settingable?: any; // Polymorphic relation
 }
+
+export type BitrixSettingResponseValue =
+    | string
+    | number
+    | boolean
+    | null
+    | Record<string, unknown>
+    | unknown[];
+
+export type BitrixSettingResponseEntity = Omit<BitrixSettingEntity, 'value'> & {
+    value?: BitrixSettingResponseValue;
+};

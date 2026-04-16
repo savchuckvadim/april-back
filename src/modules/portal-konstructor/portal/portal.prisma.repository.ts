@@ -108,8 +108,9 @@ export class PortalPrismaRepository implements PortalRepository {
     }
     async findByClientId(clientId: number): Promise<PortalEntity[] | null> {
         const result = await this.prisma.portal.findMany({
-            where: { client_id: BigInt(clientId) },
+            where: { client_id: BigInt(clientId.toString()) },
         });
+        console.log('portals findByClientId result', result);
         if (!result) return null;
         return result.map(portal => createPortalEntityFromPrisma(portal));
     }

@@ -11,8 +11,10 @@ import {
     ClientAuthResponseDto,
     LoginDto,
     AuthResponseDto,
+    MeResponseDto,
+    ResetPasswordDto,
+    ResetPasswordTokenStatusDto,
 } from '../dto/auth.dto';
-import { JwtService } from '@nestjs/jwt';
 import { MailConfirmationService } from './mail.service';
 import { UserService } from '../../user/services/user.service';
 import { compare } from '@/shared/lib/utils/crypt.util';
@@ -22,6 +24,8 @@ import { User } from 'generated/prisma';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { TokenService } from '../token/token.service';
 import { jwtConstants } from '../constants/jwt.constants';
+import { AuthJwtService } from './auth-jwt.service';
+import { AuthJwtPayload } from '../interfaces/auth-jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -29,11 +33,11 @@ export class AuthService {
         private readonly clientService: BitrixClientService,
         private readonly userService: UserService,
         private readonly portalService: PortalStoreService,
-        private readonly jwtService: JwtService,
+        private readonly authJwtService: AuthJwtService,
         private readonly mailer: MailConfirmationService,
         private readonly cookieService: CookieService,
         private readonly tokenService: TokenService,
-    ) { }
+    ) {}
 
     async registerClient(
         dto: ClientRegistrationRequestDto,
@@ -53,6 +57,7 @@ export class AuthService {
         );
 
         const portalId = existingPortal?.id;
+
         const client = await this.clientService.registrationClient(
             dto,
             Number(portalId),
@@ -61,9 +66,9 @@ export class AuthService {
         const owner = client.ownerUser;
         if (!owner) throw new BadRequestException('Owner did not created');
 
-        const token = this.jwtService.sign(
-            { email: dto.email },
-            { secret: jwtConstants.accessSecret, expiresIn: '24h' },
+        const token = this.authJwtService.signEmailConfirmationToken(dto.email);
+        const portal = await this.portalService.getAuthRootPortalByClientId(
+            Number(client.client.id),
         );
         await this.mailer.sendEmailConfirmation(owner, token);
 
@@ -72,13 +77,12 @@ export class AuthService {
             message: 'Client registered, please confirm email',
             client: client.clientDto,
             owner: this.userService.getUserDto(owner) ?? null,
+            portal: portal,
         };
     }
 
     async confirmClientEmail(token: string) {
-        const payload = this.jwtService.verify<{ email: string }>(token, {
-            secret: jwtConstants.accessSecret,
-        });
+        const payload = this.authJwtService.verifyEmailConfirmationToken(token);
         const user = await this.userService.findUserByEmail(payload.email);
         await this.userService.updateUserByEmail(payload.email, {
             email_verified_at: new Date(),
@@ -91,9 +95,7 @@ export class AuthService {
     }
 
     async confirmUserEmail(token: string) {
-        const payload = this.jwtService.verify<{ email: string }>(token, {
-            secret: jwtConstants.accessSecret,
-        });
+        const payload = this.authJwtService.verifyEmailConfirmationToken(token);
         await this.userService.updateUserByEmail(payload.email, {
             email_verified_at: new Date(),
         });
@@ -113,14 +115,37 @@ export class AuthService {
         if (!client?.is_active)
             throw new ForbiddenException('Client is inactive');
 
+        const portalDto = await this.portalService.getAuthRootPortalByClientId(
+            userDto.client_id,
+        );
+        if (!portalDto) {
+            throw new ForbiddenException('Portal not found');
+        }
+        if (portalDto.domain !== dto.domain) {
+            throw new ForbiddenException('Не верный domain');
+        }
+
         await this.issueTokens(res, userDto.id, userDto.client_id);
-        console.log('userDto', userDto);
-        console.log('client', client);
-        return { user: userDto, client };
+
+        return {
+            user: userDto,
+            client,
+            portal: portalDto,
+        };
+    }
+    async getMe(userId: number, clientId: number): Promise<MeResponseDto> {
+        const user = await this.validateUserById(userId);
+        if (!user) throw new UnauthorizedException('User not found');
+        const client = await this.validateClientById(clientId);
+        if (!client) throw new UnauthorizedException('Client not found');
+        const portal =
+            await this.portalService.getAuthRootPortalByClientId(clientId);
+
+        return { user, client, portal };
     }
 
     async refresh(
-        jwtPayload: { sub: number; client_id: number },
+        jwtPayload: AuthJwtPayload,
         oldRefreshToken: string,
         res: Response,
     ): Promise<AuthResponseDto> {
@@ -134,12 +159,14 @@ export class AuthService {
         if (!client) throw new ForbiddenException('Client not found');
 
         await this.issueTokens(res, userDto.id, userDto.client_id);
-
-        return { user: userDto, client };
+        const portal = await this.portalService.getAuthRootPortalByClientId(
+            userDto.client_id,
+        );
+        return { user: userDto, client, portal };
     }
 
     async logout(
-        user: { sub: number },
+        user: Pick<AuthJwtPayload, 'sub'>,
         refreshToken: string | undefined,
         res: Response,
     ) {
@@ -153,10 +180,7 @@ export class AuthService {
     }
 
     async resendConfirmation(email: string) {
-        const token = this.jwtService.sign(
-            { email },
-            { secret: jwtConstants.accessSecret, expiresIn: '24h' },
-        );
+        const token = this.authJwtService.signEmailConfirmationToken(email);
         const user = await this.userService.findUserByEmail(email);
         if (!user) throw new NotFoundException('User not found');
 
@@ -164,15 +188,58 @@ export class AuthService {
         return { message: 'Confirmation email resent' };
     }
 
-    generateToken(userId: number, clientId: number) {
-        return this.generateAccessToken(userId, clientId);
+    async requestPasswordReset(email: string) {
+        const user = await this.userService.findUserByEmail(email);
+
+        if (user?.email) {
+            const resetToken =
+                this.tokenService.generatePasswordResetTokenString();
+            await this.tokenService.savePasswordResetToken(
+                Number(user.id),
+                resetToken,
+                jwtConstants.passwordResetTtlMinutes,
+            );
+            await this.mailer.sendPasswordReset(user, resetToken);
+        }
+
+        return {
+            message:
+                'If an account with this email exists, password reset instructions have been sent',
+        };
     }
 
-    verifyToken(token: string): { sub: number; client_id: number } {
-        return this.jwtService.verify<{ sub: number; client_id: number }>(
-            token,
-            { secret: jwtConstants.accessSecret },
+    async validatePasswordResetToken(
+        token: string,
+    ): Promise<ResetPasswordTokenStatusDto> {
+        const userId =
+            await this.tokenService.validatePasswordResetToken(token);
+        return { valid: userId !== null };
+    }
+
+    async resetPassword(dto: ResetPasswordDto) {
+        const userId = await this.tokenService.consumePasswordResetToken(
+            dto.token,
         );
+
+        if (!userId) {
+            throw new UnauthorizedException('Invalid or expired reset token');
+        }
+
+        await this.userService.updateUser(userId, {
+            password: dto.password,
+        });
+        await this.tokenService.revokeAllUserTokens(userId);
+        await this.tokenService.revokeAllPasswordResetTokens(userId);
+
+        return { message: 'Password updated successfully' };
+    }
+
+    generateToken(userId: number, clientId: number) {
+        return this.authJwtService.signAccessToken(userId, clientId);
+    }
+
+    verifyToken(token: string): Promise<AuthJwtPayload> {
+        return this.authJwtService.verifyAccessToken(token);
     }
 
     async validateUserById(userId: number) {
@@ -199,33 +266,19 @@ export class AuthService {
         return await this.userService.findUsersByClientId(clientId);
     }
 
-    private generateAccessToken(userId: number, clientId: number): string {
-        return this.jwtService.sign(
-            { sub: userId, client_id: clientId },
-            {
-                secret: jwtConstants.accessSecret,
-                expiresIn: jwtConstants.accessExpiresIn,
-            },
-        );
-    }
-
-    private generateRefreshJwt(userId: number, clientId: number): string {
-        return this.jwtService.sign(
-            { sub: userId, client_id: clientId },
-            {
-                secret: jwtConstants.refreshSecret,
-                expiresIn: jwtConstants.refreshExpiresIn,
-            },
-        );
-    }
-
     private async issueTokens(
         res: Response,
         userId: number,
         clientId: number,
     ): Promise<void> {
-        const accessToken = this.generateAccessToken(userId, clientId);
-        const refreshJwt = this.generateRefreshJwt(userId, clientId);
+        const accessToken = this.authJwtService.signAccessToken(
+            userId,
+            clientId,
+        );
+        const refreshJwt = this.authJwtService.signRefreshToken(
+            userId,
+            clientId,
+        );
 
         await this.tokenService.saveRefreshToken(
             userId,

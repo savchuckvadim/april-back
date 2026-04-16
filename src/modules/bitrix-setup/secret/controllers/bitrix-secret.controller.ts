@@ -14,6 +14,7 @@ import {
     CreateBitrixSecretDto,
     GetBitrixSecretDto,
 } from '../dto/bitrix-secret.dto';
+import { getErrorDetails } from '@/shared';
 
 @Controller('bitrix-secret')
 export class BitrixSecretController {
@@ -43,8 +44,7 @@ export class BitrixSecretController {
                     error: 'Bitrix App Secret failed',
                     details: {
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,
@@ -73,8 +73,7 @@ export class BitrixSecretController {
                     error: 'Bitrix App Secret not found',
                     details: {
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.NOT_FOUND,

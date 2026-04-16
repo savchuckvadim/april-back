@@ -4,22 +4,15 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { jwtConstants } from '../constants/jwt.constants';
 import { TokenService } from '../token/token.service';
-
-interface JwtPayload {
-    sub: number;
-    client_id: number;
-}
-
-type AuthRequest = Request & { user: JwtPayload; refreshToken: string };
+import { AuthJwtService } from '../services/auth-jwt.service';
+import { AuthRequest } from '../interfaces/auth-request.interface';
 
 @Injectable()
 export class RefreshGuard implements CanActivate {
     constructor(
-        private readonly jwtService: JwtService,
+        private readonly authJwtService: AuthJwtService,
         private readonly tokenService: TokenService,
     ) {}
 
@@ -32,12 +25,8 @@ export class RefreshGuard implements CanActivate {
         }
 
         try {
-            const payload = await this.jwtService.verifyAsync<JwtPayload>(
-                refreshToken,
-                {
-                    secret: jwtConstants.refreshSecret,
-                },
-            );
+            const payload =
+                await this.authJwtService.verifyRefreshToken(refreshToken);
 
             const isValid = await this.tokenService.validateRefreshToken(
                 refreshToken,
