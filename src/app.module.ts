@@ -51,7 +51,7 @@ import { InvoiceTemplateModule } from './modules/invoice-template/invoice-templa
 import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
 import { PbxRegistryModule } from './modules/pbx-registry';
 import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
-import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
+// import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
 import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
@@ -144,7 +144,7 @@ import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls
         DocumentCounterModule,
         PbxRegistryModule,
         CommandSmartActGsrModule,
-        BitrixImBridgeModule,
+        // BitrixImBridgeModule, //только для сервера с телеграмом
         MissedCallsTodoModule,
     ],
     controllers: [AppController, HealthController],

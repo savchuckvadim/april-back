@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+// import { Cron, CronExpression } from '@nestjs/schedule';
 import { BitrixImBridgeConfigService } from '../config/bitrix-im-bridge-config.service';
 import { PollScheduledDomainsUseCase } from '../../usecases/poll-scheduled-domains.use-case';
 
@@ -12,7 +12,7 @@ export class BitrixImBridgeCronService {
         private readonly config: BitrixImBridgeConfigService,
     ) {}
 
-    @Cron(CronExpression.EVERY_HOUR, { timeZone: 'Europe/Moscow' })
+    // @Cron(CronExpression.EVERY_HOUR, { timeZone: 'Europe/Moscow' })
     async pollScheduledDomains(): Promise<void> {
         if (!this.config.isSchedulerEnabled()) {
             return;
