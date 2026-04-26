@@ -22,6 +22,7 @@ import {
     BxItemSchema,
     TimelineCommentSchema,
     RequisiteSchema,
+    ActivityTodoSchema,
 } from 'src/modules/bitrix/';
 
 import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
@@ -31,6 +32,8 @@ import { BxListItemSchema } from '@/modules/bitrix/domain/list-item/schema/bx-li
 import { RecentSchema } from '@/modules/bitrix/domain/chat/recent/schema/bx-recent.schema';
 import { MessageSchema } from '@/modules/bitrix/domain/chat/message/schema/bx-message.schema';
 import { DialogSchema } from '@/modules/bitrix/domain/chat/dialog/schema/bx-dialog.schema';
+import { DialogMessageSchema } from '@/modules/bitrix/domain/chat/dialog-message/schema/bx-dialog-message.schema';
+import { ImV2EventSchema } from '@/modules/bitrix/domain/chat/im-v2-event/schema/bx-im-v2-event.schema';
 import {
     BxDiskFileSchema,
     BxDiskFolderSchema,
@@ -52,6 +55,7 @@ export type BXApiSchema = {
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;
         [EBXEntity.REQUISITE]: RequisiteSchema;
+        [EBXEntity.ACTIVITY_TODO]: ActivityTodoSchema;
     };
     [EBxNamespace.RPA]: {
         [EBXEntity.ITEM]: BxRpaItemSchema;
@@ -86,5 +90,9 @@ export type BXApiSchema = {
         [EBXEntity.MESSAGE]: MessageSchema;
         [EBXEntity.CHAT]: DialogSchema;
         [EBXEntity.DIALOG]: DialogSchema;
+        [EBXEntity.DIALOG_MESSAGES]: DialogMessageSchema;
+    };
+    [EBxNamespace.IMV2]: {
+        [EBXEntity.EVENT]: ImV2EventSchema;
     };
 };

@@ -4,11 +4,6 @@ import { BxDealService } from './services/bx-deal.service';
 import { BxDealBatchService } from './services/bx-deal.batch.service';
 
 @Module({
-    // imports: [BitrixCoreModule],
-    // providers: [
-    //     // BxDealService,
-    //     // BxDealBatchService
-    // ],
     exports: [BxDealService, BxDealBatchService],
 })
 export class BitrixDealDomainModule {}

@@ -20,6 +20,7 @@ import {
     PbxDealCategoryCodeEnum,
     PbxDealsData,
 } from './types/deals/portal.deal.type';
+import { SmartType } from './types/smart/smart.type';
 
 // @Injectable()
 export class PortalModel {
@@ -28,7 +29,7 @@ export class PortalModel {
     constructor(
         private readonly portal: IPortal,
         private readonly telegramService: TelegramService,
-    ) {}
+    ) { }
 
     getPortal(): IPortal {
         return this.portal;
@@ -127,7 +128,8 @@ export class PortalModel {
         const field = this.portal.deals[0].bitrixfields.find(
             field => field.code === code,
         );
-        return `UF_CRM_${field?.bitrixId}` || '';
+        if (!field) return '';
+        return `UF_CRM_${field.bitrixId}`;
     }
     getDealFieldItemByCode(code: string): IFieldItem | undefined {
         for (const field of this.portal.deals[0].bitrixfields || []) {
@@ -252,7 +254,7 @@ export class PortalModel {
         return this.portal.bx_rq?.find(preset => preset.code === code);
     }
 
-    getSmartByType(type: 'service_offer' | 'service_month' | 'presentation') {
+    getSmartByType(type: SmartType) {
         return this.portal.smarts?.find(smart => smart.type === type);
     }
 

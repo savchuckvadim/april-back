@@ -7,7 +7,6 @@ import {
     IBXSmartFullType,
     IBXSmartType,
 } from '../interface/smart-type.interface';
-import { IBXStatus } from '../../status/interface/bx-status.interface';
 import {
     SmartTypeGetByEntityTypeIdRequestDto,
     SmartTypeGetRequestDto,

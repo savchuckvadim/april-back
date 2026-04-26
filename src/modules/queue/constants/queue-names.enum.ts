@@ -14,6 +14,7 @@ export enum QueueNames {
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',
+    SERVICE_DEALS_ORDER = 'service-deals-order',
 
     /** Offer Word: PDF в Redis, файлы на диске не храним */
     OFFER_WORD_EPHEMERAL_PDF = 'offer-word-ephemeral-pdf',

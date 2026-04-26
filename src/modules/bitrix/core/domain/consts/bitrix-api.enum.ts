@@ -1,5 +1,6 @@
 export enum EBxNamespace {
     CRM = 'crm',
+    IMV2 = 'im.v2',
     TASKS = 'tasks',
     LISTS = 'lists',
     CRM_ITEM = 'crm.item',
@@ -14,8 +15,13 @@ export enum EBxNamespace {
 
 export enum EBxMethod {
     ADD = 'add',
+    SUBSCRIBE = 'subscribe',
     SET = 'set',
     UPDATE = 'update',
+    UPDATE_COLOR = 'updateColor',
+    UPDATE_DEADLINE = 'updateDeadline',
+    UPDATE_DESCRIPTION = 'updateDescription',
+    UPDATE_RESPONSIBLE_USER = 'updateResponsibleUser',
     GET = 'get',
 
     USER_FIELD_LIST = 'userfield.list',
@@ -49,7 +55,6 @@ export enum EBxMethod {
     FIELD_ADD = 'field.add',
     FIELD_UPDATE = 'field.update',
     FIELD_DELETE = 'field.delete',
-    FIELD_GET_ALL = 'field.get',
 
     // CRM enum
     ENUM_OWNER_TYPE = 'enum.ownertype',

@@ -9,11 +9,7 @@ import { IBXDeal } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxDealRepository {
-    // private bxApi: BitrixBaseApi;
-    constructor(private readonly bxApi: BitrixBaseApi) {
-        // this.bxApi = this.bxApiFactoryService.getBitrixApi();
-    }
-
+    constructor(private readonly bxApi: BitrixBaseApi) {}
     async get(dealId: number, select?: string[]) {
         return await this.bxApi.callType(
             EBxNamespace.CRM,

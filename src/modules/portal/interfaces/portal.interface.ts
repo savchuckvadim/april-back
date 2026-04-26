@@ -56,6 +56,8 @@ export type IFieldCode =
     | 'supply_date'
     | 'sales_kpi_event_date'
     | 'sales_kpi_event_type'
+    | 'contract_start'
+    | 'contract_end'
     | string;
 export interface IPCategory {
     id: number;

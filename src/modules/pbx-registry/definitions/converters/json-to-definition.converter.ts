@@ -6,11 +6,13 @@ import {
     PbxStageDefinition,
     PbxSmartDefinition,
     PbxRpaDefinition,
+    PbxSmartInstallSettings,
+    PbxSmartTypeRelationsDefinition,
 } from '../../interfaces';
 
 /**
- * Legacy field shape from Google Apps Script JSON.
- * Covers both `items` (event-style) and `list` (konstructor/smart-style) formats.
+ * Field shape from source JSON.
+ * Covers both `items` and `list` item collections.
  */
 interface RawField {
     code: string;
@@ -26,10 +28,16 @@ interface RawField {
     deal?: string | number;
     smart?: string | number;
     rpa?: string | number;
+    rpas?: unknown;
     contact?: string | number;
+    smarts?: unknown;
+    list?: unknown;
+    lists?: unknown;
+    user?: string | number;
+    users?: unknown;
+    task?: string | number;
 
     items?: RawFieldItem[];
-    list?: RawFieldItem[];
 }
 
 interface RawFieldItem {
@@ -72,6 +80,8 @@ interface RawSmart {
     title: string;
     name?: string;
     entityTypeId?: number;
+    fields?: unknown;
+    installSettings?: Record<string, unknown>;
     categories?: RawCategory[];
 }
 
@@ -89,6 +99,22 @@ function toSuffix(value: unknown): string | undefined {
     return undefined;
 }
 
+function toCode(value: unknown): string | undefined {
+    if (typeof value === 'string' && value !== '') return value;
+    if (typeof value === 'number' && value > 0) return String(value);
+    return undefined;
+}
+
+function toCodeList(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+
+    const codes = value
+        .map(item => toCode(item))
+        .filter((item): item is string => Boolean(item));
+
+    return codes.length > 0 ? Array.from(new Set(codes)) : undefined;
+}
+
 function convertItem(raw: RawFieldItem): PbxFieldItemDefinition {
     return {
         code: raw.code || raw.CODE || '',
@@ -103,7 +129,11 @@ function convertItem(raw: RawFieldItem): PbxFieldItemDefinition {
 }
 
 export function convertField(raw: RawField): PbxFieldDefinition {
-    const rawItems = raw.items || raw.list || [];
+    const rawItems = Array.isArray(raw.items)
+        ? raw.items
+        : Array.isArray(raw.list)
+          ? raw.list
+          : [];
     const items = rawItems.length > 0 ? rawItems.map(convertItem) : undefined;
 
     return {
@@ -121,6 +151,15 @@ export function convertField(raw: RawField): PbxFieldDefinition {
             [PbxEntityType.BTX_RPA]: toSuffix(raw.rpa),
             [PbxEntityType.BTX_CONTACT]: toSuffix(raw.contact),
         },
+        rpa: toCode(raw.rpa),
+        rpas: toCodeList(raw.rpas),
+        smart: toCode(raw.smart),
+        smarts: toCodeList(raw.smarts),
+        list: toCode(raw.list),
+        lists: toCodeList(raw.lists),
+        user: toCode(raw.user),
+        users: toCodeList(raw.users),
+        task: toCode(raw.task),
         items,
     };
 }
@@ -162,13 +201,115 @@ export function convertCategories(
 }
 
 export function convertSmart(raw: RawSmart): PbxSmartDefinition {
+    const smartFields = Array.isArray(raw.fields)
+        ? convertFields(raw.fields as RawField[])
+        : undefined;
+    const installSettings = convertSmartInstallSettings(
+        (raw.installSettings ??
+            (!Array.isArray(raw.fields) ? raw.fields : undefined)) as
+            | Record<string, unknown>
+            | undefined,
+    );
     return {
         code: raw.code,
         title: raw.title || raw.name || raw.code,
+        fields: smartFields,
+        installSettings,
         categories: raw.categories
             ? convertCategories(raw.categories, PbxEntityType.SMART)
             : undefined,
     };
+}
+
+function convertSmartInstallSettings(
+    raw: Record<string, unknown> | undefined,
+): PbxSmartInstallSettings | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+
+    const relationRowsToDto = (
+        value: unknown,
+    ): PbxSmartTypeRelationsDefinition[keyof PbxSmartTypeRelationsDefinition] => {
+        if (!Array.isArray(value)) return undefined;
+
+        const rows = value
+            .filter(row => typeof row === 'object' && row !== null)
+            .map(row => {
+                const relation = row as Record<string, unknown>;
+                const entityTypeId = Number(relation.entityTypeId);
+                if (!Number.isFinite(entityTypeId)) return null;
+
+                const isChildrenListEnabled =
+                    relation.isChildrenListEnabled === 'Y' ||
+                    relation.isChildrenListEnabled === 'N'
+                        ? relation.isChildrenListEnabled
+                        : undefined;
+
+                return {
+                    entityTypeId,
+                    isChildrenListEnabled,
+                };
+            })
+            .filter(Boolean) as NonNullable<
+            PbxSmartTypeRelationsDefinition[keyof PbxSmartTypeRelationsDefinition]
+        >;
+
+        return rows.length > 0 ? rows : undefined;
+    };
+
+    const asYN = (value: unknown): 'Y' | 'N' | undefined =>
+        value === 'Y' || value === 'N' ? value : undefined;
+    const asNumber = (value: unknown): number | undefined => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : undefined;
+    };
+    const asRecord = (value: unknown): Record<string, string> | undefined => {
+        if (!value || typeof value !== 'object' || Array.isArray(value))
+            return undefined;
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(
+                ([key, val]) => [key, String(val)],
+            ),
+        );
+    };
+    const relationsRaw =
+        raw.relations && typeof raw.relations === 'object'
+            ? (raw.relations as Record<string, unknown>)
+            : undefined;
+
+    const settings: PbxSmartInstallSettings = {
+        entityTypeId: asNumber(raw.entityTypeId),
+        relations: relationsRaw
+            ? {
+                  parent: relationRowsToDto(relationsRaw.parent),
+                  child: relationRowsToDto(relationsRaw.child),
+              }
+            : undefined,
+        linkedUserFields: asRecord(raw.linkedUserFields),
+        isUseInUserfieldEnabled: asYN(raw.isUseInUserfieldEnabled),
+        isAutomationEnabled: asYN(raw.isAutomationEnabled),
+        isBeginCloseDatesEnabled: asYN(raw.isBeginCloseDatesEnabled),
+        isBizProcEnabled: asYN(raw.isBizProcEnabled),
+        isCategoriesEnabled: asYN(raw.isCategoriesEnabled),
+        isClientEnabled: asYN(raw.isClientEnabled),
+        isDocumentsEnabled: asYN(raw.isDocumentsEnabled),
+        isLinkWithProductsEnabled: asYN(raw.isLinkWithProductsEnabled),
+        isMycompanyEnabled: asYN(raw.isMycompanyEnabled),
+        isObserversEnabled: asYN(raw.isObserversEnabled),
+        isRecyclebinEnabled: asYN(raw.isRecyclebinEnabled),
+        isSetOpenPermissions: asYN(raw.isSetOpenPermissions),
+        isSourceEnabled: asYN(raw.isSourceEnabled),
+        isStagesEnabled: asYN(raw.isStagesEnabled),
+        isExternal: asYN(raw.isExternal),
+        customSectionId: asNumber(raw.customSectionId),
+        customSections: Array.isArray(raw.customSections)
+            ? raw.customSections
+            : undefined,
+    };
+
+    const hasAnySetting = Object.values(settings).some(
+        value => value !== undefined,
+    );
+    return hasAnySetting ? settings : undefined;
 }
 
 export function convertSmarts(rawSmarts: RawSmart[]): PbxSmartDefinition[] {

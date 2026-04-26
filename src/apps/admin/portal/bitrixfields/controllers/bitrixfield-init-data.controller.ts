@@ -2,8 +2,10 @@ import { Controller, Get, ParseEnumPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PbxRegistryService } from '@/modules/pbx-registry';
 import { PbxEntityType } from '@/shared/enums';
-import { BitrixFieldResponseDto } from '../dto/bitrixfield-response.dto';
-import { PbxFieldDefinitionDto } from '@/modules/pbx-registry/dto/pbx-definition.dto';
+import {
+    PbxFieldDefinitionDto,
+    PbxGroupDefinitionDto,
+} from '@/modules/pbx-registry/dto/pbx-definition.dto';
 
 /**
  * «Инициализационные» поля берутся из pbx-registry: для каждого поля в шаблоне
@@ -15,21 +17,17 @@ import { PbxFieldDefinitionDto } from '@/modules/pbx-registry/dto/pbx-definition
 export class BitrixFieldInitDataController {
     constructor(private readonly registry: PbxRegistryService) {}
 
-    @Get('groups')
+    @Get('all-data')
     @ApiOperation({
         summary: 'Список групп реестра (sales, service, rpa, …)',
     })
     @ApiResponse({
         status: 200,
-        description: 'Группы с количеством полей',
-        type: [BitrixFieldResponseDto],
+        description: 'Группы реестра с полным шаблоном',
+        type: [PbxGroupDefinitionDto],
     })
-    listRegistryGroups() {
-        return this.registry.getAllGroups().map(g => ({
-            group: g.group,
-            appType: g.appType ?? null,
-            fieldCount: g.fields.length,
-        }));
+    getAllPbxTemplateData() {
+        return this.registry.getAllPbxTemplateData();
     }
 
     @Get()

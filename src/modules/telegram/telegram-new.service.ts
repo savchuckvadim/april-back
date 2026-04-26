@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { TelegramSendMessageDto } from './telegram.dto';
 
-const publicUrl = 'https://back.april-dev.ru/api';
+const publicUrl = 'https://back.april-dev.ru/api/telegram';
 const url = publicUrl;
 @Global()
 @Injectable()

@@ -14,9 +14,10 @@ export interface IBXMessageMenu {
 export interface IBXMessageAddRequest {
     DIALOG_ID: string; // chatXXX или XXX (идентификатор получателя)
     MESSAGE: string; // Текст сообщения
-    SYSTEM?: boolean; // Отображать как системное сообщение, по умолчанию 'N'
+    REPLY_ID?: number; // Идентификатор сообщения для ответа в треде
+    SYSTEM?: 'N' | 'Y'; // Отображать как системное сообщение, по умолчанию 'N'
     ATTACH?: IBXMessageAttach[]; // Вложение
-    URL_PREVIEW?: boolean; // Преобразовывать ссылки в rich-ссылки, по умолчанию 'Y'
+    URL_PREVIEW?: 'Y' | 'N'; // Преобразовывать ссылки в rich-ссылки, по умолчанию 'Y'
     KEYBOARD?: IBXMessageKeyboard; // Клавиатура
     MENU?: IBXMessageMenu; // Контекстное меню
 }

@@ -67,6 +67,13 @@ export class PbxAdminService {
         return this.registry.getAllSmarts().map(s => ({
             code: s.code,
             title: s.title,
+            fieldsCount: s.fields?.length ?? 0,
+            fields: s.fields?.map(f => ({
+                code: f.code,
+                name: f.name,
+                type: f.type,
+                suffixes: f.suffixes,
+            })),
             categoriesCount: s.categories?.length ?? 0,
             categories: s.categories?.map(c => ({
                 code: c.code,

@@ -26,7 +26,15 @@ export interface PbxFieldDefinition {
     readonly isMultiple: boolean;
     readonly order?: number;
     readonly appType?: string;
-
+    readonly rpa?: string;
+    readonly rpas?: readonly string[];
+    readonly smart?: string;
+    readonly smarts?: readonly string[];
+    readonly list?: string;
+    readonly lists?: readonly string[];
+    readonly user?: string;
+    readonly users?: readonly string[];
+    readonly task?: string;
     /**
      * Suffix per entity type. Empty string = field not installed on this entity.
      * For CRM entities, this is the FIELD_NAME suffix after UF_CRM_.
@@ -70,6 +78,40 @@ export interface PbxSmartDefinition {
 
     readonly categories?: readonly PbxCategoryDefinition[];
     readonly fields?: readonly PbxFieldDefinition[];
+    readonly installSettings?: PbxSmartInstallSettings;
+}
+
+export interface PbxSmartTypeRelationDefinition {
+    readonly entityTypeId: number;
+    readonly isChildrenListEnabled?: 'Y' | 'N';
+}
+
+export interface PbxSmartTypeRelationsDefinition {
+    readonly parent?: readonly PbxSmartTypeRelationDefinition[];
+    readonly child?: readonly PbxSmartTypeRelationDefinition[];
+}
+
+export interface PbxSmartInstallSettings {
+    readonly entityTypeId?: number;
+    readonly relations?: PbxSmartTypeRelationsDefinition;
+    readonly linkedUserFields?: Record<string, string>;
+    readonly isUseInUserfieldEnabled?: 'Y' | 'N';
+    readonly isAutomationEnabled?: 'Y' | 'N';
+    readonly isBeginCloseDatesEnabled?: 'Y' | 'N';
+    readonly isBizProcEnabled?: 'Y' | 'N';
+    readonly isCategoriesEnabled?: 'Y' | 'N';
+    readonly isClientEnabled?: 'Y' | 'N';
+    readonly isDocumentsEnabled?: 'Y' | 'N';
+    readonly isLinkWithProductsEnabled?: 'Y' | 'N';
+    readonly isMycompanyEnabled?: 'Y' | 'N';
+    readonly isObserversEnabled?: 'Y' | 'N';
+    readonly isRecyclebinEnabled?: 'Y' | 'N';
+    readonly isSetOpenPermissions?: 'Y' | 'N';
+    readonly isSourceEnabled?: 'Y' | 'N';
+    readonly isStagesEnabled?: 'Y' | 'N';
+    readonly isExternal?: 'Y' | 'N';
+    readonly customSectionId?: number;
+    readonly customSections?: unknown[];
 }
 
 /**
@@ -82,6 +124,19 @@ export interface PbxRpaDefinition {
     readonly stages?: readonly PbxStageDefinition[];
     readonly fields?: readonly PbxFieldDefinition[];
 }
+/**
+ * List definition.
+ */
+export interface PbxListDefinition {
+    readonly code: string;
+    readonly title: string;
+    readonly type: string;
+    readonly group: string;
+    readonly isActive: boolean;
+    readonly order: number;
+    readonly isNeedUpdate: boolean;
+    readonly fields?: readonly PbxFieldDefinition[];
+}
 
 /**
  * Full entity group definition — all fields, categories, stages for a group (e.g., "sales").
@@ -89,9 +144,30 @@ export interface PbxRpaDefinition {
 export interface PbxGroupDefinition {
     readonly group: string;
     readonly appType?: string;
+    readonly user?: {
+        fields: readonly PbxFieldDefinition[];
+    };
+    readonly contact?: {
+        fields: readonly PbxFieldDefinition[];
+    };
+    readonly company?: {
+        fields: readonly PbxFieldDefinition[];
+    };
+    readonly deal?: {
+        categories?: readonly PbxCategoryDefinition[];
+        fields: readonly PbxFieldDefinition[];
+    };
+    readonly task?: {
+        fields: readonly PbxFieldDefinition[];
+    };
+    readonly lead?: {
+        categories?: readonly PbxCategoryDefinition[];
+        fields: readonly PbxFieldDefinition[];
+    };
 
     readonly fields: readonly PbxFieldDefinition[];
-    readonly categories: readonly PbxCategoryDefinition[];
+
     readonly smarts?: readonly PbxSmartDefinition[];
     readonly rpas?: readonly PbxRpaDefinition[];
+    readonly lists?: readonly PbxListDefinition[];
 }

@@ -128,4 +128,25 @@ export class StorageService {
             return 1;
         }
     }
+
+    /** Имена файлов в каталоге `storage/{type}/{subPath}` (без рекурсии). */
+    async listFilesByType(
+        type: StorageType,
+        subPath: string,
+    ): Promise<string[]> {
+        const dirPath = join(this.storagePath, type, subPath);
+        try {
+            return await fs.readdir(dirPath);
+        } catch (err) {
+            const code = (err as NodeJS.ErrnoException).code;
+            if (code === 'ENOENT') {
+                return [];
+            }
+            this.logger.error(
+                `Ошибка при чтении каталога ${type}/${subPath}:`,
+                err,
+            );
+            throw err;
+        }
+    }
 }

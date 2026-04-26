@@ -9,6 +9,7 @@ import { BitrixStatusDomainModule } from './status/bx-status.module';
 import { BitrixItemDomainModule } from './item/bx-item.module';
 import { BxTimelineModule } from './timeline/bx-timeline.module';
 import { BitrixSmartTypeDomainModule } from './smart-type/bx-smart-type-domain.module';
+import { BitrixActivityTodoDomainModule } from './activity-todo/bx-activity-todo.module';
 @Module({
     imports: [
         BitrixDealDomainModule,
@@ -20,6 +21,7 @@ import { BitrixSmartTypeDomainModule } from './smart-type/bx-smart-type-domain.m
         BitrixItemDomainModule,
         BxTimelineModule,
         BitrixSmartTypeDomainModule,
+        BitrixActivityTodoDomainModule,
     ],
     providers: [BxFieldService],
     exports: [
@@ -33,6 +35,7 @@ import { BitrixSmartTypeDomainModule } from './smart-type/bx-smart-type-domain.m
         BxTimelineModule,
         BxFieldService,
         BitrixSmartTypeDomainModule,
+        BitrixActivityTodoDomainModule,
     ],
 })
 export class BxCrmDomainModule {}

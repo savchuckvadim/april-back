@@ -24,6 +24,8 @@ export class QueueDispatcherService {
         private readonly serviceDealsScheduleQueue: Queue,
         @InjectQueue(QueueNames.SERVICE_DEALS)
         private readonly serviceDealsQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_DEALS_ORDER)
+        private readonly serviceDealsOrderQueue: Queue,
         @InjectQueue(QueueNames.ORK_KPI_REPORT)
         private readonly orkKpiReportQueue: Queue,
         @InjectQueue(QueueNames.OFFER_WORD_EPHEMERAL_PDF)
@@ -71,6 +73,8 @@ export class QueueDispatcherService {
                 return this.serviceDealsScheduleQueue;
             case QueueNames.SERVICE_DEALS:
                 return this.serviceDealsQueue;
+            case QueueNames.SERVICE_DEALS_ORDER:
+                return this.serviceDealsOrderQueue;
             case QueueNames.ORK_KPI_REPORT:
                 return this.orkKpiReportQueue;
             case QueueNames.OFFER_WORD_EPHEMERAL_PDF:

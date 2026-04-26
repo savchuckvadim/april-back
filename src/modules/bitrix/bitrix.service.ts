@@ -48,6 +48,12 @@ import { BxFileBatchService } from './domain/file/bx-file.batch.service';
 import { BxUserService } from './domain/user/services/bx-user.service';
 import { BxUserBatchService } from './domain/user/services/bx-user.batch.service';
 import { BxDialogBatchService, BxDialogService } from './domain/chat/dialog';
+import { BxDialogMessageBatchService } from './domain/chat/dialog-message/services/bx-dialog-message.batch.service';
+import { BxDialogMessageService } from './domain/chat/dialog-message/services/bx-dialog-message.service';
+import { BxImV2EventBatchService } from './domain/chat/im-v2-event/services/bx-im-v2-event.batch.service';
+import { BxImV2EventService } from './domain/chat/im-v2-event/services/bx-im-v2-event.service';
+import { BxActivityTodoBatchService } from './domain/crm/activity-todo/services/bx-activity-todo.batch.service';
+import { BxActivityTodoService } from './domain/crm/activity-todo/services/bx-activity-todo.service';
 import {
     BxDiskFileService,
     BxDiskFolderService,
@@ -79,8 +85,11 @@ export class BitrixService {
     public dialog: BxDialogService;
     public recent: BxRecentService;
     public message: BxMessageService;
+    public dialogMessage: BxDialogMessageService;
+    public imV2Event: BxImV2EventService;
     public task: BxTaskService;
     public activity: ActivityService;
+    public activityTodo: BxActivityTodoService;
     public user: BxUserService;
     public disk: {
         file: BxDiskFileService;
@@ -105,8 +114,11 @@ export class BitrixService {
         rpaItem: null as unknown as BxRpaItemBatchService,
         recent: null as unknown as BxRecentBatchService,
         message: null as unknown as BxMessageBatchService,
+        dialogMessage: null as unknown as BxDialogMessageBatchService,
+        imV2Event: null as unknown as BxImV2EventBatchService,
         task: null as unknown as BxTaskBatchService,
         activity: null as unknown as BxActivityBatchService,
+        activityTodo: null as unknown as BxActivityTodoBatchService,
         file: null as unknown as BxFileBatchService,
         user: null as unknown as BxUserBatchService,
         dialog: null as unknown as BxDialogBatchService,
@@ -141,8 +153,11 @@ export class BitrixService {
         this.initFile();
         this.initRecent();
         this.initMessage();
+        this.initDialogMessage();
+        this.initImV2Event();
         this.initTask();
         this.initiActivities();
+        this.initActivityTodo();
         this.initUser();
         this.initDialog();
         this.initDisk();
@@ -255,6 +270,23 @@ export class BitrixService {
         this.message = this.cloner.clone(BxMessageService, this.api);
         this.batch.message = this.cloner.clone(BxMessageBatchService, this.api);
     }
+    private initDialogMessage() {
+        this.dialogMessage = this.cloner.clone(
+            BxDialogMessageService,
+            this.api,
+        );
+        this.batch.dialogMessage = this.cloner.clone(
+            BxDialogMessageBatchService,
+            this.api,
+        );
+    }
+    private initImV2Event() {
+        this.imV2Event = this.cloner.clone(BxImV2EventService, this.api);
+        this.batch.imV2Event = this.cloner.clone(
+            BxImV2EventBatchService,
+            this.api,
+        );
+    }
 
     private initTask() {
         this.task = this.cloner.clone(BxTaskService, this.api);
@@ -270,6 +302,13 @@ export class BitrixService {
     private initUser() {
         this.user = this.cloner.clone(BxUserService, this.api);
         this.batch.user = this.cloner.clone(BxUserBatchService, this.api);
+    }
+    private initActivityTodo() {
+        this.activityTodo = this.cloner.clone(BxActivityTodoService, this.api);
+        this.batch.activityTodo = this.cloner.clone(
+            BxActivityTodoBatchService,
+            this.api,
+        );
     }
     private initDisk() {
         this.disk = {

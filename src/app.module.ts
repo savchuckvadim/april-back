@@ -50,6 +50,9 @@ import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { InvoiceTemplateModule } from './modules/invoice-template/invoice-template.module';
 import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
 import { PbxRegistryModule } from './modules/pbx-registry';
+import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
+import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
+import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
 // import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 
 @Module({
@@ -140,6 +143,9 @@ import { PbxRegistryModule } from './modules/pbx-registry';
         InvoiceTemplateModule,
         DocumentCounterModule,
         PbxRegistryModule,
+        CommandSmartActGsrModule,
+        BitrixImBridgeModule,
+        MissedCallsTodoModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],

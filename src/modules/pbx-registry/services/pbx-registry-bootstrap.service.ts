@@ -1,12 +1,9 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { StorageService } from '@/core/storage';
 import { PbxRegistryService } from './pbx-registry.service';
-import {
-    buildSalesEventGroup,
-    buildSalesKonstructorGroup,
-    buildSalesGeneralGroup,
-} from '../definitions/sales';
-import { buildRpaGroup } from '../definitions/rpa';
+import { buildSalesGroup } from '../definitions/sales';
+import { buildTmcGroup } from '../definitions/tmc';
+import { buildGeneralGroup } from '../definitions/general';
 import { buildServiceGroup } from '../definitions/service';
 
 @Injectable()
@@ -20,10 +17,9 @@ export class PbxRegistryBootstrapService implements OnModuleInit {
 
     async onModuleInit(): Promise<void> {
         const groups = await Promise.all([
-            buildSalesEventGroup(this.storage),
-            buildSalesKonstructorGroup(),
-            buildSalesGeneralGroup(this.storage),
-            buildRpaGroup(this.storage),
+            buildSalesGroup(this.storage),
+            buildTmcGroup(this.storage),
+            buildGeneralGroup(this.storage),
             buildServiceGroup(this.storage),
         ]);
 

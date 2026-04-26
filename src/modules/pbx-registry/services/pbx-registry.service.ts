@@ -52,13 +52,27 @@ export class PbxRegistryService {
         );
     }
 
+    private extractGroupCategories(
+        group: PbxGroupDefinition,
+    ): PbxCategoryDefinition[] {
+        return [
+            ...(group.deal?.categories ?? []),
+            ...(group.lead?.categories ?? []),
+            ...(group.smarts?.flatMap(s => s.categories ?? []) ?? []),
+        ];
+    }
+
     getCategoriesByGroup(group: string): readonly PbxCategoryDefinition[] {
-        return this.groups.get(group)?.categories ?? [];
+        const groupData = this.groups.get(group);
+        if (!groupData) return [];
+        return this.extractGroupCategories(groupData);
     }
 
     getCategoryByCode(code: string): PbxCategoryDefinition | undefined {
         for (const group of this.groups.values()) {
-            const found = group.categories.find(c => c.code === code);
+            const found = this.extractGroupCategories(group).find(
+                c => c.code === code,
+            );
             if (found) return found;
         }
         return undefined;
@@ -73,7 +87,9 @@ export class PbxRegistryService {
             : Array.from(this.groups.values());
 
         return sources.flatMap(g =>
-            g.categories.filter(c => c.entityType === entityType),
+            this.extractGroupCategories(g).filter(
+                c => c.entityType === entityType,
+            ),
         );
     }
 
@@ -106,7 +122,9 @@ export class PbxRegistryService {
     }
 
     getAllCategories(): PbxCategoryDefinition[] {
-        return Array.from(this.groups.values()).flatMap(g => [...g.categories]);
+        return Array.from(this.groups.values()).flatMap(g =>
+            this.extractGroupCategories(g),
+        );
     }
 
     getAllSmarts(): PbxSmartDefinition[] {
@@ -119,5 +137,9 @@ export class PbxRegistryService {
         return Array.from(this.groups.values()).flatMap(g =>
             g.rpas ? [...g.rpas] : [],
         );
+    }
+
+    getAllPbxTemplateData(): PbxGroupDefinition[] {
+        return Array.from(this.groups.values());
     }
 }
