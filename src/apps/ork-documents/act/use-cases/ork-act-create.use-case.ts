@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateActDto } from '../ork-act.dto';
 import { PBXService } from '@/modules/pbx';
-import { BitrixService } from '@/modules/bitrix';
-
 import { OrkOnActCreateTaskService } from '../services/task.service';
 import { OrkOnActCreateProductRowService } from '../services/product-row.service';
 
@@ -14,7 +12,7 @@ export class OrkOnActCreateUseCase {
 
     async createAct(dto: CreateActDto) {
         const result = true;
-        const { bitrix, portal, PortalModel } = await this.pbx.init(dto.domain);
+        const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
 
         const productRowService = new OrkOnActCreateProductRowService(bitrix);
         void (await productRowService.migrateRowsFromDealToSmart(dto));

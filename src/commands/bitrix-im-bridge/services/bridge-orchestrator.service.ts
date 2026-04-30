@@ -178,6 +178,7 @@ export class BridgeOrchestratorService implements OnModuleInit {
             domain,
             this.config.getDefaultBridgeEmail(),
         );
+        console.log('bridgeUserId', bridgeUserId);
         const offset = await this.state.getOffset(domain);
         this.logger.debug(
             `Polling domain=${domain} with bridgeUser=${bridgeUserId}, offset=${String(offset)}`,
@@ -187,6 +188,7 @@ export class BridgeOrchestratorService implements OnModuleInit {
             this.config.getPollLimit(),
             offset,
         );
+
         const events = eventsResponse.result?.events || [];
         this.logger.debug(
             `Polling domain=${domain} received events=${events.length}`,
@@ -230,24 +232,24 @@ export class BridgeOrchestratorService implements OnModuleInit {
         this.logger.debug(
             `Incoming event: domain=${domain}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}, payload=${payloadShape}`,
         );
-        if (this.config.shouldNotifyIncomingEvents()) {
-            await this.telegramBridge.sendSystemMessage(
-                `🚨 Поймано событие IM: domain=${domain}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}`,
-            );
-        }
+        // if (this.config.shouldNotifyIncomingEvents()) {
+        //     await this.telegramBridge.sendSystemMessage(
+        //         `🚨 Поймано событие IM: domain=${domain}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}`,
+        //     );
+        // }
 
-        const decision = this.filter.shouldProcess(domain, bridgeUserId, event);
-        if (!decision.allowed) {
-            this.logger.debug(
-                `Event skipped for domain=${domain}: reason=${decision.reason || 'unknown'}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}, payload=${payloadShape}`,
-            );
-            if (this.config.shouldNotifyIncomingEvents()) {
-                await this.telegramBridge.sendSystemMessage(
-                    `⛔ Событие пропущено: domain=${domain}, reason=${decision.reason || 'unknown'}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}`,
-                );
-            }
-            return false;
-        }
+        // const decision = this.filter.shouldProcess(domain, bridgeUserId, event);
+        // if (!decision.allowed) {
+        //     this.logger.debug(
+        //         `Event skipped for domain=${domain}: reason=${decision.reason || 'unknown'}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}, payload=${payloadShape}`,
+        //     );
+        //     if (this.config.shouldNotifyIncomingEvents()) {
+        //         await this.telegramBridge.sendSystemMessage(
+        //             `⛔ Событие пропущено: domain=${domain}, reason=${decision.reason || 'unknown'}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}`,
+        //         );
+        //     }
+        //     return false;
+        // }
 
         let dialogId = this.parser.extractDialogId(eventData);
         if (!dialogId && authorId && authorId !== bridgeUserId) {

@@ -5,7 +5,6 @@ import {
     RpaIconEnum,
 } from './lib/rpa-comment-helper.service';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
-import { CONTRACT_LTYPE } from '@/apps/konstructor/document-generate/type/contract.type';
 import { ContractTypeService } from './lib/contract-type.service';
 
 @Injectable()

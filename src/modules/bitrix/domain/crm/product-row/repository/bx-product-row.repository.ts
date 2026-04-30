@@ -1,4 +1,3 @@
-// import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import {
     EBxMethod,
@@ -22,7 +21,7 @@ export class BxProductRowRepository {
             data,
         );
     }
-    async setBtch(cmdCode: string, data: IBXProductRow) {
+    setBtch(cmdCode: string, data: IBXProductRow) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM_ITEM,
@@ -39,7 +38,7 @@ export class BxProductRowRepository {
             { fields: fields },
         );
     }
-    async addBtch(cmdCode: string, fields: IBXProductRowRow) {
+    addBtch(cmdCode: string, fields: IBXProductRowRow) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM_ITEM,
@@ -50,6 +49,16 @@ export class BxProductRowRepository {
     }
     async list(data: ListProductRowDto) {
         return await this.bxApi.callType(
+            EBxNamespace.CRM_ITEM,
+            EBXEntity.PRODUCT_ROW,
+            EBxMethod.LIST,
+            { filter: data },
+        );
+    }
+    listBtch(cmdCode: string, data: ListProductRowDto) {
+        console.log('data', data);
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
             EBxNamespace.CRM_ITEM,
             EBXEntity.PRODUCT_ROW,
             EBxMethod.LIST,

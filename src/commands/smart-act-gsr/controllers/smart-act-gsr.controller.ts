@@ -1,12 +1,12 @@
 import { Controller, Get, Injectable } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { SmartActGsrService } from '../services/smart-act-gsr.service';
+import { SmartActGsrService } from '../services/smart/smart-act-gsr.service';
 
 @Injectable()
 @ApiTags('Commands Smart Act Gsr')
 @Controller('commands/smart-act-gsr')
 export class SmartActGsrController {
-    constructor(private readonly smartActGsrService: SmartActGsrService) {}
+    constructor(private readonly smartActGsrService: SmartActGsrService) { }
 
     @Get()
     @ApiOperation({ summary: 'Get smart act gsr' })

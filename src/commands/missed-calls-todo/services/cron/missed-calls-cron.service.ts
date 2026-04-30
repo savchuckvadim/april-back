@@ -12,11 +12,13 @@ export class MissedCallsCronService {
         private readonly config: MissedCallsConfigService,
     ) {}
 
-    @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Europe/Moscow' })
+    // @Cron(CronExpression.EVERY_MINUTE, { timeZone: 'Europe/Moscow' })
     async handle(): Promise<void> {
+        this.logger.log('Missed calls cron started');
         if (!this.config.isSchedulerEnabled()) {
             return;
         }
+        this.logger.log('Missed calls cron enabled');
         try {
             const result = await this.processMissedCallsUseCase.execute();
             this.logger.log(

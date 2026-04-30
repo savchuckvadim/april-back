@@ -1,34 +1,39 @@
 import { PBXModule } from '@/modules/pbx';
 import { SmartActGsrController } from './controllers/smart-act-gsr.controller';
-import { SmartActGsrService } from './services/smart-act-gsr.service';
+import { SmartActGsrService } from './services/smart/smart-act-gsr.service';
 import { Module } from '@nestjs/common';
-import { DealServiceService } from './services/deal-service.service';
 import { DealActGsrController } from './controllers/deal-act-gsr.controller';
+import { UserInfoService } from './services/user/user-info.service';
+import { CompanyInfoService } from './services/company/company-info.service';
 import {
     DealContractPeriodService,
     DealGroupingService,
     DealQueryService,
 } from './services';
-import { DealMessageService } from './services/deal-message.service';
-import { DealWarningsBbcodeFormatterService } from './services/deal-warnings-bbcode-formatter.service';
-import { CompanyInfoService } from './services/company-info.service';
-import { UserInfoService } from './services/user-info.service';
-import { SendDealsWarningsUseCase } from './usecases/send-deals-warnings.use-case';
+import { OrkDealsService } from './services/ork-deals.service';
+import { OrkActsUpdateUseCase } from './usecases/ork-acts-update.use-case';
+import { DealPerodDataService } from './services/ork-deals/deal-perod-data.service';
+import { CategorySmartActService } from './services/smart/category-smart-act.service';
+import { RedisModule } from '@/core/redis/redis.module';
+import { OrkActsReconcilePlanUseCase } from './usecases/ork-acts-reconcile-plan.use-case';
+import { ActNProductHandlerUseCase } from './usecases/act-n-product-handler.use-case';
 
 @Module({
-    imports: [PBXModule],
+    imports: [PBXModule, RedisModule],
     controllers: [SmartActGsrController, DealActGsrController],
     providers: [
         SmartActGsrService,
-        DealServiceService,
+        OrkDealsService,
         DealQueryService,
         DealGroupingService,
         DealContractPeriodService,
-        DealMessageService,
-        DealWarningsBbcodeFormatterService,
         CompanyInfoService,
         UserInfoService,
-        SendDealsWarningsUseCase,
+        OrkActsUpdateUseCase,
+        DealPerodDataService,
+        CategorySmartActService,
+        OrkActsReconcilePlanUseCase,
+        ActNProductHandlerUseCase,
     ],
 })
 export class CommandSmartActGsrModule {}

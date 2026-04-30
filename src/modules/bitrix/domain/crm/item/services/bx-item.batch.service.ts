@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { BxItemRepository } from '../repository/bx-item.repository';
 import { IBXItem } from '../interface/item.interface';
@@ -24,5 +23,19 @@ export class BxItemBatchService {
         data: Partial<IBXItem>,
     ) {
         return this.repo.updateBtch(cmdCode, id, entityTypeId, data);
+    }
+    get(
+        cmdCode: string,
+        id: number | string,
+        entityTypeId: string,
+        select?: string[],
+    ) {
+        return this.repo.getBtch(cmdCode, id, entityTypeId, select);
+    }
+    add(cmdCode: string, entityTypeId: string, data: Partial<IBXItem>) {
+        return this.repo.addBtch(cmdCode, entityTypeId, data);
+    }
+    delete(cmdCode: string, id: number | string, entityTypeId: string) {
+        return this.repo.deleteBtch(cmdCode, id, entityTypeId);
     }
 }

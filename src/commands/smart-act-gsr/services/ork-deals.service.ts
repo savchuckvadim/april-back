@@ -4,13 +4,33 @@ import {
     DealGroupingService,
     DealQueryService,
 } from './index';
+import { IBXDeal } from '@/modules/bitrix';
+import {
+    DealPerodDataService,
+    IOrkDealPeriodData,
+} from './ork-deals/deal-perod-data.service';
+import { PortalModel } from '@/modules/portal/services/portal.model';
 
+export interface IOrkDeal {
+    deal: IBXDeal;
+    periodData: IOrkDealPeriodData;
+}
+export interface IOrkDealsResult {
+    count: number;
+    items: IOrkDeal[];
+}
+export interface IOrkDeals {
+    openDeals: IOrkDealsResult;
+    // successDeals: IOrkDealsResult;
+    // failDeals: IOrkDealsResult;
+}
 @Injectable()
-export class DealServiceService {
+export class OrkDealsService {
     constructor(
         private readonly dealQueryService: DealQueryService,
         private readonly dealGroupingService: DealGroupingService,
         private readonly dealContractPeriodService: DealContractPeriodService,
+        private readonly dealPerodDataService: DealPerodDataService,
     ) {}
 
     public async geGrouppedByComapny() {
@@ -67,34 +87,53 @@ export class DealServiceService {
         return { dealsWithEmptyFrom, dealsWithEmptyTo };
     }
 
-    public async getDealService() {
-        const assignedById = '187';
-        const allDeals =
-            await this.dealQueryService.getAllDealsByAssigned(assignedById);
+    public async getDealService(
+        portal: PortalModel,
+        assignedById?: string,
+    ): Promise<IOrkDeals> {
+        // const allDeals =
+        //     await this.dealQueryService.getAllDealsByAssigned(assignedById);
         const openDeals =
             await this.dealQueryService.getOpenDealsByAssigned(assignedById);
-        const successDeals =
-            await this.dealQueryService.getSuccessDealsByAssigned(assignedById);
-        const failDeals = await this.dealQueryService.getFailDeals();
+        const preparedDeals =
+            (openDeals?.map(deal =>
+                this.getDealPreparedResult(deal, portal),
+            ) as IOrkDeal[]) ?? [];
+        // const successDeals =
+        //     await this.dealQueryService.getSuccessDealsByAssigned(assignedById);
+        // const failDeals =
+        //     await this.dealQueryService.getFailDealsByAssigned(assignedById);
 
-        //    const chat =  await bitrix.dialog.chatGet()
         return {
-            allDeals: {
-                count: allDeals?.length ?? 0,
-                items: allDeals ?? [],
-            },
+            // allDeals: {
+            //     count: allDeals?.length ?? 0,
+            //     items: allDeals ?? [],
+            // },
             openDeals: {
-                count: openDeals?.length ?? 0,
-                items: openDeals ?? [],
+                count: preparedDeals?.length ?? 0,
+                items: preparedDeals ?? [],
             },
-            successDeals: {
-                count: successDeals?.length ?? 0,
-                items: successDeals ?? [],
-            },
-            failDeals: {
-                count: failDeals?.length ?? 0,
-                items: failDeals ?? [],
-            },
+            // successDeals: {
+            //     count: successDeals?.length ?? 0,
+            //     items: successDeals ?? [],
+            // },
+            // failDeals: {
+            //     count: failDeals?.length ?? 0,
+            //     items: failDeals ?? [],
+            // },
+        };
+    }
+    private getDealPreparedResult(
+        deal: IBXDeal,
+        portal: PortalModel,
+    ): IOrkDeal {
+        const periodData = this.dealPerodDataService.getDealPeriodData(
+            deal,
+            portal,
+        );
+        return {
+            deal,
+            periodData,
         };
     }
 }

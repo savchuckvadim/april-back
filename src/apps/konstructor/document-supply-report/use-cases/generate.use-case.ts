@@ -9,6 +9,7 @@ import { PortalService } from '@/modules/portal';
 import { FileLinkService } from '@/core/file-link/file-link.service';
 import dayjs from 'dayjs';
 import { PBXService } from '@/modules/pbx';
+import { getErrorStack, getErrorString } from '@/shared';
 
 @Injectable()
 export class GenerateUseCase {
@@ -36,7 +37,7 @@ export class GenerateUseCase {
         error?: string;
     }> {
         try {
-            const { domain, userId, dealId, companyId } = dto;
+            const { domain, userId, dealId } = dto;
             const { bitrix } = await this.pbx.init(domain);
             const bitrixService = new SupplyReportBitrixService(bitrix);
 
@@ -72,11 +73,11 @@ export class GenerateUseCase {
             );
 
             // Извлекаем hash из пути для создания других ссылок
-            const pathParts = docxFilePath.split('/');
-            const hashIndex = pathParts.findIndex(
-                part => part.length === 8 && /^[a-f0-9]+$/i.test(part),
-            );
-            const hash = hashIndex !== -1 ? pathParts[hashIndex] : '';
+            // const pathParts = docxFilePath.split('/');
+            // const hashIndex = pathParts.findIndex(
+            //     part => part.length === 8 && /^[a-f0-9]+$/i.test(part),
+            // );
+            // const hash = hashIndex !== -1 ? pathParts[hashIndex] : '';
 
             const document = link; // Можно использовать тот же формат
             const file = link; // Можно использовать тот же формат
@@ -104,7 +105,7 @@ export class GenerateUseCase {
                     this.logger.log(`PDF created: ${pdfFilePath}`);
                 } catch (error) {
                     this.logger.warn(
-                        `Failed to convert to PDF: ${error.message}`,
+                        `Failed to convert to PDF: ${getErrorString(error)}`,
                     );
                     // Не прерываем выполнение, если конвертация в PDF не удалась
                 }
@@ -122,7 +123,7 @@ export class GenerateUseCase {
                     );
                 } catch (error) {
                     this.logger.warn(
-                        `Failed to add timeline comment: ${error.message}`,
+                        `Failed to add timeline comment: ${getErrorString(error)}`,
                     );
                     // Не прерываем выполнение, если отправка комментария не удалась
                 }
@@ -139,12 +140,12 @@ export class GenerateUseCase {
             };
         } catch (error) {
             this.logger.error(
-                `Error generating supply report: ${error.message}`,
-                error.stack,
+                `Error generating supply report: ${getErrorString(error)}`,
+                getErrorStack(error),
             );
             return {
                 success: false,
-                error: error.message,
+                error: getErrorString(error),
             };
         }
     }

@@ -2,17 +2,20 @@ import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { Category, Field, ListItem, Smart, Stage } from '../../type/parse.type';
-import { SmartNameEnum } from '../../dto/install-smart.dto';
+import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { EUserFieldType } from '@/modules/bitrix';
 
 @Injectable()
 export class ParseSmartService {
     private readonly logger = new Logger(ParseSmartService.name);
-    private readonly installPath = 'install/service/smart';
-    constructor(private readonly storageService: StorageService) {}
+    private readonly installPath = 'install';
+    constructor(private readonly storageService: StorageService) { }
 
-    async getParsedData(smartName: SmartNameEnum): Promise<Smart[]> {
-        const fullPath = `${this.installPath}/${smartName}`;
+    async getParsedData(
+        smartName: SmartNameEnum,
+        group: SmartGroupEnum,
+    ): Promise<Smart[]> {
+        const fullPath = `${this.installPath}/${group}/smart/${smartName}`;
         const fileName = 'data.xlsx';
         const path = this.storageService.getFilePath(
             StorageType.APP,
@@ -75,7 +78,8 @@ export class ParseSmartService {
                 );
                 category.stages = stages;
             });
-
+            console.log('smart', smart.name);
+            console.log('categories', categories);
             smart.categories = categories;
             smart.fields = this.getFieldsData(fieldsSheet, fieldItemsSheet);
             resultSmarts.push(smart);
@@ -159,7 +163,9 @@ export class ParseSmartService {
         });
         const categories: Category[] = [];
         categoriesData.forEach(categoryValues => {
+            console.log('categoryValues', categoryValues);
             const [
+                emptyValue,
                 categoryId,
                 categoryEntityTypeId,
                 categoryEntityType,
@@ -175,7 +181,9 @@ export class ParseSmartService {
                 categoryOrder,
                 cIsDefault,
             ] = categoryValues;
-
+            console.log('categoryIsNeedUpdate', categoryIsNeedUpdate);
+            console.log('entityTypeId', entityTypeId);
+            console.log('categoryEntityTypeId', categoryEntityTypeId);
             if (categoryIsNeedUpdate) {
                 if (entityTypeId == categoryEntityTypeId) {
                     const category: Category = {
@@ -218,6 +226,7 @@ export class ParseSmartService {
 
         stagesData.forEach(stageValues => {
             const [
+                emptyValue,
                 stageId,
                 stageName,
                 stageTitle,
@@ -235,7 +244,10 @@ export class ParseSmartService {
                 stageIsNeedUpdate,
                 stageOrder,
             ] = stageValues;
-
+            console.log('stageValues', stageValues);
+            console.log('stageIsNeedUpdate', stageIsNeedUpdate);
+            console.log('categoryId', categoryId);
+            console.log('stageCategoryId', stageCategoryId);
             if (stageIsNeedUpdate) {
                 if (stageCategoryId === categoryId) {
                     const stage: Stage = {

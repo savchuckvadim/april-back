@@ -8,6 +8,7 @@ import {
     ResponsibleMessageItem,
     TodoCreateItem,
 } from '../../interfaces/missed-call.types';
+import { IBXActivityTodoAddRequest } from '@/modules/bitrix';
 
 const METHOD_COMPANY_GET = 'crm.company.get';
 const METHOD_LEAD_GET = 'crm.lead.get';
@@ -23,13 +24,14 @@ export class MissedCallsBitrixApiService {
         sinceIso: string,
     ): Promise<BxActivityCall[]> {
         const { bitrix } = await this.pbx.init(domain);
-        const response = await bitrix.activity.getList(
+        const response = await bitrix.activity.getAll(
             {
                 TYPE_ID: 2,
                 PROVIDER_ID: 'VOXIMPLANT_CALL',
                 DIRECTION: 2,
                 COMPLETED: 'N',
                 '>START_TIME': sinceIso,
+                IS_INCOMING_CHANNEL: 1,
             },
             [
                 'ID',
@@ -44,8 +46,8 @@ export class MissedCallsBitrixApiService {
                 'STATUS',
             ],
         );
-
-        return (response?.result || []) as BxActivityCall[];
+        console.log('response listMissedCalls', response);
+        return (response?.activities || []) as BxActivityCall[];
     }
 
     async loadEntities(
@@ -121,17 +123,12 @@ export class MissedCallsBitrixApiService {
         if (items.length === 0) return;
         const { bitrix } = await this.pbx.init(domain);
         const activityTodoBatch = bitrix.batch.activityTodo as {
-            add(
-                cmdCode: string,
-                data: {
-                    ownerTypeId: number;
-                    ownerId: number;
-                    responsibleId: number;
-                    description: string;
-                },
-            ): unknown;
+            add(cmdCode: string, data: IBXActivityTodoAddRequest): unknown;
         };
         let index = 0;
+        const now = new Date();
+        const deadline = new Date(now.getTime() + 1000 * 60 * 60 * 2); // 24 hours from now
+        const deadlineIso = deadline.toISOString();
         for (const item of items) {
             index += 1;
             activityTodoBatch.add(`todo_${index}`, {
@@ -140,9 +137,11 @@ export class MissedCallsBitrixApiService {
                 // responsibleId: Number(item.responsibleId),
                 responsibleId: 2153,
                 description: item.description,
+                deadline: deadlineIso,
+                title: `Missed call`,
             });
         }
-        await bitrix.api.callBatchWithConcurrency(2);
+        await bitrix.api.callBatchWithConcurrency(1);
     }
 
     async sendResponsibleMessagesBatch(
@@ -161,7 +160,7 @@ export class MissedCallsBitrixApiService {
                 URL_PREVIEW: 'N',
             });
         }
-        await bitrix.api.callBatchWithConcurrency(2);
+        await bitrix.api.callBatchWithConcurrency(1);
     }
 
     private entityKey(ownerTypeId: number, ownerId: number): string {

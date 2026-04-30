@@ -115,6 +115,7 @@ export class EventSalesFlowUseCase {
 
     async getFlow(dto: EventSalesFlowDto): Promise<any> {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
+        const flowData = this.getFlowData(dto);
         const {
             isSuccessSale,
 
@@ -139,8 +140,8 @@ export class EventSalesFlowUseCase {
             isPresentationDone,
             isNeedReturnToTmc,
             nowDate,
-        } = this.getFlowData(dto);
-
+        } = flowData;
+        console.log('flowData', flowData);
         let company: IBXCompany | null = null;
         let companyId: number | null = null;
         let lead: IBXLead | null = null;

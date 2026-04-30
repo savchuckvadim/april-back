@@ -26,6 +26,7 @@ export class PbxInstallSmartService {
         const { bitrix } = await this.pbxService.init(dto.domain);
         const parsedSmartData = await this.parseSmartService.getParsedData(
             dto.smartName,
+            dto.group,
         );
 
         const bxResults: any[] = [];

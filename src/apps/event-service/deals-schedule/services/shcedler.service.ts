@@ -38,7 +38,7 @@ export class SchedulerService {
         }
     }
 
-    @Cron('0 0 9 * * 1', { timeZone: 'Europe/Moscow' }) // Monday 09:00
+    // @Cron('0 0 9 * * 1', { timeZone: 'Europe/Moscow' }) // Monday 09:00
     @Cron('0 0 15 * * 5', { timeZone: 'Europe/Moscow' }) // Friday 15:00
     // @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Europe/Moscow' })
     async checkDealsEveryWeek() {

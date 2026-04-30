@@ -11,28 +11,23 @@ import { getContractPeriodFieldBitrixId } from './utils/get-contract-period-fiel
 export class DealQueryService {
     constructor(private readonly pbx: PBXService) {}
 
-    public async getOpenDeals(assignedById?: string) {
+    public async getOpenDealsByAssigned(assignedById?: string) {
         const { deals } = await this.getDealsByFilter('open', assignedById);
         return deals;
     }
 
-    public async getOpenDealsByAssigned(assignedById: string) {
-        const { deals } = await this.getDealsByFilter('open', assignedById);
-        return deals;
-    }
-
-    public async getSuccessDealsByAssigned(assignedById: string) {
+    public async getSuccessDealsByAssigned(assignedById?: string) {
         const { deals } = await this.getDealsByFilter('success', assignedById);
         return deals;
     }
 
-    public async getAllDealsByAssigned(assignedById: string) {
+    public async getAllDealsByAssigned(assignedById?: string) {
         const { deals } = await this.getDealsByFilter('all', assignedById);
         return deals;
     }
 
-    public async getFailDeals() {
-        const { deals } = await this.getDealsByFilter('fail');
+    public async getFailDealsByAssigned(assignedById?: string) {
+        const { deals } = await this.getDealsByFilter('fail', assignedById);
         return deals;
     }
 

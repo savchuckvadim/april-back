@@ -24,7 +24,7 @@ export class BxItemRepository {
         );
     }
 
-    async updateBtch(
+    updateBtch(
         cmdCode: string,
         id: number | string,
         entityTypeId: BitrixOwnerTypeId.DEAL,
@@ -60,6 +60,20 @@ export class BxItemRepository {
             { id, entityTypeId, select },
         );
     }
+    getBtch(
+        cmdCode: string,
+        id: number | string,
+        entityTypeId: string,
+        select?: string[],
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.GET,
+            { id, entityTypeId, select },
+        );
+    }
 
     async add(entityTypeId: string, data: Partial<IBXItem>) {
         return this.bxApi.callType(
@@ -67,6 +81,32 @@ export class BxItemRepository {
             EBXEntity.ITEM,
             EBxMethod.ADD,
             { entityTypeId, fields: data },
+        );
+    }
+    addBtch(cmdCode: string, entityTypeId: string, data: Partial<IBXItem>) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.ADD,
+            { entityTypeId, fields: data },
+        );
+    }
+    async delete(id: number | string, entityTypeId: string) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.DELETE,
+            { id, entityTypeId },
+        );
+    }
+    deleteBtch(cmdCode: string, id: number | string, entityTypeId: string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.DELETE,
+            { id, entityTypeId },
         );
     }
 }

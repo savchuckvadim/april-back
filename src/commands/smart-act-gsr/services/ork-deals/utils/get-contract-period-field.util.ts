@@ -19,3 +19,12 @@ export const getContractPeriodDealValue = (
     const bitrixId = getContractPeriodFieldBitrixId(portal, type);
     return deal[bitrixId];
 };
+
+export const getContractPeriodDealData = (
+    deal: IBXDeal,
+    portal: PortalModel,
+) => {
+    const from = getContractPeriodDealValue(deal, portal, 'start') as string;
+    const to = getContractPeriodDealValue(deal, portal, 'end') as string;
+    return { from, to };
+};

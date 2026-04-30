@@ -1,14 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MissedCallsConfigService {
+    private readonly logger = new Logger(MissedCallsConfigService.name);
     constructor(private readonly config: ConfigService) {}
 
     isSchedulerEnabled(): boolean {
         const raw = this.config.get<string>('WITH_SCHEDLER');
+        this.logger.log('WITH_SCHEDLER', raw);
         if (raw == null) return false;
-        return this.toBoolean(raw, false);
+        const result = this.toBoolean(raw, false);
+        this.logger.log('WITH_SCHEDLER result', result);
+        return result;
     }
 
     getPortalDomain(): string {

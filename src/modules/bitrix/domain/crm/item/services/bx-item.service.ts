@@ -16,23 +16,31 @@ export class BxItemService {
         this.repo = new BxItemRepository(api);
     }
 
-    update(
+    async update(
         id: number | string,
         entityTypeId: BitrixOwnerTypeId.DEAL,
         data: Partial<IBXItem>,
     ) {
-        return this.repo.update(id, entityTypeId, data);
+        return await this.repo.update(id, entityTypeId, data);
     }
 
-    list(entityTypeId: string, filter?: Partial<IBXItem>, select?: string[]) {
-        return this.repo.list(entityTypeId, filter, select);
+    async list(
+        entityTypeId: string,
+        filter?: Partial<IBXItem>,
+        select?: string[],
+    ) {
+        return await this.repo.list(entityTypeId, filter, select);
     }
 
-    get(id: number | string, entityTypeId: string, select?: string[]) {
-        return this.repo.get(id, entityTypeId, select);
+    async get(id: number | string, entityTypeId: string, select?: string[]) {
+        return await this.repo.get(id, entityTypeId, select);
     }
 
-    add(entityTypeId: string, data: Partial<IBXItem>) {
-        return this.repo.add(entityTypeId, data);
+    async add(entityTypeId: string, data: Partial<IBXItem>) {
+        return await this.repo.add(entityTypeId, data);
+    }
+
+    async delete(id: number | string, entityTypeId: string) {
+        return await this.repo.delete(id, entityTypeId);
     }
 }

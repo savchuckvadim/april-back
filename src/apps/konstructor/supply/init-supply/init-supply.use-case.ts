@@ -1,24 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { InitSupplyService } from './init-supply.service';
 import { InitSupplyDto } from './dto/init-supply.dto';
 import { InitSupplyTimelineCommentService } from './services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { InitSupplyRpaFieldsService } from './services/rpa-fields/init-supply-rpa-fields.service';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBxRpaItem } from '@/modules/bitrix/domain/rpa/item/interface/bx-rpa-item.interface';
-import {
-    EBXEntity,
-    EBxMethod,
-    EBxNamespace,
-    IBXTimelineComment,
-} from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { EBXEntity, IBXTimelineComment } from '@/modules/bitrix';
 
 @Injectable()
 export class InitSupplyUseCase {
     constructor(
         private readonly pbx: PBXService,
-        private readonly initSupplyService: InitSupplyService,
         private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,
         private readonly initSupplyTimelineCommentService: InitSupplyTimelineCommentService,
     ) {}
@@ -64,10 +55,7 @@ export class InitSupplyUseCase {
         const rpaId = dto.rpa_id || rpaResponse?.id;
 
         const timelineComment =
-            await this.initSupplyTimelineCommentService.getTimelineComment(
-                dto,
-                PortalModel,
-            );
+            await this.initSupplyTimelineCommentService.getTimelineComment(dto);
         if (rpaId && dto.userId) {
             rpaTimelineResponse = await bitrix.api.call('rpa.timeline.add', {
                 typeId: rpaTypeId,

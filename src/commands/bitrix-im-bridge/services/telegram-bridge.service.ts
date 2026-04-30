@@ -66,7 +66,7 @@ export class TelegramBridgeService {
         ]
             .filter(Boolean)
             .join('\n');
-
+        console.log(text);
         const result = await this.sendRawMessage(text);
         this.logger.debug(
             `Forward to Telegram result: ok=${String(result.ok)}, domain=${payload.domain}, dialog=${payload.dialogId}, author=${payload.authorId || 'unknown'}, tgMessageId=${String(result.messageId)}`,

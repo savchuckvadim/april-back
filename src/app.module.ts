@@ -53,7 +53,9 @@ import { PbxRegistryModule } from './modules/pbx-registry';
 import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
 // import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
 import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
-// import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
+import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
+import { DealsOrderModule } from './apps/event-service/deals-order/deals-order.module';
+import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.module';
 
 @Module({
     imports: [
@@ -84,8 +86,6 @@ import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls
         MailModule,
         //apps
         EventServiceAppModule,
-
-        // DealsScheduleModule,
 
         // HooksModule,
         // AlfaActivityModule,
@@ -144,8 +144,11 @@ import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls
         DocumentCounterModule,
         PbxRegistryModule,
         CommandSmartActGsrModule,
-        // BitrixImBridgeModule, //только для сервера с телеграмом
-        MissedCallsTodoModule,
+        DealsScheduleModule, //запускает процессы отдела сервиса по расписанию : DealsOrderModule и DealsMoveModule
+        // BitrixImBridgeModule, //проверяет сообщения лс админа в битриксе только для сервера с телеграмом
+        MissedCallsTodoModule, //gsirk  проверяет пропущенные звонки
+        DealsOrderModule, //проверяет дубли и заполненность с по полей каждую неделю
+        DealsMoveModule, //перемещает сделки отдела сервиса каждые три часа по стадиям
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],

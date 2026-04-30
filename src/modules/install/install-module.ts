@@ -9,13 +9,21 @@ import { PortalKonstructorModule } from '../portal-konstructor/portal-konstructo
 import { SaveSmartFieldsService } from './smart/services/save/save-smart-fields.service';
 import { PbxDomainModule } from '../pbx-domain/pbx-domain.module';
 import { DeleteSmartUseCase } from './smart/use-cases/delete.use-case';
+import { ParseSmartRegistryService } from './smart/services/parse/parse-registry.service';
+import { PbxRegistryModule } from '../pbx-registry';
 
 @Module({
-    imports: [PBXModule, PortalKonstructorModule, PbxDomainModule],
+    imports: [
+        PBXModule,
+        PortalKonstructorModule,
+        PbxDomainModule,
+        PbxRegistryModule,
+    ],
     controllers: [PbxSmartController],
     providers: [
         PortalSmartService,
         ParseSmartService,
+        ParseSmartRegistryService,
         PbxInstallSmartService,
         SaveSmartService,
         SaveSmartFieldsService,
