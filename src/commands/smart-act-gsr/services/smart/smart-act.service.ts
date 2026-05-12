@@ -9,6 +9,8 @@ import { IPSmart } from '@/modules/portal/interfaces/portal.interface';
 
 export interface ICreateSmartAct {
     dealId: number;
+    companyId: number;
+    responsibleId: number;
     productQuantity: number;
     productCoefficient: number;
     smartItems: ISmartActItemsByDealResult;
@@ -53,6 +55,9 @@ export class SmartActService {
             categoryId: stageData.stage.CATEGORY_ID,
             stageId: stageData.stage.STATUS_ID,
             parentId2: dto.dealId,
+            companyId: dto.companyId,
+            parentId4: dto.companyId,
+            assignedById: dto.responsibleId,
             title: this.formatActPeriodTitle(dto.from, dto.to),
             ufCrm13PeriodFrom: dto.from,
             ufCrm13PeriodTo: dto.to,

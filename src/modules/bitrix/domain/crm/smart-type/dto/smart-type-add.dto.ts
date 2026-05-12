@@ -62,6 +62,7 @@ export interface IBXSmartTypeFields {
     isExternal?: YN; // Является ли смарт-процесс вынесенным из CRM
     customSectionId?: number; // Идентификатор цифрового рабочего места
     customSections?: any[]; // Массив цифровых рабочих мест
+    code?: string; // Код смарт-процесса
 }
 
 export class SmartTypeRelationDto implements IBXSmartTypeRelation {
@@ -107,6 +108,13 @@ export class SmartTypeRelationsDto implements IBXSmartTypeRelations {
 }
 
 export class SmartTypeFieldsDto implements IBXSmartTypeFields {
+    @ApiPropertyOptional({
+        description: 'Код смарт-процесса не известно работает ли - тестируем',
+    })
+    @IsOptional()
+    @IsString()
+    code?: string;
+
     @ApiProperty({
         description: 'Название смарт-процесса',
         example: 'Коммерческое предложение',

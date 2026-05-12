@@ -6,9 +6,11 @@ import {
     PbxFieldEntity,
     PbxFieldItem,
     PbxFieldItemEntity,
+    PbxFieldWithItems,
 } from '../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { FieldDataHelper } from '../lib/field-data.helper';
+import { mapFromDbToEntityField } from '../lib/map-from-db-to-entity-field.util';
 
 @Injectable()
 export class PbxFieldPrismaRepository implements PbxFieldRepository {
@@ -30,6 +32,13 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
         return fields.map(field => FieldDataHelper.getFieldEntity(field));
     }
 
+    async findManyWithItems(ids: bigint[]): Promise<PbxFieldEntity[]> {
+        const fields = await this.prisma.bitrixfields.findMany({
+            where: { id: { in: ids } },
+            include: { bitrixfield_items: true },
+        });
+        return fields.map(field => mapFromDbToEntityField(field));
+    }
     async addField(field: PbxFieldEntity): Promise<PbxField> {
         const newField = await this.prisma.bitrixfields.create({
             data: FieldDataHelper.createFieldData(field),
@@ -128,9 +137,9 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
         });
     }
 
-    async upsertFields(fields: PbxFieldEntity[]): Promise<PbxField[]> {
+    async upsertFields(fields: PbxFieldEntity[]): Promise<PbxFieldWithItems[]> {
         return await this.prisma.$transaction(async tx => {
-            const resultFields: PbxField[] = [];
+            const resultFields: PbxFieldWithItems[] = [];
 
             for (const field of fields) {
                 // Проверяем существование field по code, entity_id и entity_type
@@ -145,7 +154,7 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
                     },
                 });
 
-                let currentField: PbxField;
+                let currentField: PbxFieldWithItems;
 
                 if (existingField) {
                     // Обновляем существующий field
@@ -167,7 +176,7 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
                 }
 
                 // Обрабатываем items
-                if (field.items.length > 0) {
+                if (field?.items && field.items.length > 0) {
                     // Получаем существующие items для этого field
                     const existingItems = await tx.bitrixfield_items.findMany({
                         where: { bitrixfield_id: currentField.id },

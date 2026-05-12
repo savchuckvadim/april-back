@@ -43,6 +43,11 @@ export class ComplectInfoblockValueDto {
     @IsBoolean()
     @IsOptional()
     isRegion?: boolean;
+
+    @ApiProperty({ description: 'Description of the complect value' })
+    @IsOptional()
+    @IsString()
+    subtitle?: string | null | undefined;
 }
 
 export class ComplectDto {

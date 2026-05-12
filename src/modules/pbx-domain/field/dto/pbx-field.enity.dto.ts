@@ -10,6 +10,8 @@ import { PbxEntityTypePrisma } from '@/shared/enums';
 import { EUserFieldType } from '@/modules/bitrix';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { PbxSalesEventFieldType } from '../type/sales/event/pbx-sales-event-field.type';
+import { PbxSalesKonstructorFieldType } from '../type/sales/konstructor/pbx-sales-konstructor-field.type';
 
 export class PbxFieldItemEntityDto {
     constructor(item: PbxFieldItemEntity) {
@@ -98,7 +100,11 @@ export class PbxFieldEntityDto {
         enumName: 'EUserFieldType',
     })
     @IsEnum(EUserFieldType)
-    type: EUserFieldType | 'multiple';
+    type:
+        | EUserFieldType
+        | 'multiple'
+        | PbxSalesEventFieldType
+        | PbxSalesKonstructorFieldType;
 
     @ApiProperty({
         description: 'Field is plural',

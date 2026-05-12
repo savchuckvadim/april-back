@@ -1,8 +1,9 @@
 export interface IBXField {
     ID: string;
+    LABEL: string;
     ENTITY_ID: string;
     FIELD_NAME: string;
-    USER_TYPE_ID: EnumUserFieldType | 'enumeration' | string;
+    USER_TYPE_ID: EnumUserFieldType | string;
     XML_ID: string | null;
     SORT: string;
     MULTIPLE: 'Y' | 'N';
@@ -34,7 +35,8 @@ export interface BitrixLangMapNullable {
 }
 
 export interface BitrixEnumerationOption {
-    ID: string;
+    ID?: string;
+    XML_ID: string;
     SORT: string;
     VALUE: string;
     DEF: 'Y' | 'N';

@@ -49,7 +49,7 @@ export class BxStatusRepository {
     }
 
     async add(fields: Partial<IBXStatus>) {
-        return this.bxApi.callType(
+        return await this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.STATUS,
             EBxMethod.ADD,

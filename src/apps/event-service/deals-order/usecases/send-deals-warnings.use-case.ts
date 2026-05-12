@@ -6,7 +6,7 @@ import { UserInfoService } from '../services/user/user-info.service';
 import { DealMessageService } from '../services/message-send/deal-message.service';
 import { DealWarningsBbcodeFormatterService } from '../services/message-layout/deal-warnings-bbcode-formatter.service';
 
-const ADMIN_USER_ID = '221';
+const ADMIN_USER_ID = '187';
 const DEFAULT_DOMAIN = 'gsr.bitrix24.ru';
 
 type DuplicateWarning = {
@@ -25,7 +25,7 @@ type EmployeeReport = {
 };
 
 type SendMode = 'employee' | 'admin' | 'both';
-const mode: SendMode = 'both';
+const mode: SendMode = 'admin';
 @Injectable()
 export class SendDealsWarningsUseCase {
     constructor(

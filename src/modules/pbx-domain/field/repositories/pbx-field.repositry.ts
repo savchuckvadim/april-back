@@ -3,6 +3,7 @@ import {
     PbxFieldEntity,
     PbxFieldItem,
     PbxFieldItemEntity,
+    PbxFieldWithItems,
 } from '../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 
@@ -11,9 +12,12 @@ export abstract class PbxFieldRepository {
         entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<PbxFieldEntity[]>;
+    abstract findManyWithItems(ids: bigint[]): Promise<PbxFieldEntity[]>;
     abstract addField(field: PbxFieldEntity): Promise<PbxField>;
     abstract addFields(fields: PbxFieldEntity[]): Promise<PbxField[]>;
-    abstract upsertFields(fields: PbxFieldEntity[]): Promise<PbxField[]>;
+    abstract upsertFields(
+        fields: PbxFieldEntity[],
+    ): Promise<PbxFieldWithItems[]>;
     abstract addFieldItem(
         fieldId: string,
         fieldItem: PbxFieldItemEntity,

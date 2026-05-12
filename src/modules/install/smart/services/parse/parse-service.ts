@@ -1,15 +1,82 @@
 import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { Category, Field, ListItem, Smart, Stage } from '../../type/parse.type';
+import { Category, Smart, Stage } from '../../type/parse.type';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { EUserFieldType } from '@/modules/bitrix';
+import { unwrapExcelCellValue } from '@/modules/install/shared';
+import { ParseFieldsService } from '@/modules/install/shared/parse-field-excel/services/parse-fields.service';
+import { PbxEntityType } from '@/shared';
+
+/** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
+type SmartImportSheetRow = readonly [
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    boolean,
+    number,
+    boolean,
+];
+
+/** Categories sheet row (full row.values incl. ExcelJS leading empty cell) */
+type CategoryImportSheetRow = readonly [
+    unknown,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+    boolean,
+    boolean,
+    number,
+    boolean,
+];
+
+/** Stages sheet row (full row.values incl. ExcelJS leading empty cell) */
+type StageImportSheetRow = readonly [
+    unknown,
+    string, //id
+    string, //name
+    string, //title
+    string, //type
+    string, // group
+    string, //bitrixId
+    string, //color
+    string, //code
+    string, // entityType
+    string, //parentType
+    string, //isActive 'true' | 'false'
+    string, // category id
+    string, //isNeedUpdate 'true' | 'false'
+    number, //order
+    'Y' | 'N', //is default
+];
 
 @Injectable()
 export class ParseSmartService {
     private readonly logger = new Logger(ParseSmartService.name);
     private readonly installPath = 'install';
-    constructor(private readonly storageService: StorageService) { }
+    constructor(
+        private readonly storageService: StorageService,
+        private readonly parseFieldsService: ParseFieldsService,
+    ) {}
 
     async getParsedData(
         smartName: SmartNameEnum,
@@ -37,7 +104,7 @@ export class ParseSmartService {
     private async parseData(path: string): Promise<Smart[]> {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(path);
-        const colorsSheet = workbook.worksheets[0];
+        // const colorsSheet = workbook.worksheets[0];
         const fieldsSheet = workbook.worksheets[1];
         const fieldItemsSheet = workbook.worksheets[2];
         const smartsSheet = workbook.worksheets[3];
@@ -78,10 +145,12 @@ export class ParseSmartService {
                 );
                 category.stages = stages;
             });
-            console.log('smart', smart.name);
-            console.log('categories', categories);
             smart.categories = categories;
-            smart.fields = this.getFieldsData(fieldsSheet, fieldItemsSheet);
+            smart.fields = this.parseFieldsService.getFieldsData(
+                fieldsSheet,
+                fieldItemsSheet,
+                PbxEntityType.SMART,
+            );
             resultSmarts.push(smart);
         });
 
@@ -94,13 +163,11 @@ export class ParseSmartService {
         smartsSheet.eachRow((row, index) => {
             // Пропускаем заголовок (первую строку с индексом 1)
             if (index === 1) return;
-            const rawValues = row.values as any[];
+            const rawValues = row.values as unknown[];
             // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
             const values = rawValues
                 .slice(1)
-                .map(v =>
-                    v && typeof v === 'object' && 'result' in v ? v.result : v,
-                );
+                .map(unwrapExcelCellValue) as unknown as SmartImportSheetRow;
 
             const [
                 smartId,
@@ -111,7 +178,7 @@ export class ParseSmartService {
                 type,
                 group,
                 bitrixId,
-                entityTypeId,
+                ,
                 forStageId,
                 forFilterId,
                 crmId,
@@ -120,7 +187,7 @@ export class ParseSmartService {
                 crm,
                 isActive,
                 smartOrder,
-                smartIsDefault,
+                ,
             ] = values;
 
             const smart: Smart = {
@@ -155,17 +222,19 @@ export class ParseSmartService {
         categoriesSheet: ExcelJS.Worksheet,
         entityTypeId: string,
     ): Category[] {
-        const categoriesData: any[][] = [];
+        const categoriesData: CategoryImportSheetRow[] = [];
         categoriesSheet.eachRow((row, index) => {
-            const values = row.values as any[];
             if (index === 1) return; // Пропускаем заголовок (первая строка)
-            categoriesData.push(values);
+            const rawValues = row.values as unknown[];
+            const categoryValues = rawValues.map(
+                unwrapExcelCellValue,
+            ) as unknown as CategoryImportSheetRow;
+            categoriesData.push(categoryValues);
         });
         const categories: Category[] = [];
         categoriesData.forEach(categoryValues => {
-            console.log('categoryValues', categoryValues);
             const [
-                emptyValue,
+                ,
                 categoryId,
                 categoryEntityTypeId,
                 categoryEntityType,
@@ -181,9 +250,6 @@ export class ParseSmartService {
                 categoryOrder,
                 cIsDefault,
             ] = categoryValues;
-            console.log('categoryIsNeedUpdate', categoryIsNeedUpdate);
-            console.log('entityTypeId', entityTypeId);
-            console.log('categoryEntityTypeId', categoryEntityTypeId);
             if (categoryIsNeedUpdate) {
                 if (entityTypeId == categoryEntityTypeId) {
                     const category: Category = {
@@ -216,39 +282,43 @@ export class ParseSmartService {
         categoryId: string,
         categoryEntityTypeId: string,
     ): Stage[] {
-        const stagesData: any[][] = [];
+        const stagesData: StageImportSheetRow[] = [];
         const stages: Stage[] = [];
         stagesSheet.eachRow((row, index) => {
-            const values = row.values as any[];
             if (index === 1) return; // Пропускаем заголовок (первая строка)
-            stagesData.push(values);
+            const rawValues = row.values as unknown[];
+            const stageValues = rawValues.map(
+                unwrapExcelCellValue,
+            ) as unknown as StageImportSheetRow;
+            stagesData.push(stageValues);
         });
 
         stagesData.forEach(stageValues => {
             const [
-                emptyValue,
+                ,
                 stageId,
-                stageName,
-                stageTitle,
-                stageType,
-                stageGroup,
-                stageBitrixId,
-                stageColor,
-                stageCode,
-                stageEntityType,
-                stageParentType,
-                stageIsActive,
-                stageSmartBitrixId,
+                stageName, //presentation
+                stageTitle, // Запланирована
+                stageType, // smart
+                stageGroup, //general
+                stageBitrixId, // NEW
+                stageColor, // #3bc8f5
+                stageCode, //pres_new
+                stageEntityType, //smart
+                stageParentType, //presentation
+                stageIsActive, //true
+                // stageSmartBitrixId,
                 stageCategoryId,
-                stageBitrixEnitiyId,
+                // stageBitrixEnitiyId,
                 stageIsNeedUpdate,
                 stageOrder,
+                stageIsDefault,
             ] = stageValues;
-            console.log('stageValues', stageValues);
-            console.log('stageIsNeedUpdate', stageIsNeedUpdate);
-            console.log('categoryId', categoryId);
-            console.log('stageCategoryId', stageCategoryId);
-            if (stageIsNeedUpdate) {
+
+            const isNeedUpdate = stageIsNeedUpdate === 'true';
+            const isActive = stageIsActive === 'true';
+
+            if (isNeedUpdate) {
                 if (stageCategoryId === categoryId) {
                     const stage: Stage = {
                         id: stageId,
@@ -260,130 +330,133 @@ export class ParseSmartService {
                         name: stageName,
                         title: stageTitle,
                         bitrixId: stageBitrixId,
-                        isActive: stageIsActive,
-                        smartBitrixId: stageSmartBitrixId,
+                        isActive: isActive,
+                        smartBitrixId: '',
                         color: stageColor,
                         code: stageCode,
-                        isNeedUpdate: stageIsNeedUpdate,
-                        order: stageOrder,
-                        bitrixEnitiyId: stageBitrixEnitiyId,
+                        isNeedUpdate: isNeedUpdate,
+                        order: Number(stageOrder),
+                        bitrixEnitiyId: '',
+                        isDefault: stageIsDefault,
                     };
 
                     stages.push(stage);
                 }
             }
         });
-
+        console.log('stages', stages);
         return stages;
     }
 
-    private getFieldsData(
-        fieldsSheet: ExcelJS.Worksheet,
-        fieldItemsSheet: ExcelJS.Worksheet,
-    ): Field[] {
-        const fieldsData: any[][] = [];
-        fieldsSheet.eachRow((row, index) => {
-            if (index === 1) return; // Пропускаем заголовок (первая строка)
-            const rawValues = row.values as any[];
-            // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-            const values = rawValues
-                .slice(1)
-                .map(v =>
-                    v && typeof v === 'object' && 'result' in v ? v.result : v,
-                );
-            fieldsData.push(values);
-        });
+    // private getFieldsData(
+    //     fieldsSheet: ExcelJS.Worksheet,
+    //     fieldItemsSheet: ExcelJS.Worksheet,
+    // ): Field[] {
+    //     const fieldsData: FieldImportSheetRow[] = [];
+    //     fieldsSheet.eachRow((row, index) => {
+    //         if (index === 1) return; // Пропускаем заголовок (первая строка)
+    //         const rawValues = row.values as unknown[];
+    //         // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
+    //         const fieldValues = rawValues
+    //             .slice(1)
+    //             .map(unwrapExcelCellValue) as unknown as FieldImportSheetRow;
+    //         fieldsData.push(fieldValues);
+    //     });
 
-        const fields: Field[] = [];
+    //     const fields: Field[] = [];
 
-        fieldsData.forEach(fieldValues => {
-            const [
-                name,
-                appType,
-                shortType,
-                type,
-                list,
-                code,
-                smart,
-                order,
-                isNeedUpdate,
-                multiple,
-            ] = fieldValues;
+    //     fieldsData.forEach(fieldValues => {
+    //         const [
+    //             name,
+    //             appType,
+    //             ,
+    //             type,
+    //             ,
+    //             code,
+    //             smart,
+    //             order,
+    //             isNeedUpdate,
+    //             multiple,
+    //         ] = fieldValues;
+    //         const fieldType:
+    //             | PbxSalesEventFieldType
+    //             | PbxSalesKonstructorFieldType = type as
+    //             | PbxSalesEventFieldType
+    //             | PbxSalesKonstructorFieldType;
+    //         let listArray: ListItem[] = [];
+    //         if (fieldType === 'enumeration') {
+    //             listArray = this.getListItems(fieldItemsSheet, code);
+    //         }
 
-            let listArray: ListItem[] = [];
-            if (type === 'enumeration') {
-                listArray = this.getListItems(fieldItemsSheet, code);
-            }
+    //         const field: Field = {
+    //             name,
+    //             appType,
+    //             type: fieldType,
+    //             list: listArray,
+    //             code,
+    //             smart,
+    //             order,
+    //             isNeedUpdate,
+    //             isMultiple: multiple,
+    //         };
 
-            const field: Field = {
-                name,
-                appType,
-                type,
-                list: listArray,
-                code,
-                smart,
-                order,
-                isNeedUpdate,
-                isMultiple: multiple,
-            };
+    //         fields.push(field);
+    //     });
 
-            fields.push(field);
-        });
+    //     return fields;
+    // }
 
-        return fields;
-    }
+    // private getListItems(
+    //     fieldItemsSheet: ExcelJS.Worksheet,
+    //     code: string,
+    // ): ListItem[] {
+    //     const listArray: ListItem[] = [];
+    //     const itemsData: FieldItemImportSheetRow[] = [];
 
-    private getListItems(
-        fieldItemsSheet: ExcelJS.Worksheet,
-        code: string,
-    ): ListItem[] {
-        const listArray: ListItem[] = [];
-        const itemsData: any[][] = [];
+    //     fieldItemsSheet.eachRow((row, index) => {
+    //         if (index === 1) return; // Пропускаем заголовок (первая строка)
+    //         const rawValues = row.values as unknown[];
+    //         // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
+    //         const itemValues = rawValues
+    //             .slice(1)
+    //             .map(
+    //                 unwrapExcelCellValue,
+    //             ) as unknown as FieldItemImportSheetRow;
+    //         itemsData.push(itemValues);
+    //     });
 
-        fieldItemsSheet.eachRow((row, index) => {
-            if (index === 1) return; // Пропускаем заголовок (первая строка)
-            const rawValues = row.values as any[];
-            // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-            const values = rawValues
-                .slice(1)
-                .map(v =>
-                    v && typeof v === 'object' && 'result' in v ? v.result : v,
-                );
-            itemsData.push(values);
-        });
+    //     itemsData.forEach(itemValues => {
+    //         const [
+    //             ,
+    //             field_code,
+    //             item_name,
+    //             item_code,
+    //             ,
+    //             item_order,
+    //             ,
+    //             item_isActive,
+    //             item_isNeedUpdate,
+    //         ] = itemValues;
 
-        itemsData.forEach(itemValues => {
-            const [
-                field_name,
-                field_code,
-                item_name,
-                item_code,
-                field_app,
-                item_order,
-                item_del,
-                item_isActive,
-                item_isNeedUpdate,
-            ] = itemValues;
+    //         if (field_code == code) {
+    //             if (item_isNeedUpdate && item_isActive) {
+    //                 listArray.push(
+    //                     this.getListItem(item_name, item_code, item_order),
+    //                 );
+    //             }
+    //         }
+    //     });
 
-            if (field_code == code) {
-                if (item_isNeedUpdate && item_isActive) {
-                    listArray.push(
-                        this.getListItem(item_name, item_code, item_order),
-                    );
-                }
-            }
-        });
+    //     return listArray;
+    // }
 
-        return listArray;
-    }
-
-    private getListItem(name: string, code: string, order: number): ListItem {
-        return {
-            VALUE: name,
-            DEL: 'N',
-            XML_ID: code,
-            CODE: code,
-            SORT: order,
-        };
-    }
+    // private getListItem(name: string, code: string, order: number): ListItem {
+    //     return {
+    //         VALUE: name,
+    //         DEL: 'N',
+    //         XML_ID: code,
+    //         CODE: code,
+    //         SORT: order,
+    //     };
+    // }
 }

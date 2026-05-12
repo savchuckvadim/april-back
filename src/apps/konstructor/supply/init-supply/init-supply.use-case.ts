@@ -4,7 +4,7 @@ import { InitSupplyTimelineCommentService } from './services/rpa-timeline-commen
 import { InitSupplyRpaFieldsService } from './services/rpa-fields/init-supply-rpa-fields.service';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBxRpaItem } from '@/modules/bitrix/domain/rpa/item/interface/bx-rpa-item.interface';
-import { EBXEntity, IBXTimelineComment } from '@/modules/bitrix';
+import { EBXEntity } from '@/modules/bitrix';
 
 @Injectable()
 export class InitSupplyUseCase {
@@ -28,7 +28,6 @@ export class InitSupplyUseCase {
         }
 
         let rpaResponse: IBxRpaItem | null = null;
-        let rpaTimelineResponse: IBXTimelineComment | null = null;
         const rpaFields = await this.initSupplyRpaFieldsService.getRpaFields(
             dto,
             PortalModel,
@@ -57,7 +56,7 @@ export class InitSupplyUseCase {
         const timelineComment =
             await this.initSupplyTimelineCommentService.getTimelineComment(dto);
         if (rpaId && dto.userId) {
-            rpaTimelineResponse = await bitrix.api.call('rpa.timeline.add', {
+            await bitrix.api.call('rpa.timeline.add', {
                 typeId: rpaTypeId,
                 itemId: rpaResponse?.id,
                 userId: dto.userId.toString(),
@@ -67,8 +66,8 @@ export class InitSupplyUseCase {
                 },
             });
 
-            dto.dealId &&
-                (await bitrix.timeline.addTimelineComment({
+            if (dto.dealId) {
+                await bitrix.timeline.addTimelineComment({
                     ENTITY_ID: Number(dto.dealId),
                     ENTITY_TYPE: EBXEntity.DEAL,
                     COMMENT: this.getCommentEntityMessage(
@@ -77,7 +76,8 @@ export class InitSupplyUseCase {
                         rpaId,
                     ),
                     AUTHOR_ID: dto.userId.toString(),
-                }));
+                });
+            }
         }
         return {
             rpaDb: rpaType,

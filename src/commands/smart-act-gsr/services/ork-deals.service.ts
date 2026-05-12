@@ -10,6 +10,7 @@ import {
     IOrkDealPeriodData,
 } from './ork-deals/deal-perod-data.service';
 import { PortalModel } from '@/modules/portal/services/portal.model';
+import { delay } from '@/shared';
 
 export interface IOrkDeal {
     deal: IBXDeal;
@@ -31,7 +32,7 @@ export class OrkDealsService {
         private readonly dealGroupingService: DealGroupingService,
         private readonly dealContractPeriodService: DealContractPeriodService,
         private readonly dealPerodDataService: DealPerodDataService,
-    ) {}
+    ) { }
 
     public async geGrouppedByComapny() {
         const { deals: openDeals, portal } =
@@ -90,20 +91,33 @@ export class OrkDealsService {
     public async getDealService(
         portal: PortalModel,
         assignedById?: string,
+        dealId?: number,
     ): Promise<IOrkDeals> {
-        // const allDeals =
-        //     await this.dealQueryService.getAllDealsByAssigned(assignedById);
-        const openDeals =
-            await this.dealQueryService.getOpenDealsByAssigned(assignedById);
-        const preparedDeals =
-            (openDeals?.map(deal =>
-                this.getDealPreparedResult(deal, portal),
-            ) as IOrkDeal[]) ?? [];
+        // console.log('getting all deals by assigned by id', assignedById);
+        // const openDeals = await this.dealQueryService.getAllDealsByAssigned(
+        //     assignedById,
+        //     dealId,
+        // );
+        console.log('getting fail deals by assigned by id', assignedById);
+        const failDeals = await this.dealQueryService.getFailDealsByAssigned(
+            assignedById,
+            dealId,
+        );
+        await delay(2000);
+        console.log('getting open deals by assigned by id', assignedById);
+        const openDeals = await this.dealQueryService.getOpenDealsByAssigned(
+            assignedById,
+            dealId,
+        );
+        const deals = [...(failDeals ?? []), ...(openDeals ?? [])];
+        const preparedDeals = deals.map(deal =>
+            this.getDealPreparedResult(deal, portal),
+        );
         // const successDeals =
         //     await this.dealQueryService.getSuccessDealsByAssigned(assignedById);
-        // const failDeals =
-        //     await this.dealQueryService.getFailDealsByAssigned(assignedById);
 
+        const preparedOpenDealsCount = preparedDeals?.length;
+        console.log('preparedOpenDealsCount', preparedOpenDealsCount);
         return {
             // allDeals: {
             //     count: allDeals?.length ?? 0,

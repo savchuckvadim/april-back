@@ -6,6 +6,7 @@ import {
 } from '../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { EUserFieldType } from '@/modules/bitrix';
+import { bigintConvertToNumber } from '@/shared';
 
 export class FieldDataHelper {
     static createFieldData(field: PbxFieldEntity) {
@@ -64,7 +65,7 @@ export class FieldDataHelper {
         entity.type = field.type as EUserFieldType | 'multiple';
         entity.bitrixCamelId = field.bitrixCamelId;
         entity.bitrixId = field.bitrixId;
-        entity.entity_id = field.entity_id;
+        entity.entity_id = bigintConvertToNumber(field.entity_id);
         entity.entity_type = field.entity_type as PbxEntityTypePrisma;
         entity.parent_type = field.parent_type;
         // entity.created_at = item.created_at?.toISOString() || '';
@@ -83,8 +84,8 @@ export class FieldDataHelper {
         entity.name = item.name;
         entity.title = item.title;
         entity.code = item.code;
+        entity.bitrixfield_id = bigintConvertToNumber(item.bitrixfield_id);
         entity.bitrixId = item.bitrixId;
-
         return entity;
     }
 }

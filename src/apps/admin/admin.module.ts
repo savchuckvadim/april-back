@@ -11,7 +11,6 @@ import { BitrixFieldModule } from './portal/bitrixfields/bitrixfield.module';
 import { SmartModule } from './portal/smarts/smart.module';
 import { BxRqModule } from './portal/bx-rqs/bx-rq.module';
 import { TimezoneModule } from './portal/timezones/timezone.module';
-import { BtxCategoryModule } from './portal/btx-categories/btx-category.module';
 import { ContractModule } from './garant/contracts/contract.module';
 import { MeasureModule } from './garant/measures/measure.module';
 import { PortalMeasureModule } from './portal/portal-measures/portal-measure.module';
@@ -22,6 +21,7 @@ import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.mod
 import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
 import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
 import { PbxInstallModule } from './portal/pbx-install/pbx-install.module';
+import { PortalCategoryModule } from '@/modules/pbx-domain/category';
 
 @Module({
     imports: [
@@ -37,7 +37,7 @@ import { PbxInstallModule } from './portal/pbx-install/pbx-install.module';
         SmartModule,
         BxRqModule,
         TimezoneModule,
-        BtxCategoryModule,
+        PortalCategoryModule,
         ContractModule,
         MeasureModule,
         PortalMeasureModule,

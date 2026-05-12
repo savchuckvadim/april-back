@@ -1,4 +1,4 @@
-import { EUserFieldType } from '@/modules/bitrix';
+import { Field } from '@/modules/install/shared/parse-field-excel/type/parse-field.type';
 
 export interface Smart {
     id: string;
@@ -39,6 +39,7 @@ export interface Stage {
     isNeedUpdate: boolean;
     order: number;
     bitrixEnitiyId: string;
+    isDefault: 'Y' | 'N';
 }
 
 export interface Category {
@@ -57,24 +58,4 @@ export interface Category {
     order: number;
     isDefault: boolean;
     stages: Stage[];
-}
-
-export interface ListItem {
-    VALUE: string;
-    DEL: string;
-    XML_ID: string;
-    CODE: string;
-    SORT: number;
-}
-
-export interface Field {
-    name: string;
-    appType: string;
-    type: EUserFieldType;
-    list: ListItem[];
-    code: string;
-    smart: string;
-    order: number;
-    isNeedUpdate: boolean;
-    isMultiple: boolean;
 }

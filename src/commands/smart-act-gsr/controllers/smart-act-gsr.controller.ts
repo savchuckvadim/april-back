@@ -6,7 +6,7 @@ import { SmartActGsrService } from '../services/smart/smart-act-gsr.service';
 @ApiTags('Commands Smart Act Gsr')
 @Controller('commands/smart-act-gsr')
 export class SmartActGsrController {
-    constructor(private readonly smartActGsrService: SmartActGsrService) { }
+    constructor(private readonly smartActGsrService: SmartActGsrService) {}
 
     @Get()
     @ApiOperation({ summary: 'Get smart act gsr' })

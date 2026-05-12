@@ -16,10 +16,11 @@ import {
     PbxSalesKonstructorField,
     PbxSalesKonstructorFieldCode,
 } from '../../type/sales/konstructor/pbx-sales-konstructor-field.type';
-import { PbxFieldEntity } from '../../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { delay } from '@/shared/lib';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
+import { mapFieldTypeToBitrixType } from '../../lib/field-type-to-bx.mapper';
+import { buildPbxFieldEntityFromPortalInstall } from '../../lib/install-field-entity.mapper';
 
 type FieldGroup = 'sales' | 'service';
 type AppType = 'event' | 'konstructor';
@@ -95,7 +96,6 @@ export class PbxFieldSmartInstallService {
             for (const smartEntity of entitiesToProcess) {
                 const fieldResults = await this.installFieldForSmart(
                     bitrix,
-                    portal,
                     field,
                     appType,
                     smartEntity.entityTypeId,
@@ -147,7 +147,6 @@ export class PbxFieldSmartInstallService {
 
     private async installFieldForSmart(
         bitrix: BitrixService,
-        portal: IPortal,
         field: PbxSalesEventField | PbxSalesKonstructorField,
         appType: AppType,
         entityTypeId: number,
@@ -247,7 +246,7 @@ export class PbxFieldSmartInstallService {
         itemKey: 'items' | 'list',
     ): Partial<IUserFieldConfig> {
         const fieldName = `UF_CRM_${bitrixFieldId}`;
-        const userTypeId = this.mapFieldTypeToBitrixType(field.type);
+        const userTypeId = mapFieldTypeToBitrixType(field.type);
         const items = (field[itemKey] || []) as Array<{
             value?: string;
             code: string;
@@ -288,23 +287,6 @@ export class PbxFieldSmartInstallService {
         return config;
     }
 
-    private mapFieldTypeToBitrixType(type: string): EUserFieldType {
-        const typeMap: Record<string, EUserFieldType> = {
-            string: EUserFieldType.STRING,
-            integer: EUserFieldType.INTEGER,
-            double: EUserFieldType.DOUBLE,
-            datetime: EUserFieldType.DATETIME,
-            date: EUserFieldType.DATE,
-            boolean: EUserFieldType.BOOLEAN,
-            enumeration: EUserFieldType.ENUMERATION,
-            employee: EUserFieldType.EMPLOYEE,
-            multiple: EUserFieldType.ENUMERATION,
-            money: EUserFieldType.MONEY,
-        };
-
-        return typeMap[type] || EUserFieldType.STRING;
-    }
-
     private getBitrixFieldId(
         field: PbxSalesEventField | PbxSalesKonstructorField,
         entityKey: 'lead' | 'company' | 'deal' | 'smart',
@@ -321,36 +303,13 @@ export class PbxFieldSmartInstallService {
         itemKey: 'items' | 'list',
         entityId: bigint,
     ): Promise<void> {
-        const bitrixFieldIdStr = `UF_CRM_${bitrixFieldId}`;
-
-        const fieldEntity = new PbxFieldEntity();
-        fieldEntity.name = field.name;
-        fieldEntity.title = field.name;
-        fieldEntity.code = field.code;
-        fieldEntity.type = this.mapFieldTypeToBitrixType(field.type);
-        fieldEntity.bitrixId = bitrixFieldIdStr;
-        fieldEntity.bitrixCamelId = '';
-        fieldEntity.entity_id = entityId;
-        fieldEntity.entity_type = PbxEntityTypePrisma.SMART;
-        fieldEntity.parent_type = '';
-        fieldEntity.isPlural = field.isMultiple;
-        fieldEntity.items = (
-            (field[itemKey] || []) as Array<{
-                code: string;
-                name?: string;
-                title?: string;
-                bitrixId?: string | number;
-            }>
-        ).map(item => ({
-            name: item.name || item.code,
-            title: item.title || item.code,
-            code: item.code,
-            bitrixId:
-                typeof item.bitrixId === 'number'
-                    ? item.bitrixId
-                    : parseInt(item.bitrixId || '0', 10),
-            bitrixfield_id: BigInt(0),
-        }));
+        const fieldEntity = buildPbxFieldEntityFromPortalInstall({
+            field,
+            itemKey,
+            entityId,
+            entityType: PbxEntityTypePrisma.SMART,
+            bitrixFieldId,
+        });
 
         await this.pbxFieldService.upsertFields([fieldEntity]);
     }
@@ -376,7 +335,6 @@ export class PbxFieldSmartInstallService {
             for (const entityTypeId of entityTypeIds) {
                 const fieldResults = await this.installFieldForSmart(
                     bitrix,
-                    portal,
                     field,
                     appType,
                     entityTypeId,

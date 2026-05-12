@@ -23,6 +23,7 @@ export enum JobNames {
     SERVICE_DEAL_MOVE_STAGES = 'service-deal-move-stages',
     SERVICE_DEAL_INIT = 'service-deal-init',
     SERVICE_DEALS_ORDER = 'service-deals-order',
+    SERVICE_GENERATE_ACTS = 'service-generate-acts',
 
     OFFER_WORD_EPHEMERAL_PDF_GENERATE = 'offer-word-ephemeral-pdf-generate',
 }

@@ -42,14 +42,18 @@ export function periodMatchesSlot(
 }
 
 /**
- * Прошедшие по договору месяцы (monthIndex меньше currentMonth) → цель success;
- * текущий месяц договора → inprogress (новый акт создаём открытым).
+ * Слоты за полностью прошедшие месяцы договора → success (как в actsSummury.expectedClosed).
+ * Слот за текущий незавершённый месяц (monthIndex > passedMonths) → inprogress.
+ *
+ * Важно: при now >= end договора passedMonths === totalMonths, все слоты доходят до success
+ * (в т.ч. последний), а не monthIndex < currentMonth — там при currentMonth === totalMonths
+ * последний месяц ошибочно оставался inprogress.
  */
 export function resolveCreateStageForSlot(
     monthIndex: number,
-    currentMonth: number,
+    passedMonths: number,
 ): 'success' | 'inprogress' {
-    return monthIndex < currentMonth ? 'success' : 'inprogress';
+    return monthIndex <= passedMonths ? 'success' : 'inprogress';
 }
 
 export function findUnusedActMatchingSlot(

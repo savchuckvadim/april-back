@@ -17,9 +17,11 @@ import { CategorySmartActService } from './services/smart/category-smart-act.ser
 import { RedisModule } from '@/core/redis/redis.module';
 import { OrkActsReconcilePlanUseCase } from './usecases/ork-acts-reconcile-plan.use-case';
 import { ActNProductHandlerUseCase } from './usecases/act-n-product-handler.use-case';
+import { QueueModule } from '@/modules/queue/queue.module';
+import { SmartActProcessor } from './queue/smart-act.processor';
 
 @Module({
-    imports: [PBXModule, RedisModule],
+    imports: [PBXModule, RedisModule, QueueModule],
     controllers: [SmartActGsrController, DealActGsrController],
     providers: [
         SmartActGsrService,
@@ -34,6 +36,7 @@ import { ActNProductHandlerUseCase } from './usecases/act-n-product-handler.use-
         CategorySmartActService,
         OrkActsReconcilePlanUseCase,
         ActNProductHandlerUseCase,
+        SmartActProcessor,
     ],
 })
 export class CommandSmartActGsrModule {}

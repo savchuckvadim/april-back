@@ -11,10 +11,12 @@ import {
     buildContractActPeriods,
     IContractActPeriodSlot,
 } from '../services/ork-deals/utils/build-contract-act-periods.util';
+import { tryBuildLicenseCalendarOneMonthShift } from '../services/ork-deals/utils/deal-license-calendar-one-month-shift.util';
 
 type TReconcileActionType =
     | 'notify_responsible_missing_data'
     | 'skip_contract_not_started'
+    | 'align_contract_start_one_month_license'
     | 'remove_failed_acts'
     | 'create_new_act'
     | 'close_inprogress_act'
@@ -28,6 +30,8 @@ export interface IReconcileActionPlanItem {
     reason: string;
     // Технический комментарий: здесь описываем, какой API-вызов будет позже.
     todoComment: string;
+    /** Для align_contract_start_one_month_license — новое значение UF «дата начала» (ISO). */
+    shiftedContractStartIso?: string;
 }
 
 export interface IDealReconcilePlan {
@@ -64,9 +68,10 @@ export interface IDealReconcilePlan {
 export class OrkActsReconcilePlanUseCase {
     constructor(private readonly orkActsUpdateUseCase: OrkActsUpdateUseCase) {}
 
-    async execute(): Promise<{ plans: IDealReconcilePlan[] }> {
+    async execute(dealId?: number): Promise<{ plans: IDealReconcilePlan[] }> {
         console.log('OrkActsReconcilePlanUseCase execute');
-        const { dealsWithRows } = await this.orkActsUpdateUseCase.execute();
+        const { dealsWithRows } =
+            await this.orkActsUpdateUseCase.execute(dealId);
         const plans = dealsWithRows.map(item => {
             const result = this.buildDealPlan(item);
             console.log('OrkActsReconcilePlanUseCase result', result);
@@ -76,7 +81,7 @@ export class OrkActsReconcilePlanUseCase {
     }
 
     private buildDealPlan(item: IDealWithRows): IDealReconcilePlan {
-        const dealId = item.deal.deal.ID;
+        const dealId = Number(item.deal.deal.ID);
         const assignedById = item.deal.deal.ASSIGNED_BY_ID ?? null;
         const { periodData } = item.deal;
 
@@ -172,6 +177,23 @@ export class OrkActsReconcilePlanUseCase {
             };
         }
 
+        const licenseOneMonthShift = tryBuildLicenseCalendarOneMonthShift({
+            calendarTotalMonths: totalMonths,
+            contractFromIso: periodData.from,
+            productQuantity: item.productQuantity,
+            productCoefficient: item.productCoefficient,
+        });
+        if (licenseOneMonthShift != null) {
+            actions.push({
+                type: 'align_contract_start_one_month_license',
+                reason: `Календарь договора ${licenseOneMonthShift.calendarTotalMonths} мес., лицензия qty×коэф = ${licenseOneMonthShift.licensedMonths} мес. (ровно +1 мес.): сдвинуть дату «с» на месяц вперёд в CRM.`,
+                todoComment:
+                    'crm.deal.update: UF даты начала договора = shiftedContractStartIso; затем пересчитать период и акты.',
+                shiftedContractStartIso:
+                    licenseOneMonthShift.shiftedStartFromIso,
+            });
+        }
+
         if (actualFailedActs > 0) {
             actions.push({
                 type: 'remove_failed_acts',
@@ -206,22 +228,29 @@ export class OrkActsReconcilePlanUseCase {
             });
         }
 
-        if (actualProductsTotal < expectedProductsTotal) {
+        /**
+         * Потолок для увеличения qty: не больше месяцев договора.
+         * Если success-актов меньше, чем по календарю должно быть закрыто — ориентируемся на expectedClosed
+         * (иначе при 0 актов actualClosed=0 и инкремент никогда не попадёт в план).
+         * Когда акты догнали план — снова только min(месяцев, сумма qty по success), не опережать оплату.
+         */
+        const increaseDealProductsCeiling =
+            actualClosedActs < expectedClosedActs
+                ? Math.min(expectedProductsTotal, expectedClosedActs)
+                : Math.min(expectedProductsTotal, actualClosedActs);
+        if (actualProductsTotal < increaseDealProductsCeiling) {
             actions.push({
                 type: 'increase_deal_products',
-                reason: `Товаров меньше срока договора: ${actualProductsTotal}/${expectedProductsTotal}`,
+                reason: `Товаров меньше нормы (потолок ${increaseDealProductsCeiling} из ${expectedProductsTotal} мес. договора): ${actualProductsTotal}/${increaseDealProductsCeiling}`,
                 todoComment:
-                    'Увеличить количество в товарных строках сделки, чтобы к концу периода было равно totalMonths.',
+                    'Поднять quantity в строках сделки до потолка (догонка по закрытым актам или по плану закрытых, если актов ещё нет).',
             });
-        } else if (
-            actualProductsTotal > expectedProductsTotal &&
-            totalMonths < passedMonths
-        ) {
+        } else if (actualProductsTotal > expectedProductsTotal) {
             actions.push({
                 type: 'decrease_deal_products',
-                reason: `Товаров больше срока договора после ретро-уменьшения: ${actualProductsTotal}/${expectedProductsTotal}`,
+                reason: `Товаров больше нормы по договору (qty×коэф vs месяцев): ${actualProductsTotal}/${expectedProductsTotal}`,
                 todoComment:
-                    'Сократить количество товаров в сделке, если договор уже закончился в прошлом.',
+                    'Сократить quantity в строках сделки под ожидаемые месяцы договора (в т.ч. после укорочения или лишнего qty).',
             });
         }
 

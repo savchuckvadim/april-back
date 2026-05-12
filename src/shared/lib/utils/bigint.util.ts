@@ -15,7 +15,7 @@ export class BigIntUtil {
     /**
      * Рекурсивная функция для сериализации объекта с BigInt значениями
      */
-    static serializeBigInt(obj: any): any {
+    static serializeBigInt(obj: unknown): unknown {
         if (obj === null || obj === undefined) {
             return obj;
         }
@@ -29,7 +29,7 @@ export class BigIntUtil {
         }
 
         if (typeof obj === 'object') {
-            const result: any = {};
+            const result: Record<string, unknown> = {};
             for (const [key, value] of Object.entries(obj)) {
                 result[key] = this.serializeBigInt(value);
             }

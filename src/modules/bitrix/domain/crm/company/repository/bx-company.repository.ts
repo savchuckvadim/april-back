@@ -19,12 +19,8 @@ export class BxCompanyRepository {
         );
     }
 
-    async getBtch(
-        cmdCode: string,
-        companyId: number | string,
-        select?: string[],
-    ) {
-        return this.bxApi.addCmdBatchType(
+    getBtch(cmdCode: string, companyId: number | string, select?: string[]) {
+        this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
@@ -46,7 +42,7 @@ export class BxCompanyRepository {
         );
     }
 
-    async getListBtch(
+    getListBtch(
         cmdCode: string,
         filter: Partial<IBXCompany>,
         select?: string[],
@@ -91,7 +87,7 @@ export class BxCompanyRepository {
         );
     }
 
-    async setBtch(cmdCode: string, data: Partial<IBXCompany>) {
+    setBtch(cmdCode: string, data: Partial<IBXCompany>) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -109,7 +105,7 @@ export class BxCompanyRepository {
         );
     }
 
-    async updateBtch(
+    updateBtch(
         cmdCode: string,
         id: number | string,
         data: Partial<IBXCompany>,
@@ -124,7 +120,7 @@ export class BxCompanyRepository {
     }
 
     async getFieldList(filter: { [key: string]: any }, select?: string[]) {
-        return this.bxApi.callType(
+        return await this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.USER_FIELD_LIST,
@@ -151,7 +147,7 @@ export class BxCompanyRepository {
         );
     }
 
-    async getFieldBtch(cmdCode: string, id: number | string) {
+    getFieldBtch(cmdCode: string, id: number | string) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -172,7 +168,7 @@ export class BxCompanyRepository {
     }
 
     async setField(fields: Partial<IBXField>) {
-        return this.bxApi.callType(
+        return await this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.USER_FIELD_ADD,
@@ -180,7 +176,7 @@ export class BxCompanyRepository {
         );
     }
 
-    async setFieldBtch(cmdCode: string, fields: Partial<IBXField>) {
+    setFieldBtch(cmdCode: string, fields: Partial<IBXField>) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,

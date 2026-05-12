@@ -24,20 +24,20 @@ export class BxStatusService {
         return this.repo.getList(filter);
     }
 
-    get(id: number | string) {
-        return this.repo.get(id);
+    async get(id: number | string) {
+        return await this.repo.get(id);
     }
 
-    add(fields: Partial<IBXStatus>) {
-        return this.repo.add(fields);
+    async add(fields: Partial<IBXStatus>) {
+        return await this.repo.add(fields);
     }
 
-    update(id: number | string, fields: Partial<IBXStatus>) {
-        return this.repo.update(id, fields);
+    async update(id: number | string, fields: Partial<IBXStatus>) {
+        return await this.repo.update(id, fields);
     }
 
-    delete(id: number | string) {
-        return this.repo.delete(id);
+    async delete(id: number | string) {
+        return await this.repo.delete(id);
     }
 
     async getEntityItems(

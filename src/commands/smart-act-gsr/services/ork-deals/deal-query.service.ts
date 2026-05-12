@@ -11,30 +11,59 @@ import { getContractPeriodFieldBitrixId } from './utils/get-contract-period-fiel
 export class DealQueryService {
     constructor(private readonly pbx: PBXService) {}
 
-    public async getOpenDealsByAssigned(assignedById?: string) {
-        const { deals } = await this.getDealsByFilter('open', assignedById);
+    public async getOpenDealsByAssigned(
+        assignedById?: string,
+        dealId?: number,
+    ) {
+        const { deals } = await this.getDealsByFilter(
+            'open',
+            assignedById,
+            dealId,
+        );
         return deals;
     }
 
-    public async getSuccessDealsByAssigned(assignedById?: string) {
-        const { deals } = await this.getDealsByFilter('success', assignedById);
+    public async getSuccessDealsByAssigned(
+        assignedById?: string,
+        dealId?: number,
+    ) {
+        const { deals } = await this.getDealsByFilter(
+            'success',
+            assignedById,
+            dealId,
+        );
         return deals;
     }
 
-    public async getAllDealsByAssigned(assignedById?: string) {
-        const { deals } = await this.getDealsByFilter('all', assignedById);
+    public async getAllDealsByAssigned(assignedById?: string, dealId?: number) {
+        const { deals } = await this.getDealsByFilter(
+            'all',
+            assignedById,
+            dealId,
+        );
         return deals;
     }
 
-    public async getFailDealsByAssigned(assignedById?: string) {
-        const { deals } = await this.getDealsByFilter('fail', assignedById);
+    public async getFailDealsByAssigned(
+        assignedById?: string,
+        dealId?: number,
+    ) {
+        const { deals } = await this.getDealsByFilter(
+            'fail',
+            assignedById,
+            dealId,
+        );
         return deals;
     }
 
-    public async getOpenDealsWithPortal(assignedById?: string) {
+    public async getOpenDealsWithPortal(
+        assignedById?: string,
+        dealId?: number,
+    ) {
         const { deals, portal } = await this.getDealsByFilter(
             'open',
             assignedById,
+            dealId,
         );
         return { deals, portal };
     }
@@ -42,6 +71,7 @@ export class DealQueryService {
     private async getDealsByFilter(
         which: DealFilterType,
         assignedById?: string,
+        dealId?: number,
     ): Promise<{ deals: IBXDeal[] | null; portal: PortalModel }> {
         const domain = 'gsr.bitrix24.ru';
         const { PortalModel: portal, bitrix } = await this.pbx.init(domain);
@@ -50,6 +80,7 @@ export class DealQueryService {
             portal,
             which,
             assignedById,
+            dealId,
         );
         await delay(1500);
         return { deals, portal };
@@ -60,6 +91,7 @@ export class DealQueryService {
         portalModel: PortalModel,
         which: DealFilterType = 'all',
         assignedById?: string,
+        dealId?: number,
     ): Promise<IBXDeal[] | null> {
         const contractStartField = getContractPeriodFieldBitrixId(
             portalModel,
@@ -82,14 +114,16 @@ export class DealQueryService {
 
         const stageFailCode = 'service_fail';
         const targetFailStage = portalModel.getStageByCode(stageFailCode);
-
+        console.log('targetFailStage', targetFailStage);
         const filter: Partial<IBXDeal> = {
             CATEGORY_ID: dealService.bitrixId,
         };
         if (assignedById) {
             filter.ASSIGNED_BY_ID = assignedById;
         }
-
+        if (dealId) {
+            filter.ID = dealId;
+        }
         if (which === 'open') {
             filter.CLOSED = 'N';
         } else if (which === 'success') {

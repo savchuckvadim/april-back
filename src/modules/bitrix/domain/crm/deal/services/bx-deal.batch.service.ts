@@ -46,6 +46,9 @@ export class BxDealBatchService {
     setField(cmdCode: string, fields: Partial<IBXField>) {
         return this.repo.setFieldBtch(cmdCode, fields);
     }
+    addField(cmdCode: string, fields: Partial<IBXField>) {
+        return this.repo.setFieldBtch(cmdCode, fields);
+    }
 
     updateField(
         cmdCode: string,

@@ -25,9 +25,8 @@ export const getRegionInfoblockData = (
         iData.value.some(iBlock => iBlock.code === REGION_INFOBLOCK_CODE),
     );
 
-    const rootRegionGroup: ComplectDto | undefined = complect.find((iData, i) =>
-        iData.groupsName === NPA_FROM_FRONT_GROUP_NAME ||
-        i === 0,
+    const rootRegionGroup: ComplectDto | undefined = complect.find(
+        (iData, i) => iData.groupsName === NPA_FROM_FRONT_GROUP_NAME || i === 0,
         // iData.value.some(iBlock => iBlock.code === REGION_INFOBLOCK_CODE),
     );
 
@@ -92,10 +91,10 @@ export const getRegionInfoblockData = (
         const value =
             nonRegionBlocks.length > 0
                 ? [
-                    nonRegionBlocks[0],
-                    ...totalRegionsBlocks,
-                    ...nonRegionBlocks.slice(1),
-                ]
+                      nonRegionBlocks[0],
+                      ...totalRegionsBlocks,
+                      ...nonRegionBlocks.slice(1),
+                  ]
                 : [...totalRegionsBlocks];
         return {
             ...group,

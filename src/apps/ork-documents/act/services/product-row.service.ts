@@ -62,7 +62,7 @@ export class OrkOnActCreateProductRowService {
         });
 
         const setData = {
-            ownerType: smartCrmId, // `DYNAMIC_${ACT_SMART_TYPE_ID}`,
+            ownerType: smartCrmId, // T41_ для  item.productrow. нужен crmId смарта
             ownerId: smartId,
             productRows: updatedProductRows,
         };

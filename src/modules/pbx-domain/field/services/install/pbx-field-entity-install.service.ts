@@ -12,12 +12,12 @@ import {
     PbxSalesKonstructorField,
     PbxSalesKonstructorFieldCode,
 } from '../../type/sales/konstructor/pbx-sales-konstructor-field.type';
-import { PbxFieldEntity } from '../../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { delay } from '@/shared/lib';
 import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 import { IBXField } from '@/modules/bitrix/domain/crm/fields/bx-field.interface';
-import { EUserFieldType } from '@/modules/bitrix';
+import { mapFieldTypeToBitrixType } from '../../lib/field-type-to-bx.mapper';
+import { buildPbxFieldEntityFromPortalInstall } from '../../lib/install-field-entity.mapper';
 
 type FieldGroup = 'sales' | 'service';
 type AppType = 'event' | 'konstructor';
@@ -180,6 +180,7 @@ export class PbxFieldEntityInstallService {
                 dbEntityId: BigInt(1),
                 useUserFieldConfig: true,
             },
+            /** Bitrix company + строка `btx_companies` / модуль `portal-company` (одна компания на портал в PBX). */
             [PbxEntityTypePrisma.BTX_COMPANY]: {
                 service: bitrix.company as EntityInstallConfig['service'],
                 entityId: 'CRM_COMPANY',
@@ -359,7 +360,7 @@ export class PbxFieldEntityInstallService {
         const config: Partial<IBXField> = {
             ENTITY_ID: entityId,
             FIELD_NAME: fieldName,
-            USER_TYPE_ID: this.mapFieldTypeToBitrixType(field.type),
+            USER_TYPE_ID: mapFieldTypeToBitrixType(field.type),
             MULTIPLE: field.isMultiple ? 'Y' : 'N',
             MANDATORY: 'N',
             SHOW_FILTER: 'Y',
@@ -378,7 +379,7 @@ export class PbxFieldEntityInstallService {
         // Добавляем enum значения если есть
         if (config.USER_TYPE_ID === 'enumeration' && items.length > 0) {
             config.LIST = items.map((item, index) => ({
-                ID: item.code,
+                XML_ID: item.code,
                 SORT: String(item.sort || (index + 1) * 10),
                 VALUE: item.value || item.code,
                 DEF: 'N' as const,
@@ -411,23 +412,6 @@ export class PbxFieldEntityInstallService {
                 xmlId: item.ID,
             })),
         };
-    }
-
-    private mapFieldTypeToBitrixType(type: string): string {
-        const typeMap: Record<string, string> = {
-            string: 'string',
-            integer: 'integer',
-            double: 'double',
-            datetime: 'datetime',
-            date: 'date',
-            boolean: 'boolean',
-            enumeration: 'enumeration',
-            employee: 'employee',
-            multiple: 'enumeration',
-            money: 'money',
-        };
-
-        return typeMap[type] || 'string';
     }
 
     private getBitrixFieldId(
@@ -468,38 +452,13 @@ export class PbxFieldEntityInstallService {
         itemKey: 'items' | 'list',
         entityId: bigint, //переделать брать id сущности а не  хардеодить как сейчас
     ): Promise<void> {
-        const bitrixFieldIdStr = `UF_CRM_${bitrixFieldId}`;
-
-        const fieldEntity = new PbxFieldEntity();
-        fieldEntity.name = field.name;
-        fieldEntity.title = field.name;
-        fieldEntity.code = field.code;
-        fieldEntity.type = this.mapFieldTypeToBitrixType(
-            field.type,
-        ) as EUserFieldType;
-        fieldEntity.bitrixId = bitrixFieldIdStr;
-        fieldEntity.bitrixCamelId = '';
-        fieldEntity.entity_id = entityId; //переделать брать id сущности а не  хардеодить как сейчас
-        fieldEntity.entity_type = entityType;
-        fieldEntity.parent_type = '';
-        fieldEntity.isPlural = field.isMultiple;
-        fieldEntity.items = (
-            (field[itemKey] || []) as Array<{
-                code: string;
-                name?: string;
-                title?: string;
-                bitrixId?: string | number;
-            }>
-        ).map(item => ({
-            name: item.name || item.code,
-            title: item.title || item.code,
-            code: item.code,
-            bitrixId:
-                typeof item.bitrixId === 'number'
-                    ? item.bitrixId
-                    : parseInt(item.bitrixId || '0', 10),
-            bitrixfield_id: BigInt(0),
-        }));
+        const fieldEntity = buildPbxFieldEntityFromPortalInstall({
+            field,
+            itemKey,
+            entityId,
+            entityType,
+            bitrixFieldId,
+        });
 
         await this.pbxFieldService.upsertFields([fieldEntity]);
     }

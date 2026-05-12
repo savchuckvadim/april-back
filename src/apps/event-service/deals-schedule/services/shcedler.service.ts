@@ -26,7 +26,7 @@ export class SchedulerService {
         const minutes = date.getMinutes();
         const seconds = date.getSeconds();
         await this.telegramService.sendMessage(
-            `⏰EVERY_3_HOURS SCHEDLER MoveDealStagesService start ${hours}:${minutes}:${seconds} ${timezone}`,
+            `⏰ EVERY_5_HOURS SCHEDLER MoveDealStagesService start ${hours}:${minutes}:${seconds} ${timezone}`,
         );
 
         try {
@@ -38,7 +38,7 @@ export class SchedulerService {
         }
     }
 
-    // @Cron('0 0 9 * * 1', { timeZone: 'Europe/Moscow' }) // Monday 09:00
+    @Cron('0 0 10 * * 1', { timeZone: 'Europe/Moscow' }) // Monday 10:00
     @Cron('0 0 15 * * 5', { timeZone: 'Europe/Moscow' }) // Friday 15:00
     // @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Europe/Moscow' })
     async checkDealsEveryWeek() {

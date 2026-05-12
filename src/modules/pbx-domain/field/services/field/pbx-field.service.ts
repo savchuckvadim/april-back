@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PbxFieldRepository } from '../../repositories/pbx-field.repositry';
 import { PbxField, PbxFieldEntity } from '../../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
+import { mapFromDbToEntityField } from '../../lib/map-from-db-to-entity-field.util';
 
 @Injectable()
 export class PbxFieldService {
@@ -21,8 +22,9 @@ export class PbxFieldService {
         return this.pbxFieldRepository.addFields(fields);
     }
 
-    async upsertFields(fields: PbxFieldEntity[]): Promise<PbxField[]> {
-        return this.pbxFieldRepository.upsertFields(fields);
+    async upsertFields(fields: PbxFieldEntity[]): Promise<PbxFieldEntity[]> {
+        const result = await this.pbxFieldRepository.upsertFields(fields);
+        return result.map(field => mapFromDbToEntityField(field));
     }
 
     async updateField(

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as https from 'https';
@@ -112,7 +112,7 @@ export class BitrixCore {
         }
 
         // Если Bitrix вернул 503 — подождать и повторить
-        if (error.response?.status === 503 && retries > 0) {
+        if ((error as AxiosError).response?.status === 503 && retries > 0) {
             this.logger.warn(
                 `Bitrix 503 Service Unavailable on ${method}, retrying in 10s...`,
             );

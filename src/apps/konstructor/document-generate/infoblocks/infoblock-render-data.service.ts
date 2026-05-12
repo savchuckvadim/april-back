@@ -117,7 +117,54 @@ export class InfoblocksRenderDataService {
                         code !== undefined && code !== 'reg',
                 ),
         );
-        return infoblocks || [];
+        // const preparedInfoblocksWithSubtitle = infoblocks?.map(infoblock => {
+        //     const targetInfogroupFromComplect = complect.find(group =>
+        //         group.value.find(value => value.code === infoblock.code),
+        //     );
+        //     const targetInfoblockFromComplectValue =
+        //         targetInfogroupFromComplect?.value.find(
+        //             value => value.code === infoblock.code,
+        //         );
+        //     const subtitle = targetInfoblockFromComplectValue?.subtitle || '';
+
+        //     if (subtitle) {
+        //         return {
+        //             ...infoblock,
+        //             name: subtitle,
+        //         };
+        //     }
+        //     return infoblock;
+        // });
+        const preparedInfoblocksWithSubtitle =
+            this.prepareInfoblocksWithSubtitle(infoblocks, complect);
+        return preparedInfoblocksWithSubtitle || [];
+    }
+
+    private prepareInfoblocksWithSubtitle(
+        infoblocks: InfoblockEntity[] | null,
+        complect: ComplectDto[],
+    ): InfoblockEntity[] {
+        if (!infoblocks) return [];
+        const preparedInfoblocksWithSubtitle = infoblocks?.map(infoblock => {
+            const targetInfogroupFromComplect = complect.find(group =>
+                group.value.find(value => value.code === infoblock.code),
+            );
+            const targetInfoblockFromComplectValue =
+                targetInfogroupFromComplect?.value.find(
+                    value => value.code === infoblock.code,
+                );
+            const subtitle = targetInfoblockFromComplectValue?.subtitle || '';
+
+            if (subtitle) {
+                return {
+                    ...infoblock,
+                    name: subtitle,
+                    title: subtitle,
+                };
+            }
+            return infoblock;
+        });
+        return preparedInfoblocksWithSubtitle || [];
     }
 
     private getWithDescriptionByGroupsListData(
@@ -167,7 +214,6 @@ export class InfoblocksRenderDataService {
 
                 if (needRegionData) {
                     isRegionsProcessed = true;
-                    
                     infoblocksData.push(
                         getRegionsWithDescriptionData(complect),
                     );

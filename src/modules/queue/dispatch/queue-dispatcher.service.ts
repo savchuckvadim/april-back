@@ -34,6 +34,8 @@ export class QueueDispatcherService {
         private readonly zakupkiOfferQueue: Queue,
         @InjectQueue(QueueNames.KONSTRUCTOR)
         private readonly konstructorQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_GENERATE_ACTS)
+        private readonly serviceGenerateActsQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -75,6 +77,8 @@ export class QueueDispatcherService {
                 return this.serviceDealsQueue;
             case QueueNames.SERVICE_DEALS_ORDER:
                 return this.serviceDealsOrderQueue;
+            case QueueNames.SERVICE_GENERATE_ACTS:
+                return this.serviceGenerateActsQueue;
             case QueueNames.ORK_KPI_REPORT:
                 return this.orkKpiReportQueue;
             case QueueNames.OFFER_WORD_EPHEMERAL_PDF:
@@ -83,6 +87,7 @@ export class QueueDispatcherService {
                 return this.zakupkiOfferQueue;
             case QueueNames.KONSTRUCTOR:
                 return this.konstructorQueue;
+
             default: {
                 const error = `Unknown queue name: ${name}`;
                 this.logger.error(error);

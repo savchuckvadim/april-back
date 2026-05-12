@@ -55,7 +55,6 @@ export class OrkActsProductRowsService {
         quantity: number, // количество месяцев
         smartCrmId: string,
     ): Promise<IBXProductRowRow[] | undefined> {
-
         const updatedProductRows = productRows.map(row => {
             let coefficient: number = 1;
             if (row.measureName?.includes('12')) {

@@ -5,8 +5,6 @@ export interface IBXSmartType {
     id?: number;
     name: string;
     entityTypeId: string;
-    // categories: IBXCategory[];
-
     title: string;
     code: string;
     createdBy: number;

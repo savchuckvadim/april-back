@@ -8,22 +8,22 @@ import {
 } from '@/modules/bitrix';
 import { ListProductRowDto } from '@/modules/bitrix/domain/crm/product-row/dto/list-product-row.sto';
 
-const ACT_SMART_TYPE_ID = `1044`;
-const ACT_SMART_ID = 13;
+// const ACT_SMART_TYPE_ID = `1044`;
+// const ACT_SMART_ID = 13;
 // const SMART_GENERAL_CATEGORY_ID = 21;
 @Injectable()
 export class OrkOnActCloseUseCase {
     private bitrix: BitrixService;
     constructor(private readonly pbx: PBXService) {}
-    async init(bitrix: BitrixService) {
+    init(bitrix: BitrixService) {
         this.bitrix = bitrix;
     }
 
     async closeAct(dto: CreateActDto) {
         console.log(dto);
         const { bitrix } = await this.pbx.init(dto.domain);
-        await this.init(bitrix);
-        const smartCrmId = this.getSmartCrmId(dto.smartCrmId, dto.smartId);
+        this.init(bitrix);
+        // const smartCrmId = this.getSmartCrmId(dto.smartCrmId, dto.smartId);
 
         const currentSmartResponse = await bitrix.item.get(
             dto.smartId,
@@ -75,13 +75,13 @@ export class OrkOnActCloseUseCase {
         return { result: true };
     }
 
-    private getSmartCrmId(smartCrmId: string, smartId: number): string {
-        const end =
-            smartCrmId.toString().length - smartId.toString().length - 1;
+    // private getSmartCrmId(smartCrmId: string, smartId: number): string {
+    //     const end =
+    //         smartCrmId.toString().length - smartId.toString().length - 1;
 
-        const result = smartCrmId.slice(0, end);
-        return result;
-    }
+    //     const result = smartCrmId.slice(0, end);
+    //     return result;
+    // }
     private async getDealProductRows(dealId: number): Promise<{
         rows: IBXProductRowRow[] | undefined;
         currentQuantity: number;

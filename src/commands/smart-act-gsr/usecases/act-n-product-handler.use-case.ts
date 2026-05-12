@@ -14,6 +14,10 @@ import { PBXService } from '@/modules/pbx';
 import { CategorySmartActService } from '../services/smart/category-smart-act.service';
 import { SmartActService } from '../services/smart/smart-act.service';
 import { SmartProductRowService } from '../services/smart/smart-product-row.service';
+import { SmartDealProductRowService } from '../services/smart/smart-deal-product-row.service';
+import { getContractPeriodFieldBitrixId } from '../services/ork-deals/utils/get-contract-period-field.util';
+import { BitrixService, EBXEntity, IBXDeal } from '@/modules/bitrix';
+import { PortalModel } from '@/modules/portal/services/portal.model';
 
 const domain = 'gsr.bitrix24.ru';
 @Injectable()
@@ -25,18 +29,77 @@ export class ActNProductHandlerUseCase {
         private readonly categorySmartActService: CategorySmartActService,
     ) {}
 
-    async execute(): Promise<{ plans: IDealReconcilePlan[] }> {
-        const { plans } = await this.orkActsReconcilePlanUseCase.execute();
+    async execute(dealId?: number): Promise<{ plans: IDealReconcilePlan[] }> {
+        // 1) Планы reconcile по сделкам (акты, товары, действия) на основе текущих данных CRM.
+        let { plans } = await this.orkActsReconcilePlanUseCase.execute(dealId);
+        // 2) Подключение Bitrix API и модели портала (маппинг UF полей договора и т.д.).
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
+        // 3) Флаг: хотя бы у одной сделки сдвинули дату начала договора по паттерну лицензии.
+        let didShiftContractStart = false;
         for (const plan of plans) {
+            // 4) Если в плане есть align_contract_start_one_month_license — пишем UF «с» + комментарий в таймлайн.
+            const shifted = await this.shiftContractStartOneMonthForward(
+                plan,
+                bitrix,
+                PortalModel,
+            );
+            // 5) Накопление флага по результату сдвига текущего плана (await выше выполняется на каждой итерации).
+            didShiftContractStart ||= shifted;
+        }
+        if (didShiftContractStart) {
+            // 6) После изменения UF пересобираем планы — totalMonths/слоты/qty уже от новой даты начала.
+            ({ plans } =
+                await this.orkActsReconcilePlanUseCase.execute(dealId));
+        }
+        for (const plan of plans) {
+            // 7) Синхронизация актов и строк по итоговому плану (создание, закрытие, qty сделки).
             await this.syncDealActsFromPlan(plan);
         }
-        // await bitrix.api.callBatchAsync();
+
+        // 8) Ответ API — финальные планы (после возможного второго reconcile).
         return { plans };
     }
 
     /**
+     * Паттерн «лицензия 6/12/24 мес. + ровно 1 лишний календарный месяц»: обновить UF начала договора и зафиксировать в таймлайне.
+     * @returns true, если для плана было действие и выполнен сдвиг в CRM.
+     */
+    private async shiftContractStartOneMonthForward(
+        plan: IDealReconcilePlan,
+        bitrix: BitrixService,
+        portal: PortalModel,
+    ): Promise<boolean> {
+        const shift = plan.actions.find(
+            a =>
+                a.type === 'align_contract_start_one_month_license' &&
+                a.shiftedContractStartIso != null,
+        );
+        if (shift?.shiftedContractStartIso == null) {
+            return false;
+        }
+
+        const startField = getContractPeriodFieldBitrixId(portal, 'start');
+        await bitrix.deal.update(plan.dealId, {
+            [startField]: shift.shiftedContractStartIso,
+        } as Partial<IBXDeal>);
+
+        const commentMessage =
+            'Дата начала договора сдвинута на месяц вперёд под срок лицензии по товару. ' +
+            `Новое значение UF начала: ${shift.shiftedContractStartIso}.`;
+
+        await bitrix.timeline.addTimelineComment({
+            ENTITY_TYPE: EBXEntity.DEAL,
+            ENTITY_ID: plan.dealId,
+            COMMENT: commentMessage,
+            AUTHOR_ID: plan.assignedById?.toString() ?? '1',
+        });
+
+        return true;
+    }
+
+    /**
      * Сопоставляет слоты expectedActPeriods с актами по UF-периоду,
-     * создаёт недостающие (success для прошедших месяцев, inprogress для текущего),
+     * создаёт недостающие (success для слотов за полностью прошедшие месяцы, inprogress для текущего незавершённого),
      * переводит в успех там, где уже должно быть закрыто,
      * правит from/to при расхождении со слотом,
      * удаляет fail по плану и лишние акты при remove_extra_acts.
@@ -56,6 +119,7 @@ export class ActNProductHandlerUseCase {
             bitrix,
             PortalModel,
         );
+        const dealProductRowService = new SmartDealProductRowService(bitrix);
         // Товары смарта: строки сделки (plan.item.rows, owner D + dealId) → доля на месяц на элемент смарта.
         // Внутри — list по DYNAMIC_* + id акта; set только если снимок строк отличается от желаемого.
         // Нет периода / товаров или договор ещё не начался — reconcile уже описал notify/skip, мутаций не делаем.
@@ -70,6 +134,12 @@ export class ActNProductHandlerUseCase {
         if (!Number.isFinite(dealIdNum)) {
             return;
         }
+
+        // Подогнать quantity в строках сделки под месяцы договора (ретро-отказ / догонка); затем обновить plan.item.rows из Bitrix.
+        await dealProductRowService.syncDealRowsQuantityFromPlanIfNeeded(
+            plan,
+            dealIdNum,
+        );
 
         // Контур reconcile: сначала убрать акты в стадии «не состоялся», чтобы не мешали расчёту.
         if (actionTypes.has('remove_failed_acts')) {
@@ -90,7 +160,7 @@ export class ActNProductHandlerUseCase {
         );
 
         const expectedTotal = plan.actsSummury.expectedTotal;
-        const currentMonth = plan.monthPeriodSummary.current;
+        const passedMonths = plan.monthPeriodSummary.passed;
         const periods = plan.expectedActPeriods;
         const slotsCount = Math.min(Math.max(expectedTotal, 0), periods.length);
 
@@ -107,13 +177,15 @@ export class ActNProductHandlerUseCase {
             );
             const targetStage = resolveCreateStageForSlot(
                 monthIndex,
-                currentMonth,
+                passedMonths,
             );
 
-            // Нет акта под этот месяц — создаём (прошлые месяцы сразу в success, текущий — inprogress).
+            // Нет акта под этот месяц — создаём (закрытые месяцы — success, текущий незавершённый — inprogress).
             if (!match) {
                 const newId = await smartActService.createSmartActGsr({
                     dealId: dealIdNum,
+                    companyId: Number(plan.item.deal.deal.COMPANY_ID),
+                    responsibleId: Number(plan.assignedById),
                     productQuantity: plan.item.productQuantity,
                     productCoefficient: plan.item.productCoefficient,
                     smartItems: plan.item.smartItems,
@@ -123,12 +195,6 @@ export class ActNProductHandlerUseCase {
                     stageType: targetStage,
                 });
                 if (newId != null) {
-                    console.log('newId', newId);
-                    console.log(
-                        '1 Привязать товарные строки к новому элементу смарта (или пропуск, если sync выключен).',
-                        plan.item.rows,
-                    );
-                    // Привязать товарные строки к новому элементу смарта (или пропуск, если sync выключен).
                     await smartProductRowService.syncDealRowsToSmartIfNeeded(
                         plan.item.rows,
                         newId,
@@ -165,11 +231,6 @@ export class ActNProductHandlerUseCase {
             }
 
             if (actId != null) {
-                console.log(
-                    '2 Акт уже есть: при изменении товаров/цен в сделке подтянуть строки акта без лишнего set при совпадении.',
-                    plan.item.rows,
-                );
-                // Акт уже есть: при изменении товаров/цен в сделке подтянуть строки акта без лишнего set при совпадении.
                 await smartProductRowService.syncDealRowsToSmartIfNeeded(
                     plan.item.rows,
                     actId,

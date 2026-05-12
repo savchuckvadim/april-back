@@ -1,4 +1,8 @@
-import { BitrixService, IBXProductRowRow } from '@/modules/bitrix';
+import {
+    BitrixService,
+    IBXProductRow,
+    IBXProductRowRow,
+} from '@/modules/bitrix';
 import { PortalModel } from '@/modules/portal/services/portal.model';
 import { ListProductRowDto } from '@/modules/bitrix/domain/crm/product-row/dto/list-product-row.sto';
 import { isSmartActProductRowSyncEnabled } from './smart-product-row.config';
@@ -55,22 +59,24 @@ export class SmartProductRowService {
             smartItemId,
         );
 
-        const smartTypeId = this.getSmartActOwnerType(this.portalModel);
+        const { crmId } = this.getSmartActOwnerType(this.portalModel);
         const effectiveMonths = effectiveDealMonthsFromFirstRow(
             dealProductRows[0],
         );
         const desired = buildMonthlyProductRowsForSmart(
             dealProductRows,
             effectiveMonths,
-            smartTypeId,
+            crmId,
             smartItemId,
         );
 
         // Фильтр list: тот же ownerType/ownerId, что будут у строк после set — только смарт-акт.
         const filter: ListProductRowDto = {
-            '=ownerType': smartTypeId,
+            '=ownerType': crmId, // T41_ для получения item.productrow.list нужен crmId смарта
             '=ownerId': smartItemId,
+            '>price': 1,
         };
+        console.log('filter', filter);
         const listed = await this.bitrix.productRow.list(filter);
         const existing = listed?.result?.productRows as
             | IBXProductRowRow[]
@@ -80,18 +86,38 @@ export class SmartProductRowService {
             return;
         }
 
-        // Тело set: владелец — смарт-элемент; каждая строка в productRows тоже с этим ownerType/ownerId.
-        await this.bitrix.productRow.set({
-            ownerType: smartTypeId,
+        const setData = {
+            ownerType: crmId,
             ownerId: smartItemId,
             productRows: desired,
-        });
+        } as IBXProductRow;
+        console.log('setData', setData);
+        // Тело set: владелец — смарт-элемент; каждая строка в productRows тоже с этим ownerType/ownerId.
+        await this.bitrix.productRow.set(setData);
     }
 
     /** Строка типа владельца для dynamic CRM item в Bitrix24 (service_act). */
-    private getSmartActOwnerType(portal: PortalModel): string {
+    private getSmartActOwnerType(portal: PortalModel): {
+        crmId: string;
+        ownerType: string;
+        entityTypeId: number;
+    } {
         const targetSmart = portal.getSmartByType('service_act');
-        const entityTypeId = targetSmart?.entityTypeId;
-        return `DYNAMIC_${entityTypeId}`;
+        if (!targetSmart) {
+            throw new Error('Target smart not found');
+        }
+        console.log('targetSmart', targetSmart);
+        const entityTypeId = targetSmart.entityTypeId;
+        if (!entityTypeId) {
+            throw new Error('Entity type ID not found');
+        }
+        const crmId = targetSmart.crm.endsWith('_')
+            ? targetSmart.crm.slice(0, -1)
+            : targetSmart.crm;
+        return {
+            crmId, // T41_
+            ownerType: `DYNAMIC_${entityTypeId}`,
+            entityTypeId, //1044
+        };
     }
 }

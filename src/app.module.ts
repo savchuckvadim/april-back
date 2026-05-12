@@ -26,7 +26,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
 import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
 import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
-import { PBXInstallModule } from './modules/install/install-module';
+import { PBXInstallModule } from './modules/install/pbx-install.module';
 import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -56,6 +56,8 @@ import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls
 import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 import { DealsOrderModule } from './apps/event-service/deals-order/deals-order.module';
 import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.module';
+import { SkapModule } from './apps/event-service/skap/skap.module';
+import { ParseFieldExcelModule } from './modules/install/shared';
 
 @Module({
     imports: [
@@ -93,6 +95,7 @@ import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.modu
         PortalModule,
         PBXModule,
         PBXInstallModule,
+        ParseFieldExcelModule,
         PbxDomainModule,
         OrkHistoryBxListModule,
 
@@ -149,6 +152,7 @@ import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.modu
         MissedCallsTodoModule, //gsirk  проверяет пропущенные звонки
         DealsOrderModule, //проверяет дубли и заполненность с по полей каждую неделю
         DealsMoveModule, //перемещает сделки отдела сервиса каждые три часа по стадиям
+        SkapModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],
