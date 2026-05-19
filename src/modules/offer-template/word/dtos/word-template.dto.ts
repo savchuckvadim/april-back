@@ -117,24 +117,32 @@ export class UserSelectedTemplateSummaryDto {
             bitrix_user_id: Number(partial.bitrix_user_id),
         });
     }
-    @ApiProperty()
+    @ApiProperty({ type: Number })
     id: number;
 
-    @ApiProperty()
+    @ApiProperty({ type: Number })
     bitrix_user_id: number;
 
-    @ApiProperty()
+    @ApiProperty({ type: Number })
     portal_id: number;
 
-    @ApiProperty()
+    @ApiProperty({ type: Number })
     template_id: number;
 
-    @ApiProperty()
+    @ApiProperty({ type: Boolean })
     is_current: boolean;
 
-    @ApiProperty()
+    @ApiProperty({ type: Boolean })
     is_favorite: boolean;
 
-    @ApiProperty()
+    @ApiProperty({ type: Boolean })
     is_active: boolean;
+}
+
+export class UserSelectedResponseDto {
+    @ApiProperty({ type: [WordTemplateSummaryDto] })
+    templates: WordTemplateSummaryDto[];
+
+    @ApiProperty({ type: [UserSelectedTemplateSummaryDto] })
+    selected: UserSelectedTemplateSummaryDto[];
 }

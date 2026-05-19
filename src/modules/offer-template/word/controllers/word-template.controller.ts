@@ -37,6 +37,7 @@ import {
 } from '../dtos/word-template-params.dto';
 import { WordTemplateQueryDto } from '../dtos/find-all-word-template.dto';
 import {
+    UserSelectedResponseDto,
     UserSelectedTemplateSummaryDto,
     WordTemplateDto,
     WordTemplateSummaryDto,
@@ -158,15 +159,12 @@ export class WordTemplateController {
     @ApiResponse({
         status: 200,
         description: 'List of user word templates',
-        type: [WordTemplateSummaryDto],
+        type: UserSelectedResponseDto,
     })
     @Get('user/:user_id/portal/:portal_id')
     async findUserTemplates(
         @Param() params: WordTemplateUserPortalParamsDto,
-    ): Promise<{
-        templates: WordTemplateSummaryDto[];
-        selected: UserSelectedTemplateSummaryDto[];
-    }> {
+    ): Promise<UserSelectedResponseDto> {
         const templates = await this.wordTemplateService.findUserTemplates(
             BigInt(params.user_id),
             BigInt(params.portal_id),

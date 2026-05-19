@@ -5,12 +5,15 @@ export enum QueueNames {
     TELEGRAM = 'telegram',
     MAIL = 'mail',
     SILENT = 'silent', // новая универсальная
+    EVENT_SILENT = 'event-silent', // новая универсальная
     SALES_KPI_REPORT = 'sales-kpi-report',
     ORK_KPI_REPORT = 'ork-kpi-report',
     PING = 'ping',
     TRANSCRIBE_AUDIO = 'transcribe-audio',
     // добавишь по мере надобности
 
+    //event sales
+    EVENT_SALES_COLD_CALL = 'event-sales-cold-call',
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',

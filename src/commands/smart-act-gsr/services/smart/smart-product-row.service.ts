@@ -8,7 +8,6 @@ import { ListProductRowDto } from '@/modules/bitrix/domain/crm/product-row/dto/l
 import { isSmartActProductRowSyncEnabled } from './smart-product-row.config';
 import {
     buildMonthlyProductRowsForSmart,
-    effectiveDealMonthsFromFirstRow,
     monthlyProductRowsMatch,
 } from './utils/deal-product-row-monthly.util';
 
@@ -37,14 +36,14 @@ export class SmartProductRowService {
     /**
      * Главный поток:
      * 1) Без флага или без строк сделки — выходим (ничего не делаем в Bitrix).
-     * 2) Считаем effectiveMonths по первой строке сделки (quantity × коэф. из ед. измерения).
-     * 3) Строим desired — строки с ownerType/ownerId смарта, цены поделены на месяцы, quantity = 1.
-     * 4) Запрос list с фильтром ТОЛЬКО по смарт-элементу:
+     * 2) Строим desired — по каждой строке сделки: месяцы покрытия = qty × коэф. из меры (6/12/24…);
+     *    на акте цена за ед. = (цена_сделки × qty) / эти_месяцы, discountSum/месяцы, quantity = 1.
+     * 3) Запрос list с фильтром ТОЛЬКО по смарт-элементу:
      *    '=ownerType': "DYNAMIC_{entityTypeId}" — тип владельца для CRM dynamic (не "D" как у сделки).
      *    '=ownerId': smartItemId — ID конкретного элемента смарт-процесса (акта).
      *    Так мы получаем уже привязанные к акту строки, а не строки сделки.
-     * 5) Сравниваем existing с desired (имя, qty=1, цены, discountTypeId/discountRate/discountSum и т.д.).
-     * 6) Если отличие есть — один вызов productRow.set с ownerType/ownerId смарта и массивом desired.
+     * 4) Сравниваем existing с desired (имя, qty=1, цены, discountTypeId/discountRate/discountSum и т.д.).
+     * 5) Если отличие есть — один вызов productRow.set с ownerType/ownerId смарта и массивом desired.
      */
     async syncDealRowsToSmartIfNeeded(
         dealProductRows: IBXProductRowRow[],
@@ -60,12 +59,8 @@ export class SmartProductRowService {
         );
 
         const { crmId } = this.getSmartActOwnerType(this.portalModel);
-        const effectiveMonths = effectiveDealMonthsFromFirstRow(
-            dealProductRows[0],
-        );
         const desired = buildMonthlyProductRowsForSmart(
             dealProductRows,
-            effectiveMonths,
             crmId,
             smartItemId,
         );

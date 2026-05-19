@@ -28,9 +28,9 @@ export function measureMonthFactorFromName(measureName?: string): number {
 }
 
 /**
- * Сколько «месяцев покрытия» заложено в строках сделки по первой строке пачки:
- * quantity (из сделки) × коэффициент из measureName (6 / 12 / 24 …).
- * Остальные строки считаем с тем же смыслом пачки (одинаковые qty/коэффициент по вашей бизнес-модели).
+ * Сколько календарных месяцев покрытия заложено в одной строке сделки:
+ * `quantity` × коэффициент из названия единицы (6 / 12 / 24 / 3 в `measureName`, иначе 1).
+ * Пример: qty 1 и «…6 мес…» → 6 месяцев; qty 4 и «шт» → 4 месяца.
  */
 export function effectiveDealMonthsFromFirstRow(row: IBXProductRowRow): number {
     const qty = Math.max(Number(row.quantity ?? 1), 1);
@@ -39,15 +39,20 @@ export function effectiveDealMonthsFromFirstRow(row: IBXProductRowRow): number {
     return Math.max(1, Math.floor(months));
 }
 
-/** Денежные поля строки: делим на effectiveMonths при переносе на месячный акт. */
-const MONEY_KEYS = [
+/** Поля цены за единицу в Bitrix: на акте — доля месяца = (значение × qty строки сделки) / месяцы покрытия. */
+const PER_UNIT_MONEY_KEYS = [
     'price',
     'priceNetto',
     'priceExclusive',
     'priceAccount',
     'priceBrutto',
-    'discountSum',
 ] as const;
+
+/** Сумма скидки по строке целиком: доля месяца = значение / месяцы покрытия. */
+const LINE_LEVEL_MONEY_KEYS = ['discountSum'] as const;
+
+/** Все денежные поля для сравнения снимков и set (порядок важен для snapshot). */
+const MONEY_KEYS = [...PER_UNIT_MONEY_KEYS, ...LINE_LEVEL_MONEY_KEYS] as const;
 
 export { MONEY_KEYS };
 
@@ -61,27 +66,36 @@ function scaleNumber(n: number, divisor: number): number {
 /**
  * Строим набор строк для ОДНОГО смарт-акта (один календарный слот = 1 месяц):
  * 1) Копируем поля строки сделки (название, мера, сортировка, тип скидки и т.д.).
- * 2) Делим денежные поля из MONEY_KEYS на effectiveMonths — доля за месяц.
- * 3) Проставляем владельца смарта:
- *    - ownerType = например "DYNAMIC_131" (не "D" как у сделки).
- *    - ownerId = ID созданного/существующего элемента смарт-процесса (не ID сделки).
- * 4) quantity на акте всегда 1 (одна доля на месяц).
- * 5) Убираем id — для set это новый набор строк привязки к элементу.
+ * 2) Месяцы покрытия по **этой** строке: `effectiveDealMonthsFromFirstRow(row)` (qty × коэф. из меры).
+ * 3) Цены за единицу в Bitrix — умножаем на qty строки сделки (сумма строки), делим на месяцы покрытия.
+ *    `discountSum` — уже по строке целиком, делим только на месяцы покрытия.
+ * 4) Владелец смарта: ownerType (crmId смарта), ownerId = элемент акта.
+ * 5) quantity на акте всегда 1.
+ * 6) Убираем id — для set новый набор привязки к элементу.
  */
 export function buildMonthlyProductRowsForSmart(
     dealRows: IBXProductRowRow[],
-    effectiveMonths: number,
     smartOwnerType: string,
     smartItemId: number,
 ): IBXProductRowRow[] {
     return dealRows.map((row, index) => {
+        const months = effectiveDealMonthsFromFirstRow(row);
+        const qty = Math.max(Number(row.quantity ?? 1), 1);
         const base = { ...row } as Record<string, unknown>;
-        for (const key of MONEY_KEYS) {
+
+        for (const key of PER_UNIT_MONEY_KEYS) {
             const v = base[key];
             if (typeof v === 'number' && Number.isFinite(v)) {
-                base[key] = scaleNumber(v, effectiveMonths);
+                base[key] = scaleNumber(v * qty, months);
             }
         }
+        for (const key of LINE_LEVEL_MONEY_KEYS) {
+            const v = base[key];
+            if (typeof v === 'number' && Number.isFinite(v)) {
+                base[key] = scaleNumber(v, months);
+            }
+        }
+
         const out = base as unknown as IBXProductRowRow & {
             ownerType: string;
             ownerId: number;

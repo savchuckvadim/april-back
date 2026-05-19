@@ -1,6 +1,6 @@
 import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
 
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
 import { DeletePbxSmartUseCase } from '../use-cases/delete-pbx-smart.use-case';
 import { GetPbxSmartUseCase } from '../use-cases/get-pbx-smart.use-case';
@@ -61,20 +61,25 @@ export class PbxSmartInstallController {
     }
 
     @ApiOperation({ summary: 'Delete Installed smart' })
+    @ApiParam({ name: 'domain', description: 'Domain of the portal' })
     @ApiParam({ name: 'smartName', enum: SmartNameEnum })
-    // @ApiParam({ name: 'smartGroup', enum: SmartGroupEnum })
-    @ApiParam({ name: 'withBitrix', description: 'If true, delete in bitrix' })
+    @ApiParam({ name: 'smartGroup', enum: SmartGroupEnum })
+    @ApiQuery({
+        name: 'withBitrix',
+        required: false,
+        description: 'If true, delete in bitrix',
+    })
     @Delete('install/domain/:domain/smart/:smartName/:smartGroup')
     async deleteSmart(
         @Param('domain') domain: string,
         @Param('smartName') smartName: SmartNameEnum,
-        // @Param('smartGroup') smartGroup: SmartGroupEnum,
+        @Param('smartGroup') smartGroup: SmartGroupEnum,
         @Query('withBitrix') withBitrix: boolean = false,
     ): Promise<any> {
         return await this.deletePbxSmartUseCase.execute(
             smartName,
             domain,
-            undefined,
+            smartGroup,
             withBitrix,
         );
     }

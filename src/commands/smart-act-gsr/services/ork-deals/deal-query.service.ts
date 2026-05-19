@@ -12,10 +12,12 @@ export class DealQueryService {
     constructor(private readonly pbx: PBXService) {}
 
     public async getOpenDealsByAssigned(
+        domain: string,
         assignedById?: string,
         dealId?: number,
     ) {
         const { deals } = await this.getDealsByFilter(
+            domain,
             'open',
             assignedById,
             dealId,
@@ -24,10 +26,12 @@ export class DealQueryService {
     }
 
     public async getSuccessDealsByAssigned(
+        domain: string,
         assignedById?: string,
         dealId?: number,
     ) {
         const { deals } = await this.getDealsByFilter(
+            domain,
             'success',
             assignedById,
             dealId,
@@ -35,8 +39,13 @@ export class DealQueryService {
         return deals;
     }
 
-    public async getAllDealsByAssigned(assignedById?: string, dealId?: number) {
+    public async getAllDealsByAssigned(
+        domain: string,
+        assignedById?: string,
+        dealId?: number,
+    ) {
         const { deals } = await this.getDealsByFilter(
+            domain,
             'all',
             assignedById,
             dealId,
@@ -45,10 +54,12 @@ export class DealQueryService {
     }
 
     public async getFailDealsByAssigned(
+        domain: string,
         assignedById?: string,
         dealId?: number,
     ) {
         const { deals } = await this.getDealsByFilter(
+            domain,
             'fail',
             assignedById,
             dealId,
@@ -57,10 +68,12 @@ export class DealQueryService {
     }
 
     public async getOpenDealsWithPortal(
+        domain: string,
         assignedById?: string,
         dealId?: number,
     ) {
         const { deals, portal } = await this.getDealsByFilter(
+            domain,
             'open',
             assignedById,
             dealId,
@@ -69,11 +82,11 @@ export class DealQueryService {
     }
 
     private async getDealsByFilter(
+        domain: string,
         which: DealFilterType,
         assignedById?: string,
         dealId?: number,
     ): Promise<{ deals: IBXDeal[] | null; portal: PortalModel }> {
-        const domain = 'gsr.bitrix24.ru';
         const { PortalModel: portal, bitrix } = await this.pbx.init(domain);
         const deals = await this.getAllDeals(
             bitrix,
@@ -83,6 +96,7 @@ export class DealQueryService {
             dealId,
         );
         await delay(1500);
+        console.log('deals', deals);
         return { deals, portal };
     }
 

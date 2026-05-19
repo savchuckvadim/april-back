@@ -32,11 +32,11 @@ export class OrkDealsService {
         private readonly dealGroupingService: DealGroupingService,
         private readonly dealContractPeriodService: DealContractPeriodService,
         private readonly dealPerodDataService: DealPerodDataService,
-    ) { }
+    ) {}
 
-    public async geGrouppedByComapny() {
+    public async geGrouppedByComapny(domain: string) {
         const { deals: openDeals, portal } =
-            await this.dealQueryService.getOpenDealsWithPortal();
+            await this.dealQueryService.getOpenDealsWithPortal(domain);
 
         const groupped = this.dealGroupingService.getDealsGrouppedByComapny(
             openDeals ?? [],
@@ -72,9 +72,9 @@ export class OrkDealsService {
         };
     }
 
-    public async getDealsWithEmptyOneOfContractPeriodFields() {
+    public async getDealsWithEmptyOneOfContractPeriodFields(domain: string) {
         const { deals: openDeals, portal } =
-            await this.dealQueryService.getOpenDealsWithPortal();
+            await this.dealQueryService.getOpenDealsWithPortal(domain);
         const dealsWithEmptyFrom =
             this.dealContractPeriodService.getDealsWithEmptyFrom(
                 openDeals ?? [],
@@ -89,6 +89,7 @@ export class OrkDealsService {
     }
 
     public async getDealService(
+        domain: string,
         portal: PortalModel,
         assignedById?: string,
         dealId?: number,
@@ -100,12 +101,14 @@ export class OrkDealsService {
         // );
         console.log('getting fail deals by assigned by id', assignedById);
         const failDeals = await this.dealQueryService.getFailDealsByAssigned(
+            domain,
             assignedById,
             dealId,
         );
         await delay(2000);
         console.log('getting open deals by assigned by id', assignedById);
         const openDeals = await this.dealQueryService.getOpenDealsByAssigned(
+            domain,
             assignedById,
             dealId,
         );
@@ -115,7 +118,7 @@ export class OrkDealsService {
         );
         // const successDeals =
         //     await this.dealQueryService.getSuccessDealsByAssigned(assignedById);
-
+        console.log('preparedDeals', preparedDeals);
         const preparedOpenDealsCount = preparedDeals?.length;
         console.log('preparedOpenDealsCount', preparedOpenDealsCount);
         return {

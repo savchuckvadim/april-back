@@ -9,6 +9,7 @@ import {
     SmartActGsrService,
 } from '../services/smart/smart-act-gsr.service';
 import { coefficientFromDealMeasureName } from '../services/smart/utils/deal-product-coefficient.util';
+import { domain } from './act-n-product-handler.use-case';
 
 export interface IDealWithRows {
     deal: IOrkDeal;
@@ -17,7 +18,7 @@ export interface IDealWithRows {
     productCoefficient: number;
     smartItems: ISmartActItemsByDealResult;
 }
-const assignedById = '221';
+const assignedById = '';
 @Injectable()
 export class OrkActsUpdateUseCase {
     constructor(
@@ -29,17 +30,18 @@ export class OrkActsUpdateUseCase {
     async execute(dealId?: number): Promise<{
         dealsWithRows: IDealWithRows[];
     }> {
-        const { bitrix, PortalModel } = await this.pbx.init('gsr.bitrix24.ru');
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
         const deals = await this.orkDealsService.getDealService(
+            domain,
             PortalModel,
             assignedById,
             dealId,
         );
         const productRowsService = new OrkActsProductRowsService(bitrix);
-        const openDeals = deals.openDeals.items.filter(
-            (d, index) => index < 100,
-        );
-
+        // const openDeals = deals.openDeals.items.filter(
+        //     (d, index) => index < 100,
+        // );
+        const openDeals = deals.openDeals.items;
         const dealsWithRows: IDealWithRows[] = [];
         for (const deal of openDeals) {
             const dealWithRowsItem: IDealWithRows = {

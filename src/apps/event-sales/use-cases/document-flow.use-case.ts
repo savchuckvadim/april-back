@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import {
-    BitrixDealService,
-    Deal,
-} from '../services/deal-flow/bitrix-deal.service';
-import { BitrixDealBatchFlowService } from '../services/deal-flow/bitrix-deal-batch-flow.service';
-import { BitrixBatchService } from '../services/general/bitrix-batch.service';
+// import {
+//     BitrixDealService,
+//     BitrixDealBatchFlowService,
+// } from '../shared/deal-flow';
 import { IBXDeal } from '@/modules/bitrix';
-import { PBXService } from '@pbx';
+import { PBXService } from '@/modules/pbx';
+import { BitrixDealService, BitrixEntityFlowService } from '../shared';
 
 interface EventDocumentFlowDto {
     domain: string;
@@ -20,19 +19,18 @@ interface EventDocumentFlowDto {
 }
 
 @Injectable()
-export class EventDocumentService {
-    constructor(
-        private readonly pbx: PBXService,
-        private readonly bitrixDealService: BitrixDealService,
-        private readonly bitrixDealBatchFlowService: BitrixDealBatchFlowService,
-        private readonly bitrixBatchService: BitrixBatchService,
-    ) {}
+export class EventDocumentFlowUseCase {
+    constructor(private readonly pbx: PBXService) {}
 
-    async flow(dto: EventDocumentFlowDto): Promise<void> {
+    async flow(dto: EventDocumentFlowDto): Promise<boolean> {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
         const portal = PortalModel.getPortal();
-        // const dealService = new BitrixDealService(bitrix, portal)
-        // const entityService = new BitrixEntityService(bitrix, portal)
+        const dealService = new BitrixDealService(bitrix);
+        const entityService = new BitrixEntityFlowService(bitrix);
+        console.log('dealService', dealService);
+        console.log('entityService', entityService);
+        console.log('portal', portal);
         // const listService = new BitrixListService(bitrix, portal)
+        return true;
     }
 }

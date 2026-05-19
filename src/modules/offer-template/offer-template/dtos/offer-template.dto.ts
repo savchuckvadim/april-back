@@ -71,6 +71,14 @@ export class OfferTemplateSummaryDto extends OfferTemplateSummary {
     declare counter: number;
 
     @ApiProperty({
+        description: 'The creator bitrix user id of the offer template',
+        type: Number,
+    })
+    @IsNumber()
+    @IsOptional()
+    declare creator_bitrix_user_id?: number;
+
+    @ApiProperty({
         description: 'The pages of the offer template',
         type: [OfferTemplatePageDto],
     })

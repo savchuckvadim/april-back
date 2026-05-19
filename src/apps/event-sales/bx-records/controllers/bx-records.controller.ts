@@ -12,4 +12,13 @@ export class BxRecordsController {
     async getRecordsByCompany(@Body() dto: BxRecordsByCompanyRequestDto) {
         return await this.recordsByCompanyUseCase.getRecords(dto);
     }
+    /**
+     * TODO: get records by lead делается где-то в другом месте
+     * перенести сюда
+     *
+     */
+    // @Post('lead')
+    // async getRecordsByCompany(@Body() dto: BxRecordsByCompanyRequestDto) {
+    //     return await this.recordsByCompanyUseCase.getRecords(dto);
+    // }
 }

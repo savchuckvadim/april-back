@@ -16,10 +16,14 @@ import { SmartActService } from '../services/smart/smart-act.service';
 import { SmartProductRowService } from '../services/smart/smart-product-row.service';
 import { SmartDealProductRowService } from '../services/smart/smart-deal-product-row.service';
 import { getContractPeriodFieldBitrixId } from '../services/ork-deals/utils/get-contract-period-field.util';
-import { BitrixService, EBXEntity, IBXDeal } from '@/modules/bitrix';
+import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@/modules/portal/services/portal.model';
+import { SmartActTimelineChangeContractStartService } from '../services/timeline/smart-act.timeline.service';
+import type { ISmartActWarningTaskSendData } from '../services/task/smart-act-plan-warning.constants';
+import { buildSmartActWarningTasksFromPlan } from '../services/task/smart-act-plan-warning-from-plan.util';
+import { SmartActWarningTaskService } from '../services/task/smart-act-task-warning.service';
 
-const domain = 'gsr.bitrix24.ru';
+export const domain = 'gsr.bitrix24.ru';
 @Injectable()
 export class ActNProductHandlerUseCase {
     constructor(
@@ -36,6 +40,7 @@ export class ActNProductHandlerUseCase {
         const { bitrix, PortalModel } = await this.pbx.init(domain);
         // 3) Флаг: хотя бы у одной сделки сдвинули дату начала договора по паттерну лицензии.
         let didShiftContractStart = false;
+        const changedFromContractTasks: ISmartActWarningTaskSendData[] = [];
         for (const plan of plans) {
             // 4) Если в плане есть align_contract_start_one_month_license — пишем UF «с» + комментарий в таймлайн.
             const shifted = await this.shiftContractStartOneMonthForward(
@@ -45,6 +50,14 @@ export class ActNProductHandlerUseCase {
             );
             // 5) Накопление флага по результату сдвига текущего плана (await выше выполняется на каждой итерации).
             didShiftContractStart ||= shifted;
+            if (shifted) {
+                changedFromContractTasks.push({
+                    type: 'changed_from',
+                    dealId: plan.dealId,
+                    companyId: plan.companyId,
+                    responsibleId: Number(plan.assignedById),
+                });
+            }
         }
         if (didShiftContractStart) {
             // 6) После изменения UF пересобираем планы — totalMonths/слоты/qty уже от новой даты начала.
@@ -55,8 +68,17 @@ export class ActNProductHandlerUseCase {
             // 7) Синхронизация актов и строк по итоговому плану (создание, закрытие, qty сделки).
             await this.syncDealActsFromPlan(plan);
         }
+        // 8) Задачи-предупреждения: сдвиг «начала договора» (changed_from) + проблемы по плану (один batch).
+        const planWarningTasks = plans.flatMap(p =>
+            buildSmartActWarningTasksFromPlan(p),
+        );
+        const warningTasks = [...changedFromContractTasks, ...planWarningTasks];
+        if (warningTasks.length > 0) {
+            const warningTaskService = new SmartActWarningTaskService(bitrix);
+            await warningTaskService.sendTasks(warningTasks);
+        }
 
-        // 8) Ответ API — финальные планы (после возможного второго reconcile).
+        // 9) Ответ API — финальные планы (после возможного второго reconcile).
         return { plans };
     }
 
@@ -82,17 +104,16 @@ export class ActNProductHandlerUseCase {
         await bitrix.deal.update(plan.dealId, {
             [startField]: shift.shiftedContractStartIso,
         } as Partial<IBXDeal>);
-
-        const commentMessage =
-            'Дата начала договора сдвинута на месяц вперёд под срок лицензии по товару. ' +
-            `Новое значение UF начала: ${shift.shiftedContractStartIso}.`;
-
-        await bitrix.timeline.addTimelineComment({
-            ENTITY_TYPE: EBXEntity.DEAL,
-            ENTITY_ID: plan.dealId,
-            COMMENT: commentMessage,
-            AUTHOR_ID: plan.assignedById?.toString() ?? '1',
-        });
+        //отправка в timeline комментария о сдвиге даты начала договора
+        const smartActTimelineChangeContractStartService =
+            new SmartActTimelineChangeContractStartService(
+                bitrix,
+                plan.item.deal.periodData.from,
+                shift.shiftedContractStartIso,
+                plan.dealId,
+                Number(plan.assignedById),
+            );
+        await smartActTimelineChangeContractStartService.execute();
 
         return true;
     }
@@ -184,7 +205,7 @@ export class ActNProductHandlerUseCase {
             if (!match) {
                 const newId = await smartActService.createSmartActGsr({
                     dealId: dealIdNum,
-                    companyId: Number(plan.item.deal.deal.COMPANY_ID),
+                    companyId: plan.companyId,
                     responsibleId: Number(plan.assignedById),
                     productQuantity: plan.item.productQuantity,
                     productCoefficient: plan.item.productCoefficient,

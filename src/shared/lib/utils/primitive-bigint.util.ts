@@ -1,6 +1,17 @@
-export const bigintConvertToNumber = (value: bigint): number => {
+export const bigintConvertToNumber = (
+    value: bigint | undefined | string | number,
+): number => {
+    if (value === undefined) {
+        return 0;
+    }
     if (typeof value === 'bigint') {
         return Number(value.toString());
+    }
+    if (typeof value === 'string') {
+        return Number(value);
+    }
+    if (typeof value === 'number') {
+        return value;
     }
     return value;
 };

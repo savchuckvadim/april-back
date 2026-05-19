@@ -73,6 +73,7 @@ export class OfferTemplateSummary {
     counter: number;
     created_at?: Date;
     portal_id?: number;
+    creator_bitrix_user_id?: bigint | number;
     constructor(partial: Partial<OfferTemplateSummary>) {
         Object.assign(this, {
             ...partial,

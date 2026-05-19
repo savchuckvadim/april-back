@@ -19,7 +19,7 @@ export class BitrixImBridgeConfigService {
         }
 
         // Backward-compatible alias for corrected variable naming.
-        const alias = this.config.get<string>('WITH_SCHEDULER');
+        const alias = this.config.get<string>('WITH_SCHEDLER');
         if (alias != null) {
             return this.toBoolean(alias, false);
         }

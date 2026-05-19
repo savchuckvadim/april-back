@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Post } from '@nestjs/common';
 import { KonstructorInitUseCase } from './konstructor-init.use-case';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { KonstructorInitDataDto } from './dto/response-init-data.dto';

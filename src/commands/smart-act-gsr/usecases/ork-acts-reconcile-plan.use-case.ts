@@ -12,6 +12,7 @@ import {
     IContractActPeriodSlot,
 } from '../services/ork-deals/utils/build-contract-act-periods.util';
 import { tryBuildLicenseCalendarOneMonthShift } from '../services/ork-deals/utils/deal-license-calendar-one-month-shift.util';
+import { parseDealCompanyId } from '../services/task/smart-act-plan-warning.constants';
 
 type TReconcileActionType =
     | 'notify_responsible_missing_data'
@@ -36,6 +37,8 @@ export interface IReconcileActionPlanItem {
 
 export interface IDealReconcilePlan {
     dealId: number;
+    /** COMPANY_ID сделки, >0 если компания привязана */
+    companyId: number;
     item: IDealWithRows;
     assignedById: string | null;
     actions: IReconcileActionPlanItem[];
@@ -77,11 +80,13 @@ export class OrkActsReconcilePlanUseCase {
             console.log('OrkActsReconcilePlanUseCase result', result);
             return result;
         });
+        console.log('OrkActsReconcilePlanUseCase plans', plans);
         return { plans };
     }
 
     private buildDealPlan(item: IDealWithRows): IDealReconcilePlan {
         const dealId = Number(item.deal.deal.ID);
+        const companyId = parseDealCompanyId(item.deal.deal.COMPANY_ID);
         const assignedById = item.deal.deal.ASSIGNED_BY_ID ?? null;
         const { periodData } = item.deal;
 
@@ -148,6 +153,7 @@ export class OrkActsReconcilePlanUseCase {
             });
             return {
                 dealId,
+                companyId,
                 item,
                 assignedById,
                 actions,
@@ -167,6 +173,7 @@ export class OrkActsReconcilePlanUseCase {
             });
             return {
                 dealId,
+                companyId,
                 item,
                 assignedById,
                 actions,
@@ -264,6 +271,7 @@ export class OrkActsReconcilePlanUseCase {
 
         return {
             dealId,
+            companyId,
             item,
             assignedById,
             actions,

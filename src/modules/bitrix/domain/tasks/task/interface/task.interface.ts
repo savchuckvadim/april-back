@@ -11,6 +11,11 @@ export interface ITaskFilter extends Partial<IBXTask> {
  * Интерфейс для полей создания/обновления задачи в формате Bitrix API (UPPERCASE)
  * При создании задачи поля передаются в формате TITLE, DEADLINE, CREATED_BY и т.д.
  */
+export enum ETaskPriority {
+    HIGH = 2,
+    MEDIUM = 1,
+    LOW = 0,
+}
 export interface ITaskCreateFields {
     TITLE: string;
     RESPONSIBLE_ID: number | string;
@@ -18,7 +23,7 @@ export interface ITaskCreateFields {
     GROUP_ID?: number | string;
     DEADLINE?: string;
     DESCRIPTION?: string;
-    PRIORITY?: number | string;
+    PRIORITY?: ETaskPriority;
     PARENT_ID?: number | string;
     UF_CRM_TASK?: string[];
     UF_TASK_WEBDAV_FILES?: string[];

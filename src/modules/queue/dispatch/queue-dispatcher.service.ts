@@ -36,6 +36,9 @@ export class QueueDispatcherService {
         private readonly konstructorQueue: Queue,
         @InjectQueue(QueueNames.SERVICE_GENERATE_ACTS)
         private readonly serviceGenerateActsQueue: Queue,
+
+        @InjectQueue(QueueNames.EVENT_SILENT)
+        private readonly eventSilentQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -52,7 +55,14 @@ export class QueueDispatcherService {
         const job = jobId
             ? await queue.add(jobName, data, { jobId })
             : await queue.add(jobName, data);
-        this.logger.log('Job added to queue');
+        const counts =
+            queueName === QueueNames.SILENT
+                ? await queue.getJobCounts()
+                : undefined;
+        this.logger.log(
+            `[silent] Job added: id=${job.id} name=${job.name} queue=${queueName}` +
+                (counts ? ` counts=${JSON.stringify(counts)}` : ''),
+        );
         return job;
     }
 
@@ -87,6 +97,8 @@ export class QueueDispatcherService {
                 return this.zakupkiOfferQueue;
             case QueueNames.KONSTRUCTOR:
                 return this.konstructorQueue;
+            case QueueNames.EVENT_SILENT:
+                return this.eventSilentQueue;
 
             default: {
                 const error = `Unknown queue name: ${name}`;

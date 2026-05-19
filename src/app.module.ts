@@ -7,7 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
 import { RedisModule } from './core/redis/redis.module';
-import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
+// import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
 import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 import { EventSalesModule } from './apps/event-sales/event.module';
 import { HealthController } from './health.controller';
@@ -101,7 +101,7 @@ import { ParseFieldExcelModule } from './modules/install/shared';
 
         TelegramModule,
         RedisModule,
-        SilentJobHandlersModule,
+        // SilentJobHandlersModule,
         KpiReportModule,
         EventSalesModule,
 
