@@ -4,13 +4,11 @@ import {
     PbxCompanyMonitoringService,
 } from './pbx-company-monitoring.service';
 import { PbxFieldEntityDto } from '@/modules/pbx-domain';
-import {
-    CompanyAppName,
-    ParseCompanyService,
-    PbxCompanyGroupEnum,
-} from './pbx-company-parse.service';
+
 import { IBXField } from '@/modules/bitrix';
 import { Field } from '@/modules/install/shared/parse-field-excel/type/parse-field.type';
+import { ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
+import { PbxEntityType } from '@/shared';
 
 export interface PbxCompanyFieldSearchResult {
     pbx: PbxFieldEntityDto | null;
@@ -26,18 +24,19 @@ export class PbxCompanySearchService {
     private readonly logger = new Logger(PbxCompanySearchService.name);
     private readonly installPath = 'install';
     constructor(
-        private readonly parseCompanyService: ParseCompanyService,
+        private readonly parseCompanyService: ParseEntityFieldsService,
         private readonly pbxCompanyMonitoringService: PbxCompanyMonitoringService,
     ) {}
 
     async search(
         domain: string,
-        group: PbxCompanyGroupEnum,
+        group: PbxEntityGroupEnum,
         search: string,
     ): Promise<PbxCompanyFieldSearchResultResponse> {
         const { fields: parseFields } =
             await this.parseCompanyService.getParsedData(
-                CompanyAppName.ALL,
+                PbxEntityType.BTX_COMPANY,
+                ParseEntityFieldsAppName.ALL,
                 group,
             );
         const searchedParsedFields = parseFields.filter(field =>

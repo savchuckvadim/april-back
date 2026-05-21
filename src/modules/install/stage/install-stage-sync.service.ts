@@ -6,34 +6,21 @@ import {
     normalizeStatusListResult,
     toSort,
 } from '../shared/utils/bitrix-category-stage.utils';
-import { Stage } from '../smart/type/parse.type';
 import type { SyncStagesForCategoryArgs } from './sync-stages-for-category.args';
+import { Stage } from '../shared';
+import { BitrixCategoryStageStrategy } from '../category';
 
 /** Параметры нижнего уровня: то же, что у use case, плюс режим wipe перед заливкой. */
 export type SyncStagesForCategoryParams = SyncStagesForCategoryArgs & {
     resetStagesBeforeSync?: boolean;
 };
 
-/** Семантика Bitrix по суффиксу STATUS_ID (поле шаблона `bitrixId`). */
-function semanticsFromBitrixId(bitrixId: string): string {
-    const id = String(bitrixId).toUpperCase();
-    if (id === 'SUCCESS' || id === 'WON') {
-        return 'S';
-    }
-    if (
-        id === 'FAIL' ||
-        id === 'LOSE' ||
-        id === 'LOST' ||
-        id === 'APOLOGY' ||
-        id === 'DECLINED'
-    ) {
-        return 'F';
-    }
-    return '';
-}
-
 /**
- * Справочник стадий (`crm.status.*`) для смарт-процесса (ENTITY_ID / STATUS_ID в формате dynamic).
+ * Справочник стадий (`crm.status.*`) для воронки.
+ *
+ * Алгоритм один и тот же для смартов, сделок и RPA. Конкретику Bitrix-форматов
+ * (`ENTITY_ID`, `STATUS_ID`, `SEMANTICS`) предоставляет {@link BitrixCategoryStageStrategy},
+ * который пробрасывается оркестратором (`InstallSmartCategoriesService` и т.п.).
  *
  * Два режима вызываются через use case (рекомендуется) или напрямую:
  * - **Bootstrap** — `resetStagesBeforeSync: true`: только что созданная воронка; Bitrix уже подставил дефолтные стадии с «чужими» SORT/S — их удаляем и ставим только шаблон.
@@ -47,12 +34,14 @@ export class InstallStageSyncService {
 
     constructor(private readonly stageRepository: BtxStageRepository) { }
 
-    async deleteAllStagesInCategory(
-        bitrix: BitrixService,
-        entityTypeId: number,
-        bxCategoryId: number,
-    ): Promise<void> {
-        const entityId = `DYNAMIC_${entityTypeId}_STAGE_${bxCategoryId}`;
+    async deleteAllStagesInCategory(params: {
+        bitrix: BitrixService;
+        entityTypeId: number;
+        bxCategoryId: number;
+        strategy: BitrixCategoryStageStrategy;
+    }): Promise<void> {
+        const { bitrix, entityTypeId, bxCategoryId, strategy } = params;
+        const entityId = strategy.statusEntityId(entityTypeId, bxCategoryId);
         const list = await bitrix.status.getList({ ENTITY_ID: entityId });
         const rows = normalizeStatusListResult(list.result);
         for (const row of rows) {
@@ -85,7 +74,7 @@ export class InstallStageSyncService {
      * 1) Отсортировать стадии шаблона по `order` (SORT в Bitrix) — иначе возможна ошибка «промежуточная после успешной».
      * 2) При bootstrap — удалить все текущие `crm.status` по ENTITY_ID воронки (включая системные дефолты новой категории).
      * 3) Загрузить актуальный список статусов из Bitrix.
-     * 4) Для каждой стадии шаблона (в порядке SORT): семантика из `bitrixId` (+ запасной эвристикой по `code`), update или add, затем upsert строки в `btx_stages`.
+     * 4) Для каждой стадии шаблона (в порядке SORT): семантика из стратегии, update или add, затем upsert строки в `btx_stages`.
      * 5) Удалить из Bitrix статусы, которых нет в шаблоне (по STATUS_ID).
      * 6) Удалить из БД портала стадии, чьих `code` нет в шаблоне.
      */
@@ -98,19 +87,21 @@ export class InstallStageSyncService {
             bxCategoryId,
             portalCategoryId,
             stages,
+            strategy,
             resetStagesBeforeSync = false,
         } = params;
 
         const sortedStages = this.sortStagesByTemplateOrder(stages);
-        const entityId = `DYNAMIC_${entityTypeId}_STAGE_${bxCategoryId}`;
+        const entityId = strategy.statusEntityId(entityTypeId, bxCategoryId);
 
         // Шаг 2 (только bootstrap): чистый лист в Bitrix перед заливкой шаблона.
         if (resetStagesBeforeSync) {
-            await this.deleteAllStagesInCategory(
+            await this.deleteAllStagesInCategory({
                 bitrix,
                 entityTypeId,
                 bxCategoryId,
-            );
+                strategy,
+            });
         }
 
         // Шаг 3: актуальное состояние Bitrix после возможного wipe.
@@ -118,18 +109,26 @@ export class InstallStageSyncService {
         const currentRows = normalizeStatusListResult(listBefore.result);
 
         const expectedStatusIds = new Set(
-            sortedStages.map(
-                s => `DT${entityTypeId}_${bxCategoryId}:${String(s.bitrixId)}`,
+            sortedStages.map(s =>
+                strategy.statusId(
+                    entityTypeId,
+                    bxCategoryId,
+                    String(s.bitrixId),
+                ),
             ),
         );
 
         // Шаг 4: применяем шаблон по возрастанию SORT.
         for (const stage of sortedStages) {
-            const statusId = `DT${entityTypeId}_${bxCategoryId}:${String(stage.bitrixId)}`;
+            const statusId = strategy.statusId(
+                entityTypeId,
+                bxCategoryId,
+                String(stage.bitrixId),
+            );
             const sort = toSort(stage.order);
             const color = normalizeBitrixStageColor(stage.color, this.logger);
             const name = String(stage.title || stage.name);
-            const semantics = this.semanticsForStage(stage);
+            const semantics = strategy.resolveStageSemantics(stage);
 
             const existing = currentRows.find(r => r.STATUS_ID === statusId);
 
@@ -183,21 +182,6 @@ export class InstallStageSyncService {
     /** Шаг 1 шаблона: стабильный порядок для crm.status.* (Bitrix не любит «промежуточную» после SUCCESS по SORT). */
     private sortStagesByTemplateOrder(stages: Stage[]): Stage[] {
         return [...stages].sort((a, b) => Number(a.order) - Number(b.order));
-    }
-
-    /** Семантика: в приоритете суффикс Bitrix (`bitrixId`), иначе эвристика по `code` (старые шаблоны). */
-    private semanticsForStage(stage: Stage): string {
-        const fromBitrixId = semanticsFromBitrixId(String(stage.bitrixId));
-        if (fromBitrixId) {
-            return fromBitrixId;
-        }
-        if (stage.code.includes('success')) {
-            return 'S';
-        }
-        if (stage.code.includes('fail')) {
-            return 'F';
-        }
-        return '';
     }
 
     private async upsertPortalStage(

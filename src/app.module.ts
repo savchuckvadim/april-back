@@ -30,6 +30,7 @@ import { PBXInstallModule } from './modules/install/pbx-install.module';
 import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OfferTemplateModule } from './modules/offer-template/offer-template.module';
 import { KpiReportOrkModule } from './apps/kpi-report-ork/kpi-report-ork.module';
 import { BitrixSetupModule } from './modules/bitrix-setup/bitrix-setup.module';
@@ -80,6 +81,7 @@ import { ParseFieldExcelModule } from './modules/install/shared';
             ],
         }),
         ScheduleModule.forRoot(),
+        EventEmitterModule.forRoot(),
         CookieModule,
         PrismaModule,
         MetricsModule,

@@ -51,4 +51,8 @@ export class BxCompanyBatchService {
     ) {
         return this.repo.updateFieldBtch(cmdCode, id, fields);
     }
+
+    deleteField(cmdCode: string, id: number | string) {
+        return this.repo.deleteFieldBtch(cmdCode, id);
+    }
 }

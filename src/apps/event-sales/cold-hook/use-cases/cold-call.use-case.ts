@@ -11,7 +11,7 @@ export class ColdCallUseCase {
     constructor(
         private readonly bitrixService: BitrixService,
         private readonly portal: PortalModel,
-    ) {}
+    ) { }
 
     async flow(
         data: IColdCallData,
@@ -19,10 +19,9 @@ export class ColdCallUseCase {
         deal: IBXDeal | null,
         lead: IBXLead | null,
     ) {
-        this.logger.log('company', company.ID ?? 'null');
-        this.logger.log('deal', deal?.ID ?? 'null');
-        this.logger.log('lead', lead?.ID ?? 'null');
-        this.logger.log('data', data);
+        this.logger.log('flow',company?.ID);
+
+
         const service = new ColdFlowDealService(
             this.bitrixService,
             this.portal,

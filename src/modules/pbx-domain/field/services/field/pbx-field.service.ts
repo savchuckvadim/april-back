@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PbxFieldRepository } from '../../repositories/pbx-field.repositry';
-import { PbxField, PbxFieldEntity } from '../../entity/pbx-field.entity';
+import {
+    PbxField,
+    PbxFieldEntity,
+    PbxFieldItem,
+} from '../../entity/pbx-field.entity';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { mapFromDbToEntityField } from '../../lib/map-from-db-to-entity-field.util';
 
@@ -42,10 +46,36 @@ export class PbxFieldService {
         return this.pbxFieldRepository.deleteFieldItem(fieldItemId);
     }
 
+    async updateFieldItemNameById(
+        fieldItemId: string,
+        newValue: string,
+    ): Promise<PbxFieldItem> {
+        return this.pbxFieldRepository.updateFieldItemNameById(
+            fieldItemId,
+            newValue,
+        );
+    }
+
     async deleteFieldsByEntityId(
         entity: PbxEntityTypePrisma,
         entityId: bigint,
     ): Promise<void> {
         return this.pbxFieldRepository.deleteFieldsByEntityId(entity, entityId);
+    }
+
+    async deleteFieldsByIds(fieldIds: bigint[]): Promise<void> {
+        return this.pbxFieldRepository.deleteFieldsByIds(fieldIds);
+    }
+
+    async findByEntityIdAndCodes(
+        entity: PbxEntityTypePrisma,
+        entityId: bigint,
+        codes: string[],
+    ): Promise<PbxFieldEntity[]> {
+        return this.pbxFieldRepository.findByEntityIdAndCodes(
+            entity,
+            entityId,
+            codes,
+        );
     }
 }

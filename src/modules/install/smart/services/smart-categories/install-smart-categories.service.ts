@@ -7,14 +7,21 @@ import { InstallCategorySyncService } from '@/modules/install/category/install-c
 import { InstallStageSyncService } from '@/modules/install/stage/install-stage-sync.service';
 import { BootstrapPortalCategoryStagesUseCase } from '@/modules/install/stage/use-cases/bootstrap-portal-category-stages.use-case';
 import { ReconcilePortalCategoryStagesUseCase } from '@/modules/install/stage/use-cases/reconcile-portal-category-stages.use-case';
+import { InstallCategoryParent } from '@/modules/install/category/strategy/bitrix-category-stage.strategy';
+import { PbxEntityTypePrisma } from '@/shared/enums';
+import { SmartCategoryStageStrategy } from './smart-category-stage.strategy';
 
 /**
  * Оркестратор установки воронок и стадий смарт-процесса при инсталле из шаблона.
- * Детальный порядок шагов см. комментарии внутри `installTemplateCategories`.
  *
- * Идея в целом:
- * - сначала убрать из Bitrix/БД лишние воронки относительно шаблона (со стадиями в правильном порядке);
- * - затем привести воронки к шаблону и синхронизировать стадии по каждой.
+ * Этот сервис отвечает только за смарт-специфичные шаги:
+ * - резолв смарта (portal + smarts row) → `parent.entityDbId`;
+ * - подстановку {@link SmartCategoryStageStrategy} (Bitrix-форматы и семантика для смартов).
+ *
+ * Сам алгоритм синка (удалить orphans → ensure → bootstrap/reconcile стадий)
+ * живёт в `InstallCategorySyncService` / `InstallStageSyncService` и общий для смартов,
+ * сделок и RPA. Аналог для сделки делает то же самое: достаёт свою db-строку и
+ * подставляет `DealCategoryStageStrategy`.
  */
 @Injectable()
 export class InstallSmartCategoriesService {
@@ -25,6 +32,7 @@ export class InstallSmartCategoriesService {
         private readonly stageSync: InstallStageSyncService,
         private readonly bootstrapStages: BootstrapPortalCategoryStagesUseCase,
         private readonly reconcileStages: ReconcilePortalCategoryStagesUseCase,
+        private readonly strategy: SmartCategoryStageStrategy,
     ) {}
 
     async installTemplateCategories(
@@ -60,7 +68,11 @@ export class InstallSmartCategoriesService {
             throw new Error('Smart not found after save');
         }
 
-        const smartDbId = innerSmart.id;
+        const parent: InstallCategoryParent = {
+            entityType: PbxEntityTypePrisma.SMART,
+            entityDbId: innerSmart.id,
+            parentType: 'smart',
+        };
         const entityTypeIdStr = String(entityTypeId);
         // Набор кодов воронок из шаблона (нормализованные), чтобы отличить «лишнее» в Bitrix от «нужного».
         const templateCodes = new Set(
@@ -81,29 +93,31 @@ export class InstallSmartCategoriesService {
         // Шаг 2: для каждой лишней воронки — сначала стадии в Bitrix, потом категория в Bitrix, потом запись в нашей БД.
         for (const orphan of orphans) {
             const bxCategoryId = Number(orphan.id);
-            await this.stageSync.deleteAllStagesInCategory(
+            await this.stageSync.deleteAllStagesInCategory({
                 bitrix,
                 entityTypeId,
                 bxCategoryId,
-            );
+                strategy: this.strategy,
+            });
             await this.categorySync.deleteBitrixCategory(
                 bitrix,
                 bxCategoryId,
                 entityTypeIdStr,
             );
             await this.categorySync.deletePortalCategoryByBitrixId(
-                smartDbId,
+                parent,
                 String(orphan.id),
             );
         }
 
         // Шаг 3: создаём/обновляем воронки по шаблону в Bitrix и зеркалим в `btx_categories`; возвращает bxCategoryId + portalCategoryId.
-        const ensured = await this.categorySync.ensureTemplateCategories(
+        const ensured = await this.categorySync.ensureTemplateCategories({
             bitrix,
             entityTypeId,
-            smartDbId,
+            parent,
             templateCategories,
-        );
+            strategy: this.strategy,
+        });
 
         // Шаг 4: стадии по воронке — bootstrap (новая категория в Bitrix: снос дефолтных статусов + шаблон)
         // или reconcile (уже живая воронка: добиваем/правим/удаляем лишнее без полного wipe в начале).
@@ -114,6 +128,7 @@ export class InstallSmartCategoriesService {
                 bxCategoryId: row.bxCategoryId,
                 portalCategoryId: row.portalCategoryId,
                 stages: row.cat.stages ?? [],
+                strategy: this.strategy,
             };
             if (row.isNewCategory) {
                 //удаляет все родные стадии созданной только что воронки и создаёт новые свои

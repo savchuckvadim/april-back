@@ -4,12 +4,14 @@ import { Module } from '@nestjs/common';
 import { PbxCompanyMonitoringService } from './services/pbx-company-monitoring.service';
 import { PbxCompanyInstallMonitoringController } from './controllers/pbx-comapany-install-monitoring.controller';
 import { PbxFieldModule, PortalCompanyModule } from '@/modules/pbx-domain';
-import { ParseFieldExcelModule } from '../shared';
-import { ParseCompanyService } from './services/pbx-company-parse.service';
+import { ParseFieldExcelModule, PortalEntityFieldInstallService } from '../shared';
+// import { ParseCompanyService } from './services/pbx-company-parse.service';
 import { PbxCompanySearchService } from './services/pbx-company-search.service';
 import { PbxCompanyInstallUseCase } from './use-cases/pbx-company-install.use-case';
 import { PbxCompanyInstallController } from './controllers/pbx-comapany-install.controller';
-import { PortalEntityFieldInstallService } from './services/portal-field-entity-install.service';
+import { InstallEntityModule } from '../shared/entity/install-entity.module';
+import { PbxCompanyInstallFieldUseCase } from './use-cases/pbx-company-install-field.use-case';
+import { PbxCompanyFieldManageUseCase } from './use-cases/pbx-company-field-manage.use-case';
 
 @Module({
     imports: [
@@ -18,6 +20,7 @@ import { PortalEntityFieldInstallService } from './services/portal-field-entity-
         PortalCompanyModule,
         ParseFieldExcelModule,
         PbxFieldModule,
+        InstallEntityModule
     ],
     controllers: [
         PbxCompanyInstallMonitoringController,
@@ -25,10 +28,12 @@ import { PortalEntityFieldInstallService } from './services/portal-field-entity-
     ],
     providers: [
         PbxCompanyMonitoringService,
-        ParseCompanyService,
+        // ParseCompanyService,
         PbxCompanySearchService,
-        PortalEntityFieldInstallService,
+        // PortalEntityFieldInstallService,
         PbxCompanyInstallUseCase,
+        PbxCompanyInstallFieldUseCase,
+        PbxCompanyFieldManageUseCase,
     ],
 })
 export class PbxCompanyInstallModule {}

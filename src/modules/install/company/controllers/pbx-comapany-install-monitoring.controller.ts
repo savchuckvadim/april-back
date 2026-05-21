@@ -3,24 +3,20 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { PbxCompanyMonitoringService } from '../services/pbx-company-monitoring.service';
 import {
-    CompanyAppName,
-    CompanyParseData,
-    ParseCompanyService,
-    PbxCompanyGroupEnum,
-} from '../services/pbx-company-parse.service';
-import {
     PbxCompanyFieldSearchResultResponse,
     PbxCompanySearchService,
 } from '../services/pbx-company-search.service';
+import { EntityParseData, ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
+import { PbxEntityType } from '@/shared';
 
 @ApiTags('PBX Company Install Monitoring')
 @Controller('pbx-company-install-monitoring')
 export class PbxCompanyInstallMonitoringController {
     constructor(
         private readonly monitoringService: PbxCompanyMonitoringService,
-        private readonly parseService: ParseCompanyService,
+        private readonly parseService: ParseEntityFieldsService,
         private readonly searchService: PbxCompanySearchService,
-    ) {}
+    ) { }
 
     @ApiOperation({
         summary: 'Get company data by domain',
@@ -39,14 +35,18 @@ export class PbxCompanyInstallMonitoringController {
         summary: 'Get company fields parse data',
         description: 'Получить данные для установки "fields" для "Company"',
     })
-    @ApiParam({ name: 'appName', enum: CompanyAppName })
-    @ApiParam({ name: 'group', enum: PbxCompanyGroupEnum })
+    @ApiParam({ name: 'appName', enum: ParseEntityFieldsAppName })
+    @ApiParam({ name: 'group', enum: PbxEntityGroupEnum })
     @Get('/parse/:appName/:group')
     async getCompanyFieldsParseData(
-        @Param('appName') appName: CompanyAppName,
-        @Param('group') group: PbxCompanyGroupEnum,
-    ): Promise<CompanyParseData> {
-        return await this.parseService.getParsedData(appName, group);
+        @Param('appName') appName: ParseEntityFieldsAppName,
+        @Param('group') group: PbxEntityGroupEnum,
+    ): Promise<EntityParseData> {
+        return await this.parseService.getParsedData(
+            PbxEntityType.BTX_COMPANY,
+            appName,
+            group
+        );
     }
 
     @ApiOperation({
@@ -56,31 +56,15 @@ export class PbxCompanyInstallMonitoringController {
     })
     @ApiParam({ name: 'domain', description: 'Domain of the portal' })
     @ApiParam({ name: 'search', description: 'Search string' })
-    @ApiParam({ name: 'group', enum: PbxCompanyGroupEnum })
+    @ApiParam({ name: 'group', enum: PbxEntityGroupEnum })
     @Get('/search/:domain/:group/:search')
     async getPbxCompanyField(
         @Param('domain') domain: string,
-        @Param('group') group: PbxCompanyGroupEnum,
+        @Param('group') group: PbxEntityGroupEnum,
         @Param('search') search: string,
     ): Promise<PbxCompanyFieldSearchResultResponse> {
         return await this.searchService.search(domain, group, search);
     }
 
-    // @ApiOperation({
-    //     summary: 'Get smart by portal and name',
-    //     description: 'Получить смарт по домену и названию',
-    // })
-    // @ApiParam({ name: 'smartName', enum: SmartNameEnum })
-    // @Get('domain/:domain/smart/:smartName')
-    // async getSmartByPortalAndName(
-    //     @Param('domain') domain: string,
-    //     @Param('smartName') smartName: SmartNameEnum,
-    // ): Promise<any> {
-    //     const getPbxSmartDto = {
-    //         domain,
-    //         smartName,
-    //         withBitrix: true,
-    //     };
-    //     return await this.getPbxSmartUseCase.getPbxSmartByName(getPbxSmartDto);
-    // }
+
 }

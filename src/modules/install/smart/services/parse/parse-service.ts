@@ -1,10 +1,10 @@
 import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { Category, Smart, Stage } from '../../type/parse.type';
+import { Smart } from '../../type/parse.type';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { EUserFieldType } from '@/modules/bitrix';
-import { unwrapExcelCellValue } from '@/modules/install/shared';
+import { Category, Stage, unwrapExcelCellValue } from '@/modules/install/shared';
 import { ParseFieldsService } from '@/modules/install/shared/parse-field-excel/services/parse-fields.service';
 import { PbxEntityType } from '@/shared';
 
@@ -348,115 +348,4 @@ export class ParseSmartService {
         return stages;
     }
 
-    // private getFieldsData(
-    //     fieldsSheet: ExcelJS.Worksheet,
-    //     fieldItemsSheet: ExcelJS.Worksheet,
-    // ): Field[] {
-    //     const fieldsData: FieldImportSheetRow[] = [];
-    //     fieldsSheet.eachRow((row, index) => {
-    //         if (index === 1) return; // Пропускаем заголовок (первая строка)
-    //         const rawValues = row.values as unknown[];
-    //         // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-    //         const fieldValues = rawValues
-    //             .slice(1)
-    //             .map(unwrapExcelCellValue) as unknown as FieldImportSheetRow;
-    //         fieldsData.push(fieldValues);
-    //     });
-
-    //     const fields: Field[] = [];
-
-    //     fieldsData.forEach(fieldValues => {
-    //         const [
-    //             name,
-    //             appType,
-    //             ,
-    //             type,
-    //             ,
-    //             code,
-    //             smart,
-    //             order,
-    //             isNeedUpdate,
-    //             multiple,
-    //         ] = fieldValues;
-    //         const fieldType:
-    //             | PbxSalesEventFieldType
-    //             | PbxSalesKonstructorFieldType = type as
-    //             | PbxSalesEventFieldType
-    //             | PbxSalesKonstructorFieldType;
-    //         let listArray: ListItem[] = [];
-    //         if (fieldType === 'enumeration') {
-    //             listArray = this.getListItems(fieldItemsSheet, code);
-    //         }
-
-    //         const field: Field = {
-    //             name,
-    //             appType,
-    //             type: fieldType,
-    //             list: listArray,
-    //             code,
-    //             smart,
-    //             order,
-    //             isNeedUpdate,
-    //             isMultiple: multiple,
-    //         };
-
-    //         fields.push(field);
-    //     });
-
-    //     return fields;
-    // }
-
-    // private getListItems(
-    //     fieldItemsSheet: ExcelJS.Worksheet,
-    //     code: string,
-    // ): ListItem[] {
-    //     const listArray: ListItem[] = [];
-    //     const itemsData: FieldItemImportSheetRow[] = [];
-
-    //     fieldItemsSheet.eachRow((row, index) => {
-    //         if (index === 1) return; // Пропускаем заголовок (первая строка)
-    //         const rawValues = row.values as unknown[];
-    //         // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
-    //         const itemValues = rawValues
-    //             .slice(1)
-    //             .map(
-    //                 unwrapExcelCellValue,
-    //             ) as unknown as FieldItemImportSheetRow;
-    //         itemsData.push(itemValues);
-    //     });
-
-    //     itemsData.forEach(itemValues => {
-    //         const [
-    //             ,
-    //             field_code,
-    //             item_name,
-    //             item_code,
-    //             ,
-    //             item_order,
-    //             ,
-    //             item_isActive,
-    //             item_isNeedUpdate,
-    //         ] = itemValues;
-
-    //         if (field_code == code) {
-    //             if (item_isNeedUpdate && item_isActive) {
-    //                 listArray.push(
-    //                     this.getListItem(item_name, item_code, item_order),
-    //                 );
-    //             }
-    //         }
-    //     });
-
-    //     return listArray;
-    // }
-
-    // private getListItem(name: string, code: string, order: number): ListItem {
-    //     return {
-    //         VALUE: name,
-    //         DEL: 'N',
-    //         XML_ID: code,
-    //         CODE: code,
-    //         SORT: order,
-    //     };
-    // }
 }

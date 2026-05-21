@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PbxSmartInstallController } from '@/modules/install/smart/controller/pbx-smart-install.controller';
 import { ParseSmartService } from '@/modules/install/smart/services/parse/parse-service';
 import { InstallSmartCategoriesService } from './services/smart-categories/install-smart-categories.service';
+import { SmartCategoryStageStrategy } from './services/smart-categories/smart-category-stage.strategy';
 import { InstallCategoryModule } from '@/modules/install/category/install-category.module';
 import { InstallStageModule } from '@/modules/install/stage/install-stage.module';
 import { PBXModule } from '@/modules/pbx';
@@ -34,6 +35,7 @@ import { StorageModule } from '@/core/storage/storage.module';
         ParseSmartRegistryService,
         InstallSmartUseCase,
         InstallSmartCategoriesService,
+        SmartCategoryStageStrategy,
         SaveSmartFieldsService,
         DeletePbxSmartUseCase,
         GetPbxSmartUseCase,

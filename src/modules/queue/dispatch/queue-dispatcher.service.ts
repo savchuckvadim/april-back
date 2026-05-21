@@ -3,7 +3,6 @@ import { Job, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueNames } from '../constants/queue-names.enum';
-import { SilentJobHandlerId } from 'src/core/silence/constants/silent-job-handlers.enum';
 import { TranscribeJobHandlerId } from '../constants/transcribe-job-handler-id.enum';
 import { JobNames } from '../constants/job-names.enum';
 
@@ -15,7 +14,6 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT) private readonly eventQueue: Queue,
         @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
         @InjectQueue(QueueNames.MAIL) private readonly mailQueue: Queue,
-        @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
         @InjectQueue(QueueNames.SALES_KPI_REPORT)
         private readonly salesKpiReportQueue: Queue,
         @InjectQueue(QueueNames.TRANSCRIBE_AUDIO)
@@ -37,6 +35,12 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.SERVICE_GENERATE_ACTS)
         private readonly serviceGenerateActsQueue: Queue,
 
+        // event-sales-app
+        @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL)
+        private readonly eventSalesColdCallQueue: Queue,
+
+
+        //очепедь для ожидания данных в тишине
         @InjectQueue(QueueNames.EVENT_SILENT)
         private readonly eventSilentQueue: Queue,
     ) {
@@ -45,7 +49,7 @@ export class QueueDispatcherService {
 
     async dispatch<T>(
         queueName: QueueNames,
-        jobName: SilentJobHandlerId | TranscribeJobHandlerId | JobNames,
+        jobName: TranscribeJobHandlerId | JobNames,
         data: any,
         jobId?: string,
     ): Promise<Job<T>> {
@@ -55,14 +59,7 @@ export class QueueDispatcherService {
         const job = jobId
             ? await queue.add(jobName, data, { jobId })
             : await queue.add(jobName, data);
-        const counts =
-            queueName === QueueNames.SILENT
-                ? await queue.getJobCounts()
-                : undefined;
-        this.logger.log(
-            `[silent] Job added: id=${job.id} name=${job.name} queue=${queueName}` +
-                (counts ? ` counts=${JSON.stringify(counts)}` : ''),
-        );
+
         return job;
     }
 
@@ -75,8 +72,6 @@ export class QueueDispatcherService {
                 return this.documentQueue;
             case QueueNames.MAIL:
                 return this.mailQueue;
-            case QueueNames.SILENT:
-                return this.silentQueue;
             case QueueNames.SALES_KPI_REPORT:
                 return this.salesKpiReportQueue;
             case QueueNames.TRANSCRIBE_AUDIO:
@@ -97,6 +92,10 @@ export class QueueDispatcherService {
                 return this.zakupkiOfferQueue;
             case QueueNames.KONSTRUCTOR:
                 return this.konstructorQueue;
+
+            case QueueNames.EVENT_SALES_COLD_CALL:
+                return this.eventSalesColdCallQueue;
+
             case QueueNames.EVENT_SILENT:
                 return this.eventSilentQueue;
 

@@ -1,20 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import {
-    CompanyAppName,
-    ParseCompanyService,
-    PbxCompanyGroupEnum,
-} from '../services/pbx-company-parse.service';
-import { BxEntityFieldsInstallService } from '../services/bx-entity-field-install.service';
+
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { PortalCompanyService } from '@/modules/pbx-domain';
-import {
-    IPbxFieldInstallData,
-    PortalEntityFieldInstallService,
-} from '../services/portal-field-entity-install.service';
 import { PbxEntityType } from '@/shared';
 import { PBXService } from '@/modules/pbx';
 import { Field } from '../../shared/parse-field-excel/type/parse-field.type';
-
+import { BxEntityFieldsInstallService, IPbxFieldInstallData, PortalEntityFieldInstallService } from '../../shared';
+import { ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
 /**
  * Установка полей для компании в Bitrix
  * 1. Получаем поля для установки из excel - parsed по group и app
@@ -34,16 +26,16 @@ import { Field } from '../../shared/parse-field-excel/type/parse-field.type';
 export class PbxCompanyInstallUseCase {
     constructor(
         private readonly pbxService: PBXService,
-        private readonly parseCompanyService: ParseCompanyService,
+        private readonly parseCompanyService: ParseEntityFieldsService,
         private readonly portalService: PortalStoreService,
         private readonly portalCompanyService: PortalCompanyService,
         private readonly portalFieldEntityInstallService: PortalEntityFieldInstallService,
-    ) {}
+    ) { }
 
     async installCompanyFields(
         domain: string,
-        group: PbxCompanyGroupEnum,
-        appName: CompanyAppName,
+        group: PbxEntityGroupEnum,
+        appName: ParseEntityFieldsAppName,
     ): Promise<any> {
         const codes = [
             // 'supply_information',
@@ -74,7 +66,11 @@ export class PbxCompanyInstallUseCase {
 
         // получаем поля для установки из excel
         const { fields: parseFields } =
-            await this.parseCompanyService.getParsedData(appName, group);
+            await this.parseCompanyService.getParsedData(
+                PbxEntityType.BTX_COMPANY,
+                appName,
+                group
+            );
         // фильтруем поля для установки из excel чтобы не перегружать битрикс TESTING
         let localParseFields: Field[] = parseFields;
         if (codes && codes.length > 0) {

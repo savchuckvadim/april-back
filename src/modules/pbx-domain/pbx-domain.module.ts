@@ -5,6 +5,7 @@ import { PortalCategoryModule } from './category/category.module';
 import { PortalStageModule } from './stage/stage.module';
 import { PortalSmartModule } from './portal-smart/portal-smart.module';
 import { PortalCompanyModule } from './portal-company/portal-company.module';
+import { PortalDealModule } from './portal-deal/portal-deal.module';
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { PortalCompanyModule } from './portal-company/portal-company.module';
         PortalStageModule,
         PortalSmartModule,
         PortalCompanyModule,
+        PortalDealModule,
     ],
     exports: [
         PbxFieldModule,
@@ -22,6 +24,7 @@ import { PortalCompanyModule } from './portal-company/portal-company.module';
         PortalStageModule,
         PortalSmartModule,
         PortalCompanyModule,
+        PortalDealModule,
     ],
 })
 export class PbxDomainModule {}

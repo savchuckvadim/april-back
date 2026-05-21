@@ -71,4 +71,8 @@ export class BxCompanyService {
     async updateField(id: number | string, fields: Partial<IBXField>) {
         return await this.repo.updateField(id, fields);
     }
+
+    async deleteField(id: number | string) {
+        return await this.repo.deleteField(id);
+    }
 }

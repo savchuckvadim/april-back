@@ -24,8 +24,6 @@ export class ColdHooksHandlerService {
         hooks: IColdHookSilenceHandlerData['collected'],
     ): Promise<void> {
         try {
-            this.logger.log('hooks', hooks);
-            this.logger.log('domain', domain);
             if (!hooks || Object.keys(hooks).length === 0) {
                 this.logger.log('No Cold Hooks to create');
                 return;
@@ -34,6 +32,7 @@ export class ColdHooksHandlerService {
             const useCase = new ColdCallUseCase(bitrix, PortalModel);
 
             const companies = await this.getCompanies(bitrix, hooks);
+            const deals = await this.getDeals(bitrix, companies.map(c => c.ID));
             //todo переделать добавить сделки тоже если запускалось из сделко
             // const deals = await bitrix.deal.getList({
             //     filter: { ID: { IN: dealsIds } },
@@ -48,15 +47,10 @@ export class ColdHooksHandlerService {
                         (company: IBXCompany) =>
                             Number(company.ID) === Number(raw.entityId),
                     ) as IBXCompany;
-                    this.logger.log(
-                        'currentCompany',
-                        currentCompany.ID ?? 'null',
-                        'raw',
-                        raw,
-                    );
+
                     await useCase.flow(raw, currentCompany, null, null);
                 }
-                this.logger.log('hooks', hooks);
+
                 const result = await bitrix.api.callBatchWithConcurrency(2);
                 this.logger.log(`Batch result: ${JSON.stringify(result)}`);
                 return;
@@ -74,6 +68,35 @@ export class ColdHooksHandlerService {
             this.logger.error(stack);
         }
     }
+    private async getDeals(
+        bitrix: BitrixService,
+        companiesIds: number[],
+    ): Promise<IBXDeal[]> {
+
+        this.logger.log(companiesIds)
+
+        companiesIds.map(id => {
+            bitrix.batch.deal.getList(`deal_company_${id}`, {
+                'COMPANY_ID': String(id),
+                'CLOSED': 'N'
+            }, ['ID', 'TITLE', 'STAGE_SEMANTIC_ID']);
+        });
+        try {
+            // const result = await bitrix.deal.all({
+            //     '@COMPANY_IDS': companiesIds,
+            // }, ['ID', 'TITLE']);
+            const result = await bitrix.api.callBatchWithConcurrency(2);
+            const deals = this.prepareBatchResults<IBXDeal>(result);
+            this.logger.log('deals');
+            this.logger.log(deals);
+            return deals;
+        } catch (err) {
+            this.logger.log('deals error');
+            this.logger.log(err);
+            return [];
+        }
+    }
+
     private async getCompanies(
         bitrix: BitrixService,
         hooks: IColdHookSilenceHandlerData['collected'],
@@ -89,14 +112,14 @@ export class ColdHooksHandlerService {
                 dealsIds.push(Number(hook.entityId));
             }
         }
-        this.logger.log('companiesIds', companiesIds);
-        this.logger.log('dealsIds', dealsIds);
+
         companiesIds.map(id => {
             bitrix.batch.company.get(`company_${id}`, id, ['ID', 'TITLE']);
         });
         const result = await bitrix.api.callBatchWithConcurrency(1);
         const companies = this.prepareBatchResults<IBXCompany>(result);
-
+        this.logger.log('companies');
+        // this.logger.log(companies)
         return companies;
     }
 

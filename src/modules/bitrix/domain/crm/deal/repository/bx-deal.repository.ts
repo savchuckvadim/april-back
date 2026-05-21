@@ -53,7 +53,7 @@ export class BxDealRepository {
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.LIST,
-            { select, filter, order },
+            { select, filter, order: order || {} },
         );
     }
     //     field_n — название поля, по которому будет отфильтрована выборка элементов

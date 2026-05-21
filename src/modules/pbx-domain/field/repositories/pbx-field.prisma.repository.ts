@@ -137,6 +137,19 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
         });
     }
 
+    async updateFieldItemNameById(
+        fieldItemId: string,
+        newValue: string,
+    ): Promise<PbxFieldItem> {
+        return this.prisma.bitrixfield_items.update({
+            where: { id: BigInt(fieldItemId) },
+            data: {
+                name: newValue,
+                title: newValue,
+            },
+        });
+    }
+
     async upsertFields(fields: PbxFieldEntity[]): Promise<PbxFieldWithItems[]> {
         return await this.prisma.$transaction(async tx => {
             const resultFields: PbxFieldWithItems[] = [];
@@ -228,6 +241,45 @@ export class PbxFieldPrismaRepository implements PbxFieldRepository {
             }
 
             return resultFields;
+        });
+    }
+
+    async findByEntityIdAndCodes(
+        entity: PbxEntityTypePrisma,
+        entityId: bigint,
+        codes: string[],
+    ): Promise<PbxFieldEntity[]> {
+        if (codes.length === 0) {
+            return [];
+        }
+        const fields = await this.prisma.bitrixfields.findMany({
+            where: {
+                entity_id: entityId,
+                entity_type: entity,
+                code: { in: codes },
+            },
+            include: {
+                bitrixfield_items: true,
+            },
+        });
+        return fields.map(field => FieldDataHelper.getFieldEntity(field));
+    }
+
+    async deleteFieldsByIds(fieldIds: bigint[]): Promise<void> {
+        if (fieldIds.length === 0) {
+            return;
+        }
+        await this.prisma.$transaction(async tx => {
+            await tx.bitrixfield_items.deleteMany({
+                where: {
+                    bitrixfield_id: { in: fieldIds },
+                },
+            });
+            await tx.bitrixfields.deleteMany({
+                where: {
+                    id: { in: fieldIds },
+                },
+            });
         });
     }
 

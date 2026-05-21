@@ -1,54 +1,53 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-
+import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { IColdCallData } from '../../type/cold-hook-silence.interface';
 import { ColdHooksHandlerService } from './cold-hooks-handler.service';
-import { EventSilentJobManagerService } from '@/apps/event-sales/event-silence/silent-job-manager.service';
-import { EventSilentJobManagerData } from '@/apps/event-sales/event-silence/event-silence.type';
+import {
+    EventSilentJobManagerData,
+    EventSilentJobManagerHandler,
+    EventSilentJobManagerService,
+    SILENCE_EVENT_PREFIX,
+} from '@/core/event-silence';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
+import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
+import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 
-/**
- * Сервис для обработки запроса
- * передает каждый запрос вместе с хендлером в менеджер ddos-а (silent-job-manager.service)
- */
 @Injectable()
-export class ColdHookSilinceEndpointService implements OnModuleInit {
+export class ColdHookSilinceEndpointService {
     private readonly logger = new Logger(ColdHookSilinceEndpointService.name);
+
     constructor(
         private readonly hooksHandler: ColdHooksHandlerService,
         private readonly silentManager: EventSilentJobManagerService,
-    ) {
-        this.logger.log('Cold Hook Silence constructor ✅');
-    }
-
-    onModuleInit() {
-        this.silentManager.registerHandler<IColdCallData>(
-            JobNames.EVENT_COLD_CALL,
-            async handleData => {
-                await this.hooksHandler.handleHooks(
-                    handleData.payload.domain,
-                    handleData.collected,
-                );
-            },
-        );
-    }
+        private readonly queueDispatcher: QueueDispatcherService,
+    ) { }
 
     async createColdCallHook(domain: string, coldCallData: IColdCallData) {
         const domainKey = domain.replace(/\./g, '_');
         const keyPrefix = `XO_event_sales_cold_call_${domainKey}_${coldCallData.responsible}`;
         this.logger.log(
-            `[silent] cold-hook createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} entityId=${coldCallData.entityId}`,
+            `[silent] createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} entityId=${coldCallData.entityId}`,
         );
 
-        const endpointHandleData: EventSilentJobManagerData<IColdCallData> = {
+        const ddosItem: EventSilentJobManagerData<IColdCallData> = {
             keyPrefix,
             data: coldCallData,
             jobName: JobNames.EVENT_COLD_CALL,
             domain,
         };
 
-        await this.silentManager.handle<IColdCallData>(endpointHandleData);
-        this.logger.log(
-            `[silent] cold-hook createColdCallHook exit keyPrefix=${keyPrefix}`,
+        await this.silentManager.handle<IColdCallData>(ddosItem);
+        this.logger.log(`[silent] createColdCallHook exit keyPrefix=${keyPrefix}`);
+    }
+
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_COLD_CALL}`, { async: true })
+    async onColdCallSilence(data: EventSilentJobManagerHandler<IColdCallData>) {
+        this.logger.log(`[silence event] cold-call received, domain=${data.payload.domain}`);
+        // await this.hooksHandler.handleHooks(data.payload.domain, data.collected);
+        await this.queueDispatcher.dispatch(
+            QueueNames.EVENT_SALES_COLD_CALL,
+            JobNames.EVENT_COLD_CALL,
+            data,
         );
     }
 }

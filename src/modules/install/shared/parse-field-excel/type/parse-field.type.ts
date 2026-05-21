@@ -3,7 +3,7 @@ import { PbxSalesEventFieldType } from '@/modules/pbx-domain/field/type/sales/ev
 import { PbxSalesKonstructorFieldType } from '@/modules/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 // import { PbxSalesEventFieldType } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 // import { PbxSalesKonstructorFieldType } from '@/modules/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
-
+export type FieldType = PbxSalesEventFieldType | PbxSalesKonstructorFieldType;
 export interface ListItem {
     VALUE: string;
     DEL: string;
@@ -15,7 +15,7 @@ export interface ListItem {
 export interface Field {
     name: string;
     appType: string;
-    type: PbxSalesEventFieldType | PbxSalesKonstructorFieldType; // тип из exel файла
+    type: FieldType; // тип из exel файла
     // type: EUserFieldType | 'multiple';
     list: ListItem[];
     code: string;
