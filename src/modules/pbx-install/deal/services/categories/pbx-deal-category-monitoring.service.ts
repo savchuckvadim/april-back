@@ -1,9 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-    BitrixOwnerTypeId,
-    BitrixService,
-    IBXStatus,
-} from '@/modules/bitrix';
+import { BitrixOwnerTypeId, BitrixService, IBXStatus } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
 import {
     BtxCategoryResponseDto,
@@ -73,7 +69,7 @@ export class PbxDealCategoryMonitoringService {
         private readonly portalDealService: PortalDealService,
         private readonly categoryService: BtxCategoryService,
         private readonly strategy: DealCategoryStageStrategy,
-    ) { }
+    ) {}
 
     async getPbxDealCategoriesByDomain(
         domain: string,
@@ -126,7 +122,9 @@ export class PbxDealCategoryMonitoringService {
         if (codes.length === 0) return [];
         const all = await this.getPbxDealCategoriesByDomain(domain);
         const wanted = new Set(codes.map(c => normalizeKey(c)));
-        return all.mergedCategories.filter(m => wanted.has(normalizeKey(m.key)));
+        return all.mergedCategories.filter(m =>
+            wanted.has(normalizeKey(m.key)),
+        );
     }
 
     private async loadPortalCategories(
@@ -201,7 +199,9 @@ export class PbxDealCategoryMonitoringService {
 }
 
 function normalizeKey(v: unknown): string {
-    return String(v ?? '').trim().toLowerCase();
+    return String(v ?? '')
+        .trim()
+        .toLowerCase();
 }
 
 function matchCategory(
@@ -227,9 +227,7 @@ function buildMergedCategory(
     for (const ps of portalStages) {
         const bs =
             bitrixStages.find(
-                s =>
-                    statusIdSuffix(s.STATUS_ID) ===
-                    normalizeKey(ps.bitrixId),
+                s => statusIdSuffix(s.STATUS_ID) === normalizeKey(ps.bitrixId),
             ) ?? null;
         if (bs?.STATUS_ID) {
             usedBxStatusIds.add(bs.STATUS_ID);

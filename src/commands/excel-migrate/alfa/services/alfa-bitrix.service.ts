@@ -8,7 +8,7 @@ import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { AlfaMigrateBitrixCompanyService } from './bitrix/alfa-migrate-bxcompany.service';
 import { IAlfaParse } from './alfa-parse.service';
-import { Column, Workbook } from 'exceljs';
+import { Cell, Column, Workbook } from 'exceljs';
 import { StorageService, StorageType } from 'src/core/storage';
 import { delay } from '@/shared/lib';
 import { getCompanies, getDoubles, ICompany } from '../data/get-companies';
@@ -25,9 +25,7 @@ export class AlfaBitrixService {
     ) {}
 
     async migrateToBitrix(domain: string, data: IAlfaParse[]) {
-        const { bitrix, PortalModel } = await this.pbx.init(domain);
-        // this.bitrix = bitrix
-        // this.portal = PortalModel
+        const { bitrix } = await this.pbx.init(domain);
 
         const fieldsResponse = await bitrix.api.callType(
             EBxNamespace.CRM,
@@ -52,7 +50,7 @@ export class AlfaBitrixService {
             const chunk = data.slice(i, i + 3);
 
             for (const item of chunk) {
-                await bitrix.batch.company.getList(
+                bitrix.batch.company.getList(
                     `${item.inn}_${count}`,
                     {
                         [`UF_CRM_1539345538`]: `${item.inn}`,
@@ -140,7 +138,7 @@ export class AlfaBitrixService {
     }
 
     async migrate(domain: string, data: IAlfaParse[]) {
-        const { bitrix, PortalModel } = await this.pbx.init(domain);
+        const { bitrix } = await this.pbx.init(domain);
         const companies = getCompanies();
         const doubles = getDoubles();
         // void await this.getDoublesExcel(doubles, domain)
@@ -163,11 +161,10 @@ export class AlfaBitrixService {
                 [`UF_CRM_1632896396`]: parsedCompany.isWork,
             });
             if (
-                migrated.find(group =>
+                !migrated.find(group =>
                     group.find(item => item.inn === parsedCompany.inn),
                 )
             ) {
-            } else {
                 migrated.push([parsedCompany]);
             }
         });
@@ -223,9 +220,8 @@ export class AlfaBitrixService {
             };
         });
 
-        let rowIndex = 2;
         doubles.forEach((group, groupIndex) => {
-            group.forEach((company, index) => {
+            group.forEach(company => {
                 const row = worksheet.addRow([
                     groupIndex + 1,
                     company.ID,
@@ -244,8 +240,6 @@ export class AlfaBitrixService {
                     color: { argb: 'FF0000FF' },
                     underline: true,
                 };
-
-                rowIndex++;
             });
 
             const separatorRow = worksheet.addRow(['', '', '', '', '']);
@@ -257,23 +251,20 @@ export class AlfaBitrixService {
                 };
             });
             separatorRow.height = 5; // сделать полоску тонкой
-
-            rowIndex++;
         });
 
         // Автоширина
-        worksheet.columns.forEach((col, index) => {
+        worksheet.columns.forEach((col, _index) => {
             const column = col as Column;
             let maxLength = 10;
-            column.eachCell({ includeEmpty: true }, (cell: any) => {
-                maxLength = Math.max(
-                    maxLength,
-                    (cell.value?.toString()?.length || 0) + 2,
-                );
+            column.eachCell({ includeEmpty: true }, (cell: Cell) => {
+                const v = cell.value;
+                const len = v !== null && v !== undefined ? String(v).length : 0;
+                maxLength = Math.max(maxLength, len + 2);
             });
 
             column.width =
-                index === 0 || index === 1 ? 10 : index === 2 ? 160 : 30;
+                _index === 0 || _index === 1 ? 10 : _index === 2 ? 160 : 30;
         });
 
         // Генерация буфера
@@ -316,9 +307,8 @@ export class AlfaBitrixService {
             };
         });
 
-        let rowIndex = 2;
         migrated.forEach((group, groupIndex) => {
-            group.forEach((company, index) => {
+            group.forEach(company => {
                 const row = worksheet.addRow([
                     groupIndex + 1,
                     company.id,
@@ -337,8 +327,6 @@ export class AlfaBitrixService {
                     color: { argb: 'FF0000FF' },
                     underline: true,
                 };
-
-                rowIndex++;
             });
 
             const separatorRow = worksheet.addRow(['', '', '', '', '']);
@@ -350,23 +338,20 @@ export class AlfaBitrixService {
                 };
             });
             separatorRow.height = 5; // сделать полоску тонкой
-
-            rowIndex++;
         });
 
         // Автоширина
-        worksheet.columns.forEach((col, index) => {
+        worksheet.columns.forEach((col, _index) => {
             const column = col as Column;
             let maxLength = 10;
-            column.eachCell({ includeEmpty: true }, (cell: any) => {
-                maxLength = Math.max(
-                    maxLength,
-                    (cell.value?.toString()?.length || 0) + 2,
-                );
+            column.eachCell({ includeEmpty: true }, (cell: Cell) => {
+                const v = cell.value;
+                const len = v !== null && v !== undefined ? String(v).length : 0;
+                maxLength = Math.max(maxLength, len + 2);
             });
 
             column.width =
-                index === 0 || index === 1 ? 10 : index === 2 ? 160 : 30;
+                _index === 0 || _index === 1 ? 10 : _index === 2 ? 160 : 30;
         });
 
         // Генерация буфера

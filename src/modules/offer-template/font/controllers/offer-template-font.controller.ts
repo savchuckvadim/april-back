@@ -7,7 +7,6 @@ import {
     Param,
     Delete,
     Query,
-    ParseIntPipe,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
@@ -39,7 +38,7 @@ export class OfferTemplateFontController {
         @Query() query: OfferTemplateFontQueryDto,
     ): Promise<OfferTemplateFont[]> {
         const { offer_template_id } = query;
-        const filters: any = {};
+        const filters: { offer_template_id?: bigint } = {};
 
         if (offer_template_id)
             filters.offer_template_id = BigInt(offer_template_id);

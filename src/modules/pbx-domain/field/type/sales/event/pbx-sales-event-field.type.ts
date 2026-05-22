@@ -513,7 +513,6 @@ export const PBX_SALES_EVENT_FIELDS = [
         appType: 'general',
         type: 'enumeration',
         items: [
-
             { code: 'free', name: 'Свободен' },
             { code: 'chok', name: 'ЧОК' },
             { code: 'nok', name: 'НОК' },

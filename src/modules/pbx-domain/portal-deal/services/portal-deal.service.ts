@@ -27,9 +27,7 @@ export class PortalDealService {
         private readonly pbxFieldService: PbxFieldService,
     ) {}
 
-    async create(
-        dto: CreatePortalDealDto,
-    ): Promise<PortalDealResponseDto> {
+    async create(dto: CreatePortalDealDto): Promise<PortalDealResponseDto> {
         const existing = await this.repository.findFirstByPortalId(
             dto.portalId,
         );
@@ -41,9 +39,7 @@ export class PortalDealService {
         const row = await this.repository.create(
             portalDealPrismaCreateFromDto(dto),
         );
-        return portalDealEntityToResponseDto(
-            portalDealEntityFromPrisma(row),
-        );
+        return portalDealEntityToResponseDto(portalDealEntityFromPrisma(row));
     }
 
     async findById(id: number): Promise<PortalDealResponseDto> {
@@ -51,9 +47,7 @@ export class PortalDealService {
         if (!row) {
             throw new NotFoundException(`Portal deal id=${id} not found`);
         }
-        return portalDealEntityToResponseDto(
-            portalDealEntityFromPrisma(row),
-        );
+        return portalDealEntityToResponseDto(portalDealEntityFromPrisma(row));
     }
 
     async findByPortalId(
@@ -63,9 +57,7 @@ export class PortalDealService {
         if (!row) {
             return null;
         }
-        return portalDealEntityToResponseDto(
-            portalDealEntityFromPrisma(row),
-        );
+        return portalDealEntityToResponseDto(portalDealEntityFromPrisma(row));
     }
 
     async findMany(): Promise<PortalDealResponseDto[]> {
@@ -114,9 +106,7 @@ export class PortalDealService {
         }
         const patch = portalDealPrismaUpdatePatch(dto);
         const row = await this.repository.update(id, patch);
-        return portalDealEntityToResponseDto(
-            portalDealEntityFromPrisma(row),
-        );
+        return portalDealEntityToResponseDto(portalDealEntityFromPrisma(row));
     }
 
     async delete(id: number): Promise<void> {

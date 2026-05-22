@@ -11,7 +11,7 @@ import { BtxDealResponseDto } from '../dto/btx-deal-response.dto';
 
 @Injectable()
 export class BtxDealService {
-    constructor(private readonly repository: BtxDealRepository) { }
+    constructor(private readonly repository: BtxDealRepository) {}
 
     async create(dto: CreateBtxDealDto): Promise<BtxDealResponseDto> {
         const deal = await this.repository.create({

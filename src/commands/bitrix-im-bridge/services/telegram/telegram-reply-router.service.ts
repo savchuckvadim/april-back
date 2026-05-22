@@ -39,7 +39,8 @@ export class TelegramReplyRouterService {
         }
 
         if (replyToMessageId) {
-            const contextByReply = await this.state.getReplyContext(replyToMessageId);
+            const contextByReply =
+                await this.state.getReplyContext(replyToMessageId);
             this.logger.debug(
                 `contextByReply: replyToMessageId=${replyToMessageId}, found=${Boolean(contextByReply)}, domain=${contextByReply?.domain ?? 'n/a'}`,
             );

@@ -1,4 +1,4 @@
-import { CreateRegionDto, RegionEntity, RegionService } from '@/modules/garant';
+import { CreateRegionDto, RegionService } from '@/modules/garant';
 import {
     Controller,
     Get,

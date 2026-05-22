@@ -52,7 +52,7 @@ export class BtxLeadPrismaRepository implements BtxLeadRepository {
         id: number,
         lead: Partial<btx_leads>,
     ): Promise<btx_leads | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_leads> = {};
         if (lead.name !== undefined) updateData.name = lead.name;
         if (lead.title !== undefined) updateData.title = lead.title;
         if (lead.code !== undefined) updateData.code = lead.code;

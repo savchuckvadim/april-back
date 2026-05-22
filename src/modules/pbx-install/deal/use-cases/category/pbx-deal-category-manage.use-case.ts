@@ -1,9 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-    BitrixOwnerTypeId,
-    BitrixService,
-    IBXStatus,
-} from '@/modules/bitrix';
+import { BitrixOwnerTypeId, BitrixService, IBXStatus } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
 import {
     BtxCategoryResponseDto,
@@ -77,7 +73,7 @@ export class PbxDealCategoryManageUseCase {
         private readonly categorySync: InstallCategorySyncService,
         private readonly stageSync: InstallStageSyncService,
         private readonly strategy: DealCategoryStageStrategy,
-    ) { }
+    ) {}
 
     async deleteCategories(
         dto: DeleteDealCategoriesDto,

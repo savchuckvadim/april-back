@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-    ArrayMinSize,
-    IsArray,
-    IsNotEmpty,
-    IsString,
-} from 'class-validator';
+import { ArrayMinSize, IsArray, IsNotEmpty, IsString } from 'class-validator';
 import { MANAGE_DOMAIN_ALL } from '@/modules/pbx-install/shared';
 
 const DOMAIN_DESCRIPTION =

@@ -17,7 +17,7 @@ export class BxListItemService {
         return await this.repo.get(dto);
     }
     async all(dto: BxListItemGetRequestDto) {
-        const listItems: Record<string, any>[] = [];
+        const listItems: Record<string, unknown>[] = [];
         let needMore = true;
         let nextId = 0;
         while (needMore) {
@@ -25,12 +25,14 @@ export class BxListItemService {
                 ...dto.filter,
                 '>ID': nextId,
             };
-            const { result } = await this.get(dto);
+            const { result } = (await this.get(dto)) as {
+                result: Record<string, unknown>[];
+            };
 
             if (result.length === 0) {
                 break;
             }
-            nextId = result[result.length - 1]?.ID ?? 0;
+            nextId = (result[result.length - 1]?.['ID'] as number) ?? 0;
             if (nextId === 0) {
                 needMore = false;
             }
@@ -48,12 +50,14 @@ export class BxListItemService {
                 ...dto.filter,
                 '>ID': nextId,
             };
-            const { result } = await this.get(dto);
+            const { result } = (await this.get(dto)) as {
+                result: Record<string, unknown>[];
+            };
 
             if (result.length === 0) {
                 break;
             }
-            nextId = result[result.length - 1]?.ID ?? 0;
+            nextId = (result[result.length - 1]?.['ID'] as number) ?? 0;
             if (nextId === 0) {
                 needMore = false;
             }

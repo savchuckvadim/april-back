@@ -20,7 +20,7 @@ export class ColdHookSilinceEndpointService {
         private readonly hooksHandler: ColdHooksHandlerService,
         private readonly silentManager: EventSilentJobManagerService,
         private readonly queueDispatcher: QueueDispatcherService,
-    ) { }
+    ) {}
 
     async createColdCallHook(domain: string, coldCallData: IColdCallData) {
         const domainKey = domain.replace(/\./g, '_');
@@ -37,12 +37,18 @@ export class ColdHookSilinceEndpointService {
         };
 
         await this.silentManager.handle<IColdCallData>(ddosItem);
-        this.logger.log(`[silent] createColdCallHook exit keyPrefix=${keyPrefix}`);
+        this.logger.log(
+            `[silent] createColdCallHook exit keyPrefix=${keyPrefix}`,
+        );
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_COLD_CALL}`, { async: true })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_COLD_CALL}`, {
+        async: true,
+    })
     async onColdCallSilence(data: EventSilentJobManagerHandler<IColdCallData>) {
-        this.logger.log(`[silence event] cold-call received, domain=${data.payload.domain}`);
+        this.logger.log(
+            `[silence event] cold-call received, domain=${data.payload.domain}`,
+        );
         // await this.hooksHandler.handleHooks(data.payload.domain, data.collected);
         await this.queueDispatcher.dispatch(
             QueueNames.EVENT_SALES_COLD_CALL,

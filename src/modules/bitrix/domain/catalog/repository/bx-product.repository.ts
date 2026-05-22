@@ -12,7 +12,7 @@ export class BxProductRepository {
             { id, select },
         );
     }
-    async getBatch(
+    getBatch(
         cmdCode: string,
         id: number | string,
         select?: Partial<IBXProduct>,
@@ -35,7 +35,7 @@ export class BxProductRepository {
         );
     }
 
-    async getListBatch(
+    getListBatch(
         cmdCode: string,
         filter: Partial<IBXProduct>,
         select: (keyof IBXProduct)[],

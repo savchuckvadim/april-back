@@ -1,13 +1,9 @@
 import {
     Controller,
-    Get,
     Post,
     Body,
-    Patch,
     Param,
     Delete,
-    Query,
-    ParseIntPipe,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';

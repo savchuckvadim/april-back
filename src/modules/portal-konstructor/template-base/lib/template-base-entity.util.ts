@@ -1,5 +1,4 @@
 import { Template } from 'generated/prisma';
-import { createFieldLightEntityFromEntity } from '../../field';
 import {
     TemplateBaseEntity,
     TemplateBaseLightEntity,

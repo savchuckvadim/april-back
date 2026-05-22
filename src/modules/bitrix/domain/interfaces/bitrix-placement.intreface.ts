@@ -39,7 +39,7 @@ export type CustomPlacement = {
         activityId: number; //"11005",
         companyId: number;
         dealId: number;
-        planType: string | 'fail_work';
+        planType: string;
         // "someImportant": "qwerty",
         // "placement": "COMPANY"
     };
@@ -47,11 +47,6 @@ export type CustomPlacement = {
 type PlacementCallBindEntity = {
     ENTITY_TYPE: 'DEAL' | 'COMPANY' | 'LEAD';
     ENTITY_ID: number;
-};
-
-type CallCardEntity = {
-    ENTITY_ID: string; // as "19"
-    ENTITY_TYPE: 'DEAL' | 'COMPANY' | 'LEAD';
 };
 
 export enum PLACEMENT_ENTITY {

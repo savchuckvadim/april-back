@@ -14,7 +14,6 @@ import { BxRqService } from '../services/bx-rq.service';
 import { CreateBxRqDto } from '../dto/create-bx-rq.dto';
 import { UpdateBxRqDto } from '../dto/update-bx-rq.dto';
 import { BxRqResponseDto } from '../dto/bx-rq-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Bx RQs Management')
 @Controller('admin/pbx/bx-rqs')
@@ -59,7 +58,7 @@ export class BxRqController {
     async getAllRqs(
         @Query('portal_id') portalId?: string,
     ): Promise<BxRqResponseDto[]> {
-        let rqs;
+        let rqs: BxRqResponseDto[];
         if (portalId) {
             rqs = await this.rqService.findByPortalId(Number(portalId));
         } else {

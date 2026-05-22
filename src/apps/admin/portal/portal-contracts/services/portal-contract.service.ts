@@ -16,29 +16,23 @@ export class PortalContractService {
     async create(
         dto: CreatePortalContractDto,
     ): Promise<PortalContractResponseDto> {
-        try {
-            const portalContract = await this.repository.create({
-                portal_id: BigInt(dto.portal_id),
-                contract_id: BigInt(dto.contract_id),
-                portal_measure_id: BigInt(dto.portal_measure_id),
-                bitrixfield_item_id: BigInt(dto.bitrixfield_item_id),
-                title: dto.title,
-                template: dto.template,
-                order: dto.order,
-                productName: dto.productName,
-                description: dto.description,
-            });
+        const portalContract = await this.repository.create({
+            portal_id: BigInt(dto.portal_id),
+            contract_id: BigInt(dto.contract_id),
+            portal_measure_id: BigInt(dto.portal_measure_id),
+            bitrixfield_item_id: BigInt(dto.bitrixfield_item_id),
+            title: dto.title,
+            template: dto.template,
+            order: dto.order,
+            productName: dto.productName,
+            description: dto.description,
+        });
 
-            if (!portalContract) {
-                throw new BadRequestException(
-                    'Failed to create portal contract',
-                );
-            }
-
-            return this.mapToResponseDto(portalContract);
-        } catch (error) {
-            throw error;
+        if (!portalContract) {
+            throw new BadRequestException('Failed to create portal contract');
         }
+
+        return this.mapToResponseDto(portalContract);
     }
 
     async findById(id: number): Promise<PortalContractResponseDto> {
@@ -56,7 +50,7 @@ export class PortalContractService {
         if (!portalContracts) {
             return [];
         }
-        return portalContracts.map(this.mapToResponseDto);
+        return portalContracts.map(c => this.mapToResponseDto(c));
     }
 
     async findByPortalId(
@@ -66,7 +60,7 @@ export class PortalContractService {
         if (!portalContracts) {
             return [];
         }
-        return portalContracts.map(this.mapToResponseDto);
+        return portalContracts.map(c => this.mapToResponseDto(c));
     }
 
     async findByContractId(
@@ -77,7 +71,7 @@ export class PortalContractService {
         if (!portalContracts) {
             return [];
         }
-        return portalContracts.map(this.mapToResponseDto);
+        return portalContracts.map(c => this.mapToResponseDto(c));
     }
 
     async update(
@@ -91,39 +85,31 @@ export class PortalContractService {
             );
         }
 
-        try {
-            const updateData: Partial<portal_contracts> = {};
-            if (dto.portal_id !== undefined)
-                updateData.portal_id = BigInt(dto.portal_id);
-            if (dto.contract_id !== undefined)
-                updateData.contract_id = BigInt(dto.contract_id);
-            if (dto.portal_measure_id !== undefined)
-                updateData.portal_measure_id = BigInt(dto.portal_measure_id);
-            if (dto.bitrixfield_item_id !== undefined)
-                updateData.bitrixfield_item_id = BigInt(
-                    dto.bitrixfield_item_id,
-                );
-            if (dto.title !== undefined) updateData.title = dto.title;
-            if (dto.template !== undefined) updateData.template = dto.template;
-            if (dto.order !== undefined) updateData.order = dto.order;
-            if (dto.productName !== undefined)
-                updateData.productName = dto.productName;
-            if (dto.description !== undefined)
-                updateData.description = dto.description;
+        const updateData: Partial<portal_contracts> = {};
+        if (dto.portal_id !== undefined)
+            updateData.portal_id = BigInt(dto.portal_id);
+        if (dto.contract_id !== undefined)
+            updateData.contract_id = BigInt(dto.contract_id);
+        if (dto.portal_measure_id !== undefined)
+            updateData.portal_measure_id = BigInt(dto.portal_measure_id);
+        if (dto.bitrixfield_item_id !== undefined)
+            updateData.bitrixfield_item_id = BigInt(dto.bitrixfield_item_id);
+        if (dto.title !== undefined) updateData.title = dto.title;
+        if (dto.template !== undefined) updateData.template = dto.template;
+        if (dto.order !== undefined) updateData.order = dto.order;
+        if (dto.productName !== undefined)
+            updateData.productName = dto.productName;
+        if (dto.description !== undefined)
+            updateData.description = dto.description;
 
-            const updatedPortalContract = await this.repository.update(
-                id,
-                updateData,
-            );
-            if (!updatedPortalContract) {
-                throw new BadRequestException(
-                    'Failed to update portal contract',
-                );
-            }
-            return this.mapToResponseDto(updatedPortalContract);
-        } catch (error) {
-            throw error;
+        const updatedPortalContract = await this.repository.update(
+            id,
+            updateData,
+        );
+        if (!updatedPortalContract) {
+            throw new BadRequestException('Failed to update portal contract');
         }
+        return this.mapToResponseDto(updatedPortalContract);
     }
 
     async delete(id: number): Promise<void> {

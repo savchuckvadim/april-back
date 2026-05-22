@@ -55,7 +55,7 @@ export class BtxStagePrismaRepository implements BtxStageRepository {
         id: number,
         stage: Partial<btx_stages>,
     ): Promise<btx_stages | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_stages> = {};
         if (stage.name !== undefined) updateData.name = stage.name;
         if (stage.title !== undefined) updateData.title = stage.title;
         if (stage.code !== undefined) updateData.code = stage.code;

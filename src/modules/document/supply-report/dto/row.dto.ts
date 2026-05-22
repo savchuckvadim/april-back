@@ -1,12 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-    IsBoolean,
-    IsInt,
-    IsObject,
-    IsOptional,
-    IsString,
-    ValidateNested,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsString, ValidateNested } from 'class-validator';
 import { RowComplectDto } from './row-complect.dto';
 import { RowContractDto } from './row-contract.dto';
 import { RowSupplyDto } from './row-supply.dto';

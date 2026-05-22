@@ -21,7 +21,7 @@ import { IBXCompany } from '@/modules/bitrix';
 
 @Injectable()
 export class SalesUserReportService {
-    constructor(private readonly pbx: PBXService) { }
+    constructor(private readonly pbx: PBXService) {}
 
     public async *getReport(dto: SalesUserReportGetRequestDto) {
         const { domain, socketId, userId } = dto;

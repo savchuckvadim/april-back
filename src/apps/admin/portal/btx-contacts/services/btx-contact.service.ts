@@ -14,22 +14,18 @@ export class BtxContactService {
     constructor(private readonly repository: BtxContactRepository) {}
 
     async create(dto: CreateBtxContactDto): Promise<BtxContactResponseDto> {
-        try {
-            const contact = await this.repository.create({
-                name: dto.name,
-                title: dto.title,
-                code: dto.code,
-                portal_id: BigInt(dto.portal_id),
-            });
+        const contact = await this.repository.create({
+            name: dto.name,
+            title: dto.title,
+            code: dto.code,
+            portal_id: BigInt(dto.portal_id),
+        });
 
-            if (!contact) {
-                throw new BadRequestException('Failed to create contact');
-            }
-
-            return this.mapToResponseDto(contact);
-        } catch (error) {
-            throw error;
+        if (!contact) {
+            throw new BadRequestException('Failed to create contact');
         }
+
+        return this.mapToResponseDto(contact);
     }
 
     async findById(id: number): Promise<BtxContactResponseDto> {
@@ -45,7 +41,7 @@ export class BtxContactService {
         if (!contacts) {
             return [];
         }
-        return contacts.map(this.mapToResponseDto);
+        return contacts.map(c => this.mapToResponseDto(c));
     }
 
     async findByPortalId(portalId: number): Promise<BtxContactResponseDto[]> {
@@ -53,7 +49,7 @@ export class BtxContactService {
         if (!contacts) {
             return [];
         }
-        return contacts.map(this.mapToResponseDto);
+        return contacts.map(c => this.mapToResponseDto(c));
     }
 
     async update(
@@ -65,22 +61,18 @@ export class BtxContactService {
             throw new NotFoundException(`Contact with id ${id} not found`);
         }
 
-        try {
-            const updateData: Partial<btx_contacts> = {};
-            if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.title !== undefined) updateData.title = dto.title;
-            if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined)
-                updateData.portal_id = BigInt(dto.portal_id);
+        const updateData: Partial<btx_contacts> = {};
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.title !== undefined) updateData.title = dto.title;
+        if (dto.code !== undefined) updateData.code = dto.code;
+        if (dto.portal_id !== undefined)
+            updateData.portal_id = BigInt(dto.portal_id);
 
-            const updatedContact = await this.repository.update(id, updateData);
-            if (!updatedContact) {
-                throw new BadRequestException('Failed to update contact');
-            }
-            return this.mapToResponseDto(updatedContact);
-        } catch (error) {
-            throw error;
+        const updatedContact = await this.repository.update(id, updateData);
+        if (!updatedContact) {
+            throw new BadRequestException('Failed to update contact');
         }
+        return this.mapToResponseDto(updatedContact);
     }
 
     async delete(id: number): Promise<void> {

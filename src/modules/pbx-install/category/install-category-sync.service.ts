@@ -35,7 +35,7 @@ export interface EnsureTemplateCategoriesParams {
 export class InstallCategorySyncService {
     private readonly logger = new Logger(InstallCategorySyncService.name);
 
-    constructor(private readonly categoryRepository: BtxCategoryRepository) { }
+    constructor(private readonly categoryRepository: BtxCategoryRepository) {}
 
     async listCategories(
         bitrix: BitrixService,

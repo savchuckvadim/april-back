@@ -13,7 +13,7 @@ export class BxFileRepository {
         );
     }
 
-    async getBtch(cmdCode: string, id: number | string) {
+    getBtch(cmdCode: string, id: number | string) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.DISK,

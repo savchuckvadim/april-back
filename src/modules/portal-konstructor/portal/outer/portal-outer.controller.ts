@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { UpdatePortalOuterDto } from './dto/update-portal.dto';
@@ -11,9 +11,7 @@ export class PortalOuterController {
 
     @ApiOperation({ summary: 'Get portal by domain' })
     @Get('domain/:domain')
-    async getPortalByDomain(
-        @Param('domain') domain: string,
-    ): Promise<any | null> {
+    async getPortalByDomain(@Param('domain') domain: string): Promise<unknown> {
         return await this.service.getByDomain(domain);
     }
 
@@ -21,7 +19,7 @@ export class PortalOuterController {
     @Post('update')
     async updatePortalByDomain(
         @Body() body: UpdatePortalOuterDto,
-    ): Promise<any | null> {
+    ): Promise<unknown> {
         return await this.service.setOrUpdate(body);
     }
 }

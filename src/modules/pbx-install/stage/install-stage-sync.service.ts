@@ -32,7 +32,7 @@ export type SyncStagesForCategoryParams = SyncStagesForCategoryArgs & {
 export class InstallStageSyncService {
     private readonly logger = new Logger(InstallStageSyncService.name);
 
-    constructor(private readonly stageRepository: BtxStageRepository) { }
+    constructor(private readonly stageRepository: BtxStageRepository) {}
 
     async deleteAllStagesInCategory(params: {
         bitrix: BitrixService;

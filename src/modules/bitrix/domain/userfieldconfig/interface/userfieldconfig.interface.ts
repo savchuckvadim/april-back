@@ -1,14 +1,6 @@
 export interface IUserFieldConfig {
     id?: string | number;
-    entityId:
-        | 'CRM_LEAD'
-        | 'CRM_CONTACT'
-        | 'CRM_COMPANY'
-        | 'CRM_DEAL'
-        | 'CRM_QUOTE'
-        | 'CRM_INVOICE'
-        | 'CRM_SMART_INVOICE'
-        | string;
+    entityId: string;
     fieldName: string; //UF_CRM_
     userTypeId: EUserFieldType;
     xmlId: string | null;

@@ -45,7 +45,7 @@ export class BxRqPrismaRepository implements BxRqRepository {
     }
 
     async update(id: number, rq: Partial<bx_rqs>): Promise<bx_rqs | null> {
-        const updateData: any = {};
+        const updateData: Partial<bx_rqs> = {};
         if (rq.portal_id !== undefined)
             updateData.portal_id = rq.portal_id ? BigInt(rq.portal_id) : null;
         if (rq.name !== undefined) updateData.name = rq.name;

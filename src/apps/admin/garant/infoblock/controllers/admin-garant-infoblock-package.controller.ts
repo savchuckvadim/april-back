@@ -1,13 +1,11 @@
 import { InfoblockService } from '@/modules/garant/infoblock';
 import {
     Controller,
-    Get,
     Post,
     Put,
     Body,
     Param,
     Delete,
-    BadRequestException,
     NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';

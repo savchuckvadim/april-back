@@ -63,11 +63,12 @@ export class PbxSmartFieldSearchService {
         // Полное имя UF в Bitrix для смарта = `UF_CRM_<smartTypeId>_<bxFieldName>` —
         // monitoring уже знает smartTypeId, нам тут достаточно только bxFieldName-ов.
         // Чтобы избежать второго резолва — берём merged по всем полям и фильтруем.
-        const monitoring = await this.monitoringService.getPbxSmartFieldsByDomain(
-            domain,
-            smartName,
-            group,
-        );
+        const monitoring =
+            await this.monitoringService.getPbxSmartFieldsByDomain(
+                domain,
+                smartName,
+                group,
+            );
 
         const items: PbxSmartFieldSearchItem[] = matched.map(parse => ({
             parse,
@@ -95,7 +96,10 @@ function fieldMatches(f: Field, needle: string): boolean {
  * `bxFieldName` в шаблоне — это суффикс (`OP_STATUS`), а в Bitrix `fieldName` —
  * полное имя `UF_CRM_<smartTypeId>_OP_STATUS`. Сравниваем по суффиксу.
  */
-function matchesParseField(bxFullName: string, parseBxFieldName: string): boolean {
+function matchesParseField(
+    bxFullName: string,
+    parseBxFieldName: string,
+): boolean {
     const suffix = parseBxFieldName.replace(/^UF_CRM_/, '');
     return bxFullName.endsWith(`_${suffix}`) || bxFullName.endsWith(suffix);
 }

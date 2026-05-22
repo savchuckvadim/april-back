@@ -58,7 +58,7 @@ export class InstallDealCategoriesService {
         private readonly bootstrapStages: BootstrapPortalCategoryStagesUseCase,
         private readonly reconcileStages: ReconcilePortalCategoryStagesUseCase,
         private readonly strategy: DealCategoryStageStrategy,
-    ) { }
+    ) {}
 
     async installTemplateCategories(
         domain: string,

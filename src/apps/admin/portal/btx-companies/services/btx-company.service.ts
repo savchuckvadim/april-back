@@ -14,22 +14,18 @@ export class BtxCompanyService {
     constructor(private readonly repository: BtxCompanyRepository) {}
 
     async create(dto: CreateBtxCompanyDto): Promise<BtxCompanyResponseDto> {
-        try {
-            const company = await this.repository.create({
-                name: dto.name,
-                title: dto.title,
-                code: dto.code,
-                portal_id: BigInt(dto.portal_id),
-            });
+        const company = await this.repository.create({
+            name: dto.name,
+            title: dto.title,
+            code: dto.code,
+            portal_id: BigInt(dto.portal_id),
+        });
 
-            if (!company) {
-                throw new BadRequestException('Failed to create company');
-            }
-
-            return this.mapToResponseDto(company);
-        } catch (error) {
-            throw error;
+        if (!company) {
+            throw new BadRequestException('Failed to create company');
         }
+
+        return this.mapToResponseDto(company);
     }
 
     async findById(id: number): Promise<BtxCompanyResponseDto> {
@@ -45,7 +41,7 @@ export class BtxCompanyService {
         if (!companies) {
             return [];
         }
-        return companies.map(this.mapToResponseDto);
+        return companies.map(c => this.mapToResponseDto(c));
     }
 
     async findByPortalId(portalId: number): Promise<BtxCompanyResponseDto[]> {
@@ -53,7 +49,7 @@ export class BtxCompanyService {
         if (!companies) {
             return [];
         }
-        return companies.map(this.mapToResponseDto);
+        return companies.map(c => this.mapToResponseDto(c));
     }
 
     async update(
@@ -65,22 +61,18 @@ export class BtxCompanyService {
             throw new NotFoundException(`Company with id ${id} not found`);
         }
 
-        try {
-            const updateData: Partial<btx_companies> = {};
-            if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.title !== undefined) updateData.title = dto.title;
-            if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined)
-                updateData.portal_id = BigInt(dto.portal_id);
+        const updateData: Partial<btx_companies> = {};
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.title !== undefined) updateData.title = dto.title;
+        if (dto.code !== undefined) updateData.code = dto.code;
+        if (dto.portal_id !== undefined)
+            updateData.portal_id = BigInt(dto.portal_id);
 
-            const updatedCompany = await this.repository.update(id, updateData);
-            if (!updatedCompany) {
-                throw new BadRequestException('Failed to update company');
-            }
-            return this.mapToResponseDto(updatedCompany);
-        } catch (error) {
-            throw error;
+        const updatedCompany = await this.repository.update(id, updateData);
+        if (!updatedCompany) {
+            throw new BadRequestException('Failed to update company');
         }
+        return this.mapToResponseDto(updatedCompany);
     }
 
     async delete(id: number): Promise<void> {

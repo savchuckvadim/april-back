@@ -3,7 +3,11 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { ParseFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-fields.service';
 import { PbxEntityGroupEnum } from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
-import { Category, Stage, unwrapExcelCellValue } from '@/modules/pbx-install/shared';
+import {
+    Category,
+    Stage,
+    unwrapExcelCellValue,
+} from '@/modules/pbx-install/shared';
 /** Categories sheet row (full row.values incl. ExcelJS leading empty cell) */
 type CategoryImportSheetRow = readonly [
     unknown,
@@ -11,7 +15,7 @@ type CategoryImportSheetRow = readonly [
     string, // entityTypeId 2
     string, //entityType deal
     string, //type base
-    string,  // group service
+    string, // group service
     string, // name Сервис
     string, // code service_base
     string, //order
@@ -43,9 +47,9 @@ export enum ParseCategoryNameEnum {
     sales_xo = 'sales_xo', // отел продаж
     sales_presentation = 'sales_presentation', // отел продаж
     tmc_base = 'tmc_base', // отел продаж
-    service_base = 'service_base' //отдел сервиса
+    service_base = 'service_base', //отдел сервиса
 }
-export type ParseCategoryName = ParseCategoryNameEnum | 'all'
+export type ParseCategoryName = ParseCategoryNameEnum | 'all';
 
 export const PARSE_CATEGORY_NAME_VALUES = [
     ParseCategoryNameEnum.sales_base,
@@ -55,14 +59,12 @@ export const PARSE_CATEGORY_NAME_VALUES = [
     ParseCategoryNameEnum.service_base,
     'all',
 ] as const satisfies readonly ParseCategoryName[];
-const DEAL_CATEGORY_FOLDER_NAME = 'deal'
+const DEAL_CATEGORY_FOLDER_NAME = 'deal';
 @Injectable()
 export class ParseCategoryService {
     private readonly logger = new Logger(ParseCategoryService.name);
     private readonly installPath = 'install';
-    constructor(
-        private readonly storageService: StorageService,
-    ) { }
+    constructor(private readonly storageService: StorageService) {}
 
     async getParsedData(
         categoryName: ParseCategoryName,
@@ -91,14 +93,11 @@ export class ParseCategoryService {
         path: string,
         categoryName: ParseCategoryName,
     ): Promise<EntityParseData> {
-
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(path);
         // const colorsSheet = workbook.worksheets[0];
         const categoriesSheet = workbook.worksheets[1];
         const stagesSheet = workbook.worksheets[2];
-
-
 
         let categories = this.getCategoriesData(categoriesSheet);
         if (categoryName && categoryName !== 'all') {
@@ -112,15 +111,15 @@ export class ParseCategoryService {
         return { count: categories.length || 0, categories };
     }
 
-    private getCategoriesData(
-        categoriesSheet: ExcelJS.Worksheet,
-    ): Category[] {
+    private getCategoriesData(categoriesSheet: ExcelJS.Worksheet): Category[] {
         const rows: CategoryImportSheetRow[] = [];
         categoriesSheet.eachRow((row, index) => {
             if (index === 1) return;
             const rawValues = row.values as unknown[];
             rows.push(
-                rawValues.map(unwrapExcelCellValue) as unknown as CategoryImportSheetRow,
+                rawValues.map(
+                    unwrapExcelCellValue,
+                ) as unknown as CategoryImportSheetRow,
             );
         });
 
@@ -167,7 +166,9 @@ export class ParseCategoryService {
             if (index === 1) return;
             const rawValues = row.values as unknown[];
             rows.push(
-                rawValues.map(unwrapExcelCellValue) as unknown as StageImportSheetRow,
+                rawValues.map(
+                    unwrapExcelCellValue,
+                ) as unknown as StageImportSheetRow,
             );
         });
 

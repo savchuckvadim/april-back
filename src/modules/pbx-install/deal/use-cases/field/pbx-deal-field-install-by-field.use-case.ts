@@ -6,7 +6,11 @@ import { PortalDealService } from '@/modules/pbx-domain';
 import { PbxEntityType } from '@/shared';
 import { PBXService } from '@/modules/pbx';
 import { InstallDealFieldDto } from '../../dto/install-deal-field.dto';
-import { BxEntityFieldsInstallService, IPbxFieldInstallData, PortalEntityFieldInstallService } from '../../../shared';
+import {
+    BxEntityFieldsInstallService,
+    IPbxFieldInstallData,
+    PortalEntityFieldInstallService,
+} from '../../../shared';
 
 /**
  * Установка полей для сделки в Bitrix
@@ -30,7 +34,7 @@ export class PbxDealFieldInstallByFieldUseCase {
         private readonly portalService: PortalStoreService,
         private readonly portalDealService: PortalDealService,
         private readonly portalFieldEntityInstallService: PortalEntityFieldInstallService,
-    ) { }
+    ) {}
 
     async installDealFields(dto: InstallDealFieldDto): Promise<any> {
         const { domain, fields } = dto;

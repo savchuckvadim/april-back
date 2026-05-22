@@ -34,7 +34,8 @@ export class InstallSmartFieldDto extends InstallEntityFieldsBulkDto {
     smartName!: SmartNameEnum;
 
     @ApiProperty({
-        description: 'Группа отдела, к которой относится смарт (`smarts.group`).',
+        description:
+            'Группа отдела, к которой относится смарт (`smarts.group`).',
         example: SmartGroupEnum.SALES,
         enum: SmartGroupEnum,
     })

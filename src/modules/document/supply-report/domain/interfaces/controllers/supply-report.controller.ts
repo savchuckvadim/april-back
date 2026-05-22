@@ -11,7 +11,7 @@ export class SupplyReportController {
     ) {}
 
     @Post()
-    async generate(@Body() dto: GenerateSupplyReportDto) {
+    generate(@Body() dto: GenerateSupplyReportDto) {
         try {
             console.log(dto);
             console.log(this.generateUseCase);
@@ -22,11 +22,8 @@ export class SupplyReportController {
     }
 
     @Get('ping')
-    ping(path) {
-        const r = 134636346346346;
-
+    ping(path: string) {
         console.log(path);
-        debugger;
         return { status: 'ok' };
     }
 }

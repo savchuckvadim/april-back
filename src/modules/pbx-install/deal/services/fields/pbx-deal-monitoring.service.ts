@@ -81,9 +81,8 @@ export class PbxDealMonitoringService {
             await this.portalDealService.findWithFieldsByPortalId(portalId);
 
         const filtredDealFields =
-            portalDeal?.fields?.filter(f =>
-                fieldNames.includes(f.bitrixId),
-            ) ?? [];
+            portalDeal?.fields?.filter(f => fieldNames.includes(f.bitrixId)) ??
+            [];
 
         if (!portalDeal?.fields) {
             throw new NotFoundException('Deal fields not found');
@@ -106,8 +105,7 @@ export class PbxDealMonitoringService {
                 p: null,
                 bx: null,
             };
-            const p =
-                filtredDealFields.find(f => f.bitrixId === name) ?? null;
+            const p = filtredDealFields.find(f => f.bitrixId === name) ?? null;
             const bx =
                 bitrixFields.find(f => f.FIELD_NAME === `UF_CRM_${name}`) ??
                 null;

@@ -9,7 +9,7 @@ export class SmartTypeGetByEntityTypeIdRequestDto {
 export class SmartTypeListRequestDto {
     filter?: Partial<IBXSmartType>;
     select?: string[];
-    start: -1 | number = -1;
+    start: number = -1;
     order?: {
         [key in keyof IBXSmartType]?: 'asc' | 'desc' | 'ASC' | 'DESC';
     };

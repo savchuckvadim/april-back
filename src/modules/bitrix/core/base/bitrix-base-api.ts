@@ -11,7 +11,6 @@ import {
     IBitrixBatchResponseResult,
     IBitrixResponse,
 } from '../interface/bitrix-api-http.intterface';
-import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 
 export class BitrixBaseApi {
     private readonly core: BitrixCore;
@@ -43,11 +42,14 @@ export class BitrixBaseApi {
         // this.token = token;
         // this.authType = authType;
     }
-    init(portal: IPortal) {
+    init() {
         console.log('init new BitrixBaseApi');
     }
     // Обертки для удобства:
-    async call<T>(method: string, data: Record<string, any>): Promise<any> {
+    async call(
+        method: string,
+        data: Record<string, unknown>,
+    ): Promise<unknown> {
         return await this.callApi.call(method, data);
     }
     async callType<

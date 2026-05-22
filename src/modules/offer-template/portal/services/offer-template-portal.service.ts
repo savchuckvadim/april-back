@@ -142,7 +142,6 @@ export class OfferTemplatePortalService {
         id: bigint,
         is_active: boolean,
     ): Promise<OfferTemplatePortal> {
-        const portal = await this.findById(id);
         return this.offerTemplatePortalRepository.update(id, { is_active });
     }
 

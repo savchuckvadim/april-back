@@ -134,8 +134,7 @@ export class StageDto implements Stage {
     smartBitrixId: string;
 
     @ApiProperty({
-        description:
-            'HEX-код цвета стадии в карточке Bitrix (вместе с `#`).',
+        description: 'HEX-код цвета стадии в карточке Bitrix (вместе с `#`).',
         example: '#39A8EF',
         type: String,
     })

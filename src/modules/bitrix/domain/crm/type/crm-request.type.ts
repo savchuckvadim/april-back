@@ -14,7 +14,7 @@ export type CrmGetRequestType = {
 export type CrmListRequestType<T> = {
     filter: Partial<T>;
     select?: string[];
-    start?: -1 | number;
+    start?: number;
     order?: {
         [key in keyof T]?: 'asc' | 'desc' | 'ASC' | 'DESC';
     };

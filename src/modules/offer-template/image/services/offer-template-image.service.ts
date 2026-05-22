@@ -1,8 +1,4 @@
-import {
-    Injectable,
-    NotFoundException,
-    BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { OfferTemplateImageRepository } from '../repositories/offer-template-image.repository';
 import { OfferTemplateImage } from '../entities/offer-template-image.entity';
 import { CreateOfferTemplateImageDto } from '../dtos/create-offer-template-image.dto';
@@ -117,7 +113,6 @@ export class OfferTemplateImageService {
         id: bigint,
         is_public: boolean,
     ): Promise<OfferTemplateImage> {
-        const image = await this.findById(id);
         return this.offerTemplateImageRepository.update(id, { is_public });
     }
 

@@ -54,7 +54,7 @@ export class BtxCompanyPrismaRepository implements BtxCompanyRepository {
         id: number,
         company: Partial<btx_companies>,
     ): Promise<btx_companies | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_companies> = {};
         if (company.name !== undefined) updateData.name = company.name;
         if (company.title !== undefined) updateData.title = company.title;
         if (company.code !== undefined) updateData.code = company.code;

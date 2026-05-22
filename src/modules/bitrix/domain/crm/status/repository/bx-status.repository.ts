@@ -114,10 +114,13 @@ export class BxStatusRepository {
     ): Promise<StatusEntityItemsResponseDto> {
         return this.bxApi.call('crm.status.entity.items', {
             entityId: dto.entityId,
-        });
+        }) as Promise<StatusEntityItemsResponseDto>;
     }
 
     async getEntityTypes(): Promise<StatusEntityTypesResponseDto> {
-        return this.bxApi.call('crm.status.entity.types', {});
+        return this.bxApi.call(
+            'crm.status.entity.types',
+            {},
+        ) as Promise<StatusEntityTypesResponseDto>;
     }
 }

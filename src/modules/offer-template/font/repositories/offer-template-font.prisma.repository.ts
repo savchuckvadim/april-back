@@ -23,7 +23,7 @@ export class OfferTemplateFontPrismaRepository
     async findMany(filters?: {
         offer_template_id?: bigint;
     }): Promise<OfferTemplateFont[]> {
-        const where: any = {};
+        const where: { offer_template_id?: bigint } = {};
 
         if (filters?.offer_template_id) {
             where.offer_template_id = filters.offer_template_id;

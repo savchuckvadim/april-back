@@ -10,7 +10,7 @@ export class BxAllDepartmentsService {
     async getAll(domain: string) {
         const { bitrix } = await this.pbx.init(domain);
 
-        const departmentService = new DepartmentBitrixService(bitrix.api);
+        const departmentService = new DepartmentBitrixService(bitrix);
 
         const departments = await departmentService.getDepartmentsAll();
         return departments;

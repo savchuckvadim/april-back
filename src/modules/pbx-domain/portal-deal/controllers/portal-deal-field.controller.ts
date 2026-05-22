@@ -22,8 +22,7 @@ export class PortalDealFieldController {
     constructor(private readonly portalDealService: PortalDealService) {}
 
     @ApiOperation({
-        summary:
-            'Список PBX-полей сделки портала (`PbxEntityTypePrisma.DEAL`)',
+        summary: 'Список PBX-полей сделки портала (`PbxEntityTypePrisma.DEAL`)',
     })
     @ApiParam({ name: 'portalId' })
     @ApiOkResponse({ type: PortalDealFieldsListResponseDto })

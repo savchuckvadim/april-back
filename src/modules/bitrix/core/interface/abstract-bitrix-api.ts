@@ -7,7 +7,6 @@ import { BXApiSchema } from '../domain';
 import { TBXRequest } from '../domain';
 import { TBXResponse } from '../domain';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
-import { Logger } from '@nestjs/common';
 
 import { TelegramService } from '@/modules/telegram/telegram.service';
 import { HttpService } from '@nestjs/axios';

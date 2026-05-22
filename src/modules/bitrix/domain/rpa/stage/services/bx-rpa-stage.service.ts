@@ -15,15 +15,18 @@ export class BxRpaStageService {
         this.repo = new BxRpaStageRepository(api);
     }
 
-    async add(fields: Partial<IBxRpaStage>) {
-        return await this.repo.add(fields);
+    async add(fields: Partial<IBxRpaStage>): Promise<unknown> {
+        return this.repo.add(fields);
     }
 
-    async update(id: number | string, fields: Partial<IBxRpaStage>) {
-        return await this.repo.update(id, fields);
+    async update(
+        id: number | string,
+        fields: Partial<IBxRpaStage>,
+    ): Promise<unknown> {
+        return this.repo.update(id, fields);
     }
 
-    async listForType(typeId: number | string) {
-        return await this.repo.listForType(typeId);
+    async listForType(typeId: number | string): Promise<unknown> {
+        return this.repo.listForType(typeId);
     }
 }

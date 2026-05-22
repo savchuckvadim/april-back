@@ -51,9 +51,11 @@ export class PbxDealFieldManageUseCase {
         private readonly portalService: PortalStoreService,
         private readonly portalDealService: PortalDealService,
         private readonly pbxFieldService: PbxFieldService,
-    ) { }
+    ) {}
 
-    async deleteFields(dto: DeleteEntityFieldsDto): Promise<PerPortalDeleteResult[]> {
+    async deleteFields(
+        dto: DeleteEntityFieldsDto,
+    ): Promise<PerPortalDeleteResult[]> {
         const domains = await this.resolveDomains(dto.domain);
         const results: PerPortalDeleteResult[] = [];
         for (const domain of domains) {
@@ -98,7 +100,9 @@ export class PbxDealFieldManageUseCase {
         return results;
     }
 
-    async deleteFieldItem(dto: DeleteEntityFieldItemDto): Promise<PerPortalItemResult[]> {
+    async deleteFieldItem(
+        dto: DeleteEntityFieldItemDto,
+    ): Promise<PerPortalItemResult[]> {
         const domains = await this.resolveDomains(dto.domain);
         const results: PerPortalItemResult[] = [];
         for (const domain of domains) {
@@ -142,7 +146,10 @@ export class PbxDealFieldManageUseCase {
                         dto.itemCode,
                         'item has no bitrixId in PortalDB — not synced with Bitrix yet',
                     ),
-                    db: { ok: false, error: 'item has no bitrixId in PortalDB' },
+                    db: {
+                        ok: false,
+                        error: 'item has no bitrixId in PortalDB',
+                    },
                 });
                 continue;
             }
@@ -162,7 +169,9 @@ export class PbxDealFieldManageUseCase {
         return results;
     }
 
-    async editFieldItem(dto: EditEntityFieldItemDto): Promise<PerPortalItemResult[]> {
+    async editFieldItem(
+        dto: EditEntityFieldItemDto,
+    ): Promise<PerPortalItemResult[]> {
         const domains = await this.resolveDomains(dto.domain);
         const results: PerPortalItemResult[] = [];
         for (const domain of domains) {
@@ -206,7 +215,10 @@ export class PbxDealFieldManageUseCase {
                         dto.itemCode,
                         'item has no bitrixId in PortalDB — not synced with Bitrix yet',
                     ),
-                    db: { ok: false, error: 'item has no bitrixId in PortalDB' },
+                    db: {
+                        ok: false,
+                        error: 'item has no bitrixId in PortalDB',
+                    },
                 });
                 continue;
             }
@@ -293,7 +305,10 @@ export class PbxDealFieldManageUseCase {
             return { ok: false, error: 'item has no id in PortalDB' };
         }
         try {
-            await this.pbxFieldService.updateFieldItemNameById(itemId, newValue);
+            await this.pbxFieldService.updateFieldItemNameById(
+                itemId,
+                newValue,
+            );
             return { ok: true, itemId };
         } catch (e) {
             return {

@@ -60,7 +60,7 @@ export class BtxRpaPrismaRepository implements BtxRpaRepository {
     }
 
     async update(id: number, rpa: Partial<btx_rpas>): Promise<btx_rpas | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_rpas> = {};
         if (rpa.name !== undefined) updateData.name = rpa.name;
         if (rpa.title !== undefined) updateData.title = rpa.title;
         if (rpa.code !== undefined) updateData.code = rpa.code;

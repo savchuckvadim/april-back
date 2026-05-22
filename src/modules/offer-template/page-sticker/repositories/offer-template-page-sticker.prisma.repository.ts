@@ -24,7 +24,7 @@ export class OfferTemplatePageStickerPrismaRepository
     async findMany(filters?: {
         offer_template_page_id?: bigint;
     }): Promise<OfferTemplatePageSticker[]> {
-        const where: any = {};
+        const where: { offer_template_page_id?: bigint } = {};
 
         if (filters?.offer_template_page_id) {
             where.offer_template_page_id = filters.offer_template_page_id;

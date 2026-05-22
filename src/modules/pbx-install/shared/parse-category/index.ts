@@ -1,1 +1,1 @@
-export * from './parse-category.type'
+export * from './parse-category.type';

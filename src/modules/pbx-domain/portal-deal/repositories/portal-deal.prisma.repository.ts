@@ -36,9 +36,7 @@ export class PortalDealPrismaRepository implements PortalDealRepository {
 
     async update(
         id: number,
-        data: Partial<
-            Pick<btx_deals, 'name' | 'title' | 'code' | 'portal_id'>
-        >,
+        data: Partial<Pick<btx_deals, 'name' | 'title' | 'code' | 'portal_id'>>,
     ): Promise<btx_deals> {
         return this.prisma.btx_deals.update({
             where: { id: BigInt(id) },

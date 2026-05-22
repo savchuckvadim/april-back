@@ -11,7 +11,10 @@ import { PbxCompanyInstallUseCase } from '../use-cases/pbx-company-install.use-c
 import { InstallCompanyFieldDto } from '../dto/install-company-field.dto';
 import { PbxCompanyInstallFieldUseCase } from '../use-cases/pbx-company-install-field.use-case';
 import { PbxCompanyFieldManageUseCase } from '../use-cases/pbx-company-field-manage.use-case';
-import { ParseEntityFieldsAppName, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
+import {
+    ParseEntityFieldsAppName,
+    PbxEntityGroupEnum,
+} from '../../shared/entity/field/parse-entity-field.service';
 import {
     DeleteEntityFieldItemDto,
     DeleteEntityFieldsDto,
@@ -25,7 +28,7 @@ export class PbxCompanyInstallController {
         private readonly useCase: PbxCompanyInstallUseCase,
         private readonly fieldseCase: PbxCompanyInstallFieldUseCase,
         private readonly manageUseCase: PbxCompanyFieldManageUseCase,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Install company fields by portal, group and appName',
@@ -76,7 +79,9 @@ export class PbxCompanyInstallController {
     })
     @ApiBody({ type: DeleteEntityFieldsDto })
     @Post('/delete-fields/')
-    async deleteCompanyFields(@Body() dto: DeleteEntityFieldsDto): Promise<any> {
+    async deleteCompanyFields(
+        @Body() dto: DeleteEntityFieldsDto,
+    ): Promise<any> {
         return await this.manageUseCase.deleteFields(dto);
     }
 

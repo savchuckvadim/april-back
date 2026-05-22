@@ -32,7 +32,9 @@ export class MailProcessor {
                 await this.mailService.sendPasswordReset(mailUser, token);
                 return;
             default:
-                this.logger.error(`Unknown mail auth job type: ${String(type)}`);
+                this.logger.error(
+                    `Unknown mail auth job type: ${String(type)}`,
+                );
                 throw new Error(`Unknown mail auth job type: ${String(type)}`);
         }
     }

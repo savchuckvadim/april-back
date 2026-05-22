@@ -16,26 +16,20 @@ export class PortalMeasureService {
     async create(
         dto: CreatePortalMeasureDto,
     ): Promise<PortalMeasureResponseDto> {
-        try {
-            const portalMeasure = await this.repository.create({
-                measure_id: BigInt(dto.measure_id),
-                portal_id: BigInt(dto.portal_id),
-                bitrixId: dto.bitrixId,
-                name: dto.name,
-                shortName: dto.shortName,
-                fullName: dto.fullName,
-            });
+        const portalMeasure = await this.repository.create({
+            measure_id: BigInt(dto.measure_id),
+            portal_id: BigInt(dto.portal_id),
+            bitrixId: dto.bitrixId,
+            name: dto.name,
+            shortName: dto.shortName,
+            fullName: dto.fullName,
+        });
 
-            if (!portalMeasure) {
-                throw new BadRequestException(
-                    'Failed to create portal measure',
-                );
-            }
-
-            return this.mapToResponseDto(portalMeasure);
-        } catch (error) {
-            throw error;
+        if (!portalMeasure) {
+            throw new BadRequestException('Failed to create portal measure');
         }
+
+        return this.mapToResponseDto(portalMeasure);
     }
 
     async findById(id: number): Promise<PortalMeasureResponseDto> {
@@ -53,7 +47,7 @@ export class PortalMeasureService {
         if (!portalMeasures) {
             return [];
         }
-        return portalMeasures.map(this.mapToResponseDto);
+        return portalMeasures.map(m => this.mapToResponseDto(m));
     }
 
     async findByPortalId(
@@ -63,7 +57,7 @@ export class PortalMeasureService {
         if (!portalMeasures) {
             return [];
         }
-        return portalMeasures.map(this.mapToResponseDto);
+        return portalMeasures.map(m => this.mapToResponseDto(m));
     }
 
     async findByMeasureId(
@@ -73,7 +67,7 @@ export class PortalMeasureService {
         if (!portalMeasures) {
             return [];
         }
-        return portalMeasures.map(this.mapToResponseDto);
+        return portalMeasures.map(m => this.mapToResponseDto(m));
     }
 
     async update(
@@ -87,31 +81,24 @@ export class PortalMeasureService {
             );
         }
 
-        try {
-            const updateData: Partial<portal_measure> = {};
-            if (dto.measure_id !== undefined)
-                updateData.measure_id = BigInt(dto.measure_id);
-            if (dto.portal_id !== undefined)
-                updateData.portal_id = BigInt(dto.portal_id);
-            if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId;
-            if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.shortName !== undefined)
-                updateData.shortName = dto.shortName;
-            if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
+        const updateData: Partial<portal_measure> = {};
+        if (dto.measure_id !== undefined)
+            updateData.measure_id = BigInt(dto.measure_id);
+        if (dto.portal_id !== undefined)
+            updateData.portal_id = BigInt(dto.portal_id);
+        if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId;
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.shortName !== undefined) updateData.shortName = dto.shortName;
+        if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
 
-            const updatedPortalMeasure = await this.repository.update(
-                id,
-                updateData,
-            );
-            if (!updatedPortalMeasure) {
-                throw new BadRequestException(
-                    'Failed to update portal measure',
-                );
-            }
-            return this.mapToResponseDto(updatedPortalMeasure);
-        } catch (error) {
-            throw error;
+        const updatedPortalMeasure = await this.repository.update(
+            id,
+            updateData,
+        );
+        if (!updatedPortalMeasure) {
+            throw new BadRequestException('Failed to update portal measure');
         }
+        return this.mapToResponseDto(updatedPortalMeasure);
     }
 
     async delete(id: number): Promise<void> {

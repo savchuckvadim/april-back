@@ -1,7 +1,4 @@
-import {
-    CounterEntity,
-    TemplateCounterEntity,
-} from '../counter/counter.entity';
+import { TemplateCounterEntity } from '../counter/counter.entity';
 import { FieldEntity, FieldLightEntity } from '../field/field.entity';
 
 export class TemplateBaseEntity {

@@ -10,12 +10,16 @@ describe('BitrixImEventDataService', () => {
 
     describe('isPrivateDialog', () => {
         it('возвращает true когда chat.type === user', () => {
-            const data: ImV2EventPayload = { chat: { type: 'user', dialogId: '42' } };
+            const data: ImV2EventPayload = {
+                chat: { type: 'user', dialogId: '42' },
+            };
             expect(service.isPrivateDialog(data)).toBe(true);
         });
 
         it('возвращает true когда chat.messageType === P', () => {
-            const data: ImV2EventPayload = { chat: { messageType: 'P', dialogId: '42' } };
+            const data: ImV2EventPayload = {
+                chat: { messageType: 'P', dialogId: '42' },
+            };
             expect(service.isPrivateDialog(data)).toBe(true);
         });
 
@@ -25,7 +29,9 @@ describe('BitrixImEventDataService', () => {
         });
 
         it('возвращает false когда chat.type === chat', () => {
-            const data: ImV2EventPayload = { chat: { type: 'chat', dialogId: 'chat5' } };
+            const data: ImV2EventPayload = {
+                chat: { type: 'chat', dialogId: 'chat5' },
+            };
             expect(service.isPrivateDialog(data)).toBe(false);
         });
 
@@ -35,7 +41,9 @@ describe('BitrixImEventDataService', () => {
         });
 
         it('возвращает false для open-линии', () => {
-            const data: ImV2EventPayload = { chat: { type: 'open', dialogId: 'chat99' } };
+            const data: ImV2EventPayload = {
+                chat: { type: 'open', dialogId: 'chat99' },
+            };
             expect(service.isPrivateDialog(data)).toBe(false);
         });
 
@@ -115,12 +123,16 @@ describe('BitrixImEventDataService', () => {
         });
 
         it('возвращает true когда user.type === bot', () => {
-            const data: ImV2EventPayload = { user: { bot: false, type: 'bot' } };
+            const data: ImV2EventPayload = {
+                user: { bot: false, type: 'bot' },
+            };
             expect(service.isBotMessage(data)).toBe(true);
         });
 
         it('возвращает false для обычного пользователя', () => {
-            const data: ImV2EventPayload = { user: { bot: false, type: 'employee' } };
+            const data: ImV2EventPayload = {
+                user: { bot: false, type: 'employee' },
+            };
             expect(service.isBotMessage(data)).toBe(false);
         });
     });

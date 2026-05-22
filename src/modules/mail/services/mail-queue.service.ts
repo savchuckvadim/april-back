@@ -7,9 +7,7 @@ import { MailAuthJobPayload, MailAuthJobType } from '../dto/mail-auth-job.dto';
 
 @Injectable()
 export class MailQueueService {
-    constructor(
-        private readonly queueDispatcher: QueueDispatcherService,
-    ) {}
+    constructor(private readonly queueDispatcher: QueueDispatcherService) {}
 
     async enqueueEmailVerification(user: User, token: string): Promise<void> {
         await this.dispatchAuthMailJob({

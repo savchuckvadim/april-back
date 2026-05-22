@@ -8,21 +8,8 @@ import { StorageModule } from '@/core/storage';
 import { ParseFieldExcelModule } from '../parse-field-excel';
 
 @Module({
-    imports: [
-        PBXModule,
-        PbxDomainModule,
-        StorageModule,
-        ParseFieldExcelModule
-
-    ],
-    providers: [
-        PortalEntityFieldInstallService,
-        ParseEntityFieldsService
-    ],
-    exports: [
-        PortalEntityFieldInstallService,
-        ParseEntityFieldsService
-    ]
-
+    imports: [PBXModule, PbxDomainModule, StorageModule, ParseFieldExcelModule],
+    providers: [PortalEntityFieldInstallService, ParseEntityFieldsService],
+    exports: [PortalEntityFieldInstallService, ParseEntityFieldsService],
 })
-export class InstallEntityModule { }
+export class InstallEntityModule {}

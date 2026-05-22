@@ -60,7 +60,7 @@ export class SmartPrismaRepository implements SmartRepository {
     }
 
     async update(id: number, smart: Partial<smarts>): Promise<smarts | null> {
-        const updateData: any = {};
+        const updateData: Partial<smarts> = {};
         if (smart.type !== undefined) updateData.type = smart.type;
         if (smart.group !== undefined) updateData.group = smart.group;
         if (smart.name !== undefined) updateData.name = smart.name;

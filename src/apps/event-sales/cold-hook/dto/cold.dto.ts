@@ -12,7 +12,7 @@ export enum EnumColdCallIsTmc {
     Y = 'Y',
     N = 'N',
 }
-export class ColdCallQueryDto  {
+export class ColdCallQueryDto {
     @ApiProperty({ example: 'company', enum: EnumColdCallEntityType })
     @IsEnum(EnumColdCallEntityType)
     entityType: EnumColdCallEntityType;

@@ -3,6 +3,7 @@ import { PbxEntityAccessorService } from '@/modules/pbx-registry';
 import { PbxEntityContext } from '@/modules/pbx-registry/services/pbx-entity-accessor.service';
 import { PBXService } from '@/modules/pbx';
 import { PbxEntityType } from '@/shared/enums';
+import { BitrixService } from '@/modules/bitrix';
 
 export interface TestReadOptions {
     domain: string;
@@ -120,10 +121,10 @@ export class PbxTestService {
         entityType: PbxEntityType,
         entityCode?: string,
     ): Promise<PbxEntityContext | null> {
-        if (entityType === 'smart' && entityCode) {
+        if (entityType === PbxEntityType.SMART && entityCode) {
             return this.accessor.forSmart(portalId, entityCode);
         }
-        if (entityType === 'rpa' && entityCode) {
+        if (entityType === PbxEntityType.BTX_RPA && entityCode) {
             return this.accessor.forRpa(portalId, entityCode);
         }
         return this.accessor.forEntity(portalId, entityType, portalId);
@@ -142,7 +143,7 @@ export class PbxTestService {
     }
 
     private async fetchBitrixRecord(
-        bitrix: any,
+        bitrix: BitrixService,
         entityType: PbxEntityType,
         entityId: number,
     ): Promise<{ data: Record<string, unknown> } | { error: string }> {
@@ -180,12 +181,12 @@ export class PbxTestService {
         }
     }
 
-    private async writeBitrixRecord(
-        bitrix: any,
+    private writeBitrixRecord(
+        bitrix: BitrixService,
         entityType: PbxEntityType,
         entityId: number,
         payload: Record<string, unknown>,
-    ): Promise<unknown> {
+    ): Promise<unknown> | null {
         if (entityType === PbxEntityType.DEAL) {
             return bitrix.deal.update(
                 entityId,

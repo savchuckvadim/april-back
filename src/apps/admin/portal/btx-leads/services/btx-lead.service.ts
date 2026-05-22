@@ -14,22 +14,18 @@ export class BtxLeadService {
     constructor(private readonly repository: BtxLeadRepository) {}
 
     async create(dto: CreateBtxLeadDto): Promise<BtxLeadResponseDto> {
-        try {
-            const lead = await this.repository.create({
-                name: dto.name,
-                title: dto.title,
-                code: dto.code,
-                portal_id: BigInt(dto.portal_id),
-            });
+        const lead = await this.repository.create({
+            name: dto.name,
+            title: dto.title,
+            code: dto.code,
+            portal_id: BigInt(dto.portal_id),
+        });
 
-            if (!lead) {
-                throw new BadRequestException('Failed to create lead');
-            }
-
-            return this.mapToResponseDto(lead);
-        } catch (error) {
-            throw error;
+        if (!lead) {
+            throw new BadRequestException('Failed to create lead');
         }
+
+        return this.mapToResponseDto(lead);
     }
 
     async findById(id: number): Promise<BtxLeadResponseDto> {
@@ -45,7 +41,7 @@ export class BtxLeadService {
         if (!leads) {
             return [];
         }
-        return leads.map(this.mapToResponseDto);
+        return leads.map(l => this.mapToResponseDto(l));
     }
 
     async findByPortalId(portalId: number): Promise<BtxLeadResponseDto[]> {
@@ -53,7 +49,7 @@ export class BtxLeadService {
         if (!leads) {
             return [];
         }
-        return leads.map(this.mapToResponseDto);
+        return leads.map(l => this.mapToResponseDto(l));
     }
 
     async update(
@@ -65,22 +61,18 @@ export class BtxLeadService {
             throw new NotFoundException(`Lead with id ${id} not found`);
         }
 
-        try {
-            const updateData: Partial<btx_leads> = {};
-            if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.title !== undefined) updateData.title = dto.title;
-            if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.portal_id !== undefined)
-                updateData.portal_id = BigInt(dto.portal_id);
+        const updateData: Partial<btx_leads> = {};
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.title !== undefined) updateData.title = dto.title;
+        if (dto.code !== undefined) updateData.code = dto.code;
+        if (dto.portal_id !== undefined)
+            updateData.portal_id = BigInt(dto.portal_id);
 
-            const updatedLead = await this.repository.update(id, updateData);
-            if (!updatedLead) {
-                throw new BadRequestException('Failed to update lead');
-            }
-            return this.mapToResponseDto(updatedLead);
-        } catch (error) {
-            throw error;
+        const updatedLead = await this.repository.update(id, updateData);
+        if (!updatedLead) {
+            throw new BadRequestException('Failed to update lead');
         }
+        return this.mapToResponseDto(updatedLead);
     }
 
     async delete(id: number): Promise<void> {

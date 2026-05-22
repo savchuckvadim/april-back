@@ -31,7 +31,10 @@ export class PbxSmartCategoryInstallByParseUseCase {
         group: SmartGroupEnum,
     ): Promise<void> {
         const { bitrix } = await this.pbxService.init(domain);
-        const parsed = await this.parseSmartService.getParsedData(smartName, group);
+        const parsed = await this.parseSmartService.getParsedData(
+            smartName,
+            group,
+        );
         const smart = parsed[0];
         const ctx = await this.contextResolver.resolve({
             domain,

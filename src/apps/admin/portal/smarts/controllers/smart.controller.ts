@@ -14,7 +14,6 @@ import { SmartService } from '../services/smart.service';
 import { CreateSmartDto } from '../dto/create-smart.dto';
 import { UpdateSmartDto } from '../dto/update-smart.dto';
 import { SmartResponseDto } from '../dto/smart-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Smarts Management')
 @Controller('admin/pbx/smarts')
@@ -59,7 +58,7 @@ export class SmartController {
     async getAllSmarts(
         @Query('portal_id') portalId?: string,
     ): Promise<SmartResponseDto[]> {
-        let smarts;
+        let smarts: SmartResponseDto[];
         if (portalId) {
             smarts = await this.smartService.findByPortalId(Number(portalId));
         } else {

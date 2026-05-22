@@ -1,9 +1,7 @@
 import { ClientResponseDto } from '@/modules/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Portal } from 'generated/prisma';
-import { MeasureResponseDto } from '../../garant/measures/dto/measure-response.dto';
 import { TimezoneResponseDto } from '../timezones/dto/timezone-response.dto';
-import { ContractResponseDto } from '../../garant/contracts/dto/contract-response.dto';
 import { PortalContractResponseDto } from '../portal-contracts/dto/portal-contract-response.dto';
 import { PortalMeasureResponseDto } from '../portal-measures/dto/portal-measure-response.dto';
 import { SmartResponseDto } from '../smarts/dto/smart-response.dto';

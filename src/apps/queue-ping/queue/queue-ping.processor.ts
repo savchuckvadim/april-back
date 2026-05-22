@@ -31,7 +31,7 @@ export class QueuePingQueueProcessor {
         const portal = await this.portalService.getPortalByDomain(dto.domain);
         this.logger.log('portal.C_REST_CLIENT_SECRET');
         this.logger.log(portal.C_REST_CLIENT_SECRET);
-        await this.useCase.init(dto.domain);
+
         this.logger.log(dto.socketId);
         const result = await this.useCase.case(dto);
         this.logger.log('QUEUE PING useCase result');

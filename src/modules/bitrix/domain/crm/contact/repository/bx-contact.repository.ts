@@ -19,7 +19,7 @@ export class BxContactRepository {
         );
     }
 
-    async getBtch(cmdCode: string, contactId: number) {
+    getBtch(cmdCode: string, contactId: number) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -38,7 +38,7 @@ export class BxContactRepository {
         );
     }
 
-    async getListBtch(
+    getListBtch(
         cmdCode: string,
         filter: Partial<IBXContact>,
         select?: string[],
@@ -61,7 +61,7 @@ export class BxContactRepository {
         );
     }
 
-    async setBtch(cmdCode: string, data: Partial<IBXContact>) {
+    setBtch(cmdCode: string, data: Partial<IBXContact>) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -80,7 +80,7 @@ export class BxContactRepository {
         );
     }
 
-    async updateBtch(
+    updateBtch(
         cmdCode: string,
         id: number | string,
         data: Partial<IBXContact>,
@@ -136,7 +136,7 @@ export class BxContactRepository {
         );
     }
 
-    async getFieldBtch(cmdCode: string, id: number | string) {
+    getFieldBtch(cmdCode: string, id: number | string) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,

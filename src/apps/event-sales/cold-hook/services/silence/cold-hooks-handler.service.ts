@@ -32,7 +32,10 @@ export class ColdHooksHandlerService {
             const useCase = new ColdCallUseCase(bitrix, PortalModel);
 
             const companies = await this.getCompanies(bitrix, hooks);
-            const deals = await this.getDeals(bitrix, companies.map(c => c.ID));
+            const deals = await this.getDeals(
+                bitrix,
+                companies.map(c => c.ID),
+            );
             //todo переделать добавить сделки тоже если запускалось из сделко
             // const deals = await bitrix.deal.getList({
             //     filter: { ID: { IN: dealsIds } },
@@ -72,14 +75,17 @@ export class ColdHooksHandlerService {
         bitrix: BitrixService,
         companiesIds: number[],
     ): Promise<IBXDeal[]> {
-
-        this.logger.log(companiesIds)
+        this.logger.log(companiesIds);
 
         companiesIds.map(id => {
-            bitrix.batch.deal.getList(`deal_company_${id}`, {
-                'COMPANY_ID': String(id),
-                'CLOSED': 'N'
-            }, ['ID', 'TITLE', 'STAGE_SEMANTIC_ID']);
+            bitrix.batch.deal.getList(
+                `deal_company_${id}`,
+                {
+                    COMPANY_ID: String(id),
+                    CLOSED: 'N',
+                },
+                ['ID', 'TITLE', 'STAGE_SEMANTIC_ID'],
+            );
         });
         try {
             // const result = await bitrix.deal.all({

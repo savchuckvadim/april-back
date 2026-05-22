@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-    ArrayMinSize,
-    IsArray,
-    IsNotEmpty,
-    IsString,
-} from 'class-validator';
+import { ArrayMinSize, IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 /** Спец-значение домена: применить операцию ко всем порталам. */
 export const MANAGE_DOMAIN_ALL = 'all';

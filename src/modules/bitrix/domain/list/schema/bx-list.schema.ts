@@ -3,22 +3,12 @@ import { IBXList } from '../interface/bx-list.interface';
 
 export type ListGetRequestType = {
     IBLOCK_TYPE_ID: 'lists';
-    IBLOCK_CODE?:
-        | string
-        | 'sales_kpi'
-        | 'sales_history'
-        | 'presentation'
-        | 'ork_history';
+    IBLOCK_CODE?: string;
 };
 
 export type ListFieldsGetRequestType = {
     IBLOCK_TYPE_ID: 'lists';
-    IBLOCK_CODE:
-        | string
-        | 'sales_kpi'
-        | 'sales_history'
-        | 'presentation'
-        | 'ork_history';
+    IBLOCK_CODE: string;
     FIELD_ID?: string;
 };
 

@@ -207,7 +207,7 @@ export class WordTemplateService {
         }
 
         const wordTemplates: WordTemplateSummary[] =
-            await this.getWordTemplates(fullTemplates);
+            this.getWordTemplates(fullTemplates);
         const result = wordTemplates.map(
             t =>
                 new WordTemplateSummaryDto({
@@ -235,7 +235,7 @@ export class WordTemplateService {
             );
 
         const wordTemplates: WordTemplateSummary[] =
-            await this.getWordTemplates(templates);
+            this.getWordTemplates(templates);
 
         const selectedTemplates =
             await this.userSelectedTemplateRepository.findByUser(
@@ -248,14 +248,12 @@ export class WordTemplateService {
             selected: selectedTemplates,
         };
     }
-    private async getWordTemplates(
+    private getWordTemplates(
         templates: OfferTemplate[],
-    ): Promise<WordTemplateSummary[]> {
-        return Promise.all(
-            templates
-                .filter(t => t.type === 'word')
-                .map(t => this.getWordTemplateSummary(t)),
-        );
+    ): WordTemplateSummary[] {
+        return templates
+            .filter(t => t.type === 'word')
+            .map(t => this.getWordTemplateSummary(t));
     }
     private getWordTemplateSummary(
         template: OfferTemplate,

@@ -38,4 +38,4 @@ import { SmartActProcessor } from './queue/smart-act.processor';
         SmartActProcessor,
     ],
 })
-export class CommandSmartActGsrModule { }
+export class CommandSmartActGsrModule {}

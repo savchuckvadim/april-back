@@ -49,7 +49,7 @@ export class ContractPrismaRepository implements ContractRepository {
         id: number,
         contract: Partial<contracts>,
     ): Promise<contracts | null> {
-        const updateData: any = {};
+        const updateData: Partial<contracts> = {};
         if (contract.name !== undefined) updateData.name = contract.name;
         if (contract.number !== undefined) updateData.number = contract.number;
         if (contract.title !== undefined) updateData.title = contract.title;

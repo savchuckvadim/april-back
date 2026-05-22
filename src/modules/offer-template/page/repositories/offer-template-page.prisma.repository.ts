@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { offer_template_pages_type } from 'generated/prisma';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { OfferTemplatePageRepository } from './offer-template-page.repository';
 import { OfferTemplatePage } from '../entities/offer-template-page.entity';
@@ -44,7 +45,11 @@ export class OfferTemplatePagePrismaRepository
             | 'default';
         is_active?: boolean;
     }): Promise<OfferTemplatePage[]> {
-        const where: any = {};
+        const where: {
+            offer_template_id?: bigint;
+            type?: offer_template_pages_type;
+            is_active?: boolean;
+        } = {};
 
         if (filters?.offer_template_id) {
             where.offer_template_id = filters.offer_template_id;
@@ -80,18 +85,17 @@ export class OfferTemplatePagePrismaRepository
 
         if (!results) return [];
 
-        const entities = results.map(
-            result =>
-                ({
-                    ...result,
-                    offerTemplate: result.offerTemplate
-                        ? {
-                              ...result.offerTemplate,
-                              id: String(result.offerTemplate.id),
-                          }
-                        : undefined,
-                }) as Partial<OfferTemplatePage>,
-        );
+        const entities = results.map(result => {
+            const row = result as Record<string, unknown>;
+            const tpl = row['offerTemplate'] as
+                | Record<string, unknown>
+                | null
+                | undefined;
+            return {
+                ...result,
+                offerTemplate: tpl ? { ...tpl, id: String(tpl.id) } : undefined,
+            } as Partial<OfferTemplatePage>;
+        });
 
         return entities.map(entity => new OfferTemplatePage(entity));
     }
@@ -200,18 +204,17 @@ export class OfferTemplatePagePrismaRepository
 
         if (!results) return [];
 
-        const entities = results.map(
-            result =>
-                ({
-                    ...result,
-                    offerTemplate: result.offerTemplate
-                        ? {
-                              ...result.offerTemplate,
-                              id: String(result.offerTemplate.id),
-                          }
-                        : undefined,
-                }) as Partial<OfferTemplatePage>,
-        );
+        const entities = results.map(result => {
+            const row = result as Record<string, unknown>;
+            const tpl = row['offerTemplate'] as
+                | Record<string, unknown>
+                | null
+                | undefined;
+            return {
+                ...result,
+                offerTemplate: tpl ? { ...tpl, id: String(tpl.id) } : undefined,
+            } as Partial<OfferTemplatePage>;
+        });
 
         return entities.map(entity => new OfferTemplatePage(entity));
     }
@@ -244,18 +247,17 @@ export class OfferTemplatePagePrismaRepository
 
         if (!results) return [];
 
-        const entities = results.map(
-            result =>
-                ({
-                    ...result,
-                    offerTemplate: result.offerTemplate
-                        ? {
-                              ...result.offerTemplate,
-                              id: String(result.offerTemplate.id),
-                          }
-                        : undefined,
-                }) as Partial<OfferTemplatePage>,
-        );
+        const entities = results.map(result => {
+            const row = result as Record<string, unknown>;
+            const tpl = row['offerTemplate'] as
+                | Record<string, unknown>
+                | null
+                | undefined;
+            return {
+                ...result,
+                offerTemplate: tpl ? { ...tpl, id: String(tpl.id) } : undefined,
+            } as Partial<OfferTemplatePage>;
+        });
 
         return entities.map(entity => new OfferTemplatePage(entity));
     }

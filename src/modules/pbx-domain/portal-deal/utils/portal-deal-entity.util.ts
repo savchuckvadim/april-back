@@ -8,9 +8,7 @@ import type { PortalDealWithFieldsEntity } from '../entity/portal-deal-with-fiel
 import { PortalDealWithFieldsResponseDto } from '../dto/portal-deal-with-fields-response.dto';
 import { PbxFieldEntityDto } from '@/modules/pbx-domain/field/dto/pbx-field.enity.dto';
 
-export function portalDealEntityFromPrisma(
-    row: btx_deals,
-): PortalDealEntity {
+export function portalDealEntityFromPrisma(row: btx_deals): PortalDealEntity {
     const e = new PortalDealEntity();
     e.id = bigintConvertToNumber(row.id);
     e.portalId = bigintConvertToNumber(row.portal_id);

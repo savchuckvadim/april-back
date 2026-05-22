@@ -55,7 +55,7 @@ export class BitrixFieldItemPrismaRepository
         id: number,
         item: Partial<bitrixfield_items>,
     ): Promise<bitrixfield_items | null> {
-        const updateData: any = {};
+        const updateData: Partial<bitrixfield_items> = {};
         if (item.name !== undefined) updateData.name = item.name;
         if (item.title !== undefined) updateData.title = item.title;
         if (item.code !== undefined) updateData.code = item.code;

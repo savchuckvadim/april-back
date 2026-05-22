@@ -16,7 +16,7 @@ import { PbxEntityType } from '@/shared';
  */
 @Injectable()
 export class ParseSmartFieldsService {
-    constructor() { }
+    constructor() {}
     public getFieldsData(
         fieldsSheet: ExcelJS.Worksheet,
         fieldItemsSheet: ExcelJS.Worksheet,
@@ -29,24 +29,17 @@ export class ParseSmartFieldsService {
             // Удаляем первый пустой элемент (ExcelJS вставляет пустой элемент в начале)
             const fieldValues = rawValues
                 .slice(1)
-                .map(unwrapExcelCellValue) as unknown as SmartFieldImportSheetRow;
+                .map(
+                    unwrapExcelCellValue,
+                ) as unknown as SmartFieldImportSheetRow;
             fieldsData.push(fieldValues);
         });
 
         const fields: Field[] = [];
 
         fieldsData.forEach(fieldValues => {
-            const [
-                name,
-                appType,
-                ,
-                type,
-                ,
-                code,
-                smart,
-                order,
-                multiple,
-            ] = fieldValues;
+            const [name, appType, , type, , code, smart, order, multiple] =
+                fieldValues;
 
             const fieldType:
                 | PbxSalesEventFieldType
@@ -135,5 +128,4 @@ export class ParseSmartFieldsService {
             SORT: order,
         };
     }
-
 }

@@ -10,12 +10,10 @@ import {
     Body,
     Param,
     Delete,
-    BadRequestException,
     NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { InfoblockResponseDto } from '../dto/infoblock-response.dto';
-import { GetInfoblockLightResponseDto } from '../dto/get-infoblock-light-response.dto';
 import { CreateInfoblockDto } from '../dto/create-infoblock.dto';
 import {
     SetInfoblockGroupDto,

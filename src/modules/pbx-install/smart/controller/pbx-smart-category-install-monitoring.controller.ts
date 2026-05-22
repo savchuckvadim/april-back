@@ -22,7 +22,8 @@ export class PbxSmartCategoryInstallMonitoringController {
     ) {}
 
     @ApiOperation({
-        summary: 'Get smart categories and stages by domain, smartName and group',
+        summary:
+            'Get smart categories and stages by domain, smartName and group',
         description:
             'Получить "Smart Category Data" для конкретного смарта на портале: ' +
             'портал-БД (`btx_categories` + `btx_stages`) + Bitrix ' +
@@ -79,6 +80,11 @@ export class PbxSmartCategoryInstallMonitoringController {
         @Param('group') group: SmartGroupEnum,
         @Param('search') search: string,
     ): Promise<PbxSmartCategorySearchResultResponse> {
-        return await this.searchService.search(domain, smartName, group, search);
+        return await this.searchService.search(
+            domain,
+            smartName,
+            group,
+            search,
+        );
     }
 }

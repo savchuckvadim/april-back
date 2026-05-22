@@ -53,7 +53,7 @@ export class CompanyRelationsService {
             'PHONE',
             'HAS_PHONE',
         ];
-        const order = { ID: 'DESC' as const };
+        // const order = { ID: 'DESC' as const };
 
         try {
             // Используем getList, хотя в репозитории он использует GET вместо LIST
@@ -144,12 +144,16 @@ export class CompanyRelationsService {
 
         try {
             // Используем прямой вызов API через call, так как LEAD не входит в типизированную схему
-            const response = await this.bitrix.api.call('crm.lead.list', {
+            // const response = await this.bitrix.api.call('crm.lead.list', {
+            //     filter,
+            //     select,
+            //     order,
+            // });
+            const response = await this.bitrix.lead.getList(
                 filter,
                 select,
                 order,
-            });
-
+            );
             // Извлекаем result из ответа
             const leads = response?.result || [];
 

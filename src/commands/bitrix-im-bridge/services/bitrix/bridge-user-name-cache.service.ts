@@ -74,14 +74,18 @@ export class BridgeUserNameCacheService {
     ): Promise<CachedUserName | undefined> {
         try {
             const { bitrix } = await this.pbx.init(domain);
-            const response = (await bitrix.user.get(
-                { ID: authorId },
-                ['ID', 'NAME', 'LAST_NAME', 'EMAIL'],
-            )) as UserGetResponse;
+            const response = (await bitrix.user.get({ ID: authorId }, [
+                'ID',
+                'NAME',
+                'LAST_NAME',
+                'EMAIL',
+            ])) as UserGetResponse;
 
             const user = response?.result?.[0];
             if (!user) {
-                this.logger.warn(`Пользователь не найден: domain=${domain}, authorId=${authorId}`);
+                this.logger.warn(
+                    `Пользователь не найден: domain=${domain}, authorId=${authorId}`,
+                );
                 return undefined;
             }
 

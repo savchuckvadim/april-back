@@ -83,3 +83,8 @@ docker-compose-full-dev.yml
 /db_data/**
 /db_dev
 /db_prod/**
+
+
+/claude
+.claude/**
+/ai

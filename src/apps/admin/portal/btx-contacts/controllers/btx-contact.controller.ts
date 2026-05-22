@@ -14,7 +14,6 @@ import { BtxContactService } from '../services/btx-contact.service';
 import { CreateBtxContactDto } from '../dto/create-btx-contact.dto';
 import { UpdateBtxContactDto } from '../dto/update-btx-contact.dto';
 import { BtxContactResponseDto } from '../dto/btx-contact-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Contacts Management')
 @Controller('admin/pbx/btx-contacts')
@@ -59,7 +58,7 @@ export class BtxContactController {
     async getAllContacts(
         @Query('portal_id') portalId?: string,
     ): Promise<BtxContactResponseDto[]> {
-        let contacts;
+        let contacts: BtxContactResponseDto[];
         if (portalId) {
             contacts = await this.contactService.findByPortalId(
                 Number(portalId),

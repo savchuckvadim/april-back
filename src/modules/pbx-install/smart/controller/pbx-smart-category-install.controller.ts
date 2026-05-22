@@ -43,7 +43,11 @@ export class PbxSmartCategoryInstallController {
         @Param('smartName') smartName: SmartNameEnum,
         @Param('group') group: SmartGroupEnum,
     ): Promise<void> {
-        return await this.parseUseCase.installSmartCategories(domain, smartName, group);
+        return await this.parseUseCase.installSmartCategories(
+            domain,
+            smartName,
+            group,
+        );
     }
 
     @ApiOperation({

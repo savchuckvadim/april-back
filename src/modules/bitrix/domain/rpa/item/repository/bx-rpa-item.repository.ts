@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { IBxRpaItem } from '../interface/bx-rpa-item.interface';
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 import {
     AddRpaItemDto,

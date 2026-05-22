@@ -22,10 +22,12 @@ export class BxFileService {
         url: string,
         name?: string,
     ): Promise<[string, string]> {
-        const response = await axios.get(url, {
+        const response = await axios.get<ArrayBuffer>(url, {
             responseType: 'arraybuffer', // 👈 обязательно!
         });
-        const contentDisposition = response.headers['content-disposition'];
+        const contentDisposition = response.headers[
+            'content-disposition'
+        ] as string;
         const filename =
             this.getFilenameFromDisposition(contentDisposition) ||
             `${name}.docx`;
@@ -39,7 +41,7 @@ export class BxFileService {
 
     private getFilenameFromDisposition(header: string): string | undefined {
         // Пробуем сначала filename*=utf-8''
-        const utf8Match = header.match(/filename\*\=utf-8''([^;]+)/i);
+        const utf8Match = header.match(/filename\*=utf-8''([^;]+)/i);
         if (utf8Match) {
             return decodeURIComponent(utf8Match[1]);
         }

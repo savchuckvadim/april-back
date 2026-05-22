@@ -29,7 +29,6 @@ export type SmartFieldImportSheetRow = readonly [
     string, //isMultiple 'true' | 'false'
 ];
 
-
 /** Field items sheet row after slice(1) and unwrapping formula cells */
 export type FieldItemImportSheetRow = readonly [
     string, //field_name

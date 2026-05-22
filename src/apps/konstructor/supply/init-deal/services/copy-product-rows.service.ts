@@ -3,7 +3,6 @@ import {
     IBXDealProductRowGet,
     IBXProductRowRow,
 } from '@/modules/bitrix';
-import { TelegramService } from '@/modules/telegram/telegram.service';
 
 import { BitrixOwnerType } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { IPSmart } from '@/modules/portal/interfaces/portal.interface';
@@ -39,21 +38,12 @@ export class CopyProductRowsService {
 
         const rows = getRowsResponse.result.productRows;
 
-        const newRows = [] as IBXProductRowRow[];
-        for (const row of rows) {
-            const newRow = {} as IBXProductRowRow;
+        const newRows = rows.map(row => {
+            const newRow: IBXProductRowRow = { ...row };
+            delete newRow.id;
+            return newRow;
+        });
 
-            for (const key in row) {
-                if (
-                    key !== 'id' &&
-                    key !== 'ownerId' &&
-                    key !== 'ownerTypeId'
-                ) {
-                    newRow[key] = row[key];
-                }
-            }
-            newRows.push(newRow);
-        }
         const setRowsResponse = await this.bitrix.productRow.set({
             ownerType: BitrixOwnerType.DEAL,
             ownerId: this.newDealId,
@@ -71,19 +61,14 @@ export class CopyProductRowsService {
                 id: this.oldDealId,
             },
         );
-        const rows = getRowsResponse.result as IBXDealProductRowGet[];
+        const getResult = getRowsResponse as { result: IBXDealProductRowGet[] };
+        const rows = getResult.result;
         console.log('rows');
-        const newRows = [] as IBXDealProductRowGet[];
-        for (const row of rows) {
-            const newRow = {} as IBXDealProductRowGet;
-
-            for (const key in row) {
-                if (key !== 'ID') {
-                    newRow[key] = row[key];
-                }
-            }
-            newRows.push(newRow);
-        }
+        const newRows = rows.map(row => {
+            const newRow: IBXDealProductRowGet = { ...row };
+            delete newRow.ID;
+            return newRow;
+        });
 
         const setRowsResponse = await this.bitrix.api.call(
             'crm.deal.productrows.set',
