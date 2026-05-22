@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import * as ExcelJS from 'exceljs';
 import * as fs from 'fs';
@@ -27,7 +27,7 @@ export class AlfaParseService {
             isWork: 0 as number,
         } as IAlfaParse;
 
-        sheet.eachRow((row, rowNumber) => {
+        sheet.eachRow((row, _rowNumber) => {
             const [id, companyName, region, inn, isWork] = [
                 row.getCell(1).value, //id
                 row.getCell(2).value, //companyName

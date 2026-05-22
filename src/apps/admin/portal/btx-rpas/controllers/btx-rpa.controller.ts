@@ -14,7 +14,6 @@ import { BtxRpaService } from '../services/btx-rpa.service';
 import { CreateBtxRpaDto } from '../dto/create-btx-rpa.dto';
 import { UpdateBtxRpaDto } from '../dto/update-btx-rpa.dto';
 import { BtxRpaResponseDto } from '../dto/btx-rpa-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx RPAs Management')
 @Controller('admin/pbx/btx-rpas')
@@ -59,7 +58,7 @@ export class BtxRpaController {
     async getAllRpas(
         @Query('portal_id') portalId?: string,
     ): Promise<BtxRpaResponseDto[]> {
-        let rpas;
+        let rpas: BtxRpaResponseDto[];
         if (portalId) {
             rpas = await this.rpaService.findByPortalId(Number(portalId));
         } else {

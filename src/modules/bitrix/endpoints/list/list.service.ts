@@ -1,9 +1,6 @@
 import { BxListRepository } from '../../domain/list/repository/bx-list.repository';
 import { Logger, Injectable, HttpStatus, HttpException } from '@nestjs/common';
-import {
-    IField,
-    IPBXList,
-} from 'src/modules/portal/interfaces/portal.interface';
+import { IField } from 'src/modules/portal/interfaces/portal.interface';
 import { EBxListCode } from '../../domain';
 
 import { PBXService } from '@/modules/pbx';

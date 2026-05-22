@@ -75,13 +75,20 @@ export class BitrixCore {
      * Обработка ошибок таймаута и Bitrix ошибок
      */
     protected async handleError<T>(
-        error: any,
+        error: unknown,
         method: string,
-        data: any,
+        data: Record<string, unknown>,
         retries: number,
     ): Promise<AxiosResponse<T>> {
-        const message = error?.message || 'Unknown error';
-        const responseText = error?.response?.data || error?.toString();
+        const e = error as {
+            message?: string;
+            response?: { data?: unknown };
+            code?: string;
+            toString?: () => string;
+        };
+        const message = e?.message ?? 'Unknown error';
+        const responseText =
+            e?.response?.data ?? e?.toString?.() ?? String(error);
 
         this.logger.error(`Error calling Bitrix [${method}]: ${message}`);
         await this.telegramBot.sendMessageAdminError(
@@ -90,7 +97,7 @@ export class BitrixCore {
 
         // Retry для таймаута
         if (
-            (message.includes('timeout') || error.code === 'ECONNABORTED') &&
+            (message.includes('timeout') || e?.code === 'ECONNABORTED') &&
             retries > 0
         ) {
             this.logger.warn(`Timeout on ${method}, retrying in 3s...`);

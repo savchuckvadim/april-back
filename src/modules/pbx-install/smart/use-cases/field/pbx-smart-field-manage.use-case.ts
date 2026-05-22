@@ -60,7 +60,7 @@ export class PbxSmartFieldManageUseCase {
         private readonly portalService: PortalStoreService,
         private readonly resolver: SmartContextResolver,
         private readonly pbxFieldService: PbxFieldService,
-    ) { }
+    ) {}
 
     async deleteFields(
         dto: DeleteTypedEntityFieldsDto,
@@ -140,7 +140,10 @@ export class PbxSmartFieldManageUseCase {
                         dto.itemCode,
                         'item has no bitrixId in PortalDB — not synced with Bitrix yet',
                     ),
-                    db: { ok: false, error: 'item has no bitrixId in PortalDB' },
+                    db: {
+                        ok: false,
+                        error: 'item has no bitrixId in PortalDB',
+                    },
                 });
                 continue;
             }
@@ -200,7 +203,10 @@ export class PbxSmartFieldManageUseCase {
                         dto.itemCode,
                         'item has no bitrixId in PortalDB — not synced with Bitrix yet',
                     ),
-                    db: { ok: false, error: 'item has no bitrixId in PortalDB' },
+                    db: {
+                        ok: false,
+                        error: 'item has no bitrixId in PortalDB',
+                    },
                 });
                 continue;
             }
@@ -306,7 +312,10 @@ export class PbxSmartFieldManageUseCase {
     ): Promise<{ ok: boolean; itemId?: string; error?: string }> {
         if (!itemId) return { ok: false, error: 'item has no id in PortalDB' };
         try {
-            await this.pbxFieldService.updateFieldItemNameById(itemId, newValue);
+            await this.pbxFieldService.updateFieldItemNameById(
+                itemId,
+                newValue,
+            );
             return { ok: true, itemId };
         } catch (e) {
             return {

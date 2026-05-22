@@ -4,12 +4,7 @@ import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
 export class BxListItemGetRequestDto {
     @ApiProperty({ description: 'Код инфоблока' })
     @IsString()
-    IBLOCK_CODE?:
-        | string
-        | 'sales_kpi'
-        | 'sales_history'
-        | 'presentation'
-        | 'ork_history';
+    IBLOCK_CODE?: string;
 
     @ApiProperty({ description: 'ID инфоблока' })
     @IsString()

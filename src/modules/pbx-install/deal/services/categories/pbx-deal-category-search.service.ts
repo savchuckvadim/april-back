@@ -33,7 +33,7 @@ export class PbxDealCategorySearchService {
     constructor(
         private readonly parseCategoryService: ParseCategoryService,
         private readonly monitoringService: PbxDealCategoryMonitoringService,
-    ) { }
+    ) {}
 
     async search(
         domain: string,
@@ -51,9 +51,7 @@ export class PbxDealCategorySearchService {
         }
 
         const needle = search.trim().toLowerCase();
-        const matched = parseCategories.filter(c =>
-            categoryMatches(c, needle),
-        );
+        const matched = parseCategories.filter(c => categoryMatches(c, needle));
 
         if (matched.length === 0) {
             return { count: 0, items: [] };

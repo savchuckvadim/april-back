@@ -70,4 +70,4 @@ import { StorageModule } from '@/core/storage/storage.module';
         GetPbxSmartUseCase,
     ],
 })
-export class PbxSmartInstallModule { }
+export class PbxSmartInstallModule {}

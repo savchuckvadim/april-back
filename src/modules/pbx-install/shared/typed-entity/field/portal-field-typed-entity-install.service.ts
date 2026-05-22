@@ -41,7 +41,12 @@ export class PortalFieldTypedEntityInstallService {
     ): Promise<PbxFieldEntity[]> {
         const prismaEntityType = getPrismaEntityTypeByType(owner.entityType);
         const entities: PbxFieldEntity[] = fields.map(f =>
-            this.buildEntity(f, prismaEntityType, owner.entityDbId, owner.parentType),
+            this.buildEntity(
+                f,
+                prismaEntityType,
+                owner.entityDbId,
+                owner.parentType,
+            ),
         );
         return this.pbxFieldService.upsertFields(entities);
     }
@@ -61,7 +66,9 @@ export class PortalFieldTypedEntityInstallService {
         e.code = field.parsedField.code;
         e.type = field.parsedField.type;
         e.isPlural = field.bxField.multiple === 'Y';
-        e.bitrixId = String(field.bxField.fieldName ?? field.parsedField.bxFieldName);
+        e.bitrixId = String(
+            field.bxField.fieldName ?? field.parsedField.bxFieldName,
+        );
         e.bitrixCamelId = getCamelBxFieldIdCase(
             String(field.bxField.fieldName ?? field.parsedField.bxFieldName),
         );

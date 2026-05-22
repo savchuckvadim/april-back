@@ -1,22 +1,20 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 
 import { BxAuthType } from '../../bitrix-service.factory';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
-import { BitrixAuthService } from '../../auth/bitrix-auth.service';
 
 @Injectable()
 export class BitrixApiFactoryService {
     constructor(private readonly telegram: TelegramService) {}
 
     //NEW//
-    public async create(
+    public create(
         portal: IPortal,
         authType: BxAuthType = BxAuthType.HOOK,
         token?: string,
-    ): Promise<BitrixBaseApi> {
+    ): BitrixBaseApi {
         // const token = authType === BxAuthType.TOKEN ? await this.authService.getFreshToken(portal.domain) : null;
         const api = new BitrixBaseApi(
             this.telegram,
@@ -25,7 +23,7 @@ export class BitrixApiFactoryService {
             token || null,
             authType,
         );
-        api.init(portal);
+        api.init();
         return api;
     }
 

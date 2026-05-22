@@ -74,7 +74,7 @@ export class PortalMeasurePrismaRepository implements PortalMeasureRepository {
         id: number,
         portalMeasure: Partial<portal_measure>,
     ): Promise<portal_measure | null> {
-        const updateData: any = {};
+        const updateData: Partial<portal_measure> = {};
         if (portalMeasure.measure_id !== undefined)
             updateData.measure_id = BigInt(portalMeasure.measure_id);
         if (portalMeasure.portal_id !== undefined)

@@ -33,7 +33,7 @@ export class InstallSmartCategoriesService {
         private readonly bootstrapStages: BootstrapPortalCategoryStagesUseCase,
         private readonly reconcileStages: ReconcilePortalCategoryStagesUseCase,
         private readonly strategy: SmartCategoryStageStrategy,
-    ) { }
+    ) {}
 
     async installTemplateCategories(
         params: InstallSmartCategoriesParams,

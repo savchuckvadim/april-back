@@ -11,7 +11,6 @@ export interface List {
     fields: Field[];
 }
 
-
 export enum ListGroupEnum {
     SALES = 'sales',
     SERVICE = 'service',

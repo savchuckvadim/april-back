@@ -15,7 +15,7 @@ import { PbxListInstallModule } from './list/pbx-list-install.module';
         PbxSmartInstallModule,
         PbxCompanyInstallModule,
         PbxDealInstallModule,
-        PbxListInstallModule
+        PbxListInstallModule,
     ],
 })
-export class PBXInstallModule { }
+export class PBXInstallModule {}

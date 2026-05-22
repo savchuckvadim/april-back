@@ -19,7 +19,7 @@ export type DialogSchema = {
         response: IBXChatGetResponse;
     };
     [EBxMethod.COUNTERS_GET]: {
-        request: {};
+        request: object;
         response: IBXCountersGetResponse;
     };
     [EBxMethod.DIALOG_GET]: {

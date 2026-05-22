@@ -26,7 +26,12 @@ export class OfferTemplatePortalPrismaRepository
         is_active?: boolean;
         is_default?: boolean;
     }): Promise<OfferTemplatePortal[]> {
-        const where: any = {};
+        const where: {
+            offer_template_id?: bigint;
+            portal_id?: bigint;
+            is_active?: boolean;
+            is_default?: boolean;
+        } = {};
 
         if (filters?.offer_template_id) {
             where.offer_template_id = filters.offer_template_id;

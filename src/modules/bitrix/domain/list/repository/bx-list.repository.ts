@@ -38,8 +38,8 @@ export class BxListRepository {
         );
     }
 
-    async add(IBLOCK_CODE: string, fields: Partial<IBXList>) {
-        return await this.bitrixService.call('lists.add', {
+    async add(IBLOCK_CODE: string, fields: Partial<IBXList>): Promise<unknown> {
+        return this.bitrixService.call('lists.add', {
             IBLOCK_TYPE_ID: 'lists',
             IBLOCK_CODE,
             FIELDS: fields,
@@ -106,8 +106,11 @@ export class BxListRepository {
         );
     }
 
-    async addField(IBLOCK_CODE: string, fields: Record<string, any>) {
-        return await this.bitrixService.call('lists.field.add', {
+    async addField(
+        IBLOCK_CODE: string,
+        fields: Record<string, unknown>,
+    ): Promise<unknown> {
+        return this.bitrixService.call('lists.field.add', {
             IBLOCK_TYPE_ID: 'lists',
             IBLOCK_CODE,
             FIELDS: fields,
@@ -117,9 +120,9 @@ export class BxListRepository {
     async updateField(
         IBLOCK_CODE: string,
         FIELD_ID: string | number,
-        fields: Record<string, any>,
-    ) {
-        return await this.bitrixService.call('lists.field.update', {
+        fields: Record<string, unknown>,
+    ): Promise<unknown> {
+        return this.bitrixService.call('lists.field.update', {
             IBLOCK_TYPE_ID: 'lists',
             IBLOCK_CODE,
             FIELD_ID,
@@ -127,8 +130,11 @@ export class BxListRepository {
         });
     }
 
-    async deleteField(IBLOCK_CODE: string, FIELD_ID: string | number) {
-        return await this.bitrixService.call('lists.field.delete', {
+    async deleteField(
+        IBLOCK_CODE: string,
+        FIELD_ID: string | number,
+    ): Promise<unknown> {
+        return this.bitrixService.call('lists.field.delete', {
             IBLOCK_TYPE_ID: 'lists',
             IBLOCK_CODE,
             FIELD_ID,

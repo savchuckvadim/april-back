@@ -25,7 +25,7 @@ export class OrkUserReportService {
     constructor(
         private readonly pbx: PBXService,
         private readonly orkHistoryListService: OrkHistoryBxListService,
-    ) { }
+    ) {}
 
     public async *getReport(dto: OrkUserReportGetRequestDto) {
         const { domain, socketId, userId, dateFrom, dateTo } = dto;

@@ -7,7 +7,6 @@ import {
     Param,
     Delete,
     Query,
-    ParseIntPipe,
     HttpCode,
     HttpStatus,
     UseInterceptors,
@@ -115,7 +114,12 @@ export class OfferTemplateImageController {
         // @Query('is_public') is_public?: string,
     ): Promise<OfferTemplateImage[]> {
         const { portal_id, storage_type, parent, is_public } = query || {};
-        const filters: any = {};
+        const filters: {
+            portal_id?: bigint;
+            storage_type?: 'public' | 'private' | 'app';
+            parent?: 'template' | 'page' | 'block' | 'sticker' | 'other';
+            is_public?: boolean;
+        } = {};
 
         if (portal_id) filters.portal_id = BigInt(portal_id);
         if (storage_type) filters.storage_type = storage_type;

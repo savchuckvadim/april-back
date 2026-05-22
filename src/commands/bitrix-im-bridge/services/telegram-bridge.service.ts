@@ -70,7 +70,9 @@ export class TelegramBridgeService {
         return this.bot.getWebhookInfo();
     }
 
-    private formatIncomingMessage(payload: IncomingBitrixMessagePayload): string {
+    private formatIncomingMessage(
+        payload: IncomingBitrixMessagePayload,
+    ): string {
         const authorLine = payload.authorName
             ? `👤 <b>${this.escapeHtml(payload.authorName)}</b>`
             : payload.authorId

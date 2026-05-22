@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
-import {
-    IBXDepartment,
-    IBXUser,
-} from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { EDepartamentGroup } from 'src/modules/portal/interfaces/portal.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { PBXService } from '@/modules/pbx';
@@ -41,9 +38,12 @@ export class BxDepartmentService {
         const sessionKey = `department_${domain}_${day}_${targetGroup}`;
 
         const fromCache = await this.redis.get(sessionKey);
-        if (fromCache) return JSON.parse(fromCache);
+        if (fromCache) {
+            const result = JSON.parse(fromCache) as BxDepartmentResponseDto;
+            return result;
+        }
 
-        const departmentService = new DepartmentBitrixService(bitrix.api);
+        const departmentService = new DepartmentBitrixService(bitrix);
 
         const general = await departmentService.getDepartments({
             ID: baseDepartmentBitrixId,

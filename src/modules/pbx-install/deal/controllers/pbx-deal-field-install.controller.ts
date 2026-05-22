@@ -9,7 +9,10 @@ import {
 
 import { InstallDealFieldDto } from '../dto/install-deal-field.dto';
 import { PbxDealFieldManageUseCase } from '../use-cases/field/pbx-deal-field-manage.use-case';
-import { ParseEntityFieldsAppName, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
+import {
+    ParseEntityFieldsAppName,
+    PbxEntityGroupEnum,
+} from '../../shared/entity/field/parse-entity-field.service';
 import {
     DeleteEntityFieldItemDto,
     DeleteEntityFieldsDto,
@@ -25,7 +28,7 @@ export class PbxDealFieldInstallController {
         private readonly parseUseCase: PbxDealFieldInstallByParseUseCase,
         private readonly fieldseCase: PbxDealFieldInstallByFieldUseCase,
         private readonly manageUseCase: PbxDealFieldManageUseCase,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Install deal fields by portal, group and appName',
@@ -42,7 +45,11 @@ export class PbxDealFieldInstallController {
         @Param('group') group: PbxEntityGroupEnum,
         @Param('appName') appName: ParseEntityFieldsAppName,
     ): Promise<any> {
-        return await this.parseUseCase.installDealFields(domain, group, appName);
+        return await this.parseUseCase.installDealFields(
+            domain,
+            group,
+            appName,
+        );
     }
 
     @ApiOperation({
@@ -104,9 +111,7 @@ export class PbxDealFieldInstallController {
     })
     @ApiBody({ type: EditEntityFieldItemDto })
     @Post('/edit-field-item/')
-    async editDealFieldItem(
-        @Body() dto: EditEntityFieldItemDto,
-    ): Promise<any> {
+    async editDealFieldItem(@Body() dto: EditEntityFieldItemDto): Promise<any> {
         return await this.manageUseCase.editFieldItem(dto);
     }
 }

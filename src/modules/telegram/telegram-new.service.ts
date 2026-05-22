@@ -16,11 +16,10 @@ export class TelegramService {
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
     ) {
-
         this.withTelegram = this.configService.get<boolean>(
             'WITH_TELEGRAM',
         ) as boolean;
-        this.init()
+        this.init();
         console.log(this.withTelegram, 'withTelegram');
     }
     public async sendPublicMessage(dto: TelegramSendMessageDto) {
@@ -30,6 +29,7 @@ export class TelegramService {
         const payload = {
             ...dto,
             app: 'nest api prod',
+            text: cleanText,
         } as TelegramSendMessageDto;
 
         try {
@@ -58,7 +58,7 @@ export class TelegramService {
         }
     }
     async sendMessageAdminError(message: string) {
-        const cleanText = this.cleanText(message);
+        // const cleanText = this.cleanText(message);
 
         // const payload = {
         //     // chat_id: Number(this.adminChatId),
@@ -90,7 +90,6 @@ export class TelegramService {
             text: `NEST ADMIN ERROR: ${cleanText}`,
             parse_mode: 'Markdown',
         };
-
     }
 
     private cleanText(text: string) {
@@ -104,8 +103,8 @@ export class TelegramService {
     }
 
     private init() {
-        this.initUrl()
-        this.initAdminChatId()
+        this.initUrl();
+        this.initAdminChatId();
     }
 
     private initUrl() {
@@ -113,22 +112,19 @@ export class TelegramService {
             'TELEGRAM_BOT_TOKEN',
         ) as string;
 
-        this.url = this.withTelegram && botToken
-            ? `https://api.telegram.org/bot${botToken}/sendMessage`
-            : publicUrl;
+        this.url =
+            this.withTelegram && botToken
+                ? `https://api.telegram.org/bot${botToken}/sendMessage`
+                : publicUrl;
     }
 
     private initAdminChatId() {
-        const appName = this.configService.get<string>(
-            'APP_NAME',
-        ) as string;
+        const appName = this.configService.get<string>('APP_NAME') as string;
 
         this.adminChatId = this.withTelegram
-            ? this.configService.get<string>(
-                'TELEGRAM_ADMIN_CHAT_ID',
-            ) as string
+            ? (this.configService.get<string>(
+                  'TELEGRAM_ADMIN_CHAT_ID',
+              ) as string)
             : appName;
     }
-
-
 }

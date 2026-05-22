@@ -1,6 +1,5 @@
 import { EBxMethod } from 'src/modules/bitrix/core';
 import { IBXProduct } from '../interface/bx-product.interface';
-import { CrmListRequestType } from '../../crm/type/crm-request.type';
 
 export type BxCatalogSchema = {
     [EBxMethod.GET]: {

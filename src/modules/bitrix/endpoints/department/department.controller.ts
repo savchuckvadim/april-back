@@ -18,7 +18,7 @@ export class DepartmentEndpointController {
 
     @Post('sales')
     @HttpCode(200)
-    async getFullDepartment(@Body() dto: DomainDto) {
+    async getFullDepartment(@Body() dto: DomainDto): Promise<unknown> {
         // Logger.log('getFullDepartment dto');
 
         // const { portal, PortalModel } = await this.pbx.init(dto.domain);

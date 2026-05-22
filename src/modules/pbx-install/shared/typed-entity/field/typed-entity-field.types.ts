@@ -30,7 +30,8 @@ export interface IBxTypedFieldInstallResult {
 }
 
 /** Тот же результат после повторного list + матчинга с шаблонным полем. */
-export interface IBxTypedFieldWithParsedResult extends IBxTypedFieldInstallResult {
+export interface IBxTypedFieldWithParsedResult
+    extends IBxTypedFieldInstallResult {
     parsedField: Field;
     bxField: IUserFieldConfig | undefined;
 }

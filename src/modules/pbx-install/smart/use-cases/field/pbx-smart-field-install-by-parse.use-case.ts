@@ -32,7 +32,7 @@ export class PbxSmartFieldInstallByParseUseCase {
         private readonly parseSmartService: ParseSmartService,
         private readonly resolver: SmartContextResolver,
         private readonly portalSync: PortalFieldTypedEntityInstallService,
-    ) { }
+    ) {}
 
     async installSmartFields(
         domain: string,
@@ -64,7 +64,6 @@ export class PbxSmartFieldInstallByParseUseCase {
             group,
         });
 
-
         const bxFieldService = new BxTypedEntityFieldsInstallService(
             domain,
             this.pbxService,
@@ -73,7 +72,9 @@ export class PbxSmartFieldInstallByParseUseCase {
         );
         const bxResult = await bxFieldService.installFields();
         if (bxResult.countSuccess === 0) {
-            throw new Error('В битриксе не удалось изменить ни одного поля смарта');
+            throw new Error(
+                'В битриксе не удалось изменить ни одного поля смарта',
+            );
         }
 
         const clearFields = bxResult.results.filter(

@@ -1,20 +1,26 @@
+import { BitrixService } from '@/modules/bitrix';
 import { IBXDepartment, IBXUser } from '../../interfaces/bitrix.interface';
-import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
 export class DepartmentBitrixService {
-    constructor(private readonly bitrixApi: BitrixBaseApi) {}
+    constructor(private readonly bitrix: BitrixService) {}
 
-    async getDepartmentsAll() {
-        const res = await this.bitrixApi.call('department.get', {});
+    async getDepartmentsAll(): Promise<IBXDepartment[]> {
+        const res = (await this.bitrix.api.call('department.get', {})) as {
+            result: IBXDepartment[];
+        };
         return res.result;
     }
-    async getDepartments(filter: any) {
-        const res = await this.bitrixApi.call('department.get', filter);
+    async getDepartments(
+        filter: Record<string, unknown>,
+    ): Promise<IBXDepartment[]> {
+        const res = (await this.bitrix.api.call('department.get', filter)) as {
+            result: IBXDepartment[];
+        };
         return res.result;
     }
 
     async getUsersByDepartment(id: number) {
-        return await this.bitrixApi.call<IBXUser>('user.get', {
+        const res = await this.bitrix.api.call('user.get', {
             FILTER: { UF_DEPARTMENT: id, ACTIVE: true },
             SELECT: [
                 'ID',
@@ -41,6 +47,7 @@ export class DepartmentBitrixService {
                 'PERSONAL_ADDRESS',
             ],
         });
+        return res as { result: IBXUser[] };
     }
 
     async enrichWithUsers(
@@ -49,7 +56,9 @@ export class DepartmentBitrixService {
         const enriched = [] as IBXDepartment[];
 
         for (const d of departments) {
-            const users = await this.getUsersByDepartment(d.ID);
+            const users = (await this.getUsersByDepartment(d.ID)) as {
+                result: IBXUser[];
+            };
             enriched.push({ ...d, USERS: users.result });
         }
 

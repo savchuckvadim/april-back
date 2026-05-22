@@ -29,7 +29,7 @@ export class GsrBitrixService {
         private readonly dealService: GsrMigrateBitrixDealService,
         private readonly productRowService: GsrMigrateBitrixProductRowService,
         private readonly contactService: GsrMigrateBitrixContactService,
-    ) { }
+    ) {}
 
     async migrateToBitrix(
         domain: string,
@@ -46,7 +46,6 @@ export class GsrBitrixService {
         this.productRowService.setContext(this.bitrix, this.portal, userId);
         this.contactService.setContext(this.bitrix, this.portal, userId);
         const results = [] as IBitrixBatchResponseResult[][];
-        const count = 0;
         // for (let i = 0; i < data.length; i += 1) {
         //     const chunk = data.slice(i, i + 1)
 
@@ -113,12 +112,11 @@ export class GsrBitrixService {
         this.productRowService.setContext(this.bitrix, this.portal, userId);
         this.contactService.setContext(this.bitrix, this.portal, userId);
         const results = [] as IBitrixBatchResponseResult[][];
-        const count = 0;
         // for (let i = 0; i < data.length; i += 1) {
         //     const chunk = data.slice(i, i + 1)
 
         // chunk.
-        data.forEach((element, index) => {
+        data.forEach(element => {
             // console.log(index)
             // if (index > 1) {
 
@@ -163,13 +161,13 @@ export class GsrBitrixService {
     }
 
     async getDeals(domain: string, data: MigrateToBxDto[]) {
-        const { portal, bitrix, PortalModel } = await this.pbx.init(domain);
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
         this.portal = PortalModel;
         this.bitrix = bitrix;
         // this.bitrixApi = this.bitrixApiFactory.create(this.portal.getPortal());
         // const pDealCategory = this.portal.getDealCategoryByCode('service_base')
 
-        data.forEach((element, index) => {
+        data.forEach(element => {
             if (element.id) {
                 const companyCmd = `${EBxNamespace.CRM}.${EBXEntity.COMPANY}.${EBxMethod.LIST}.${element.id}`;
                 this.bitrix.batch.company.getList(

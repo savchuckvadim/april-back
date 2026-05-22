@@ -2,10 +2,18 @@ import { Controller, Get, Param } from '@nestjs/common';
 
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { EntityParseData, ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
+import {
+    EntityParseData,
+    ParseEntityFieldsAppName,
+    ParseEntityFieldsService,
+    PbxEntityGroupEnum,
+} from '../../shared/entity/field/parse-entity-field.service';
 import { PbxEntityType } from '@/shared';
 import { PbxDealMonitoringService } from '../services/fields/pbx-deal-monitoring.service';
-import { PbxDealFieldSearchResultResponse, PbxDealSearchService } from '../services/fields/pbx-deal-search.service';
+import {
+    PbxDealFieldSearchResultResponse,
+    PbxDealSearchService,
+} from '../services/fields/pbx-deal-search.service';
 
 @ApiTags('PBX Deal Field Install Monitoring')
 @Controller('pbx-deal-field-install-monitoring')
@@ -14,7 +22,7 @@ export class PbxDealFieldInstallMonitoringController {
         private readonly monitoringService: PbxDealMonitoringService,
         private readonly parseService: ParseEntityFieldsService,
         private readonly searchService: PbxDealSearchService,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Get deal data by domain',
@@ -43,7 +51,7 @@ export class PbxDealFieldInstallMonitoringController {
         return await this.parseService.getParsedData(
             PbxEntityType.DEAL,
             appName,
-            group
+            group,
         );
     }
 
@@ -63,6 +71,4 @@ export class PbxDealFieldInstallMonitoringController {
     ): Promise<PbxDealFieldSearchResultResponse> {
         return await this.searchService.search(domain, group, search);
     }
-
-
 }

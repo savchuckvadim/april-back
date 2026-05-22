@@ -87,7 +87,8 @@ export class PbxSmartFieldMonitoringService {
                     p: portalField,
                     bx: bxField,
                 });
-                if (portalField.id) matchedPortalIds.add(String(portalField.id));
+                if (portalField.id)
+                    matchedPortalIds.add(String(portalField.id));
                 matchedBxNames.add(bxField.fieldName);
             }
         }
@@ -134,8 +135,9 @@ export class PbxSmartFieldMonitoringService {
                 full.portalFieldsWithoutMerged.find(f => f.bitrixId === name) ??
                 null;
             const bx =
-                full.bitrixFieldsWithoutMerged.find(f => f.fieldName === name) ??
-                null;
+                full.bitrixFieldsWithoutMerged.find(
+                    f => f.fieldName === name,
+                ) ?? null;
             if (p || bx) {
                 out.push({ name, p, bx });
             }

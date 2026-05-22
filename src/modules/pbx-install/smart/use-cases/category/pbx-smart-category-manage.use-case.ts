@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-    BitrixService,
-    IBXStatus,
-} from '@/modules/bitrix';
+import { BitrixService, IBXStatus } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
 import {
     BtxCategoryResponseDto,
@@ -83,7 +80,11 @@ export class PbxSmartCategoryManageUseCase {
         const results: PerPortalSmartCategoryDeleteResult[] = [];
 
         for (const domain of domains) {
-            const ctx = await this.resolveSmartCtx(domain, dto.smartName, dto.group);
+            const ctx = await this.resolveSmartCtx(
+                domain,
+                dto.smartName,
+                dto.group,
+            );
             if (!ctx) continue;
             const { portalId, smartDbId, entityTypeId, bitrix, parent } = ctx;
             const entityTypeIdStr = String(entityTypeId);
@@ -146,7 +147,11 @@ export class PbxSmartCategoryManageUseCase {
         const results: PerPortalSmartStageOperationResult[] = [];
 
         for (const domain of domains) {
-            const ctx = await this.resolveSmartCtx(domain, dto.smartName, dto.group);
+            const ctx = await this.resolveSmartCtx(
+                domain,
+                dto.smartName,
+                dto.group,
+            );
             if (!ctx) continue;
             const { portalId, smartDbId, entityTypeId, bitrix } = ctx;
 
@@ -156,11 +161,22 @@ export class PbxSmartCategoryManageUseCase {
                 dto.stageCode,
             );
             if (!target) {
-                results.push(notFoundStageResult(domain, portalId, 'category or stage not found in PortalDB'));
+                results.push(
+                    notFoundStageResult(
+                        domain,
+                        portalId,
+                        'category or stage not found in PortalDB',
+                    ),
+                );
                 continue;
             }
             const { category, stage } = target;
-            const bxLookup = await this.findBxStatus(bitrix, entityTypeId, category, stage);
+            const bxLookup = await this.findBxStatus(
+                bitrix,
+                entityTypeId,
+                category,
+                stage,
+            );
 
             let bxResult: PerPortalSmartStageOperationResult['bx'] = {
                 statusId: bxLookup.statusId,
@@ -170,8 +186,15 @@ export class PbxSmartCategoryManageUseCase {
             };
             if (bxLookup.row?.ID != null) {
                 try {
-                    await this.stageSync.deleteStatusForced(bitrix, bxLookup.row.ID);
-                    bxResult = { statusId: bxLookup.statusId, bxId: bxLookup.row.ID, ok: true };
+                    await this.stageSync.deleteStatusForced(
+                        bitrix,
+                        bxLookup.row.ID,
+                    );
+                    bxResult = {
+                        statusId: bxLookup.statusId,
+                        bxId: bxLookup.row.ID,
+                        ok: true,
+                    };
                 } catch (e) {
                     bxResult = {
                         statusId: bxLookup.statusId,
@@ -206,7 +229,11 @@ export class PbxSmartCategoryManageUseCase {
         const results: PerPortalSmartStageOperationResult[] = [];
 
         for (const domain of domains) {
-            const ctx = await this.resolveSmartCtx(domain, dto.smartName, dto.group);
+            const ctx = await this.resolveSmartCtx(
+                domain,
+                dto.smartName,
+                dto.group,
+            );
             if (!ctx) continue;
             const { portalId, smartDbId, entityTypeId, bitrix } = ctx;
 
@@ -216,11 +243,22 @@ export class PbxSmartCategoryManageUseCase {
                 dto.stageCode,
             );
             if (!target) {
-                results.push(notFoundStageResult(domain, portalId, 'category or stage not found in PortalDB'));
+                results.push(
+                    notFoundStageResult(
+                        domain,
+                        portalId,
+                        'category or stage not found in PortalDB',
+                    ),
+                );
                 continue;
             }
             const { category, stage } = target;
-            const bxLookup = await this.findBxStatus(bitrix, entityTypeId, category, stage);
+            const bxLookup = await this.findBxStatus(
+                bitrix,
+                entityTypeId,
+                category,
+                stage,
+            );
 
             let bxResult: PerPortalSmartStageOperationResult['bx'] = {
                 statusId: bxLookup.statusId,
@@ -230,8 +268,14 @@ export class PbxSmartCategoryManageUseCase {
             };
             if (bxLookup.row?.ID != null) {
                 try {
-                    await bitrix.status.update(bxLookup.row.ID, { NAME: dto.newValue });
-                    bxResult = { statusId: bxLookup.statusId, bxId: bxLookup.row.ID, ok: true };
+                    await bitrix.status.update(bxLookup.row.ID, {
+                        NAME: dto.newValue,
+                    });
+                    bxResult = {
+                        statusId: bxLookup.statusId,
+                        bxId: bxLookup.row.ID,
+                        ok: true,
+                    };
                 } catch (e) {
                     bxResult = {
                         statusId: bxLookup.statusId,
@@ -297,7 +341,9 @@ export class PbxSmartCategoryManageUseCase {
             group,
         );
         if (!smart) {
-            this.logger.warn(`smart not found for domain ${domain} type=${smartName} group=${group}`);
+            this.logger.warn(
+                `smart not found for domain ${domain} type=${smartName} group=${group}`,
+            );
             return null;
         }
         const { bitrix } = await this.pbxService.init(domain);
@@ -319,7 +365,10 @@ export class PbxSmartCategoryManageUseCase {
         smartDbId: number,
         categoryCode: string,
         stageCode: string,
-    ): Promise<{ category: BtxCategoryResponseDto; stage: BtxStageResponseDto } | null> {
+    ): Promise<{
+        category: BtxCategoryResponseDto;
+        stage: BtxStageResponseDto;
+    } | null> {
         const dbCategories = await this.categoryService.findByEntity(
             PbxEntityType.SMART,
             smartDbId,
@@ -338,8 +387,15 @@ export class PbxSmartCategoryManageUseCase {
         stage: BtxStageResponseDto,
     ): Promise<{ statusId: string; row: IBXStatus | null }> {
         const bxCategoryId = Number(category.bitrixId);
-        const entityId = this.strategy.statusEntityId(entityTypeId, bxCategoryId);
-        const statusId = this.strategy.statusId(entityTypeId, bxCategoryId, stage.bitrixId);
+        const entityId = this.strategy.statusEntityId(
+            entityTypeId,
+            bxCategoryId,
+        );
+        const statusId = this.strategy.statusId(
+            entityTypeId,
+            bxCategoryId,
+            stage.bitrixId,
+        );
         const list = await bitrix.status.getList({ ENTITY_ID: entityId });
         const rows = normalizeStatusListResult(list.result);
         const row = rows.find(r => r.STATUS_ID === statusId) ?? null;

@@ -63,7 +63,7 @@ export class PortalContractController {
     async getListPortalContracts(
         @Query() query: GetPortalContractsQueryDto,
     ): Promise<PortalContractResponseDto[]> {
-        let portalContracts;
+        let portalContracts: PortalContractResponseDto[];
         const { portalId, contractId } = query;
         if (portalId) {
             portalContracts = await this.portalContractService.findByPortalId(

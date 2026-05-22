@@ -100,12 +100,12 @@ export class OrkHistoryBxListService {
             } else if (fieldCode === EnumOrkFieldCode.ork_event_action) {
                 fields[field.bitrixCamelId] =
                     field.items
-                        ?.find(item => item.code === dto.action)
+                        ?.find(item => item.code === (dto.action as string))
                         ?.bitrixId?.toString() ?? '';
             } else if (fieldCode === EnumOrkFieldCode.ork_event_type) {
                 fields[field.bitrixCamelId] =
                     field.items
-                        ?.find(item => item.code === dto.type)
+                        ?.find(item => item.code === (dto.type as string))
                         ?.bitrixId?.toString() ?? '';
             } else if (fieldCode === EnumOrkFieldCode.ork_event_date) {
                 fields[field.bitrixCamelId] = nowDateTime;
@@ -115,7 +115,7 @@ export class OrkHistoryBxListService {
                         ?.find(
                             item =>
                                 item.code ===
-                                EnumOrkResultStatus.ork_call_result_yes,
+                                (EnumOrkResultStatus.ork_call_result_yes as string),
                         )
                         ?.bitrixId?.toString() ?? '';
             } else if (fieldCode === EnumOrkFieldCode.crm) {
@@ -177,7 +177,6 @@ export class OrkHistoryBxListService {
     ): Record<string, any> {
         let result: Record<string, any> = {};
         for (const key in filter) {
-            const fieldCode = filter[key as keyof OrkFieldsInput];
             const pField = portalList.bitrixfields?.find(
                 field => field.code === key,
             );
@@ -247,8 +246,9 @@ export class OrkHistoryBxListService {
 
         return listItems.map(item => {
             const resultItem = {
-                id: item.ID,
-                title: item.NAME,
+                id: Number(item.ID as string),
+                title: item.NAME as string,
+                date: '',
                 // comapny: null,
                 // companyId: null,
                 // dealId: null,

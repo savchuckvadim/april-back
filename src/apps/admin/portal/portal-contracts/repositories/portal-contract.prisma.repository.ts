@@ -93,7 +93,7 @@ export class PortalContractPrismaRepository
         id: number,
         portalContract: Partial<portal_contracts>,
     ): Promise<portal_contracts | null> {
-        const updateData: any = {};
+        const updateData: Partial<portal_contracts> = {};
         if (portalContract.portal_id !== undefined)
             updateData.portal_id = BigInt(portalContract.portal_id);
         if (portalContract.contract_id !== undefined)

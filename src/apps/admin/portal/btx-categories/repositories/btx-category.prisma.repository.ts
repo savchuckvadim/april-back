@@ -88,7 +88,7 @@ export class BtxCategoryPrismaRepository implements BtxCategoryRepository {
         id: number,
         category: Partial<btx_categories>,
     ): Promise<btx_categories | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_categories> = {};
         if (category.entity_type !== undefined)
             updateData.entity_type = category.entity_type;
         if (category.entity_id !== undefined)

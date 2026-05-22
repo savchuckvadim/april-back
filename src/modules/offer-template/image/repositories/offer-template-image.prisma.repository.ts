@@ -27,7 +27,12 @@ export class OfferTemplateImagePrismaRepository
         parent?: 'template' | 'page' | 'block' | 'sticker' | 'other';
         is_public?: boolean;
     }): Promise<OfferTemplateImage[]> {
-        const where: any = {};
+        const where: {
+            portal_id?: bigint;
+            storage_type?: 'app' | 'public' | 'private';
+            parent?: 'template' | 'page' | 'block' | 'sticker' | 'other';
+            is_public?: boolean;
+        } = {};
 
         if (filters?.portal_id) {
             where.portal_id = filters.portal_id;

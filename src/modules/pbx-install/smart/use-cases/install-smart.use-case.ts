@@ -34,7 +34,7 @@ export class InstallSmartUseCase {
         private readonly pbxService: PBXService,
         private readonly installSmartCategoriesService: InstallSmartCategoriesService,
         private readonly fieldInstallByParse: PbxSmartFieldInstallByParseUseCase,
-    ) { }
+    ) {}
 
     async execute(dto: InstallSmartDto) {
         // Шаг 1–2: клиент Bitrix + описание смарта из шаблона (имя смарта и группа задают строку/лист).

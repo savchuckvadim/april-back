@@ -34,8 +34,9 @@ export class AdminPortalService {
             }
 
             return this.mapToResponseDto(portal);
-        } catch (error) {
-            if (error.code === 'P2002') {
+        } catch (error: unknown) {
+            const e = error as { code?: string };
+            if (e.code === 'P2002') {
                 throw new BadRequestException(
                     'Portal with this domain already exists',
                 );
@@ -57,7 +58,7 @@ export class AdminPortalService {
         if (!portals) {
             return [];
         }
-        return portals.map(this.mapToResponseDto);
+        return portals.map(p => this.mapToResponseDto(p));
     }
 
     async findByDomain(domain: string): Promise<AdminPortalResponseDto | null> {
@@ -73,7 +74,7 @@ export class AdminPortalService {
         if (!portals) {
             return [];
         }
-        return portals.map(this.mapToResponseDto);
+        return portals.map(p => this.mapToResponseDto(p));
     }
 
     async update(
@@ -85,29 +86,28 @@ export class AdminPortalService {
             throw new NotFoundException(`Portal with id ${id} not found`);
         }
 
-        try {
-            const updateData: Partial<Portal> = {};
-            if (dto.domain !== undefined) updateData.domain = dto.domain;
-            if (dto.key !== undefined) updateData.key = dto.key;
-            if (dto.C_REST_CLIENT_ID !== undefined)
-                updateData.C_REST_CLIENT_ID = dto.C_REST_CLIENT_ID;
-            if (dto.C_REST_CLIENT_SECRET !== undefined)
-                updateData.C_REST_CLIENT_SECRET = dto.C_REST_CLIENT_SECRET;
-            if (dto.C_REST_WEB_HOOK_URL !== undefined)
-                updateData.C_REST_WEB_HOOK_URL = dto.C_REST_WEB_HOOK_URL;
-            if (dto.number !== undefined) updateData.number = dto.number;
-            if (dto.client_id !== undefined)
-                updateData.client_id = dto.client_id
-                    ? BigInt(dto.client_id)
-                    : null;
+        const updateData: Partial<Portal> = {};
+        if (dto.domain !== undefined) updateData.domain = dto.domain;
+        if (dto.key !== undefined) updateData.key = dto.key;
+        if (dto.C_REST_CLIENT_ID !== undefined)
+            updateData.C_REST_CLIENT_ID = dto.C_REST_CLIENT_ID;
+        if (dto.C_REST_CLIENT_SECRET !== undefined)
+            updateData.C_REST_CLIENT_SECRET = dto.C_REST_CLIENT_SECRET;
+        if (dto.C_REST_WEB_HOOK_URL !== undefined)
+            updateData.C_REST_WEB_HOOK_URL = dto.C_REST_WEB_HOOK_URL;
+        if (dto.number !== undefined) updateData.number = dto.number;
+        if (dto.client_id !== undefined)
+            updateData.client_id = dto.client_id ? BigInt(dto.client_id) : null;
 
+        try {
             const updatedPortal = await this.repository.update(id, updateData);
             if (!updatedPortal) {
                 throw new BadRequestException('Failed to update portal');
             }
             return this.mapToResponseDto(updatedPortal);
-        } catch (error) {
-            if (error.code === 'P2002') {
+        } catch (error: unknown) {
+            const e = error as { code?: string };
+            if (e.code === 'P2002') {
                 throw new BadRequestException(
                     'Portal with this domain already exists',
                 );

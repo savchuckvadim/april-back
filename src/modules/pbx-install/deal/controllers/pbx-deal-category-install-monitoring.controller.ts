@@ -1,5 +1,10 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiTags,
+} from '@nestjs/swagger';
 
 import { PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
 import {
@@ -59,7 +64,8 @@ export class PbxDealCategoryInstallMonitoringController {
     @ApiParam({
         name: 'group',
         enum: PbxEntityGroupEnum,
-        description: 'Группа отдела: `sales` или `service`. Определяет папку Excel-файла.',
+        description:
+            'Группа отдела: `sales` или `service`. Определяет папку Excel-файла.',
     })
     @ApiOkResponse({
         description: 'Распарсенные категории сделки со стадиями.',

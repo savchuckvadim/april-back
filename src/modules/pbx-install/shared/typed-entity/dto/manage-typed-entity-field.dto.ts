@@ -24,36 +24,60 @@ const GROUP_DESCRIPTION =
     'Совпадает с `smarts.group` / `btx_rpa.group`.';
 
 export class DeleteTypedEntityFieldsDto extends DeleteEntityFieldsDto {
-    @ApiProperty({ description: TYPE_DESCRIPTION, example: 'presentation', type: String })
+    @ApiProperty({
+        description: TYPE_DESCRIPTION,
+        example: 'presentation',
+        type: String,
+    })
     @IsString()
     @IsNotEmpty()
     type: string;
 
-    @ApiProperty({ description: GROUP_DESCRIPTION, example: 'sales', type: String })
+    @ApiProperty({
+        description: GROUP_DESCRIPTION,
+        example: 'sales',
+        type: String,
+    })
     @IsString()
     @IsNotEmpty()
     group: string;
 }
 
 export class DeleteTypedEntityFieldItemDto extends DeleteEntityFieldItemDto {
-    @ApiProperty({ description: TYPE_DESCRIPTION, example: 'presentation', type: String })
+    @ApiProperty({
+        description: TYPE_DESCRIPTION,
+        example: 'presentation',
+        type: String,
+    })
     @IsString()
     @IsNotEmpty()
     type: string;
 
-    @ApiProperty({ description: GROUP_DESCRIPTION, example: 'sales', type: String })
+    @ApiProperty({
+        description: GROUP_DESCRIPTION,
+        example: 'sales',
+        type: String,
+    })
     @IsString()
     @IsNotEmpty()
     group: string;
 }
 
 export class EditTypedEntityFieldItemDto extends EditEntityFieldItemDto {
-    @ApiProperty({ description: TYPE_DESCRIPTION, example: 'presentation', type: String })
+    @ApiProperty({
+        description: TYPE_DESCRIPTION,
+        example: 'presentation',
+        type: String,
+    })
     @IsString()
     @IsNotEmpty()
     type: string;
 
-    @ApiProperty({ description: GROUP_DESCRIPTION, example: 'sales', type: String })
+    @ApiProperty({
+        description: GROUP_DESCRIPTION,
+        example: 'sales',
+        type: String,
+    })
     @IsString()
     @IsNotEmpty()
     group: string;

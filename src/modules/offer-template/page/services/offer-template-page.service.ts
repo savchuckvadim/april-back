@@ -159,7 +159,6 @@ export class OfferTemplatePageService {
         id: bigint,
         is_active: boolean,
     ): Promise<OfferTemplatePage> {
-        const page = await this.findById(id);
         return this.offerTemplatePageRepository.update(id, { is_active });
     }
 

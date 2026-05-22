@@ -3,7 +3,9 @@ import { BitrixImBridgeConfigService } from '../config/bitrix-im-bridge-config.s
 import { BitrixImEventDataService } from '../parsers/bitrix-im-event-data.service';
 import { ImV2Event } from '../../interfaces/bridge.types';
 
-const makeConfig = (overrides: Partial<BitrixImBridgeConfigService> = {}): BitrixImBridgeConfigService =>
+const makeConfig = (
+    overrides: Partial<BitrixImBridgeConfigService> = {},
+): BitrixImBridgeConfigService =>
     ({
         isPortalAllowed: () => true,
         isUserAllowed: () => true,
@@ -39,13 +41,21 @@ describe('BitrixImEventFilterService', () => {
 
     it('пропускает личное сообщение', () => {
         const service = new BitrixImEventFilterService(makeConfig(), parser);
-        const result = service.shouldProcess('test.bitrix24.ru', '1', privateEvent(5));
+        const result = service.shouldProcess(
+            'test.bitrix24.ru',
+            '1',
+            privateEvent(5),
+        );
         expect(result.allowed).toBe(true);
     });
 
     it('блокирует сообщение из группового чата', () => {
         const service = new BitrixImEventFilterService(makeConfig(), parser);
-        const result = service.shouldProcess('test.bitrix24.ru', '1', groupEvent(5));
+        const result = service.shouldProcess(
+            'test.bitrix24.ru',
+            '1',
+            groupEvent(5),
+        );
         expect(result.allowed).toBe(false);
         expect(result.reason).toBe('not_private_dialog');
     });
@@ -55,7 +65,11 @@ describe('BitrixImEventFilterService', () => {
             makeConfig({ isPortalAllowed: () => false }),
             parser,
         );
-        const result = service.shouldProcess('blocked.bitrix24.ru', '1', privateEvent());
+        const result = service.shouldProcess(
+            'blocked.bitrix24.ru',
+            '1',
+            privateEvent(),
+        );
         expect(result.allowed).toBe(false);
         expect(result.reason).toBe('portal_not_in_whitelist');
     });
@@ -70,7 +84,11 @@ describe('BitrixImEventFilterService', () => {
 
     it('блокирует self-message', () => {
         const service = new BitrixImEventFilterService(makeConfig(), parser);
-        const result = service.shouldProcess('test.bitrix24.ru', '5', privateEvent(5));
+        const result = service.shouldProcess(
+            'test.bitrix24.ru',
+            '5',
+            privateEvent(5),
+        );
         expect(result.allowed).toBe(false);
         expect(result.reason).toBe('self_message');
     });
@@ -80,7 +98,11 @@ describe('BitrixImEventFilterService', () => {
             makeConfig({ isUserAllowed: () => false }),
             parser,
         );
-        const result = service.shouldProcess('test.bitrix24.ru', '1', privateEvent(5));
+        const result = service.shouldProcess(
+            'test.bitrix24.ru',
+            '1',
+            privateEvent(5),
+        );
         expect(result.allowed).toBe(false);
         expect(result.reason).toBe('user_not_in_whitelist');
     });

@@ -6,7 +6,12 @@ import {
     PbxCompanyFieldSearchResultResponse,
     PbxCompanySearchService,
 } from '../services/pbx-company-search.service';
-import { EntityParseData, ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '../../shared/entity/field/parse-entity-field.service';
+import {
+    EntityParseData,
+    ParseEntityFieldsAppName,
+    ParseEntityFieldsService,
+    PbxEntityGroupEnum,
+} from '../../shared/entity/field/parse-entity-field.service';
 import { PbxEntityType } from '@/shared';
 
 @ApiTags('PBX Company Install Monitoring')
@@ -16,7 +21,7 @@ export class PbxCompanyInstallMonitoringController {
         private readonly monitoringService: PbxCompanyMonitoringService,
         private readonly parseService: ParseEntityFieldsService,
         private readonly searchService: PbxCompanySearchService,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Get company data by domain',
@@ -45,7 +50,7 @@ export class PbxCompanyInstallMonitoringController {
         return await this.parseService.getParsedData(
             PbxEntityType.BTX_COMPANY,
             appName,
-            group
+            group,
         );
     }
 
@@ -65,6 +70,4 @@ export class PbxCompanyInstallMonitoringController {
     ): Promise<PbxCompanyFieldSearchResultResponse> {
         return await this.searchService.search(domain, group, search);
     }
-
-
 }

@@ -24,7 +24,7 @@ export class PortalService {
     async getPortalByDomain(domain: string): Promise<IPortal> {
         this.logger.log(`Getting portal for domain: ${domain}`);
         const cacheKey = `portal_${domain}`;
-        const cached = await this.redis.get(cacheKey) as string;
+        const cached = (await this.redis.get(cacheKey)) as string;
 
         if (cached) {
             this.logger.log('Returning cached portal');

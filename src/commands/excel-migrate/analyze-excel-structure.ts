@@ -35,13 +35,20 @@ async function analyzeExcelStructure(filePath: string) {
                         typeof cell.value === 'object' &&
                         'richText' in cell.value
                     ) {
-                        value = cell.value.richText
-                            .map((rt: any) => rt.text || '')
+                        value = (
+                            cell.value as { richText: { text?: string }[] }
+                        ).richText
+                            .map(rt => rt.text || '')
                             .join('');
                     } else if (cell.value instanceof Date) {
                         value = cell.value.toISOString();
+                    } else if (
+                        cell.value !== null &&
+                        typeof cell.value === 'object'
+                    ) {
+                        value = JSON.stringify(cell.value);
                     } else {
-                        value = String(cell.value);
+                        value = String(cell.value as string | number | boolean);
                     }
                 }
 

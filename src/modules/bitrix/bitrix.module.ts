@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { TelegramModule } from '../telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
@@ -11,7 +11,6 @@ import { BitrixCoreModule } from './core/bitrix-core.module';
 import { BitrixService } from './bitrix.service';
 import { BitrixServiceFactory } from './bitrix-service.factory';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
-import { BitrixApiFactoryService } from './core';
 import { BitrixAuthService } from './auth/bitrix-auth.service';
 import { BitrixSetupModule } from '../bitrix-setup/bitrix-setup.module';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\bitrix.module.ts

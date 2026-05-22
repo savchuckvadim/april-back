@@ -36,7 +36,7 @@ export class MeasurePrismaRepository implements MeasureRepository {
         id: number,
         measure: Partial<measures>,
     ): Promise<measures | null> {
-        const updateData: any = {};
+        const updateData: Partial<measures> = {};
         if (measure.name !== undefined) updateData.name = measure.name;
         if (measure.shortName !== undefined)
             updateData.shortName = measure.shortName;

@@ -1,7 +1,6 @@
 import { EBxMethod } from 'src/modules/bitrix/core';
 import { IBXField } from '../../crm';
 import { IBXUser } from '../../interfaces/bitrix.interface';
-import { CrmGetRequestType } from '../../crm/type/crm-request.type';
 import {
     AddRequestType,
     ListRequestType,
@@ -22,7 +21,7 @@ export type UserSchema = {
         response: IBXUser[];
     };
     [EBxMethod.CURRENT]: {
-        request: {};
+        request: object;
         response: IBXUser;
     };
     [EBxMethod.UPDATE]: {
@@ -32,7 +31,7 @@ export type UserSchema = {
     [EBxMethod.FIELDS]: {
         //получить список имен полей пользователя
         request: undefined;
-        response: { [key in keyof IBXUser & string]?: string };
+        response: { [key in keyof IBXUser]?: string };
     };
 
     [EBxMethod.USER_FIELD_LIST]: {

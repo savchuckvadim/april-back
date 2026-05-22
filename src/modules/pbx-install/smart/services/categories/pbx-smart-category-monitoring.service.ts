@@ -182,7 +182,9 @@ export class PbxSmartCategoryMonitoringService {
 }
 
 function normalizeKey(v: unknown): string {
-    return String(v ?? '').trim().toLowerCase();
+    return String(v ?? '')
+        .trim()
+        .toLowerCase();
 }
 
 function matchCategory(
@@ -208,9 +210,7 @@ function buildMergedCategory(
     for (const ps of portalStages) {
         const bs =
             bitrixStages.find(
-                s =>
-                    statusIdSuffix(s.STATUS_ID) ===
-                    normalizeKey(ps.bitrixId),
+                s => statusIdSuffix(s.STATUS_ID) === normalizeKey(ps.bitrixId),
             ) ?? null;
         if (bs?.STATUS_ID) usedBxStatusIds.add(bs.STATUS_ID);
         mergedStages.push({ bitrixId: ps.bitrixId, p: ps, bx: bs });

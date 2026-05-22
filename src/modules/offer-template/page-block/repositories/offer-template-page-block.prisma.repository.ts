@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { offer_template_page_blocks_type } from 'generated/prisma';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { OfferTemplatePageBlockRepository } from './offer-template-page-block.repository';
 import { OfferTemplatePageBlock } from '../entities/offer-template-page-block.entity';
-import { OfferTemplatePageBlockDto } from '../dtos/offer-template-page-block.dto';
 import { CreateOfferTemplatePageBlockDto } from '../dtos/create-offer-template-page-block.dto';
 
 @Injectable()
@@ -48,7 +48,10 @@ export class OfferTemplatePageBlockPrismaRepository
             | 'user'
             | 'default';
     }): Promise<OfferTemplatePageBlock[]> {
-        const where: any = {};
+        const where: {
+            offer_template_page_id?: bigint;
+            type?: offer_template_page_blocks_type;
+        } = {};
 
         if (filters?.offer_template_page_id) {
             where.offer_template_page_id = filters.offer_template_page_id;

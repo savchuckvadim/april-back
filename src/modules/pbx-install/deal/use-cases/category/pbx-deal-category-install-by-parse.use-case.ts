@@ -24,7 +24,7 @@ export class PbxDealCategoryInstallByParseUseCase {
     constructor(
         private readonly parseCategoryService: ParseCategoryService,
         private readonly installService: InstallDealCategoriesService,
-    ) { }
+    ) {}
 
     async installDealCategories(
         domain: string,
@@ -35,6 +35,9 @@ export class PbxDealCategoryInstallByParseUseCase {
             categoryName,
             group,
         );
-        return this.installService.installTemplateCategories(domain, categories);
+        return this.installService.installTemplateCategories(
+            domain,
+            categories,
+        );
     }
 }

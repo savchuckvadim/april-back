@@ -32,7 +32,7 @@ export class BitrixServiceFactory {
             authType === BxAuthType.TOKEN
                 ? await this.authService.getFreshToken(portal.domain)
                 : undefined;
-        const bitrixApi = await this.bitrixApiFactoryService.create(
+        const bitrixApi = this.bitrixApiFactoryService.create(
             portal,
             authType,
             token,

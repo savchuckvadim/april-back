@@ -22,7 +22,7 @@ export class GetPbxSmartUseCase {
     constructor(
         private readonly portalSmartService: PortalSmartService,
         private readonly pbx: PBXService,
-    ) { }
+    ) {}
 
     async getPbxSmartByName(
         data: GetPbxSmartByNameDto,

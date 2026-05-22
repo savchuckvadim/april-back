@@ -19,6 +19,11 @@ export class TelegramChatBotService implements OnModuleInit {
     constructor(private readonly config: ConfigService) {}
 
     onModuleInit(): void {
+        const withTelegram = this.config.get<boolean>('WITH_TELEGRAM');
+        if (!withTelegram) {
+            this.logger.warn('WITH_TELEGRAM не задан — бот отключён');
+            return;
+        }
         const token = this.config.get<string>('TELEGRAM_CHAT_BOT_TOKEN');
         if (!token) {
             this.logger.warn('TELEGRAM_CHAT_BOT_TOKEN не задан — бот отключён');

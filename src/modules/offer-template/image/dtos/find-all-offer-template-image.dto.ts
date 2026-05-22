@@ -1,11 +1,5 @@
-import {
-    IsString,
-    IsOptional,
-    IsBoolean,
-    IsEnum,
-    IsNumber,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsBoolean, IsEnum, IsNumber } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { StorageType, ImageParent } from './create-offer-template-image.dto';
 
 export class OfferTemplateImageQueryDto {

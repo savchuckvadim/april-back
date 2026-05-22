@@ -660,12 +660,6 @@ type OrkFieldItem = {
     code: string;
 };
 
-type OrkField = {
-    name: string;
-    code: string;
-    items?: Record<string, OrkFieldItem>;
-};
-
 export type OrkFieldCode = keyof typeof OrkFields;
 export type OrkItemCode<T extends OrkFieldCode> =
     T extends keyof typeof OrkFields

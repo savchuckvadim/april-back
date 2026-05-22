@@ -53,7 +53,7 @@ export class BtxDealPrismaRepository implements BtxDealRepository {
         id: number,
         deal: Partial<btx_deals>,
     ): Promise<btx_deals | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_deals> = {};
         if (deal.name !== undefined) updateData.name = deal.name;
         if (deal.title !== undefined) updateData.title = deal.title;
         if (deal.code !== undefined) updateData.code = deal.code;

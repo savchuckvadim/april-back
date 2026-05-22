@@ -4,7 +4,11 @@ import * as ExcelJS from 'exceljs';
 import { Smart } from '../../type/parse.type';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { EUserFieldType } from '@/modules/bitrix';
-import { Category, Stage, unwrapExcelCellValue } from '@/modules/pbx-install/shared';
+import {
+    Category,
+    Stage,
+    unwrapExcelCellValue,
+} from '@/modules/pbx-install/shared';
 import { PbxEntityType } from '@/shared';
 import { ParseSmartFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
 
@@ -76,7 +80,7 @@ export class ParseSmartService {
     constructor(
         private readonly storageService: StorageService,
         private readonly parseFieldsService: ParseSmartFieldsService,
-    ) { }
+    ) {}
 
     async getParsedData(
         smartName: SmartNameEnum,
@@ -347,5 +351,4 @@ export class ParseSmartService {
         console.log('stages', stages);
         return stages;
     }
-
 }

@@ -4,7 +4,12 @@ import * as ExcelJS from 'exceljs';
 import { unwrapExcelCellValue } from '@/modules/pbx-install/shared';
 import { PbxEntityType } from '@/shared';
 import { ParseSmartFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
-import { List, ListFolderEnum, ListGroupEnum, ListNameEnum } from '../../type/parse.type';
+import {
+    List,
+    ListFolderEnum,
+    ListGroupEnum,
+    ListNameEnum,
+} from '../../type/parse.type';
 
 /** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
 type ListImportSheetRow = readonly [
@@ -33,7 +38,7 @@ export class ParseListService {
     constructor(
         private readonly storageService: StorageService,
         private readonly parseFieldsService: ParseSmartFieldsService,
-    ) { }
+    ) {}
 
     async getParsedData(
         listFolder: ListFolderEnum,
@@ -66,13 +71,7 @@ export class ParseListService {
         const fieldsSheet = workbook.worksheets[2];
         const fieldItemsSheet = workbook.worksheets[3];
 
-
-
-        const data = this.createLists(
-            listsSheet,
-            fieldsSheet,
-            fieldItemsSheet,
-        );
+        const data = this.createLists(listsSheet, fieldsSheet, fieldItemsSheet);
 
         return data;
     }
@@ -86,8 +85,6 @@ export class ParseListService {
         const baseListsData = this.getBaseListsData(listsSheet);
 
         baseListsData.forEach(list => {
-
-
             list.fields = this.parseFieldsService.getFieldsData(
                 fieldsSheet,
                 fieldItemsSheet,
@@ -111,23 +108,15 @@ export class ParseListService {
                 .slice(1)
                 .map(unwrapExcelCellValue) as unknown as ListImportSheetRow;
 
-            const [
-                id,
-                type,
-                group,
-                name,
-                code,
-                isActive,
-                order
-            ] = values;
+            const [id, type, group, name, code, isActive, order] = values;
 
-            console.log('id', id)
-            console.log('type', type)
-            console.log('group', group)
-            console.log('name', name)
-            console.log('code', code)
-            console.log('isActive', isActive)
-            console.log('order', order)
+            console.log('id', id);
+            console.log('type', type);
+            console.log('group', group);
+            console.log('name', name);
+            console.log('code', code);
+            console.log('isActive', isActive);
+            console.log('order', order);
             const list: List = {
                 id,
                 type,
@@ -144,7 +133,4 @@ export class ParseListService {
 
         return resultLists;
     }
-
-
-
 }

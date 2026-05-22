@@ -57,7 +57,11 @@ export class BitrixImBridgeController {
     @ApiOperation({
         summary: 'Зарегистрировать вебхук Telegram bridge-бота',
     })
-    @ApiQuery({ name: 'url', description: 'Полный URL вебхука', required: true })
+    @ApiQuery({
+        name: 'url',
+        description: 'Полный URL вебхука',
+        required: true,
+    })
     @Post('telegram/webhook-register')
     async telegramWebhookRegister(@Query('url') url: string) {
         await this.telegramBridge.registerWebhook(url);

@@ -8,7 +8,6 @@ import {
     Param,
     Query,
     ParseIntPipe,
-    HttpStatus,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ClientService } from '@/modules/client/services/client.service';
@@ -18,7 +17,7 @@ import {
     ClientResponseDto,
     ClientWithRelationsResponseDto,
 } from '@/modules/client/dto/client-response.dto';
-import { SuccessResponseDto, EResultCode, ErrorResponseDto } from '@/core';
+import { ErrorResponseDto } from '@/core';
 
 @ApiTags('Admin Client Management')
 @Controller('admin/clients')
@@ -74,7 +73,7 @@ export class AdminClientController {
         @Query('status') status?: string,
         @Query('is_active') isActive?: string,
     ): Promise<ClientResponseDto[]> {
-        let clients;
+        let clients: ClientResponseDto[];
         if (status) {
             clients = await this.clientService.findByStatus(status);
         } else if (isActive !== undefined) {

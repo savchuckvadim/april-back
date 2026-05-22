@@ -14,31 +14,27 @@ export class SmartService {
     constructor(private readonly repository: SmartRepository) {}
 
     async create(dto: CreateSmartDto): Promise<SmartResponseDto> {
-        try {
-            const smart = await this.repository.create({
-                type: dto.type,
-                group: dto.group,
-                name: dto.name,
-                title: dto.title,
-                entityTypeId: BigInt(dto.entityTypeId),
-                portal_id: BigInt(dto.portal_id),
-                bitrixId: BigInt(dto.bitrixId),
-                forStageId: BigInt(dto.forStageId),
-                forFilterId: BigInt(dto.forFilterId),
-                crmId: BigInt(dto.crmId),
-                forStage: dto.forStage,
-                forFilter: dto.forFilter,
-                crm: dto.crm,
-            });
+        const smart = await this.repository.create({
+            type: dto.type,
+            group: dto.group,
+            name: dto.name,
+            title: dto.title,
+            entityTypeId: BigInt(dto.entityTypeId),
+            portal_id: BigInt(dto.portal_id),
+            bitrixId: BigInt(dto.bitrixId),
+            forStageId: BigInt(dto.forStageId),
+            forFilterId: BigInt(dto.forFilterId),
+            crmId: BigInt(dto.crmId),
+            forStage: dto.forStage,
+            forFilter: dto.forFilter,
+            crm: dto.crm,
+        });
 
-            if (!smart) {
-                throw new BadRequestException('Failed to create smart');
-            }
-
-            return this.mapToResponseDto(smart);
-        } catch (error) {
-            throw error;
+        if (!smart) {
+            throw new BadRequestException('Failed to create smart');
         }
+
+        return this.mapToResponseDto(smart);
     }
 
     async findById(id: number): Promise<SmartResponseDto> {
@@ -54,7 +50,7 @@ export class SmartService {
         if (!smarts) {
             return [];
         }
-        return smarts.map(this.mapToResponseDto);
+        return smarts.map(s => this.mapToResponseDto(s));
     }
 
     async findByPortalId(portalId: number): Promise<SmartResponseDto[]> {
@@ -62,7 +58,7 @@ export class SmartService {
         if (!smarts) {
             return [];
         }
-        return smarts.map(this.mapToResponseDto);
+        return smarts.map(s => this.mapToResponseDto(s));
     }
 
     async update(id: number, dto: UpdateSmartDto): Promise<SmartResponseDto> {
@@ -71,43 +67,36 @@ export class SmartService {
             throw new NotFoundException(`Smart with id ${id} not found`);
         }
 
-        try {
-            const updateData: Partial<smarts> = {};
-            if (dto.type !== undefined) updateData.type = dto.type;
-            if (dto.group !== undefined) updateData.group = dto.group;
-            if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.title !== undefined) updateData.title = dto.title;
-            if (dto.entityTypeId !== undefined)
-                updateData.entityTypeId = BigInt(dto.entityTypeId);
-            if (dto.portal_id !== undefined)
-                updateData.portal_id = BigInt(dto.portal_id);
-            if (dto.bitrixId !== undefined)
-                updateData.bitrixId = dto.bitrixId
-                    ? BigInt(dto.bitrixId)
-                    : null;
-            if (dto.forStageId !== undefined)
-                updateData.forStageId = dto.forStageId
-                    ? BigInt(dto.forStageId)
-                    : null;
-            if (dto.forFilterId !== undefined)
-                updateData.forFilterId = dto.forFilterId
-                    ? BigInt(dto.forFilterId)
-                    : null;
-            if (dto.crmId !== undefined)
-                updateData.crmId = dto.crmId ? BigInt(dto.crmId) : null;
-            if (dto.forStage !== undefined) updateData.forStage = dto.forStage;
-            if (dto.forFilter !== undefined)
-                updateData.forFilter = dto.forFilter;
-            if (dto.crm !== undefined) updateData.crm = dto.crm;
+        const updateData: Partial<smarts> = {};
+        if (dto.type !== undefined) updateData.type = dto.type;
+        if (dto.group !== undefined) updateData.group = dto.group;
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.title !== undefined) updateData.title = dto.title;
+        if (dto.entityTypeId !== undefined)
+            updateData.entityTypeId = BigInt(dto.entityTypeId);
+        if (dto.portal_id !== undefined)
+            updateData.portal_id = BigInt(dto.portal_id);
+        if (dto.bitrixId !== undefined)
+            updateData.bitrixId = dto.bitrixId ? BigInt(dto.bitrixId) : null;
+        if (dto.forStageId !== undefined)
+            updateData.forStageId = dto.forStageId
+                ? BigInt(dto.forStageId)
+                : null;
+        if (dto.forFilterId !== undefined)
+            updateData.forFilterId = dto.forFilterId
+                ? BigInt(dto.forFilterId)
+                : null;
+        if (dto.crmId !== undefined)
+            updateData.crmId = dto.crmId ? BigInt(dto.crmId) : null;
+        if (dto.forStage !== undefined) updateData.forStage = dto.forStage;
+        if (dto.forFilter !== undefined) updateData.forFilter = dto.forFilter;
+        if (dto.crm !== undefined) updateData.crm = dto.crm;
 
-            const updatedSmart = await this.repository.update(id, updateData);
-            if (!updatedSmart) {
-                throw new BadRequestException('Failed to update smart');
-            }
-            return this.mapToResponseDto(updatedSmart);
-        } catch (error) {
-            throw error;
+        const updatedSmart = await this.repository.update(id, updateData);
+        if (!updatedSmart) {
+            throw new BadRequestException('Failed to update smart');
         }
+        return this.mapToResponseDto(updatedSmart);
     }
 
     async delete(id: number): Promise<void> {

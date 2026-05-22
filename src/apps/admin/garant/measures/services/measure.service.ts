@@ -14,23 +14,19 @@ export class MeasureService {
     constructor(private readonly repository: MeasureRepository) {}
 
     async create(dto: CreateMeasureDto): Promise<MeasureResponseDto> {
-        try {
-            const measure = await this.repository.create({
-                name: dto.name,
-                shortName: dto.shortName,
-                fullName: dto.fullName,
-                code: dto.code,
-                type: dto.type,
-            });
+        const measure = await this.repository.create({
+            name: dto.name,
+            shortName: dto.shortName,
+            fullName: dto.fullName,
+            code: dto.code,
+            type: dto.type,
+        });
 
-            if (!measure) {
-                throw new BadRequestException('Failed to create measure');
-            }
-
-            return this.mapToResponseDto(measure);
-        } catch (error) {
-            throw error;
+        if (!measure) {
+            throw new BadRequestException('Failed to create measure');
         }
+
+        return this.mapToResponseDto(measure);
     }
 
     async findById(id: number): Promise<MeasureResponseDto> {
@@ -46,7 +42,7 @@ export class MeasureService {
         if (!measures) {
             return [];
         }
-        return measures.map(this.mapToResponseDto);
+        return measures.map(m => this.mapToResponseDto(m));
     }
 
     async update(
@@ -58,23 +54,18 @@ export class MeasureService {
             throw new NotFoundException(`Measure with id ${id} not found`);
         }
 
-        try {
-            const updateData: Partial<measures> = {};
-            if (dto.name !== undefined) updateData.name = dto.name;
-            if (dto.shortName !== undefined)
-                updateData.shortName = dto.shortName;
-            if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
-            if (dto.code !== undefined) updateData.code = dto.code;
-            if (dto.type !== undefined) updateData.type = dto.type;
+        const updateData: Partial<measures> = {};
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.shortName !== undefined) updateData.shortName = dto.shortName;
+        if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
+        if (dto.code !== undefined) updateData.code = dto.code;
+        if (dto.type !== undefined) updateData.type = dto.type;
 
-            const updatedMeasure = await this.repository.update(id, updateData);
-            if (!updatedMeasure) {
-                throw new BadRequestException('Failed to update measure');
-            }
-            return this.mapToResponseDto(updatedMeasure);
-        } catch (error) {
-            throw error;
+        const updatedMeasure = await this.repository.update(id, updateData);
+        if (!updatedMeasure) {
+            throw new BadRequestException('Failed to update measure');
         }
+        return this.mapToResponseDto(updatedMeasure);
     }
 
     async delete(id: number): Promise<void> {

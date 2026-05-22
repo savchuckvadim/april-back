@@ -24,7 +24,7 @@ export class PbxSmartFieldInstallController {
         private readonly parseUseCase: PbxSmartFieldInstallByParseUseCase,
         private readonly fieldUseCase: PbxSmartFieldInstallByFieldUseCase,
         private readonly manageUseCase: PbxSmartFieldManageUseCase,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Install smart fields by portal, smartName and group',

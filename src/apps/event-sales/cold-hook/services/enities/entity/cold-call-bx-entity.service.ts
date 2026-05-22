@@ -18,7 +18,7 @@ export class ColdCallBxEntityService {
     constructor(
         private readonly bitrix: BitrixService,
         private readonly portal: PortalModel,
-    ) { }
+    ) {}
 
     flow(data: IColdCallBxEntityData) {
         const { name, deadline, responsible, xoCreated, entity, entityType } =
@@ -50,6 +50,4 @@ export class ColdCallBxEntityService {
             nextValues,
         );
     }
-
-
 }

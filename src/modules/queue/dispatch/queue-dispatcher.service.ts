@@ -39,7 +39,6 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL)
         private readonly eventSalesColdCallQueue: Queue,
 
-
         //очепедь для ожидания данных в тишине
         @InjectQueue(QueueNames.EVENT_SILENT)
         private readonly eventSilentQueue: Queue,

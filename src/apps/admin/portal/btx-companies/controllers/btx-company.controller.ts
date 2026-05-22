@@ -14,7 +14,6 @@ import { BtxCompanyService } from '../services/btx-company.service';
 import { CreateBtxCompanyDto } from '../dto/create-btx-company.dto';
 import { UpdateBtxCompanyDto } from '../dto/update-btx-company.dto';
 import { BtxCompanyResponseDto } from '../dto/btx-company-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Companies Management')
 @Controller('admin/pbx/btx-companies')
@@ -59,7 +58,7 @@ export class BtxCompanyController {
     async getAllCompanies(
         @Query('portal_id') portalId?: string,
     ): Promise<BtxCompanyResponseDto[]> {
-        let companies;
+        let companies: BtxCompanyResponseDto[];
         if (portalId) {
             companies = await this.companyService.findByPortalId(
                 Number(portalId),

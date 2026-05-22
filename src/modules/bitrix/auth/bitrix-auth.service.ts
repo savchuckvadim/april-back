@@ -4,8 +4,12 @@ import { BitrixAppService } from '../../bitrix-setup/app/services/bitrix-app.ser
 import { firstValueFrom } from 'rxjs';
 import { BitrixTokenService } from '../../bitrix-setup/token/services/bitrix-token.service';
 import { BITRIX_APP_CODES } from 'src/modules/bitrix-setup/app/enums/bitrix-app.enum';
-import { decrypt } from '@/shared/lib/utils/crypt.util';
 
+interface BitrixOAuthTokenResponse {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+}
 @Injectable()
 export class BitrixAuthService {
     constructor(
@@ -22,7 +26,8 @@ export class BitrixAuthService {
             throw new Error(`Bitrix app not installed for domain: ${domain}`);
         }
 
-        let { access_token, expires_at } = app.bitrix_tokens || {};
+        const { expires_at } = app.bitrix_tokens || {};
+        let { access_token } = app.bitrix_tokens || {};
         if (!access_token || !expires_at) {
             throw new Error(`Bitrix token not found for domain: ${domain}`);
         }
@@ -58,7 +63,9 @@ export class BitrixAuthService {
 
         const url = `https://${domain}/oauth/token/?grant_type=refresh_token&client_id=${clientId}&client_secret=${clientSecret}&refresh_token=${refreshToken}`;
         console.log('BitrixAuthService url', url);
-        const response = await firstValueFrom(this.http.get(url));
+        const response = await firstValueFrom(
+            this.http.get<BitrixOAuthTokenResponse>(url),
+        );
         const data = response.data;
 
         if (!data.access_token) {

@@ -7,7 +7,6 @@ import {
     Param,
     Delete,
     Query,
-    ParseIntPipe,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
@@ -16,6 +15,7 @@ import { OfferTemplatePageService } from '../services/offer-template-page.servic
 import { OfferTemplatePage } from '../entities/offer-template-page.entity';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OfferTemplatePageQueryDto } from '../dtos/find-all-offer-template-page.dto';
+import { PageType } from '../dtos/create-offer-template-page.dto';
 import {
     OfferTemplatePageIdParamsDto,
     OfferTemplatePageTemplateIdParamsDto,
@@ -57,7 +57,11 @@ export class OfferTemplatePageController {
         @Query() query?: OfferTemplatePageQueryDto,
     ): Promise<OfferTemplatePage[]> {
         const { offer_template_id, type, is_active } = query || {};
-        const filters: any = {};
+        const filters: {
+            offer_template_id?: bigint;
+            type?: PageType;
+            is_active?: boolean;
+        } = {};
 
         if (offer_template_id)
             filters.offer_template_id = BigInt(offer_template_id);

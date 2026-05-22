@@ -1,19 +1,15 @@
 import {
     Controller,
-    Get,
     Post,
     Body,
     Patch,
     Param,
     Delete,
-    Query,
-    ParseIntPipe,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
 import { OfferTemplatePortalService } from '../services/offer-template-portal.service';
 import { CreateOfferTemplatePortalDto } from '../dtos/create-offer-template-portal.dto';
-import { UpdateOfferTemplatePortalDto } from '../dtos/update-offer-template-portal.dto';
 import { OfferTemplatePortal } from '../entities/offer-template-portal.entity';
 import { OfferTemplatePortalIdParamsDto } from '../dtos/offer-template-portal-params.dto';
 

@@ -56,7 +56,6 @@ export class BxTypedEntityFieldsInstallService {
         this.pbxService = pbxService;
         this.ctx = ctx;
         this.parseFields = parseFields;
-
     }
 
     private async init(): Promise<void> {
@@ -92,7 +91,7 @@ export class BxTypedEntityFieldsInstallService {
         const listData = {
             moduleId: this.ctx.moduleId,
             filter: { entityId: this.ctx.bitrixEntityId },
-        }
+        };
         const response = await this.bitrix.userFieldConfig.list(listData);
         const result = response.result as
             | { fields?: IUserFieldConfig[] }
@@ -109,7 +108,11 @@ export class BxTypedEntityFieldsInstallService {
             // if (!parseField.isNeedUpdate) continue;
             const fieldName = this.buildBxFieldName(parseField.bxFieldName);
             const existingField = existing.find(f => f.fieldName === fieldName);
-            const payload = this.buildPayload(parseField, fieldName, existingField);
+            const payload = this.buildPayload(
+                parseField,
+                fieldName,
+                existingField,
+            );
 
             if (existingField?.id != null) {
                 this.bitrix.batch.userFieldConfig.updateBtch(parseField.code, {
@@ -242,11 +245,7 @@ export class BxTypedEntityFieldsInstallService {
                 await this.bitrix.api.callBatchWithConcurrency(1);
             const { errorCodes: batchErrorCodes, results: batchResults } =
                 this.prepareBatchResult(batchResponse);
-            errorCodes.splice(
-                0,
-                errorCodes.length,
-                ...batchErrorCodes,
-            );
+            errorCodes.splice(0, errorCodes.length, ...batchErrorCodes);
             results.push(...batchResults);
             retryCount++;
         }

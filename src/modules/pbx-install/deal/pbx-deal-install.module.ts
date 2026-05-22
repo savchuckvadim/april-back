@@ -63,4 +63,4 @@ import { InstallStageModule } from '../stage';
         PbxDealCategoryManageUseCase,
     ],
 })
-export class PbxDealInstallModule { }
+export class PbxDealInstallModule {}

@@ -8,7 +8,11 @@ import { PbxFieldEntityDto } from '@/modules/pbx-domain';
 import { IBXField } from '@/modules/bitrix';
 import { Field } from '@/modules/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { PbxEntityType } from '@/shared';
-import { ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
+import {
+    ParseEntityFieldsAppName,
+    ParseEntityFieldsService,
+    PbxEntityGroupEnum,
+} from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
 
 export interface PbxDealFieldSearchResult {
     pbx: PbxFieldEntityDto | null;
@@ -26,7 +30,7 @@ export class PbxDealSearchService {
     constructor(
         private readonly parseDealService: ParseEntityFieldsService,
         private readonly pbxDealMonitoringService: PbxDealMonitoringService,
-    ) { }
+    ) {}
 
     async search(
         domain: string,

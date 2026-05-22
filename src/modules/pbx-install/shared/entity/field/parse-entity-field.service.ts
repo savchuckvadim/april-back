@@ -27,7 +27,7 @@ export class ParseEntityFieldsService {
     constructor(
         private readonly storageService: StorageService,
         private readonly parseFieldsService: ParseFieldsService,
-    ) { }
+    ) {}
 
     async getParsedData(
         entity: PbxEntityType,

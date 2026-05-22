@@ -1,7 +1,7 @@
 export interface IBXItem {
     id?: number | string;
     categoryId?: number | string;
-    stageId?: `C${number | string}:${string}` | string;
+    stageId?: string;
     parentId2?: number | string; //id родительской сделки
     title?: string;
 

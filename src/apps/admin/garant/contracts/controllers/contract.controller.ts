@@ -13,7 +13,6 @@ import { ContractService } from '../services/contract.service';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
 import { ContractResponseDto } from '../dto/contract-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Contracts Management')
 @Controller('admin/contracts')

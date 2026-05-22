@@ -34,7 +34,11 @@ export class BxTypedEntityFieldManageService {
     private readonly pbxService: PBXService;
     private readonly ctx: TypedEntityFieldCtx;
 
-    constructor(domain: string, pbxService: PBXService, ctx: TypedEntityFieldCtx) {
+    constructor(
+        domain: string,
+        pbxService: PBXService,
+        ctx: TypedEntityFieldCtx,
+    ) {
         this.domain = domain;
         this.pbxService = pbxService;
         this.ctx = ctx;
@@ -101,7 +105,9 @@ export class BxTypedEntityFieldManageService {
                     code,
                     bxFieldId,
                     deleted: !errorCodes.has(code),
-                    error: errorCodes.has(code) ? 'bitrix batch error' : undefined,
+                    error: errorCodes.has(code)
+                        ? 'bitrix batch error'
+                        : undefined,
                 });
             }
         }

@@ -1,14 +1,8 @@
 import { EBxMethod } from '../../../core/domain/consts/bitrix-api.enum';
-import { IBXList } from '../../interfaces/bitrix.interface';
 
 export type BxListItemGetRequestType = {
     IBLOCK_TYPE_ID: 'lists';
-    IBLOCK_CODE?:
-        | string
-        | 'sales_kpi'
-        | 'sales_history'
-        | 'presentation'
-        | 'ork_history';
+    IBLOCK_CODE?: string;
     IBLOCK_ID?: string;
     filter?: Record<string, any>;
     select?: string[];

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { BitrixOwnerTypeId, BitrixService, IBXDeal } from 'src/modules/bitrix/';
-import { PortalService } from 'src/modules/portal';
 import { GetDealsDto, ReplaceDealsDto } from './dto/get-deals.dto';
 import { PBXService } from '@/modules/pbx/pbx.service';
 @Injectable()
@@ -10,7 +9,7 @@ export class ChangeDealCategoryService {
     constructor(private readonly pbx: PBXService) {}
 
     async getDeals(dto: GetDealsDto) {
-        const { bitrix, portal, PortalModel } = await this.pbx.init(dto.domain);
+        const { bitrix } = await this.pbx.init(dto.domain);
         this.bitrix = bitrix;
 
         let more = true;
@@ -97,7 +96,7 @@ export class ChangeDealCategoryService {
         );
         startId = response.result[response.result.length - 1].ID;
         const batchesCount = Math.ceil(response.total / 50);
-        const batches = [];
+        const _batches = [];
         for (let i = 0; i < batchesCount; i++) {
             bitrix.batch.deal.getList(
                 `get_deal_list_${i}`,

@@ -92,11 +92,11 @@ export class BatchApiService {
         return this.cmdBatch;
     }
 
-    async callBatch(): Promise<any[]> {
+    async callBatch(): Promise<unknown[]> {
         // this.logger.log('Calling batch');
         // this.logger.log(`Domain: ${this.domain}`);
 
-        const results = [] as string[];
+        const results: unknown[] = [];
         const commands = Object.entries(this.cmdBatch);
         // this.logger.log(`Number of commands: ${commands.length}`);
 
@@ -114,26 +114,22 @@ export class BatchApiService {
 
             // const url = `https://${this.domain}/${this.apiKey}/batch`;
             try {
-                // this.logger.log(`Making batch request to: ${url}`);
-                // const response: AxiosResponse<any> = await firstValueFrom(
-                //     this.httpService.post(url, batchPayload, this.axiosOptions),
-                // );
-                const response = await this.core.request<any>(
+                const response = await this.core.request<{ result: unknown }>(
                     'batch',
                     batchPayload,
                 );
-                // this.logger.log(`Batch request successful: ${JSON.stringify(response.data)}`);
                 results.push(response.data.result);
                 await this.sleep(100);
             } catch (error) {
+                const e = error as { message?: string };
                 this.core.logger.error(
-                    `Batch request failed: ${error.message}`,
+                    `Batch request failed: ${e.message ?? String(error)}`,
                 );
                 await this.core.telegramBot.sendMessageAdminError(`Batch error:
           callBatch
           ${this.core.domain}
 
-          ${JSON.stringify(error?.message)}`);
+          ${JSON.stringify(e.message)}`);
                 results.push(error);
             }
         }
@@ -148,7 +144,7 @@ export class BatchApiService {
         // this.logger.log(`Number of commands: ${commands.length}`);
         // this.logger.log(`Domain: ${this.domain}`);
         // this.logger.log(`Commands: ${JSON.stringify(commands)}`);
-        const tasks: Promise<any>[] = [];
+        const tasks: Promise<IBitrixBatchResponseResult>[] = [];
 
         for (let i = 0; i < commands.length; i += 50) {
             const batch = commands.slice(i, i + 50);
@@ -236,16 +232,14 @@ export class BatchApiService {
             await this.handleBatchErrors(result, 'executeBatch');
             return result;
         } catch (error) {
-            const msg = error?.response?.data || error;
-            // this.logger.error(`Execute batch failed: ${JSON.stringify(msg)}`);
             await this.core.telegramBot.sendMessageAdminError(
                 `Execute batch failed: ${JSON.stringify(error)}`,
             );
-            return error;
+            return error as IBitrixBatchResponseResult;
         }
     }
-    clearResult(result: IBitrixBatchResponseResult[]) {
-        const results = [] as any[];
+    clearResult(result: IBitrixBatchResponseResult[]): unknown[] {
+        const results: unknown[] = [];
         result.map(res => {
             if (Object.keys(res.result).length > 0) {
                 for (const key in res.result) {

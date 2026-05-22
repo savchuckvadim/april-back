@@ -14,7 +14,6 @@ import { BtxLeadService } from '../services/btx-lead.service';
 import { CreateBtxLeadDto } from '../dto/create-btx-lead.dto';
 import { UpdateBtxLeadDto } from '../dto/update-btx-lead.dto';
 import { BtxLeadResponseDto } from '../dto/btx-lead-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Leads Management')
 @Controller('admin/pbx/btx-leads')
@@ -59,7 +58,7 @@ export class BtxLeadController {
     async getAllLeads(
         @Query('portal_id') portalId?: string,
     ): Promise<BtxLeadResponseDto[]> {
-        let leads;
+        let leads: BtxLeadResponseDto[];
         if (portalId) {
             leads = await this.leadService.findByPortalId(Number(portalId));
         } else {

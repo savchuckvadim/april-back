@@ -52,7 +52,7 @@ import { InvoiceTemplateModule } from './modules/invoice-template/invoice-templa
 import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
 import { PbxRegistryModule } from './modules/pbx-registry';
 import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
-import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
+// import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
 import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 import { DealsOrderModule } from './apps/event-service/deals-order/deals-order.module';
 import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.module';
@@ -161,4 +161,4 @@ const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],
 })
-export class AppModule { }
+export class AppModule {}

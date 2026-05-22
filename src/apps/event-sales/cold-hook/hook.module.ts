@@ -24,4 +24,4 @@ import { ColdHooksProcessor } from './queue/cold-hooks.processor';
         ColdHooksProcessor,
     ],
 })
-export class EventSalesHookModule { }
+export class EventSalesHookModule {}

@@ -39,10 +39,15 @@ export class PbxSmartCategorySearchService {
         group: SmartGroupEnum,
         search: string,
     ): Promise<PbxSmartCategorySearchResultResponse> {
-        const parsed = await this.parseSmartService.getParsedData(smartName, group);
+        const parsed = await this.parseSmartService.getParsedData(
+            smartName,
+            group,
+        );
         const smart = parsed[0];
         if (!smart) {
-            throw new NotFoundException(`No smart parsed for ${smartName}/${group}`);
+            throw new NotFoundException(
+                `No smart parsed for ${smartName}/${group}`,
+            );
         }
         const parseCategories = smart.categories ?? [];
         if (parseCategories.length === 0) {
@@ -56,12 +61,13 @@ export class PbxSmartCategorySearchService {
         }
 
         const codes = matched.map(c => c.code);
-        const mergedList = await this.monitoringService.getPbxSmartCategoriesByCodes(
-            domain,
-            smartName,
-            group,
-            codes,
-        );
+        const mergedList =
+            await this.monitoringService.getPbxSmartCategoriesByCodes(
+                domain,
+                smartName,
+                group,
+                codes,
+            );
 
         const items: PbxSmartCategorySearchItem[] = matched.map(parse => ({
             parse,

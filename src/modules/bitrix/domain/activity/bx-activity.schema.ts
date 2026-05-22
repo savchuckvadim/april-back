@@ -2,7 +2,6 @@ import { EBxMethod } from 'src/modules/bitrix/core';
 import { IBXTask } from '../interfaces/bitrix.interface';
 import { CrmListRequestType } from '../crm/type/crm-request.type';
 import {
-    BXActivityRequest,
     BXActivityRequestFields,
     IBXActivity,
 } from './interfaces/bx-activity.interface';

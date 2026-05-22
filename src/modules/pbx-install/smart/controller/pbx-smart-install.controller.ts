@@ -13,7 +13,7 @@ export class PbxSmartInstallController {
         private readonly installSmartUseCase: InstallSmartUseCase,
         private readonly getPbxSmartUseCase: GetPbxSmartUseCase,
         private readonly deletePbxSmartUseCase: DeletePbxSmartUseCase,
-    ) { }
+    ) {}
 
     @ApiOperation({
         summary: 'Get smarts by domain',

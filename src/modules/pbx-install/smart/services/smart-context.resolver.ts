@@ -37,7 +37,7 @@ export class SmartContextResolver {
     constructor(
         private readonly portalService: PortalStoreService,
         private readonly portalSmartService: PortalSmartService,
-    ) { }
+    ) {}
 
     async resolve(args: SmartContextResolveArgs): Promise<SmartContext> {
         const portal = await this.portalService.getPortalByDomain(args.domain);

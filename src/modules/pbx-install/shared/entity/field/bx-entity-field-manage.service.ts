@@ -55,8 +55,14 @@ export class BxEntityFieldManageService {
         this.bitrix = bitrix;
         this.bxEntityService = this.bitrix[this.entity];
         this.bxEntityBatchService = this.bitrix.batch[this.entity];
-        if (!this.bitrix || !this.bxEntityService || !this.bxEntityBatchService) {
-            throw new Error(`Bitrix service not found for entity: ${this.entity}`);
+        if (
+            !this.bitrix ||
+            !this.bxEntityService ||
+            !this.bxEntityBatchService
+        ) {
+            throw new Error(
+                `Bitrix service not found for entity: ${this.entity}`,
+            );
         }
     }
 
@@ -78,7 +84,9 @@ export class BxEntityFieldManageService {
 
         for (const { code, bxFieldName } of bxFieldNames) {
             const bxField = existingBxFields.find(
-                f => f.FIELD_NAME === this.getBxFieldNameByParseName(bxFieldName),
+                f =>
+                    f.FIELD_NAME ===
+                    this.getBxFieldNameByParseName(bxFieldName),
             );
             if (!bxField) {
                 results.push({
@@ -101,7 +109,10 @@ export class BxEntityFieldManageService {
                 await this.bitrix.api.callBatchWithConcurrency(1);
             const errorCodes = new Set<string>();
             for (const response of batchResponse) {
-                if (response.result_error && typeof response.result_error === 'object') {
+                if (
+                    response.result_error &&
+                    typeof response.result_error === 'object'
+                ) {
                     Object.keys(response.result_error).forEach(k =>
                         errorCodes.add(k),
                     );
@@ -112,7 +123,9 @@ export class BxEntityFieldManageService {
                     code,
                     bxFieldId,
                     deleted: !errorCodes.has(code),
-                    error: errorCodes.has(code) ? 'bitrix batch error' : undefined,
+                    error: errorCodes.has(code)
+                        ? 'bitrix batch error'
+                        : undefined,
                 });
             }
         }

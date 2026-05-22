@@ -5,8 +5,16 @@ import { PortalDealService } from '@/modules/pbx-domain';
 import { PbxEntityType } from '@/shared';
 import { PBXService } from '@/modules/pbx';
 import { Field } from '../../../shared/parse-field-excel/type/parse-field.type';
-import { BxEntityFieldsInstallService, IPbxFieldInstallData, PortalEntityFieldInstallService } from '../../../shared';
-import { ParseEntityFieldsAppName, ParseEntityFieldsService, PbxEntityGroupEnum } from '../../../shared/entity/field/parse-entity-field.service';
+import {
+    BxEntityFieldsInstallService,
+    IPbxFieldInstallData,
+    PortalEntityFieldInstallService,
+} from '../../../shared';
+import {
+    ParseEntityFieldsAppName,
+    ParseEntityFieldsService,
+    PbxEntityGroupEnum,
+} from '../../../shared/entity/field/parse-entity-field.service';
 /**
  * Установка полей для сделки в Bitrix
  * 1. Получаем поля для установки из excel - parsed по group и app
@@ -30,7 +38,7 @@ export class PbxDealFieldInstallByParseUseCase {
         private readonly portalService: PortalStoreService,
         private readonly portalDealService: PortalDealService,
         private readonly portalFieldEntityInstallService: PortalEntityFieldInstallService,
-    ) { }
+    ) {}
 
     async installDealFields(
         domain: string,
@@ -69,7 +77,7 @@ export class PbxDealFieldInstallByParseUseCase {
             await this.parseDealService.getParsedData(
                 PbxEntityType.DEAL,
                 appName,
-                group
+                group,
             );
         // фильтруем поля для установки из excel чтобы не перегружать битрикс TESTING
         let localParseFields: Field[] = parseFields;

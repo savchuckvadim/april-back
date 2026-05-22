@@ -3,6 +3,12 @@ import { APIOnlineClient } from '../../../../clients/online';
 import { Injectable } from '@nestjs/common';
 import { UpdatePortalOuterDto } from './dto/update-portal.dto';
 
+type ApiResponse = {
+    resultCode: number;
+    message: string;
+    data?: unknown;
+};
+
 @Injectable()
 export class PortalOuterService {
     constructor(
@@ -10,26 +16,26 @@ export class PortalOuterService {
         private readonly apiOnlineAdminClient: APIOnlineAdminClient,
     ) {}
 
-    async getByDomain(domain: string): Promise<void> {
-        const response = await this.apiOnlineClient.request(
+    async getByDomain(domain: string): Promise<unknown> {
+        const response = (await this.apiOnlineClient.request(
             'post',
             'getportal',
             { domain },
             'portal',
-        );
+        )) as ApiResponse;
         if (response.resultCode === 0) {
-            const portal = response.data;
-            return portal;
+            return response.data;
         }
         throw new Error(response.message);
     }
+
     async setOrUpdate(dto: UpdatePortalOuterDto): Promise<void> {
-        const response = await this.apiOnlineAdminClient.request(
+        const response = (await this.apiOnlineAdminClient.request(
             'post',
             'update/portal',
             dto,
             'portal',
-        );
+        )) as ApiResponse;
         if (response.resultCode === 0) {
             return;
         }

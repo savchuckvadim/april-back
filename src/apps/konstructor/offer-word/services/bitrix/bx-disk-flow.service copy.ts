@@ -13,7 +13,7 @@ export class BxDiskFlowService {
         private readonly portalModel: PortalModel,
         private readonly companyId: number | string,
         private readonly dealId?: number | string,
-    ) { }
+    ) {}
 
     public async upload(files: [string, string][]): Promise<{
         uploadedFiles: IBXDiskFolderItem[];

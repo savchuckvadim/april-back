@@ -113,7 +113,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
         const transcriptions = await this.prisma.transcription.findMany({
             where: { portal_id: String(result.id) },
         });
-        const fullResult = {
+        return {
             ...result,
             portal_templates,
             bitrixlists,
@@ -139,7 +139,6 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
             bx_rqs,
             transcriptions,
         } as AdminPortalWithRelations;
-        return result;
     }
 
     async findMany(): Promise<Portal[] | null> {
@@ -172,7 +171,7 @@ export class AdminPortalPrismaRepository implements AdminPortalRepository {
     }
 
     async update(id: number, portal: Partial<Portal>): Promise<Portal | null> {
-        const updateData: any = {};
+        const updateData: Partial<Portal> = {};
         if (portal.domain !== undefined) updateData.domain = portal.domain;
         if (portal.key !== undefined) updateData.key = portal.key;
         if (portal.C_REST_CLIENT_ID !== undefined)

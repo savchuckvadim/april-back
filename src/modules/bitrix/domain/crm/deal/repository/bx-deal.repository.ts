@@ -176,7 +176,12 @@ export class BxDealRepository {
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.CONTACT_ITEMS_SET,
-            { id: dealId, items: contactIds.map(id => ({ CONTACT_ID: id })) },
+            {
+                id: dealId,
+                items: (contactIds as (number | string)[]).map(id => ({
+                    CONTACT_ID: id,
+                })),
+            },
         );
     }
     contactItemsSetBtch(

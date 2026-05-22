@@ -9,10 +9,10 @@ import { GenerateSupplyReportDto } from '../../dto/generate-supply-report.dto';
 export class GenerateSupplyReportUseCase {
     constructor() {} // private readonly bitrixGateway: BitrixGateway, // private readonly libreOfficeService: LibreOfficeService, // private readonly docxService: DocxTemplateService,
 
-    async execute(dto: GenerateSupplyReportDto) {
-        const d = dto;
-        const v = dto.bxCompanyItems.find(item => item.id == 2);
-        debugger;
+    execute(dto: GenerateSupplyReportDto): unknown {
+        const v = (dto.bxCompanyItems as { id: number }[]).find(
+            item => item.id == 2,
+        );
         console.log(v);
 
         return v;

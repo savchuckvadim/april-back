@@ -104,9 +104,7 @@ export class PbxDealCategoryInstallController {
     })
     @ApiBody({ type: DeleteDealCategoryStageDto })
     @Post('/delete-category-stage/')
-    async deleteDealCategoryStage(
-        @Body() dto: DeleteDealCategoryStageDto,
-    ) {
+    async deleteDealCategoryStage(@Body() dto: DeleteDealCategoryStageDto) {
         return await this.manageUseCase.deleteCategoryStage(dto);
     }
 
@@ -120,9 +118,7 @@ export class PbxDealCategoryInstallController {
     })
     @ApiBody({ type: EditDealCategoryStageDto })
     @Post('/edit-category-stage/')
-    async editDealCategoryStage(
-        @Body() dto: EditDealCategoryStageDto,
-    ) {
+    async editDealCategoryStage(@Body() dto: EditDealCategoryStageDto) {
         return await this.manageUseCase.editCategoryStage(dto);
     }
 }

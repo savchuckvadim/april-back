@@ -6,7 +6,11 @@ import { PortalCompanyService } from '@/modules/pbx-domain';
 import { PbxEntityType } from '@/shared';
 import { PBXService } from '@/modules/pbx';
 import { InstallCompanyFieldDto } from '../dto/install-company-field.dto';
-import { BxEntityFieldsInstallService, IPbxFieldInstallData, PortalEntityFieldInstallService } from '../../shared';
+import {
+    BxEntityFieldsInstallService,
+    IPbxFieldInstallData,
+    PortalEntityFieldInstallService,
+} from '../../shared';
 
 /**
  * Установка полей для компании в Bitrix
@@ -30,7 +34,7 @@ export class PbxCompanyInstallFieldUseCase {
         private readonly portalService: PortalStoreService,
         private readonly portalCompanyService: PortalCompanyService,
         private readonly portalFieldEntityInstallService: PortalEntityFieldInstallService,
-    ) { }
+    ) {}
 
     async installCompanyFields(dto: InstallCompanyFieldDto): Promise<any> {
         const { domain, fields } = dto;

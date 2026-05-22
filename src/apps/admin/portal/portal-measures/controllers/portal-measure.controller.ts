@@ -62,7 +62,7 @@ export class PortalMeasureController {
         @Query() query: GetPortalMeasuresQueryDto,
     ): Promise<PortalMeasureResponseDto[]> {
         const { portalId, measureId } = query;
-        let portalMeasures;
+        let portalMeasures: PortalMeasureResponseDto[];
         if (portalId) {
             portalMeasures = await this.portalMeasureService.findByPortalId(
                 Number(portalId),

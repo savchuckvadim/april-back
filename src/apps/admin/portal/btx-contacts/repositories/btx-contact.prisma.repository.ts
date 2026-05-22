@@ -52,7 +52,7 @@ export class BtxContactPrismaRepository implements BtxContactRepository {
         id: number,
         contact: Partial<btx_contacts>,
     ): Promise<btx_contacts | null> {
-        const updateData: any = {};
+        const updateData: Partial<btx_contacts> = {};
         if (contact.name !== undefined) updateData.name = contact.name;
         if (contact.title !== undefined) updateData.title = contact.title;
         if (contact.code !== undefined) updateData.code = contact.code;

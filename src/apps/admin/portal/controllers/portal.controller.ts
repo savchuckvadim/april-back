@@ -13,11 +13,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminPortalService } from '../services/portal.service';
 import { CreatePortalDto } from '../dto/create-portal.dto';
 import { UpdatePortalDto } from '../dto/update-portal.dto';
-import {
-    AdminPortalResponseDto,
-    AdminPortalWithRelationsResponseDto,
-} from '../dto/portal-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
+import { AdminPortalResponseDto } from '../dto/portal-response.dto';
 
 @ApiTags('Admin Portal Management')
 @Controller('admin/portals')
@@ -71,7 +67,7 @@ export class AdminPortalController {
         @Query('client_id') clientId?: string,
         @Query('domain') domain?: string,
     ): Promise<AdminPortalResponseDto[]> {
-        let portals;
+        let portals: AdminPortalResponseDto[];
         if (clientId) {
             portals = await this.portalService.findByClientId(Number(clientId));
         } else if (domain) {
