@@ -26,7 +26,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
 import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
 import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
-import { PBXInstallModule } from './modules/install/pbx-install.module';
+import { PBXInstallModule } from './modules/pbx-install/pbx-install.module';
 import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -52,13 +52,15 @@ import { InvoiceTemplateModule } from './modules/invoice-template/invoice-templa
 import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
 import { PbxRegistryModule } from './modules/pbx-registry';
 import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
-// import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
 import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
 import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
 import { DealsOrderModule } from './apps/event-service/deals-order/deals-order.module';
 import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.module';
 import { SkapModule } from './apps/event-service/skap/skap.module';
-import { ParseFieldExcelModule } from './modules/install/shared';
+import { ParseFieldExcelModule } from './modules/pbx-install/shared';
+import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
+
+const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
 
 @Module({
     imports: [
@@ -150,8 +152,8 @@ import { ParseFieldExcelModule } from './modules/install/shared';
         PbxRegistryModule,
         CommandSmartActGsrModule,
         DealsScheduleModule, //запускает процессы отдела сервиса по расписанию : DealsOrderModule и DealsMoveModule
-        // BitrixImBridgeModule, //проверяет сообщения лс админа в битриксе только для сервера с телеграмом
-        MissedCallsTodoModule, //gsirk  проверяет пропущенные звонки
+        ...(WITH_TELEGRAM ? [BitrixImBridgeModule] : []), //проверяет сообщения лс админа в битриксе только для сервера с телеграмом
+        // MissedCallsTodoModule, //gsirk  проверяет пропущенные звонки
         DealsOrderModule, //проверяет дубли и заполненность с по полей каждую неделю
         DealsMoveModule, //перемещает сделки отдела сервиса каждые три часа по стадиям
         SkapModule,
@@ -159,4 +161,4 @@ import { ParseFieldExcelModule } from './modules/install/shared';
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],
 })
-export class AppModule {}
+export class AppModule { }

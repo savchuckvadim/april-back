@@ -6,6 +6,7 @@ import {
     UserFieldConfigListDto,
     UserFieldConfigUpdateDto,
 } from '../dto/userfieldconfig.dto';
+import { IUserFieldConfig } from '../interface/userfieldconfig.interface';
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
 export class BxUserFieldConfigService {
@@ -39,5 +40,27 @@ export class BxUserFieldConfigService {
 
     async list(dto: UserFieldConfigListDto) {
         return await this.repo.list(dto);
+    }
+
+    async getAll(
+        moduleId: 'crm' | 'rpa',
+        filter: Partial<IUserFieldConfig>,
+    ): Promise<IUserFieldConfig[]> {
+        const items: IUserFieldConfig[] = [];
+        let needMore = true;
+        let nextId: string | number = 0;
+        while (needMore) {
+            const fullFilter = { ...filter, '>id': nextId };
+            const { result } = await this.repo.list({
+                moduleId,
+                filter: fullFilter,
+                order: { id: 'ASC' },
+            });
+            if (result.fields.length === 0) break;
+            nextId = result.fields[result.fields.length - 1]?.id ?? 0;
+            if (nextId === 0) needMore = false;
+            items.push(...result.fields);
+        }
+        return items;
     }
 }

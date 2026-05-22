@@ -3,7 +3,7 @@ import {
     StartBridgeDto,
     TelegramWebhookUpdateDto,
 } from '../dto/bitrix-im-bridge.dto';
-import { ImV2Event } from '../interfaces/bridge.types';
+import { ImV2Event, ImV2EventPayload } from '../interfaces/bridge.types';
 import { BitrixImBridgeConfigService } from './config/bitrix-im-bridge-config.service';
 import { BitrixImBridgeStateService } from './bitrix-im-bridge-state.service';
 import { BitrixImApiService } from './bitrix/bitrix-im-api.service';
@@ -12,6 +12,7 @@ import { BitrixImEventDataService } from './parsers/bitrix-im-event-data.service
 import { BitrixImEventFilterService } from './filters/bitrix-im-event-filter.service';
 import { TelegramBridgeService } from './telegram-bridge.service';
 import { TelegramReplyRouterService } from './telegram/telegram-reply-router.service';
+import { BridgeUserNameCacheService } from './bitrix/bridge-user-name-cache.service';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 
 @Injectable()
@@ -28,10 +29,13 @@ export class BridgeOrchestratorService implements OnModuleInit {
         private readonly filter: BitrixImEventFilterService,
         private readonly telegramBridge: TelegramBridgeService,
         private readonly telegramReplyRouter: TelegramReplyRouterService,
+        private readonly userNameCache: BridgeUserNameCacheService,
         private readonly portalStore: PortalStoreService,
     ) {}
 
     async onModuleInit(): Promise<void> {
+        await this.registerWebhookIfConfigured();
+
         if (!this.config.isSchedulerEnabled()) {
             this.logger.log(
                 'Bitrix IM bridge scheduler is disabled (WITH_SCHEDLER=false)',
@@ -178,7 +182,6 @@ export class BridgeOrchestratorService implements OnModuleInit {
             domain,
             this.config.getDefaultBridgeEmail(),
         );
-        console.log('bridgeUserId', bridgeUserId);
         const offset = await this.state.getOffset(domain);
         this.logger.debug(
             `Polling domain=${domain} with bridgeUser=${bridgeUserId}, offset=${String(offset)}`,
@@ -225,31 +228,21 @@ export class BridgeOrchestratorService implements OnModuleInit {
         bridgeUserId: string,
         event: ImV2Event,
     ): Promise<boolean> {
-        const eventData = event.data || {};
+        const eventData: ImV2EventPayload = event.data ?? {};
         const authorId = this.parser.extractAuthorId(eventData);
         const dialogIdFromEvent = this.parser.extractDialogId(eventData);
         const payloadShape = this.describeEventPayload(eventData);
         this.logger.debug(
             `Incoming event: domain=${domain}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}, payload=${payloadShape}`,
         );
-        // if (this.config.shouldNotifyIncomingEvents()) {
-        //     await this.telegramBridge.sendSystemMessage(
-        //         `🚨 Поймано событие IM: domain=${domain}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}`,
-        //     );
-        // }
 
-        // const decision = this.filter.shouldProcess(domain, bridgeUserId, event);
-        // if (!decision.allowed) {
-        //     this.logger.debug(
-        //         `Event skipped for domain=${domain}: reason=${decision.reason || 'unknown'}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}, payload=${payloadShape}`,
-        //     );
-        //     if (this.config.shouldNotifyIncomingEvents()) {
-        //         await this.telegramBridge.sendSystemMessage(
-        //             `⛔ Событие пропущено: domain=${domain}, reason=${decision.reason || 'unknown'}, type=${event.type || 'n/a'}, bridgeUser=${bridgeUserId}, author=${authorId || 'unknown'}, dialog=${dialogIdFromEvent || 'unknown'}`,
-        //         );
-        //     }
-        //     return false;
-        // }
+        const decision = this.filter.shouldProcess(domain, bridgeUserId, event);
+        if (!decision.allowed) {
+            this.logger.debug(
+                `Event skipped: domain=${domain}, reason=${decision.reason ?? 'unknown'}, type=${event.type ?? 'n/a'}, author=${authorId ?? 'unknown'}, chat=${JSON.stringify(eventData.chat ?? null)}, payload=${payloadShape}`,
+            );
+            return false;
+        }
 
         let dialogId = this.parser.extractDialogId(eventData);
         if (!dialogId && authorId && authorId !== bridgeUserId) {
@@ -275,10 +268,15 @@ export class BridgeOrchestratorService implements OnModuleInit {
             bitrixMessageId,
         );
 
+        const authorName = authorId
+            ? await this.userNameCache.resolveName(domain, authorId)
+            : undefined;
+
         const sendResult = await this.telegramBridge.sendIncomingMessage({
             domain,
             dialogId,
             authorId,
+            authorName,
             text,
         });
         if (!sendResult.ok || !sendResult.messageId) {
@@ -304,22 +302,18 @@ export class BridgeOrchestratorService implements OnModuleInit {
         return true;
     }
 
-    private describeEventPayload(eventData: Record<string, unknown>): string {
+    private describeEventPayload(eventData: ImV2EventPayload): string {
         const topLevelKeys = Object.keys(eventData).slice(0, 12);
-        const message =
-            eventData.message &&
-            typeof eventData.message === 'object' &&
-            !Array.isArray(eventData.message)
-                ? (eventData.message as Record<string, unknown>)
-                : undefined;
-        const messageKeys = message ? Object.keys(message).slice(0, 12) : [];
+        const messageKeys = eventData.message
+            ? Object.keys(eventData.message).slice(0, 12)
+            : [];
         return `keys=[${topLevelKeys.join(',')}],messageKeys=[${messageKeys.join(',')}]`;
     }
 
     private async resolveMessageText(
         domain: string,
         dialogId: string,
-        eventData: Record<string, unknown>,
+        eventData: ImV2EventPayload,
         bitrixMessageId?: number,
     ): Promise<string> {
         const directText = this.parser.extractText(eventData);
@@ -336,6 +330,16 @@ export class BridgeOrchestratorService implements OnModuleInit {
                 ? messages.find(item => item.id === bitrixMessageId)
                 : undefined) || messages[0];
         return target?.text || '[без текста]';
+    }
+
+    private async registerWebhookIfConfigured(): Promise<void> {
+        const webhookUrl = this.config.getBridgeWebhookUrl();
+        if (!webhookUrl) return;
+        try {
+            await this.telegramBridge.registerWebhook(webhookUrl);
+        } catch (error) {
+            this.logger.error('Ошибка регистрации Telegram webhook', error);
+        }
     }
 
     private async loadAllPortalDomains(): Promise<string[]> {

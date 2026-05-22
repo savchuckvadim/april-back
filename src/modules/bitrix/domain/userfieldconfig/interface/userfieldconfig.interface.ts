@@ -69,9 +69,14 @@ export interface IUserFieldConfigEnumerationItem {
     id?: string | number;
     userFieldId?: string | number;
     value: string;
-    def: 'N';
+    def: 'Y' | 'N';
     sort: string | number;
     xmlId: string;
+    /**
+     * Флаг удаления элемента списка при `userfieldconfig.update`.
+     * Совпадает с поведением legacy `crm.{entity}.userfield.update({ LIST: [{ ID, DEL: 'Y' }] })`.
+     */
+    del?: 'Y' | 'N';
 }
 export interface IUserFieldConfigSmart<T extends string>
     extends IUserFieldConfig {

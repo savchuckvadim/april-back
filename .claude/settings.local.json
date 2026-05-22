@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Remove-Item -Recurse -Force src/modules/install/field)",
+      "Bash(Remove-Item -Force src/modules/install/smart/services/smart-fields/save-smart-fields.service.ts)",
+      "Bash(Remove-Item -Force src/modules/install/smart/services/parse/parse-registry.service.ts)",
+      "mcp__b24-dev-mcp__bitrix-search",
+      "mcp__b24-dev-mcp__bitrix-method-details",
+      "mcp__b24-dev-mcp__bitrix-event-details",
+      "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; $output = npx tsc --noEmit 2>&1; $lines = $output -split \"`n\"; $lines | Where-Object { $_ -match \"bitrix-im-bridge\" } | Select-Object -First 30)",
+      "PowerShell(Tee-Object *)",
+      "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"im-bridge|bridge-orchestrator|bitrix-im-event\" })",
+      "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; npx tsc --noEmit 2>&1 | ForEach-Object { if \\($_ -match \"im.bridge|bridge.orchestrator|bitrix.im.event|bridge.types|im.bridge\"\\) { $_ } })",
+      "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; $result = npx tsc --noEmit 2>&1; $result.Count; $result | Select-Object -First 10)"
     ]
   }
 }

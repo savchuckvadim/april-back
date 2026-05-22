@@ -15,6 +15,6 @@ export class SmartActProcessor {
 
     @Process(JobNames.SERVICE_GENERATE_ACTS)
     async handle(job: Job<SmartActJobData>) {
-        await this.useCase.execute(job.data.dealId);
+        await this.useCase.execute();
     }
 }

@@ -1,7 +1,14 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
+import { TelegramChatBotService } from '@/modules/telegram-chat-bot';
+import { BitrixImBridgeConfigService } from './config/bitrix-im-bridge-config.service';
+
+export type IncomingBitrixMessagePayload = {
+    domain: string;
+    dialogId: string;
+    authorId?: string;
+    authorName?: string;
+    text: string;
+};
 
 type SendMessageResult = {
     ok: boolean;
@@ -9,41 +16,17 @@ type SendMessageResult = {
     chatId?: number;
 };
 
-type IncomingBitrixMessagePayload = {
-    domain: string;
-    dialogId: string;
-    authorId?: string;
-    text: string;
-};
-
-type TelegramSendMessageApiResponse = {
-    ok?: boolean;
-    result?: {
-        message_id?: number;
-        chat?: {
-            id?: number;
-        };
-    };
-};
-
 @Injectable()
 export class TelegramBridgeService {
     private readonly logger = new Logger(TelegramBridgeService.name);
-    private readonly token?: string;
-    private readonly adminChatId?: string;
 
     constructor(
-        private readonly httpService: HttpService,
-        private readonly configService: ConfigService,
-    ) {
-        this.token = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
-        this.adminChatId = this.configService.get<string>(
-            'TELEGRAM_ADMIN_CHAT_ID',
-        );
-    }
+        private readonly bot: TelegramChatBotService,
+        private readonly config: BitrixImBridgeConfigService,
+    ) {}
 
     isConfigured(): boolean {
-        return Boolean(this.token && this.adminChatId);
+        return this.bot.isEnabled() && Boolean(this.config.getBridgeChatId());
     }
 
     async sendIncomingMessage(
@@ -51,62 +34,63 @@ export class TelegramBridgeService {
     ): Promise<SendMessageResult> {
         if (!this.isConfigured()) {
             this.logger.warn(
-                'Telegram bot credentials are missing. Skip forwarding.',
+                'Bridge Telegram bot не настроен. Пересылка пропущена.',
             );
             return { ok: false };
         }
 
-        const text = [
-            '📩 Новое сообщение из Bitrix24',
-            `🌍 Портал: ${payload.domain}`,
-            `💬 Диалог: ${payload.dialogId}`,
-            payload.authorId ? `👤 Автор ID: ${payload.authorId}` : '',
-            '',
-            payload.text || '[пустой текст]',
-        ]
-            .filter(Boolean)
-            .join('\n');
-        console.log(text);
-        const result = await this.sendRawMessage(text);
+        const chatId = this.config.getBridgeChatId()!;
+        const text = this.formatIncomingMessage(payload);
+
         this.logger.debug(
-            `Forward to Telegram result: ok=${String(result.ok)}, domain=${payload.domain}, dialog=${payload.dialogId}, author=${payload.authorId || 'unknown'}, tgMessageId=${String(result.messageId)}`,
+            `Пересылка в Telegram: domain=${payload.domain}, dialog=${payload.dialogId}, author=${payload.authorId ?? 'unknown'}`,
         );
-        return result;
+
+        const result = await this.bot.sendMessage(chatId, text);
+        if (!result) return { ok: false };
+
+        this.logger.log(
+            `Пересылка в Telegram выполнена: tgMessageId=${result.messageId}, domain=${payload.domain}, dialog=${payload.dialogId}`,
+        );
+        return { ok: true, messageId: result.messageId, chatId: result.chatId };
     }
 
     async sendSystemMessage(text: string): Promise<void> {
-        await this.sendRawMessage(`ℹ️ ${text}`);
+        if (!this.isConfigured()) return;
+        const chatId = this.config.getBridgeChatId()!;
+        await this.bot.sendMessage(chatId, `ℹ️ ${text}`);
     }
 
-    private async sendRawMessage(text: string): Promise<SendMessageResult> {
-        if (!this.token || !this.adminChatId) {
-            return { ok: false };
-        }
+    async registerWebhook(url: string): Promise<void> {
+        await this.bot.setWebhook(url);
+        this.logger.log(`Webhook зарегистрирован: ${url}`);
+    }
 
-        const url = `https://api.telegram.org/bot${this.token}/sendMessage`;
-        const body = {
-            chat_id: Number(this.adminChatId),
-            text: text.slice(0, 4000),
-        };
+    async getWebhookInfo(): Promise<Record<string, unknown>> {
+        return this.bot.getWebhookInfo();
+    }
 
-        try {
-            const response = await firstValueFrom(
-                this.httpService.post(url, body),
-            );
-            const data = response.data as TelegramSendMessageApiResponse;
-            const messageId = Number(data?.result?.message_id);
-            const chatId = Number(data?.result?.chat?.id);
-            return {
-                ok: Boolean(data?.ok),
-                messageId: Number.isFinite(messageId) ? messageId : undefined,
-                chatId: Number.isFinite(chatId) ? chatId : undefined,
-            };
-        } catch (error) {
-            this.logger.error(
-                `Telegram sendMessage failed: chat=${this.adminChatId || 'n/a'}`,
-                error,
-            );
-            return { ok: false };
-        }
+    private formatIncomingMessage(payload: IncomingBitrixMessagePayload): string {
+        const authorLine = payload.authorName
+            ? `👤 <b>${this.escapeHtml(payload.authorName)}</b>`
+            : payload.authorId
+              ? `👤 ID: ${payload.authorId}`
+              : '';
+
+        const parts = [
+            `📩 <b>${this.escapeHtml(payload.domain)}</b>`,
+            `💬 Диалог: ${payload.dialogId}${authorLine ? ` · ${authorLine}` : ''}`,
+            '━━━━━━━━━━━━━━━━━━━━',
+            this.escapeHtml(payload.text || '[пустой текст]'),
+        ];
+
+        return parts.join('\n');
+    }
+
+    private escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 }

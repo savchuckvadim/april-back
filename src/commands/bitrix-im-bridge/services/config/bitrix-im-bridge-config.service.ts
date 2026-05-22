@@ -12,6 +12,21 @@ export class BitrixImBridgeConfigService {
         );
     }
 
+    isWithTelegram(): boolean {
+        return this.toBoolean(
+            this.config.get<string>('WITH_TELEGRAM') ?? '',
+            false,
+        );
+    }
+
+    getBridgeChatId(): string | undefined {
+        return this.config.get<string>('TELEGRAM_CHAT_MANAGER_CHAT_ID');
+    }
+
+    getBridgeWebhookUrl(): string | undefined {
+        return this.config.get<string>('TELEGRAM_BRIDGE_WEBHOOK_URL');
+    }
+
     isSchedulerEnabled(): boolean {
         const explicit = this.config.get<string>('WITH_SCHEDLER');
         if (explicit != null) {
@@ -75,10 +90,6 @@ export class BitrixImBridgeConfigService {
 
     shouldIgnoreBotMessages(): boolean {
         return this.getBoolean('BITRIX_IM_BRIDGE_IGNORE_BOTS', true);
-    }
-
-    shouldNotifyIncomingEvents(): boolean {
-        return this.getBoolean('BITRIX_IM_BRIDGE_NOTIFY_INCOMING_EVENTS', true);
     }
 
     getPollLimit(): number {

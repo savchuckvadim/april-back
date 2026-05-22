@@ -1,5 +1,4 @@
 import { PBXModule } from '@/modules/pbx';
-import { SmartActGsrController } from './controllers/smart-act-gsr.controller';
 import { SmartActGsrService } from './services/smart/smart-act-gsr.service';
 import { Module } from '@nestjs/common';
 import { DealActGsrController } from './controllers/deal-act-gsr.controller';
@@ -22,7 +21,7 @@ import { SmartActProcessor } from './queue/smart-act.processor';
 
 @Module({
     imports: [PBXModule, RedisModule, QueueModule],
-    controllers: [SmartActGsrController, DealActGsrController],
+    controllers: [DealActGsrController],
     providers: [
         SmartActGsrService,
         OrkDealsService,
@@ -39,4 +38,4 @@ import { SmartActProcessor } from './queue/smart-act.processor';
         SmartActProcessor,
     ],
 })
-export class CommandSmartActGsrModule {}
+export class CommandSmartActGsrModule { }

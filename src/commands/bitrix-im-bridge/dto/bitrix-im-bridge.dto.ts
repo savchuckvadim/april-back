@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+    IsBoolean,
+    IsNotEmpty,
+    IsNumber,
+    IsObject,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class StartBridgeDto {
     @ApiProperty({ example: 'gsr.bitrix24.ru' })
@@ -29,28 +38,53 @@ export class PollDomainDto {
     domain: string;
 }
 
+export class TelegramWebhookReplyToMessageDto {
+    @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
+    message_id?: number;
+}
+
+export class TelegramWebhookChatDto {
+    @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
+    id?: number;
+}
+
 export class TelegramWebhookMessageDto {
     @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
     message_id?: number;
 
     @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
     text?: string;
 
-    @ApiPropertyOptional({ type: Object })
-    chat?: {
-        id?: number;
-    };
+    @ApiPropertyOptional({ type: TelegramWebhookChatDto })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => TelegramWebhookChatDto)
+    chat?: TelegramWebhookChatDto;
 
-    @ApiPropertyOptional({ type: Object })
-    reply_to_message?: {
-        message_id?: number;
-    };
+    @ApiPropertyOptional({ type: TelegramWebhookReplyToMessageDto })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => TelegramWebhookReplyToMessageDto)
+    reply_to_message?: TelegramWebhookReplyToMessageDto;
 }
 
 export class TelegramWebhookUpdateDto {
     @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
     update_id?: number;
 
     @ApiPropertyOptional({ type: TelegramWebhookMessageDto })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => TelegramWebhookMessageDto)
     message?: TelegramWebhookMessageDto;
 }

@@ -1,29 +1,17 @@
-export type ImV2Event = {
-    eventId?: number;
-    type?: string;
-    data?: Record<string, unknown>;
-};
+export type {
+    IBXImV2ChatType as ImV2ChatType,
+    IBXImV2ChatData as ImV2ChatData,
+    IBXImV2MessageData as ImV2MessageData,
+    IBXImV2UserData as ImV2UserData,
+    IBXImV2EventPayload as ImV2EventPayload,
+    IBXImV2Event as ImV2Event,
+    IBXImV2EventGetResponse as ImV2EventGetResponse,
+} from '@/modules/bitrix/domain/chat/im-v2-event/interface/bx-im-v2-event.interface';
 
-export type ImV2EventGetResponse = {
-    result?: {
-        events?: ImV2Event[];
-        nextOffset?: number;
-        hasMore?: boolean;
-    };
-};
-
-export type DialogMessage = {
-    id?: number;
-    author_id?: number;
-    text?: string;
-    params?: Record<string, unknown>;
-};
-
-export type DialogMessagesGetResponse = {
-    result?: {
-        messages?: DialogMessage[];
-    };
-};
+export type {
+    IBXDialogMessage as DialogMessage,
+    IBXDialogMessagesGetResponse as DialogMessagesGetResponse,
+} from '@/modules/bitrix/domain/chat/dialog-message/interface/bx-dialog-message.interface';
 
 export type BridgeReplyContext = {
     domain: string;

@@ -1,5 +1,5 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
     PollDomainDto,
     StartBridgeDto,
@@ -8,6 +8,7 @@ import {
 import { StartBridgeUseCase } from '../usecases/start-bridge.use-case';
 import { PollDomainUseCase } from '../usecases/poll-domain.use-case';
 import { HandleTelegramWebhookUseCase } from '../usecases/handle-telegram-webhook.use-case';
+import { TelegramBridgeService } from '../services/telegram-bridge.service';
 
 @ApiTags('Bitrix IM Bridge')
 @Controller('commands/bitrix-im-bridge')
@@ -16,11 +17,12 @@ export class BitrixImBridgeController {
         private readonly startBridgeUseCase: StartBridgeUseCase,
         private readonly pollDomainUseCase: PollDomainUseCase,
         private readonly handleTelegramWebhookUseCase: HandleTelegramWebhookUseCase,
+        private readonly telegramBridge: TelegramBridgeService,
     ) {}
 
     @ApiOperation({
         summary:
-            'Subscribe domain and start scheduled Bitrix IM -> Telegram bridge',
+            'Подписать домен и запустить мост Bitrix IM → Telegram по расписанию',
     })
     @ApiBody({ type: StartBridgeDto })
     @Post('start')
@@ -28,7 +30,7 @@ export class BitrixImBridgeController {
         return await this.startBridgeUseCase.execute(dto);
     }
 
-    @ApiOperation({ summary: 'Poll one Bitrix domain immediately' })
+    @ApiOperation({ summary: 'Немедленный поллинг одного домена Bitrix' })
     @ApiBody({ type: PollDomainDto })
     @Post('poll')
     async poll(@Body() dto: PollDomainDto) {
@@ -36,11 +38,29 @@ export class BitrixImBridgeController {
     }
 
     @ApiOperation({
-        summary: 'Telegram webhook endpoint for reply -> Bitrix relay',
+        summary: 'Вебхук Telegram — получение ответов оператора',
     })
     @ApiBody({ type: TelegramWebhookUpdateDto })
     @Post('telegram/webhook')
     async telegramWebhook(@Body() body: TelegramWebhookUpdateDto) {
         return await this.handleTelegramWebhookUseCase.execute(body);
+    }
+
+    @ApiOperation({
+        summary: 'Диагностика: статус Telegram-вебхука bridge-бота',
+    })
+    @Get('telegram/webhook-info')
+    async telegramWebhookInfo() {
+        return this.telegramBridge.getWebhookInfo();
+    }
+
+    @ApiOperation({
+        summary: 'Зарегистрировать вебхук Telegram bridge-бота',
+    })
+    @ApiQuery({ name: 'url', description: 'Полный URL вебхука', required: true })
+    @Post('telegram/webhook-register')
+    async telegramWebhookRegister(@Query('url') url: string) {
+        await this.telegramBridge.registerWebhook(url);
+        return { ok: true, url };
     }
 }

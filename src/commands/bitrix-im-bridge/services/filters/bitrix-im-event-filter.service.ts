@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BitrixImBridgeConfigService } from '../config/bitrix-im-bridge-config.service';
 import { BitrixImEventDataService } from '../parsers/bitrix-im-event-data.service';
-import { ImV2Event } from '../../interfaces/bridge.types';
+import { ImV2Event, ImV2EventPayload } from '../../interfaces/bridge.types';
 
 @Injectable()
 export class BitrixImEventFilterService {
@@ -22,7 +22,12 @@ export class BitrixImEventFilterService {
             return { allowed: false, reason: 'unsupported_event_type' };
         }
 
-        const data = event.data || {};
+        const data: ImV2EventPayload = event.data ?? {};
+
+        if (!this.parser.isPrivateDialog(data)) {
+            return { allowed: false, reason: 'not_private_dialog' };
+        }
+
         const authorId = this.parser.extractAuthorId(data);
         if (authorId && authorId === bridgeUserId) {
             return { allowed: false, reason: 'self_message' };

@@ -18,7 +18,7 @@ export interface IDealWithRows {
     productCoefficient: number;
     smartItems: ISmartActItemsByDealResult;
 }
-const assignedById = '';
+const assignedById = '221';
 @Injectable()
 export class OrkActsUpdateUseCase {
     constructor(
@@ -38,10 +38,10 @@ export class OrkActsUpdateUseCase {
             dealId,
         );
         const productRowsService = new OrkActsProductRowsService(bitrix);
-        // const openDeals = deals.openDeals.items.filter(
-        //     (d, index) => index < 100,
-        // );
-        const openDeals = deals.openDeals.items;
+        const openDeals = deals.openDeals.items.filter(
+            (d, index) => index < 10,
+        );
+        // const openDeals = deals.openDeals.items;
         const dealsWithRows: IDealWithRows[] = [];
         for (const deal of openDeals) {
             const dealWithRowsItem: IDealWithRows = {

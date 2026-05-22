@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { PBXModule } from '@/modules/pbx';
 import { RedisModule } from '@/core/redis/redis.module';
+import { TelegramChatBotModule } from '@/modules/telegram-chat-bot';
 import { BridgeOrchestratorService } from './services/bridge-orchestrator.service';
 import { BitrixImBridgeStateService } from './services/bitrix-im-bridge-state.service';
 import { TelegramBridgeService } from './services/telegram-bridge.service';
 import { BitrixImBridgeConfigService } from './services/config/bitrix-im-bridge-config.service';
 import { BitrixImApiService } from './services/bitrix/bitrix-im-api.service';
 import { BridgeUserResolverService } from './services/bitrix/bridge-user-resolver.service';
+import { BridgeUserNameCacheService } from './services/bitrix/bridge-user-name-cache.service';
 import { BitrixImEventFilterService } from './services/filters/bitrix-im-event-filter.service';
 import { BitrixImEventDataService } from './services/parsers/bitrix-im-event-data.service';
 import { TelegramReplyRouterService } from './services/telegram/telegram-reply-router.service';
@@ -24,9 +25,9 @@ import { PollScheduledDomainsUseCase } from './usecases/poll-scheduled-domains.u
     imports: [
         PBXModule,
         RedisModule,
-        HttpModule,
         ConfigModule,
         PortalStoreModule,
+        TelegramChatBotModule,
     ],
     controllers: [BitrixImBridgeController],
     providers: [
@@ -36,6 +37,7 @@ import { PollScheduledDomainsUseCase } from './usecases/poll-scheduled-domains.u
         BitrixImBridgeConfigService,
         BitrixImApiService,
         BridgeUserResolverService,
+        BridgeUserNameCacheService,
         BitrixImEventFilterService,
         BitrixImEventDataService,
         TelegramReplyRouterService,

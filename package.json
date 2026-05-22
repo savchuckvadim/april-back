@@ -65,6 +65,7 @@
     "jsonwebtoken": "^9.0.2",
     "lvovich": "^2.0.2",
     "nest-winston": "^1.10.2",
+    "nestjs-telegraf": "^2.9.1",
     "nodemailer": "^7.0.9",
     "number-to-words-ru": "^2.4.1",
     "officegen": "^0.6.5",
@@ -76,6 +77,7 @@
     "reflect-metadata": "^0.2.2",
     "russian-nouns-js": "^2.2.0",
     "rxjs": "^7.8.1",
+    "telegraf": "^4.16.3",
     "winston": "^3.17.0"
   },
   "devDependencies": {

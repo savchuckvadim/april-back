@@ -5,23 +5,23 @@ import { firstValueFrom } from 'rxjs';
 import { TelegramSendMessageDto } from './telegram.dto';
 
 const publicUrl = 'https://back.april-dev.ru/api/telegram';
-const url = publicUrl;
+// const url = publicUrl;
 @Global()
 @Injectable()
 export class TelegramService {
-    private botToken: string;
     private adminChatId: string;
-
+    private url: string;
+    private withTelegram: boolean;
     constructor(
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
     ) {
-        this.botToken = this.configService.get<string>(
-            'TELEGRAM_BOT_TOKEN',
-        ) as string;
-        this.adminChatId = this.configService.get<string>(
-            'TELEGRAM_ADMIN_CHAT_ID',
-        ) as string;
+
+        this.withTelegram = this.configService.get<boolean>(
+            'WITH_TELEGRAM',
+        ) as boolean;
+        this.init()
+        console.log(this.withTelegram, 'withTelegram');
     }
     public async sendPublicMessage(dto: TelegramSendMessageDto) {
         const text = `\n💥 App:  ${dto.app}\n🌍 Domain:   ${dto.domain}\n🧭 UserId: ${dto.userId}\n\n ⚠️ Text:  ${dto.text}`;
@@ -33,7 +33,7 @@ export class TelegramService {
         } as TelegramSendMessageDto;
 
         try {
-            await firstValueFrom(this.httpService.post(url, payload));
+            await firstValueFrom(this.httpService.post(this.url, payload));
         } catch (error) {
             console.error('Telegram error:', error);
         }
@@ -41,17 +41,18 @@ export class TelegramService {
     }
 
     async sendMessage(message: string) {
-        const cleanText = this.cleanText(message);
+        // const cleanText = this.cleanText(message);
 
-        const payload = {
-            userId: '123',
-            text: `NEST ${cleanText}`,
-            app: 'nest api prod',
-            domain: 'example.com',
-        } as TelegramSendMessageDto;
+        // const payload = {
+        //     userId: '123',
+        //     text: `NEST ${cleanText}`,
+        //     app: 'nest api prod',
+        //     domain: 'example.com',
+        // } as TelegramSendMessageDto;
 
         try {
-            await firstValueFrom(this.httpService.post(url, payload));
+            const payload = this.getPayload(message);
+            await firstValueFrom(this.httpService.post(this.url, payload));
         } catch (error) {
             console.error('Telegram error:', error);
         }
@@ -59,18 +60,37 @@ export class TelegramService {
     async sendMessageAdminError(message: string) {
         const cleanText = this.cleanText(message);
 
-        const payload = {
-            userId: '123',
-            text: `NEST ${cleanText}`,
-            app: 'nest api prod',
-            domain: 'example.com',
-        } as TelegramSendMessageDto;
+        // const payload = {
+        //     // chat_id: Number(this.adminChatId),
+        //     text: `NEST ${cleanText}`,
+        //     app: 'nest api prod',
+        //     domain: 'example.com',
+        // } as TelegramSendMessageDto;
 
         try {
-            await firstValueFrom(this.httpService.post(url, payload));
+            const payload = this.getPayload(message);
+            await firstValueFrom(this.httpService.post(this.url, payload));
         } catch (error) {
             console.error('Telegram error:', error);
         }
+    }
+
+    private getPayload(message: string) {
+        const cleanText = this.cleanText(message);
+        if (!this.withTelegram) {
+            return {
+                userId: '123',
+                text: `NEST selecte el ${cleanText}`,
+                app: 'nest api prod',
+                domain: 'example.com',
+            } as TelegramSendMessageDto;
+        }
+        return {
+            chat_id: this.adminChatId,
+            text: `NEST ADMIN ERROR: ${cleanText}`,
+            parse_mode: 'Markdown',
+        };
+
     }
 
     private cleanText(text: string) {
@@ -82,4 +102,33 @@ export class TelegramService {
             .replace(/[_*[\]()~`>#+=|{}.!\\]/g, '\\$&') // экранируем ВСЁ, что может сломать markdown
             .slice(0, 4000); // Telegram лимит: 4096 символов;
     }
+
+    private init() {
+        this.initUrl()
+        this.initAdminChatId()
+    }
+
+    private initUrl() {
+        const botToken = this.configService.get<string>(
+            'TELEGRAM_BOT_TOKEN',
+        ) as string;
+
+        this.url = this.withTelegram && botToken
+            ? `https://api.telegram.org/bot${botToken}/sendMessage`
+            : publicUrl;
+    }
+
+    private initAdminChatId() {
+        const appName = this.configService.get<string>(
+            'APP_NAME',
+        ) as string;
+
+        this.adminChatId = this.withTelegram
+            ? this.configService.get<string>(
+                'TELEGRAM_ADMIN_CHAT_ID',
+            ) as string
+            : appName;
+    }
+
+
 }

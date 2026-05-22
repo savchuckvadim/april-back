@@ -18,7 +18,7 @@ export class BitrixImBridgeCronService {
             return;
         }
         try {
-            console.log('poll Scheduled Domains cron started');
+            this.logger.debug('Scheduled Bitrix IM bridge poll started');
             await this.pollScheduledDomainsUseCase.execute();
         } catch (error) {
             this.logger.error(

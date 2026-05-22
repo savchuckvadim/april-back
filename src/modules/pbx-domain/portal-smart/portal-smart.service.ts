@@ -25,7 +25,7 @@ export class PortalSmartService {
         private readonly pbxFieldService: PbxFieldService,
         private readonly portalService: PortalStoreService,
         private readonly categoryRepository: BtxCategoryRepository,
-    ) {}
+    ) { }
 
     /** Строка из БД по порталу + type/group (как после инсталла). */
     async findFirstByPortalTypeGroup(
@@ -273,7 +273,6 @@ export class PortalSmartService {
         if (!portal) {
             throw new Error('Portal not found');
         }
-
         const smart = await this.findSmartRowByPortal(
             BigInt(portal.id.toString()),
             smartType,

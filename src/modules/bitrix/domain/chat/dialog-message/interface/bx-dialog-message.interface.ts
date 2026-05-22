@@ -1,8 +1,9 @@
 export interface IBXDialogMessage {
-    id: number;
-    text: string;
+    id?: number;
+    text?: string;
     author_id?: number;
     date?: string;
+    params?: Record<string, unknown>;
 }
 
 export interface IBXDialogMessagesGetRequest {
