@@ -7,7 +7,6 @@ import {
     IBXSmartFullType,
     IBXSmartType,
 } from '../interface/smart-type.interface';
-import { IBXStatus } from '../../status/interface/bx-status.interface';
 import {
     SmartTypeGetByEntityTypeIdRequestDto,
     SmartTypeGetRequestDto,
@@ -63,9 +62,7 @@ export class BxSmartTypeService {
         const smartType = await this.repo.getList(dto);
         const result = [] as IBXSmartFullType[];
         for (const type of smartType.result.types) {
-            result.push(
-                await this.getFullSmartData(type, type.entityTypeId as string),
-            );
+            result.push(await this.getFullSmartData(type, type.entityTypeId));
         }
         return result;
     }

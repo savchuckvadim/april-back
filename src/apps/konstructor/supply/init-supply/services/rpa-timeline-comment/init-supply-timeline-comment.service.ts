@@ -1,6 +1,4 @@
-import { PortalModel } from '@/modules/portal/services/portal.model';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
-
 import { Injectable } from '@nestjs/common';
 import { ArmCommentService } from './arm-comment.service';
 import { ProviderCommentService } from './provider-comment.service';
@@ -24,10 +22,7 @@ export class InitSupplyTimelineCommentService {
         private readonly totalSumCommentService: TotalSumCommentService,
     ) {}
 
-    public async getTimelineComment(
-        dto: InitSupplyDto,
-        PortalModel: PortalModel,
-    ): Promise<string> {
+    public async getTimelineComment(dto: InitSupplyDto): Promise<string> {
         let timelineComment = '';
         const armComment = this.armCommentService.getArmString(
             dto.clientArmId,

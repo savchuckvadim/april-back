@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { BxTimelineRepository } from '../repository/bx-timeline.repository';
 import { IBXTimelineComment } from '../interface/bx-timeline.interface';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';

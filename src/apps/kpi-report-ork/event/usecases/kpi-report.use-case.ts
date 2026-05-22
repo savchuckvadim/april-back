@@ -80,7 +80,7 @@ export class ReportKpiUseCase {
         const currentActionsData = this.getActionsData(
             eventAction?.items,
             eventActionType?.items,
-        ) as OrkKpiFilter[];
+        );
 
         this.generateBatchCommands(
             departament,
@@ -136,7 +136,7 @@ export class ReportKpiUseCase {
                 const actionType = EnumOrkFieldCode.ork_event_type;
                 switch (plField.code as EnumOrkFieldCode) {
                     case EnumOrkFieldCode.ork_event_action:
-                        eventActionField = plField as IField;
+                        eventActionField = plField;
                         actionFieldId = plField.bitrixCamelId;
                         break;
 
@@ -502,9 +502,7 @@ export class ReportKpiUseCase {
                     }
                 }
             }
-            userReport = this.proccesResultCommunications(
-                userReport,
-            ) as OrkReportKpiData;
+            userReport = this.proccesResultCommunications(userReport);
             report.push(userReport);
         }
         return report;

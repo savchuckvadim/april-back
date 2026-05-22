@@ -96,7 +96,7 @@ export class OfferTemplateService {
 
     async create(
         createDto: CreateOfferTemplateRequestDto,
-    ): Promise<OfferTemplate> {
+    ): Promise<OfferTemplate | null> {
         // Check if template with same code already exists
         // TODO: check if this is needed
         // TODO unique check for code
@@ -162,16 +162,15 @@ export class OfferTemplateService {
                 );
             }
 
-            blocks &&
-                (await this.offerTemplatePageBlockRepository.createMany(
-                    blocks,
-                ));
+            if (blocks && blocks.length > 0) {
+                await this.offerTemplatePageBlockRepository.createMany(blocks);
+            }
         }
 
         const resultWithRelations = await this.offerTemplateRepository.findById(
             BigInt(result.id),
         );
-        //@ts-ignore
+
         return resultWithRelations;
     }
 
@@ -229,7 +228,7 @@ export class OfferTemplateService {
     }
 
     async setActive(id: bigint, is_active: boolean): Promise<OfferTemplate> {
-        const template = await this.findById(id);
+        // const template = await this.findById(id);
         return this.offerTemplateRepository.update(id, { is_active });
     }
 
@@ -255,5 +254,12 @@ export class OfferTemplateService {
         }
 
         return this.offerTemplateRepository.update(id, { is_default });
+    }
+
+    async incrementTemplateCounter(id: bigint): Promise<OfferTemplate> {
+        const template = await this.findById(id);
+        return this.offerTemplateRepository.update(id, {
+            counter: template.counter + 1,
+        });
     }
 }

@@ -188,7 +188,7 @@ export class GsrParseService {
             // добавляем продукт
             if (complectName) {
                 currentCompany.products.push({
-                    name: complectName?.toString().trim() as string,
+                    name: complectName?.toString().trim(),
                     quantity: quantityStringCell
                         ? Number(
                               this.parseQuantity(
@@ -199,7 +199,7 @@ export class GsrParseService {
                     monthSum: monthSumCell
                         ? this.trimLast3IfDash(monthSumCell.toString()).trim()
                         : ('0' as string),
-                    armId: `${complectId?.toString().trim()} - ${complectName?.toString().trim()}` as string,
+                    armId: `${complectId?.toString().trim()} - ${complectName?.toString().trim()}`,
                 });
             }
 
@@ -213,7 +213,7 @@ export class GsrParseService {
                     contractEndDate: this.parseDate(
                         contractEndDateCell as string | Date | number,
                         true,
-                    ) as string,
+                    ),
                     contractType:
                         contractTypeCell?.toString().trim() || ('' as string),
                     contractPrepayment:

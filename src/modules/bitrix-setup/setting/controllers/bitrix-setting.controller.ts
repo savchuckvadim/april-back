@@ -17,6 +17,7 @@ import {
     CreateBitrixSettingDto,
     UpdateBitrixSettingDto,
 } from '../dto/bitrix-setting.dto';
+import { getErrorDetails } from '@/shared';
 
 @Controller('bitrix-setting')
 export class BitrixSettingController {
@@ -48,8 +49,7 @@ export class BitrixSettingController {
                     error: 'Bitrix Setting failed',
                     details: {
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,
@@ -81,8 +81,7 @@ export class BitrixSettingController {
                     details: {
                         settingable_id: settingableId,
                         settingable_type: settingableType,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.NOT_FOUND,
@@ -114,8 +113,7 @@ export class BitrixSettingController {
                     details: {
                         id: id,
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,
@@ -144,8 +142,7 @@ export class BitrixSettingController {
                     error: 'Bitrix Setting delete failed',
                     details: {
                         id: id,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,

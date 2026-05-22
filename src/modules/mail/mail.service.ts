@@ -1,13 +1,9 @@
 import { ISendMailOptions, MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
-import { RestrictionLiftedTemplate } from './templates/restriction-lifted.template';
 import { render } from '@react-email/components';
 import { User } from 'generated/prisma';
-import { RestrictionTemplate } from './templates/restriction.template';
 import { EmailVerificationTemplate } from './templates/email-verification.template';
 import { ResetPasswordTemplate } from './templates/reset-password.template';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
 import { TestTemplate } from './templates/test.template';
 import { SendEmailOfferRequestDto, SendEmailRequestDto } from './mail.dto';
 import { EmailOfferTemplate } from './templates/email-offer.template';
@@ -19,7 +15,6 @@ export class MailService {
 
     constructor(
         private readonly mailerService: MailerService,
-        @InjectQueue('mail') private readonly queue: Queue,
         private readonly storageService: StorageService,
     ) {}
 
@@ -83,12 +78,6 @@ export class MailService {
     public async sendEmailVerification(user: User, token: string) {
         const html = await render(EmailVerificationTemplate({ user, token }));
 
-        // await this.queue.add(
-        //     'send-email',
-        //     { email: user.email, subject: 'Верификация почты', html },
-        //     { removeOnComplete: true }
-        // )
-
         await this.sendEmail({
             subject: 'Верификация почты',
             html: html,
@@ -103,44 +92,47 @@ export class MailService {
     public async sendPasswordReset(user: User, token: string) {
         const html = await render(ResetPasswordTemplate({ user, token }));
 
-        // await this.queue.add(
-        // 	'send-email',
-        // 	{ email: user.email, subject: 'Сброс пароля', html },
-        // 	{ removeOnComplete: true }
-        // )
+        await this.sendEmail({
+            subject: 'Сброс пароля',
+            html,
+            to: [user.email ?? 'april-app@mail.ru'],
+            context: {
+                name: user.name,
+            },
+        });
 
         return true;
     }
 
-    public async sendRestrictionEmail(
-        user: User,
-        // restriction: Restriction,
-        violations: number,
-    ) {
-        const html = await render(RestrictionTemplate({ user, violations }));
+    // public async sendRestrictionEmail(
+    //     user: User,
+    //     // restriction: Restriction,
+    //     violations: number,
+    // ) {
+    //     const html = await render(RestrictionTemplate({ user, violations }));
 
-        // await this.queue.add(
-        // 	'send-email',
-        // 	{ email: user.email, subject: 'Ваш аккаунт был ограничен', html },
-        // 	{ removeOnComplete: true }
-        // )
+    //     // await this.queue.add(
+    //     // 	'send-email',
+    //     // 	{ email: user.email, subject: 'Ваш аккаунт был ограничен', html },
+    //     // 	{ removeOnComplete: true }
+    //     // )
 
-        return true;
-    }
+    //     return true;
+    // }
 
-    public async sendRestrictionLiftedEmail(user: User, violations: number) {
-        const html = await render(
-            RestrictionLiftedTemplate({ user, violations }),
-        );
+    // public async sendRestrictionLiftedEmail(user: User, violations: number) {
+    //     const html = await render(
+    //         RestrictionLiftedTemplate({ user, violations }),
+    //     );
 
-        // await this.queue.add(
-        // 	'send-email',
-        // 	{ email: user.email, subject: 'Ограничение снято', html },
-        // 	{ removeOnComplete: true }
-        // )
+    //     // await this.queue.add(
+    //     // 	'send-email',
+    //     // 	{ email: user.email, subject: 'Ограничение снято', html },
+    //     // 	{ removeOnComplete: true }
+    //     // )
 
-        return true;
-    }
+    //     return true;
+    // }
     async sendEmail(params: {
         subject: string;
         html: string;
@@ -171,16 +163,9 @@ export class MailService {
                 html: params.html,
                 attachments: params.attachments,
             };
-            const response = await this.mailerService.sendMail(sendMailParams);
-            this.logger.log(
-                `Email sent successfully to recipients with the following parameters : ${JSON.stringify(
-                    sendMailParams,
-                )}`,
-                response,
-            );
-            return {
-                ...response,
+            await this.mailerService.sendMail(sendMailParams);
 
+            return {
                 message: 'Email sent successfully',
             };
         } catch (error) {

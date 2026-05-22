@@ -11,8 +11,9 @@ import {
     GetBitrixTokenDto,
     SetBitrixSecretDto,
 } from '../dto/bitrix-token.dto';
-import { PrismaService } from 'src/core/prisma';
-import { decrypt, encrypt } from '@/lib/utils/crypt.util';
+
+import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
+import { PrismaService } from '@/core/prisma/prisma.service';
 
 @Injectable()
 export class BitrixTokenService {
@@ -53,7 +54,7 @@ export class BitrixTokenService {
             return await this.storeOrUpdateAppToken(app.id, dto.token);
         } catch (error) {
             throw new BadRequestException(
-                `Failed to store or update token: ${error.message}`,
+                `Failed to store or update token: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
         }
     }
@@ -91,7 +92,7 @@ export class BitrixTokenService {
             };
         } catch (error) {
             throw new BadRequestException(
-                `Failed to store or update token: ${error.message}`,
+                `Failed to store or update token: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
         }
     }
@@ -137,7 +138,7 @@ export class BitrixTokenService {
             };
         } catch (error) {
             throw new BadRequestException(
-                `Failed to store or update token: ${error.message}`,
+                `Failed to store or update token: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
         }
     }

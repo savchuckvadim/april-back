@@ -67,9 +67,6 @@ export class InitDealUseCase {
             'service_offer_smart',
         );
 
-        // console.log('offerServicePortalSmart')
-        // console.log(offerServicePortalSmart)
-
         let serviceSmartId = null as number | null;
         if (rpa && offerSmartEntityType && offerSmartInRpaId) {
             const offerSmartResponse = await bitrix.item.get(

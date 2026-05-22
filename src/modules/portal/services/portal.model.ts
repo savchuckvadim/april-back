@@ -13,15 +13,17 @@ import {
     IFieldCode,
     IPDeal,
     IStage,
+    IPSmart,
 } from '../interfaces/portal.interface';
 import { TelegramService } from '../../telegram/telegram.service';
 import {
     CategoryToStageMap,
     PbxDealCategoryCodeEnum,
-    PbxDealsData,
 } from './types/deals/portal.deal.type';
+import { SmartType } from './types/smart/smart.type';
 
 // @Injectable()
+export type PbxEntityType = 'company' | 'lead' | 'deal' | 'contact';
 export class PortalModel {
     private readonly logger = new Logger(PortalModel.name);
 
@@ -94,6 +96,33 @@ export class PortalModel {
         }
         return item;
     }
+    getEntityFieldByCode(
+        entityType: PbxEntityType,
+        code: string,
+    ): IField | undefined {
+        if (entityType === 'company') {
+            return this.portal.company?.bitrixfields.find(
+                field => field.code === code,
+            );
+        }
+        if (entityType === 'lead') {
+            return this.portal.lead?.bitrixfields.find(
+                field => field.code === code,
+            );
+        }
+        if (entityType === 'deal') {
+            return this.portal.deals?.[0]?.bitrixfields.find(
+                field => field.code === code,
+            );
+        }
+        if (entityType === 'contact') {
+            return this.portal.contact?.bitrixfields.find(
+                field => field.code === code,
+            );
+        }
+        return undefined;
+    }
+
     getDeal(): IPDeal {
         return this.portal.deals[0];
     }
@@ -127,7 +156,8 @@ export class PortalModel {
         const field = this.portal.deals[0].bitrixfields.find(
             field => field.code === code,
         );
-        return `UF_CRM_${field?.bitrixId}` || '';
+        if (!field) return '';
+        return `UF_CRM_${field.bitrixId}`;
     }
     getDealFieldItemByCode(code: string): IFieldItem | undefined {
         for (const field of this.portal.deals[0].bitrixfields || []) {
@@ -252,12 +282,12 @@ export class PortalModel {
         return this.portal.bx_rq?.find(preset => preset.code === code);
     }
 
-    getSmartByType(type: 'service_offer' | 'service_month' | 'presentation') {
+    getSmartByType(type: SmartType) {
         return this.portal.smarts?.find(smart => smart.type === type);
     }
 
-    getSmartFieldByCode(smart: any, code: string): IField | undefined {
-        const field = smart.fields.find((field: IField) => field.code === code);
+    getSmartFieldByCode(smart: IPSmart, code: string): IField | undefined {
+        const field = smart.fields.find(f => f.code === code);
         if (
             field?.bitrixId &&
             field.bitrixId[0].toUpperCase() === field.bitrixId[0]
@@ -287,4 +317,42 @@ export class PortalModel {
     ): IFieldItem | undefined {
         return field.items.find(item => item.code === itemCode);
     }
+
+    getSalesTaskGroupId = (): number => {
+        let result = 41;
+        if (this.portal) {
+            if (this.portal.bitrixCallingTasksGroup) {
+                result = this.portal.bitrixCallingTasksGroup.bitrixId;
+            }
+        }
+        return result;
+    };
+
+    getServiceTaskGroupId = (): number => {
+        const domain = this.portal.domain;
+        if (domain.includes('dev')) {
+            return 15;
+        }
+        if (domain.includes('gsr')) {
+            return 45;
+        }
+        if (domain.includes('april')) {
+            return 34;
+        }
+        return 41;
+    };
+
+    getServiceSignalTaskGroupId = (): number => {
+        const domain = this.portal.domain;
+        if (domain.includes('dev')) {
+            return 17;
+        }
+        if (domain.includes('gsr')) {
+            return 9;
+        }
+        if (domain.includes('april')) {
+            return 34;
+        }
+        return 41;
+    };
 }

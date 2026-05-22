@@ -1,11 +1,4 @@
-import {
-    Controller,
-    Get,
-    Param,
-    Res,
-    NotFoundException,
-    BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
 import { FileLinkService } from './file-link.service';
 import * as fs from 'fs';
@@ -20,7 +13,22 @@ export class FilesController {
 
     @Get(':token')
     async download(@Param('token') token: string, @Res() res: Response) {
-        const payload = this.encryptService.decryptData(token);
+        const payload = this.encryptService.decryptData(token) as {
+            domain: string;
+            userId: number;
+            app: 'konstructor' | 'transcription';
+            subDir:
+                | 'zoffer'
+                | 'audio'
+                | 'offer'
+                | 'provider/stamp'
+                | 'provider/logo'
+                | 'offer-word'
+                | 'contract'
+                | 'supply';
+            year: string;
+            fileName: string;
+        };
 
         const { domain, userId, app, subDir, year, fileName } = payload;
         const filePath = await this.fileLinkService.getFilePath(
@@ -31,7 +39,8 @@ export class FilesController {
             year,
             fileName,
         );
-
+        console.log('payload', payload);
+        console.log('filePath', filePath);
         if (!filePath || !fs.existsSync(filePath)) {
             throw new NotFoundException('Файл не найден');
         }

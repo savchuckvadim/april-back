@@ -4,7 +4,7 @@ import { BitrixAppService } from '../../bitrix-setup/app/services/bitrix-app.ser
 import { firstValueFrom } from 'rxjs';
 import { BitrixTokenService } from '../../bitrix-setup/token/services/bitrix-token.service';
 import { BITRIX_APP_CODES } from 'src/modules/bitrix-setup/app/enums/bitrix-app.enum';
-import { decrypt } from '@/lib/utils/crypt.util';
+import { decrypt } from '@/shared/lib/utils/crypt.util';
 
 @Injectable()
 export class BitrixAuthService {

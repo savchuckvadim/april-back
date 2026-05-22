@@ -43,7 +43,7 @@ export class RqEntity {
     bankAdress: string;
     bankOther: string;
     qrs: any[];
-
+    withTax: boolean;
     // logos: LogoEntity[];
     // stamps: LogoEntity[];
     // signatures: LogoEntity[];

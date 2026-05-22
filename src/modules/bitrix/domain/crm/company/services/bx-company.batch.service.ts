@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { BxCompanyRepository } from '../repository/bx-company.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXCompany } from '../interface/bx-company.interface';
@@ -43,5 +42,17 @@ export class BxCompanyBatchService {
 
     addField(cmdCode: string, fields: Partial<IBXField>) {
         return this.repo.setFieldBtch(cmdCode, fields);
+    }
+
+    updateField(
+        cmdCode: string,
+        id: number | string,
+        fields: Partial<IBXField>,
+    ) {
+        return this.repo.updateFieldBtch(cmdCode, id, fields);
+    }
+
+    deleteField(cmdCode: string, id: number | string) {
+        return this.repo.deleteFieldBtch(cmdCode, id);
     }
 }

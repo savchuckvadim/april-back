@@ -4,6 +4,7 @@ import { PortalMeasureEntity } from './portal-measure.entity';
 export class PortalContractEntity {
     id: bigint;
     title: string;
+
     template: string | null;
     order: number | null;
     portal_id: bigint;

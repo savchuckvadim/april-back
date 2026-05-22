@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { SetSecretDto } from '../dto/set-secret.dto';
 import {
     BitrixAppDto,
     GetBitrixAppDto,
@@ -35,12 +34,14 @@ export class BitrixAppClientService {
         const apps = await this.bitrixAppService.getAppsByPortalId(
             dto.portalId,
         );
+        console.log('getPortalApps dto', dto);
+        console.log('getPortalApps apps', apps);
         return apps.map(app => toBitrixAppDto(app));
     }
 
     //TODO: убрать - for dev
-    async getAllApps(dto: GetPortalAppsDto): Promise<BitrixAppDto[]> {
-        const apps = await this.bitrixAppService.getAllApps();
-        return apps.map(app => toBitrixAppDto(app));
-    }
+    // async getAllApps(dto: GetPortalAppsDto): Promise<BitrixAppDto[]> {
+    //     const apps = await this.bitrixAppService.getAllApps();
+    //     return apps.map(app => toBitrixAppDto(app));
+    // }
 }

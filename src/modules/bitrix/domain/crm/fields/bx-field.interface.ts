@@ -1,8 +1,9 @@
 export interface IBXField {
     ID: string;
+    LABEL: string;
     ENTITY_ID: string;
     FIELD_NAME: string;
-    USER_TYPE_ID: 'enumeration' | string;
+    USER_TYPE_ID: EnumUserFieldType | string;
     XML_ID: string | null;
     SORT: string;
     MULTIPLE: 'Y' | 'N';
@@ -34,8 +35,25 @@ export interface BitrixLangMapNullable {
 }
 
 export interface BitrixEnumerationOption {
-    ID: string;
+    ID?: string;
+    XML_ID: string;
     SORT: string;
     VALUE: string;
     DEF: 'Y' | 'N';
+}
+
+export enum EnumUserFieldType {
+    STRING = 'string',
+    INTEGER = 'integer',
+    DOUBLE = 'double',
+    DATE = 'date',
+    DATETIME = 'datetime',
+    BOOLEAN = 'boolean',
+    FILE = 'file',
+    ENUMERATION = 'enumeration',
+    URL = 'url',
+    ADDRESS = 'address',
+    MONEY = 'money',
+    IBLOCK_SECTION = 'iblock_section',
+    IBLOCK_ELEMENT = 'iblock_element',
 }

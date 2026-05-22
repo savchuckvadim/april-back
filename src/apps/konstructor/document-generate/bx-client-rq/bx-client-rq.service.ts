@@ -22,7 +22,7 @@ export class DocumentClientBxRqService {
         } else {
             fullname =
                 (clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.FULLNAME)
-                    ?.value as string) || (fullname as string);
+                    ?.value as string) || fullname;
         }
         inn = `ИНН: ${clientRq.fields.find(fld => fld.code === RQ_ITEM_CODE.INN)?.value || inn}`;
         return [fullname, inn];
@@ -86,7 +86,7 @@ export class DocumentClientBxRqService {
         )?.value;
         phone = `Телефон: ${phoneValue || phone}`;
         result.push(phone);
-        let address = this.getAddressString(clientRq);
+        const address = this.getAddressString(clientRq);
         result.push(address);
         return result;
     }

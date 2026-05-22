@@ -16,7 +16,7 @@ import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
 import { gsrMigrateDataDto } from './gsr.nigrate-dto';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 
 @Injectable()
 export class GsrBitrixService {
@@ -46,7 +46,7 @@ export class GsrBitrixService {
         this.productRowService.setContext(this.bitrix, this.portal, userId);
         this.contactService.setContext(this.bitrix, this.portal, userId);
         const results = [] as IBitrixBatchResponseResult[][];
-        let count = 0;
+        const count = 0;
         // for (let i = 0; i < data.length; i += 1) {
         //     const chunk = data.slice(i, i + 1)
 
@@ -113,7 +113,7 @@ export class GsrBitrixService {
         this.productRowService.setContext(this.bitrix, this.portal, userId);
         this.contactService.setContext(this.bitrix, this.portal, userId);
         const results = [] as IBitrixBatchResponseResult[][];
-        let count = 0;
+        const count = 0;
         // for (let i = 0; i < data.length; i += 1) {
         //     const chunk = data.slice(i, i + 1)
 
@@ -182,7 +182,7 @@ export class GsrBitrixService {
             }
         });
         const response = await this.bitrix.api.callBatchWithConcurrency(1);
-        let total = 0;
+        const total = 0;
         const result = {
             result: {} as { [key: string]: any },
             total,
@@ -312,7 +312,7 @@ export class GsrBitrixService {
 
         // Преобразуем в формат MigrateToBxDto
         // const migrateData = this.converter.convertSheetsToMigrate(sheetsData);
-        const migrateData = gsrMigrateDataDto as MigrateToBxDto[];
+        const migrateData = gsrMigrateDataDto;
         // Выполняем миграцию
         return await this.migrateToBitrix(domain, userId, migrateData);
     }

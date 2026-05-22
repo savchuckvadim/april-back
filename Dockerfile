@@ -1,34 +1,44 @@
-# Используем Node.js 20
-FROM node:20-slim
-
-
-# Установка LibreOffice
-# RUN apt update && \
-#     apt install -y libreoffice libreoffice-writer && \
-#     apt clean && rm -rf /var/lib/apt/lists/*
+# syntax=docker/dockerfile:1.7
+FROM node:20-slim AS deps
 
 RUN apt-get update && \
-    apt-get install -y openssl libssl-dev ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends openssl libssl-dev ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# Рабочая директория
 WORKDIR /app
-
-# Копируем зависимости
 COPY package*.json ./
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
-# Копируем исходный код
+
+FROM node:20-slim AS build
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl libssl-dev ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-
 RUN npx prisma generate
-
-# Собираем
 RUN npm run build
 
-# Открываем порт
-EXPOSE 3003
 
-# Запуск приложения
+FROM node:20-slim AS runtime
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# только prod зависимости для рантайма
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --no-audit --no-fund
+
+# артефакты сборки
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/generated ./generated
+COPY --from=build /app/prisma ./prisma
+
 CMD ["node", "dist/main"]

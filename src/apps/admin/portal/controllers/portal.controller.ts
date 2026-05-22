@@ -37,19 +37,16 @@ export class AdminPortalController {
     @Post()
     async createPortal(
         @Body() createPortalDto: CreatePortalDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<AdminPortalResponseDto> {
         const portal = await this.portalService.create(createPortalDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: portal,
-        };
+        return portal;
     }
 
     @ApiOperation({ summary: 'Get portal by ID' })
     @ApiResponse({
         status: 200,
         description: 'Portal found',
-        type: AdminPortalWithRelationsResponseDto,
+        type: AdminPortalResponseDto,
     })
     @ApiResponse({
         status: 404,
@@ -58,7 +55,7 @@ export class AdminPortalController {
     @Get(':id')
     async getPortalById(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<AdminPortalWithRelationsResponseDto> {
+    ): Promise<AdminPortalResponseDto> {
         const portal = await this.portalService.findById(id);
         return portal;
     }

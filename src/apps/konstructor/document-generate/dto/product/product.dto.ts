@@ -3,15 +3,16 @@ import { Type } from 'class-transformer';
 import { IsNumber } from 'class-validator';
 import { IsString } from 'class-validator';
 import { ValidateNested } from 'class-validator';
-import { ProductRowSupplyDto } from '../product-row/product-row.dto';
 import { ContractDto } from '../../../dto/contract.dto';
 import { SupplyDto } from '@/apps/konstructor/dto';
 
 export enum ProductTypeEnum {
     garant = 'garant',
     lt = 'lt',
+    lt_other = 'lt_other',
     consalting = 'consalting',
     star = 'star',
+    academy = 'academy',
 }
 
 export class ProductDto {
@@ -34,10 +35,11 @@ export class ProductDto {
     @Type(() => ContractDto)
     contract: ContractDto;
 
-    @ValidateIf(o => o.supply !== false)
+    @IsOptional()
+    @ValidateIf((o: ProductDto) => o.supply !== false)
     @ValidateNested()
     @Type(() => SupplyDto)
-    supply: SupplyDto | false;
+    supply: SupplyDto | false | null;
 
     @IsEnum(ProductTypeEnum) type: ProductTypeEnum;
     // остальные поля по аналогии (можно расширить)

@@ -9,7 +9,7 @@
 import { BitrixOwnerType } from '../../../enums/bitrix-constants.enum';
 
 export interface IBXProductRow {
-    ownerType: BitrixOwnerType;
+    ownerType: BitrixOwnerType | string;
     ownerId: string | number;
     productRows: IBXProductRowRow[];
 }
@@ -29,6 +29,8 @@ export interface IBXProductRowRow {
     supply?: string;
     measureCode?: string;
     measureId?: number | string;
+
+    measureName?: string;
     sort?: number;
 }
 
@@ -40,15 +42,15 @@ export interface IBXDealProductRowGet {
     PRODUCT_NAME: string;
     ORIGINAL_PRODUCT_NAME: string | null;
     PRODUCT_DESCRIPTION: string | null;
-    PRICE: number | number;
-    PRICE_EXCLUSIVE: number | number;
-    PRICE_NETTO: number | number;
-    PRICE_BRUTTO: number | number;
-    PRICE_ACCOUNT: number | number;
+    PRICE: number;
+    PRICE_EXCLUSIVE: number;
+    PRICE_NETTO: number;
+    PRICE_BRUTTO: number;
+    PRICE_ACCOUNT: number;
     QUANTITY: number;
-    DISCOUNT_TYPE_ID: number | number;
-    DISCOUNT_RATE: number | number;
-    DISCOUNT_SUM: number | number;
+    DISCOUNT_TYPE_ID: number;
+    DISCOUNT_RATE: number;
+    DISCOUNT_SUM: number;
     TAX_RATE: number | string | null;
     TAX_INCLUDED: string;
     CUSTOMIZED: string;

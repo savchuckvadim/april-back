@@ -6,13 +6,10 @@ import {
 } from '../../../../core/domain/consts/bitrix-api.enum';
 import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
 import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxDealRepository {
-    // private bxApi: BitrixBaseApi;
-    constructor(private readonly bxApi: BitrixBaseApi) {
-        // this.bxApi = this.bxApiFactoryService.getBitrixApi();
-    }
-
+    constructor(private readonly bxApi: BitrixBaseApi) {}
     async get(dealId: number, select?: string[]) {
         return await this.bxApi.callType(
             EBxNamespace.CRM,
@@ -56,7 +53,7 @@ export class BxDealRepository {
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.LIST,
-            { select, filter, order },
+            { select, filter, order: order || {} },
         );
     }
     //     field_n — название поля, по которому будет отфильтрована выборка элементов
@@ -198,6 +195,67 @@ export class BxDealRepository {
                     CONTACT_ID: id,
                 })),
             },
+        );
+    }
+
+    async setField(fields: Partial<IBXField>) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_ADD,
+            { fields },
+        );
+    }
+
+    setFieldBtch(cmdCode: string, fields: Partial<IBXField>) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_ADD,
+            { fields },
+        );
+    }
+
+    async updateField(id: number | string, fields: Partial<IBXField>) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_UPDATE,
+            { id, fields },
+        );
+    }
+
+    updateFieldBtch(
+        cmdCode: string,
+        id: number | string,
+        fields: Partial<IBXField>,
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_UPDATE,
+            { id, fields },
+        );
+    }
+
+    async deleteField(id: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_DELETE,
+            { id },
+        );
+    }
+
+    deleteFieldBtch(cmdCode: string, id: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.USER_FIELD_DELETE,
+            { id },
         );
     }
 }

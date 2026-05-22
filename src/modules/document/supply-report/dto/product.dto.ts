@@ -10,7 +10,7 @@ import {
     IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ContractDto } from './contract.dto';
+import { ContractDto } from '@/apps/konstructor/dto/contract.dto';
 
 export class ProductDto {
     @IsInt()

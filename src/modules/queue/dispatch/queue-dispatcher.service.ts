@@ -3,7 +3,6 @@ import { Job, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueNames } from '../constants/queue-names.enum';
-import { SilentJobHandlerId } from 'src/core/silence/constants/silent-job-handlers.enum';
 import { TranscribeJobHandlerId } from '../constants/transcribe-job-handler-id.enum';
 import { JobNames } from '../constants/job-names.enum';
 
@@ -14,7 +13,7 @@ export class QueueDispatcherService {
     constructor(
         @InjectQueue(QueueNames.EVENT) private readonly eventQueue: Queue,
         @InjectQueue(QueueNames.DOCUMENT) private readonly documentQueue: Queue,
-        @InjectQueue(QueueNames.SILENT) private readonly silentQueue: Queue,
+        @InjectQueue(QueueNames.MAIL) private readonly mailQueue: Queue,
         @InjectQueue(QueueNames.SALES_KPI_REPORT)
         private readonly salesKpiReportQueue: Queue,
         @InjectQueue(QueueNames.TRANSCRIBE_AUDIO)
@@ -23,37 +22,56 @@ export class QueueDispatcherService {
         private readonly serviceDealsScheduleQueue: Queue,
         @InjectQueue(QueueNames.SERVICE_DEALS)
         private readonly serviceDealsQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_DEALS_ORDER)
+        private readonly serviceDealsOrderQueue: Queue,
         @InjectQueue(QueueNames.ORK_KPI_REPORT)
         private readonly orkKpiReportQueue: Queue,
+        @InjectQueue(QueueNames.OFFER_WORD_EPHEMERAL_PDF)
+        private readonly offerWordEphemeralPdfQueue: Queue,
+        @InjectQueue(QueueNames.ZAKUPKI_OFFER)
+        private readonly zakupkiOfferQueue: Queue,
+        @InjectQueue(QueueNames.KONSTRUCTOR)
+        private readonly konstructorQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_GENERATE_ACTS)
+        private readonly serviceGenerateActsQueue: Queue,
+
+        // event-sales-app
+        @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL)
+        private readonly eventSalesColdCallQueue: Queue,
+
+
+        //очепедь для ожидания данных в тишине
+        @InjectQueue(QueueNames.EVENT_SILENT)
+        private readonly eventSilentQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
 
     async dispatch<T>(
         queueName: QueueNames,
-        jobName: SilentJobHandlerId | TranscribeJobHandlerId | JobNames,
+        jobName: TranscribeJobHandlerId | JobNames,
         data: any,
         jobId?: string,
     ): Promise<Job<T>> {
         const queue = this.getQueue(queueName);
         this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
-        this.logger.log(`Job data: ${JSON.stringify(data)}`);
+        // this.logger.log(`Job data: ${JSON.stringify(data)}`);
         const job = jobId
             ? await queue.add(jobName, data, { jobId })
             : await queue.add(jobName, data);
-        this.logger.log('Job added to queue');
+
         return job;
     }
 
     getQueue(name: QueueNames): Queue {
-        this.logger.log(`Getting queue: ${name}`);
+        this.logger.debug(`Getting queue: ${name}`);
         switch (name) {
             case QueueNames.EVENT:
                 return this.eventQueue;
             case QueueNames.DOCUMENT:
                 return this.documentQueue;
-            case QueueNames.SILENT:
-                return this.silentQueue;
+            case QueueNames.MAIL:
+                return this.mailQueue;
             case QueueNames.SALES_KPI_REPORT:
                 return this.salesKpiReportQueue;
             case QueueNames.TRANSCRIBE_AUDIO:
@@ -62,12 +80,30 @@ export class QueueDispatcherService {
                 return this.serviceDealsScheduleQueue;
             case QueueNames.SERVICE_DEALS:
                 return this.serviceDealsQueue;
+            case QueueNames.SERVICE_DEALS_ORDER:
+                return this.serviceDealsOrderQueue;
+            case QueueNames.SERVICE_GENERATE_ACTS:
+                return this.serviceGenerateActsQueue;
             case QueueNames.ORK_KPI_REPORT:
                 return this.orkKpiReportQueue;
-            default:
+            case QueueNames.OFFER_WORD_EPHEMERAL_PDF:
+                return this.offerWordEphemeralPdfQueue;
+            case QueueNames.ZAKUPKI_OFFER:
+                return this.zakupkiOfferQueue;
+            case QueueNames.KONSTRUCTOR:
+                return this.konstructorQueue;
+
+            case QueueNames.EVENT_SALES_COLD_CALL:
+                return this.eventSalesColdCallQueue;
+
+            case QueueNames.EVENT_SILENT:
+                return this.eventSilentQueue;
+
+            default: {
                 const error = `Unknown queue name: ${name}`;
                 this.logger.error(error);
                 throw new Error(error);
+            }
         }
     }
 

@@ -7,13 +7,9 @@ import {
     Param,
     Delete,
     Query,
-    HttpCode,
-    HttpStatus,
-    BadRequestException,
     UploadedFile,
     UseInterceptors,
     Res,
-    NotFoundException,
     Put,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -24,11 +20,13 @@ import {
     ApiTags,
     ApiConsumes,
     ApiBody,
+    ApiProduces,
 } from '@nestjs/swagger';
 import { WordTemplateService } from '../services/word-template.service';
-import { StorageService } from '../../../../core/storage/storage.service';
+import { DownloadTemplateService } from '../services/download-template.service';
 import {
-    CreateWordTemplateRequestDto,
+    CreateWordTemplateBodyDto,
+    CreateWordTemplateMultipartDto,
     CreateWordTemplateResponseDto,
 } from '../dtos/create-word-template.dto';
 import { UpdateWordTemplateDto } from '../dtos/update-word-template.dto';
@@ -39,12 +37,13 @@ import {
 } from '../dtos/word-template-params.dto';
 import { WordTemplateQueryDto } from '../dtos/find-all-word-template.dto';
 import {
+    UserSelectedResponseDto,
     UserSelectedTemplateSummaryDto,
     WordTemplateDto,
     WordTemplateSummaryDto,
 } from '../dtos/word-template.dto';
-import { UserSelectedTemplate } from 'generated/prisma';
 import { randomUUID } from 'crypto';
+import { OfferTemplateVisibility } from '../../offer-template';
 
 /**
  * set default
@@ -60,7 +59,7 @@ import { randomUUID } from 'crypto';
 export class WordTemplateController {
     constructor(
         private readonly wordTemplateService: WordTemplateService,
-        private readonly storageService: StorageService,
+        private readonly downloadTemplateService: DownloadTemplateService,
     ) {}
 
     @ApiOperation({
@@ -76,45 +75,22 @@ export class WordTemplateController {
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data')
     @ApiBody({
-        type: CreateWordTemplateRequestDto,
+        type: CreateWordTemplateMultipartDto,
     })
     async createWordTemplate(
         @UploadedFile() file: Express.Multer.File,
-        @Body() createDto: CreateWordTemplateRequestDto,
+        @Body() createDto: CreateWordTemplateBodyDto,
     ): Promise<CreateWordTemplateResponseDto> {
-        try {
-            const uuid = randomUUID();
+        const uuid = randomUUID();
 
-            const code = `offer-word-${uuid}`;
-            const result = await this.wordTemplateService.create(
-                {
-                    ...createDto,
-                    code,
-                },
-                file,
-            );
-            return {
-                id: String(result.id!), // Преобразуем BigInt в string
-                name: result.name,
-                visibility: result.visibility as any,
-                is_default: result.is_default,
-                file_path: result.file_path,
-                demo_path: result.demo_path,
-                type: result.type,
-                code: result.code,
-                tags: result.tags,
-                is_active: result.is_active,
-                counter: result.counter,
-                template_url: result.template_url,
-                created_at: result.created_at,
-                updated_at: result.updated_at,
-            };
-        } catch (error) {
-            console.error(error);
-            throw new BadRequestException(
-                error.message || 'Failed to create word template',
-            );
-        }
+        const code = `offer-word-${uuid}`;
+        return await this.wordTemplateService.create(
+            {
+                ...createDto,
+                code,
+            },
+            file,
+        );
     }
 
     @ApiOperation({
@@ -130,33 +106,15 @@ export class WordTemplateController {
     async findAllWordTemplates(
         @Query() query?: WordTemplateQueryDto,
     ): Promise<WordTemplateSummaryDto[]> {
-        try {
-            const filters: any = {};
-            const { visibility, portal_id, is_active, search } = query || {};
-            if (visibility) filters.visibility = visibility;
-            if (portal_id) filters.portal_id = BigInt(portal_id);
-            if (is_active !== undefined) filters.is_active = is_active === true;
-            if (search) filters.search = search;
+        const filters: Partial<WordTemplateQueryDto> = {};
+        const { visibility, portal_id, is_active, search } = query || {};
+        if (visibility) filters.visibility = visibility;
+        if (portal_id) filters.portal_id = portal_id;
+        if (is_active !== undefined) filters.is_active = is_active === true;
+        if (search) filters.search = search;
 
-            const templates = await this.wordTemplateService.findMany(filters);
-            return templates.map(t => ({
-                id: String(t.id), // Преобразуем BigInt в string
-                name: t.name,
-                visibility: t.visibility as any,
-                is_default: t.is_default,
-                type: t.type,
-                code: t.code,
-                is_active: t.is_active,
-                counter: t.counter,
-                template_url: t.template_url,
-                created_at: t.created_at,
-            }));
-        } catch (error) {
-            console.error(error);
-            throw new BadRequestException(
-                error.message || 'Failed to get word templates',
-            );
-        }
+        const templates = await this.wordTemplateService.findMany(filters);
+        return templates.map(t => new WordTemplateSummaryDto(t));
     }
 
     @ApiOperation({
@@ -171,18 +129,7 @@ export class WordTemplateController {
     @Get('public')
     async findPublic(): Promise<WordTemplateSummaryDto[]> {
         const templates = await this.wordTemplateService.findPublic();
-        return templates.map(t => ({
-            id: String(t.id), // Преобразуем BigInt в string
-            name: t.name,
-            visibility: t.visibility as any,
-            is_default: t.is_default,
-            type: t.type,
-            code: t.code,
-            is_active: t.is_active,
-            counter: t.counter,
-            template_url: t.template_url,
-            created_at: t.created_at,
-        }));
+        return templates;
     }
 
     @ApiOperation({
@@ -201,18 +148,7 @@ export class WordTemplateController {
         const templates = await this.wordTemplateService.findPortalTemplates(
             BigInt(params.portal_id),
         );
-        return templates.map(t => ({
-            id: String(t.id), // Преобразуем BigInt в string
-            name: t.name,
-            visibility: t.visibility as any,
-            is_default: t.is_default,
-            type: t.type,
-            code: t.code,
-            is_active: t.is_active,
-            counter: t.counter,
-            template_url: t.template_url,
-            created_at: t.created_at,
-        }));
+        return templates;
     }
 
     @ApiOperation({
@@ -223,15 +159,12 @@ export class WordTemplateController {
     @ApiResponse({
         status: 200,
         description: 'List of user word templates',
-        type: [WordTemplateSummaryDto],
+        type: UserSelectedResponseDto,
     })
     @Get('user/:user_id/portal/:portal_id')
     async findUserTemplates(
         @Param() params: WordTemplateUserPortalParamsDto,
-    ): Promise<{
-        templates: WordTemplateSummaryDto[];
-        selected: UserSelectedTemplateSummaryDto[];
-    }> {
+    ): Promise<UserSelectedResponseDto> {
         const templates = await this.wordTemplateService.findUserTemplates(
             BigInt(params.user_id),
             BigInt(params.portal_id),
@@ -240,19 +173,24 @@ export class WordTemplateController {
             templates: templates.templates.map(t => ({
                 id: String(t.id), // Преобразуем BigInt в string
                 name: t.name,
-                visibility: t.visibility as any,
+                visibility: t.visibility as OfferTemplateVisibility,
                 is_default: t.is_default,
                 type: t.type,
                 code: t.code,
                 is_active: t.is_active,
+                is_archived: t.is_archived,
+                user_id: t.user_id,
                 counter: t.counter,
                 template_url: t.template_url,
                 created_at: t.created_at,
+                tags: t.tags,
+                portal_id: t.portal_id,
             })),
             selected: templates.selected.map(
                 t => new UserSelectedTemplateSummaryDto(t),
             ),
         };
+
         return result;
     }
 
@@ -281,6 +219,7 @@ export class WordTemplateController {
         const template = await this.wordTemplateService.findById(
             BigInt(params.id),
         );
+
         return template as WordTemplateDto;
     }
 
@@ -291,76 +230,20 @@ export class WordTemplateController {
     @ApiResponse({
         status: 200,
         description: 'File download',
-        content: {
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                {
-                    schema: {
-                        type: 'string',
-                        format: 'binary',
-                    },
-                },
+        schema: {
+            type: 'string',
+            format: 'binary',
         },
     })
+    @ApiProduces(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
     @Get(':id/download')
     async downloadTemplate(
         @Param() params: WordTemplateIdParamsDto,
-        @Res() res: Response,
+        @Res({ passthrough: true }) res: Response,
     ): Promise<void> {
-        const template = await this.wordTemplateService.findById(
-            BigInt(params.id),
-        );
-
-        if (!template.file_path) {
-            throw new NotFoundException('Template file not found');
-        }
-
-        // Проверяем существование файла
-        const fileExists = await this.storageService.fileExists(
-            template.file_path,
-        );
-
-        if (!fileExists) {
-            throw new NotFoundException('Template file not found in storage');
-        }
-
-        // Читаем файл
-        const fileBuffer = await this.storageService.readFile(
-            template.file_path,
-        );
-
-        // Очищаем имя файла от недопустимых символов для HTTP заголовков
-        // Используем только безопасные ASCII символы
-        const sanitizeFileName = (name: string): string => {
-            if (!name) return 'template';
-            // Оставляем только буквы, цифры, дефисы, подчеркивания и точки
-            // Все остальное заменяем на подчеркивания
-            const sanitized = name
-                .replace(/[^a-zA-Z0-9\-_.]/g, '_')
-                .replace(/_+/g, '_')
-                .replace(/^_+|_+$/g, '')
-                .substring(0, 100) // Ограничиваем длину
-                .trim();
-            return sanitized || 'template';
-        };
-
-        const safeFileName = sanitizeFileName(template.name || 'template');
-        const fileName = `${safeFileName}.docx`;
-
-        // Устанавливаем заголовки для скачивания
-        res.setHeader(
-            'Content-Type',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        );
-
-        // Используем простой формат без кавычек (как в kpi-report)
-        // Это самый безопасный вариант для HTTP заголовков
-        res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=${fileName}`,
-        );
-
-        // Отправляем файл
-        res.send(fileBuffer);
+        await this.downloadTemplateService.downloadById(params.id, res);
     }
 
     @ApiOperation({
@@ -400,9 +283,20 @@ export class WordTemplateController {
         description: 'Word template deleted successfully',
     })
     @Delete(':id')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    async remove(@Param() params: WordTemplateIdParamsDto): Promise<void> {
-        return this.wordTemplateService.delete(BigInt(params.id));
+    async remove(@Param() params: WordTemplateIdParamsDto): Promise<boolean> {
+        return await this.wordTemplateService.delete(BigInt(params.id));
+    }
+
+    @Get(':id/archive')
+    async archive(@Param() params: WordTemplateIdParamsDto): Promise<boolean> {
+        return await this.wordTemplateService.archive(BigInt(params.id));
+    }
+
+    @Get(':id/unarchive')
+    async unarchive(
+        @Param() params: WordTemplateIdParamsDto,
+    ): Promise<boolean> {
+        return await this.wordTemplateService.unarchive(BigInt(params.id));
     }
 
     @ApiOperation({

@@ -14,7 +14,7 @@ export class GsrMigrateBitrixCompanyService extends GsrMigrateBitrixAbstract {
             {
                 ASSIGNED_BY_ID: this.userId,
                 TITLE: title,
-                UF_CRM_USER_CARDNUM: element.id as string,
+                UF_CRM_USER_CARDNUM: element.id,
                 COMMENTS: element.company,
             },
         );
@@ -27,7 +27,7 @@ export class GsrMigrateBitrixCompanyService extends GsrMigrateBitrixAbstract {
         const response = await this.bitrix.company.set({
             ASSIGNED_BY_ID: this.userId,
             TITLE: title,
-            UF_CRM_USER_CARDNUM: element.id as string,
+            UF_CRM_USER_CARDNUM: element.id,
             COMMENTS: element.company,
         });
 

@@ -22,6 +22,7 @@ import { DocumentProductRowService } from '../../../document-generate/product-ro
 import { ContractRqHeaderService } from './contract-rq-header.service';
 import { ContractRqService } from './contract-rq.service';
 import { ContractSpecificationService } from './contract-specification.service';
+import { CONTRACT_LTYPE } from '@/apps/konstructor/document-generate/type/contract.type';
 
 @Injectable()
 export class ContractGenerateService {
@@ -191,7 +192,7 @@ export class ContractGenerateService {
             dto.contractType,
             dto.clientType,
             dto.bxrq,
-            provider as RqEntity,
+            provider,
         );
         const rqs = this.rqService.getRqs(
             provider,
@@ -203,7 +204,7 @@ export class ContractGenerateService {
         const products = this.documentProductRowService.getProducts(
             dto.rows,
             contractData.contractName,
-            dto.contractType !== 'service',
+            dto.contractType !== CONTRACT_LTYPE.SERVICE,
             dto.contract.prepayment,
             dto.clientType,
         );

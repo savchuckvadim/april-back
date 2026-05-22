@@ -17,7 +17,7 @@ import { TimezoneResponseDto } from '../dto/timezone-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Timezones Management')
-@Controller('admin/portals/timezones')
+@Controller('admin/pbx/timezones')
 export class TimezoneController {
     constructor(private readonly timezoneService: TimezoneService) {}
 
@@ -30,12 +30,9 @@ export class TimezoneController {
     @Post()
     async createTimezone(
         @Body() createTimezoneDto: CreateTimezoneDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<TimezoneResponseDto> {
         const timezone = await this.timezoneService.create(createTimezoneDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: timezone,
-        };
+        return timezone;
     }
 
     @ApiOperation({ summary: 'Get timezone by ID' })
@@ -47,12 +44,9 @@ export class TimezoneController {
     @Get(':id')
     async getTimezoneById(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<TimezoneResponseDto> {
         const timezone = await this.timezoneService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: timezone,
-        };
+        return timezone;
     }
 
     @ApiOperation({ summary: 'Get all timezones' })
@@ -64,7 +58,7 @@ export class TimezoneController {
     @Get()
     async getAllTimezones(
         @Query('portal_id') portalId?: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<TimezoneResponseDto[]> {
         let timezones;
         if (portalId) {
             timezones = await this.timezoneService.findByPortalId(
@@ -74,10 +68,7 @@ export class TimezoneController {
             timezones = await this.timezoneService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: timezones,
-        };
+        return timezones;
     }
 
     @ApiOperation({ summary: 'Update timezone' })
@@ -90,15 +81,12 @@ export class TimezoneController {
     async updateTimezone(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateTimezoneDto: UpdateTimezoneDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<TimezoneResponseDto> {
         const timezone = await this.timezoneService.update(
             id,
             updateTimezoneDto,
         );
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: timezone,
-        };
+        return timezone;
     }
 
     @ApiOperation({ summary: 'Delete timezone' })
@@ -109,11 +97,8 @@ export class TimezoneController {
     @Delete(':id')
     async deleteTimezone(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<boolean> {
         await this.timezoneService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }

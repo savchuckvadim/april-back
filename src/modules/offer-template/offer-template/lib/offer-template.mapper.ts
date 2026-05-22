@@ -11,22 +11,40 @@ import {
     OfferTemplateSummary,
 } from '../entities/offer-template.entity';
 import { OfferTemplateFontDto } from '../../font/dtos/offer-template-font.dto';
+import { bigintConvertToNumber } from '@/shared';
 
 export const templateResponseMap = (templates: OfferTemplateSummary[]) => {
-    const pages = templates.map(template => {
-        return new OfferTemplatePageDto({
+    // const pages = templates.map(template => {
+    //     return new OfferTemplatePageDto({
+    //         ...template,
+    //         id: String(template.id),
+    //         type: template.type as PageType,
+    //     });
+    // });
+    const templatesDto: OfferTemplateSummaryDto[] = templates.map(template => {
+        const templateDto: OfferTemplateSummaryDto = {
             ...template,
+            creator_bitrix_user_id: bigintConvertToNumber(
+                template.creator_bitrix_user_id,
+            ),
             id: String(template.id),
-            type: template.type as PageType,
-        });
+            name: template.name,
+            visibility: template.visibility as OfferTemplateVisibility,
+            is_default: template.is_default,
+            type: template.type,
+            style: template.style || '',
+            color: template.color || '',
+            code: template.code,
+            is_active: template.is_active,
+            counter: template.counter,
+            created_at: template.created_at,
+            portal_id: template.portal_id,
+            pages: [],
+        };
+        return templateDto;
     });
-    return templates.map(
-        template =>
-            new OfferTemplateSummaryDto({
-                ...template,
-                id: String(template.id),
-            }),
-    );
+    console.log(templatesDto);
+    return templatesDto;
 };
 export class OfferTemplateMapper {
     static toSummaryDto(entity: OfferTemplate): OfferTemplateSummaryDto {
@@ -73,7 +91,12 @@ export class OfferTemplateMapper {
                         name: f.name,
                     }),
             ) || [];
-        const colors = entity.color ? JSON.parse(entity.color) : null;
+        const colors: OfferTemplateColorsDto | undefined =
+            entity.color != null && entity.color !== ''
+                ? (JSON.parse(
+                      entity.color,
+                  ) as unknown as OfferTemplateColorsDto)
+                : undefined;
         return {
             id: entity.id || '',
             name: entity.name,
@@ -90,7 +113,7 @@ export class OfferTemplateMapper {
             is_default: entity.is_default,
             type: entity.type,
             style: entity.style || '',
-            colors: colors as OfferTemplateColorsDto,
+            colors,
             code: entity.code,
             is_active: entity.is_active,
             counter: entity.counter,

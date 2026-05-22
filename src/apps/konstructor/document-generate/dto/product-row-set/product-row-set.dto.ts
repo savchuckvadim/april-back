@@ -1,6 +1,4 @@
 import { IsArray, IsBoolean, IsNumber, ValidateNested } from 'class-validator';
-
-import { IsString } from 'class-validator';
 import { ProductTypeEnum } from '../product/product.dto';
 import { ProductRowDto } from '../product-row/product-row.dto';
 import { Type } from 'class-transformer';

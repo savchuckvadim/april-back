@@ -17,7 +17,7 @@ import {
     OrkHistoryFieldValueDto,
     OrkListHistoryItemDto,
 } from '@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 import { BxListItemGetRequestDto } from '@/modules/bitrix/domain/list-item';
 
 @Injectable()
@@ -25,7 +25,7 @@ export class OrkUserReportService {
     constructor(
         private readonly pbx: PBXService,
         private readonly orkHistoryListService: OrkHistoryBxListService,
-    ) {}
+    ) { }
 
     public async *getReport(dto: OrkUserReportGetRequestDto) {
         const { domain, socketId, userId, dateFrom, dateTo } = dto;
@@ -230,7 +230,7 @@ export class OrkUserReportService {
                             currentCommentStringValue =
                                 currentCommentStringValue
                                     .toString()
-                                    .replace(/\D/g, '') as string;
+                                    .replace(/\D/g, '');
                         }
                     }
 
@@ -243,7 +243,7 @@ export class OrkUserReportService {
                             bitrixId: 0,
                             name: '',
                             code: '',
-                            value: currentCommentStringValue as string,
+                            value: currentCommentStringValue,
                         } as OrkHistoryFieldItemValueDto,
                     } as OrkHistoryFieldValueDto;
                 } else if (
@@ -255,10 +255,7 @@ export class OrkUserReportService {
                     if (typeof currentValue === 'string') {
                         continue;
                     }
-                    for (const key in currentValue as Record<
-                        string,
-                        string | number
-                    >) {
+                    for (const key in currentValue) {
                         const pItem = pField.items?.find(
                             item =>
                                 Number(item.bitrixId) ===

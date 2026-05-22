@@ -5,7 +5,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { MailController } from './mail.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getMailerConfig } from '@/core/config/mail/mailer.config';
-import { BullModule } from '@nestjs/bull';
+import { QueueModule } from '@/modules/queue/queue.module';
+import { MailQueueService } from './services/mail-queue.service';
+import { MailProcessor } from './processors/mail.processor';
 @Global()
 @Module({
     imports: [
@@ -14,12 +16,10 @@ import { BullModule } from '@nestjs/bull';
             useFactory: getMailerConfig,
             inject: [ConfigService],
         }),
-        BullModule.registerQueue({
-            name: 'mail',
-        }),
+        QueueModule,
     ],
-    providers: [MailService],
-    exports: [MailService],
+    providers: [MailService, MailQueueService, MailProcessor],
+    exports: [MailService, MailQueueService],
 
     controllers: [MailController],
 })

@@ -9,6 +9,7 @@ export abstract class SupplyRepository {
         supply: Partial<SupplyEntity>,
     ): Promise<SupplyEntity | null>;
     abstract findById(id: string): Promise<SupplyEntity | null>;
+    abstract findByCode(code: string): Promise<SupplyEntity | null>;
     abstract findMany(): Promise<SupplyEntity[] | null>;
     abstract updateAll(
         supplies: SupplyUpdate[],

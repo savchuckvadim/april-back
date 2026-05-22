@@ -80,6 +80,19 @@ export class SupplyPrismaRepository implements SupplyRepository {
         }
     }
 
+    async findByCode(code: string): Promise<SupplyEntity | null> {
+        try {
+            const result = await this.prisma.supplies.findFirst({
+                where: { code },
+            });
+            if (!result) return null;
+            return createSupplyEntityFromPrisma(result);
+        } catch (error) {
+            console.error('Error finding supply by code:', error);
+            return null;
+        }
+    }
+
     async updateAll(supplies: SupplyUpdate[]): Promise<SupplyEntity[] | null> {
         try {
             await this.prisma.$transaction(async prisma => {

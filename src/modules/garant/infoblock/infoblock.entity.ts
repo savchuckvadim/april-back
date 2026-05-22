@@ -1,4 +1,4 @@
-import { InfogroupEntity } from '../infogroup/infogroup.entity';
+import { InfogroupEntity } from '../infogroup/';
 
 export class InfoblockEntity {
     id: string;
@@ -11,7 +11,7 @@ export class InfoblockEntity {
     weight: string;
     code: string;
     inGroupId: string | null;
-    group_id: string;
+    group_id: string | null;
     isLa: boolean;
     isFree: boolean;
     isShowing: boolean;
@@ -47,7 +47,7 @@ export class InfoblockLightEntity {
     weight: string;
     code: string;
     inGroupId: string | null;
-    group_id: string;
+    group_id: string | null;
     isLa: boolean;
     isFree: boolean;
     isShowing: boolean;

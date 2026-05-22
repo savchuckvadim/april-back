@@ -47,7 +47,7 @@ export class OrkDealsReportService {
             dealsGetSelect,
         );
         const dealsByCompanyId = {};
-        const companiesIds: Number[] = [];
+        const companiesIds: number[] = [];
         for (const deal of deals) {
             if (Number(deal.ID) === 88565) {
                 console.log('deal');
@@ -114,10 +114,10 @@ export class OrkDealsReportService {
     ): OrkReportCompanyItemDto {
         const result = {
             id: Number(company.ID),
-            title: company.TITLE as string,
-            assignedById: company.ASSIGNED_BY_ID as string,
+            title: company.TITLE,
+            assignedById: company.ASSIGNED_BY_ID,
             history: company.UF_CRM_ORK_LAST_HISTORY as string[],
-            armInfo: (company.UF_CRM_USER_CARDNUM as string) || '',
+            armInfo: company.UF_CRM_USER_CARDNUM || '',
             isActiveClient,
         } as OrkReportCompanyItemDto;
         return result;
@@ -127,29 +127,26 @@ export class OrkDealsReportService {
         deal: IBXDeal,
         portal: PortalModel,
     ): OrkReportDealItemDto {
-        const stageName = this.getDealStageName(
-            deal.STAGE_ID as string,
-            portal,
-        );
+        const stageName = this.getDealStageName(deal.STAGE_ID, portal);
         const status = this.getDealStatus(deal);
         const { from, to } = this.getFromTo(deal, portal);
         const duration = this.getDuration(deal, portal);
         const monthSum = this.getMonthSum(deal.OPPORTUNITY as string, duration);
         const result = {
             id: Number(deal.ID),
-            title: deal.TITLE as string,
+            title: deal.TITLE,
             currentContract:
                 deal.UF_CRM_CURRENT_CONTRACT as unknown as IBXFileItemField,
-            stageId: deal.STAGE_ID as string,
-            categoryId: deal.CATEGORY_ID as string,
-            assignedById: deal.ASSIGNED_BY_ID as string,
-            companyId: deal.COMPANY_ID as string,
+            stageId: deal.STAGE_ID,
+            categoryId: deal.CATEGORY_ID,
+            assignedById: deal.ASSIGNED_BY_ID,
+            companyId: deal.COMPANY_ID,
             sum: deal.OPPORTUNITY as string,
-            from: from as string,
-            to: to as string,
+            from: from,
+            to: to,
             duration,
 
-            monthSum: monthSum as number,
+            monthSum: monthSum,
 
             createDate: deal.DATE_CREATE as string,
             closedDate: deal.CLOSED_DATE as string,
@@ -167,7 +164,7 @@ export class OrkDealsReportService {
                 deal.UF_CRM_RPA_ARM_COMPLECT_NAME?.toString() || ('' as string),
             supply:
                 deal.UF_CRM_RPA_ARM_SUPPLY_NAME?.toString() || ('' as string),
-            stageName: stageName as string,
+            stageName: stageName,
         } as OrkReportDealItemDto;
 
         return result;
@@ -222,7 +219,7 @@ export class OrkDealsReportService {
     private getMonthSum(sum: string, duration: number): number {
         const sumNumber = Number(sum);
         const durationNumber = Number(duration);
-        return Number((sumNumber / durationNumber).toFixed(2)) as number;
+        return Number((sumNumber / durationNumber).toFixed(2));
     }
     private getDuration(deal: IBXDeal, portal: PortalModel): number {
         const { from: rawFrom, to: rawTo } = this.getFromTo(deal, portal);

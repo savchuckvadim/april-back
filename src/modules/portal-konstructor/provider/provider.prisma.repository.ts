@@ -14,27 +14,19 @@ export class ProviderPrismaRepository implements ProviderRepository {
         const agent = await this.prisma.agents.findUnique({
             where: { id },
         });
-        console.log('agent');
-        console.log(id);
-        console.log(agent);
 
         if (!agent) return null;
         const agentId = Number(agent.id);
-        console.log('agentId');
-        console.log(agentId);
 
         const rq = await this.prisma.rqs.findFirst({
             where: { agentId },
         });
-        console.log('rq');
-        console.log(rq);
+
         let rqEntity: RqEntity | null = null;
         if (rq) {
             // entity = new ProviderEntity();
-            rqEntity = createRqEntity(rq);
+            rqEntity = createRqEntity(rq, agent.withTax);
         }
-        console.log('rqEntity');
-        console.log(rqEntity);
         return rqEntity;
     }
 
@@ -51,7 +43,7 @@ export class ProviderPrismaRepository implements ProviderRepository {
                 portalId: portal.id,
             },
         });
-        console.log('agents', agents);
+
         const rqs = await this.prisma.rqs.findMany({
             where: {
                 agentId: {
@@ -63,7 +55,17 @@ export class ProviderPrismaRepository implements ProviderRepository {
     }
 
     async findMany(): Promise<RqEntity[] | null> {
-        const rqs = await this.prisma.rqs.findMany();
-        return rqs.map(rq => createRqEntity(rq));
+        const agents = await this.prisma.agents.findMany();
+
+        const results = [] as RqEntity[];
+        for (const agent of agents) {
+            const rq = await this.prisma.rqs.findFirst({
+                where: { agentId: agent.id },
+            });
+            if (rq) {
+                results.push(createRqEntity(rq, agent.withTax));
+            }
+        }
+        return results;
     }
 }

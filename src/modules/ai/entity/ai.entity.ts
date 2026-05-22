@@ -1,0 +1,34 @@
+export class AiEntity {
+    id: string;
+    provider?: string | null;
+    activity_id?: string | null;
+    file_id?: string | null;
+    in_comment: boolean;
+    in_report: boolean;
+    report_item_id?: string | null;
+    status?: string | null;
+    result?: string | null;
+    symbols_count?: number | null;
+    tokens_count?: number | null;
+    price?: number | null;
+    domain?: string | null;
+    user_id?: number | null;
+    user_name?: string | null;
+    entity_type?: string | null;
+    entity_id?: number | null;
+    entity_name?: string | null;
+    user_result?: any | null;
+    report_result?: string | null;
+    user_comment?: string | null;
+    owner_comment?: string | null;
+    user_mark?: string | null;
+    owner_mark?: string | null;
+    app?: string | null;
+    department?: string | null;
+    type?: string | null;
+    model?: string | null;
+    portal_id?: string | null;
+    transcription_id?: string | null;
+    created_at?: Date;
+    updated_at?: Date;
+}

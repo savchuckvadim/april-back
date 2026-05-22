@@ -33,28 +33,29 @@ export class RpaCommentHelper {
         iconType: RpaIconEnum,
         text: string,
     ): string {
-        let icon = IconHelper.getArmIcon();
-        if (iconType === RpaIconEnum.ARM) {
-            icon = IconHelper.getArmIcon();
-        } else if (iconType === RpaIconEnum.PROVIDER) {
-            icon = IconHelper.getProviderIcon();
-        } else if (iconType === RpaIconEnum.CLIENT) {
-            icon = IconHelper.getClientIcon();
-        } else if (iconType === RpaIconEnum.CONSULTING) {
-            icon = IconHelper.getConsultingIcon();
-        } else if (iconType === RpaIconEnum.COMPLECT) {
-            icon = IconHelper.getComplectIcon();
-        } else if (iconType === RpaIconEnum.INFOBLOCK) {
-            icon = IconHelper.getInfoblockIcon();
-        } else if (iconType === RpaIconEnum.CONTRACT) {
-            icon = IconHelper.getContractIcon();
-        } else if (iconType === RpaIconEnum.TOTAL_SUM) {
-            icon = IconHelper.getTotalSumIcon();
-        }
+        // let icon = IconHelper.getArmIcon();
+        // if (iconType === RpaIconEnum.ARM) {
+        //     icon = IconHelper.getArmIcon();
+        // } else if (iconType === RpaIconEnum.PROVIDER) {
+        //     icon = IconHelper.getProviderIcon();
+        // } else if (iconType === RpaIconEnum.CLIENT) {
+        //     icon = IconHelper.getClientIcon();
+        // } else if (iconType === RpaIconEnum.CONSULTING) {
+        //     icon = IconHelper.getConsultingIcon();
+        // } else if (iconType === RpaIconEnum.COMPLECT) {
+        //     icon = IconHelper.getComplectIcon();
+        // } else if (iconType === RpaIconEnum.INFOBLOCK) {
+        //     icon = IconHelper.getInfoblockIcon();
+        // } else if (iconType === RpaIconEnum.CONTRACT) {
+        //     icon = IconHelper.getContractIcon();
+        // } else if (iconType === RpaIconEnum.TOTAL_SUM) {
+        //     icon = IconHelper.getTotalSumIcon();
+        // }
+        // убираем иконку пока тестим верстку
         const color = IconHelper.getColor();
         const style = `color: ${color};`;
         return this.getBoldString(
-            `<div style="${style} display: flex; align-items: center; gap: 5px;">${icon} ${text}</div>`,
+            `<div style="${style} display: flex; align-items: center; gap: 5px;">${text}</div>`,
         );
     }
 

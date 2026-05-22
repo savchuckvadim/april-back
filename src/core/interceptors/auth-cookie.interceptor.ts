@@ -1,4 +1,7 @@
-// src/common/interceptors/auth-cookie.interceptor.ts
+/**
+ * @deprecated Auth cookies are now set directly in AuthService.
+ * Kept for backward compatibility with bitrix-app-install/ui controllers.
+ */
 import {
     CallHandler,
     ExecutionContext,
@@ -18,10 +21,9 @@ export class AuthCookieInterceptor implements NestInterceptor {
         const res = ctx.getResponse<Response>();
 
         return next.handle().pipe(
-            tap(data => {
-                if (data?.token) {
-                    this.cookieService.setAuthCookie(res, data.token);
-                    return data.token; // если не хочешь отдавать токен в JSON
+            tap((data: Record<string, unknown>) => {
+                if (data?.token && typeof data.token === 'string') {
+                    this.cookieService.setAccessCookie(res, data.token);
                 }
             }),
         );

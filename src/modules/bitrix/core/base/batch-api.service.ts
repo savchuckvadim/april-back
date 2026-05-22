@@ -228,7 +228,7 @@ export class BatchApiService {
                 'batch',
                 payload,
             );
-            const result = response.data.result as IBitrixBatchResponseResult;
+            const result = response.data.result;
             // this.logger.log(`Batch request successful: ${JSON.stringify(result)}`);
             // this.logger.log(`Domain: ${this.domain}`);
             const batchResultsCount = Object.keys(result.result).length;

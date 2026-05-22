@@ -196,7 +196,7 @@ export class OrkHistoryBxListService {
             if (pField.type === 'select') {
                 const pItem = PortalModel.getIdByCodeFieldList(
                     portalList,
-                    itemCodeOrValue as string,
+                    itemCodeOrValue,
                 );
                 if (!pItem) {
                     continue;

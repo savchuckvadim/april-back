@@ -3,10 +3,9 @@ import { PrismaService } from 'src/core/prisma';
 import { ComplectRepository } from './complect.repository';
 import { ComplectEntity } from '../complect.entity';
 
-import { InfogroupEntity } from '../../infogroup/infogroup.entity';
-import { createInfoblockEntityFromPrisma } from '../../infoblock/lib/infoblock-entity.util';
+import { createInfoblockEntityFromPrisma } from '../../infoblock/';
 import { createComplectEntityFromPrisma } from '../lib/complect-entity.util';
-import { createInfogroupEntityFromPrisma } from '../../infogroup/lib/infogroup-entity.util';
+import { createInfogroupEntityFromPrisma } from '../../infogroup/';
 
 @Injectable()
 export class ComplectPrismaRepository implements ComplectRepository {
@@ -293,5 +292,89 @@ export class ComplectPrismaRepository implements ComplectRepository {
         });
         if (!result) return null;
         return createComplectEntityFromPrisma(result);
+    }
+
+    async addInfoblocks(
+        complectId: string,
+        infoblockIds: string[],
+    ): Promise<ComplectEntity | null> {
+        try {
+            await this.prisma.complect_infoblock.createMany({
+                data: infoblockIds.map(infoblockId => ({
+                    complect_id: BigInt(complectId),
+                    infoblock_id: BigInt(infoblockId),
+                })),
+                skipDuplicates: true, // Пропускаем дубликаты
+            });
+            return this.findById(complectId);
+        } catch (error) {
+            console.error('Error adding infoblocks:', error);
+            return null;
+        }
+    }
+
+    async removeInfoblocks(
+        complectId: string,
+        infoblockIds: string[],
+    ): Promise<ComplectEntity | null> {
+        try {
+            await this.prisma.complect_infoblock.deleteMany({
+                where: {
+                    complect_id: BigInt(complectId),
+                    infoblock_id: {
+                        in: infoblockIds.map(id => BigInt(id)),
+                    },
+                },
+            });
+            return this.findById(complectId);
+        } catch (error) {
+            console.error('Error removing infoblocks:', error);
+            return null;
+        }
+    }
+
+    async removeInfoblock(
+        complectId: string,
+        infoblockId: string,
+    ): Promise<ComplectEntity | null> {
+        try {
+            await this.prisma.complect_infoblock.deleteMany({
+                where: {
+                    complect_id: BigInt(complectId),
+                    infoblock_id: BigInt(infoblockId),
+                },
+            });
+            return this.findById(complectId);
+        } catch (error) {
+            console.error('Error removing infoblock:', error);
+            return null;
+        }
+    }
+
+    async setInfoblocks(
+        complectId: string,
+        infoblockIds: string[],
+    ): Promise<ComplectEntity | null> {
+        try {
+            // Удаляем все существующие связи
+            await this.prisma.complect_infoblock.deleteMany({
+                where: {
+                    complect_id: BigInt(complectId),
+                },
+            });
+            // Создаем новые связи
+            if (infoblockIds.length > 0) {
+                await this.prisma.complect_infoblock.createMany({
+                    data: infoblockIds.map(infoblockId => ({
+                        complect_id: BigInt(complectId),
+                        infoblock_id: BigInt(infoblockId),
+                    })),
+                });
+            }
+            return this.findById(complectId);
+        } catch (error) {
+            console.error('Error setting infoblocks:', error);
+            return null;
+        }
     }
 }

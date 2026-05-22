@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { QueueModule } from './modules/queue/queue.module';
@@ -7,36 +7,30 @@ import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
 import { RedisModule } from './core/redis/redis.module';
-import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
+// import { SilentJobHandlersModule } from './core/silence/silent-job-handlers.module';
 import { KpiReportModule } from './apps/kpi-report/kpi-report.module';
 import { EventSalesModule } from './apps/event-sales/event.module';
-import { GsrModule } from './commands/excel-migrate/gsr.module';
 import { HealthController } from './health.controller';
 import { PBXModule } from './modules/pbx/pbx.module';
 import { WsModule } from './core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
-
-import { AlfaActivityModule } from './modules/hooks/alfa/alfa-activity.module';
 import { EventServiceAppModule } from './apps/event-service';
 import { KonstructorModule } from './apps/konstructor/konstructor.module';
 import { MetricsModule } from './core/metrics/metrics.module';
-import { AlfaModule } from './apps/alfa/alfa.module';
+
 import { TranscriptionModule } from './modules/transcription/transcription.module';
-// import { GarantPricesModule } from './commands/garant-prices/garant-prices.module';
-// import { FieldsModule } from './commands/fields/fields.module';
-// import { CategoryModule } from './commands/category/category.module';
-// import { ChangeDealCategoryModule } from './commands/change-deal-category/change-deal-category.module';
+import { AiModule } from './modules/ai/ai.module';
 import { StorageModule } from './core/storage/storage.module';
 import { FileLinkModule } from './core/file-link/file-link.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
 import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
 import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
-import { PBXInstallModule } from './modules/install/install-module';
+import { PBXInstallModule } from './modules/pbx-install/pbx-install.module';
 import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
 import { ScheduleModule } from '@nestjs/schedule';
-// import { EventServiceAppModule } from './apps/event-service/event-service-app.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OfferTemplateModule } from './modules/offer-template/offer-template.module';
 import { KpiReportOrkModule } from './apps/kpi-report-ork/kpi-report-ork.module';
 import { BitrixSetupModule } from './modules/bitrix-setup/bitrix-setup.module';
@@ -50,7 +44,23 @@ import { CookieModule } from '@/core/cookie/cookie.module';
 import { WordTemplateModule } from './modules/offer-template/word';
 import { OfferWordModule } from './apps/konstructor/offer-word/offer-word.module';
 import { AdminModule } from './apps/admin/admin.module';
-// import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
+import { OrkDocumentsModule } from './apps/ork-documents/ork-documents.module';
+import { EventSalesBxRecordsModule } from './apps/event-sales/bx-records/bx-records.module';
+import { DocumentSupplyReportModule } from './apps/konstructor/document-supply-report/document-supply-report.module';
+import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
+import { InvoiceTemplateModule } from './modules/invoice-template/invoice-template.module';
+import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
+import { PbxRegistryModule } from './modules/pbx-registry';
+import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
+import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';
+import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-schedule.module';
+import { DealsOrderModule } from './apps/event-service/deals-order/deals-order.module';
+import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.module';
+import { SkapModule } from './apps/event-service/skap/skap.module';
+import { ParseFieldExcelModule } from './modules/pbx-install/shared';
+import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
+
+const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
 
 @Module({
     imports: [
@@ -73,6 +83,7 @@ import { AdminModule } from './apps/admin/admin.module';
             ],
         }),
         ScheduleModule.forRoot(),
+        EventEmitterModule.forRoot(),
         CookieModule,
         PrismaModule,
         MetricsModule,
@@ -82,20 +93,19 @@ import { AdminModule } from './apps/admin/admin.module';
         //apps
         EventServiceAppModule,
 
-        // DealsScheduleModule,
-
         // HooksModule,
         // AlfaActivityModule,
         BitrixModule,
         PortalModule,
         PBXModule,
         PBXInstallModule,
+        ParseFieldExcelModule,
         PbxDomainModule,
         OrkHistoryBxListModule,
 
         TelegramModule,
         RedisModule,
-        SilentJobHandlersModule,
+        // SilentJobHandlersModule,
         KpiReportModule,
         EventSalesModule,
 
@@ -103,10 +113,11 @@ import { AdminModule } from './apps/admin/admin.module';
 
         QueuePingModule,
         KonstructorModule,
-        AlfaModule,
+
         // EventServiceModule
 
         TranscriptionModule,
+        AiModule,
 
         //commands
         // GarantPricesModule,
@@ -123,6 +134,7 @@ import { AdminModule } from './apps/admin/admin.module';
         WordTemplateModule,
         BxDepartmentModule,
         OfferWordModule,
+        DocumentSupplyReportModule,
 
         HelperModule,
 
@@ -131,8 +143,22 @@ import { AdminModule } from './apps/admin/admin.module';
 
         AuthModule,
         AdminModule,
+        OrkDocumentsModule,
+
+        EventSalesBxRecordsModule,
+        InnerDealModule,
+        InvoiceTemplateModule,
+        DocumentCounterModule,
+        PbxRegistryModule,
+        CommandSmartActGsrModule,
+        DealsScheduleModule, //запускает процессы отдела сервиса по расписанию : DealsOrderModule и DealsMoveModule
+        ...(WITH_TELEGRAM ? [BitrixImBridgeModule] : []), //проверяет сообщения лс админа в битриксе только для сервера с телеграмом
+        // MissedCallsTodoModule, //gsirk  проверяет пропущенные звонки
+        DealsOrderModule, //проверяет дубли и заполненность с по полей каждую неделю
+        DealsMoveModule, //перемещает сделки отдела сервиса каждые три часа по стадиям
+        SkapModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],
 })
-export class AppModule {}
+export class AppModule { }

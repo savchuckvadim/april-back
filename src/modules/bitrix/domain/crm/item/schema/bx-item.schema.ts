@@ -28,4 +28,8 @@ export type BxItemSchema = {
         request: CrmItemAddRequestType<IBXItem, string>;
         response: { item: IBXItem };
     };
+    [EBxMethod.DELETE]: {
+        request: CrmItemGetRequestType<string | number>;
+        response: boolean;
+    };
 };

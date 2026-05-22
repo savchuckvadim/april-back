@@ -1,4 +1,4 @@
-import { Client, Portal, User } from 'generated/prisma';
+import { Client } from 'generated/prisma';
 
 export abstract class ClientRepository {
     abstract create(client: Partial<Client>): Promise<Client | null>;

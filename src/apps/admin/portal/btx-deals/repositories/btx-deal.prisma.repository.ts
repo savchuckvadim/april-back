@@ -45,6 +45,7 @@ export class BtxDealPrismaRepository implements BtxDealRepository {
                 portals: true,
             },
         });
+
         return result;
     }
 

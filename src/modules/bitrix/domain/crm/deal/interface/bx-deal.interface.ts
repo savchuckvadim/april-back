@@ -13,4 +13,9 @@ export interface IBXDeal {
     UF_CRM_OP_CURRENT_STATUS?: string;
     UF_CRM_UC_ID?: string[]; //id комплекта арм Garant
     UF_CRM_RPA_ARM_COMPLECT_ID?: string[]; //id комплекта арм RPA April
+    CLOSED: 'Y' | 'N';
+    OPENED: 'Y' | 'N';
+    MOVED_TIME: string;
+    LAST_ACTIVITY_TIME: string;
+    STAGE_SEMANTIC_ID: 'P' | 'S' | 'F';
 }

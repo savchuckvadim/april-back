@@ -6,17 +6,9 @@ import {
     Delete,
     Body,
     Param,
-    Query,
     ParseIntPipe,
-    UseGuards,
-    Request,
 } from '@nestjs/common';
-import {
-    ApiOperation,
-    ApiResponse,
-    ApiTags,
-    ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';

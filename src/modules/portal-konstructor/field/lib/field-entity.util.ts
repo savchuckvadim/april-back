@@ -1,11 +1,18 @@
+import type { Field as PrismaField } from 'generated/prisma';
+import type { Prisma } from 'generated/prisma';
 import { FieldEntity, FieldLightEntity } from '../field.entity';
 import { createTemplateBaseEntityFromPrisma } from '../../template-base/lib/template-base-entity.util';
-import { PrismaService } from 'src/core/prisma';
-import { Template } from 'generated/prisma';
 
-type TemplateType = NonNullable<Awaited<Template>>;
+/** Field row from Prisma, optionally with `template_field.include.template` */
+type FieldPrismaRow = PrismaField & {
+    template_field?: Array<
+        Prisma.TemplateFieldGetPayload<{
+            include: { template: true };
+        }>
+    >;
+};
 
-export function createFieldEntityFromPrisma(data: any): FieldEntity {
+export function createFieldEntityFromPrisma(data: FieldPrismaRow): FieldEntity {
     const entity = new FieldEntity();
     entity.id = data.id.toString();
     entity.number = data.number;
@@ -24,13 +31,13 @@ export function createFieldEntityFromPrisma(data: any): FieldEntity {
     entity.created_at = data.created_at;
     entity.updated_at = data.updated_at;
 
-    if (data.template_field) {
-        entity.templates = data.template_field
-            .map(tf => tf.templates)
-            .filter(Boolean)
-            .map((template: Template) =>
-                createTemplateBaseEntityFromPrisma(template),
-            );
+    if (data.template_field?.length) {
+        const templates = data.template_field
+            .map(tf => tf.template)
+            .filter((t): t is NonNullable<typeof t> => t != null);
+        entity.templates = templates.map(template =>
+            createTemplateBaseEntityFromPrisma(template),
+        );
     }
 
     return entity;

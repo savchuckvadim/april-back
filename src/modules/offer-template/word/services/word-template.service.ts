@@ -14,15 +14,17 @@ import {
     WordTemplate,
     WordTemplateSummary,
 } from '../entities/word-template.entity';
-import { CreateWordTemplateRequestDto } from '../dtos/create-word-template.dto';
-import { UpdateWordTemplateDto } from '../dtos/update-word-template.dto';
 import {
-    OfferTemplate,
-    OfferTemplateSummary,
-} from '../../offer-template/entities/offer-template.entity';
+    CreateWordTemplateResponseDto,
+    CreateWordTemplateServerDto,
+} from '../dtos/create-word-template.dto';
+import { UpdateWordTemplateDto } from '../dtos/update-word-template.dto';
+import { OfferTemplate } from '../../offer-template/entities/offer-template.entity';
 import { validateDocxFile } from '../lib/file-validator';
 import { offer_templates_visibility } from 'generated/prisma';
 import { UserSelectedTemplate } from '../../user-selected';
+import { WordTemplateQueryDto } from '../dtos/find-all-word-template.dto';
+import { WordTemplateSummaryDto } from '../dtos';
 
 @Injectable()
 export class WordTemplateService {
@@ -32,6 +34,13 @@ export class WordTemplateService {
         private readonly userSelectedTemplateRepository: UserSelectedTemplateRepository,
         private readonly storageService: StorageService,
     ) {}
+
+    private isTooLongPrismaError(error: unknown): boolean {
+        if (!(error instanceof Error)) return false;
+        return error.message.includes(
+            "The provided value for the column is too long for the column's type",
+        );
+    }
 
     /**
      * Находит Word шаблон по ID
@@ -62,14 +71,16 @@ export class WordTemplateService {
     /**
      * Находит все Word шаблоны с фильтрами
      */
-    async findMany(filters?: {
-        visibility?: 'public' | 'private' | 'user';
-        portal_id?: bigint;
-        is_active?: boolean;
-        search?: string;
-    }): Promise<WordTemplateSummary[]> {
+    async findMany(
+        filters?: Partial<WordTemplateQueryDto>,
+    ): Promise<WordTemplateSummary[]> {
         const templates = await this.offerTemplateRepository.findMany({
-            ...filters,
+            visibility: filters?.visibility as offer_templates_visibility,
+            portal_id: filters?.portal_id
+                ? BigInt(filters.portal_id)
+                : undefined,
+            is_active: filters?.is_active,
+            search: filters?.search,
         });
 
         // Фильтруем только Word шаблоны
@@ -108,15 +119,15 @@ export class WordTemplateService {
     /**
      * Находит публичные Word шаблоны
      */
-    async findPublic(): Promise<WordTemplateSummary[]> {
+    async findPublic(): Promise<WordTemplateSummaryDto[]> {
         const templates = await this.offerTemplateRepository.findPublic();
-        const wordTemplates: WordTemplateSummary[] = [];
+        const wordTemplates: WordTemplateSummaryDto[] = [];
 
         for (const t of templates) {
             if (t.type === 'word') {
                 const fullTemplate =
                     await this.offerTemplateRepository.findById(BigInt(t.id));
-                const summary = new WordTemplateSummary({
+                const summary = new WordTemplateSummaryDto({
                     id: t.id,
                     name: t.name,
                     visibility: t.visibility,
@@ -179,10 +190,10 @@ export class WordTemplateService {
      */
     async findPortalTemplates(
         portal_id: bigint,
-    ): Promise<WordTemplateSummary[]> {
+    ): Promise<WordTemplateSummaryDto[]> {
         const templates = await this.offerTemplateRepository.findMany({
             portal_id: portal_id,
-            visibility: offer_templates_visibility.portal,
+            visibility: offer_templates_visibility.private,
         });
 
         const fullTemplates: OfferTemplate[] = [];
@@ -190,38 +201,21 @@ export class WordTemplateService {
             const fullTemplate = await this.offerTemplateRepository.findById(
                 BigInt(t.id),
             );
-            fullTemplate && fullTemplates.push(fullTemplate);
+            if (fullTemplate) {
+                fullTemplates.push(fullTemplate);
+            }
         }
+
         const wordTemplates: WordTemplateSummary[] =
             await this.getWordTemplates(fullTemplates);
-        return wordTemplates;
-        // const wordTemplates: WordTemplateSummary[] = [];
-
-        // for (const t of templates) {
-        //     if (t.type === 'word') {
-        //         const fullTemplate = await this.offerTemplateRepository.findById(BigInt(t.id));
-        //         const summary = new WordTemplateSummary({
-        //             id: t.id,
-        //             name: t.name,
-        //             visibility: t.visibility,
-        //             is_default: t.is_default,
-        //             type: t.type,
-        //             code: t.code,
-        //             is_active: t.is_active,
-        //             counter: t.counter,
-        //             created_at: t.created_at,
-        //         });
-        //         if (fullTemplate?.file_path) {
-        //             summary.template_url = this.getTemplateUrl(
-        //                 fullTemplate.file_path,
-        //                 String(t.id),
-        //             );
-        //         }
-        //         wordTemplates.push(summary);
-        //     }
-        // }
-
-        // return wordTemplates;
+        const result = wordTemplates.map(
+            t =>
+                new WordTemplateSummaryDto({
+                    ...t,
+                    portal_id: Number(portal_id.toString()),
+                }),
+        );
+        return result;
     }
 
     /**
@@ -242,11 +236,13 @@ export class WordTemplateService {
 
         const wordTemplates: WordTemplateSummary[] =
             await this.getWordTemplates(templates);
+
         const selectedTemplates =
             await this.userSelectedTemplateRepository.findByUser(
                 user_id,
                 portal_id,
             );
+
         return {
             templates: wordTemplates,
             selected: selectedTemplates,
@@ -261,9 +257,9 @@ export class WordTemplateService {
                 .map(t => this.getWordTemplateSummary(t)),
         );
     }
-    private async getWordTemplateSummary(
+    private getWordTemplateSummary(
         template: OfferTemplate,
-    ): Promise<WordTemplateSummary> {
+    ): WordTemplateSummary {
         const summary = new WordTemplateSummary({
             id: template.id,
             name: template.name,
@@ -272,8 +268,16 @@ export class WordTemplateService {
             type: template.type,
             code: template.code,
             is_active: template.is_active,
+            is_archived: template.is_archived,
+            user_id: template.creator_bitrix_user_id
+                ? Number(template.creator_bitrix_user_id.toString())
+                : undefined,
+            portal_id: template.portal_id
+                ? Number(template.portal_id.toString())
+                : undefined,
             counter: template.counter,
             created_at: template.created_at,
+            tags: template.tags,
         });
         if (template?.file_path) {
             summary.template_url = this.getTemplateUrl(
@@ -287,20 +291,18 @@ export class WordTemplateService {
      * Создает новый Word шаблон с загрузкой docx файла
      */
     async create(
-        createDto: CreateWordTemplateRequestDto,
+        createDto: CreateWordTemplateServerDto,
         file?: Express.Multer.File,
-    ): Promise<WordTemplate> {
+    ): Promise<CreateWordTemplateResponseDto> {
         //
         /**
-         * Если visibility portal делаем связь  с portal
+         * Если visibility portal(private)  делаем связь  с portal
          * но также должны засунуть userSelectedTemplates связь с пользователем
          * чтобы имел пометку выбран пользователем
          */
 
         // Валидируем файл (тип, размер)
-        validateDocxFile(file, {
-            maxSize: 10 * 1024 * 1024, // 10 MB
-        });
+        validateDocxFile(file);
 
         // После валидации файл гарантированно существует
         if (!file) {
@@ -316,7 +318,7 @@ export class WordTemplateService {
             StorageType.PUBLIC,
             subPath,
         );
-
+        console.log(createDto);
         // Создаем шаблон в БД
         const templateData: Partial<OfferTemplate> = {
             name: createDto.name,
@@ -330,8 +332,22 @@ export class WordTemplateService {
             counter: 0,
         };
 
-        const createdTemplate =
-            await this.offerTemplateRepository.create(templateData);
+        if (createDto.user_id) {
+            templateData.creator_bitrix_user_id = BigInt(createDto.user_id);
+        }
+
+        let createdTemplate: OfferTemplate;
+        try {
+            createdTemplate =
+                await this.offerTemplateRepository.create(templateData);
+        } catch (error) {
+            if (this.isTooLongPrismaError(error)) {
+                throw new BadRequestException(
+                    'One of the fields is too long (name/tags). Max length is 255 characters.',
+                );
+            }
+            throw error;
+        }
 
         // Если указан portal_id, создаем связь с порталом
         if (createDto.portal_id) {
@@ -370,7 +386,7 @@ export class WordTemplateService {
             filePath,
             createdTemplate.id,
         );
-        return wordTemplate;
+        return new CreateWordTemplateResponseDto(wordTemplate);
     }
 
     /**
@@ -404,7 +420,7 @@ export class WordTemplateService {
         if (file) {
             // Валидируем файл (тип, размер)
             validateDocxFile(file, {
-                maxSize: 10 * 1024 * 1024, // 10 MB
+                maxSize: 25 * 1024 * 1024, // 25 MB
             });
 
             // Удаляем старый файл, если он существует
@@ -413,7 +429,7 @@ export class WordTemplateService {
                     await this.storageService.deleteFile(
                         existingTemplate.file_path,
                     );
-                } catch (error) {
+                } catch {
                     // Игнорируем ошибки удаления
                 }
             }
@@ -430,10 +446,20 @@ export class WordTemplateService {
             updateData.file_path = filePath;
         }
 
-        const updatedTemplate = await this.offerTemplateRepository.update(
-            id,
-            updateData,
-        );
+        let updatedTemplate: OfferTemplate;
+        try {
+            updatedTemplate = await this.offerTemplateRepository.update(
+                id,
+                updateData,
+            );
+        } catch (error) {
+            if (this.isTooLongPrismaError(error)) {
+                throw new BadRequestException(
+                    'One of the fields is too long (name/tags). Max length is 255 characters.',
+                );
+            }
+            throw error;
+        }
 
         const wordTemplate = WordTemplate.fromOfferTemplate(updatedTemplate);
         wordTemplate.template_url = this.getTemplateUrl(
@@ -446,9 +472,10 @@ export class WordTemplateService {
     /**
      * Удаляет Word шаблон
      */
-    async delete(id: bigint): Promise<void> {
+    async delete(id: bigint): Promise<boolean> {
         const existingTemplate =
             await this.offerTemplateRepository.findById(id);
+        console.log(existingTemplate, 'existingTemplate');
         if (!existingTemplate) {
             throw new NotFoundException(
                 `Word template with ID ${id} not found`,
@@ -465,23 +492,59 @@ export class WordTemplateService {
         // Удаляем файл из хранилища
         if (existingTemplate.file_path) {
             try {
+                console.log(
+                    existingTemplate.file_path,
+                    'existingTemplate.file_path',
+                );
                 await this.storageService.deleteFile(
                     existingTemplate.file_path,
                 );
-            } catch (error) {
+            } catch {
                 // Игнорируем ошибки удаления файла
             }
         }
 
         // Удаляем шаблон из БД
         await this.offerTemplateRepository.delete(id);
+        return true;
     }
 
+    async archive(id: bigint): Promise<boolean> {
+        const existingTemplate =
+            await this.offerTemplateRepository.findById(id);
+        if (!existingTemplate) {
+            throw new NotFoundException(
+                `Word template with ID ${id} not found`,
+            );
+        }
+        await this.offerTemplateRepository.update(id, {
+            is_archived: true,
+            is_active: true,
+            archived_at: new Date(),
+        });
+        return true;
+    }
+
+    async unarchive(id: bigint): Promise<boolean> {
+        const existingTemplate =
+            await this.offerTemplateRepository.findById(id);
+        if (!existingTemplate) {
+            throw new NotFoundException(
+                `Word template with ID ${id} not found`,
+            );
+        }
+        await this.offerTemplateRepository.update(id, {
+            is_archived: false,
+            is_active: false,
+            archived_at: undefined,
+        });
+        return true;
+    }
     /**
      * Устанавливает шаблон как активный/неактивный
      */
     async setActive(id: bigint, is_active: boolean): Promise<WordTemplate> {
-        const template = await this.findById(id);
+        await this.findById(id); // ensure correct type/checks
         const updatedTemplate = await this.offerTemplateRepository.update(id, {
             is_active,
         });
@@ -532,6 +595,24 @@ export class WordTemplateService {
         return wordTemplate;
     }
 
+    private async getPortalIdByTemplateId(
+        templateId: bigint,
+    ): Promise<number | undefined> {
+        const portalTemplate =
+            await this.offerTemplatePortalRepository.findByTemplate(templateId);
+        if (!portalTemplate) {
+            console.log(
+                portalTemplate,
+                'portalTemplate `Word template with ID ${templateId} not found`,',
+            );
+
+            return undefined;
+        }
+        const portalId =
+            Number(portalTemplate[0].portal_id.toString()) || undefined;
+        return portalId;
+    }
+
     /**
      * Получает URL для доступа к шаблону
      * Генерирует публичный URL для скачивания шаблона через API
@@ -541,7 +622,7 @@ export class WordTemplateService {
     private getTemplateUrl(filePath: string, templateId?: string): string {
         if (templateId) {
             // Генерируем URL через API эндпоинт для скачивания
-            return `/api/konstructor/word-templates/${String(templateId)}/download`;
+            return `/api/word-templates/${String(templateId)}/download`;
         }
         // Если ID не передан, возвращаем путь к файлу (для обратной совместимости)
         return `/api/files/konstructor/word-templates/${filePath.split('/').pop()}`;

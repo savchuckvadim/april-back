@@ -1,10 +1,4 @@
-import {
-    IsString,
-    IsOptional,
-    IsDateString,
-    IsEnum,
-    IsNumber,
-} from 'class-validator';
+import { IsString, IsDateString, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { BITRIX_APP_CODES } from 'src/modules/bitrix-setup/app/enums/bitrix-app.enum';

@@ -16,7 +16,7 @@ export function createInfoblockEntityFromPrisma(
     entity.weight = data.weight;
     entity.code = data.code;
     entity.inGroupId = data.inGroupId?.toString() ?? null;
-    entity.group_id = (data.group_id || BigInt(0)).toString();
+    entity.group_id = data.group_id?.toString() ?? null;
     entity.isLa = data.isLa;
     entity.isFree = data.isFree;
     entity.isShowing = data.isShowing;

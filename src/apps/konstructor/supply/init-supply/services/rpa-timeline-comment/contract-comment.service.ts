@@ -26,7 +26,7 @@ export class ContractCommentService {
 
                 const paragrafName = RpaCommentHelper.getHeaderWithIcon(
                     RpaIconEnum.CONTRACT,
-                    licenseLong?.name as string,
+                    licenseLong?.name,
                 );
                 const licenseLongString =
                     RpaCommentHelper.getList(licenseLongList);

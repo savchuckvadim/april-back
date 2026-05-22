@@ -2,7 +2,7 @@ import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { Contact, MigrateToBxDto } from '../../dto/migrate-to-bx.dto';
 import { GsrMigrateBitrixAbstract } from './gsr-migrate-bitrix-abstract.service';
 import { IField } from 'src/modules/portal/interfaces/portal.interface';
-import { delay } from '@/lib';
+import { delay } from '@/shared/lib';
 
 export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
     private isValidEmail(email: string): boolean {
@@ -101,7 +101,7 @@ export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {
                 : []; // ← пустой массив, Bitrix проглоти
 
             if (contact.phone.length < 200) {
-                let addContactData = {
+                const addContactData = {
                     ASSIGNED_BY_ID: this.userId,
                     COMPANY_ID: companyId,
                     NAME: contact.name,

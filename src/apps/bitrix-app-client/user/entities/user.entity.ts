@@ -1,8 +1,6 @@
 import { User as PrismaUser } from 'generated/prisma';
 
-export interface User extends PrismaUser {
-    // Дополнительные поля или методы могут быть добавлены здесь
-}
+export type User = PrismaUser;
 
 export enum UserRole {
     OWNER = 'owner',

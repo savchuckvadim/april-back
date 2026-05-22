@@ -775,7 +775,7 @@ exports.Prisma.UserScalarFieldEnum = {
   bitrix_id: 'bitrix_id'
 };
 
-exports.Prisma.AisScalarFieldEnum = {
+exports.Prisma.AiScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -1019,7 +1019,13 @@ exports.Prisma.Garant_prof_pricesScalarFieldEnum = {
   region_type: 'region_type',
   supply_type: 'supply_type',
   value: 'value',
-  discount: 'discount'
+  discount: 'discount',
+  code: 'code',
+  complect_code: 'complect_code',
+  garant_package_code: 'garant_package_code',
+  supply_type_code: 'supply_type_code',
+  supply_code: 'supply_code',
+  isSpecial: 'isSpecial'
 };
 
 exports.Prisma.Google_tokensScalarFieldEnum = {
@@ -1082,7 +1088,10 @@ exports.Prisma.OfferTemplateScalarFieldEnum = {
   is_active: 'is_active',
   counter: 'counter',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  creator_bitrix_user_id: 'creator_bitrix_user_id',
+  is_archived: 'is_archived',
+  archived_at: 'archived_at'
 };
 
 exports.Prisma.Offer_zakupki_settingsScalarFieldEnum = {
@@ -1182,7 +1191,7 @@ exports.Prisma.SuppliesScalarFieldEnum = {
   lcontractPropEmail: 'lcontractPropEmail'
 };
 
-exports.Prisma.TranscriptionsScalarFieldEnum = {
+exports.Prisma.TranscriptionScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
   updated_at: 'updated_at',
@@ -1348,6 +1357,35 @@ exports.Prisma.RolesScalarFieldEnum = {
   code: 'code',
   created_at: 'created_at',
   updated_at: 'updated_at'
+};
+
+exports.Prisma.BtxUserScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  code: 'code',
+  portal_id: 'portal_id'
+};
+
+exports.Prisma.InvoiceTemplateScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  visibility: 'visibility',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  type: 'type',
+  name: 'name',
+  code: 'code',
+  counter: 'counter',
+  description: 'description',
+  is_default: 'is_default',
+  is_active: 'is_active',
+  is_archived: 'is_archived',
+  archived_at: 'archived_at',
+  portal_id: 'portal_id',
+  agent_id: 'agent_id',
+  creator_bitrix_user_id: 'creator_bitrix_user_id'
 };
 
 exports.Prisma.SortOrder = {
@@ -1774,7 +1812,7 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
-exports.Prisma.aisOrderByRelevanceFieldEnum = {
+exports.Prisma.AiOrderByRelevanceFieldEnum = {
   provider: 'provider',
   activity_id: 'activity_id',
   file_id: 'file_id',
@@ -1917,7 +1955,12 @@ exports.Prisma.garant_packagesOrderByRelevanceFieldEnum = {
 
 exports.Prisma.garant_prof_pricesOrderByRelevanceFieldEnum = {
   region_type: 'region_type',
-  supply_type: 'supply_type'
+  supply_type: 'supply_type',
+  code: 'code',
+  complect_code: 'complect_code',
+  garant_package_code: 'garant_package_code',
+  supply_type_code: 'supply_type_code',
+  supply_code: 'supply_code'
 };
 
 exports.Prisma.google_tokensOrderByRelevanceFieldEnum = {
@@ -2013,7 +2056,7 @@ exports.Prisma.suppliesOrderByRelevanceFieldEnum = {
   lcontractPropEmail: 'lcontractPropEmail'
 };
 
-exports.Prisma.transcriptionsOrderByRelevanceFieldEnum = {
+exports.Prisma.TranscriptionOrderByRelevanceFieldEnum = {
   provider: 'provider',
   activity_id: 'activity_id',
   file_id: 'file_id',
@@ -2116,11 +2159,23 @@ exports.Prisma.rolesOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code'
 };
+
+exports.Prisma.BtxUserOrderByRelevanceFieldEnum = {
+  code: 'code'
+};
+
+exports.Prisma.InvoiceTemplateOrderByRelevanceFieldEnum = {
+  id: 'id',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  name: 'name',
+  code: 'code',
+  description: 'description'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
-  user: 'user',
-  portal: 'portal'
+  user: 'user'
 };
 
 exports.offer_template_images_storage_type = exports.$Enums.offer_template_images_storage_type = {
@@ -2171,6 +2226,20 @@ exports.offer_template_pages_type = exports.$Enums.offer_template_pages_type = {
   default: 'default'
 };
 
+exports.invoice_templates_visibility = exports.$Enums.invoice_templates_visibility = {
+  public: 'public',
+  portal: 'portal',
+  provider: 'provider'
+};
+
+exports.invoice_templates_type = exports.$Enums.invoice_templates_type = {
+  word: 'word',
+  excel: 'excel',
+  pdf: 'pdf',
+  html: 'html',
+  other: 'other'
+};
+
 exports.Prisma.ModelName = {
   agents: 'agents',
   bitrixfield_items: 'bitrixfield_items',
@@ -2219,7 +2288,7 @@ exports.Prisma.ModelName = {
   Template: 'Template',
   timezones: 'timezones',
   User: 'User',
-  ais: 'ais',
+  Ai: 'Ai',
   bitrix_app_placements: 'bitrix_app_placements',
   bitrix_app_secrets: 'bitrix_app_secrets',
   bitrix_apps: 'bitrix_apps',
@@ -2241,7 +2310,7 @@ exports.Prisma.ModelName = {
   provider_currents: 'provider_currents',
   report_settings: 'report_settings',
   supplies: 'supplies',
-  transcriptions: 'transcriptions',
+  Transcription: 'Transcription',
   UserSelectedTemplate: 'UserSelectedTemplate',
   portal_region: 'portal_region',
   regions: 'regions',
@@ -2250,7 +2319,9 @@ exports.Prisma.ModelName = {
   OfferTemplatePageBlock: 'OfferTemplatePageBlock',
   OfferTemplatePageSticker: 'OfferTemplatePageSticker',
   OfferTemplatePage: 'OfferTemplatePage',
-  roles: 'roles'
+  roles: 'roles',
+  BtxUser: 'BtxUser',
+  InvoiceTemplate: 'InvoiceTemplate'
 };
 
 /**

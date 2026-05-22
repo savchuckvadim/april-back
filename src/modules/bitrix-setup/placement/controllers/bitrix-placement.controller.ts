@@ -14,6 +14,7 @@ import { BitrixPlacementService } from '../services/bitrix-placement.service';
 import { CreateBitrixPlacementDto } from '../dto/bitrix-placement.dto';
 
 import { ApiTags } from '@nestjs/swagger';
+import { getErrorDetails } from '@/shared';
 
 @ApiTags('Bitrix Setup Placement')
 @Controller('bitrix-placement')
@@ -45,8 +46,7 @@ export class BitrixPlacementController {
                     details: {
                         domain: dto.domain,
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,
@@ -73,8 +73,7 @@ export class BitrixPlacementController {
                     error: 'Bitrix App Placements not found',
                     details: {
                         appId: appId,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.NOT_FOUND,
@@ -104,8 +103,7 @@ export class BitrixPlacementController {
                     error: 'Bitrix App Placements delete failed',
                     details: {
                         appId: appId,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,
@@ -134,8 +132,7 @@ export class BitrixPlacementController {
                     error: 'Bitrix App Placement delete failed',
                     details: {
                         id: id,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,

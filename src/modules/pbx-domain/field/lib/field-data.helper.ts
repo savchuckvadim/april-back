@@ -1,13 +1,12 @@
-import { BitrixFieldType } from '@/apps/konstructor/document-generate/dto/pbx-items.dto';
 import {
-    PbxField,
     PbxFieldEntity,
-    PbxFieldEntityType,
     PbxFieldItem,
     PbxFieldItemEntity,
     PbxFieldWithItems,
-} from '../pbx-field.entity';
+} from '../entity/pbx-field.entity';
+import { PbxEntityTypePrisma } from '@/shared/enums';
 import { EUserFieldType } from '@/modules/bitrix';
+import { bigintConvertToNumber } from '@/shared';
 
 export class FieldDataHelper {
     static createFieldData(field: PbxFieldEntity) {
@@ -63,14 +62,11 @@ export class FieldDataHelper {
         entity.name = field.name;
         entity.title = field.title;
         entity.code = field.code;
-        entity.type = field.type as
-            | BitrixFieldType
-            | EUserFieldType
-            | 'multiple';
+        entity.type = field.type as EUserFieldType | 'multiple';
         entity.bitrixCamelId = field.bitrixCamelId;
         entity.bitrixId = field.bitrixId;
-        entity.entity_id = field.entity_id;
-        entity.entity_type = field.entity_type as PbxFieldEntityType;
+        entity.entity_id = bigintConvertToNumber(field.entity_id);
+        entity.entity_type = field.entity_type as PbxEntityTypePrisma;
         entity.parent_type = field.parent_type;
         // entity.created_at = item.created_at?.toISOString() || '';
         // entity.updated_at = item.updated_at?.toISOString() || '';
@@ -88,8 +84,8 @@ export class FieldDataHelper {
         entity.name = item.name;
         entity.title = item.title;
         entity.code = item.code;
+        entity.bitrixfield_id = bigintConvertToNumber(item.bitrixfield_id);
         entity.bitrixId = item.bitrixId;
-
         return entity;
     }
 }

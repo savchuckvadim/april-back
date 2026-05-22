@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { OfferTemplateVisibility } from './create-offer-template.dto';
 
 export class OfferTemplateQueryDto {

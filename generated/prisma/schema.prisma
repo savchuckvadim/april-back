@@ -10,18 +10,19 @@ datasource db {
 }
 
 model agents {
-  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at DateTime? @db.Timestamp(0)
-  updated_at DateTime? @db.Timestamp(0)
-  portalId   BigInt    @db.UnsignedBigInt
-  rqId       BigInt?   @db.UnsignedBigInt
-  type       String    @db.VarChar(255)
-  name       String    @db.VarChar(255)
-  code       String    @db.VarChar(255)
-  number     String    @db.VarChar(255)
-  withTax    Boolean   @default(false)
-  portal     Portal    @relation("PortalProviders", fields: [portalId], references: [id])
-  rq         rqs?      @relation(fields: [rqId], references: [id])
+  id               BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at       DateTime?         @db.Timestamp(0)
+  updated_at       DateTime?         @db.Timestamp(0)
+  portalId         BigInt            @db.UnsignedBigInt
+  rqId             BigInt?           @db.UnsignedBigInt
+  type             String            @db.VarChar(255)
+  name             String            @db.VarChar(255)
+  code             String            @db.VarChar(255)
+  number           String            @db.VarChar(255)
+  withTax          Boolean           @default(false)
+  portal           Portal            @relation("PortalProviders", fields: [portalId], references: [id])
+  rq               rqs?              @relation(fields: [rqId], references: [id])
+  invoiceTemplates InvoiceTemplate[]
 }
 
 model bitrixfield_items {
@@ -646,6 +647,7 @@ model Portal {
   btx_deals              btx_deals[]
   btx_leads              btx_leads[]
   btx_rpas               btx_rpas[]
+  btx_users              BtxUser[]
   callings               callings[]
   departaments           departaments[]
   offerTemplateImages    OfferTemplateImage[]
@@ -660,6 +662,8 @@ model Portal {
   userSelectedTemplates  UserSelectedTemplate[]
   agents                 agents[]                 @relation("PortalProviders")
   templates              Template[]               @relation("PortalTemplates")
+  invoiceTemplates       InvoiceTemplate[]
+  bxRqs                  bx_rqs[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
@@ -890,7 +894,7 @@ model User {
   @@map("users")
 }
 
-model ais {
+model Ai {
   id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   created_at       DateTime? @db.Timestamp(0)
   updated_at       DateTime? @db.Timestamp(0)
@@ -923,6 +927,8 @@ model ais {
   model            String?   @db.VarChar(255)
   portal_id        BigInt?
   transcription_id BigInt?
+
+  @@map("ais")
 }
 
 model bitrix_app_placements {
@@ -1085,6 +1091,9 @@ model bx_rqs {
   country_id     String?   @db.VarChar(255)
   is_active      Boolean   @default(true)
   sort           Int?
+  portal         Portal?   @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "bx_rqs_portal_id_foreign")
+
+  @@index([portal_id], map: "bx_rqs_portal_id_foreign")
 }
 
 model complect_infoblock {
@@ -1154,19 +1163,25 @@ model garant_packages {
 }
 
 model garant_prof_prices {
-  id                BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at        DateTime?        @db.Timestamp(0)
-  updated_at        DateTime?        @db.Timestamp(0)
-  complect_id       BigInt?          @db.UnsignedBigInt
-  garant_package_id BigInt?          @db.UnsignedBigInt
-  supply_id         BigInt?          @db.UnsignedBigInt
-  region_type       String           @db.VarChar(255)
-  supply_type       String?          @db.VarChar(255)
-  value             Float
-  discount          Float?
-  complects         complects?       @relation(fields: [complect_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "garant_prof_prices_complect_id_foreign")
-  garant_packages   garant_packages? @relation(fields: [garant_package_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "garant_prof_prices_garant_package_id_foreign")
-  supplies          supplies?        @relation(fields: [supply_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "garant_prof_prices_supply_id_foreign")
+  id                  BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at          DateTime?        @db.Timestamp(0)
+  updated_at          DateTime?        @db.Timestamp(0)
+  complect_id         BigInt?          @db.UnsignedBigInt
+  garant_package_id   BigInt?          @db.UnsignedBigInt
+  supply_id           BigInt?          @db.UnsignedBigInt
+  region_type         String           @db.VarChar(255)
+  supply_type         String?          @db.VarChar(255)
+  value               Float
+  discount            Float?
+  code                String?          @db.VarChar(255)
+  complect_code       String?          @db.VarChar(255)
+  garant_package_code String?          @db.VarChar(255)
+  supply_type_code    String?          @db.VarChar(255)
+  supply_code         String?          @db.VarChar(255)
+  isSpecial           Boolean          @default(false)
+  complects           complects?       @relation(fields: [complect_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "garant_prof_prices_complect_id_foreign")
+  garant_packages     garant_packages? @relation(fields: [garant_package_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "garant_prof_prices_garant_package_id_foreign")
+  supplies            supplies?        @relation(fields: [supply_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "garant_prof_prices_supply_id_foreign")
 
   @@index([complect_id], map: "garant_prof_prices_complect_id_foreign")
   @@index([garant_package_id], map: "garant_prof_prices_garant_package_id_foreign")
@@ -1225,31 +1240,35 @@ model OfferTemplatePortal {
 }
 
 model OfferTemplate {
-  id                    BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
-  name                  String                     @db.VarChar(255)
-  visibility            offer_templates_visibility @default(private)
-  is_default            Boolean                    @default(false)
-  file_path             String                     @db.VarChar(255)
-  demo_path             String?                    @db.VarChar(255)
-  type                  String                     @default("single") @db.VarChar(255)
-  rules                 String?                    @db.LongText
-  price_settings        String?                    @db.LongText
-  infoblock_settings    String?                    @db.LongText
-  letter_text           String?                    @db.LongText
-  sale_text_1           String?                    @db.LongText
-  sale_text_2           String?                    @db.LongText
-  sale_text_3           String?                    @db.LongText
-  sale_text_4           String?                    @db.LongText
-  sale_text_5           String?                    @db.LongText
-  field_codes           String?                    @db.LongText
-  style                 String?                    @db.VarChar(255)
-  color                 String?                    @db.VarChar(255)
-  code                  String                     @db.VarChar(255)
-  tags                  String?                    @db.LongText
-  is_active             Boolean                    @default(false)
-  counter               Int
-  created_at            DateTime?                  @db.Timestamp(0)
-  updated_at            DateTime?                  @db.Timestamp(0)
+  id                     BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  name                   String                     @db.VarChar(255)
+  visibility             offer_templates_visibility @default(private)
+  is_default             Boolean                    @default(false)
+  file_path              String                     @db.VarChar(255)
+  demo_path              String?                    @db.VarChar(255)
+  type                   String                     @default("single") @db.VarChar(255)
+  rules                  String?                    @db.LongText
+  price_settings         String?                    @db.LongText
+  infoblock_settings     String?                    @db.LongText
+  letter_text            String?                    @db.LongText
+  sale_text_1            String?                    @db.LongText
+  sale_text_2            String?                    @db.LongText
+  sale_text_3            String?                    @db.LongText
+  sale_text_4            String?                    @db.LongText
+  sale_text_5            String?                    @db.LongText
+  field_codes            String?                    @db.LongText
+  style                  String?                    @db.VarChar(255)
+  color                  String?                    @db.VarChar(255)
+  code                   String                     @db.VarChar(255)
+  tags                   String?                    @db.LongText
+  is_active              Boolean                    @default(false)
+  counter                Int
+  created_at             DateTime?                  @db.Timestamp(0)
+  updated_at             DateTime?                  @db.Timestamp(0)
+  creator_bitrix_user_id BigInt?                    @db.UnsignedBigInt
+  is_archived            Boolean                    @default(false)
+  archived_at            DateTime?                  @db.Timestamp(0)
+
   offerTemplateFonts    OfferTemplateFont[]
   offerTemplatePages    OfferTemplatePage[]
   offerTemplatePortal   OfferTemplatePortal[]
@@ -1359,7 +1378,7 @@ model supplies {
   garant_prof_prices         garant_prof_prices[]
 }
 
-model transcriptions {
+model Transcription {
   id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   created_at     DateTime? @db.Timestamp(0)
   updated_at     DateTime? @db.Timestamp(0)
@@ -1389,6 +1408,8 @@ model transcriptions {
   in_report      Boolean   @default(false)
   report_item_id String?   @db.VarChar(255)
   portal_id      String?   @db.VarChar(255)
+
+  @@map("transcriptions")
 }
 
 model UserSelectedTemplate {
@@ -1567,11 +1588,49 @@ model roles {
   updated_at DateTime? @db.Timestamp(0)
 }
 
+model BtxUser {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  code       String    @db.VarChar(255)
+  portal_id  BigInt    @db.UnsignedBigInt
+  portals    Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "btx_users_portal_id_foreign")
+
+  @@index([portal_id], map: "btx_users_portal_id_foreign")
+  @@map("btx_users")
+}
+
+model InvoiceTemplate {
+  id                     String                       @id @db.Char(36)
+  created_at             DateTime?                    @db.Timestamp(0)
+  updated_at             DateTime?                    @db.Timestamp(0)
+  visibility             invoice_templates_visibility @default(portal)
+  file_path              String                       @db.LongText
+  demo_path              String?                      @db.LongText
+  type                   invoice_templates_type       @default(word)
+  name                   String                       @db.LongText
+  code                   String                       @db.VarChar(255)
+  counter                Int
+  description            String?                      @db.LongText
+  is_default             Boolean                      @default(false)
+  is_active              Boolean                      @default(true)
+  is_archived            Boolean                      @default(false)
+  archived_at            DateTime?                    @db.Date
+  portal_id              BigInt?                      @db.UnsignedBigInt
+  agent_id               BigInt?                      @db.UnsignedBigInt
+  creator_bitrix_user_id BigInt?                      @db.UnsignedBigInt
+  agent                  agents?                      @relation(fields: [agent_id], references: [id], onUpdate: NoAction, map: "invoice_templates_agent_id_foreign")
+  portal                 Portal?                      @relation(fields: [portal_id], references: [id], onUpdate: NoAction, map: "invoice_templates_portal_id_foreign")
+
+  @@index([agent_id], map: "invoice_templates_agent_id_foreign")
+  @@index([portal_id], map: "invoice_templates_portal_id_foreign")
+  @@map("invoice_templates")
+}
+
 enum offer_templates_visibility {
   public
   private
   user
-  portal
 }
 
 enum offer_template_images_storage_type {
@@ -1632,5 +1691,19 @@ enum user_roles {
   user
   manager
   developer
+  other
+}
+
+enum invoice_templates_visibility {
+  public
+  portal
+  provider
+}
+
+enum invoice_templates_type {
+  word
+  excel
+  pdf
+  html
   other
 }

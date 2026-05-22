@@ -85,7 +85,7 @@ export class ReportCommunicationsUseCase {
             eventAction?.items,
             communicationItem?.items,
             initiativeItem?.items,
-        ) as FilterCommunication[];
+        );
 
         this.generateBatchCommands(
             departament,
@@ -147,17 +147,17 @@ export class ReportCommunicationsUseCase {
                 const actionType = EnumOrkFieldCode.ork_event_type;
                 switch (plField.code as EnumOrkFieldCode) {
                     case EnumOrkFieldCode.ork_event_action:
-                        eventActionField = plField as IField;
+                        eventActionField = plField;
                         actionFieldId = plField.bitrixCamelId;
                         break;
 
                     case EnumOrkFieldCode.event_communication:
-                        eventCommunicationField = plField as IField;
+                        eventCommunicationField = plField;
                         communicationFieldId = plField.bitrixCamelId;
                         break;
 
                     case EnumOrkFieldCode.ork_event_initiative:
-                        eventInitiativeField = plField as IField;
+                        eventInitiativeField = plField;
                         initiativeFieldId = plField.bitrixCamelId;
                         break;
 
@@ -311,7 +311,7 @@ export class ReportCommunicationsUseCase {
             const userId = user.ID;
             const userName = user.NAME + ' ' + user.LAST_NAME;
 
-            let userReport = {
+            const userReport = {
                 user: user,
                 userName: userName,
                 kpi: [] as KPICommunication[],

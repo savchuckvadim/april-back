@@ -7,6 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiResponse, EResultCode } from '../interfaces/response.interface';
+import { Request } from 'express';
 
 @Injectable()
 export class ResponseInterceptor<T>
@@ -16,14 +17,13 @@ export class ResponseInterceptor<T>
         context: ExecutionContext,
         next: CallHandler,
     ): Observable<ApiResponse<T>> {
-        const req = context.switchToHttp().getRequest();
-        // 🔥 Пропускаем без обертки, если это /metrics
+        const req = context.switchToHttp().getRequest<Request>();
         if (req.url === '/api/metrics') {
-            return next.handle();
+            return next.handle() as Observable<ApiResponse<T>>;
         }
 
         return next.handle().pipe(
-            map(data => {
+            map((data: T) => {
                 return {
                     resultCode: EResultCode.SUCCESS,
                     data: data,

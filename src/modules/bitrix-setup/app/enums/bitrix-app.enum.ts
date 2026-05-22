@@ -41,7 +41,7 @@ export enum API_ENDPOINTS {
     ALL = 'all',
     GET_BY_PORTAL = 'get-by-portal',
     UPDATE = ':id',
-    DELETE = ':id',
+    DELETE = 'delete/:id',
 }
 
 export enum HTTP_STATUS_CODES {
@@ -94,9 +94,9 @@ export enum ENCRYPTION_CONFIG {
 // Лимиты и ограничения
 export enum LIMITS {
     MAX_DOMAIN_LENGTH = 255,
-    MAX_CODE_LENGTH = 255,
-    MAX_GROUP_LENGTH = 255,
-    MAX_TYPE_LENGTH = 255,
-    MAX_STATUS_LENGTH = 255,
+    // MAX_CODE_LENGTH = 255,
+    // MAX_GROUP_LENGTH = 255,
+    // MAX_TYPE_LENGTH = 255,
+    // MAX_STATUS_LENGTH = 255,
     MAX_APPS_PER_PORTAL = 100,
 }

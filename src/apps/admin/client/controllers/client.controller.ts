@@ -101,18 +101,12 @@ export class AdminClientController {
     @Get('email/:email')
     async getClientByEmail(
         @Param('email') email: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<ClientResponseDto | null> {
         const client = await this.clientService.findByEmail(email);
         if (!client) {
-            return {
-                resultCode: EResultCode.ERROR,
-                data: null,
-            };
+            return null;
         }
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: client,
-        };
+        return client;
     }
 
     @ApiOperation({ summary: 'Update client' })

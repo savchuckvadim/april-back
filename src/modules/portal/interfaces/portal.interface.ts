@@ -20,9 +20,11 @@ export interface IPortal {
     rpas?: IRPA[];
     company?: ICompany;
     contact?: IContact;
-    lead?: Record<string, any>;
+    lead?: ILead;
     bx_rq?: IPresetRQ[];
     measures: IPPortalMeasure[];
+    bitrixCallingTasksGroup?: IPCallingTasksGroup;
+    callingGroups?: IPCallingTasksGroup[];
 }
 
 export interface IFieldItem {
@@ -54,6 +56,8 @@ export type IFieldCode =
     | 'supply_date'
     | 'sales_kpi_event_date'
     | 'sales_kpi_event_type'
+    | 'contract_start'
+    | 'contract_end'
     | string;
 export interface IPCategory {
     id: number;
@@ -180,7 +184,15 @@ export interface ICompany {
     title: string;
     bitrixfields: IField[];
 }
-
+export interface ILead {
+    id: number;
+    portal_id: number;
+    code: string;
+    name: string;
+    title: string;
+    categories: IPCategory[];
+    bitrixfields: IField[];
+}
 export interface IPBXList {
     group: string;
     type: string;
@@ -213,7 +225,7 @@ export interface IPMeasure {
     shortName: string;
     fullName: string;
     code: PMeasureCode;
-    type: 'service' | 'product' | 'lic' | 'abon' | string;
+    type: EMeasureType;
 }
 
 export interface IPPortalMeasure {
@@ -238,3 +250,14 @@ export type PMeasureCode =
     | 'abonHalf'
     | 'abonYear'
     | 'abonTwoYears';
+export type EMeasureType = 'service' | 'product' | 'lic' | 'abon';
+
+export interface IPCallingTasksGroup {
+    id: number;
+    type: 'sales' | 'service' | 'tmc';
+    group: 'sales' | 'service' | 'tmc';
+    name: string;
+    title: string;
+    bitrixId: number;
+    portal_id: number;
+}

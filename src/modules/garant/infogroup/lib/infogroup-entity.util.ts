@@ -3,7 +3,7 @@ import {
     InfogroupEntity,
     InfogroupProductType,
     InfogroupType,
-} from '../infogroup.entity';
+} from '../entity/infogroup.entity';
 
 export function createInfogroupEntityFromPrisma(
     data: NonNullable<

@@ -4,6 +4,7 @@ import { IBXProductRowRow } from '../interface/bx-product-row.interface';
 export class ListProductRowDto {
     '=ownerType': BitrixOwnerType | string;
     '=ownerId': string | number;
+    '>price'?: number;
 }
 
 export class ListProductRowResponseDto {

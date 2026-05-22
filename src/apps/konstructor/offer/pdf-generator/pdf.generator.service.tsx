@@ -6,10 +6,10 @@ import ReactDOMServer from 'react-dom/server';
 
 @Injectable()
 export class PdfService {
-  async generatePdf(): Promise<Buffer> {
-    const content = ReactDOMServer.renderToStaticMarkup(<Offer />);
+    async generatePdf(): Promise<Buffer> {
+        const content = ReactDOMServer.renderToStaticMarkup(<Offer />);
 
-    const html = `
+        const html = `
       <html>
         <head>
           <meta charset="utf-8" />
@@ -41,17 +41,17 @@ export class PdfService {
       </html>
     `;
 
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
 
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-    });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+        });
 
-    await browser.close();
-    return Buffer.from(pdfBuffer);
-  }
+        await browser.close();
+        return Buffer.from(pdfBuffer);
+    }
 }

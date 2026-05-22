@@ -1,19 +1,13 @@
 import { Global, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-    createWriteStream,
-    createReadStream,
-    existsSync,
-    mkdirSync,
-    unlinkSync,
-} from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { promisify } from 'util';
-import { pipeline } from 'stream';
+// import { promisify } from 'util';
+// import { pipeline } from 'stream';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const pipelineAsync = promisify(pipeline);
+// const pipelineAsync = promisify(pipeline);
 
 export enum StorageType {
     APP = 'app',
@@ -132,6 +126,27 @@ export class StorageService {
                 err,
             );
             return 1;
+        }
+    }
+
+    /** Имена файлов в каталоге `storage/{type}/{subPath}` (без рекурсии). */
+    async listFilesByType(
+        type: StorageType,
+        subPath: string,
+    ): Promise<string[]> {
+        const dirPath = join(this.storagePath, type, subPath);
+        try {
+            return await fs.readdir(dirPath);
+        } catch (err) {
+            const code = (err as NodeJS.ErrnoException).code;
+            if (code === 'ENOENT') {
+                return [];
+            }
+            this.logger.error(
+                `Ошибка при чтении каталога ${type}/${subPath}:`,
+                err,
+            );
+            throw err;
         }
     }
 }

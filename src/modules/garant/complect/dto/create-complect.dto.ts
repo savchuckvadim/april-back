@@ -5,7 +5,12 @@ import {
     IsBoolean,
     IsOptional,
     IsArray,
+    IsEnum,
 } from 'class-validator';
+import {
+    ComplectProductTypeEnum,
+    ComplectTypeEnum,
+} from '../types/complect.type';
 
 export class CreateComplectDto {
     @ApiProperty({
@@ -47,10 +52,10 @@ export class CreateComplectDto {
 
     @ApiProperty({
         description: 'Тип комплекта',
-        example: 'prof',
-        enum: ['prof', 'universal'],
+        example: ComplectTypeEnum.PROF,
+        enum: ComplectTypeEnum,
     })
-    @IsString()
+    @IsEnum(ComplectTypeEnum)
     type: string;
 
     @ApiProperty({
@@ -87,10 +92,10 @@ export class CreateComplectDto {
 
     @ApiProperty({
         description: 'Тип продукта',
-        example: 'garant',
-        enum: ['garant', 'lt', 'star', 'consalting'],
+        example: ComplectProductTypeEnum.GARANT,
+        enum: ComplectProductTypeEnum,
     })
-    @IsString()
+    @IsEnum(ComplectProductTypeEnum)
     productType: string;
 
     @ApiProperty({

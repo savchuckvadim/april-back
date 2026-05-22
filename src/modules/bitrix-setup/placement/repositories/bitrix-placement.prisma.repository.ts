@@ -27,6 +27,10 @@ export class BitrixPlacementPrismaRepository
                     bitrix_codes: placement.bitrix_codes!,
                 })),
             });
+            console.log(
+                'BitrixPlacementPrismaRepository storePlacements result',
+                result,
+            );
 
             // Return the created placements
             const createdPlacements =

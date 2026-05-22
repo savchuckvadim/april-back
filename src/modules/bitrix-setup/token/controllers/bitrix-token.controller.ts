@@ -14,6 +14,7 @@ import {
     CreateBitrixTokenDto,
     GetBitrixTokenDto,
 } from '../dto/bitrix-token.dto';
+import { getErrorDetails } from '@/shared';
 
 @Controller('bitrix-token')
 export class BitrixTokenController {
@@ -43,8 +44,7 @@ export class BitrixTokenController {
                     details: {
                         domain: dto.domain,
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.BAD_REQUEST,
@@ -70,8 +70,7 @@ export class BitrixTokenController {
                     details: {
                         domain: dto.domain,
                         request: dto,
-                        message: error.message,
-                        stack: error.stack,
+                        ...getErrorDetails(error),
                     },
                 },
                 HttpStatus.NOT_FOUND,

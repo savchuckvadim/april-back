@@ -1,16 +1,19 @@
-import { EBxMethod, EBxNamespace } from '../consts/bitrix-api.enum';
+import { EBxNamespace } from '../consts/bitrix-api.enum';
 import { EBXEntity } from '../consts/bitrix-entities.enum';
 import {
     BxCatalogSchema,
     BxListSchema,
     BxRpaItemSchema,
-    IBXItem,
+    BxRpaTypeSchema,
+    BxRpaStageSchema,
     UserFieldConfigSchema,
+    UserSchema,
 } from '@/modules/bitrix/';
 import {
     CompanySchema,
     ContactSchema,
     DealSchema,
+    LeadSchema,
     ProductRowSchema,
     FieldsSchema,
     FieldsEnumerationSchema,
@@ -18,26 +21,29 @@ import {
     BxStatusSchema,
     BxItemSchema,
     TimelineCommentSchema,
+    RequisiteSchema,
+    ActivityTodoSchema,
 } from 'src/modules/bitrix/';
 
-import { TasksSchema } from 'src/modules/bitrix/domain/tasks/bx-tasks.schema';
+import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
 import { ActivitySchema } from 'src/modules/bitrix/domain/activity/bx-activity.schema';
-import { FileSchema } from 'src/modules/bitrix/domain/file/bx-file.schema';
-// import {
-//     CrmItemAddRequestType,
-//     CrmItemGetRequestType,
-//     CrmItemListRequestType,
-//     CrmUpdateItemRequestType,
-// } from '@/modules/bitrix/domain/crm/type/crm-request.type';
 import { BxSmartTypeSchema } from '@/modules/bitrix/domain/crm/smart-type';
 import { BxListItemSchema } from '@/modules/bitrix/domain/list-item/schema/bx-list-item.schema';
 import { RecentSchema } from '@/modules/bitrix/domain/chat/recent/schema/bx-recent.schema';
 import { MessageSchema } from '@/modules/bitrix/domain/chat/message/schema/bx-message.schema';
-// import { FieldsEnumerationSchema } from "src/modules/bitrix/domain/crm";
+import { DialogSchema } from '@/modules/bitrix/domain/chat/dialog/schema/bx-dialog.schema';
+import { DialogMessageSchema } from '@/modules/bitrix/domain/chat/dialog-message/schema/bx-dialog-message.schema';
+import { ImV2EventSchema } from '@/modules/bitrix/domain/chat/im-v2-event/schema/bx-im-v2-event.schema';
+import {
+    BxDiskFileSchema,
+    BxDiskFolderSchema,
+    BxDiskStorageSchema,
+} from '@/modules/bitrix/domain/disk';
 
 export type BXApiSchema = {
     [EBxNamespace.CRM]: {
         [EBXEntity.DEAL]: DealSchema;
+        [EBXEntity.LEAD]: LeadSchema;
         [EBXEntity.COMPANY]: CompanySchema;
         [EBXEntity.CONTACT]: ContactSchema;
         [EBXEntity.USER_FIELD]: FieldsSchema;
@@ -48,60 +54,30 @@ export type BXApiSchema = {
         [EBXEntity.ITEM]: BxItemSchema;
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;
-
-        //   [EBxMethod.LIST]: {
-        //     request: { filter?: Partial<IBXItem>, select?: string[] };
-        //     response: IBXItem[];
-        //   };
-        //   [EBxMethod.GET]: {
-        //     request: CrmItemGetRequestType<string>;
-        //     response: IBXItem;
-        //   };
-        //   [EBxMethod.GET_BY_ENTITY_TYPE_ID]: {
-        //     request: { entityTypeId: string };
-        //     response: IBXItem;
-        //   };
-        //   [EBxMethod.ADD]: {
-        //     request: CrmItemAddRequestType<IBXItem, string>;
-        //     response: IBXItem;
-        //   };
-        //   [EBxMethod.FIELDS]: {
-        //     request: CrmItemListRequestType<string>;
-        //     response: IBXItem;
-        //   };
-        //   [EBxMethod.UPDATE]: {
-        //     request: {
-        //       id: number | string;
-
-        //       fields: Partial<IBXItem>;
-        //     };
-        //     response: number;
-        //   };
-        // }
+        [EBXEntity.REQUISITE]: RequisiteSchema;
+        [EBXEntity.ACTIVITY_TODO]: ActivityTodoSchema;
     };
     [EBxNamespace.RPA]: {
         [EBXEntity.ITEM]: BxRpaItemSchema;
+        [EBXEntity.TYPE]: BxRpaTypeSchema;
+        [EBXEntity.STAGE]: BxRpaStageSchema;
     };
     [EBxNamespace.TASKS]: {
-        [EBXEntity.TASK]: TasksSchema;
+        [EBXEntity.TASK]: TaskSchema;
     };
     [EBxNamespace.CRM_ITEM]: {
         [EBXEntity.PRODUCT_ROW]: ProductRowSchema;
-
-        // {
-        //   [EBxMethod.SET]: {
-        //     request: Partial<IBXProductRow>;
-        //     response: number;
-        //   };
-        // };
     };
     [EBxNamespace.DISK]: {
-        [EBXEntity.FILE]: FileSchema;
+        [EBXEntity.FILE]: BxDiskFileSchema;
+        [EBXEntity.FOLDER]: BxDiskFolderSchema;
+        [EBXEntity.STORAGE]: BxDiskStorageSchema;
     };
 
     [EBxNamespace.WITHOUT_NAMESPACE]: {
         [EBXEntity.LISTS]: BxListSchema;
         [EBXEntity.USER_FIELD_CONFIG]: UserFieldConfigSchema;
+        [EBXEntity.USER]: UserSchema;
     };
     [EBxNamespace.LISTS]: {
         [EBXEntity.ELEMENT]: BxListItemSchema;
@@ -112,5 +88,11 @@ export type BXApiSchema = {
     [EBxNamespace.IM]: {
         [EBXEntity.RECENT]: RecentSchema;
         [EBXEntity.MESSAGE]: MessageSchema;
+        [EBXEntity.CHAT]: DialogSchema;
+        [EBXEntity.DIALOG]: DialogSchema;
+        [EBXEntity.DIALOG_MESSAGES]: DialogMessageSchema;
+    };
+    [EBxNamespace.IMV2]: {
+        [EBXEntity.EVENT]: ImV2EventSchema;
     };
 };

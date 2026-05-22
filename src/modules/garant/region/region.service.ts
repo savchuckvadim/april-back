@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { RegionRepository } from './region.repository';
-import { RegionEntity } from './region.entity';
+import { PortalRegionEntity, RegionEntity } from './region.entity';
 import { RegionExcelService } from './services/region-excel.service';
+import { Decimal } from 'generated/prisma/runtime/library';
 
 @Injectable()
 export class RegionService {
@@ -66,5 +67,56 @@ export class RegionService {
         }
 
         return updatedRegions;
+    }
+
+    async delete(id: string): Promise<RegionEntity | null> {
+        return this.regionRepository.delete(id);
+    }
+
+    async findByPortalId(portalId: number): Promise<RegionEntity[] | null> {
+        return this.regionRepository.findByPortalId(portalId);
+    }
+
+    async createPortalRegion(
+        portalId: number,
+        regionId: number,
+    ): Promise<RegionEntity | null> {
+        // создать pivot связь между порталом и регионом
+        return this.regionRepository.createPortalRegion(portalId, regionId);
+    }
+
+    async getPortalRegionUpdateInitialData(
+        portalId: number,
+        regionId: number,
+    ): Promise<PortalRegionEntity | null> {
+        return this.regionRepository.findByPortalIdPortalRegion(
+            portalId,
+            regionId,
+        );
+    }
+
+    async updatePortalRegion(
+        portalId: number,
+        regionId: number,
+        own_abs: Decimal,
+        own_tax: Decimal,
+        own_tax_abs: Decimal,
+    ): Promise<RegionEntity | null> {
+        // обновить поля связи pivot связь между порталом и регионом
+        return this.regionRepository.updatePortalRegion(
+            portalId,
+            regionId,
+            own_abs,
+            own_tax,
+            own_tax_abs,
+        );
+    }
+
+    async deletePortalRegion(
+        portalId: number,
+        regionId: number,
+    ): Promise<boolean> {
+        // удалить pivot связь между порталом и регионом
+        return this.regionRepository.deletePortalRegion(portalId, regionId);
     }
 }

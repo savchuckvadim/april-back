@@ -1,8 +1,7 @@
 import { PrismaService } from 'src/core/prisma';
 import { BitrixAppEntity } from '../bitrix-app.model';
 import { createBitrixTokenEntityFromPrisma } from '@/modules/bitrix-setup/token/model/lib/bitrix-token-model.util';
-import { BitrixTokenEntity } from '@/modules/bitrix-setup/token/model/bitrix-token.model';
-import { BitrixSettingEntity } from '@/modules/bitrix-setup/setting/model/bitrix-setting.model';
+import { createPortalEntityFromPrisma } from '@/modules/portal-konstructor/portal/lib/portal-entity.util';
 
 export const createBitrixAppEntityFromPrisma = (
     app: NonNullable<
@@ -35,7 +34,7 @@ export const createBitrixAppEntityFromPrisma = (
         : undefined;
     // entity.placements = bitrix_app_placements.map(createBitrixAppPlacementEntityFromPrisma);
     // entity.settings = bitrix_settings.map(createBitrixSettingEntityFromPrisma);
-    entity.portal = portal || undefined;
+    entity.portal = portal ? createPortalEntityFromPrisma(portal) : undefined;
     return entity;
 };
 

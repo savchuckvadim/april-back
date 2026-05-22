@@ -1,19 +1,11 @@
 import { Module } from '@nestjs/common';
 import { SchedulerService } from './services/shcedler.service';
+import { DealsMoveModule } from '../deals-move/deals-move.module';
 import { TelegramModule } from '@/modules/telegram/telegram.module';
-import { MoveDealStagesService } from './services/move-deal-stages';
-import { QueueModule } from '@/modules/queue/queue.module';
-import { EventServiceMoveDealStagesProcessor } from './processor/move-deal-stges.processor';
-import { PBXModule } from '@/modules/pbx/pbx.module';
-import { DealsScheduleController } from './controllers/deals-schedule.controller';
+import { DealsOrderModule } from '../deals-order/deals-order.module';
 
 @Module({
-    imports: [PBXModule, TelegramModule, QueueModule],
-    controllers: [DealsScheduleController],
-    providers: [
-        SchedulerService,
-        MoveDealStagesService,
-        EventServiceMoveDealStagesProcessor,
-    ],
+    imports: [DealsMoveModule, TelegramModule, DealsOrderModule],
+    providers: [SchedulerService],
 })
 export class DealsScheduleModule {}

@@ -3,7 +3,7 @@ export interface IBitrixBatchResponse {
 }
 export interface IBitrixBatchResponseResult {
     result: {
-        [key: string]: any;
+        [key: string]: any; // здесь реально может оказаться что угодно, поэтому any
     };
     result_error:
         | {

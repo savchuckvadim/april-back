@@ -6,7 +6,6 @@ import {
     Delete,
     Body,
     Param,
-    Query,
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -14,10 +13,10 @@ import { BtxCategoryService } from '../services/btx-category.service';
 import { CreateBtxCategoryDto } from '../dto/create-btx-category.dto';
 import { UpdateBtxCategoryDto } from '../dto/update-btx-category.dto';
 import { BtxCategoryResponseDto } from '../dto/btx-category-response.dto';
-import { SuccessResponseDto, EResultCode } from '@/core';
+import { GetChildrenByPbxEntityDto } from '../../pbx-shared/dto/get-fields-by-entity.request.dto';
 
 @ApiTags('Admin Btx Categories Management')
-@Controller('admin/portals/btx-categories')
+@Controller('admin/pbx/btx-categories')
 export class BtxCategoryController {
     constructor(private readonly categoryService: BtxCategoryService) {}
 
@@ -30,12 +29,9 @@ export class BtxCategoryController {
     @Post()
     async createCategory(
         @Body() createCategoryDto: CreateBtxCategoryDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCategoryResponseDto> {
         const category = await this.categoryService.create(createCategoryDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: category,
-        };
+        return category;
     }
 
     @ApiOperation({ summary: 'Get category by ID' })
@@ -47,47 +43,57 @@ export class BtxCategoryController {
     @Get(':id')
     async getCategoryById(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCategoryResponseDto> {
         const category = await this.categoryService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: category,
-        };
+        return category;
     }
 
-    @ApiOperation({ summary: 'Get all categories' })
+    @ApiOperation({ summary: 'Get all fields' })
     @ApiResponse({
         status: 200,
-        description: 'Categories found',
+        description: 'Fields found',
         type: [BtxCategoryResponseDto],
     })
-    @Get()
-    async getAllCategories(
-        @Query('entity_type') entityType?: string,
-        @Query('entity_id') entityId?: string,
-        @Query('parent_type') parentType?: string,
-    ): Promise<SuccessResponseDto> {
-        let categories;
-        if (entityType && entityId && parentType) {
-            categories = await this.categoryService.findByEntityAndParentType(
-                entityType,
-                Number(entityId),
-                parentType,
-            );
-        } else if (entityType && entityId) {
-            categories = await this.categoryService.findByEntity(
-                entityType,
-                Number(entityId),
-            );
-        } else {
-            categories = await this.categoryService.findMany();
-        }
-
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: categories,
-        };
+    @Post('get-by-entity')
+    async getFieldsByEntity(
+        @Body() dto: GetChildrenByPbxEntityDto,
+    ): Promise<BtxCategoryResponseDto[]> {
+        return await this.categoryService.findByEntity(
+            dto.entityType,
+            dto.entityId,
+        );
     }
+
+    // @ApiOperation({ summary: 'Get all categories' })
+    // @ApiResponse({
+    //     status: 200,
+    //     description: 'Categories found',
+    //     type: [BtxCategoryResponseDto],
+    // })
+    // @Get()
+    // async getAllCategories(
+    //     @Query('entity_type') entityType?: string,
+    //     @Query('entity_id') entityId?: string,
+    //     @Query('parent_type') parentType?: string,
+    // ): Promise<BtxCategoryResponseDto[]> {
+    //     let categories;
+    //     if (entityType && entityId && parentType) {
+    //         categories = await this.categoryService.findByEntityAndParentType(
+    //             entityType,
+    //             Number(entityId),
+    //             parentType,
+    //         );
+    //     } else if (entityType && entityId) {
+    //         categories = await this.categoryService.findByEntity(
+    //             entityType,
+    //             Number(entityId),
+    //         );
+    //     } else {
+    //         categories = await this.categoryService.findMany();
+    //     }
+
+    //     return categories;
+    // }
 
     @ApiOperation({ summary: 'Update category' })
     @ApiResponse({
@@ -99,15 +105,12 @@ export class BtxCategoryController {
     async updateCategory(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateCategoryDto: UpdateBtxCategoryDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCategoryResponseDto> {
         const category = await this.categoryService.update(
             id,
             updateCategoryDto,
         );
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: category,
-        };
+        return category;
     }
 
     @ApiOperation({ summary: 'Delete category' })
@@ -118,11 +121,8 @@ export class BtxCategoryController {
     @Delete(':id')
     async deleteCategory(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<boolean> {
         await this.categoryService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }

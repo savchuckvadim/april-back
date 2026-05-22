@@ -1,4 +1,8 @@
 import { InfoblockEntity } from '../infoblock/infoblock.entity';
+import {
+    ComplectProductTypeEnum,
+    ComplectTypeEnum,
+} from './types/complect.type';
 
 export class ComplectEntity {
     id: string;
@@ -7,12 +11,12 @@ export class ComplectEntity {
     shortName: string;
     description?: string;
     code: string;
-    type: string;
+    type: ComplectTypeEnum;
     color?: string;
     weight: number;
     abs?: string;
     number: number;
-    productType: string;
+    productType: ComplectProductTypeEnum;
     withABS: boolean;
     withConsalting: boolean;
     withServices: boolean;

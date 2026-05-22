@@ -17,7 +17,7 @@ import { BtxCompanyResponseDto } from '../dto/btx-company-response.dto';
 import { SuccessResponseDto, EResultCode } from '@/core';
 
 @ApiTags('Admin Btx Companies Management')
-@Controller('admin/portals/btx-companies')
+@Controller('admin/pbx/btx-companies')
 export class BtxCompanyController {
     constructor(private readonly companyService: BtxCompanyService) {}
 
@@ -30,12 +30,9 @@ export class BtxCompanyController {
     @Post()
     async createCompany(
         @Body() createCompanyDto: CreateBtxCompanyDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.companyService.create(createCompanyDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: company,
-        };
+        return company;
     }
 
     @ApiOperation({ summary: 'Get company by ID' })
@@ -47,12 +44,9 @@ export class BtxCompanyController {
     @Get(':id')
     async getCompanyById(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.companyService.findById(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: company,
-        };
+        return company;
     }
 
     @ApiOperation({ summary: 'Get all companies' })
@@ -64,7 +58,7 @@ export class BtxCompanyController {
     @Get()
     async getAllCompanies(
         @Query('portal_id') portalId?: string,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCompanyResponseDto[]> {
         let companies;
         if (portalId) {
             companies = await this.companyService.findByPortalId(
@@ -74,10 +68,7 @@ export class BtxCompanyController {
             companies = await this.companyService.findMany();
         }
 
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: companies,
-        };
+        return companies;
     }
 
     @ApiOperation({ summary: 'Update company' })
@@ -90,12 +81,9 @@ export class BtxCompanyController {
     async updateCompany(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateCompanyDto: UpdateBtxCompanyDto,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<BtxCompanyResponseDto> {
         const company = await this.companyService.update(id, updateCompanyDto);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: company,
-        };
+        return company;
     }
 
     @ApiOperation({ summary: 'Delete company' })
@@ -106,11 +94,8 @@ export class BtxCompanyController {
     @Delete(':id')
     async deleteCompany(
         @Param('id', ParseIntPipe) id: number,
-    ): Promise<SuccessResponseDto> {
+    ): Promise<boolean> {
         await this.companyService.delete(id);
-        return {
-            resultCode: EResultCode.SUCCESS,
-            data: null,
-        };
+        return true;
     }
 }

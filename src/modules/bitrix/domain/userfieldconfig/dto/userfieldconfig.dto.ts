@@ -11,7 +11,7 @@ export class UserFieldConfigGetDto extends UserFieldConfigBaseDto {
 export class UserFieldConfigListDto extends UserFieldConfigBaseDto {
     select?: Partial<IUserFieldConfig>;
     order?: {
-        id: 'DESC';
+        id?: 'ASC' | 'DESC';
     };
     filter: Partial<IUserFieldConfig>;
     start?: -1;

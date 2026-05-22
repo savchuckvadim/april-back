@@ -19,7 +19,7 @@ export enum BitrixOwnerType {
     LEAD = 'L',
 }
 export enum BitrixActivityTypeId {
-    CALL = 1,
-    MEETING = 2,
+    CALL = 2,
+    // MEETING = 2,
     EMAIL = 3,
 }

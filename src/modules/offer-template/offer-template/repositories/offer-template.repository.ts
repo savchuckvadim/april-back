@@ -1,17 +1,14 @@
-import { offer_templates_visibility } from 'generated/prisma';
 import {
     OfferTemplate,
     OfferTemplateSummary,
 } from '../entities/offer-template.entity';
+import type { OfferTemplateFilters } from '../types/offer-template-filters.type';
 
 export abstract class OfferTemplateRepository {
     abstract findById(id: bigint): Promise<OfferTemplate | null>;
-    abstract findMany(filters?: {
-        visibility?: offer_templates_visibility | undefined;
-        portal_id?: bigint;
-        is_active?: boolean;
-        search?: string;
-    }): Promise<OfferTemplateSummary[]>;
+    abstract findMany(
+        filters?: OfferTemplateFilters,
+    ): Promise<OfferTemplateSummary[]>;
     abstract findWithRelations(id: bigint): Promise<OfferTemplate | null>;
     abstract create(data: Partial<OfferTemplate>): Promise<OfferTemplate>;
     abstract update(

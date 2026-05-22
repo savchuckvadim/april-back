@@ -1,6 +1,6 @@
 import { PrismaService } from '@/core/prisma';
 import { BitrixTokenEntity } from '../bitrix-token.model';
-import { decrypt } from '@/lib/utils/crypt.util';
+import { decrypt } from '@/shared/lib/utils/crypt.util';
 
 export const createBitrixTokenEntityFromPrisma = (
     token: NonNullable<

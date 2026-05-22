@@ -44,12 +44,12 @@ export class AdminPortalService {
         }
     }
 
-    async findById(id: number): Promise<AdminPortalWithRelationsResponseDto> {
+    async findById(id: number): Promise<AdminPortalResponseDto> {
         const portal = await this.repository.findById(id);
         if (!portal) {
             throw new NotFoundException(`Portal with id ${id} not found`);
         }
-        return this.mapToWithRelationsResponseDto(portal);
+        return this.mapToResponseDto(portal);
     }
 
     async findMany(): Promise<AdminPortalResponseDto[]> {

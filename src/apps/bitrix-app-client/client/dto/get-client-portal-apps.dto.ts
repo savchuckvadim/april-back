@@ -1,6 +1,6 @@
 import { BITRIX_APP_CODES } from '@/modules/bitrix-setup/app/enums/bitrix-app.enum';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class GetClientPortalAppsRequestDto {
     @ApiProperty({ description: 'Client ID', example: 1 })

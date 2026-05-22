@@ -87,7 +87,7 @@ export class InfoblockGeneralService {
 
         const packetErsDataList = packetErsDataValue
             .split('Пакет')
-            .map(item => item.trim()) as string[];
+            .map(item => item.trim());
         const ersInPacketList = ersInPacketValue
             .split('\n')
             .map(item => item.trim());

@@ -2,8 +2,13 @@ export enum JobNames {
     //event sales
     EVENT_COLD_CALL = 'cold-call',
 
+    //mail
+    MAIL_SEND_AUTH = 'mail-send-auth',
+
     //konstructor sales
     DOCUMENT_SUPPLY_REPORT = 'generate-supply-report',
+    ZAKUPKI_OFFER_GENERATE = 'zakupki-offer-generate',
+    OFFER_GENERATE = 'offer-generate',
 
     //sales report
     SALES_KPI_REPORT_GENERATE = 'sales-kpi-report-generate',
@@ -17,4 +22,8 @@ export enum JobNames {
     //event service
     SERVICE_DEAL_MOVE_STAGES = 'service-deal-move-stages',
     SERVICE_DEAL_INIT = 'service-deal-init',
+    SERVICE_DEALS_ORDER = 'service-deals-order',
+    SERVICE_GENERATE_ACTS = 'service-generate-acts',
+
+    OFFER_WORD_EPHEMERAL_PDF_GENERATE = 'offer-word-ephemeral-pdf-generate',
 }

@@ -277,6 +277,7 @@ export class BitrixAppPrismaRepository implements BitrixAppRepository {
             const result = await this.prisma.bitrix_apps.findMany({
                 where: { portal_id: BigInt(portalId) },
             });
+            console.log('findByPortalId result', result);
             const fullResult: BitrixAppEntity[] = [];
             for (const app of result) {
                 const {

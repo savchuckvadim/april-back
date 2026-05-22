@@ -1,37 +1,15 @@
-import {
-    Controller,
-    Post,
-    HttpStatus,
-    Req,
-    Res,
-    Get,
-    Body,
-} from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/bitrix-app.service';
-import { Request, Response } from 'express';
 
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { SuccessResponseDto, ErrorResponseDto } from 'src/core';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
-import { JwtService } from '@nestjs/jwt';
 import { BitrixClientService } from '@/apps/bitrix-app-client/client/services/bitrix-client.service';
-import {
-    BITRIX_APP_CODES,
-    BITRIX_APP_GROUPS,
-    BITRIX_APP_STATUSES,
-    BITRIX_APP_TYPES,
-} from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
+import { BITRIX_APP_CODES } from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
 import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator';
 import { ConfigService } from '@nestjs/config';
-import { PBXService } from '@/modules/pbx';
-import { BxAuthType } from '@/modules/bitrix/bitrix-service.factory';
-import {
-    CreateBitrixAppDto,
-    CreateBitrixAppWithTokenDto,
-} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
-import { BitrixTokenDto } from '@/modules/bitrix-setup/token';
-import { getExpiresAt } from '@/lib';
+import { CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
 import { InstallAppFromPortalResponseDto } from '../dto/install-app.response.dto';
+import { AuthJwtService } from '../../auth/services/auth-jwt.service';
 
 @ApiTags('Bitrix Setup App UI Install')
 @Controller('bitrix-app-install')
@@ -40,10 +18,9 @@ export class BitrixAppInstallController {
     constructor(
         private readonly portalService: PortalStoreService,
         private readonly clientService: BitrixClientService,
-        private readonly jwtService: JwtService,
+        private readonly authJwtService: AuthJwtService,
         private readonly bitrixAppService: BitrixAppService,
         private readonly configService: ConfigService,
-        private readonly pbxService: PBXService,
     ) {
         this.FRONT_BASE_URL =
             this.configService.get('CLIENT_CABINET_URL') || 'https://';
@@ -72,10 +49,10 @@ export class BitrixAppInstallController {
                     );
                 if (clientDta) {
                     const { client, ownerUser } = clientDta;
-                    signedJwtToken = this.jwtService.sign({
-                        sub: ownerUser.id,
-                        client_id: client.id,
-                    });
+                    signedJwtToken = this.authJwtService.signAccessToken(
+                        Number(ownerUser.id),
+                        Number(client.id),
+                    );
 
                     let bxApp = await this.bitrixAppService.getApp({
                         domain: domain,
@@ -97,7 +74,11 @@ export class BitrixAppInstallController {
             return { token: signedJwtToken, status: installStatus };
         } catch (error) {
             console.error('[Bitrix Install] error:', error);
-            return { token: null, message: error.message, status: 'fail' };
+            return {
+                token: null,
+                message: (error as Error).message,
+                status: 'fail',
+            };
         }
     }
 

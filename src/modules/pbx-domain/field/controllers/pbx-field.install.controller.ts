@@ -10,19 +10,21 @@ import {
 import {
     ApiTags,
     ApiOperation,
-    ApiResponse,
     ApiBody,
     ApiBadRequestResponse,
     ApiCreatedResponse,
 } from '@nestjs/swagger';
-import { PbxFieldEntityInstallService } from '../services/pbx-field-entity-install.service';
-import { PbxFieldSmartInstallService } from '../services/pbx-field-smart-install.service';
+import { PbxFieldEntityInstallService } from '../services/install/pbx-field-entity-install.service';
+import { PbxFieldSmartInstallService } from '../services/install/pbx-field-smart-install.service';
 import {
     InstallEntityFieldsDto,
     InstallSmartFieldsDto,
     InstallResultDto,
 } from '../dto/pbx-field-install.dto';
 
+/**
+ * @deprecated Use PbxInstallController from '@/apps/admin/portal/pbx-install' instead.
+ */
 @ApiTags('PBX Field Install')
 @Controller('pbx-field-install')
 export class PbxFieldInstallController {
@@ -65,7 +67,8 @@ export class PbxFieldInstallController {
             );
 
             return result;
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as Error;
             throw new HttpException(
                 {
                     success: false,
@@ -117,7 +120,8 @@ export class PbxFieldInstallController {
             );
 
             return result;
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as Error;
             throw new HttpException(
                 {
                     success: false,

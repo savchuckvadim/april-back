@@ -16,10 +16,12 @@ export class WordTemplate {
     code: string;
     tags?: string;
     is_active: boolean;
+    is_archived?: boolean;
+    user_id?: number;
     counter: number;
     created_at?: Date;
     updated_at?: Date;
-
+    portal_id?: number;
     // Дополнительные поля для Word шаблонов
     template_url?: string; // URL для скачивания шаблона
 
@@ -51,6 +53,11 @@ export class WordTemplate {
             code: template.code,
             tags: template.tags,
             is_active: template.is_active,
+            is_archived: template.is_archived,
+            user_id: template.creator_bitrix_user_id
+                ? Number(template.creator_bitrix_user_id)
+                : undefined,
+            portal_id: template.portal_id,
             counter: template.counter,
             created_at: template.created_at,
             updated_at: template.updated_at,
@@ -84,10 +91,14 @@ export class WordTemplateSummary {
     type: string;
     code: string;
     is_active: boolean;
+
     counter: number;
     created_at?: Date;
     template_url?: string;
-
+    is_archived?: boolean;
+    user_id?: number;
+    portal_id?: number;
+    tags?: string;
     constructor(partial: Partial<WordTemplateSummary>) {
         Object.assign(this, {
             ...partial,
@@ -95,6 +106,7 @@ export class WordTemplateSummary {
             id: partial.id ? String(partial.id) : partial.id,
             created_at: partial.created_at || undefined,
             template_url: partial.template_url || undefined,
+            tags: partial.tags || undefined,
         });
     }
 }

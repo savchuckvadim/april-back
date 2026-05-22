@@ -4,13 +4,13 @@ import {
     EBxNamespace,
 } from '../../core/domain/consts/bitrix-api.enum';
 import { EBXEntity } from '../../core/domain/consts/bitrix-entities.enum';
-import { IBXTask } from '../interfaces/bitrix.interface';
 import { TBXResponse } from '../../core';
 import { IBitrixResponse } from '../../core/interface/bitrix-api-http.intterface';
 import {
     BXActivityRequestFields,
     IBXActivity,
 } from './interfaces/bx-activity.interface';
+import { delay } from '@/shared/lib';
 
 export class BxActivityRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) {}
@@ -24,7 +24,7 @@ export class BxActivityRepository {
         );
     }
 
-    async getBtch(cmdCode: string, activityId: number | string) {
+    getBtch(cmdCode: string, activityId: number | string) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -50,7 +50,7 @@ export class BxActivityRepository {
         );
     }
 
-    async getListBtch(
+    getListBtch(
         cmdCode: string,
         filter: Partial<BXActivityRequestFields>,
         select?: string[],
@@ -67,6 +67,7 @@ export class BxActivityRepository {
     async getAll(
         filter: Partial<BXActivityRequestFields>,
         select?: string[],
+        limit?: number,
     ): Promise<{
         activities: IBXActivity[];
         total: number;
@@ -85,18 +86,77 @@ export class BxActivityRepository {
                         ...filter,
                         '>ID': lastId,
                     },
-                    order: { ID: 'asc' },
+                    order: { ID: 'ASC' },
+                    start: -1,
                 },
             );
             if (result && result.result) {
                 result.result.map(t => {
-                    lastId = t.id;
+                    lastId = Number(t.ID);
                     results.push(t);
                 });
             }
-            if (!result.total) {
+
+            if (
+                result.result.length < 50 ||
+                (limit && results.length >= limit)
+            ) {
                 condition = false;
             }
+            await delay(1000);
+        }
+        return {
+            activities: results,
+            total: results.length,
+        };
+    }
+    async getAllFresh(
+        filter: Partial<BXActivityRequestFields>,
+        select?: string[],
+        limit?: number,
+    ): Promise<{
+        activities: IBXActivity[];
+        total: number;
+    }> {
+        let condition = true;
+        const results = [] as IBXActivity[];
+        let lastId = undefined as undefined | number | string;
+        while (condition) {
+            const filterWithId =
+                lastId !== undefined ? { ...filter, '<ID': lastId } : filter;
+
+            const result = await this.bitrixService.callType(
+                EBxNamespace.CRM,
+                EBXEntity.ACTIVITY,
+                EBxMethod.LIST,
+                {
+                    select,
+                    filter: filterWithId,
+                    order: { ID: 'DESC' },
+                    start: -1,
+                },
+            );
+            if (result && result.result && result.result.length > 0) {
+                result.result.map(t => {
+                    lastId = Number(t.ID);
+                    results.push(t);
+                });
+            }
+
+            // Останавливаем цикл если:
+            // 1. Нет результата или пустой массив (больше нет записей)
+            // 2. Вернулось меньше 50 записей (это последняя страница)
+            // 3. Достигли указанного лимита
+            if (
+                !result ||
+                !result.result ||
+                result.result.length === 0 ||
+                result.result.length < 50 ||
+                (limit && results.length >= limit)
+            ) {
+                condition = false;
+            }
+            await delay(1000);
         }
         return {
             activities: results,
@@ -113,7 +173,7 @@ export class BxActivityRepository {
         );
     }
 
-    async deleteBtch(cmdCode: string, activityId: number | string) {
+    deleteBtch(cmdCode: string, activityId: number | string) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -163,7 +223,7 @@ export class BxActivityRepository {
             { fields: data },
         );
     }
-    async createBtch(cmdCode: string, data: Partial<IBXActivity>) {
+    createBtch(cmdCode: string, data: Partial<IBXActivity>) {
         return this.bitrixService.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
@@ -181,7 +241,7 @@ export class BxActivityRepository {
         );
     }
 
-    async updateBtch(
+    updateBtch(
         cmdCode: string,
         id: number | string,
         data: Partial<IBXActivity>,

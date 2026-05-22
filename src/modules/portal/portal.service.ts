@@ -24,11 +24,11 @@ export class PortalService {
     async getPortalByDomain(domain: string): Promise<IPortal> {
         this.logger.log(`Getting portal for domain: ${domain}`);
         const cacheKey = `portal_${domain}`;
-        const cached = await this.redis.get(cacheKey);
+        const cached = await this.redis.get(cacheKey) as string;
 
         if (cached) {
             this.logger.log('Returning cached portal');
-            const portal = JSON.parse(cached);
+            const portal = JSON.parse(cached) as IPortal;
             this.logger.log(`Cached portal domain: ${portal?.domain}`);
             this.logger.log(
                 `Cached portal webhook: ${portal?.C_REST_WEB_HOOK_URL}`,
@@ -43,14 +43,8 @@ export class PortalService {
             { domain },
             'portal',
         );
-        this.logger.log(`API response code: ${response.resultCode}`);
         if (response.resultCode === 0) {
-            const portal = response.data;
-            this.logger.log(`Portal from API domain: ${portal?.domain}`);
-            this.logger.log(
-                `Portal from API webhook: ${portal?.C_REST_WEB_HOOK_URL}`,
-            );
-            this.logger.log(`Caching portal for domain: ${domain}`);
+            const portal = response.data as IPortal;
             await this.redis.set(
                 cacheKey,
                 JSON.stringify(portal),
@@ -60,7 +54,7 @@ export class PortalService {
             return portal;
         }
         this.logger.error(`Error getting portal: ${response.message}`);
-        throw new Error(response.message);
+        throw new Error(response.message as string);
     }
     async getModelByDomain(domain: string): Promise<PortalModel> {
         Logger.log('getModelByDomain: ' + domain);
@@ -83,7 +77,7 @@ export class PortalService {
             this.logger.log('Portal data retrieved successfully');
             return {
                 success: true,
-                data: portal as IPortal,
+                data: portal,
             };
         } catch (error) {
             this.logger.error(`Error getting portal data: ${error.message}`);

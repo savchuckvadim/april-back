@@ -1,5 +1,9 @@
 import { PrismaService } from 'src/core/prisma';
 import { ComplectEntity } from '../complect.entity';
+import {
+    ComplectProductTypeEnum,
+    ComplectTypeEnum,
+} from '../types/complect.type';
 
 export function createComplectEntityFromPrisma(
     data: NonNullable<
@@ -13,12 +17,12 @@ export function createComplectEntityFromPrisma(
     entity.shortName = data.shortName;
     entity.description = data.description ?? undefined;
     entity.code = data.code;
-    entity.type = data.type;
+    entity.type = data.type as ComplectTypeEnum;
     entity.color = data.color;
     entity.weight = data.weight;
     entity.abs = data.abs?.toString() ?? undefined;
     entity.number = data.number;
-    entity.productType = data.productType;
+    entity.productType = data.productType as ComplectProductTypeEnum;
     entity.withABS = data.withABS;
     entity.withConsalting = data.withConsalting;
     entity.withServices = data.withServices;

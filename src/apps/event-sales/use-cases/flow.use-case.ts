@@ -1,39 +1,27 @@
-import { Injectable, Logger, Scope } from '@nestjs/common';
-import { FailDto } from '../dto/event-sale-flow/fail.dto';
+import { Injectable } from '@nestjs/common';
+// import { FailDto } from '../dto/event-sale-flow/fail.dto';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { ReportDto } from '../dto/event-sale-flow/report.dto';
 
 import { PlanDto } from '../dto/event-sale-flow/plan.dto';
-import { LeadDto } from '../dto/event-sale-flow/lead.dto';
-import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
-import { PortalModel } from 'src/modules/portal/services/portal.model';
+// import { LeadDto } from '../dto/event-sale-flow/lead.dto';
+// import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
+// import { PortalModel } from 'src/modules/portal/services/portal.model';
 import { PortalService } from 'src/modules/portal/portal.service';
-import { IBXPlacement } from 'src/modules/bitrix/domain/interfaces/bitrix-placement.intreface';
-import { EBXEntity } from 'src/modules/bitrix/core';
-import {
-    BitrixDealService,
-    Deal,
-} from '../services/deal-flow/bitrix-deal.service';
-import { BitrixDealBatchFlowService } from '../services/deal-flow/bitrix-deal-batch-flow.service';
-import { BitrixBatchService } from '../services/general/bitrix-batch.service';
 import { PBXService } from '@/modules/pbx';
-import {
-    TaskFlowDto,
-    TaskFlowService,
-} from '../services/task-flow/task-flow.service';
+import { TaskFlowDto, TaskFlowService } from '../shared/task-flow/';
 import { PlacementDto } from '../dto/event-sale-flow/placement.dto';
 import {
     EnumEventItemResultType,
     EnumWorkStatusCode,
 } from '../types/report-types';
 import { IBXCompany, IBXContact, IBXDeal } from '@/modules/bitrix';
-import { EnumEventPlanCode } from '../types/plan-types';
 import { IBXLead } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
-import { CreateTaskDto } from '../services/task-flow/task-bitrix.service';
+import { CreateTaskDto } from '../shared/task-flow/services/task-bitrix.service';
 import { EventTaskDto } from '../dto/event-sale-flow/task.dto';
-import { EventTitleService } from '../services/event-title/event-title.service';
+import { EventTitleService } from '../shared/event-title';
 import { SaleDto } from '../dto/event-sale-flow/sale.dto';
-import { DealFlowService } from '../services/deal-flow/deal-flow.service';
+import { DealFlowService } from '../shared/deal-flow/';
 
 interface DealCategory {
     code: string;
@@ -111,10 +99,13 @@ export class EventSalesFlowUseCase {
     constructor(
         private readonly portalService: PortalService,
         private readonly pbx: PBXService,
-    ) {}
+    ) { }
 
     async getFlow(dto: EventSalesFlowDto): Promise<any> {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
+        const dealFlowService = new DealFlowService(bitrix);
+        const taskFlowService = new TaskFlowService(bitrix);
+        const flowData = this.getFlowData(dto);
         const {
             isSuccessSale,
 
@@ -139,8 +130,8 @@ export class EventSalesFlowUseCase {
             isPresentationDone,
             isNeedReturnToTmc,
             nowDate,
-        } = this.getFlowData(dto);
-
+        } = flowData;
+        console.log('flowData', flowData);
         let company: IBXCompany | null = null;
         let companyId: number | null = null;
         let lead: IBXLead | null = null;
@@ -149,14 +140,12 @@ export class EventSalesFlowUseCase {
         const entityResult = await bitrix[entityType].get(entityId);
         const entity = entityResult.result;
         if (entityType === 'company') {
-            company = entity as IBXCompany;
+            company = entity as unknown as IBXCompany;
             companyId = entity.ID ?? 0;
         } else if (entityType === 'lead') {
-            lead = entity as IBXLead;
+            lead = entity as unknown as IBXLead;
             leadId = entity.ID ?? 0;
         }
-
-        const taskFlowService = new TaskFlowService(bitrix);
 
         const taskFlowDto: TaskFlowDto = {
             currentTask: dto.currentTask,
@@ -169,7 +158,7 @@ export class EventSalesFlowUseCase {
         const createTaskDto: CreateTaskDto = {
             responsibleId: dto.plan?.responsibility?.ID ?? 0,
             isPriority: false,
-            type: dto.plan?.type.current.code as EnumEventPlanCode,
+            type: dto.plan?.type.current.code,
             stringType: dto.plan?.type.current.name,
             company: company as IBXCompany,
             companyId: companyId ?? 0,
@@ -189,7 +178,7 @@ export class EventSalesFlowUseCase {
 
         await taskFlowService.flow(taskFlowDto, createTaskDto);
 
-        const dealFlowService = new DealFlowService(bitrix);
+
         const dealFlowResult = await dealFlowService.getDealFlow(
             // currentBaseDeal
             null,

@@ -10,7 +10,7 @@ import { AlfaMigrateBitrixCompanyService } from './bitrix/alfa-migrate-bxcompany
 import { IAlfaParse } from './alfa-parse.service';
 import { Column, Workbook } from 'exceljs';
 import { StorageService, StorageType } from 'src/core/storage';
-import { delay } from 'src/lib/';
+import { delay } from '@/shared/lib';
 import { getCompanies, getDoubles, ICompany } from '../data/get-companies';
 
 @Injectable()
@@ -285,7 +285,7 @@ export class AlfaBitrixService {
             StorageType.PRIVATE,
             'doubles',
         );
-        return buffer as Buffer;
+        return buffer;
     }
 
     private async getMigratedExcel(
@@ -378,6 +378,6 @@ export class AlfaBitrixService {
             StorageType.PRIVATE,
             'migrated',
         );
-        return buffer as Buffer;
+        return buffer;
     }
 }

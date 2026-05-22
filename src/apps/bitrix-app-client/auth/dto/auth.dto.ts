@@ -4,18 +4,18 @@ import {
     IsNotEmpty,
     IsNumber,
     IsObject,
+    IsOptional,
     IsString,
     IsStrongPassword,
-    Matches,
     MaxLength,
     MinLength,
     ValidateNested,
 } from 'class-validator';
-import { Client } from 'generated/prisma';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
 import { Type } from 'class-transformer';
 import { ClientDto } from '../../client/dto/client-registration.dto';
 import { IsBitrixDomain } from '@/core/decorators/dto/bitrix-domain-validate.decorator';
+import { PortalDto } from '@/modules/portal-konstructor/portal/portal.entity';
 
 export class ClientRegistrationRequestDto {
     @ApiProperty({ description: 'Client name', example: 'Acme Corp' })
@@ -91,6 +91,57 @@ export class LoginDto {
     @IsString()
     domain: string;
 }
+
+export class ForgotPasswordDto {
+    @ApiProperty({ description: 'User email', example: 'john.doe@example.com' })
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
+}
+
+export class ResendConfirmationDto {
+    @ApiProperty({ description: 'User email', example: 'john.doe@example.com' })
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
+}
+
+export class ResetPasswordDto {
+    @ApiProperty({ description: 'Password reset token' })
+    @IsNotEmpty()
+    @IsString()
+    token: string;
+
+    @ApiProperty({
+        description: 'New user password',
+        example: 'Password123!',
+        minLength: 6,
+    })
+    @IsNotEmpty({ message: 'Пароль обязательно для заполнения' })
+    @IsString({ message: 'Пароль должен быть строкой' })
+    @MinLength(6, { message: 'Пароль должен быть не менее 6 символов' })
+    @MaxLength(100, { message: 'Пароль должен быть не более 100 символов' })
+    @IsStrongPassword(
+        {
+            minLength: 6,
+            minLowercase: 1,
+            minUppercase: 1,
+            minNumbers: 1,
+            minSymbols: 1,
+        },
+        {
+            message:
+                'Пароль должен содержать хотя бы одну большую букву, одну маленькую букву, одну цифру и один специальный символ',
+        },
+    )
+    password: string;
+}
+
+export class ResetPasswordTokenStatusDto {
+    @ApiProperty({ description: 'Whether reset token is valid' })
+    valid: boolean;
+}
+
 export class LoginResponseCookieDto {
     @ApiProperty({ description: 'Token', example: 'token123' })
     @IsNotEmpty()
@@ -126,28 +177,23 @@ export class MeResponseDto {
     @ValidateNested()
     @Type(() => ClientDto)
     client: ClientDto;
+
+    @ApiProperty({ description: 'Portal', example: 'Portal' })
+    @IsObject()
+    @ValidateNested()
+    @Type(() => PortalDto)
+    portal: PortalDto | null;
 }
 
+/** @deprecated use AuthResponseDto */
 export class LoginResponseDto extends MeResponseDto {
-    // @ApiProperty({ description: 'User', example: 'User' })
-    // @IsNotEmpty()
-    // @IsObject()
-    // @ValidateNested()
-    // @Type(() => UserResponseDto)
-    // user: UserResponseDto;
-
-    // @ApiProperty({ description: 'Client', example: 'Client' })
-    // @IsNotEmpty()
-    // @IsObject()
-    // @ValidateNested()
-    // @Type(() => ClientDto)
-    // client: ClientDto;
-
     @ApiProperty({ description: 'Token', example: 'token123' })
     @IsNotEmpty()
     @IsString()
     token: string;
 }
+
+export class AuthResponseDto extends MeResponseDto {}
 export class ClientAuthResponseDto {
     @ApiProperty({ description: 'Client ID', example: 1 })
     @IsNotEmpty()
@@ -177,6 +223,17 @@ export class ClientAuthResponseDto {
     @ValidateNested()
     @Type(() => UserResponseDto)
     owner: UserResponseDto | null;
+
+    @ApiProperty({
+        description: 'Portal',
+        example: 'Portal',
+        type: PortalDto,
+        required: false,
+    })
+    @ValidateNested()
+    @Type(() => PortalDto)
+    @IsOptional()
+    portal?: PortalDto | null;
 }
 
 export class LogoutResponseDto {

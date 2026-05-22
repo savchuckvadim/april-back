@@ -37,7 +37,7 @@ export class CopyProductRowsService {
 
         const getRowsResponse = await this.bitrix.productRow.list(data);
 
-        const rows = getRowsResponse.result.productRows as IBXProductRowRow[];
+        const rows = getRowsResponse.result.productRows;
 
         const newRows = [] as IBXProductRowRow[];
         for (const row of rows) {

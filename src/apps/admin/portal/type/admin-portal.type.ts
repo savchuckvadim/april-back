@@ -1,7 +1,7 @@
 import { PrismaService } from '@/core';
 import {
     agents,
-    ais,
+    Ai,
     bitrix_apps,
     bitrixlists,
     btx_companies,
@@ -25,7 +25,7 @@ import {
     smarts,
     Template,
     timezones,
-    transcriptions,
+    Transcription,
 } from 'generated/prisma';
 
 export interface AdminPortalWithRelations extends Portal {
@@ -53,7 +53,7 @@ export interface AdminPortalWithRelations extends Portal {
     provider_currents?: provider_currents[] | null;
     bx_document_deals?: BxDocumentDeal[] | null;
     deals?: deals[] | null;
-    ais?: ais[] | null;
+    ais?: Ai[] | null;
     bx_rqs?: bx_rqs[] | null;
-    transcriptions?: transcriptions[] | null;
+    transcriptions?: Transcription[] | null;
 }

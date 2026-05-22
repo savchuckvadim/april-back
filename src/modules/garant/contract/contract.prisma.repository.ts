@@ -2,7 +2,9 @@ import { PrismaService } from 'src/core/prisma';
 import { ContractRepository } from './contract.repository';
 import { ContractEntity } from './contract.entity';
 import { PortalContractEntity } from './portal-contract.entity';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 export class ContractPrismaRepository implements ContractRepository {
     constructor(private readonly prisma: PrismaService) {}
 
@@ -56,6 +58,7 @@ export class ContractPrismaRepository implements ContractRepository {
     async findByPortalId(
         portalId: number,
     ): Promise<PortalContractEntity[] | null> {
+        console.log(portalId);
         return await this.prisma.portal_contracts.findMany({
             where: { portal_id: portalId },
             include: {

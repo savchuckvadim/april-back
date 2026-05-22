@@ -1,9 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-    BITRIX_APP_STATUSES,
-    BITRIX_APP_TYPES,
-} from '../enums/bitrix-app.enum';
-import { IsEnum } from 'class-validator';
+import { PortalEntity } from '@/modules/portal-konstructor/portal/portal.entity';
 import { BitrixTokenEntity } from '../../token';
 
 export interface IBitrixAppEntity {
@@ -32,7 +27,7 @@ export class BitrixAppEntity implements IBitrixAppEntity {
     bitrix_tokens?: BitrixTokenEntity; // BitrixToken entity
     placements?: any[]; // BitrixAppPlacement entities
     settings?: any[]; // BitrixSetting entities
-    portal?: any; // Portal entity
+    portal?: PortalEntity; // Portal entity
 }
 // export class BitrixAppDto {
 //     constructor(app: BitrixAppEntity) {
