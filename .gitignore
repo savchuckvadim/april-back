@@ -85,6 +85,6 @@ docker-compose-full-dev.yml
 /db_prod/**
 
 
-/claude
-.claude/**
-/ai
+.claude
+/.claude/**
+ai
