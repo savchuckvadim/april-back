@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { TelegramSendMessagePublicDto } from './telegram.dto';
+import { TelegramSendMessageDto } from './telegram.dto';
 import { TelegramService } from './telegram.service';
 import { TelegramOriginalService } from './telegram-original.service';
 
@@ -13,9 +13,9 @@ export class TelegramController {
     ) {}
 
     @ApiOperation({ summary: 'Send message to telegram' })
-    @ApiBody({ type: TelegramSendMessagePublicDto })
+    @ApiBody({ type: TelegramSendMessageDto })
     @Post()
-    async getTelegram(@Body() dto: TelegramSendMessagePublicDto) {
+    async getTelegram(@Body() dto: TelegramSendMessageDto) {
         return await this.telegramService.sendPublicMessage(dto);
     }
 

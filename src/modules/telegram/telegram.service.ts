@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Global, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { TelegramSendMessagePublicDto } from './telegram.dto';
+import { TelegramSendMessageDto } from './telegram.dto';
 
 const publicUrl = 'https://back.april-dev.ru/api/telegram';
 @Global()
@@ -21,7 +21,7 @@ export class TelegramService {
         this.init();
         console.log(this.withTelegram, 'withTelegram');
     }
-    public async sendPublicMessage(dto: TelegramSendMessagePublicDto) {
+    public async sendPublicMessage(dto: TelegramSendMessageDto) {
         const text = `\n💥 App:  ${dto.app}\n🌍 Domain:   ${dto.domain}\n🧭 UserId: ${dto.userId}\n\n ⚠️ Text:  ${dto.text}`;
         const cleanText = this.cleanText(text);
 
