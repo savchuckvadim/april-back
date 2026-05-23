@@ -16,9 +16,8 @@ export class TelegramService {
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
     ) {
-        this.withTelegram = this.configService.get<boolean>(
-            'WITH_TELEGRAM',
-        ) as boolean;
+        this.withTelegram =
+            this.configService.get<string>('WITH_TELEGRAM') === 'true';
         this.init();
         console.log(this.withTelegram, 'withTelegram');
     }
