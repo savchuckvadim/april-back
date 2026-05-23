@@ -9,8 +9,6 @@ import {
     SILENCE_EVENT_PREFIX,
 } from '@/core/event-silence';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
-import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
-import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 
 @Injectable()
 export class ColdHookSilinceEndpointService {
@@ -19,7 +17,6 @@ export class ColdHookSilinceEndpointService {
     constructor(
         private readonly hooksHandler: ColdHooksHandlerService,
         private readonly silentManager: EventSilentJobManagerService,
-        private readonly queueDispatcher: QueueDispatcherService,
     ) {}
 
     async createColdCallHook(domain: string, coldCallData: IColdCallData) {
@@ -47,13 +44,11 @@ export class ColdHookSilinceEndpointService {
     })
     async onColdCallSilence(data: EventSilentJobManagerHandler<IColdCallData>) {
         this.logger.log(
-            `[silence event] cold-call received, domain=${data.payload.domain}`,
+            `[silence event] cold-call received, domain=${data.payload.domain} collected=${Object.keys(data.collected).length}`,
         );
-        // await this.hooksHandler.handleHooks(data.payload.domain, data.collected);
-        await this.queueDispatcher.dispatch(
-            QueueNames.EVENT_SALES_COLD_CALL,
-            JobNames.EVENT_COLD_CALL,
-            data,
+        await this.hooksHandler.handleHooks(
+            data.payload.domain,
+            data.collected,
         );
     }
 }

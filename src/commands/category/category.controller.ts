@@ -1,11 +1,4 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Body,
-    Delete,
-    Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Delete, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoryService } from './category.service';
 import {

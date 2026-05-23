@@ -42,6 +42,9 @@ export class QueueDispatcherService {
         //очепедь для ожидания данных в тишине
         @InjectQueue(QueueNames.EVENT_SILENT)
         private readonly eventSilentQueue: Queue,
+
+        @InjectQueue(QueueNames.CALL_ANALYSIS)
+        private readonly callAnalysisQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -54,7 +57,7 @@ export class QueueDispatcherService {
     ): Promise<Job<T>> {
         const queue = this.getQueue(queueName);
         this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
-        // this.logger.log(`Job data: ${JSON.stringify(data)}`);
+        this.logger.log(`Job data: ${JSON.stringify(data)}`);
         const job = jobId
             ? await queue.add(jobName, data, { jobId })
             : await queue.add(jobName, data);
@@ -97,6 +100,9 @@ export class QueueDispatcherService {
 
             case QueueNames.EVENT_SILENT:
                 return this.eventSilentQueue;
+
+            case QueueNames.CALL_ANALYSIS:
+                return this.callAnalysisQueue;
 
             default: {
                 const error = `Unknown queue name: ${name}`;

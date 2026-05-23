@@ -134,7 +134,7 @@ export class PortalModel {
         code: PbxDealCategoryCodeEnum,
     ): IPCategory | undefined {
         return this.portal.deals[0].categories.find(
-            category => category.code === code,
+            category => category.code === (code as string),
         );
     }
     getDealStageByCode<

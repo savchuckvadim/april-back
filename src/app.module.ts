@@ -59,6 +59,7 @@ import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.modu
 import { SkapModule } from './apps/event-service/skap/skap.module';
 import { ParseFieldExcelModule } from './modules/pbx-install/shared';
 import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
+import { CallAnalysisModule } from './modules/call-analysis/call-analysis.module';
 
 const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
 
@@ -157,6 +158,7 @@ const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
         DealsOrderModule, //проверяет дубли и заполненность с по полей каждую неделю
         DealsMoveModule, //перемещает сделки отдела сервиса каждые три часа по стадиям
         SkapModule,
+        CallAnalysisModule,
     ],
     controllers: [AppController, HealthController],
     providers: [AppService, GlobalExceptionFilter],

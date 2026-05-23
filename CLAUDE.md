@@ -52,3 +52,10 @@ C:\Projects\April\april-next\back\src\modules\bitrix\BITRIX_DOMAIN_MODULE_GUIDE.
 
 никогда не пуш ничего в db проект с миграциями - другой проект
 этот может сделать только pull - но всегда спрашивай если хочешь сделать чтото с db
+
+
+после изменения или добавления модуля всегда выполняй в модуле комманду "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+
+pnpm run lint
+
+если нужно сразу фикси ошибки линтера

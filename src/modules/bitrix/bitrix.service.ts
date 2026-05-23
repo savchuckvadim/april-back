@@ -42,6 +42,8 @@ import { BxRecentBatchService } from './domain/chat/recent/services/bx-recent.ba
 import { BxMessageService } from './domain/chat/message/services/bx-message.service';
 import { BxMessageBatchService } from './domain/chat/message/services/bx-message.batch.service';
 import { BxTaskBatchService, BxTaskService } from './domain/tasks/task';
+import { BxChecklistItemService } from './domain/tasks/checklist-item/services/bx-checklist-item.service';
+import { BxChecklistItemBatchService } from './domain/tasks/checklist-item/services/bx-checklist-item.batch.service';
 import { ActivityService } from './domain/activity/services/bx-activity.service';
 import { BxActivityBatchService } from './domain/activity/services/bx-activity.batch.service';
 import { BxFileBatchService } from './domain/file/bx-file.batch.service';
@@ -88,6 +90,7 @@ export class BitrixService {
     public dialogMessage: BxDialogMessageService;
     public imV2Event: BxImV2EventService;
     public task: BxTaskService;
+    public checklistItem: BxChecklistItemService;
     public activity: ActivityService;
     public activityTodo: BxActivityTodoService;
     public user: BxUserService;
@@ -117,6 +120,7 @@ export class BitrixService {
         dialogMessage: null as unknown as BxDialogMessageBatchService,
         imV2Event: null as unknown as BxImV2EventBatchService,
         task: null as unknown as BxTaskBatchService,
+        checklistItem: null as unknown as BxChecklistItemBatchService,
         activity: null as unknown as BxActivityBatchService,
         activityTodo: null as unknown as BxActivityTodoBatchService,
         file: null as unknown as BxFileBatchService,
@@ -156,6 +160,7 @@ export class BitrixService {
         this.initDialogMessage();
         this.initImV2Event();
         this.initTask();
+        this.initChecklistItem();
         this.initiActivities();
         this.initActivityTodo();
         this.initUser();
@@ -291,6 +296,16 @@ export class BitrixService {
     private initTask() {
         this.task = this.cloner.clone(BxTaskService, this.api);
         this.batch.task = this.cloner.clone(BxTaskBatchService, this.api);
+    }
+    private initChecklistItem() {
+        this.checklistItem = this.cloner.clone(
+            BxChecklistItemService,
+            this.api,
+        );
+        this.batch.checklistItem = this.cloner.clone(
+            BxChecklistItemBatchService,
+            this.api,
+        );
     }
     private initiActivities() {
         this.activity = this.cloner.clone(ActivityService, this.api);

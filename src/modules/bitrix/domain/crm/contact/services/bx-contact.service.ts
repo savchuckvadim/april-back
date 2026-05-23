@@ -16,39 +16,63 @@ export class BxContactService {
         this.repo = new BxContactRepository(api);
     }
 
-    get(contactId: number) {
+    async get(contactId: number) {
         return this.repo.get(contactId);
     }
 
-    getList(filter: Partial<IBXContact>, select?: string[]) {
+    async getList(filter: Partial<IBXContact>, select?: string[]) {
         return this.repo.getList(filter, select);
     }
 
-    set(data: Partial<IBXContact>) {
-        return this.repo.set(data);
+    async set(data: Partial<IBXContact>) {
+        return await this.repo.set(data);
     }
 
-    update(contactId: number | string, data: Partial<IBXContact>) {
-        return this.repo.update(contactId, data);
+    async update(contactId: number | string, data: Partial<IBXContact>) {
+        return await this.repo.update(contactId, data);
     }
 
-    getFieldsList(filter: { [key: string]: any }, select?: string[]) {
-        return this.repo.getFieldList(filter, select);
+    async getFieldsList(filter: { [key: string]: any }, select?: string[]) {
+        return await this.repo.getFieldList(filter, select);
     }
 
-    getField(id: number | string) {
-        return this.repo.getField(id);
+    async getField(id: number | string) {
+        return await this.repo.getField(id);
     }
 
-    addField(fields: Partial<IBXField>) {
-        return this.repo.addField(fields);
+    async addField(fields: Partial<IBXField>) {
+        return await this.repo.addField(fields);
     }
 
-    updateField(id: number | string, fields: Partial<IBXField>) {
-        return this.repo.updateField(id, fields);
+    async updateField(id: number | string, fields: Partial<IBXField>) {
+        return await this.repo.updateField(id, fields);
     }
 
-    deleteField(id: number | string) {
-        return this.repo.deleteField(id);
+    async deleteField(id: number | string) {
+        return await this.repo.deleteField(id);
+    }
+
+    async all(filter: Partial<IBXContact>, select?: string[]) {
+        const contacts: IBXContact[] = [];
+        let needMore = true;
+        let nextId = 0;
+        while (needMore) {
+            const fullFilter = {
+                ...filter,
+                '>ID': nextId,
+            };
+            const { result } = await this.repo.getList(fullFilter, select, {
+                ID: 'ASC',
+            });
+            if (result.length === 0) {
+                break;
+            }
+            nextId = Number(result[result.length - 1]?.ID) || 0;
+            if (nextId === 0) {
+                needMore = false;
+            }
+            contacts.push(...result);
+        }
+        return contacts;
     }
 }

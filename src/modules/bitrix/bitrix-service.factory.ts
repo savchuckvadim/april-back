@@ -18,16 +18,12 @@ export class BitrixServiceFactory {
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
         private readonly cloner: ServiceClonerFactory,
         private readonly authService: BitrixAuthService,
-        // private readonly telegram: TelegramService,
-        // private readonly httpService: HttpService,
     ) {}
 
     public async create(
         portal: IPortal,
         authType: BxAuthType = BxAuthType.HOOK,
     ): Promise<BitrixService> {
-        // const bitrixApiFactoryService = new BitrixApiFactoryService(this.telegram, this.httpService);
-
         const token =
             authType === BxAuthType.TOKEN
                 ? await this.authService.getFreshToken(portal.domain)

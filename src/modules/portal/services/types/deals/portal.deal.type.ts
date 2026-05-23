@@ -2,6 +2,7 @@ export enum PbxDealCategoryCodeEnum {
     service_base = 'service_base',
     sales_base = 'sales_base',
     sales_presentation = 'sales_presentation',
+    sales_xo = 'sales_xo',
     tmc_base = 'tmc_base',
 }
 export enum PortalDealServiceStageCodeEnum {

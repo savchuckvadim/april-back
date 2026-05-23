@@ -23,6 +23,7 @@ export class ColdCallBxEntityService {
     flow(data: IColdCallBxEntityData) {
         const { name, deadline, responsible, xoCreated, entity, entityType } =
             data;
+        if (!entity) return;
         const now = new Date();
         const commentNow = now.toLocaleString('ru-RU', {
             day: '2-digit',

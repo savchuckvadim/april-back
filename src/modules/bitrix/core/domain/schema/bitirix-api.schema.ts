@@ -26,6 +26,7 @@ import {
 } from 'src/modules/bitrix/';
 
 import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
+import { ChecklistItemSchema } from 'src/modules/bitrix/domain/tasks/checklist-item/schema/bx-checklist-item.schema';
 import { ActivitySchema } from 'src/modules/bitrix/domain/activity/bx-activity.schema';
 import { BxSmartTypeSchema } from '@/modules/bitrix/domain/crm/smart-type';
 import { BxListItemSchema } from '@/modules/bitrix/domain/list-item/schema/bx-list-item.schema';
@@ -64,6 +65,9 @@ export type BXApiSchema = {
     };
     [EBxNamespace.TASKS]: {
         [EBXEntity.TASK]: TaskSchema;
+    };
+    [EBxNamespace.TASK]: {
+        [EBXEntity.CHECKLIST_ITEM]: ChecklistItemSchema;
     };
     [EBxNamespace.CRM_ITEM]: {
         [EBXEntity.PRODUCT_ROW]: ProductRowSchema;

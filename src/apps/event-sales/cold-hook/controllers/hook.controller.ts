@@ -4,7 +4,7 @@ import { BxWebHookDto } from '@/apps/ork-documents/act/ork-act.dto';
 import { ColdHookSilinceEndpointService } from '../services/silence/cold-hook-silince-endpoint.service';
 import { ApiTags } from '@nestjs/swagger';
 
-@ApiTags('Event Sales')
+@ApiTags('Event Sales Cold Hook')
 @Controller('event-sales-hook')
 export class EventSalesHookController {
     constructor(

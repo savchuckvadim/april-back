@@ -24,4 +24,5 @@ export enum QueueNames {
     OFFER_WORD_EPHEMERAL_PDF = 'offer-word-ephemeral-pdf',
     ZAKUPKI_OFFER = 'zakupki-offer',
     KONSTRUCTOR = 'konstructor',
+    CALL_ANALYSIS = 'call-analysis',
 }

@@ -48,7 +48,7 @@ async function analyzeExcelStructure(filePath: string) {
                     ) {
                         value = JSON.stringify(cell.value);
                     } else {
-                        value = String(cell.value as string | number | boolean);
+                        value = String(cell.value);
                     }
                 }
 

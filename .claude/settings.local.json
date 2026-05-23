@@ -12,7 +12,8 @@
       "PowerShell(Tee-Object *)",
       "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"im-bridge|bridge-orchestrator|bitrix-im-event\" })",
       "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; npx tsc --noEmit 2>&1 | ForEach-Object { if \\($_ -match \"im.bridge|bridge.orchestrator|bitrix.im.event|bridge.types|im.bridge\"\\) { $_ } })",
-      "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; $result = npx tsc --noEmit 2>&1; $result.Count; $result | Select-Object -First 10)"
+      "PowerShell(cd \"C:\\\\Projects\\\\April\\\\april-next\\\\back\"; $result = npx tsc --noEmit 2>&1; $result.Count; $result | Select-Object -First 10)",
+      "mcp__b24-dev-mcp__bitrix-article-details"
     ]
   }
 }

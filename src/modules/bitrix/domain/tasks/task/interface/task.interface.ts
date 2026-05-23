@@ -16,6 +16,12 @@ export enum ETaskPriority {
     MEDIUM = 1,
     LOW = 0,
 }
+export interface ITaskChecklistItem {
+    TITLE: string;
+    IS_COMPLETE?: 'Y' | 'N';
+    SORT_INDEX?: number;
+}
+
 export interface ITaskCreateFields {
     TITLE: string;
     RESPONSIBLE_ID: number | string;
@@ -27,6 +33,7 @@ export interface ITaskCreateFields {
     PARENT_ID?: number | string;
     UF_CRM_TASK?: string[];
     UF_TASK_WEBDAV_FILES?: string[];
+    CHECKLIST?: ITaskChecklistItem[];
     ALLOW_CHANGE_DEADLINE?: 'Y' | 'N';
     ALLOW_TIME_TRACKING?: 'Y' | 'N';
     TASK_CONTROL?: 'Y' | 'N';
