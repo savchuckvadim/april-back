@@ -11,21 +11,21 @@ import {
     IBitrixBatchResponseResult,
     IBitrixResponse,
 } from '../interface/bitrix-api-http.intterface';
+import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
 
 export class BitrixBaseApi {
     private readonly core: BitrixCore;
     private readonly callApi: CallApiService;
     private readonly batchApi: BatchApiService;
     public readonly domain: string;
-    // private readonly apiKey: string;
-    // private readonly token: string | null;
-    // private readonly authType: BxAuthType;
+
     constructor(
         telegramBot: TelegramService,
         domain: string,
         apiKey: string,
         token: string | null,
         authType: BxAuthType,
+        rateLimiter: BitrixRateLimiterService,
     ) {
         const http = axios.create({ timeout: 25000 });
         this.core = new BitrixCore(
@@ -34,13 +34,11 @@ export class BitrixBaseApi {
             domain,
             token,
             apiKey,
+            rateLimiter,
         );
         this.callApi = new CallApiService(this.core, http);
         this.batchApi = new BatchApiService(this.core, http);
         this.domain = domain;
-        // this.apiKey = apiKey;
-        // this.token = token;
-        // this.authType = authType;
     }
     init() {
         console.log('init new BitrixBaseApi');

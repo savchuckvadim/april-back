@@ -4,10 +4,14 @@ import { TelegramService } from '@/modules/telegram/telegram.service';
 
 import { BxAuthType } from '../../bitrix-service.factory';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
+import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
 
 @Injectable()
 export class BitrixApiFactoryService {
-    constructor(private readonly telegram: TelegramService) {}
+    constructor(
+        private readonly telegram: TelegramService,
+        private readonly rateLimiter: BitrixRateLimiterService,
+    ) {}
 
     //NEW//
     public create(
@@ -22,6 +26,7 @@ export class BitrixApiFactoryService {
             portal.key,
             token || null,
             authType,
+            this.rateLimiter,
         );
         api.init();
         return api;

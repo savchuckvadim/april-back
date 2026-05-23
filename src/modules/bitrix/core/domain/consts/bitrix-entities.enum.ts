@@ -32,4 +32,5 @@ export enum EBXEntity {
     FOLDER = 'folder',
     STORAGE = 'storage',
     WORKFLOW = 'workflow',
+    CHECKLIST_ITEM = 'checklistitem',
 }

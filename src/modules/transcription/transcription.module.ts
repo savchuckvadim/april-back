@@ -47,5 +47,6 @@ import { AdminTranscriptionStoreController } from './controllers/transcription-s
         FileStorageService,
         TranscriptionService,
     ],
+    exports: [TranscriptionStoreService],
 })
 export class TranscriptionModule {}

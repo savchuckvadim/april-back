@@ -45,10 +45,7 @@ export class CompanyInfoService {
         companyIds: readonly string[],
     ): void {
         for (const companyId of companyIds) {
-            void bitrix.batch.company.get(`company_${companyId}`, companyId, [
-                'ID',
-                'TITLE',
-            ]);
+            void bitrix.batch.company.get(`company_${companyId}`, companyId);
         }
     }
 

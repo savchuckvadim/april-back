@@ -14,6 +14,7 @@ import { TelegramBridgeService } from './telegram-bridge.service';
 import { TelegramReplyRouterService } from './telegram/telegram-reply-router.service';
 import { BridgeUserNameCacheService } from './bitrix/bridge-user-name-cache.service';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalEntity } from '@/modules/portal-konstructor/portal/portal.entity';
 
 @Injectable()
 export class BridgeOrchestratorService implements OnModuleInit {
@@ -343,7 +344,43 @@ export class BridgeOrchestratorService implements OnModuleInit {
     }
 
     private async loadAllPortalDomains(): Promise<string[]> {
-        const portals = (await this.portalStore.getPortals()) || [];
+        // Если whitelist задан явно — используем его как прямой список доменов.
+        // На сервере порталы живут в Redis/PBX, а Prisma может вернуть пустоту.
+        const whitelist = this.config.getPortalWhitelist();
+        if (whitelist.size > 0) {
+            this.logger.log(
+                `Loading domains from BITRIX_IM_BRIDGE_PORTAL_WHITELIST (${whitelist.size} entries)`,
+            );
+            const valid: string[] = [];
+            for (const domain of whitelist) {
+                if (!this.config.isValidBitrixPortalDomain(domain)) {
+                    this.logger.warn(
+                        `Whitelist domain skipped — invalid format: "${domain}"`,
+                    );
+                    continue;
+                }
+                valid.push(domain);
+            }
+            return valid;
+        }
+
+        // Fallback: загружаем из Prisma DB
+        this.logger.log(
+            'BITRIX_IM_BRIDGE_PORTAL_WHITELIST not set — loading domains from DB',
+        );
+        let portals: PortalEntity[];
+        try {
+            portals = (await this.portalStore.getPortals()) ?? [];
+        } catch (error) {
+            this.logger.error(
+                'Failed to load portals from DB — scheduledDomains will be empty. ' +
+                    'Set BITRIX_IM_BRIDGE_PORTAL_WHITELIST as a fallback.',
+                error,
+            );
+            return [];
+        }
+
+        this.logger.log(`DB returned ${portals.length} portals`);
         const unique = new Set<string>();
         const skipped: Array<{ domain: string; reason: string }> = [];
 
@@ -353,7 +390,10 @@ export class BridgeOrchestratorService implements OnModuleInit {
             const domain = this.config.normalizeDomain(rawDomain);
 
             if (!this.config.isValidBitrixPortalDomain(domain)) {
-                skipped.push({ domain, reason: 'invalid format' });
+                skipped.push({
+                    domain,
+                    reason: 'invalid format (only *.bitrix24.ru allowed)',
+                });
                 continue;
             }
             if (!this.config.isPortalAllowed(domain)) {
@@ -367,10 +407,9 @@ export class BridgeOrchestratorService implements OnModuleInit {
         }
 
         if (skipped.length > 0) {
-            const skippedText = skipped
-                .map(item => `${item.domain} (${item.reason})`)
-                .join(', ');
-            this.logger.warn(`Skip portal domains on startup: ${skippedText}`);
+            this.logger.warn(
+                `Skipped portal domains: ${skipped.map(s => `${s.domain} (${s.reason})`).join(', ')}`,
+            );
         }
 
         return Array.from(unique);

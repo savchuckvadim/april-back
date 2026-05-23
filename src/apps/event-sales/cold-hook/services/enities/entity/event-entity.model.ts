@@ -3,10 +3,7 @@ import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { PortalModel } from '@/modules/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';
 import { findPbxSalesEventField } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
-import {
-    IField,
-    IFieldItem,
-} from '@/modules/portal/interfaces/portal.interface';
+import { IField } from '@/modules/portal/interfaces/portal.interface';
 
 export class EventEntityModel {
     private readonly eventTypeName = 'Холодный обзвон';
@@ -20,7 +17,11 @@ export class EventEntityModel {
         private readonly eventDeadline: string,
         private readonly eventResponsible: string,
         private readonly eventXoCreated: string,
-    ) {}
+    ) {
+        if (!entity) {
+            throw new Error('Entity not found');
+        }
+    }
 
     public getNextValues(): Record<string, number | string | string[]> {
         const result = {} as Record<string, number | string | string[]>; //'UF_CRM_999999' : 'value'
@@ -90,6 +91,9 @@ export class EventEntityModel {
         return undefined;
     }
     private hasField(bitrixId: string) {
+        if (!bitrixId) {
+            return false;
+        }
         return Object.hasOwn(this.entity, bitrixId) !== undefined;
     }
     private getPortalFieldByCode(code: ColdEntityCodesEnum) {

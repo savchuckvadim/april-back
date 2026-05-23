@@ -6,22 +6,10 @@ import { EventSalesHookController } from './controllers/hook.controller';
 import { ColdHookSilinceEndpointService } from './services/silence/cold-hook-silince-endpoint.service';
 import { ColdHooksHandlerService } from './services/silence/cold-hooks-handler.service';
 import { EventSilenceModule } from '@/core';
-import { QueueModule } from '@/modules/queue/queue.module';
-import { ColdHooksProcessor } from './queue/cold-hooks.processor';
 
 @Module({
-    imports: [
-        EventSilenceModule,
-        PBXModule,
-        TelegramModule,
-        HttpModule,
-        QueueModule,
-    ],
+    imports: [EventSilenceModule, PBXModule, TelegramModule, HttpModule],
     controllers: [EventSalesHookController],
-    providers: [
-        ColdHookSilinceEndpointService,
-        ColdHooksHandlerService,
-        ColdHooksProcessor,
-    ],
+    providers: [ColdHookSilinceEndpointService, ColdHooksHandlerService],
 })
 export class EventSalesHookModule {}

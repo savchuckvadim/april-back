@@ -15,17 +15,17 @@ export class BxCompanyRepository {
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.GET,
-            { ID: companyId, select: ['ID'] },
+            { ID: companyId },
         );
     }
 
-    getBtch(cmdCode: string, companyId: number | string, select?: string[]) {
+    getBtch(cmdCode: string, companyId: number | string) {
         this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.GET,
-            { ID: companyId, select: select ?? ['ID'] },
+            { ID: companyId },
         );
     }
 

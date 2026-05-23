@@ -16,8 +16,8 @@ export class BxCompanyBatchService {
         this.repo = new BxCompanyRepository(api);
     }
 
-    get(cmdCode: string, companyId: number | string, select?: string[]) {
-        return this.repo.getBtch(cmdCode, companyId, select);
+    get(cmdCode: string, companyId: number | string) {
+        return this.repo.getBtch(cmdCode, companyId);
     }
 
     getList(cmdCode: string, filter: Partial<IBXCompany>, select?: string[]) {

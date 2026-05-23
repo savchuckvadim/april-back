@@ -4,6 +4,7 @@ import { Job } from 'bull';
 import { QueueNames } from 'src/modules/queue/constants/queue-names.enum';
 import { TranscribeJobHandlerId } from 'src/modules/queue/constants/transcribe-job-handler-id.enum';
 import { TranscriptionService } from '../services/transcription.service';
+import { getErrorString } from '@/shared';
 
 interface TranscribeAudioJobData {
     fileUrl: string;
@@ -73,9 +74,9 @@ export class TranscribeAudioProcessor {
                 `Completed transcription job for taskId: ${job.data.taskId}`,
             );
         } catch (error) {
+            const errorString = getErrorString(error);
             this.logger.error(
-                `Error processing transcription job: ${error.message}`,
-                error.stack,
+                `Error processing transcription job: ${errorString}`,
             );
             throw error;
         }

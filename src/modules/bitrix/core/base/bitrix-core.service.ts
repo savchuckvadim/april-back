@@ -6,6 +6,7 @@ import { TelegramService } from '../../../telegram/telegram.service';
 import { BxAuthType } from '../../bitrix-service.factory';
 import { Semaphore } from './semaphor';
 import { delay } from '@/shared/lib';
+import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
 
 export class BitrixCore {
     public readonly logger = new Logger(BitrixCore.name);
@@ -23,6 +24,7 @@ export class BitrixCore {
         domain: string,
         token: string | null,
         apiKey: string = '',
+        private readonly rateLimiter: BitrixRateLimiterService,
     ) {
         this.semaphore = new Semaphore(10);
         this.domain = domain;
@@ -59,6 +61,7 @@ export class BitrixCore {
         retries = 2,
     ): Promise<AxiosResponse<T>> {
         const url = this.getUrl(method);
+        await this.rateLimiter.acquire(this.domain);
         await this.semaphore.acquire();
 
         try {

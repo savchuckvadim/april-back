@@ -13,3 +13,14 @@ export enum ColdEntityCodesEnum {
     op_work_status = 'op_work_status',
     op_prospects_type = 'op_prospects_type',
 }
+
+// 'xo_name',
+// 'xo_date',
+// 'xo_responsible',
+// 'xo_created',
+// 'manager_op',
+// 'call_next_date',
+// 'call_next_name',
+// 'call_last_date',
+// 'op_history',
+// 'op_history_multiple',

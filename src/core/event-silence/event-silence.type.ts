@@ -12,4 +12,3 @@ export interface EventSilentJobManagerData<T> {
     jobName: JobNames;
     domain: string;
 }
-

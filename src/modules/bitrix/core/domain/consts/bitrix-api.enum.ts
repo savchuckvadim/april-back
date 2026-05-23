@@ -2,6 +2,7 @@ export enum EBxNamespace {
     CRM = 'crm',
     IMV2 = 'im.v2',
     TASKS = 'tasks',
+    TASK = 'task',
     LISTS = 'lists',
     CRM_ITEM = 'crm.item',
     WITHOUT_NAMESPACE = 'without.namespace',

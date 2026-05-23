@@ -5,6 +5,7 @@ import { RedisModule } from 'src/core/redis/redis.module';
 import { TelegramModule } from 'src/modules/telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
 import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
+import { BitrixRateLimiterService } from './rate-limit/bitrix-rate-limiter.service';
 
 @Module({
     imports: [
@@ -14,7 +15,7 @@ import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
         HttpModule,
         // BitrixSetupAppModule,
     ],
-    providers: [BitrixApiFactoryService],
+    providers: [BitrixApiFactoryService, BitrixRateLimiterService],
     exports: [BitrixApiFactoryService],
     //     // {
     //     //     provide: BitrixAuthService,

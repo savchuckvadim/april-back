@@ -259,7 +259,8 @@ export class AlfaBitrixService {
             let maxLength = 10;
             column.eachCell({ includeEmpty: true }, (cell: Cell) => {
                 const v = cell.value;
-                const len = v !== null && v !== undefined ? String(v).length : 0;
+                const len =
+                    v !== null && v !== undefined ? String(v).length : 0;
                 maxLength = Math.max(maxLength, len + 2);
             });
 
@@ -346,7 +347,8 @@ export class AlfaBitrixService {
             let maxLength = 10;
             column.eachCell({ includeEmpty: true }, (cell: Cell) => {
                 const v = cell.value;
-                const len = v !== null && v !== undefined ? String(v).length : 0;
+                const len =
+                    v !== null && v !== undefined ? String(v).length : 0;
                 maxLength = Math.max(maxLength, len + 2);
             });
 

@@ -19,22 +19,26 @@ export class BxContactRepository {
         );
     }
 
-    getBtch(cmdCode: string, contactId: number) {
+    getBtch(cmdCode: string, contactId: number, select?: string[]) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.GET,
-            { ID: contactId },
+            { ID: contactId, select },
         );
     }
 
-    async getList(filter: Partial<IBXContact>, select?: string[]) {
+    async getList(
+        filter: Partial<IBXContact>,
+        select?: string[],
+        order?: { [key in keyof IBXContact]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+    ) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.LIST,
-            { filter, select },
+            { filter, select, order },
         );
     }
 
