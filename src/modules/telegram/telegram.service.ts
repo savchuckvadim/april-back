@@ -24,10 +24,17 @@ export class TelegramService {
         const text = `\n💥 App:  ${dto.app}\n🌍 Domain:   ${dto.domain}\n🧭 UserId: ${dto.userId}\n\n ⚠️ Text:  ${dto.text}`;
         const cleanText = this.cleanText(text);
 
-        const payload = {
-            ...dto,
-            app: 'nest api prod',
-        } as TelegramSendMessageDto;
+        const payload = this.withTelegram
+            ? {
+                  chat_id: this.adminChatId,
+                  text: cleanText,
+                  parse_mode: 'Markdown',
+              }
+            : ({
+                  ...dto,
+                  app: 'nest api prod',
+                  text: cleanText,
+              } as TelegramSendMessageDto);
 
         try {
             await firstValueFrom(this.httpService.post(this.url, payload));
