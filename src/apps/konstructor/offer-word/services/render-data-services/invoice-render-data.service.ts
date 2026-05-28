@@ -72,7 +72,6 @@ export class InvoiceRenderDataService {
 
         const withTax = getWithTax(provider, dto.contractType);
 
-
         const invoicePrices: IInvoicePriceData[] = this.getInvoicePrices(
             dto,
             withTax,

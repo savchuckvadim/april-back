@@ -6,7 +6,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
 
@@ -33,7 +33,7 @@ RUN apt-get update && \
 WORKDIR /app
 
 # только prod зависимости для рантайма
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --no-audit --no-fund
 
 # артефакты сборки
