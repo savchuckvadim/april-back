@@ -1,4 +1,4 @@
-import { IBXTask } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import { IBXTask } from '@/modules/bitrix/domain/tasks/task';
 import { PresentationStateCount } from './presentation-types';
 import { IBXDeal } from 'src/modules/bitrix/domain';
 

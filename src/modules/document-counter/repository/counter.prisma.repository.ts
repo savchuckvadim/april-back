@@ -115,7 +115,7 @@ export class CounterPrismaRepository implements CounterRepository {
         rqId: number,
         type: CounterType,
     ): Promise<rq_counter | null> {
-        return this.prisma.rq_counter.findFirst({
+        return await this.prisma.rq_counter.findFirst({
             where: {
                 rq_id: BigInt(rqId),
                 type,
@@ -151,5 +151,15 @@ export class CounterPrismaRepository implements CounterRepository {
 
             return newCount;
         });
+    }
+
+    async setCurrent(rqId: bigint, counterId: bigint, value: number) {
+        await this.prisma.rq_counter.update({
+            where: {
+                rq_id_counter_id: { rq_id: rqId, counter_id: counterId },
+            },
+            data: { count: value },
+        });
+        return value;
     }
 }

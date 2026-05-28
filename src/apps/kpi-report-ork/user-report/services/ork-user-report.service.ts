@@ -19,6 +19,7 @@ import {
 } from '@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto';
 import { delay } from '@/shared/lib';
 import { BxListItemGetRequestDto } from '@/modules/bitrix/domain/list-item';
+import { IBXListItem } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
 
 @Injectable()
 export class OrkUserReportService {
@@ -91,7 +92,7 @@ export class OrkUserReportService {
             if (result.length === 0) {
                 break;
             }
-            nextId = result[result.length - 1]?.ID ?? 0;
+            nextId = Number(result[result.length - 1]?.ID) ?? 0;
             if (nextId === 0) {
                 needMore = false;
             }

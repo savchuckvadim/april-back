@@ -9,19 +9,20 @@ import { EventSalesActivityUseCase } from './use-cases/bx-activity.use-case';
 import { EventSalesHookModule } from './cold-hook/hook.module';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { RedisModule } from '@/core/redis/redis.module';
+import { EventReportModule } from './event-report/event-report.module';
 
 @Module({
     imports: [
         PBXModule,
         TelegramModule,
         HttpModule,
-        // EventSalesHookModule,
         QueueModule,
         RedisModule,
         EventSalesHookModule,
+        EventReportModule,
     ],
     controllers: [EventSalesController, EventSalesBxActivityController],
     providers: [EventSalesActivityUseCase],
-    exports: [EventSalesHookModule],
+    exports: [EventSalesHookModule, EventReportModule],
 })
 export class EventSalesModule {}

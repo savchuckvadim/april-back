@@ -20,6 +20,7 @@ import { MetricsModule } from './core/metrics/metrics.module';
 
 import { TranscriptionModule } from './modules/transcription/transcription.module';
 import { AiModule } from './modules/ai/ai.module';
+import { AiRagModule } from './modules/ai-rag/ai-rag.module';
 import { StorageModule } from './core/storage/storage.module';
 import { FileLinkModule } from './core/file-link/file-link.module';
 import { PrismaModule } from './core/prisma/prisma.module';
@@ -119,6 +120,7 @@ const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
 
         TranscriptionModule,
         AiModule,
+        AiRagModule,
 
         //commands
         // GarantPricesModule,

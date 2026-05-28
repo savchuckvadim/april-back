@@ -21,6 +21,7 @@ import {
     PbxDealCategoryCodeEnum,
 } from './types/deals/portal.deal.type';
 import { SmartType } from './types/smart/smart.type';
+import { ETimeZone, resolveTimezoneByDomain } from '@/shared/lib/date';
 
 // @Injectable()
 export type PbxEntityType = 'company' | 'lead' | 'deal' | 'contact';
@@ -37,6 +38,17 @@ export class PortalModel {
     }
     getHook(): string {
         return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET}`;
+    }
+
+    /**
+     * IANA-таймзона клиентского портала. Определяется по domain
+     * (см. resolveTimezoneByDomain). Дефолт — Europe/Moscow.
+     *
+     * Используется date-утилами из @/shared/lib/date для конвертации входных
+     * дат hook/фронта в форматы полей Bitrix (task DEADLINE / CRM datetime / строки).
+     */
+    getTimezone(): ETimeZone {
+        return resolveTimezoneByDomain(this.portal.domain);
     }
 
     getDepartamentIdByPortal(
@@ -127,7 +139,7 @@ export class PortalModel {
         return this.portal.deals[0];
     }
 
-    getDealCategories(): any {
+    getDealCategories(): IPCategory[] {
         return this.portal.deals[0].categories;
     }
     getDealCategoryByCode(

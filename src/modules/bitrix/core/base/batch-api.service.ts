@@ -24,13 +24,15 @@ export class BatchApiService {
         const queryParts: string[] = [];
 
         const processItem = (key: string, value: any) => {
+            if (value === undefined || value === null) return;
             key = key.trim();
-            if (value && typeof value === 'object' && !Array.isArray(value)) {
+            if (typeof value === 'object' && !Array.isArray(value)) {
                 for (const [subKey, subValue] of Object.entries(value)) {
                     processItem(`${key}[${subKey.trim()}]`, subValue);
                 }
             } else if (Array.isArray(value)) {
                 value.forEach((item, index) => {
+                    if (item === undefined || item === null) return;
                     if (typeof item === 'object') {
                         for (const [subKey, subValue] of Object.entries(item)) {
                             processItem(

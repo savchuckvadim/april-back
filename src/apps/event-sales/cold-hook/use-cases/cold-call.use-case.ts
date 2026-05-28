@@ -1,74 +1,101 @@
 import { BitrixService, IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IColdCallData } from '../type/cold-hook-silence.interface';
 import { PortalModel } from '@/modules/portal/services/portal.model';
-import { ColdFlowDealService } from '../services/enities/deal/cold-flow-deal.service';
-import { EnumColdCallEntityType } from '../dto/cold.dto';
-import { ColdCallBxEntityService } from '../services/enities/entity/cold-call-bx-entity.service';
+import {
+    ColdCallBxEntityFlowService,
+    IColdCallBxEntityData,
+} from '../services/enities/entity/cold-call-bx-entity.flow.service';
 import { Logger } from '@nestjs/common';
+import { ColdDealFlowService } from '../services/enities/deal/cold-deal.flow.service';
+import { ColdHookBatchGroupBuffer } from '../services/batch/cold-hook-batch-group-buffer';
+import {
+    ColdTaskFlowService,
+    IColdTaskFlow,
+} from '../services/enities/task/cold-tasks.flow.service';
+import { ColdListFlowService } from '../services/enities/kpi-list/cold-list.flow.service';
 
 export class ColdCallUseCase {
     private readonly logger = new Logger(ColdCallUseCase.name);
     constructor(
-        private readonly bitrixService: BitrixService,
         private readonly portal: PortalModel,
+        private readonly bitrix: BitrixService,
     ) {}
 
+    /**
+     * Одна компания = одна группа в буфере. Все команды этой компании
+     * (company update, base/cold deal upsert, task add, list.element add)
+     * гарантированно уходят в один HTTP-batch — $result[cmdKey] валиден
+     * между сделкой → задачей → элементом списка.
+     */
     async flow(
         data: IColdCallData,
         company: IBXCompany,
-        deal: IBXDeal | null,
+        baseDeal: IBXDeal | null,
         lead: IBXLead | null,
+        buffer: ColdHookBatchGroupBuffer,
     ) {
         this.logger.log('flow', company?.ID);
 
-        const service = new ColdFlowDealService(
-            this.bitrixService,
+        const dealsFlowService = new ColdDealFlowService(
+            this.bitrix,
             this.portal,
         );
-        const enityService = new ColdCallBxEntityService(
-            this.bitrixService,
+        const entityFlowService = new ColdCallBxEntityFlowService(
+            this.bitrix,
             this.portal,
         );
-        enityService.flow({
+        const taskFlowService = new ColdTaskFlowService(
+            this.bitrix,
+            this.portal,
+        );
+        const listFlowService = new ColdListFlowService(
+            this.bitrix,
+            this.portal,
+        );
+        const entityFlowData: IColdCallBxEntityData = {
             name: data.name,
             deadline: data.deadline,
-            responsible: data.responsible,
+            responsibleId: data.responsible,
             xoCreated: data.created,
             entity: company,
             entityType: data.entityType,
-        });
-        await service.flow(data);
-    }
-
-    async getInitData(
-        entityType: EnumColdCallEntityType,
-        entityId: string,
-    ): Promise<{
-        company: IBXCompany | null;
-        lead: IBXLead | null;
-        deal: IBXDeal | null;
-    }> {
-        const result = {
-            company: null as IBXCompany | null,
-            lead: null as IBXLead | null,
-            deal: null as IBXDeal | null,
         };
-        if (entityType === EnumColdCallEntityType.COMPANY) {
-            const company = await this.bitrixService.company.get(
-                Number(entityId),
-            );
-            result.company = company.result;
-        }
-        if (entityType === EnumColdCallEntityType.LEAD) {
-            const lead = await this.bitrixService.lead.get(Number(entityId));
-            result.lead = lead.result;
-        }
+        entityFlowService.flow(entityFlowData, buffer);
+        const { baseDealId, xoDealId } = dealsFlowService.flow(
+            entityFlowData,
+            Number(company.ID),
+            baseDeal,
+            buffer,
+        );
 
-        if (entityType === EnumColdCallEntityType.DEAL) {
-            const deal = await this.bitrixService.deal.get(Number(entityId));
-            result.deal = deal.result;
-        }
+        const taskFlowData: IColdTaskFlow = {
+            deadline: data.deadline,
+            responsibleId: Number(data.responsible),
+            companyId: Number(company.ID),
+            baseDealId,
+            xoDealId,
+            name: data.name,
+        };
+        taskFlowService.createNextTask(taskFlowData, buffer);
 
-        return result;
+        /**
+         * KPI + History элементы.
+         * Создаются в этом же HTTP-batch, что и сделки/задача —
+         * crm-поле элемента ссылается на $result[...] сделок.
+         */
+        listFlowService.flow(
+            {
+                name: data.name,
+                deadline: data.deadline,
+                createdId: data.created,
+                responsibleId: data.responsible,
+                companyId: company.ID,
+                baseDealId,
+                xoDealId,
+            },
+            buffer,
+        );
+
+        await buffer.endGroup();
     }
 }

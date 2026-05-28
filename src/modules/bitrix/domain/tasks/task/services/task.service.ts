@@ -2,10 +2,10 @@ import { BxTaskRepository } from '../repository/task.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import {
     ITaskFilter,
-    ITaskCreateFields,
+    IBXTaskCreateFields,
     ITaskUpdateFields,
+    IBXTask,
 } from '../interface/task.interface';
-import { IBXTask } from '../../../interfaces/bitrix.interface';
 
 export class BxTaskService {
     private repo: BxTaskRepository;
@@ -23,7 +23,7 @@ export class BxTaskService {
     /**
      * Создает задачу
      */
-    async add(fields: ITaskCreateFields) {
+    async add(fields: IBXTaskCreateFields) {
         return this.repo.add(fields);
     }
 

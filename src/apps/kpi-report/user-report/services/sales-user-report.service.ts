@@ -103,7 +103,7 @@ export class SalesUserReportService {
             if (result.length === 0) {
                 break;
             }
-            nextId = result[result.length - 1]?.ID ?? 0;
+            nextId = Number(result[result.length - 1]?.ID) ?? 0;
             if (nextId === 0) {
                 needMore = false;
             }

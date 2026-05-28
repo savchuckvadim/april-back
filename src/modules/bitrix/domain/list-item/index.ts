@@ -1,4 +1,5 @@
 export * from './services/bx-list-item.service';
+export * from './services/bx-list-item.batch.service';
 export * from './repositories/bx-list-item.repository';
 export * from './dto/bx-list-item.dto';
 export * from './schema/bx-list-item.schema';

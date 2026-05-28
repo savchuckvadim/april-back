@@ -1,5 +1,5 @@
 import { BitrixService } from '@/modules/bitrix';
-import type { ITaskCreateFields } from '@/modules/bitrix/domain/tasks/task';
+import type { IBXTaskCreateFields } from '@/modules/bitrix/domain/tasks/task';
 import {
     SMART_ACT_PLAN_WARNINGS,
     TASK_DEADLINE,
@@ -46,7 +46,7 @@ export class SmartActWarningTaskService {
         dealId: number,
         companyId: number,
         responsibleId: number,
-    ): ITaskCreateFields {
+    ): IBXTaskCreateFields {
         const ufCrm: string[] = [`D_${dealId}`];
         if (companyId > 0) {
             ufCrm.unshift(`CO_${companyId}`);
@@ -58,6 +58,6 @@ export class SmartActWarningTaskService {
             PRIORITY: TASK_PRIORITY,
             DEADLINE: TASK_DEADLINE,
             UF_CRM_TASK: ufCrm,
-        } as unknown as ITaskCreateFields;
+        } as unknown as IBXTaskCreateFields;
     }
 }

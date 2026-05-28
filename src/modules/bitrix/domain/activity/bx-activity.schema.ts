@@ -1,10 +1,10 @@
 import { EBxMethod } from 'src/modules/bitrix/core';
-import { IBXTask } from '../interfaces/bitrix.interface';
 import { CrmListRequestType } from '../crm/type/crm-request.type';
 import {
     BXActivityRequestFields,
     IBXActivity,
 } from './interfaces/bx-activity.interface';
+import { IBXTask } from '../tasks/task';
 
 export type ActivitySchema = {
     [EBxMethod.GET]: {

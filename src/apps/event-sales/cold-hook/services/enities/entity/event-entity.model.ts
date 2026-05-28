@@ -4,23 +4,26 @@ import { PortalModel } from '@/modules/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';
 import { findPbxSalesEventField } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import { IField } from '@/modules/portal/interfaces/portal.interface';
+import { Logger } from '@nestjs/common';
 
 export class EventEntityModel {
+    private readonly logger = new Logger(EventEntityModel.name);
     private readonly eventTypeName = 'Холодный обзвон';
+    private readonly eventComment: string;
     constructor(
         private readonly portal: PortalModel,
-        private readonly entity: IBXCompany | IBXLead | IBXDeal,
+        private readonly entity: IBXCompany | IBXLead | IBXDeal | null, //null - когда создается новый элемент
         private readonly entityType: EnumColdCallEntityType,
 
         private readonly eventName: string,
-        private readonly eventComment: string,
         private readonly eventDeadline: string,
         private readonly eventResponsible: string,
         private readonly eventXoCreated: string,
     ) {
         if (!entity) {
-            throw new Error('Entity not found');
+            this.logger.log('создаем новую сущность' + entityType);
         }
+        this.eventComment = this.getComment();
     }
 
     public getNextValues(): Record<string, number | string | string[]> {
@@ -76,12 +79,15 @@ export class EventEntityModel {
         );
         return result;
     }
-    private getEventName() {
+    public getEventName() {
         const eventName = this.eventTypeName + ' ' + this.eventName;
         return eventName;
     }
 
     private getCurrentValueByCode(code: ColdEntityCodesEnum) {
+        if (!this.entity) {
+            return '';
+        }
         const pField = this.getPortalFieldByCode(code);
         if (!pField) return undefined;
         const bitrixId = this.getBitrixIdByPortalField(pField);
@@ -91,7 +97,7 @@ export class EventEntityModel {
         return undefined;
     }
     private hasField(bitrixId: string) {
-        if (!bitrixId) {
+        if (!bitrixId || !this.entity) {
             return false;
         }
         return Object.hasOwn(this.entity, bitrixId) !== undefined;
@@ -152,5 +158,18 @@ export class EventEntityModel {
 
     private getBitrixIdByPortalField(field: IField) {
         return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : '';
+    }
+
+    private getComment(): string {
+        const now = new Date();
+        const commentNow = now.toLocaleString('ru-RU', {
+            day: '2-digit',
+            month: 'long',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+        });
+        const comment = commentNow + ' Запланирован на ' + this.eventDeadline;
+        return comment;
     }
 }

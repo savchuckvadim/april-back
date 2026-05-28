@@ -3,10 +3,10 @@ import { EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { EBXEntity } from 'src/modules/bitrix/core/domain/consts/bitrix-entities.enum';
 import {
     ITaskFilter,
-    ITaskCreateFields,
+    IBXTaskCreateFields,
     ITaskUpdateFields,
+    IBXTask,
 } from '../interface/task.interface';
-import { IBXTask } from '../../../interfaces/bitrix.interface';
 
 export class BxTaskRepository {
     constructor(private readonly bxApi: BitrixBaseApi) {}
@@ -14,7 +14,7 @@ export class BxTaskRepository {
     /**
      * Создает задачу
      */
-    async add(fields: ITaskCreateFields) {
+    async add(fields: IBXTaskCreateFields) {
         return this.bxApi.callType(
             EBxNamespace.TASKS,
             EBXEntity.TASK,
@@ -26,7 +26,7 @@ export class BxTaskRepository {
     /**
      * Создает задачу (batch)
      */
-    addBtch(cmdCode: string, fields: ITaskCreateFields) {
+    addBtch(cmdCode: string, fields: IBXTaskCreateFields) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.TASKS,

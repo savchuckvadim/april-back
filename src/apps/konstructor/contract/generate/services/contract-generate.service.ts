@@ -14,7 +14,7 @@ import {
     ProviderService,
     RqEntity,
 } from '../../../../../modules/portal-konstructor/provider';
-import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
+// import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
 
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';
 import { DocumentInfoblockService } from '../../../document-generate/infoblocks/infoblock.service';
@@ -35,7 +35,7 @@ export class ContractGenerateService {
         private readonly configService: ConfigService,
         private readonly providerService: ProviderService,
 
-        private readonly totalRowService: DocumentTotalRowService,
+        // private readonly totalRowService: DocumentTotalRowService,
         private readonly documentInfoblockService: DocumentInfoblockService,
 
         private readonly documentProductRowService: DocumentProductRowService,

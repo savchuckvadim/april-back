@@ -1,25 +1,19 @@
-import { Body, Controller, HttpCode, Post, Logger } from '@nestjs/common';
+import { Body, Controller, HttpCode, Logger, Post } from '@nestjs/common';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
-// import { EventSalesFlowUseCase } from '../use-cases/flow.use-case';
+import { EventReportUseCase } from '../event-report/use-cases/event-report.use-case';
 
 @Controller('event-sales')
 export class EventSalesController {
     private readonly logger = new Logger(EventSalesController.name);
 
-    constructor() {}
+    constructor(private readonly eventReportUseCase: EventReportUseCase) {}
 
     @Post('flow')
     @HttpCode(200)
-    getFlow(@Body() dto: EventSalesFlowDto): EventSalesFlowDto {
-        return dto;
-        // this.logger.debug(
-        //     'Received flow request:',
-        //     JSON.stringify(dto, null, 2),
-        // );
-        // this.bitrixContext.initFromRequestContext();
-        // const service = new EventSalesFlowUseCase(this.portalProvider);
-
-        // const result = await this.flowService.getFlow(dto);
-        // return result;
+    async getFlow(@Body() dto: EventSalesFlowDto) {
+        this.logger.log(
+            `event-sales/flow: domain=${dto.domain}, plan=${dto.plan?.type?.current?.code}, report=${dto.report?.resultStatus}`,
+        );
+        return this.eventReportUseCase.execute(dto);
     }
 }

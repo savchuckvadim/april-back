@@ -1,8 +1,4 @@
-import {
-    EBXTaskMark,
-    IBXUser,
-} from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { EV_TYPE, IEventTask } from '../../types/task-types';
+import { EV_TYPE } from '../../types/task-types';
 import { PresentationStateCount } from '../../types/presentation-types';
 import { IBXDeal } from 'src/modules/bitrix';
 import {
@@ -17,6 +13,7 @@ import {
 import { Type } from 'class-transformer';
 import { MinimalUserDto } from './user.dto';
 import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
+import { EBXTaskMark } from '@/modules/bitrix/domain/tasks/task';
 
 export enum EnumTaskEventType {
     XO = 'xo',

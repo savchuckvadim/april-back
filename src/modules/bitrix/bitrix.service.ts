@@ -36,7 +36,7 @@ import { BxRpaItemBatchService } from './domain/rpa/item/services/bx-rpa-item.ba
 import { BxRpaTypeService } from './domain/rpa/type/services/bx-rpa-type.service';
 import { BxRpaStageService } from './domain/rpa/stage/services/bx-rpa-stage.service';
 import { BxFileService } from './domain/file/bx-file.service';
-import { BxListItemService } from './domain/list-item';
+import { BxListItemBatchService, BxListItemService } from './domain/list-item';
 import { BxRecentService } from './domain/chat/recent/services/bx-recent.service';
 import { BxRecentBatchService } from './domain/chat/recent/services/bx-recent.batch.service';
 import { BxMessageService } from './domain/chat/message/services/bx-message.service';
@@ -112,6 +112,7 @@ export class BitrixService {
         item: null as unknown as BxItemBatchService,
         timeline: null as unknown as BxTimelineBatchService,
         list: null as unknown as BxListBatchService,
+        listItem: null as unknown as BxListItemBatchService,
         product: null as unknown as BxProductBatchService,
         userFieldConfig: null as unknown as BxUserFieldConfigBatchService,
         rpaItem: null as unknown as BxRpaItemBatchService,
@@ -229,6 +230,10 @@ export class BitrixService {
     }
     private initListItem() {
         this.listItem = this.cloner.clone(BxListItemService, this.api);
+        this.batch.listItem = this.cloner.clone(
+            BxListItemBatchService,
+            this.api,
+        );
     }
     private initProduct() {
         this.product = this.cloner.clone(BxProductService, this.api);

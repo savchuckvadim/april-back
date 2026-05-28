@@ -23,6 +23,7 @@ import {
 import { ContractDto } from '@/apps/konstructor/dto/contract.dto';
 import { ClientTypeEnum } from '@/apps/konstructor/document-generate/type/client.type';
 import dayjs from 'dayjs';
+import { getWithTax } from '@/apps/konstructor/document-generate/lib/get-with-tax.util';
 
 type IInvoicePriceData = {
     rows: IProductRenderData;
@@ -69,9 +70,12 @@ export class InvoiceRenderDataService {
             dto.recipient,
         );
 
+        const withTax = getWithTax(provider, dto.contractType);
+
+
         const invoicePrices: IInvoicePriceData[] = this.getInvoicePrices(
             dto,
-            provider?.withTax || false,
+            withTax,
         );
         const invoiceGeneralData = this.getInvoiceGeneralData(dto);
         const renderData: IInvoiceRenderData = this.createRenderData(

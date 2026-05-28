@@ -2,10 +2,10 @@ import { BxTaskRepository } from '../repository/task.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import {
     ITaskFilter,
-    ITaskCreateFields,
+    IBXTaskCreateFields,
     ITaskUpdateFields,
+    IBXTask,
 } from '../interface/task.interface';
-import { IBXTask } from '../../../interfaces/bitrix.interface';
 
 export class BxTaskBatchService {
     private repo: BxTaskRepository;
@@ -23,7 +23,7 @@ export class BxTaskBatchService {
     /**
      * Создает задачу (batch)
      */
-    add(cmdCode: string, fields: ITaskCreateFields) {
+    add(cmdCode: string, fields: IBXTaskCreateFields) {
         return this.repo.addBtch(cmdCode, fields);
     }
 
@@ -56,6 +56,13 @@ export class BxTaskBatchService {
         fields: ITaskUpdateFields,
     ) {
         return this.repo.updateBtch(cmdCode, taskId, fields);
+    }
+
+    /**
+     * Завершает задачу
+     */
+    complete(cmdCode: string, taskId: number | string) {
+        return this.repo.completeBtch(cmdCode, taskId);
     }
 
     /**

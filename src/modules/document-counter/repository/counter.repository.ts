@@ -34,4 +34,13 @@ export abstract class CounterRepository {
         counterId: bigint,
         size: number,
     ): Promise<number>;
+
+    /**
+     * Set counter value to a specific number
+     */
+    abstract setCurrent(
+        rqId: bigint,
+        counterId: bigint,
+        value: number,
+    ): Promise<number>;
 }

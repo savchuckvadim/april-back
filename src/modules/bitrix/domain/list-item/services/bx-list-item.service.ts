@@ -1,6 +1,7 @@
 import { BitrixBaseApi } from '@/modules/bitrix';
 import { BxListItemRepository } from '../repositories/bx-list-item.repository';
 import { BxListItemGetRequestDto } from '../dto/bx-list-item.dto';
+import { IBXListItem } from '../interface/bx-list-item.interface';
 import { delay } from '@/shared/lib';
 
 export class BxListItemService {
@@ -16,8 +17,8 @@ export class BxListItemService {
     async get(dto: BxListItemGetRequestDto) {
         return await this.repo.get(dto);
     }
-    async all(dto: BxListItemGetRequestDto) {
-        const listItems: Record<string, unknown>[] = [];
+    async all(dto: BxListItemGetRequestDto): Promise<IBXListItem[]> {
+        const listItems: IBXListItem[] = [];
         let needMore = true;
         let nextId = 0;
         while (needMore) {
@@ -26,13 +27,13 @@ export class BxListItemService {
                 '>ID': nextId,
             };
             const { result } = (await this.get(dto)) as {
-                result: Record<string, unknown>[];
+                result: IBXListItem[];
             };
 
             if (result.length === 0) {
                 break;
             }
-            nextId = (result[result.length - 1]?.['ID'] as number) ?? 0;
+            nextId = Number(result[result.length - 1]?.ID ?? 0);
             if (nextId === 0) {
                 needMore = false;
             }
@@ -41,7 +42,9 @@ export class BxListItemService {
         }
         return listItems;
     }
-    async *allStream(dto: BxListItemGetRequestDto) {
+    async *allStream(
+        dto: BxListItemGetRequestDto,
+    ): AsyncGenerator<IBXListItem[]> {
         let needMore = true;
         let nextId = 0;
         let batchCount = 0;
@@ -51,13 +54,13 @@ export class BxListItemService {
                 '>ID': nextId,
             };
             const { result } = (await this.get(dto)) as {
-                result: Record<string, unknown>[];
+                result: IBXListItem[];
             };
 
             if (result.length === 0) {
                 break;
             }
-            nextId = (result[result.length - 1]?.['ID'] as number) ?? 0;
+            nextId = Number(result[result.length - 1]?.ID ?? 0);
             if (nextId === 0) {
                 needMore = false;
             }

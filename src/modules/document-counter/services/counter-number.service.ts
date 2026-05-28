@@ -44,4 +44,32 @@ export class CounterNumberService {
 
         return formatDocumentNumber(pivot, pivot.count);
     }
+
+    /**
+     * Set cirrent value
+     * почти админский ендпоинт при котором задается значение от которого будет отсчитываться
+     *
+     *
+     */
+    async setCurrent(
+        rqId: number,
+        type: CounterType,
+        value: number,
+    ): Promise<string> {
+        // ищем существующую pivot таблицу
+        const pivot = await this.repo.findPivot(rqId, type);
+
+        if (!pivot) {
+            //если не находим -
+            return fallbackDocumentNumber(rqId);
+        }
+
+        const newCount = await this.repo.setCurrent(
+            pivot.rq_id,
+            pivot.counter_id,
+            value,
+        );
+
+        return formatDocumentNumber(pivot, newCount);
+    }
 }

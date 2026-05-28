@@ -27,6 +27,7 @@ import {
     IGeneralProductRenderItemData,
     OfferRenderGeneralProductService,
 } from './offer-render-general-product.service';
+import { getWithTax } from '@/apps/konstructor/document-generate/lib/get-with-tax.util';
 
 type IOfferWordRenderData = IInfoblocksRenderData &
     IProductRenderData &
@@ -61,6 +62,8 @@ export class OfferRenderDataService {
             provider ?? null,
         );
 
+        const withTax = getWithTax(provider, dto.contractType);
+
         const infoblocks = await this.renderDoumentInfoblocks(dto);
         const productPrices = this.offerRenderPriceService.renderProductPrices(
             dto.rows,
@@ -73,7 +76,7 @@ export class OfferRenderDataService {
                 dto.contract.aprilName || dto.contract.bitrixName,
                 dto.contract.prepayment,
                 dto.clientType,
-                provider?.withTax || false,
+                withTax,
             );
         const recipient = this.offerRenderRecipientService.getData(
             dto.recipient,
@@ -84,7 +87,7 @@ export class OfferRenderDataService {
             totalPrice = this.offerRenderPriceService.renderTotalPrice(
                 dto.total,
                 dto.clientType,
-                provider?.withTax || false,
+                withTax,
             );
         }
         const renderData = this.createRenderData(
