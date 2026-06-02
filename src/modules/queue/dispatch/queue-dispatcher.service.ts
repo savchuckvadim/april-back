@@ -57,7 +57,7 @@ export class QueueDispatcherService {
     ): Promise<Job<T>> {
         const queue = this.getQueue(queueName);
         this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
-        this.logger.log(`Job data: ${JSON.stringify(data)}`);
+        // this.logger.log(`Job data: ${JSON.stringify(data)}`);
         const job = jobId
             ? await queue.add(jobName, data, { jobId })
             : await queue.add(jobName, data);

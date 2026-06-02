@@ -41,7 +41,7 @@ export class BitrixBaseApi {
         this.domain = domain;
     }
     init() {
-        console.log('init new BitrixBaseApi');
+        // this.logger.log('init new BitrixBaseApi');
     }
     // Обертки для удобства:
     async call(
