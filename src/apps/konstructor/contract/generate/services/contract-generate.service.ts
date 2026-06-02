@@ -23,6 +23,8 @@ import { ContractRqHeaderService } from './contract-rq-header.service';
 import { ContractRqService } from './contract-rq.service';
 import { ContractSpecificationService } from './contract-specification.service';
 import { CONTRACT_LTYPE } from '@/apps/konstructor/document-generate/type/contract.type';
+import { ContractDto } from '@/apps/konstructor/dto/contract.dto';
+import { SupplyDto } from '@/apps/konstructor/dto';
 
 @Injectable()
 export class ContractGenerateService {
@@ -70,7 +72,7 @@ export class ContractGenerateService {
             resultPath,
         );
 
-        const data = await this.prepareDocumentData(dto, provider);
+        const data = this.prepareDocumentData(dto, provider);
 
         const { rootLink } = await this.saveDoc(
             doc,
@@ -166,10 +168,10 @@ export class ContractGenerateService {
         return { documentCount };
     }
 
-    private async prepareDocumentData(
+    private prepareDocumentData(
         dto: ContractGenerateDto,
         provider: RqEntity,
-    ): Promise<ContractGenerateTemplateProps> {
+    ): ContractGenerateTemplateProps {
         // const recipientData = this.getRecipientData(dto.recipient);
         const contractData = this.getContractData(dto.contract);
         // const supplyData = this.getSupplyData(dto.supply);
@@ -288,7 +290,7 @@ export class ContractGenerateService {
     //     };
     // }
 
-    private getContractData(contract: any) {
+    private getContractData(contract: ContractDto) {
         const generalContract = contract.contract;
         return {
             contractName: generalContract.name,
@@ -300,7 +302,7 @@ export class ContractGenerateService {
         };
     }
 
-    private getSupplyData(supply: any) {
+    private getSupplyData(supply: SupplyDto) {
         return {
             supplyName: supply.name,
             supplyType: supply.type,
