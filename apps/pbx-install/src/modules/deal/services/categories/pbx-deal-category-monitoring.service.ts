@@ -12,7 +12,7 @@ import { PbxEntityType } from '@/shared/enums';
 import {
     BxCategoryRow,
     normalizeStatusListResult,
-} from '@/modules/pbx-install/shared/utils/bitrix-category-stage.utils';
+} from '@app/pbx-install/shared/utils/bitrix-category-stage.utils';
 import { DealCategoryStageStrategy } from './deal-category-stage.strategy';
 
 /** Категория из Bitrix вместе с её стадиями. */
@@ -199,9 +199,13 @@ export class PbxDealCategoryMonitoringService {
 }
 
 function normalizeKey(v: unknown): string {
-    return String(v ?? '')
-        .trim()
-        .toLowerCase();
+    if (typeof v === 'string') {
+        return v.trim().toLowerCase();
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+        return String(v).trim().toLowerCase();
+    }
+    return '';
 }
 
 function matchCategory(

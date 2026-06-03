@@ -5,7 +5,7 @@ import { PbxEntityType } from '@/shared/enums';
 import {
     TypedEntityFieldCtx,
     TypedEntityFieldOwner,
-} from '@/modules/pbx-install/shared';
+} from '@app/pbx-install/shared';
 import { bigintConvertToNumber } from '@/shared';
 
 export interface SmartContextResolveArgs {

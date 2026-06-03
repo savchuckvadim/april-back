@@ -126,6 +126,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/bitrix-auth/tsconfig.lib.json"
       }
+    },
+    "pbx-domain": {
+      "type": "library",
+      "root": "libs/pbx-domain",
+      "entryFile": "index",
+      "sourceRoot": "libs/pbx-domain/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/pbx-domain/tsconfig.lib.json"
+      }
     }
   }
 }

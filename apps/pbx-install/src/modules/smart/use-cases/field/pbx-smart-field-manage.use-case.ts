@@ -11,7 +11,7 @@ import {
     DeleteTypedEntityFieldsDto,
     EditTypedEntityFieldItemDto,
     MANAGE_DOMAIN_ALL,
-} from '@/modules/pbx-install/shared';
+} from '@app/pbx-install/shared';
 import {
     SmartContext,
     SmartContextResolver,

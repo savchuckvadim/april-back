@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Category } from '@/modules/pbx-install/shared';
+import { Category } from '@app/pbx-install/shared';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { ParseSmartService } from '../parse/parse-smart.service';
 import {

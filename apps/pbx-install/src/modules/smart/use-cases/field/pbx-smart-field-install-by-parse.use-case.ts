@@ -4,8 +4,8 @@ import {
     BxTypedEntityFieldsInstallService,
     IPbxTypedFieldInstallData,
     PortalFieldTypedEntityInstallService,
-} from '@/modules/pbx-install/shared';
-import { Field } from '@/modules/pbx-install/shared/parse-field-excel/type/parse-field.type';
+} from '@app/pbx-install/shared';
+import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { ParseSmartService } from '../../services/parse/parse-smart.service';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { SmartContextResolver } from '../../services/smart-context.resolver';

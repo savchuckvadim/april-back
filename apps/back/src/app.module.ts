@@ -26,8 +26,7 @@ import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GarantModule } from './modules/garant/garant.module';
 import { PortalKonstructorModule } from './modules/portal-konstructor/portal-konstructor.module';
 import { BxDepartmentModule } from '@/modules/bx-department/bx-department.module';
-import { PBXInstallModule } from './modules/pbx-install/pbx-install.module';
-import { PbxDomainModule } from './modules/pbx-domain/pbx-domain.module';
+import { PbxDomainModule } from '@/modules/pbx-domain/pbx-domain.module';
 import { HelperModule } from './modules/helper/helper.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -57,7 +56,6 @@ import { DealsScheduleModule } from './apps/event-service/deals-schedule/deals-s
 import { DealsOrderModule } from './apps/event-service/deals-order/deals-order.module';
 import { DealsMoveModule } from './apps/event-service/deals-move/deals-move.module';
 import { SkapModule } from './apps/event-service/skap/skap.module';
-import { ParseFieldExcelModule } from './modules/pbx-install/shared';
 import { BitrixImBridgeModule } from './commands/bitrix-im-bridge/bitrix-im-bridge.module';
 import { CallAnalysisModule } from './modules/call-analysis/call-analysis.module';
 
@@ -99,8 +97,6 @@ const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
         BitrixModule,
         PortalModule,
         PBXModule,
-        PBXInstallModule,
-        ParseFieldExcelModule,
         PbxDomainModule,
         OrkHistoryBxListModule,
 

@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
-import { InstallSmartCategoriesParams } from '@/modules/pbx-install/category/install-smart-template.types';
-import { normalizeCode } from '@/modules/pbx-install/shared/utils/bitrix-category-stage.utils';
-import { InstallCategorySyncService } from '@/modules/pbx-install/category/install-category-sync.service';
-import { InstallStageSyncService } from '@/modules/pbx-install/stage/install-stage-sync.service';
-import { BootstrapPortalCategoryStagesUseCase } from '@/modules/pbx-install/stage/use-cases/bootstrap-portal-category-stages.use-case';
-import { ReconcilePortalCategoryStagesUseCase } from '@/modules/pbx-install/stage/use-cases/reconcile-portal-category-stages.use-case';
-import { InstallCategoryParent } from '@/modules/pbx-install/category/strategy/bitrix-category-stage.strategy';
+import { InstallSmartCategoriesParams } from '@app/pbx-install/category/install-smart-template.types';
+import { normalizeCode } from '@app/pbx-install/shared/utils/bitrix-category-stage.utils';
+import { InstallCategorySyncService } from '@app/pbx-install/category/install-category-sync.service';
+import { InstallStageSyncService } from '@app/pbx-install/stage/install-stage-sync.service';
+import { BootstrapPortalCategoryStagesUseCase } from '@app/pbx-install/stage/use-cases/bootstrap-portal-category-stages.use-case';
+import { ReconcilePortalCategoryStagesUseCase } from '@app/pbx-install/stage/use-cases/reconcile-portal-category-stages.use-case';
+import { InstallCategoryParent } from '@app/pbx-install/category/strategy/bitrix-category-stage.strategy';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { SmartCategoryStageStrategy } from './smart-category-stage.strategy';
 

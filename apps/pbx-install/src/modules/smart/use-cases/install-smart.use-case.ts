@@ -6,7 +6,6 @@ import { PBXService } from '@/modules/pbx';
 import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { InstallSmartCategoriesService } from '../services/smart-categories/install-smart-categories.service';
 import { PbxSmartFieldInstallByParseUseCase } from './field/pbx-smart-field-install-by-parse.use-case';
-import { IBXSmart } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 import { IBXSmartType } from '@/modules/bitrix/domain/crm/smart-type';
 
 /**

@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Category } from '@/modules/pbx-install/shared';
-import { PbxEntityGroupEnum } from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
+import { Category } from '@app/pbx-install/shared';
+import { PbxEntityGroupEnum } from '@app/pbx-install/shared/entity/field/parse-entity-field.service';
 import {
     ParseCategoryNameEnum,
     ParseCategoryService,

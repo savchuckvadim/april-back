@@ -322,7 +322,10 @@ export class BxEntityFieldsInstallService {
             this.alnumOnly(bxItem.XML_ID) === this.alnumOnly(parsedItem.CODE)
         );
     }
-    private alnumOnly(s: string): string {
+    private alnumOnly(s: string | undefined): string {
+        if (!s) {
+            return '';
+        }
         return s
             .normalize('NFD')
             .replace(/\p{M}/gu, '')

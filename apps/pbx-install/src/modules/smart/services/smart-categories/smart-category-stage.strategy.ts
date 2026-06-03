@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { BitrixCategoryStageStrategy } from '@/modules/pbx-install/category/strategy/bitrix-category-stage.strategy';
-import { Stage } from '@/modules/pbx-install/shared';
+import { BitrixCategoryStageStrategy } from '@app/pbx-install/category/strategy/bitrix-category-stage.strategy';
+import { Stage } from '@app/pbx-install/shared';
 
 /**
  * Стратегия идентификаторов и семантики для смарт-процессов.

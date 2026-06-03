@@ -6,6 +6,7 @@ import {
     HttpStatus,
     BadRequestException,
     Logger,
+    Optional,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { TelegramService } from '@/modules/telegram/telegram.service';
@@ -16,7 +17,9 @@ import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 export class GlobalExceptionFilter implements ExceptionFilter {
     private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-    constructor(private readonly telegram: TelegramService) {}
+    // TelegramService опционален: приложения без Telegram-бота (например,
+    // apps/pbx-install) используют тот же фильтр — уведомления просто не шлются.
+    constructor(@Optional() private readonly telegram?: TelegramService) {}
 
     async catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
@@ -100,7 +103,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         const message = `⚠️ Ошибка: ${error.name}\n\n📄 Файл: ${file}\n🔢 Строка: ${line}\n🔧 Функция: ${func}\n\n💥 Код: ${code}\n\n📬 Сообщение: ${error.message}\n\n📍 URL: ${request.method} ${request.url}\n🧭 User-Agent: ${userAgent}\n🌍 IP: ${ipText}\n🔗 Referer: ${referer}
         `;
-        await this.telegram.sendMessage(message);
+        await this.telegram?.sendMessage(message);
         console.log(message);
         const responseBody: ApiResponse<null> = {
             resultCode: EResultCode.ERROR,
@@ -135,7 +138,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         const fullMessage = `❌ Validation error:\n- ${validationMessages}\n\n📍 URL: ${request.method} ${request.url} `;
         this.logger.warn(fullMessage);
-        await this.telegram.sendMessage(fullMessage);
+        await this.telegram?.sendMessage(fullMessage);
 
         return response.status(400).json({
             resultCode: EResultCode.ERROR,

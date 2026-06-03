@@ -4,7 +4,7 @@ import {
     BxTypedEntityFieldsInstallService,
     IPbxTypedFieldInstallData,
     PortalFieldTypedEntityInstallService,
-} from '@/modules/pbx-install/shared';
+} from '@app/pbx-install/shared';
 import { InstallSmartFieldDto } from '../../dto/install-smart-field.dto';
 import { SmartContextResolver } from '../../services/smart-context.resolver';
 

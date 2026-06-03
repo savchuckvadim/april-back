@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Field } from '@/modules/pbx-install/shared/parse-field-excel/type/parse-field.type';
+import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { ParseSmartService } from '../parse/parse-smart.service';
 import {

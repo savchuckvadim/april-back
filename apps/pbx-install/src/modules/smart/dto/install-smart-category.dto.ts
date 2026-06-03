@@ -9,7 +9,7 @@ import {
     Matches,
     ValidateNested,
 } from 'class-validator';
-import { CategoryDto } from '@/modules/pbx-install/deal/dto/parse-category.dto';
+import { CategoryDto } from '@app/pbx-install/deal/dto/parse-category.dto';
 import { SmartGroupEnum, SmartNameEnum } from './install-smart.dto';
 
 /**

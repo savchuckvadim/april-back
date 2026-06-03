@@ -4,14 +4,14 @@ import { PBXService } from '@/modules/pbx';
 import { PortalDealService } from '@/modules/pbx-domain';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { PbxEntityTypePrisma } from '@/shared/enums';
-import { Category } from '@/modules/pbx-install/shared';
+import { Category } from '@app/pbx-install/shared';
 import {
     EnsuredSmartCategoryRow,
     InstallCategoryParent,
-} from '@/modules/pbx-install/category';
-import { InstallCategorySyncService } from '@/modules/pbx-install/category/install-category-sync.service';
-import { BootstrapPortalCategoryStagesUseCase } from '@/modules/pbx-install/stage/use-cases/bootstrap-portal-category-stages.use-case';
-import { ReconcilePortalCategoryStagesUseCase } from '@/modules/pbx-install/stage/use-cases/reconcile-portal-category-stages.use-case';
+} from '@app/pbx-install/category';
+import { InstallCategorySyncService } from '@app/pbx-install/category/install-category-sync.service';
+import { BootstrapPortalCategoryStagesUseCase } from '@app/pbx-install/stage/use-cases/bootstrap-portal-category-stages.use-case';
+import { ReconcilePortalCategoryStagesUseCase } from '@app/pbx-install/stage/use-cases/reconcile-portal-category-stages.use-case';
 import { DealCategoryStageStrategy } from './deal-category-stage.strategy';
 
 /** Сводный результат установки воронок и стадий сделки. */

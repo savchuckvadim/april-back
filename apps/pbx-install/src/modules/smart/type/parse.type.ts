@@ -1,4 +1,4 @@
-import { Field } from '@/modules/pbx-install/shared/parse-field-excel/type/parse-field.type';
+import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { Category } from '../../shared';
 
 export interface Smart {

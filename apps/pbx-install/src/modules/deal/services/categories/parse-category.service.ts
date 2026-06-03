@@ -1,13 +1,8 @@
 import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { ParseFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-fields.service';
-import { PbxEntityGroupEnum } from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
-import {
-    Category,
-    Stage,
-    unwrapExcelCellValue,
-} from '@/modules/pbx-install/shared';
+import { PbxEntityGroupEnum } from '@app/pbx-install/shared/entity/field/parse-entity-field.service';
+import { Category, Stage, unwrapExcelCellValue } from '@app/pbx-install/shared';
 /** Categories sheet row (full row.values incl. ExcelJS leading empty cell) */
 type CategoryImportSheetRow = readonly [
     unknown,
@@ -101,7 +96,9 @@ export class ParseCategoryService {
 
         let categories = this.getCategoriesData(categoriesSheet);
         if (categoryName && categoryName !== 'all') {
-            categories = categories.filter(c => c.code === categoryName);
+            categories = categories.filter(
+                c => String(c.code) === String(categoryName),
+            );
         }
 
         categories.forEach(category => {

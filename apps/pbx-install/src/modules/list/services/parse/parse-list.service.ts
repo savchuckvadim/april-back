@@ -1,8 +1,8 @@
 import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { unwrapExcelCellValue } from '@/modules/pbx-install/shared';
-import { ParseSmartFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
+import { unwrapExcelCellValue } from '@app/pbx-install/shared';
+import { ParseSmartFieldsService } from '@app/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
 import { List, ListFolderEnum, ListGroupEnum } from '../../type/parse.type';
 
 /** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
@@ -14,15 +14,6 @@ type ListImportSheetRow = readonly [
     string, // code
     string, // isActive TRUE | FALSE
     string, // order
-];
-
-type ListFieldImportSheetRow = readonly [
-    string, // name
-    string, //appType
-    string, //type
-    string, //code event_date
-    string, //field_btx_code EVENT_DATE
-    string, //order
 ];
 
 @Injectable()

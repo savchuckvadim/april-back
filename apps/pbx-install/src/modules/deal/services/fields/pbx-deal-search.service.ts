@@ -6,13 +6,13 @@ import {
 import { PbxFieldEntityDto } from '@/modules/pbx-domain';
 
 import { IBXField } from '@/modules/bitrix';
-import { Field } from '@/modules/pbx-install/shared/parse-field-excel/type/parse-field.type';
+import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { PbxEntityType } from '@/shared';
 import {
     ParseEntityFieldsAppName,
     ParseEntityFieldsService,
     PbxEntityGroupEnum,
-} from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
+} from '@app/pbx-install/shared/entity/field/parse-entity-field.service';
 
 export interface PbxDealFieldSearchResult {
     pbx: PbxFieldEntityDto | null;

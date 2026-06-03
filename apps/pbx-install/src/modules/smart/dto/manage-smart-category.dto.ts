@@ -4,7 +4,7 @@ import {
     DeleteDealCategoriesDto,
     DeleteDealCategoryStageDto,
     EditDealCategoryStageDto,
-} from '@/modules/pbx-install/deal/dto/manage-deal-category.dto';
+} from '@app/pbx-install/deal/dto/manage-deal-category.dto';
 import { SmartGroupEnum, SmartNameEnum } from './install-smart.dto';
 
 const SMART_NAME_DESCRIPTION =

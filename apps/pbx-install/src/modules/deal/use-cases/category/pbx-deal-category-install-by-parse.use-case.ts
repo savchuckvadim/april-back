@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PbxEntityGroupEnum } from '@/modules/pbx-install/shared/entity/field/parse-entity-field.service';
+import { PbxEntityGroupEnum } from '@app/pbx-install/shared/entity/field/parse-entity-field.service';
 import {
     ParseCategoryName,
     ParseCategoryService,

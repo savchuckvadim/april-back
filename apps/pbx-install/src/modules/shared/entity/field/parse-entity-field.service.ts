@@ -1,8 +1,8 @@
 import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { ParseFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-fields.service';
-import { Field } from '@/modules/pbx-install/shared/parse-field-excel/type/parse-field.type';
+import { ParseFieldsService } from '@app/pbx-install/shared/parse-field-excel/services/parse-fields.service';
+import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { PbxEntityType } from '@/shared';
 
 export type EntityParseData = {

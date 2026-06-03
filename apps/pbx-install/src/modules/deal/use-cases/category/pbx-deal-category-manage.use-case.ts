@@ -14,10 +14,10 @@ import {
     MANAGE_DOMAIN_ALL,
     normalizeBitrixStageColor,
     normalizeStatusListResult,
-} from '@/modules/pbx-install/shared';
-import { InstallCategorySyncService } from '@/modules/pbx-install/category/install-category-sync.service';
-import { InstallStageSyncService } from '@/modules/pbx-install/stage/install-stage-sync.service';
-import { InstallCategoryParent } from '@/modules/pbx-install/category';
+} from '@app/pbx-install/shared';
+import { InstallCategorySyncService } from '@app/pbx-install/category/install-category-sync.service';
+import { InstallStageSyncService } from '@app/pbx-install/stage/install-stage-sync.service';
+import { InstallCategoryParent } from '@app/pbx-install/category';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { DealCategoryStageStrategy } from '../../services/categories/deal-category-stage.strategy';
 import {

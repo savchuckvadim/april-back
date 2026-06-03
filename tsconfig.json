@@ -34,6 +34,8 @@
       "@lib/ai-rag/*": ["libs/ai-rag/src/*"],
       "@lib/bitrix-auth": ["libs/bitrix-auth/src"],
       "@lib/bitrix-auth/*": ["libs/bitrix-auth/src/*"],
+      "@lib/pbx-domain": ["libs/pbx-domain/src"],
+      "@lib/pbx-domain/*": ["libs/pbx-domain/src/*"],
 
       // ---- Совместимость: старые импорты модулей -> новые библиотеки ----
       // (переходный слой, чтобы не править сотни импортов сразу;
@@ -59,6 +61,18 @@
       "src/modules/ai-rag": ["libs/ai-rag/src"],
       "src/modules/ai-rag/*": ["libs/ai-rag/src/*"],
       "@pbx": ["libs/pbx/src/index.ts"],
+
+      // ---- pbx-domain: чистый слой PortalDB вынесен в libs/pbx-domain ----
+      // (старые импорты @/modules/pbx-domain перенаправлены на библиотеку)
+      "@/modules/pbx-domain": ["libs/pbx-domain/src"],
+      "@/modules/pbx-domain/*": ["libs/pbx-domain/src/*"],
+      "src/modules/pbx-domain": ["libs/pbx-domain/src"],
+      "src/modules/pbx-domain/*": ["libs/pbx-domain/src/*"],
+
+      // ---- Приложение pbx-install (apps/pbx-install/src/modules) ----
+      // самодостаточные внутренние импорты приложения установки
+      "@app/pbx-install": ["apps/pbx-install/src/modules"],
+      "@app/pbx-install/*": ["apps/pbx-install/src/modules/*"],
 
       // ---- Совместимость: вынесенные приложения ----
       // back ещё импортирует общие DTO kpi-report (kpi-report-ork);

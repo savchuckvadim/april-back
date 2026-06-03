@@ -10,7 +10,7 @@ import {
     DeleteTypedEntityFieldItemDto,
     DeleteTypedEntityFieldsDto,
     EditTypedEntityFieldItemDto,
-} from '@/modules/pbx-install/shared';
+} from '@app/pbx-install/shared';
 import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
 import { InstallSmartFieldDto } from '../dto/install-smart-field.dto';
 import { PbxSmartFieldInstallByParseUseCase } from '../use-cases/field/pbx-smart-field-install-by-parse.use-case';

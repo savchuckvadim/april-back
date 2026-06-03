@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ArrayMinSize, IsArray, IsNotEmpty, IsString } from 'class-validator';
-import { MANAGE_DOMAIN_ALL } from '@/modules/pbx-install/shared';
+import { MANAGE_DOMAIN_ALL } from '@app/pbx-install/shared';
 
 const DOMAIN_DESCRIPTION =
     'Домен Bitrix-портала без протокола и завершающего слэша. ' +

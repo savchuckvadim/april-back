@@ -10,7 +10,7 @@ import {
     Min,
     ValidateNested,
 } from 'class-validator';
-import { Category, Stage } from '@/modules/pbx-install/shared';
+import { Category, Stage } from '@app/pbx-install/shared';
 
 /**
  * DTO одной воронки (категории) сделки, распаршенной из Excel-файла установки.

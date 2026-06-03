@@ -12,7 +12,7 @@ import { PbxEntityType } from '@/shared/enums';
 import {
     BxCategoryRow,
     normalizeStatusListResult,
-} from '@/modules/pbx-install/shared/utils/bitrix-category-stage.utils';
+} from '@app/pbx-install/shared/utils/bitrix-category-stage.utils';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { SmartCategoryStageStrategy } from '../smart-categories/smart-category-stage.strategy';
 
@@ -182,9 +182,13 @@ export class PbxSmartCategoryMonitoringService {
 }
 
 function normalizeKey(v: unknown): string {
-    return String(v ?? '')
-        .trim()
-        .toLowerCase();
+    if (typeof v === 'string') {
+        return v.trim().toLowerCase();
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+        return String(v).trim().toLowerCase();
+    }
+    return '';
 }
 
 function matchCategory(
