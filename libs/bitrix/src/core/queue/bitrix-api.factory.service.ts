@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 
-import { BxAuthType } from '../../bitrix-service.factory';
+import { BxAuthType } from '../base/bx-auth-type.enum';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
 import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
 import { BitrixCredentials } from '../interface/bitrix-credentials.interface';

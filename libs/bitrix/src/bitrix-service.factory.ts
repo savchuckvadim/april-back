@@ -8,11 +8,11 @@ import {
     BITRIX_TOKEN_PROVIDER,
     IBitrixTokenProvider,
 } from './auth/bitrix-token-provider.port';
+import { BxAuthType } from './core/base/bx-auth-type.enum';
 
-export enum BxAuthType {
-    TOKEN = 'token',
-    HOOK = 'hook',
-}
+// Ре-экспорт для обратной совместимости со старыми импортами
+// `import { BxAuthType } from '.../bitrix-service.factory'`.
+export { BxAuthType };
 
 @Injectable()
 export class BitrixServiceFactory {

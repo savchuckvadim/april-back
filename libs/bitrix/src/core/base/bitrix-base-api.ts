@@ -3,7 +3,7 @@ import { BitrixCore } from './bitrix-core.service';
 
 import axios from 'axios';
 import { TelegramService } from '@/modules/telegram/telegram.service';
-import { BxAuthType } from '../../bitrix-service.factory';
+import { BxAuthType } from './bx-auth-type.enum';
 import { CallApiService } from './call-api.service';
 import { BatchApiService } from './batch-api.service';
 import { BXApiSchema, TBXRequest, TBXResponse } from '../domain';
