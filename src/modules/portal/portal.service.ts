@@ -80,10 +80,12 @@ export class PortalService {
                 data: portal,
             };
         } catch (error) {
-            this.logger.error(`Error getting portal data: ${error.message}`);
+            const message =
+                error instanceof Error ? error.message : String(error);
+            this.logger.error(`Error getting portal data: ${message}`);
             return {
                 success: false,
-                error: error.message,
+                error: message,
             };
         }
     }

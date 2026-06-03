@@ -250,7 +250,7 @@ export class PortalModel {
     }
 
     getRpaFieldBitrixIdByCode(
-        rpaCode: 'supply' | string,
+        rpaCode: string,
         code: string,
     ): string | undefined {
         const rpa = this.getRpaByCode(rpaCode);

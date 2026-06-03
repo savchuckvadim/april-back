@@ -1,6 +1,6 @@
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TranscriptionStoreService } from '../services/transcription.store.service';
-import { Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Controller, Delete, Get, Param } from '@nestjs/common';
 import { TranscriptionStoreDto } from '../dto/transcription.store.dto';
 
 @ApiTags('Admin Transcription Store')

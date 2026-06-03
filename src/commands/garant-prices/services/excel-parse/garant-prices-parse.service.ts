@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import dayjs from 'dayjs';
 import * as ExcelJS from 'exceljs';
-import * as fs from 'fs';
 
 export type ParsedPrice = {
     name: string;
@@ -50,14 +48,14 @@ export class GarantPricesParseService {
                     complectName,
                     complectNumber,
                     code,
-                    od1,
-                    od2,
-                    od3,
-                    od5,
-                    od10,
-                    od20,
-                    od30,
-                    od50,
+                    // od1,
+                    // od2,
+                    // od3,
+                    // od5,
+                    // od10,
+                    // od20,
+                    // od30,
+                    // od50,
                 ] = values;
                 const proximaSupplyNumbers = [
                     10, 11, 12, 13, 14, 15, 16, 17, 18,

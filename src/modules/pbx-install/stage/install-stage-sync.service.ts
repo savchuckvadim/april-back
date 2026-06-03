@@ -59,12 +59,37 @@ export class InstallStageSyncService {
                 id: statusPkId,
                 params: { FORCED: 'Y' },
             });
+            return;
         } catch (e) {
             this.logger.warn(
-                `crm.status.delete id=${String(statusPkId)}: ${(e as Error).message}`,
+                `crm.status.delete FORCED id=${String(statusPkId)}: ${this.describeBxError(e)}`,
             );
-            await bitrix.status.delete(statusPkId);
         }
+
+        try {
+            await bitrix.status.delete(statusPkId);
+        } catch (e) {
+            // Системные/защищённые стадии Bitrix (финальные WON/LOSE, SYSTEM='Y',
+            // стадии с привязанными элементами) удалить нельзя — Bitrix отдаёт 400.
+            // Пропускаем такую стадию: одна неудаляемая стадия не должна рушить
+            // установку всей воронки. Реальную причину пишем из ответа Bitrix.
+            this.logger.warn(
+                `crm.status.delete id=${String(statusPkId)} пропущена (не удаляется): ${this.describeBxError(e)}`,
+            );
+        }
+    }
+
+    /** Достаёт реальный текст ошибки Bitrix из ответа axios (а не общее «status code 400»). */
+    private describeBxError(e: unknown): string {
+        const err = e as {
+            response?: { data?: unknown };
+            message?: string;
+        };
+        const data = err?.response?.data;
+        if (data != null) {
+            return typeof data === 'string' ? data : JSON.stringify(data);
+        }
+        return err?.message ?? String(e);
     }
 
     /**

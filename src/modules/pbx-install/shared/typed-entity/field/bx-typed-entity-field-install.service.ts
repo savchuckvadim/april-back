@@ -198,7 +198,9 @@ export class BxTypedEntityFieldsInstallService {
     }
 
     private alnumOnly(s: unknown): string {
-        return String(s ?? '')
+        const raw =
+            typeof s === 'string' || typeof s === 'number' ? String(s) : '';
+        return raw
             .normalize('NFD')
             .replace(/\p{M}/gu, '')
             .toLowerCase()

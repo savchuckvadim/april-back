@@ -37,7 +37,9 @@ export function createTranscriptionEntityFromDto(
 ): Partial<Transcription> {
     const data = {
         user_result: transcription.userResult
-            ? JSON.parse(transcription.userResult)
+            ? (JSON.parse(
+                  transcription.userResult,
+              ) as Transcription['user_result'])
             : null,
     } as Transcription;
 
@@ -45,7 +47,9 @@ export function createTranscriptionEntityFromDto(
         data.entity_id = transcription.entityId;
     }
     if (transcription.userResult) {
-        data.user_result = JSON.parse(transcription.userResult);
+        data.user_result = JSON.parse(
+            transcription.userResult,
+        ) as Transcription['user_result'];
     }
     if (transcription.entityName) {
         data.entity_name = transcription.entityName;

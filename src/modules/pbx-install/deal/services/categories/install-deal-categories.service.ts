@@ -5,13 +5,11 @@ import { PortalDealService } from '@/modules/pbx-domain';
 import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { Category } from '@/modules/pbx-install/shared';
-import { normalizeCode } from '@/modules/pbx-install/shared/utils/bitrix-category-stage.utils';
 import {
     EnsuredSmartCategoryRow,
     InstallCategoryParent,
 } from '@/modules/pbx-install/category';
 import { InstallCategorySyncService } from '@/modules/pbx-install/category/install-category-sync.service';
-import { InstallStageSyncService } from '@/modules/pbx-install/stage/install-stage-sync.service';
 import { BootstrapPortalCategoryStagesUseCase } from '@/modules/pbx-install/stage/use-cases/bootstrap-portal-category-stages.use-case';
 import { ReconcilePortalCategoryStagesUseCase } from '@/modules/pbx-install/stage/use-cases/reconcile-portal-category-stages.use-case';
 import { DealCategoryStageStrategy } from './deal-category-stage.strategy';
@@ -20,7 +18,6 @@ import { DealCategoryStageStrategy } from './deal-category-stage.strategy';
 export interface InstallDealCategoriesResult {
     dealId: number;
     parent: InstallCategoryParent;
-    deletedOrphanIds: number[];
     ensured: Array<{
         code: string;
         bxCategoryId: number;
@@ -39,10 +36,12 @@ export interface InstallDealCategoriesResult {
  *   если её ещё нет;
  * - используется {@link DealCategoryStageStrategy} для форматов `ENTITY_ID`/`STATUS_ID`/семантики.
  *
- * Алгоритм (общий с смартом):
- * 1. Снять «осиротевшие» воронки в Bitrix (те, которых нет в шаблоне) — сначала их стадии, затем сама категория, затем зеркало в БД.
- * 2. `ensureTemplateCategories` — upsert воронок шаблона в Bitrix + зеркала в `btx_categories`.
- * 3. Для каждой воронки — bootstrap (если только что создана) или reconcile (если уже жила) стадий.
+ * Алгоритм:
+ * 1. `ensureTemplateCategories` — upsert воронок шаблона в Bitrix + зеркала в `btx_categories`.
+ * 2. Для каждой воронки — bootstrap (если только что создана) или reconcile (если уже жила) стадий.
+ *
+ * Установка НЕ удаляет существующие воронки сделок, которых нет в шаблоне («сироты»):
+ * это позволяет ставить отдельную воронку по имени, не затрагивая остальные funnel-ы клиента.
  */
 @Injectable()
 export class InstallDealCategoriesService {
@@ -54,7 +53,6 @@ export class InstallDealCategoriesService {
         private readonly portalService: PortalStoreService,
         private readonly portalDealService: PortalDealService,
         private readonly categorySync: InstallCategorySyncService,
-        private readonly stageSync: InstallStageSyncService,
         private readonly bootstrapStages: BootstrapPortalCategoryStagesUseCase,
         private readonly reconcileStages: ReconcilePortalCategoryStagesUseCase,
         private readonly strategy: DealCategoryStageStrategy,
@@ -92,42 +90,11 @@ export class InstallDealCategoriesService {
             entityDbId: BigInt(dealId),
             parentType: 'deal',
         };
-        const entityTypeIdStr = String(this.entityTypeId);
+        // Установка НЕ удаляет «осиротевшие» воронки: ставим/обновляем только воронки
+        // из шаблона, а все прочие существующие воронки сделок на портале не трогаем
+        // (иначе установка одной воронки снесла бы остальные funnel-ы клиента).
 
-        const templateCodes = new Set(
-            templateCategories.map(c => normalizeCode(c.code)),
-        );
-
-        // Шаг 1: подчищаем «осиротевшие» воронки в Bitrix (default-воронка id=0 в list не возвращается — её не трогаем).
-        const bxCategories = await this.categorySync.listCategories(
-            bitrix,
-            entityTypeIdStr,
-        );
-        const orphans = bxCategories.filter(
-            row => !templateCodes.has(normalizeCode(row.code)),
-        );
-        const deletedOrphanIds: number[] = [];
-        for (const orphan of orphans) {
-            const bxCategoryId = Number(orphan.id);
-            await this.stageSync.deleteAllStagesInCategory({
-                bitrix,
-                entityTypeId: this.entityTypeId,
-                bxCategoryId,
-                strategy: this.strategy,
-            });
-            await this.categorySync.deleteBitrixCategory(
-                bitrix,
-                bxCategoryId,
-                entityTypeIdStr,
-            );
-            await this.categorySync.deletePortalCategoryByBitrixId(
-                parent,
-                String(orphan.id),
-            );
-            deletedOrphanIds.push(bxCategoryId);
-        }
-
-        // Шаг 2: создаём/обновляем шаблонные воронки в Bitrix + зеркала в БД.
+        // Шаг 1: создаём/обновляем шаблонные воронки в Bitrix + зеркала в БД.
         const ensured: EnsuredSmartCategoryRow[] =
             await this.categorySync.ensureTemplateCategories({
                 bitrix,
@@ -137,7 +104,7 @@ export class InstallDealCategoriesService {
                 strategy: this.strategy,
             });
 
-        // Шаг 3: стадии по каждой воронке.
+        // Шаг 2: стадии по каждой воронке.
         for (const row of ensured) {
             const stages = row.cat.stages ?? [];
             const payload = {
@@ -158,7 +125,6 @@ export class InstallDealCategoriesService {
         return {
             dealId,
             parent,
-            deletedOrphanIds,
             ensured: ensured.map(r => ({
                 code: r.cat.code,
                 bxCategoryId: r.bxCategoryId,
