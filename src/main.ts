@@ -1,3 +1,14 @@
+// Prisma отдаёт id-поля как BigInt, а JSON.stringify (express res.json, отправка в TG)
+// не умеет их сериализовать → "Do not know how to serialize a BigInt". Глобально учим
+// BigInt отдавать себя строкой (строка, а не number — чтобы не терять точность на
+// значениях больше Number.MAX_SAFE_INTEGER). Лишнего обхода не добавляет: toJSON
+// вызывается для каждого bigint в рамках обычного прохода JSON.stringify.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function (
+    this: bigint,
+): string {
+    return this.toString();
+};
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';

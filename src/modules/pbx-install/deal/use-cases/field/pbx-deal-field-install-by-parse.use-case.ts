@@ -44,30 +44,23 @@ export class PbxDealFieldInstallByParseUseCase {
         domain: string,
         group: PbxEntityGroupEnum,
         appName: ParseEntityFieldsAppName,
+        codes?: string[],
     ): Promise<any> {
-        const codes = [
-            // 'supply_information',
-            // 'op_work_result',
-            // 'department',
-            // 'op_source_select',
-            'concurents_multiple',
-        ] as string[] | undefined;
         // получаем предварительные данные чтобы получить теккущую сущность - deal
         const portal = await this.portalService.getPortalByDomain(domain);
         if (!portal) throw new Error('Portal not found');
         const portalId = Number(portal.id);
         // получаем текущую сущность - deal
         let deal = await this.portalDealService.findByPortalId(portalId);
-        console.log('deal', deal);
+
         if (!deal) {
             // если сделки нет - создаем ее
             deal = await this.portalDealService.create({
-                code: `'deal_'${domain}`,
+                code: `deal_${domain}`,
                 name: 'deal',
                 title: 'deal',
                 portalId: portalId,
             });
-            console.log('deal created', deal);
         }
         // получаем id сделки
         const dealId = deal.id;
@@ -79,8 +72,11 @@ export class PbxDealFieldInstallByParseUseCase {
                 appName,
                 group,
             );
-        // фильтруем поля для установки из excel чтобы не перегружать битрикс TESTING
-        let localParseFields: Field[] = parseFields;
+        // По умолчанию ставим поля, помеченные в Excel флагом isNeedUpdate.
+        // Опциональный `codes` дополнительно сужает выборку (точечная переустановка/тест).
+        let localParseFields: Field[] = parseFields.filter(
+            field => field.isNeedUpdate,
+        );
         if (codes && codes.length > 0) {
             localParseFields = localParseFields.filter(field =>
                 codes.includes(field.code),
@@ -96,8 +92,6 @@ export class PbxDealFieldInstallByParseUseCase {
         );
         // устанавливаем или обновляем поля в битрикс
         const bxResult = await bxFieldService.installBxFields();
-
-        console.log('bxResult', bxResult);
         // если не удалось изменить ни одного поля - выбрасываем ошибку
         if (bxResult.countSuccess === 0) {
             throw new Error('В битриксе не удалось изменить ни одного поля');
@@ -113,10 +107,6 @@ export class PbxDealFieldInstallByParseUseCase {
                 dealId,
                 clearFields,
             );
-        console.log(
-            'portalFieldEntityInstallResult',
-            portalFieldEntityInstallResult,
-        );
         return {
             bxResult,
             portalFieldEntityInstallResult,

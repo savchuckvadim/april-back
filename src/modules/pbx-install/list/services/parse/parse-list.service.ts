@@ -2,14 +2,8 @@ import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { unwrapExcelCellValue } from '@/modules/pbx-install/shared';
-import { PbxEntityType } from '@/shared';
 import { ParseSmartFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
-import {
-    List,
-    ListFolderEnum,
-    ListGroupEnum,
-    ListNameEnum,
-} from '../../type/parse.type';
+import { List, ListFolderEnum, ListGroupEnum } from '../../type/parse.type';
 
 /** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
 type ListImportSheetRow = readonly [
@@ -88,7 +82,6 @@ export class ParseListService {
             list.fields = this.parseFieldsService.getFieldsData(
                 fieldsSheet,
                 fieldItemsSheet,
-                PbxEntityType.BITRIX_LIST,
             );
             resultLists.push(list);
         });
@@ -110,13 +103,6 @@ export class ParseListService {
 
             const [id, type, group, name, code, isActive, order] = values;
 
-            console.log('id', id);
-            console.log('type', type);
-            console.log('group', group);
-            console.log('name', name);
-            console.log('code', code);
-            console.log('isActive', isActive);
-            console.log('order', order);
             const list: List = {
                 id,
                 type,

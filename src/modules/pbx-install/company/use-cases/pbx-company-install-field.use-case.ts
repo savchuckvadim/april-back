@@ -44,7 +44,6 @@ export class PbxCompanyInstallFieldUseCase {
         const portalId = Number(portal.id);
         // получаем текущую сущность - company
         let company = await this.portalCompanyService.findByPortalId(portalId);
-        console.log('company', company);
         if (!company) {
             // если компании нет - создаем ее
             company = await this.portalCompanyService.create({
@@ -53,7 +52,6 @@ export class PbxCompanyInstallFieldUseCase {
                 title: 'company',
                 portalId: portalId,
             });
-            console.log('company created', company);
         }
         // получаем id компании
         const companyId = company.id;

@@ -7,6 +7,7 @@ import {
     FieldItemImportSheetRow,
 } from '../type/sheet-feild.type';
 import { unwrapExcelCellValue } from '../../utils/unwrap-excel-cell.util';
+import { coerceExcelBool } from '../../utils/coerce-bool.util';
 import { Injectable } from '@nestjs/common';
 import { PbxEntityType } from '@/shared';
 
@@ -80,8 +81,9 @@ export class ParseFieldsService {
                     code,
                     bxFieldName: targetFieldCodeByEntityType,
                     order,
-                    isNeedUpdate: isNeedUpdate === 'true',
-                    isMultiple: multiple === 'true',
+                    // Ячейки Excel приходят как boolean / 'true' / 1 / пусто — нормализуем все варианты.
+                    isNeedUpdate: coerceExcelBool(isNeedUpdate),
+                    isMultiple: coerceExcelBool(multiple),
                 };
 
                 fields.push(field);
@@ -118,21 +120,20 @@ export class ParseFieldsService {
                 item_code,
                 ,
                 item_order,
-                ,
+                item_del,
                 item_isActive,
-                item_isNeedUpdate,
             ] = itemValues;
 
-            if (field_code == code) {
-                if (item_isNeedUpdate && item_isActive) {
-                    listArray.push(
-                        this.getListItem(
-                            item_name,
-                            item_code,
-                            Number(item_order),
-                        ),
-                    );
-                }
+            if (field_code !== code) return;
+            // В список поля включаем ВСЕ активные (и не помеченные на удаление) элементы,
+            // независимо от item-level isNeedUpdate: для add/update enumeration в Bitrix
+            // нужен полный список значений, иначе часть значений теряется.
+            const isActive = coerceExcelBool(item_isActive);
+            const isDeleted = String(item_del ?? '').toUpperCase() === 'Y';
+            if (isActive && !isDeleted) {
+                listArray.push(
+                    this.getListItem(item_name, item_code, Number(item_order)),
+                );
             }
         });
 

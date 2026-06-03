@@ -45,29 +45,20 @@ export class PbxCompanyInstallUseCase {
         group: PbxEntityGroupEnum,
         appName: ParseEntityFieldsAppName,
     ): Promise<any> {
-        const codes = [
-            // 'supply_information',
-            // 'op_work_result',
-            // 'department',
-            // 'op_source_select',
-            'concurents_multiple',
-        ] as string[] | undefined;
         // получаем предварительные данные чтобы получить теккущую сущность - company
         const portal = await this.portalService.getPortalByDomain(domain);
         if (!portal) throw new Error('Portal not found');
         const portalId = Number(portal.id);
         // получаем текущую сущность - company
         let company = await this.portalCompanyService.findByPortalId(portalId);
-        console.log('company', company);
         if (!company) {
             // если компании нет - создаем ее
             company = await this.portalCompanyService.create({
-                code: `'company_'${domain}`,
+                code: `company_${domain}`,
                 name: 'company',
                 title: 'company',
                 portalId: portalId,
             });
-            console.log('company created', company);
         }
         // получаем id компании
         const companyId = company.id;
@@ -79,13 +70,10 @@ export class PbxCompanyInstallUseCase {
                 appName,
                 group,
             );
-        // фильтруем поля для установки из excel чтобы не перегружать битрикс TESTING
-        let localParseFields: Field[] = parseFields;
-        if (codes && codes.length > 0) {
-            localParseFields = localParseFields.filter(field =>
-                codes.includes(field.code),
-            );
-        }
+        // устанавливаем только поля, помеченные в Excel флагом isNeedUpdate.
+        const localParseFields: Field[] = parseFields.filter(
+            field => field.isNeedUpdate,
+        );
         // устанавливаем или обновляем поля в битрикс
         // и получаем специальную предподготовленную смердженную Data
         const bxFieldService = new BxEntityFieldsInstallService(

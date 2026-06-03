@@ -9,7 +9,6 @@ import {
     Stage,
     unwrapExcelCellValue,
 } from '@/modules/pbx-install/shared';
-import { PbxEntityType } from '@/shared';
 import { ParseSmartFieldsService } from '@/modules/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
 
 /** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
@@ -153,7 +152,6 @@ export class ParseSmartService {
             smart.fields = this.parseFieldsService.getFieldsData(
                 fieldsSheet,
                 fieldItemsSheet,
-                PbxEntityType.SMART,
             );
             resultSmarts.push(smart);
         });

@@ -7,8 +7,8 @@ import {
     SmartFieldImportSheetRow,
 } from '../type/sheet-feild.type';
 import { unwrapExcelCellValue } from '../../utils/unwrap-excel-cell.util';
+import { coerceExcelBool } from '../../utils/coerce-bool.util';
 import { Injectable } from '@nestjs/common';
-import { PbxEntityType } from '@/shared';
 
 /**
  * Service for parsing fields from excel file
@@ -20,7 +20,6 @@ export class ParseSmartFieldsService {
     public getFieldsData(
         fieldsSheet: ExcelJS.Worksheet,
         fieldItemsSheet: ExcelJS.Worksheet,
-        entityType: PbxEntityType,
     ): Field[] {
         const fieldsData: SmartFieldImportSheetRow[] = [];
         fieldsSheet.eachRow((row, index) => {
@@ -61,7 +60,7 @@ export class ParseSmartFieldsService {
                     bxFieldName: targetFieldCodeByEntityType,
                     order,
                     isNeedUpdate: true,
-                    isMultiple: multiple?.toLowerCase() === 'true',
+                    isMultiple: coerceExcelBool(multiple),
                 };
 
                 fields.push(field);
@@ -98,21 +97,19 @@ export class ParseSmartFieldsService {
                 item_code,
                 ,
                 item_order,
-                ,
+                item_del,
                 item_isActive,
-                item_isNeedUpdate,
             ] = itemValues;
 
-            if (field_code == code) {
-                if (item_isNeedUpdate && item_isActive) {
-                    listArray.push(
-                        this.getListItem(
-                            item_name,
-                            item_code,
-                            Number(item_order),
-                        ),
-                    );
-                }
+            if (field_code !== code) return;
+            // Полный список активных значений (см. ParseFieldsService.getListItems):
+            // для enumeration в Bitrix нужны все активные элементы, не только isNeedUpdate.
+            const isActive = coerceExcelBool(item_isActive);
+            const isDeleted = String(item_del ?? '').toUpperCase() === 'Y';
+            if (isActive && !isDeleted) {
+                listArray.push(
+                    this.getListItem(item_name, item_code, Number(item_order)),
+                );
             }
         });
 
