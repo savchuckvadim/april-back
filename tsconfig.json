@@ -1,4 +1,14 @@
 {
+  // ============================================================
+  // Родительский tsconfig монорепозитория.
+  // Наследуется ВСЕМИ приложениями (apps/*/tsconfig.app.json)
+  // и библиотеками (libs/*/tsconfig.lib.json) через "extends".
+  //
+  // ВАЖНО: TypeScript НЕ сливает "paths" при extends — дочерний
+  // конфиг полностью заменяет родительский. Поэтому все алиасы
+  // путей держим централизованно ЗДЕСЬ (единый источник правды),
+  // а дочерние конфиги своих "paths" не объявляют.
+  // ============================================================
   "compilerOptions": {
     "jsx": "react-jsx",
     "module": "commonjs",
@@ -9,16 +19,66 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": "./",
     "paths": {
-      "@/*": ["./src/*"],
-      "@apps/*": ["./src/apps/*"],
-      "@pbx": ["./src/modules/pbx/index.ts"],
+      // ---- Библиотеки (канонические алиасы, предпочтительны в новом коде) ----
+      "@lib/shared": ["libs/shared/src"],
+      "@lib/shared/*": ["libs/shared/src/*"],
+      "@lib/core": ["libs/core/src"],
+      "@lib/core/*": ["libs/core/src/*"],
+      "@lib/bitrix": ["libs/bitrix/src"],
+      "@lib/bitrix/*": ["libs/bitrix/src/*"],
+      "@lib/pbx": ["libs/pbx/src"],
+      "@lib/pbx/*": ["libs/pbx/src/*"],
+      "@lib/ai-rag": ["libs/ai-rag/src"],
+      "@lib/ai-rag/*": ["libs/ai-rag/src/*"],
+
+      // ---- Совместимость: старые импорты модулей -> новые библиотеки ----
+      // (переходный слой, чтобы не править сотни импортов сразу;
+      //  постепенно мигрируем на @lib/*)
+      "@/shared": ["libs/shared/src"],
+      "@/shared/*": ["libs/shared/src/*"],
+      "src/shared": ["libs/shared/src"],
+      "src/shared/*": ["libs/shared/src/*"],
+      "@/core": ["libs/core/src"],
+      "@/core/*": ["libs/core/src/*"],
+      "src/core": ["libs/core/src"],
+      "src/core/*": ["libs/core/src/*"],
+      "@/modules/bitrix": ["libs/bitrix/src"],
+      "@/modules/bitrix/*": ["libs/bitrix/src/*"],
+      "src/modules/bitrix": ["libs/bitrix/src"],
+      "src/modules/bitrix/*": ["libs/bitrix/src/*"],
+      "@/modules/pbx": ["libs/pbx/src"],
+      "@/modules/pbx/*": ["libs/pbx/src/*"],
+      "src/modules/pbx": ["libs/pbx/src"],
+      "src/modules/pbx/*": ["libs/pbx/src/*"],
+      "@/modules/ai-rag": ["libs/ai-rag/src"],
+      "@/modules/ai-rag/*": ["libs/ai-rag/src/*"],
+      "src/modules/ai-rag": ["libs/ai-rag/src"],
+      "src/modules/ai-rag/*": ["libs/ai-rag/src/*"],
+      "@pbx": ["libs/pbx/src/index.ts"],
+
+      // ---- Совместимость: вынесенные приложения ----
+      // back ещё импортирует общие DTO kpi-report (kpi-report-ork);
+      // долг: вынести общие типы в библиотеку.
+      "@/apps/kpi-report": ["apps/kpi-report-sales/src"],
+      "@/apps/kpi-report/*": ["apps/kpi-report-sales/src/*"],
+      "src/apps/kpi-report": ["apps/kpi-report-sales/src"],
+      "src/apps/kpi-report/*": ["apps/kpi-report-sales/src/*"],
+
+      // ---- Сгенерированный Prisma client ----
       "@prisma": ["./generated/prisma/index.ts"],
+      "generated/*": ["./generated/*"],
+
+      // ---- Приложение back (apps/back/src) ----
+      // generic-алиасы; стоят последними, перекрываются специфичными выше
+      "@/*": ["./apps/back/src/*"],
+      "@apps/*": ["./apps/back/src/apps/*"],
+      "src/*": ["./apps/back/src/*"]
     },
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

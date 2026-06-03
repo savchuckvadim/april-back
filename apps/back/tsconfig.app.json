@@ -1,0 +1,11 @@
+{
+  // Приложение back. Наследует все настройки и paths из ../../tsconfig.json.
+  // Свои paths НЕ объявляем (иначе перекрыли бы родительские — paths не сливаются).
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "../../dist/apps/back"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

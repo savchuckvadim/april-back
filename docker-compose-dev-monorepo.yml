@@ -1,0 +1,135 @@
+# ============================================================
+# Monorepo dev stack: поднимает все приложения монорепозитория.
+# Каждое приложение собирается из одного Dockerfile.monorepo по build-арг APP
+# (webpack -> dist/apps/<APP>/main.js).
+#
+# Запуск:   docker compose -f docker-compose-dev-monorepo.yml up -d --build
+# Логи:     docker compose -f docker-compose-dev-monorepo.yml logs -f back
+#
+# ENV-стратегия:
+#   - .env (корень)              — ОБЩИЕ переменные для всех приложений (DB, Redis, Bitrix...)
+#   - apps/<app>/.env            — переменные КОНКРЕТНОГО приложения (PORT, SWAGGER_*, ...)
+#   env_file со списком: значения из app-файла переопределяют общие; а
+#   секция environment ниже переопределяет оба (для сетевых имён контейнеров).
+# ============================================================
+
+# Общий шаблон приложения (YAML-якорь), чтобы не дублировать.
+x-app-common: &app-common
+  restart: unless-stopped
+  depends_on:
+    redis:
+      condition: service_healthy
+    db:
+      condition: service_healthy
+  networks:
+    - app-network
+  volumes:
+    - ./keys:/app/keys
+    - ./storage:/app/storage
+
+x-app-env: &app-env
+  NODE_ENV: production
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  DATABASE_URL: mysql://root:cfdx@db:3306/bitrix
+
+services:
+  # ---------------- Приложения монорепо ----------------
+  back:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: Dockerfile.monorepo
+      args:
+        APP: back
+    container_name: app-back
+    env_file:
+      - .env
+    environment:
+      <<: *app-env
+      PORT: 3000
+    ports:
+      - "8334:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  kpi-report-sales:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: Dockerfile.monorepo
+      args:
+        APP: kpi-report-sales
+    container_name: app-kpi-report-sales
+    env_file:
+      - .env
+      - apps/kpi-report-sales/.env
+    environment:
+      <<: *app-env
+      PORT: 3001
+    ports:
+      - "8335:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ---------------- Инфраструктура ----------------
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6334:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+  # Локальная dev-БД. На проде подключаемся к внешней БД через DATABASE_URL.
+  db:
+    image: mysql:8.0
+    container_name: app_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: cfdx
+      MYSQL_DATABASE: bitrix
+      MYSQL_PASSWORD: cfdx
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db_dev:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pcfdx"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Конвертация Office -> PDF (LibreOffice внутри). Nest ходит на http://gotenberg:3000
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    ports:
+      - "33030:3000"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,8 +1,122 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/back/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "builder": "webpack",
+    "tsConfigPath": "apps/back/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/back",
+  "projects": {
+    "admin": {
+      "type": "application",
+      "root": "apps/admin",
+      "entryFile": "main",
+      "sourceRoot": "apps/admin/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/admin/tsconfig.app.json"
+      }
+    },
+    "back": {
+      "type": "application",
+      "root": "apps/back",
+      "entryFile": "main",
+      "sourceRoot": "apps/back/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/back/tsconfig.app.json"
+      }
+    },
+    "bitrix": {
+      "type": "application",
+      "root": "apps/bitrix",
+      "entryFile": "main",
+      "sourceRoot": "apps/bitrix/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/bitrix/tsconfig.app.json"
+      }
+    },
+    "event-sales": {
+      "type": "application",
+      "root": "apps/event-sales",
+      "entryFile": "main",
+      "sourceRoot": "apps/event-sales/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/event-sales/tsconfig.app.json"
+      }
+    },
+    "event-service": {
+      "type": "application",
+      "root": "apps/event-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/event-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/event-service/tsconfig.app.json"
+      }
+    },
+    "konstructor": {
+      "type": "application",
+      "root": "apps/konstructor",
+      "entryFile": "main",
+      "sourceRoot": "apps/konstructor/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/konstructor/tsconfig.app.json"
+      }
+    },
+    "kpi-report-sales": {
+      "type": "application",
+      "root": "apps/kpi-report-sales",
+      "entryFile": "main",
+      "sourceRoot": "apps/kpi-report-sales/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/kpi-report-sales/tsconfig.app.json"
+      }
+    },
+    "kpi-report-service": {
+      "type": "application",
+      "root": "apps/kpi-report-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/kpi-report-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/kpi-report-service/tsconfig.app.json"
+      }
+    },
+    "shared": {
+      "type": "library",
+      "root": "libs/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared/tsconfig.lib.json"
+      }
+    },
+    "core": {
+      "type": "library",
+      "root": "libs/core",
+      "entryFile": "index",
+      "sourceRoot": "libs/core/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/core/tsconfig.lib.json"
+      }
+    },
+    "pbx": {
+      "type": "library",
+      "root": "libs/pbx",
+      "entryFile": "index",
+      "sourceRoot": "libs/pbx/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/pbx/tsconfig.lib.json"
+      }
+    },
+    "ai-rag": {
+      "type": "library",
+      "root": "libs/ai-rag",
+      "entryFile": "index",
+      "sourceRoot": "libs/ai-rag/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ai-rag/tsconfig.lib.json"
+      }
+    }
   }
 }
