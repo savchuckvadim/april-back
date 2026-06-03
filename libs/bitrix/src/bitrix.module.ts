@@ -11,8 +11,6 @@ import { BitrixCoreModule } from './core/bitrix-core.module';
 import { BitrixService } from './bitrix.service';
 import { BitrixServiceFactory } from './bitrix-service.factory';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
-import { BitrixAuthService } from './auth/bitrix-auth.service';
-import { BitrixSetupModule } from '@/modules/bitrix-setup/bitrix-setup.module';
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\bitrix.module.ts
 @Module({
     imports: [
@@ -22,7 +20,6 @@ import { BitrixSetupModule } from '@/modules/bitrix-setup/bitrix-setup.module';
         RedisModule,
         // forwardRef(() => PortalModule),
         BitrixCoreModule,
-        BitrixSetupModule,
         // BitrixDomainModule,
         // BitrixEndpointsModule,
     ],
@@ -31,7 +28,6 @@ import { BitrixSetupModule } from '@/modules/bitrix-setup/bitrix-setup.module';
         RedisService,
         BitrixService,
         BitrixServiceFactory,
-        BitrixAuthService,
         ServiceClonerFactory,
         // BitrixApiFactoryService //fromm bitrix core  module
     ],

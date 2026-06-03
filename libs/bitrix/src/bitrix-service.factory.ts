@@ -1,11 +1,13 @@
-// ..C:\Projects\April\april-next\back\src\modules\bitrix\bitrix-service.factory.ts,
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { BitrixService } from './bitrix.service';
 import { BitrixApiFactoryService } from './core/queue/bitrix-api.factory.service';
 
-import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
-import { BitrixAuthService } from './auth/bitrix-auth.service';
+import { BitrixCredentials } from './core/interface/bitrix-credentials.interface';
+import {
+    BITRIX_TOKEN_PROVIDER,
+    IBitrixTokenProvider,
+} from './auth/bitrix-token-provider.port';
 
 export enum BxAuthType {
     TOKEN = 'token',
@@ -17,26 +19,45 @@ export class BitrixServiceFactory {
     constructor(
         private readonly bitrixApiFactoryService: BitrixApiFactoryService,
         private readonly cloner: ServiceClonerFactory,
-        private readonly authService: BitrixAuthService,
+        // Поставщик токена нужен только для авторизации по TOKEN.
+        // В HOOK-сценарии может отсутствовать — поэтому @Optional().
+        @Optional()
+        @Inject(BITRIX_TOKEN_PROVIDER)
+        private readonly tokenProvider?: IBitrixTokenProvider,
     ) {}
 
     public async create(
-        portal: IPortal,
+        credentials: BitrixCredentials,
         authType: BxAuthType = BxAuthType.HOOK,
     ): Promise<BitrixService> {
         const token =
             authType === BxAuthType.TOKEN
-                ? await this.authService.getFreshToken(portal.domain)
+                ? await this.resolveToken(credentials)
                 : undefined;
+
         const bitrixApi = this.bitrixApiFactoryService.create(
-            portal,
+            credentials,
             authType,
             token,
         );
 
         const instance = new BitrixService(bitrixApi, this.cloner);
 
-        instance.init(portal);
+        instance.init(credentials.domain);
         return instance;
+    }
+
+    private async resolveToken(
+        credentials: BitrixCredentials,
+    ): Promise<string> {
+        if (credentials.accessToken) {
+            return credentials.accessToken;
+        }
+        if (!this.tokenProvider) {
+            throw new Error(
+                'BitrixServiceFactory: для авторизации по TOKEN не сконфигурирован IBitrixTokenProvider (BITRIX_TOKEN_PROVIDER)',
+            );
+        }
+        return this.tokenProvider.getFreshToken(credentials.domain);
     }
 }

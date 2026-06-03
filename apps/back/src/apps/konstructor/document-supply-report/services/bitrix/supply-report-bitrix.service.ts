@@ -18,7 +18,7 @@ export class SupplyReportBitrixService {
     ): Promise<void> {
         try {
             // Инициализируем Bitrix API для портала
-            this.bitrixService.init(portal);
+            this.bitrixService.init(portal.domain);
 
             const message = `<a href="${link}" target="_blank">${fileName}</a>`;
 

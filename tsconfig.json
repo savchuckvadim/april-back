@@ -32,6 +32,8 @@
       "@lib/pbx/*": ["libs/pbx/src/*"],
       "@lib/ai-rag": ["libs/ai-rag/src"],
       "@lib/ai-rag/*": ["libs/ai-rag/src/*"],
+      "@lib/bitrix-auth": ["libs/bitrix-auth/src"],
+      "@lib/bitrix-auth/*": ["libs/bitrix-auth/src/*"],
 
       // ---- Совместимость: старые импорты модулей -> новые библиотеки ----
       // (переходный слой, чтобы не править сотни импортов сразу;

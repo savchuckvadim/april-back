@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { PortalModule } from '@/modules/portal/portal.module';
 import { BitrixModule } from '@/modules/bitrix/bitrix.module';
+import { BitrixAuthModule } from '@lib/bitrix-auth';
 import { PBXService } from './pbx.service';
 // pbx.module.ts
 
 @Module({
-    imports: [PortalModule, BitrixModule],
+    // BitrixAuthModule реализует порт BITRIX_TOKEN_PROVIDER, который
+    // инжектится в BitrixServiceFactory (libs/bitrix) для TOKEN-авторизации.
+    imports: [PortalModule, BitrixModule, BitrixAuthModule],
     providers: [PBXService],
     exports: [PortalModule, BitrixModule, PBXService],
 })

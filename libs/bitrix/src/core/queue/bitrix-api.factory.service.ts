@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
 import { TelegramService } from '@/modules/telegram/telegram.service';
 
 import { BxAuthType } from '../../bitrix-service.factory';
 import { BitrixBaseApi } from '../base/bitrix-base-api';
 import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
+import { BitrixCredentials } from '../interface/bitrix-credentials.interface';
 
 @Injectable()
 export class BitrixApiFactoryService {
@@ -15,15 +15,14 @@ export class BitrixApiFactoryService {
 
     //NEW//
     public create(
-        portal: IPortal,
+        credentials: BitrixCredentials,
         authType: BxAuthType = BxAuthType.HOOK,
         token?: string,
     ): BitrixBaseApi {
-        // const token = authType === BxAuthType.TOKEN ? await this.authService.getFreshToken(portal.domain) : null;
         const api = new BitrixBaseApi(
             this.telegram,
-            portal.domain,
-            portal.key,
+            credentials.domain,
+            credentials.key ?? '',
             token || null,
             authType,
             this.rateLimiter,

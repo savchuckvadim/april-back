@@ -1,4 +1,3 @@
-import { IPortal } from '@/modules/portal/interfaces/portal.interface';
 import { BitrixBaseApi } from './core/base/bitrix-base-api';
 // import { BitrixApiFactoryService } from './core/queue/bitrix-api.factory.service';
 import {
@@ -134,9 +133,8 @@ export class BitrixService {
     ) {
         this.api = bxApi;
     }
-    init(portal: IPortal) {
-        console.log('init BitrixService', portal.domain);
-        // this.api = this.bitrixApiFactoryService.create(portal);
+    init(domain: string) {
+        console.log('init BitrixService', domain);
         this.initDeal();
         this.initLead();
         this.initCompany();

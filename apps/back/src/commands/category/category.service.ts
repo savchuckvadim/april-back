@@ -17,7 +17,7 @@ export class CategoryService {
     ) {}
     async init(domain: string) {
         const portal = await this.portalService.getPortalByDomain(domain);
-        this.bitrix.init(portal);
+        this.bitrix.init(portal.domain);
         this.Portal = await this.portalService.getModelByDomain(domain);
     }
 

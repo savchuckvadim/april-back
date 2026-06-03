@@ -117,6 +117,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/ai-rag/tsconfig.lib.json"
       }
+    },
+    "bitrix-auth": {
+      "type": "library",
+      "root": "libs/bitrix-auth",
+      "entryFile": "index",
+      "sourceRoot": "libs/bitrix-auth/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/bitrix-auth/tsconfig.lib.json"
+      }
     }
   }
 }

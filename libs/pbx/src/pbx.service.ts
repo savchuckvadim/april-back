@@ -16,7 +16,10 @@ export class PBXService {
         const portal = await this.portal.getPortalByDomain(domain);
         const PortalModel = await this.portal.getModelByDomain(domain);
 
-        const bitrix = await this.bitrixFactory.create(portal, authType); // ← полноценный BitrixService
+        const bitrix = await this.bitrixFactory.create(
+            { domain: portal.domain, key: portal.key },
+            authType,
+        ); // ← полноценный BitrixService
 
         return {
             bitrix,
