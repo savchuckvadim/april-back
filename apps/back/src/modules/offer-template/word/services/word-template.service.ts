@@ -6,10 +6,7 @@ import {
 import { OfferTemplateRepository } from '../../offer-template/repositories/offer-template.repository';
 import { OfferTemplatePortalRepository } from '../../portal/repositories/offer-template-portal.repository';
 import { UserSelectedTemplateRepository } from '../../user-selected/repositories/user-selected-template.repository';
-import {
-    StorageService,
-    StorageType,
-} from '@/core/storage/storage.service';
+import { StorageService, StorageType } from '@/core/storage/storage.service';
 import {
     WordTemplate,
     WordTemplateSummary,

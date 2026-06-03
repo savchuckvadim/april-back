@@ -1,9 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
-import {
-    StorageService,
-    StorageType,
-} from '@/core/storage/storage.service';
+import { StorageService, StorageType } from '@/core/storage/storage.service';
 import {
     DOCUMENT_TAGS_FILE_NAME,
     DOCUMENT_TAGS_MIME_TYPE,
