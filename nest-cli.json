@@ -28,13 +28,13 @@
         "tsConfigPath": "apps/back/tsconfig.app.json"
       }
     },
-    "bitrix": {
+    "pbx-install": {
       "type": "application",
-      "root": "apps/bitrix",
+      "root": "apps/pbx-install",
       "entryFile": "main",
-      "sourceRoot": "apps/bitrix/src",
+      "sourceRoot": "apps/pbx-install/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/bitrix/tsconfig.app.json"
+        "tsConfigPath": "apps/pbx-install/tsconfig.app.json"
       }
     },
     "event-sales": {
