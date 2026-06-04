@@ -1,5 +1,5 @@
 import { IBXDeal } from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { getContractPeriodDealData } from './utils/get-contract-period-field.util';
 import { Injectable } from '@nestjs/common';
 export interface IOrkDealPeriodData {

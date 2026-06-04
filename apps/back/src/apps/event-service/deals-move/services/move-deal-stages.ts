@@ -1,6 +1,6 @@
 import { PBXService } from '@/modules/pbx';
-import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

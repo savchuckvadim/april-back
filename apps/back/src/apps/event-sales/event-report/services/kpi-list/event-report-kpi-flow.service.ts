@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { KpiListFlowService } from '../../../shared/kpi-list-flow/services/kpi-list-flow.service';
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';

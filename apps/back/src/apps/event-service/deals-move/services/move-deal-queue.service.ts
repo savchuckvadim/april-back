@@ -1,5 +1,5 @@
 // scheduler.service.ts
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';

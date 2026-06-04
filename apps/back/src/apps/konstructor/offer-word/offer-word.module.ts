@@ -8,9 +8,9 @@ import { OfferWordPdfExportService } from './services/pdf-export/offer-word-pdf-
 import { Module } from '@nestjs/common';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { RedisModule } from '@/core/redis/redis.module';
-import { GarantModule } from '@/modules/garant';
-import { PortalKonstructorModule } from '@/modules/portal-konstructor/portal-konstructor.module';
-import { ProviderModule } from '@/modules/portal-konstructor/provider';
+import { GarantModule } from '@lib/garant';
+import { PortalKonstructorModule } from '@lib/portal-konstructor/portal-konstructor.module';
+import { ProviderModule } from '@lib/portal-konstructor/provider';
 import { StorageModule } from '@/core/storage/storage.module';
 import { FileLinkModule } from '@/core/file-link/file-link.module';
 import { OfferRenderInfoblocksService } from './services/render-data-services/offer-render-infoblocks.service';

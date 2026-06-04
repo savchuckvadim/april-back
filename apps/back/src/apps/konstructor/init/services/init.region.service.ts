@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RegionService } from '@/modules/garant';
+import { RegionService } from '@lib/garant';
 
 @Injectable()
 export class InitRegionService {

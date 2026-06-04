@@ -1,6 +1,6 @@
 import { CreateActDto } from '../ork-act.dto';
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 
 export class OrkOnActCreateTaskService {
     constructor(

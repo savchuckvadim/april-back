@@ -1,8 +1,8 @@
-import { InfoblockModule, InfoblockService } from '@/modules/garant/infoblock';
+import { InfoblockModule, InfoblockService } from '@lib/garant/infoblock';
 import { Module } from '@nestjs/common';
 import { AdminGarantInfoblockController } from './controllers/admin-garant-infoblock.controller';
-import { InfoblockRepository } from '@/modules/garant/infoblock/infoblock.repository';
-import { InfoblockPrismaRepository } from '@/modules/garant/infoblock/infoblock.prisma.repository';
+import { InfoblockRepository } from '@lib/garant/infoblock/infoblock.repository';
+import { InfoblockPrismaRepository } from '@lib/garant/infoblock/infoblock.prisma.repository';
 import { AdminGarantInfoblockPackageController } from './controllers/admin-garant-infoblock-package.controller';
 
 @Module({

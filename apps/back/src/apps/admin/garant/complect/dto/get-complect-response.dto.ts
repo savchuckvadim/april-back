@@ -1,8 +1,8 @@
-import { ComplectEntity } from '@/modules/garant/complect/complect.entity';
+import { ComplectEntity } from '@lib/garant/complect/complect.entity';
 import {
     ComplectProductTypeEnum,
     ComplectTypeEnum,
-} from '@/modules/garant/complect/types/complect.type';
+} from '@lib/garant/complect/types/complect.type';
 import { ApiProperty } from '@nestjs/swagger';
 import { InfoblockResponseDto } from '../../infoblock/dto/infoblock-response.dto';
 

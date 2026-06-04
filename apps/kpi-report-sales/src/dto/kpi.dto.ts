@@ -11,7 +11,7 @@ import {
     IsDate,
 } from 'class-validator';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
+import { IFieldItem } from '@lib/portal/interfaces/portal.interface';
 
 // Wrapper classes for external interfaces
 export class BitrixUser implements IBXUser {

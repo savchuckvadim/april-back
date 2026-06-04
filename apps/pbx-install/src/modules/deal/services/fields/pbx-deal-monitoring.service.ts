@@ -1,7 +1,7 @@
 import { IBXField } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
 import { PbxFieldEntityDto, PortalDealService } from '@/modules/pbx-domain';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 export interface PbxDealMergedField {

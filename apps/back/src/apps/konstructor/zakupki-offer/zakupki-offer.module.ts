@@ -6,7 +6,7 @@ import { StorageModule } from 'src/core/storage/storage.module';
 import { FileLinkModule } from 'src/core/file-link/file-link.module';
 import { LibreOfficeModule } from 'src/modules/libre-office/libre-office.module';
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
-import { GarantModule } from 'src/modules/garant/garant.module';
+import { GarantModule } from '@lib/garant/garant.module';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { ZakupkiOfferProcessor } from './queue/zakupki-offer.processor';
 import { ZakupkiOfferQueueService } from './services/zukupki-offer.queue-service';

@@ -5,10 +5,10 @@ import {
     BitrixAppDto,
     CreateBitrixAppDto,
     GetBitrixAppDto,
-} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+} from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
 import { GetPortalAppsDto } from '../dto/get-app.dto';
-import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
-import { EnabledAppDto } from '@/modules/bitrix-setup/app/dto/enaled-app.dto';
+import { BitrixAppService } from '@lib/bitrix-setup/app/services/bitrix-app.service';
+import { EnabledAppDto } from '@lib/bitrix-setup/app/dto/enaled-app.dto';
 import { CreateAppResponseDto } from '../dto/create-app-response.dto';
 
 @ApiTags('Bitrix App Client App')

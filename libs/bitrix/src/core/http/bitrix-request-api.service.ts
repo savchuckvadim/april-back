@@ -1,7 +1,7 @@
 import { Injectable, Optional, Scope } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { TelegramService } from '@/modules/telegram/telegram.service';
-import { PortalContextService } from 'src/modules/portal/services/portal-context.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
+import { PortalContextService } from '@lib/portal/services/portal-context.service';
 
 @Injectable({ scope: Scope.REQUEST })
 // export class BitrixRequestApiService extends BitrixBaseApi {

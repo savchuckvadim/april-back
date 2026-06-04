@@ -1,5 +1,5 @@
 import { BitrixService, IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
-import { PortalModel } from 'src/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { EventEntityModel } from './event-entity.model';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { Logger } from '@nestjs/common';

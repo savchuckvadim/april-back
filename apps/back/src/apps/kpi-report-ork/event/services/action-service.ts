@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IFieldItem } from 'src/modules/portal/interfaces/portal.interface';
+import { IFieldItem } from '@lib/portal/interfaces/portal.interface';
 import { OrkKpiFilter } from '../dto/kpi.dto';
 import {
     EnumOrkFilterCode,

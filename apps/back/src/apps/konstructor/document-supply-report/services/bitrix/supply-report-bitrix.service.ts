@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import { IPortal } from '@/modules/portal/interfaces/portal.interface';
+import { IPortal } from '@lib/portal/interfaces/portal.interface';
 
 export class SupplyReportBitrixService {
     private readonly logger = new Logger(SupplyReportBitrixService.name);

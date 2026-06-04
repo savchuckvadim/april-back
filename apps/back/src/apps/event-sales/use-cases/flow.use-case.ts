@@ -5,9 +5,9 @@
 
 // import { PlanDto } from '../dto/event-sale-flow/plan.dto';
 // // import { LeadDto } from '../dto/event-sale-flow/lead.dto';
-// // import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
-// // import { PortalModel } from 'src/modules/portal/services/portal.model';
-// import { PortalService } from 'src/modules/portal/portal.service';
+// // import { IPortal } from '@lib/portal/interfaces/portal.interface';
+// // import { PortalModel } from '@lib/portal/services/portal.model';
+// import { PortalService } from '@lib/portal/portal.service';
 // import { PBXService } from '@/modules/pbx';
 // // import { TaskFlowDto, TaskFlowService } from '../shared/task-flow/';
 // import { PlacementDto } from '../dto/event-sale-flow/placement.dto';

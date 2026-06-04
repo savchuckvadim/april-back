@@ -7,9 +7,9 @@ import {
     IBXLead,
 } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
+import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
 import { EventSalesFlowDto } from '../../../dto/event-sale-flow/event-sales-flow.dto';
 import {
     EventReportEntityType,

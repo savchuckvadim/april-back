@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TelegramModule } from '@/modules/telegram/telegram.module';
+import { TelegramModule } from '@lib/telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
 import { PBXModule } from '@/modules/pbx/pbx.module';
 import { EventSalesHookController } from './controllers/hook.controller';

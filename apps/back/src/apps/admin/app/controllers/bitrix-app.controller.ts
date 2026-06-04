@@ -10,15 +10,15 @@ import {
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
+import { BitrixAppService } from '@lib/bitrix-setup/app/services/bitrix-app.service';
 import {
     CreateBitrixAppDto,
     UpdateBitrixAppDto,
     GetBitrixAppDto,
     BitrixAppDto,
-} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
-import { toBitrixAppDto } from '@/modules/bitrix-setup/app/lib/bx-app-dto.mapper';
-import { EnabledAppDto } from '@/modules/bitrix-setup/app/dto/enaled-app.dto';
+} from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
+import { toBitrixAppDto } from '@lib/bitrix-setup/app/lib/bx-app-dto.mapper';
+import { EnabledAppDto } from '@lib/bitrix-setup/app/dto/enaled-app.dto';
 
 @ApiTags('Admin Bitrix App Management')
 @Controller('admin/bitrix-apps')

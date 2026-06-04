@@ -3,7 +3,7 @@ import { DocumentClientBxRqService } from 'src/apps/konstructor/document-generat
 import { BxRqDto } from 'src/apps/konstructor/document-generate/dto/bx-rq/bx-rq.dto';
 import { ClientTypeEnum } from 'src/apps/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from 'src/apps/konstructor/document-generate/type/contract.type';
-import { RqEntity } from 'src/modules/portal-konstructor/provider';
+import { RqEntity } from '@lib/portal-konstructor/provider';
 @Injectable()
 export class ContractRqService {
     constructor(private readonly clientRqService: DocumentClientBxRqService) {}

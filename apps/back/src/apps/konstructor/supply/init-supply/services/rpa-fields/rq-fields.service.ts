@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { IBxRpaItem } from '@/modules/bitrix';
 import { BxRqDto } from '@/apps/konstructor/document-generate/dto/bx-rq/bx-rq.dto';
 import { ClientTypeEnum } from '@/apps/konstructor/document-generate/type/client.type';

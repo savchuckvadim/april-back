@@ -1,10 +1,10 @@
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { PortalDealColdCategoryService } from './portal-deal-cold-category.service';
-import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
+import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
 import {
     IPCategory,
     IStage,
-} from '@/modules/portal/interfaces/portal.interface';
+} from '@lib/portal/interfaces/portal.interface';
 /**
  * Возвращает id полей в заисимости от категории и события
  * в данном случае событие одно - xo

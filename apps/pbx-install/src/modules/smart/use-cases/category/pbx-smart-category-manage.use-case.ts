@@ -8,7 +8,7 @@ import {
     BtxStageResponseDto,
 } from '@/modules/pbx-domain';
 import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { PbxEntityType, PbxEntityTypePrisma } from '@/shared/enums';
 import {
     MANAGE_DOMAIN_ALL,

@@ -4,7 +4,7 @@ import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import {
     IPCategory,
     IPDeal,
-} from '@/modules/portal/interfaces/portal.interface';
+} from '@lib/portal/interfaces/portal.interface';
 
 // interface DealCategory {
 //     code: string;

@@ -2,7 +2,7 @@
 // import { DepartmentEndpointController } from './department.controller';
 // import { DepartmentResolverService } from './services/department-resolver-bitrxi.service';
 // import { RedisModule } from 'src/core/redis/redis.module';
-// import { PortalModule } from 'src/modules/portal/portal.module';
+// import { PortalModule } from '@lib/portal/portal.module';
 // import { BitrixCoreModule } from '../../core/bitrix-core.module';
 // import { DepartmentBitrixService } from '../../domain/department/services/department-bitrxi.service';
 // import { PBXModule } from '@/modules/pbx';

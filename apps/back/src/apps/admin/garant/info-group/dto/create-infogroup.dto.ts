@@ -3,7 +3,7 @@ import { IsString, IsNumber, IsOptional, IsEnum } from 'class-validator';
 import {
     InfogroupType,
     InfogroupProductType,
-} from '@/modules/garant/infogroup/';
+} from '@lib/garant/infogroup/';
 
 export class CreateInfogroupDto {
     @ApiProperty({

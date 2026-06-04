@@ -3,7 +3,7 @@ import { IUserFieldConfig } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
 import { PbxFieldEntity, PbxFieldService } from '@/modules/pbx-domain';
 import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 

@@ -3,10 +3,10 @@ import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { EDepartamentGroup } from 'src/modules/portal/interfaces/portal.interface';
+import { EDepartamentGroup } from '@lib/portal/interfaces/portal.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { PBXService } from '@/modules/pbx';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { BxDepartmentResponseDto } from '../dto/bx-department.dto';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts

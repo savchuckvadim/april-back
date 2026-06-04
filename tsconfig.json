@@ -36,6 +36,18 @@
       "@lib/bitrix-auth/*": ["libs/bitrix-auth/src/*"],
       "@lib/pbx-domain": ["libs/pbx-domain/src"],
       "@lib/pbx-domain/*": ["libs/pbx-domain/src/*"],
+      "@lib/online": ["libs/online/src"],
+      "@lib/online/*": ["libs/online/src/*"],
+      "@lib/telegram": ["libs/telegram/src"],
+      "@lib/telegram/*": ["libs/telegram/src/*"],
+      "@lib/portal-konstructor": ["libs/portal-konstructor/src"],
+      "@lib/portal-konstructor/*": ["libs/portal-konstructor/src/*"],
+      "@lib/garant": ["libs/garant/src"],
+      "@lib/garant/*": ["libs/garant/src/*"],
+      "@lib/bitrix-setup": ["libs/bitrix-setup/src"],
+      "@lib/bitrix-setup/*": ["libs/bitrix-setup/src/*"],
+      "@lib/portal": ["libs/portal/src"],
+      "@lib/portal/*": ["libs/portal/src/*"],
 
       // ---- Совместимость: старые импорты модулей -> новые библиотеки ----
       // (переходный слой, чтобы не править сотни импортов сразу;

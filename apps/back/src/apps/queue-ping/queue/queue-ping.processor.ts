@@ -6,7 +6,7 @@ import { WsService } from 'src/core/ws';
 import { Logger } from '@nestjs/common';
 import { QueuePingUseCase } from '../use-cases/queue-ping.use-case';
 import { QueuePingDto } from '../dto/queue.dto';
-import { PortalService } from 'src/modules/portal/portal.service';
+import { PortalService } from '@lib/portal/portal.service';
 
 @Processor(QueueNames.PING)
 export class QueuePingQueueProcessor {

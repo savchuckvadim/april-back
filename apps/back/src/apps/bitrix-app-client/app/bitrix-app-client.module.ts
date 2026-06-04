@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { BitrixSetupModule } from '@/modules/bitrix-setup/bitrix-setup.module';
+import { BitrixSetupModule } from '@lib/bitrix-setup/bitrix-setup.module';
 import { BitrixAppClientController } from './controllers/bitrix-app-client.controller';
 import { BitrixAppClientService } from './services/bitrix-app-client.service';
 import { UserModule } from '../user/user.module';
 import { ClientModule } from '../client/client.module';
 import { AuthModule } from '../auth/auth.module';
 import { BitrixAppUiController } from './controllers/bitrix-app-ui.controller';
-import { BitrixSetupAppModule } from '@/modules/bitrix-setup/app/bitrix-setup-app.module';
-import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
+import { BitrixSetupAppModule } from '@lib/bitrix-setup/app/bitrix-setup-app.module';
+import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { BitrixAppInstallController } from './controllers/bitrix-app-install.controller';
 import { PBXModule } from '@/modules/pbx';

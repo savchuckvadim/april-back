@@ -1,4 +1,4 @@
-import { SupplyEntity } from '@/modules/garant/supply/supply.entity';
+import { SupplyEntity } from '@lib/garant/supply/supply.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GetSupplyResponseDto {

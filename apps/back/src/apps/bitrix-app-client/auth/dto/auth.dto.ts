@@ -15,7 +15,7 @@ import { UserResponseDto } from '../../user/dto/user-response.dto';
 import { Type } from 'class-transformer';
 import { ClientDto } from '../../client/dto/client-registration.dto';
 import { IsBitrixDomain } from '@/core/decorators/dto/bitrix-domain-validate.decorator';
-import { PortalDto } from '@/modules/portal-konstructor/portal/portal.entity';
+import { PortalDto } from '@lib/portal-konstructor/portal/portal.entity';
 
 export class ClientRegistrationRequestDto {
     @ApiProperty({ description: 'Client name', example: 'Acme Corp' })

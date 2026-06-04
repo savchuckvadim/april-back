@@ -19,7 +19,7 @@ import {
     RegionsDto,
     ComplectDto,
 } from 'src/apps/konstructor/document-generate';
-import { ProviderDto } from '../../../../modules/portal-konstructor/provider';
+import { ProviderDto } from '@lib/portal-konstructor/provider';
 import { ContractDto } from '../../dto/contract.dto';
 import { SupplyDto } from '../../dto';
 

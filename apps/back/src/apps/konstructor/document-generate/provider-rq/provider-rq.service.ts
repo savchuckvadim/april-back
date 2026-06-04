@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RqEntity } from 'src/modules/portal-konstructor/provider';
+import { RqEntity } from '@lib/portal-konstructor/provider';
 
 @Injectable()
 export class ProviderRqService {

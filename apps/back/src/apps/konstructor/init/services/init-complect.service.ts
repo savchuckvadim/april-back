@@ -5,7 +5,7 @@ import {
     InfogroupProductType,
     InfogroupService,
     InfogroupType,
-} from '@/modules/garant';
+} from '@lib/garant';
 import { Injectable } from '@nestjs/common';
 
 export interface IComplects {

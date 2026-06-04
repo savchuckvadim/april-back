@@ -15,7 +15,7 @@ import { BitrixImEventDataService } from './services/parsers/bitrix-im-event-dat
 import { TelegramReplyRouterService } from './services/telegram/telegram-reply-router.service';
 import { BitrixImBridgeCronService } from './services/cron/bitrix-im-bridge-cron.service';
 import { BitrixImBridgeController } from './controllers/bitrix-im-bridge.controller';
-import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
 import { StartBridgeUseCase } from './usecases/start-bridge.use-case';
 import { PollDomainUseCase } from './usecases/poll-domain.use-case';
 import { HandleTelegramWebhookUseCase } from './usecases/handle-telegram-webhook.use-case';

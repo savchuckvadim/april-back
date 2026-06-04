@@ -1,5 +1,5 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

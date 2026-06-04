@@ -1,11 +1,11 @@
-import { ComplectModule, ComplectService } from '@/modules/garant/complect';
+import { ComplectModule, ComplectService } from '@lib/garant/complect';
 import { Module } from '@nestjs/common';
 import { AdminGarantComplectController } from './controllers/admin-garant-complect.controller';
-import { ComplectRepository } from '@/modules/garant/complect/repository/complect.repository';
-import { ComplectPrismaRepository } from '@/modules/garant/complect/repository/complect.prisma.repository';
-import { InfoblockService } from '@/modules/garant';
-import { InfoblockRepository } from '@/modules/garant/infoblock/infoblock.repository';
-import { InfoblockPrismaRepository } from '@/modules/garant/infoblock/infoblock.prisma.repository';
+import { ComplectRepository } from '@lib/garant/complect/repository/complect.repository';
+import { ComplectPrismaRepository } from '@lib/garant/complect/repository/complect.prisma.repository';
+import { InfoblockService } from '@lib/garant';
+import { InfoblockRepository } from '@lib/garant/infoblock/infoblock.repository';
+import { InfoblockPrismaRepository } from '@lib/garant/infoblock/infoblock.prisma.repository';
 
 @Module({
     imports: [ComplectModule],

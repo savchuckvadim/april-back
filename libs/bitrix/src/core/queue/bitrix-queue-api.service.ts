@@ -1,6 +1,6 @@
 // import { HttpService } from '@nestjs/axios';
-// import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
-// import { TelegramService } from 'src/modules/telegram/telegram.service';
+// import { IPortal } from '@lib/portal/interfaces/portal.interface';
+// import { TelegramService } from '@lib/telegram/telegram.service';
 // import { BitrixBaseApi } from '../base/bitrix-base-api';
 // // import { BitrixBaseApiOriginal } from '../base/bitrix-base-api-original';
 

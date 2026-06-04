@@ -5,9 +5,9 @@ import {
     EnumOrkFieldCode,
     EnumOrkResultStatus,
 } from '../type/ork-list-history.enum';
-import { IPBXList } from '@/modules/portal/interfaces/portal.interface';
+import { IPBXList } from '@lib/portal/interfaces/portal.interface';
 import { OrkFieldsType, OrkFieldValue } from '../type/ork-list-history.type';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import {
     OrkHistoryFieldValueDto,
     OrkHistoryFieldItemValueDto,

@@ -17,7 +17,7 @@ import {
     ProductRowSupplyDto,
 } from '../document-generate';
 import { OfferSettingSDto } from './dto/offer-settings.dto';
-import { ProviderDto } from '../../../modules/portal-konstructor/provider/provider.dto';
+import { ProviderDto } from '@lib/portal-konstructor/provider/provider.dto';
 import { InvoiceSettingsDto } from './dto/invoice-settings.dto';
 import { ContractDto } from '../dto/contract.dto';
 

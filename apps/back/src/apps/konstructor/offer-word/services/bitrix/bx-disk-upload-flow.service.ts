@@ -4,7 +4,7 @@ import {
     IBXDiskFolderItem,
     IBXDiskStorageChildItem,
 } from '@/modules/bitrix/domain/disk';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 
 export class BxDiskUploadFlowService {
     private rootStorageId: number | undefined;

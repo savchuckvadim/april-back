@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { toCrmDateTime } from '@/shared/lib/date';
 import { KpiEventPayload } from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
 import {

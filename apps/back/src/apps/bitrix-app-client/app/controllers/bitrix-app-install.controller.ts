@@ -1,13 +1,13 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { BitrixAppService } from '../../../../modules/bitrix-setup/app/services/bitrix-app.service';
+import { BitrixAppService } from '@lib/bitrix-setup/app/services/bitrix-app.service';
 
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { BitrixClientService } from '@/apps/bitrix-app-client/client/services/bitrix-client.service';
-import { BITRIX_APP_CODES } from '../../../../modules/bitrix-setup/app/enums/bitrix-app.enum';
+import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
 import { SetAuthCookie } from '@/core/decorators/auth/set-auth-cookie.decorator';
 import { ConfigService } from '@nestjs/config';
-import { CreateBitrixAppWithTokenDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import { CreateBitrixAppWithTokenDto } from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
 import { InstallAppFromPortalResponseDto } from '../dto/install-app.response.dto';
 import { AuthJwtService } from '../../auth/services/auth-jwt.service';
 

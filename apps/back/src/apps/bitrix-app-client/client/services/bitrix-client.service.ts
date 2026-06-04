@@ -7,7 +7,7 @@ import {
 import { ClientRepository } from '../repositories/client.repository';
 import { UserService } from '../../user/services/user.service';
 import { Client } from 'generated/prisma';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
 
 @Injectable()

@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import {
     BitrixAppDto,
     GetBitrixAppDto,
-} from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
-import { BitrixAppService } from '@/modules/bitrix-setup/app/services/bitrix-app.service';
-import { BitrixTokenService } from '@/modules/bitrix-setup/token/services/bitrix-token.service';
-import { BitrixSettingService } from '@/modules/bitrix-setup/setting/services/bitrix-setting.service';
+} from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
+import { BitrixAppService } from '@lib/bitrix-setup/app/services/bitrix-app.service';
+import { BitrixTokenService } from '@lib/bitrix-setup/token/services/bitrix-token.service';
+import { BitrixSettingService } from '@lib/bitrix-setup/setting/services/bitrix-setting.service';
 import { GetPortalAppsDto } from '../dto/get-app.dto';
-import { toBitrixAppDto } from '@/modules/bitrix-setup/app/lib/bx-app-dto.mapper';
+import { toBitrixAppDto } from '@lib/bitrix-setup/app/lib/bx-app-dto.mapper';
 
 @Injectable()
 export class BitrixAppClientService {

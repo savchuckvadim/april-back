@@ -1,6 +1,6 @@
 import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
 import { Injectable } from '@nestjs/common';
-import { ProviderService } from '@/modules/portal-konstructor/provider';
+import { ProviderService } from '@lib/portal-konstructor/provider';
 
 import {
     IProductRenderData,

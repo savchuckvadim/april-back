@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
     PbxDealCategoryCodeEnum,
     PortalDealServiceStageCodeEnum,
-} from '@/modules/portal/services/types/deals/portal.deal.type';
+} from '@lib/portal/services/types/deals/portal.deal.type';
 import {
     OrkReportCompanyItemDto,
     OrkReportDealItemDto,
@@ -11,12 +11,12 @@ import {
     OrkReportDealsResponseDto,
 } from '../dto/ork-report-deals.dto';
 import { IBXCompany, IBXDeal } from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import {
     IBXFile,
     IBXFileItemField,
 } from '@/modules/bitrix/domain/file/bx-file.interface';
-import { IField } from '@/modules/portal/interfaces/portal.interface';
+import { IField } from '@lib/portal/interfaces/portal.interface';
 
 @Injectable()
 export class OrkDealsReportService {

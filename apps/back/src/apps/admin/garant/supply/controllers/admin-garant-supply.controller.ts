@@ -1,6 +1,6 @@
 import { CreateSupplyDto } from '../dtos/create-supply.dto';
-import { SupplyService } from '@/modules/garant/supply';
-import { SupplyExcelService } from '@/modules/garant/supply/services/supply-excel.service';
+import { SupplyService } from '@lib/garant/supply';
+import { SupplyExcelService } from '@lib/garant/supply/services/supply-excel.service';
 import { StorageService } from '@/core/storage';
 import {
     Controller,

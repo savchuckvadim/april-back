@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { GetRegionResponseDto } from './get-region-response.dto';
 import { IsBoolean } from 'class-validator';
-import { RegionEntity } from '@/modules/garant';
+import { RegionEntity } from '@lib/garant';
 
 export class GetPortalRegionResponseDto extends GetRegionResponseDto {
     constructor(region: RegionEntity, isChecked: boolean) {

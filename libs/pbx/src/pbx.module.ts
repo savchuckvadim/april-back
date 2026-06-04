@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PortalModule } from '@/modules/portal/portal.module';
+import { PortalModule } from '@lib/portal/portal.module';
 import { BitrixModule } from '@/modules/bitrix/bitrix.module';
 import { BitrixAuthModule } from '@lib/bitrix-auth';
 import { PBXService } from './pbx.service';

@@ -1,11 +1,11 @@
 // import { Injectable } from '@nestjs/common';
 // import { CallingCurrentTask, CallingEventDto } from './dto/calling-event.dto';
-// import { IField, IPBXList, IPortal } from 'src/modules/portal/interfaces/portal.interface';
+// import { IField, IPBXList, IPortal } from '@lib/portal/interfaces/portal.interface';
 // import { addHours, addMilliseconds, format } from 'date-fns';
-// import { PortalService } from 'src/modules/portal/portal.service';
+// import { PortalService } from '@lib/portal/portal.service';
 // import { BitrixApiQueueApiService } from 'src/modules/bitrix/core/queue/bitrix-queue-api.service';
-// import { PortalModel } from 'src/modules/portal/services/portal.model';
-// import { TelegramService } from 'src/modules/telegram/telegram.service';
+// import { PortalModel } from '@lib/portal/services/portal.model';
+// import { TelegramService } from '@lib/telegram/telegram.service';
 // import { randomInt } from 'crypto';
 
 // @Injectable()

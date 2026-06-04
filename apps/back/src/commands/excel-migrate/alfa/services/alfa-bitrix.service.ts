@@ -1,7 +1,7 @@
 import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { Injectable } from '@nestjs/common';
 
-import { PortalModel } from 'src/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 
 import { BitrixService, IBXCompany } from 'src/modules/bitrix';
 import { PBXService } from '@/modules/pbx/pbx.service';

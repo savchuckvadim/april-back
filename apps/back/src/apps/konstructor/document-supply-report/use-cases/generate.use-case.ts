@@ -5,7 +5,7 @@ import { SupplyReportDataService } from '../services/data/supply-report-data.ser
 import { SupplyReportTemplateService } from '../services/template/supply-report-template.service';
 import { SupplyReportPdfService } from '../services/pdf/supply-report-pdf.service';
 import { SupplyReportBitrixService } from '../services/bitrix/supply-report-bitrix.service';
-import { PortalService } from '@/modules/portal';
+import { PortalService } from '@lib/portal';
 import { FileLinkService } from '@/core/file-link/file-link.service';
 import dayjs from 'dayjs';
 import { PBXService } from '@/modules/pbx';

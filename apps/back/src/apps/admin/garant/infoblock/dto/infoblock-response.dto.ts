@@ -1,4 +1,4 @@
-import { InfoblockEntity } from '@/modules/garant/infoblock/';
+import { InfoblockEntity } from '@lib/garant/infoblock/';
 import { ApiProperty } from '@nestjs/swagger';
 import { InfogroupResponseDto } from '../../info-group/dto/infogroup-response.dto';
 import { ValidateNested } from 'class-validator';

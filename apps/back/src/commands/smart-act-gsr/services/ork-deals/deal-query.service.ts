@@ -1,7 +1,7 @@
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
-import { PortalModel } from '@/modules/portal/services/portal.model';
-import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
+import { PortalModel } from '@lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
 import { delay } from '@/shared';
 import { Injectable } from '@nestjs/common';
 import { DealFilterType } from './types/deal-filter.type';

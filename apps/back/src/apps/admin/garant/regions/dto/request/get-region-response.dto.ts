@@ -1,4 +1,4 @@
-import { RegionEntity } from '@/modules/garant';
+import { RegionEntity } from '@lib/garant';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GetRegionResponseDto extends RegionEntity {

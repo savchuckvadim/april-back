@@ -3,7 +3,7 @@ import {
     IBXProductRow,
     IBXProductRowRow,
 } from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { ListProductRowDto } from '@/modules/bitrix/domain/crm/product-row/dto/list-product-row.sto';
 import { isSmartActProductRowSyncEnabled } from './smart-product-row.config';
 import {

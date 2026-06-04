@@ -1,4 +1,4 @@
-import { BITRIX_APP_CODES } from '@/modules/bitrix-setup/app/enums/bitrix-app.enum';
+import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
 

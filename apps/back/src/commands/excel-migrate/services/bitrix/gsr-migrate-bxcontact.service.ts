@@ -1,7 +1,7 @@
 import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { Contact, MigrateToBxDto } from '../../dto/migrate-to-bx.dto';
 import { GsrMigrateBitrixAbstract } from './gsr-migrate-bitrix-abstract.service';
-import { IField } from 'src/modules/portal/interfaces/portal.interface';
+import { IField } from '@lib/portal/interfaces/portal.interface';
 import { delay } from '@/shared/lib';
 
 export class GsrMigrateBitrixContactService extends GsrMigrateBitrixAbstract {

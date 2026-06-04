@@ -1,4 +1,4 @@
-import { InfoblockEntity, InfoblockService } from '@/modules/garant/infoblock';
+import { InfoblockEntity, InfoblockService } from '@lib/garant/infoblock';
 import { Injectable } from '@nestjs/common';
 import { ComplectDto } from '../dto';
 import { getRegionInfoblockData } from './utils/region-infoblock.util';

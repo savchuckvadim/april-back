@@ -12,7 +12,7 @@ import { StorageModule } from 'src/core/storage/storage.module';
 import { YandexModule } from 'src/clients/yandex/yandex.module';
 import { TranscriptionService } from './services/transcription.service';
 import { FileStorageService } from './services/file-storage.service';
-import { OnlineClientModule } from 'src/clients/online';
+import { OnlineClientModule } from '@lib/online';
 import { TranscriptionRepository } from './repository/transcription.repository';
 import { TranscriptionPrismaRepository } from './repository/transcription.prisma.repository';
 import { TranscriptionStoreService } from './services/transcription.store.service';

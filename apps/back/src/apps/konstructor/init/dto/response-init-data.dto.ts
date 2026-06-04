@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IComplects } from '../services/init-complect.service';
 import { IInfoblock, IInfoGroups } from '../services/init-infoblock.service';
-import { RegionEntity } from '@/modules/garant';
+import { RegionEntity } from '@lib/garant';
 import { IComplect } from '../services/init-complect.service';
 import { IKonstruktorInit } from '../konstructor-init.use-case';
 import { ProductRowContractDto } from '../../document-generate';

@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { PortalModel } from '@/modules/portal/services/portal.model';
-import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
+import { PortalModel } from '@lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
 import {
     IPCategory,
     IStage,
-} from '@/modules/portal/interfaces/portal.interface';
+} from '@lib/portal/interfaces/portal.interface';
 
 /**
  * Работает с данными Portal Deal из db

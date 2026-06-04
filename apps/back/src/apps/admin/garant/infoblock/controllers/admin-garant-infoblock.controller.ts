@@ -1,7 +1,7 @@
 import {
     InfoblockEntityDto,
     InfoblockService,
-} from '@/modules/garant/infoblock';
+} from '@lib/garant/infoblock';
 import {
     Controller,
     Get,

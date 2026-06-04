@@ -13,7 +13,7 @@ import { InitSupplyRpaPbxItemsFieldsService } from './services/rpa-fields/pbx-it
 import { InitSupplyFileService } from './services/file/init-supply-file.service';
 import { InitSupplyTimelineCommentService } from './services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { ProviderCommentService } from './services/rpa-timeline-comment/provider-comment.service';
-import { ProviderModule } from '@/modules/portal-konstructor/provider';
+import { ProviderModule } from '@lib/portal-konstructor/provider';
 import { ArmCommentService } from './services/rpa-timeline-comment/arm-comment.service';
 import { RqCommentService } from './services/rpa-timeline-comment/rq-comment.service';
 import { InfoblockConsaltingService } from './services/rpa-timeline-comment/infoblock/infoblock-consalting.service';
@@ -24,7 +24,7 @@ import { InfoblockLtService } from './services/rpa-timeline-comment/infoblock/in
 import { InfoblocksCommentService } from './services/rpa-timeline-comment/infoblocks-comment.service';
 import { ContractCommentService } from './services/rpa-timeline-comment/contract-comment.service';
 import { TotalSumCommentService } from './services/rpa-timeline-comment/total-comment.service';
-import { TelegramModule } from '@/modules/telegram/telegram.module';
+import { TelegramModule } from '@lib/telegram/telegram.module';
 
 @Module({
     imports: [PBXModule, ProviderModule, TelegramModule],

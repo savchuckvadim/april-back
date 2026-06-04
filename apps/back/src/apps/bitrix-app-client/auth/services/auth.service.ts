@@ -21,7 +21,7 @@ import { compare } from '@/shared/lib/utils/crypt.util';
 import { CookieService } from '@/core/cookie/cookie.service';
 import { Response } from 'express';
 import { User } from 'generated/prisma';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { TokenService } from '../token/token.service';
 import { jwtConstants } from '../constants/jwt.constants';
 import { AuthJwtService } from './auth-jwt.service';

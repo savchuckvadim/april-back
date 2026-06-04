@@ -1,6 +1,6 @@
 import { BitrixService, IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IColdCallData } from '../type/cold-hook-silence.interface';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import {
     ColdCallBxEntityFlowService,
     IColdCallBxEntityData,

@@ -9,7 +9,7 @@ import {
     DealPerodDataService,
     IOrkDealPeriodData,
 } from './ork-deals/deal-perod-data.service';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { delay } from '@/shared';
 
 export interface IOrkDeal {

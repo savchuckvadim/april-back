@@ -1,4 +1,4 @@
-import { InfoblockService } from '@/modules/garant/infoblock';
+import { InfoblockService } from '@lib/garant/infoblock';
 import {
     Controller,
     Post,

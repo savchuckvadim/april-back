@@ -12,7 +12,7 @@ import { ExcelReportService } from './services/kpi-report/kpi-report.service';
 import { Response } from 'express';
 import { DownLoadKpiReportDto } from './dto/get-excel-report.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-// import { TelegramService } from '@/modules/telegram/telegram.service';
+// import { TelegramService } from '@lib/telegram/telegram.service';
 
 @ApiTags('KPI Sales Report Download')
 @Controller('kpi-report')

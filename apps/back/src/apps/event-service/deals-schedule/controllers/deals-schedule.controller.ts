@@ -1,6 +1,6 @@
 // import { Controller, Get, Logger } from '@nestjs/common';
 // import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
-// import { TelegramService } from '@/modules/telegram/telegram.service';
+// import { TelegramService } from '@lib/telegram/telegram.service';
 // import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 // import { JobNames } from '@/modules/queue/constants/job-names.enum';
 // import { ApiTags } from '@nestjs/swagger';

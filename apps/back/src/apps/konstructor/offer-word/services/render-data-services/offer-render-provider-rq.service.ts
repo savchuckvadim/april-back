@@ -1,4 +1,4 @@
-import { RqEntity } from '@/modules/portal-konstructor/provider';
+import { RqEntity } from '@lib/portal-konstructor/provider';
 import { Injectable } from '@nestjs/common';
 
 export interface IProviderRqRenderData {

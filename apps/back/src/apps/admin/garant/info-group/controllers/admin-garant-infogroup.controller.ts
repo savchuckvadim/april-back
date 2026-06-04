@@ -1,4 +1,4 @@
-import { InfogroupService } from '@/modules/garant/infogroup';
+import { InfogroupService } from '@lib/garant/infogroup';
 import {
     Controller,
     Get,

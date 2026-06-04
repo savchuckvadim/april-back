@@ -1,9 +1,9 @@
 import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';
 import { findPbxSalesEventField } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
-import { IField } from '@/modules/portal/interfaces/portal.interface';
+import { IField } from '@lib/portal/interfaces/portal.interface';
 import { Logger } from '@nestjs/common';
 
 export class EventEntityModel {

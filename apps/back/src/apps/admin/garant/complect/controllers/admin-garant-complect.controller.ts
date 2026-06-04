@@ -1,4 +1,4 @@
-import { CreateComplectDto, ComplectService } from '@/modules/garant/complect';
+import { CreateComplectDto, ComplectService } from '@lib/garant/complect';
 import {
     Controller,
     Get,

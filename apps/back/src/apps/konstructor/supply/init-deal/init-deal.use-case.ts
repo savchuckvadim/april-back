@@ -12,10 +12,10 @@ import {
     IPDeal,
     IPSmart,
     IRPA,
-} from '@/modules/portal/interfaces/portal.interface';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+} from '@lib/portal/interfaces/portal.interface';
+import { PortalModel } from '@lib/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
 import {
     EnumOrkEventAction,

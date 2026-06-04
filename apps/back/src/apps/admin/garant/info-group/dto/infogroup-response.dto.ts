@@ -2,7 +2,7 @@ import {
     InfogroupEntity,
     InfogroupProductType,
     InfogroupType,
-} from '@/modules/garant/infogroup/entity/infogroup.entity';
+} from '@lib/garant/infogroup/entity/infogroup.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { GetInfoblockLightResponseDto } from '../../infoblock/dto/get-infoblock-light-response.dto';
 import { ValidateNested } from 'class-validator';

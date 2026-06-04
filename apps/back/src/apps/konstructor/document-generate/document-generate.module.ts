@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { DocumentInfoblockService } from './infoblocks/infoblock.service';
 import { DocumentClientBxRqService } from './bx-client-rq/bx-client-rq.service';
 import { InfoblocksRenderDataService } from './infoblocks/infoblock-render-data.service';
-import { GarantModule } from '@/modules/garant';
+import { GarantModule } from '@lib/garant';
 import { DocumentProductRowService } from './product-rows/product-row.service';
 @Module({
     imports: [GarantModule],

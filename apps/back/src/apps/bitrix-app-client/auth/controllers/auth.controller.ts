@@ -29,7 +29,7 @@ import { RefreshGuard } from '../guard/jwt-refresh.guard';
 import { Response } from 'express';
 import { UserResponseDto } from '../../user/dto/user-response.dto';
 import { UserService } from '../../user/services/user.service';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { AuthRequest } from '../interfaces/auth-request.interface';
 
 @ApiTags('Auth')

@@ -3,7 +3,7 @@ import {
     InfoblockEntity,
     InfogroupEntity,
     InfogroupService,
-} from '@/modules/garant';
+} from '@lib/garant';
 
 export interface IInfoGroups {
     id: number;

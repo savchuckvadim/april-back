@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { DepartmentResolverService } from './services/department-resolver-bitrxi.service';
 import { DomainDto } from './dto/domain.dto';
-import { EDepartamentGroup } from 'src/modules/portal/interfaces/portal.interface';
+import { EDepartamentGroup } from '@lib/portal/interfaces/portal.interface';
 import { ApiTags } from '@nestjs/swagger';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\department.controller.ts

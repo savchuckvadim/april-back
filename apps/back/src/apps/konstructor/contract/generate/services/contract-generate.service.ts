@@ -13,7 +13,7 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 import {
     ProviderService,
     RqEntity,
-} from '../../../../../modules/portal-konstructor/provider';
+} from '@lib/portal-konstructor/provider';
 // import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
 
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';

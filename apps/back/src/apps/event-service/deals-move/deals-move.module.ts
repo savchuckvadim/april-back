@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TelegramModule } from '@/modules/telegram/telegram.module';
+import { TelegramModule } from '@lib/telegram/telegram.module';
 import { MoveDealStagesService } from './services/move-deal-stages';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { EventServiceMoveDealStagesProcessor } from './processor/move-deal-stges.processor';

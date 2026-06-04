@@ -135,6 +135,60 @@
       "compilerOptions": {
         "tsConfigPath": "libs/pbx-domain/tsconfig.lib.json"
       }
+    },
+    "online": {
+      "type": "library",
+      "root": "libs/online",
+      "entryFile": "index",
+      "sourceRoot": "libs/online/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/online/tsconfig.lib.json"
+      }
+    },
+    "telegram": {
+      "type": "library",
+      "root": "libs/telegram",
+      "entryFile": "index",
+      "sourceRoot": "libs/telegram/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/telegram/tsconfig.lib.json"
+      }
+    },
+    "portal-konstructor": {
+      "type": "library",
+      "root": "libs/portal-konstructor",
+      "entryFile": "index",
+      "sourceRoot": "libs/portal-konstructor/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/portal-konstructor/tsconfig.lib.json"
+      }
+    },
+    "garant": {
+      "type": "library",
+      "root": "libs/garant",
+      "entryFile": "index",
+      "sourceRoot": "libs/garant/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/garant/tsconfig.lib.json"
+      }
+    },
+    "bitrix-setup": {
+      "type": "library",
+      "root": "libs/bitrix-setup",
+      "entryFile": "index",
+      "sourceRoot": "libs/bitrix-setup/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/bitrix-setup/tsconfig.lib.json"
+      }
+    },
+    "portal": {
+      "type": "library",
+      "root": "libs/portal",
+      "entryFile": "index",
+      "sourceRoot": "libs/portal/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/portal/tsconfig.lib.json"
+      }
     }
   }
 }

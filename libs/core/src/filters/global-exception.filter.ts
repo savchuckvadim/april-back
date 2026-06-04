@@ -9,7 +9,7 @@ import {
     Optional,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import * as path from 'path';
 import { ApiResponse, EResultCode } from '../interfaces/response.interface';
 

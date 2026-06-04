@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from 'src/core/redis/redis.service';
 import { FileStorageService } from './file-storage.service';
 import { StreamingTranscriptionService } from './streaming-transcription.service';
-import { OnlineTranscriptionService } from 'src/clients/online';
+import { OnlineTranscriptionService } from '@lib/online';
 import { TranscriptionStoreService } from './transcription.store.service';
 
 @Injectable()

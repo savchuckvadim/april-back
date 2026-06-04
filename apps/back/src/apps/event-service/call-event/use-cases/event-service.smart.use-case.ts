@@ -1,13 +1,13 @@
 // import { Injectable } from '@nestjs/common';
-// import { PortalService } from 'src/modules/portal/portal.service';
+// import { PortalService } from '@lib/portal/portal.service';
 // import { BXContactService } from 'src/modules/bitrix/bx-contact.service';
 // import { BXSmartService } from 'src/modules/bitrix/bx-smart.service';
 // import { BXCompanyService } from 'src/modules/bitrix/bx-company.service';
 // import { BXTaskService } from 'src/modules/bitrix/bx-task.service';
 // import { BXListService } from 'src/modules/bitrix/bx-list.service';
 // import { CallingEventDto } from '../dto/calling-event.dto';
-// import { IPSmart } from 'src/modules/portal/interfaces/portal.interface';
-// import { PortalModel } from 'src/modules/portal/services/portal.model';
+// import { IPSmart } from '@lib/portal/interfaces/portal.interface';
+// import { PortalModel } from '@lib/portal/services/portal.model';
 // @Injectable()
 // export class EventSmartReportService {
 //     private domain: string;

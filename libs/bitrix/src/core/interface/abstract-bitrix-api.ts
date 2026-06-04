@@ -6,9 +6,9 @@ import {
 import { BXApiSchema } from '../domain';
 import { TBXRequest } from '../domain';
 import { TBXResponse } from '../domain';
-import { IPortal } from 'src/modules/portal/interfaces/portal.interface';
+import { IPortal } from '@lib/portal/interfaces/portal.interface';
 
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { HttpService } from '@nestjs/axios';
 
 export abstract class AbstractBitrixApi {

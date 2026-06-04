@@ -7,7 +7,7 @@ import {
     BtxStageResponseDto,
 } from '@/modules/pbx-domain/category';
 import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { PbxEntityType } from '@/shared/enums';
 import {
     BxCategoryRow,

@@ -6,7 +6,7 @@ import {
     IBXStatus,
 } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
-import { IPSmart } from '@/modules/portal/interfaces/portal.interface';
+import { IPSmart } from '@lib/portal/interfaces/portal.interface';
 import { Injectable } from '@nestjs/common';
 
 export interface ICategorySmartActData {

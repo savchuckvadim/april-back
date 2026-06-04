@@ -2,7 +2,7 @@
 import { Module } from '@nestjs/common';
 
 import { RedisModule } from 'src/core/redis/redis.module';
-import { TelegramModule } from 'src/modules/telegram/telegram.module';
+import { TelegramModule } from '@lib/telegram/telegram.module';
 import { HttpModule } from '@nestjs/axios';
 import { BitrixApiFactoryService } from './queue/bitrix-api.factory.service';
 import { BitrixRateLimiterService } from './rate-limit/bitrix-rate-limiter.service';

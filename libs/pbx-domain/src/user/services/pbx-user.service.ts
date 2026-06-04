@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PbxUserRepository } from '../repositories/pbx-user.repository';
 import { PbxUserEntityDto } from '../dto/pbx-user-entity.dto';
 import { PbxUserUpdateDto } from '../dto/pbx-user-update.dto';
-import { PortalStoreService } from 'src/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 
 @Injectable()
 export class PbxUserService {

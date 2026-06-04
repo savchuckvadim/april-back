@@ -1,4 +1,4 @@
-import { InfoblockEntity } from '@/modules/garant/infoblock/infoblock.entity';
+import { InfoblockEntity } from '@lib/garant/infoblock/infoblock.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**

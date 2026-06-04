@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { PortalCompanyService } from '@/modules/pbx-domain';
 import { PbxEntityType } from '@/shared';
 import { PBXService } from '@/modules/pbx';

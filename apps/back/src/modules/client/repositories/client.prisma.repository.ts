@@ -3,7 +3,7 @@ import { Client } from 'generated/prisma';
 import { PrismaService } from '@/core/prisma';
 import { ClientRepository } from './client.repository';
 import { ClientWithRelations } from '../entity/client.entity';
-import { createPortalEntityFromPrisma } from '@/modules/portal-konstructor/portal/lib/portal-entity.util';
+import { createPortalEntityFromPrisma } from '@lib/portal-konstructor/portal/lib/portal-entity.util';
 
 @Injectable()
 export class ClientPrismaRepository implements ClientRepository {

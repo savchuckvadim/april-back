@@ -4,7 +4,7 @@ import { FioT } from 'lvovich/lib/gender';
 import { ClientTypeEnum } from 'src/apps/konstructor/document-generate/type/client.type';
 import { Injectable } from '@nestjs/common';
 import { ContractRqService } from './contract-rq.service';
-import { RqEntity } from 'src/modules/portal-konstructor/provider';
+import { RqEntity } from '@lib/portal-konstructor/provider';
 
 @Injectable()
 export class ContractRqHeaderService {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { PBXService } from '@/modules/pbx';
 import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
 import { GetPbxSmartUseCase } from './get-pbx-smart.use-case';

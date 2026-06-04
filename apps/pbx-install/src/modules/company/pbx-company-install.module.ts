@@ -1,5 +1,5 @@
 import { PBXModule } from '@/modules/pbx';
-import { PortalStoreModule } from '@/modules/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
 import { Module } from '@nestjs/common';
 import { PbxCompanyMonitoringService } from './services/pbx-company-monitoring.service';
 import { PbxCompanyInstallMonitoringController } from './controllers/pbx-comapany-install-monitoring.controller';

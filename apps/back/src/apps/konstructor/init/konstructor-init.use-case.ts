@@ -9,7 +9,7 @@ import {
     InitInfoblockService,
 } from './services/init-infoblock.service';
 import { InitRegionService } from './services/init.region.service';
-import { RegionEntity, SupplyService } from '@/modules/garant';
+import { RegionEntity, SupplyService } from '@lib/garant';
 import {
     ComplectsDto,
     ContractsDto,
@@ -18,10 +18,10 @@ import {
     KonstructorInitDataDto,
     RegionInitDto,
 } from './dto/response-init-data.dto';
-import { ContractService } from '@/modules/garant/contract/contract.service';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { ContractService } from '@lib/garant/contract/contract.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { ContractDto } from '../dto/contract.dto';
-import { PortalContractEntity } from '@/modules/garant/contract/portal-contract.entity';
+import { PortalContractEntity } from '@lib/garant/contract/portal-contract.entity';
 import { CONTRACT_CODE } from '../document-generate/type/contract.type';
 
 export interface IKonstruktorInit {

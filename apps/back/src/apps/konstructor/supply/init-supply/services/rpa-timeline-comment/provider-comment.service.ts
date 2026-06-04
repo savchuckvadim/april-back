@@ -1,4 +1,4 @@
-import { ProviderService } from '@/modules/portal-konstructor/provider';
+import { ProviderService } from '@lib/portal-konstructor/provider';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
 import {
     RpaCommentHelper,

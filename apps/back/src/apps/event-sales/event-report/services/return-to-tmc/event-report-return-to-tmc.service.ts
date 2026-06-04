@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@/modules/portal/services/portal.model';
-import { PbxDealCategoryCodeEnum } from '@/modules/portal/services/types/deals/portal.deal.type';
+import { PortalModel } from '@lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
 import { EventReportContext } from '../context/event-report.context';
 import { composeStageId } from '../deal/deal-target-stage.calculator';
 

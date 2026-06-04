@@ -4,7 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { PrismaModule } from '@/core/prisma/prisma.module';
-import { TelegramModule } from '@/modules/telegram/telegram.module';
+import { TelegramModule } from '@lib/telegram/telegram.module';
 import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
 
 import { KpiReportModule } from './kpi-report.module';

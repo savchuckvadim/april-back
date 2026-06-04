@@ -7,7 +7,7 @@
 // import { AlfaHookController } from './alfa-activity.controller';
 // import { SilentJobHandlersModule } from 'src/core/silence/silent-job-handlers.module';
 
-// import { TelegramModule } from 'src/modules/telegram/telegram.module';
+// import { TelegramModule } from '@lib/telegram/telegram.module';
 // import { HttpModule } from '@nestjs/axios';
 // import { AlfaActivityHookService } from './services/alfa-activity-hook.service';
 // import { PBXModule } from 'src/modules/pbx/pbx.module';

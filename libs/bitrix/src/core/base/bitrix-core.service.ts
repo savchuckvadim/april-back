@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as https from 'https';
-import { TelegramService } from '@/modules/telegram/telegram.service';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { BxAuthType } from './bx-auth-type.enum';
 import { Semaphore } from './semaphor';
 import { delay } from '@/shared/lib';

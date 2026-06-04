@@ -6,7 +6,7 @@ import {
     PortalCategoryEntity,
 } from '@/modules/pbx-domain/category';
 import { PbxEntityTypePrisma } from '@/shared/enums';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { bigintConvertToNumber } from '@/shared';
 import { Prisma } from 'generated/prisma';
 import { getPortalSmartEntity } from './utils/portal-smart-entity.util';

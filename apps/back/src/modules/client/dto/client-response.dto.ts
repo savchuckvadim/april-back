@@ -1,6 +1,6 @@
 import { AdminPortalResponseDto } from '@/apps/admin/portal/dto/portal-response.dto';
 import { UserResponseDto } from '@/apps/bitrix-app-client/user/dto/user-response.dto';
-import { BitrixAppDto } from '@/modules/bitrix-setup/app/dto/bitrix-app.dto';
+import { BitrixAppDto } from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Client } from 'generated/prisma';
 

@@ -5,7 +5,7 @@ import { InitSupplyUseCase } from './supply/init-supply/init-supply.use-case';
 import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
 import { ContractGenerateModule } from './contract/generate/contract-generate.module';
 import { OfferModule } from './offer/offer.module';
-import { GarantModule } from 'src/modules/garant/garant.module';
+import { GarantModule } from '@lib/garant/garant.module';
 import { KonstructorInitModule } from './init/konstructor-init.module';
 import { PBXModule } from '@/modules/pbx';
 import { InitSupplyModule } from './supply/init-supply/init-supply.module';

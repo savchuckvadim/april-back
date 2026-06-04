@@ -1,10 +1,10 @@
-import { RegionService } from '@/modules/garant';
+import { RegionService } from '@lib/garant';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { GetPortalRegionResponseDto } from '../dto/request/get-portal-region-response.dto';
 import { Prisma } from 'generated/prisma';
 import { CreatePortalRegionDtoAdminRequest } from '../dto/request/create-portal-region-request.dto';
 import { UpdatePortalRegionDtoAdmin } from '../dto/request/update-portal-region-request.dto';
-import { PortalStoreService } from '@/modules/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 
 @Injectable()
 export class PortalRegionService {

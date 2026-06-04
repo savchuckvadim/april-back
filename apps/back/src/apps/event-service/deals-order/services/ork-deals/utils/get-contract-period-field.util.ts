@@ -1,6 +1,6 @@
 import { IBXDeal } from '@/modules/bitrix';
-import { IFieldCode } from '@/modules/portal/interfaces/portal.interface';
-import { PortalModel } from '@/modules/portal/services/portal.model';
+import { IFieldCode } from '@lib/portal/interfaces/portal.interface';
+import { PortalModel } from '@lib/portal/services/portal.model';
 
 export const getContractPeriodFieldBitrixId = (
     portal: PortalModel,

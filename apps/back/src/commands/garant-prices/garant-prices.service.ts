@@ -1,5 +1,5 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import { APIOnlineClient } from 'src/clients/online';
+import { APIOnlineClient } from '@lib/online';
 import { GarantPricesParseService } from './services/excel-parse/garant-prices-parse.service';
 import { StorageService, StorageType } from 'src/core/storage';
 @Injectable()

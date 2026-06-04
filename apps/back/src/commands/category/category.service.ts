@@ -5,8 +5,8 @@ import {
     GetStagesDto,
 } from './dto/get-category.dto';
 import { BitrixService } from 'src/modules/bitrix/bitrix.service';
-import { PortalService } from 'src/modules/portal/portal.service';
-import { PortalModel } from 'src/modules/portal/services/portal.model';
+import { PortalService } from '@lib/portal/portal.service';
+import { PortalModel } from '@lib/portal/services/portal.model';
 
 @Injectable()
 export class CategoryService {
