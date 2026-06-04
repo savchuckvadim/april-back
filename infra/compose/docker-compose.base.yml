@@ -1,0 +1,80 @@
+# ============================================================
+# Monorepo DEV stack: поднимает ВСЕ приложения монорепо локально.
+# Каждое приложение собирается из общего infra/docker/Dockerfile по build-арг APP
+# (webpack -> dist/apps/<APP>/main.js). Если у app есть собственный
+# infra/docker/<app>/Dockerfile — задайте его в build.dockerfile этого сервиса.
+#
+# Запуск (из каталога infra/compose):
+#   docker compose -f docker-compose.dev.yml up -d --build
+# Пересборка ОДНОГО приложения (остальные не трогаются):
+#   docker compose -f docker-compose.dev.yml up -d --no-deps --build admin
+# Логи:
+#   docker compose -f docker-compose.dev.yml logs -f back
+#
+# ENV-стратегия:
+#   - ../../.env             — ОБЩИЕ переменные (DB, Redis, Bitrix...) для всех apps
+#   - ../../apps/<app>/.env  — переменные КОНКРЕТНОГО app (PORT, SWAGGER_*, флаги)
+#     (required:false — если файла нет, не падаем; PORT всё равно задан в environment)
+#   секция environment переопределяет env_file (сетевые имена контейнеров, PORT).
+# ============================================================
+
+
+
+x-healthcheck: &app-healthcheck
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 40s
+
+services:
+  # ---------------- Приложения монорепо ----------------
+  # ---------------- Инфраструктура ----------------
+  redis:
+    image: redis:7
+    container_name: redis
+    ports: ["6379:6379"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+  # Локальная dev-БД. На проде подключаемся к внешней БД через DATABASE_URL.
+  db:
+    image: mysql:8.0
+    container_name: app_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: cfdx
+      MYSQL_DATABASE: bitrix
+      MYSQL_PASSWORD: cfdx
+    ports: ["3306:3306"]
+    volumes:
+      - db_data:/var/lib/mysql
+      - ../../db_dev:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pcfdx"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Конвертация Office -> PDF (LibreOffice внутри). Nest ходит на http://gotenberg:3000
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    ports: ["33030:3000"]
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,8 +1,7 @@
-import { NestFactory } from '@nestjs/core';
+import { bootstrapApp } from '@/core';
 import { KpiReportServiceModule } from './kpi-report-service.module';
 
-async function bootstrap() {
-    const app = await NestFactory.create(KpiReportServiceModule);
-    await app.listen(process.env.port ?? 3000);
-}
-bootstrap();
+bootstrapApp(KpiReportServiceModule, {
+    name: 'kpi-report-service',
+    defaultPort: 3003,
+}).catch(console.error);

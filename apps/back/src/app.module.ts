@@ -69,7 +69,7 @@ const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
 
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: '.env',
+            envFilePath: ['apps/back/.env', '.env'],
             ignoreEnvFile: false,
             load: [
                 () => ({

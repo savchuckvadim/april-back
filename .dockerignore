@@ -40,3 +40,8 @@ Dockerfile copy
 docker-compose copy.yml
 AUTH_ANALYSIS.md
 
+# infra: в образ не нужны compose-файлы и архив legacy
+# (сам Dockerfile берётся через -f infra/docker/Dockerfile, контекст — корень репо)
+infra/compose
+infra/legacy
+

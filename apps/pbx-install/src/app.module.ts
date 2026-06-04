@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
+import { HealthModule } from '@/core';
 import { PBXInstallModule } from './modules/pbx-install.module';
 
 /**
@@ -15,7 +16,7 @@ import { PBXInstallModule } from './modules/pbx-install.module';
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: '.env',
+            envFilePath: ['apps/pbx-install/.env', '.env'],
             ignoreEnvFile: false,
             load: [
                 () => ({
@@ -28,6 +29,7 @@ import { PBXInstallModule } from './modules/pbx-install.module';
             ],
         }),
         PrismaModule,
+        HealthModule,
         PBXInstallModule,
     ],
     providers: [GlobalExceptionFilter],

@@ -1,19 +1,25 @@
 # ============================================================
-# Monorepo dev stack: поднимает все приложения монорепозитория.
-# Каждое приложение собирается из одного Dockerfile.monorepo по build-арг APP
-# (webpack -> dist/apps/<APP>/main.js).
+# Monorepo DEV stack: поднимает ВСЕ приложения монорепо локально.
+# Каждое приложение собирается из общего infra/docker/Dockerfile по build-арг APP
+# (webpack -> dist/apps/<APP>/main.js). Если у app есть собственный
+# infra/docker/<app>/Dockerfile — задайте его в build.dockerfile этого сервиса.
 #
-# Запуск:   docker compose -f docker-compose-dev-monorepo.yml up -d --build
-# Логи:     docker compose -f docker-compose-dev-monorepo.yml logs -f back
+# Запуск (из каталога infra/compose):
+#   docker compose --env-file ports.env -f docker-compose.dev.yml up -d --build
+# Пересборка ОДНОГО приложения (остальные не трогаются):
+#   docker compose --env-file ports.env -f docker-compose.dev.yml up -d --no-deps --build admin
+# Логи:
+#   docker compose -f docker-compose.dev.yml logs -f back
 #
-# ENV-стратегия:
-#   - .env (корень)              — ОБЩИЕ переменные для всех приложений (DB, Redis, Bitrix...)
-#   - apps/<app>/.env            — переменные КОНКРЕТНОГО приложения (PORT, SWAGGER_*, ...)
-#   env_file со списком: значения из app-файла переопределяют общие; а
-#   секция environment ниже переопределяет оба (для сетевых имён контейнеров).
+# ПОРТЫ: внутри контейнера ВСЕ apps слушают 3000 (изолированы); наружу — host-порты
+#        из infra/compose/ports.env (--env-file). Менять порт → только в ports.env.
+#
+# ENV-СТРАТЕГИЯ:
+#   - ../../.env             — ОБЩИЕ переменные (DB, Redis, Bitrix...) для всех apps
+#   - ../../apps/<app>/.env  — переменные КОНКРЕТНОГО app (SWAGGER_*, флаги)
+#     (required:false — если файла нет, не падаем). environment ниже перекрывает env_file.
 # ============================================================
 
-# Общий шаблон приложения (YAML-якорь), чтобы не дублировать.
 x-app-common: &app-common
   restart: unless-stopped
   depends_on:
@@ -24,71 +30,160 @@ x-app-common: &app-common
   networks:
     - app-network
   volumes:
-    - ./keys:/app/keys
-    - ./storage:/app/storage
+    - ../../keys:/app/keys
+    - ../../storage:/app/storage
 
+# Общее окружение всех контейнеров. PORT=3000 одинаков для всех (контейнеры
+# изолированы) — поэтому он здесь, а не дублируется в каждом сервисе.
 x-app-env: &app-env
   NODE_ENV: production
+  PORT: 3000
   REDIS_HOST: redis
   REDIS_PORT: 6379
   DATABASE_URL: mysql://root:cfdx@db:3306/bitrix
 
+# Healthcheck одинаков для всех (порт всегда 3000) — один якорь на всех.
+x-healthcheck: &app-healthcheck
+  test:
+    [
+      'CMD',
+      'node',
+      '-e',
+      "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+    ]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 40s
+
+# Шаблон app-сервиса: отличия сервисов — только APP, container_name, env_file и host-порт.
+x-app: &app-service
+  <<: *app-common
+  environment: *app-env
+  healthcheck: *app-healthcheck
+
 services:
   # ---------------- Приложения монорепо ----------------
   back:
-    <<: *app-common
+    <<: *app-service
     build:
-      context: .
-      dockerfile: Dockerfile.monorepo
-      args:
-        APP: back
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: back }
     container_name: app-back
     env_file:
-      - .env
-    environment:
-      <<: *app-env
-      PORT: 3000
-    ports:
-      - "8334:3000"
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
+      - path: ../../.env
+        required: true
+      - path: ../../apps/back/.env
+        required: false
+    ports: ['${BACK_HOST_PORT}:3000']
 
   kpi-report-sales:
-    <<: *app-common
+    <<: *app-service
     build:
-      context: .
-      dockerfile: Dockerfile.monorepo
-      args:
-        APP: kpi-report-sales
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: kpi-report-sales }
     container_name: app-kpi-report-sales
     env_file:
-      - .env
-      - apps/kpi-report-sales/.env
-    environment:
-      <<: *app-env
-      PORT: 3001
-    ports:
-      - "8335:3001"
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
+      - path: ../../.env
+        required: true
+      - path: ../../apps/kpi-report-sales/.env
+        required: false
+    ports: ['${KPI_REPORT_SALES_HOST_PORT}:3000']
+
+  pbx-install:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: pbx-install }
+    container_name: app-pbx-install
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/pbx-install/.env
+        required: false
+    ports: ['${PBX_INSTALL_HOST_PORT}:3000']
+
+  kpi-report-service:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: kpi-report-service }
+    container_name: app-kpi-report-service
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/kpi-report-service/.env
+        required: false
+    ports: ['${KPI_REPORT_SERVICE_HOST_PORT}:3000']
+
+  admin:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: admin }
+    container_name: app-admin
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/admin/.env
+        required: false
+    ports: ['${ADMIN_HOST_PORT}:3000']
+
+  event-sales:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: event-sales }
+    container_name: app-event-sales
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/event-sales/.env
+        required: false
+    ports: ['${EVENT_SALES_HOST_PORT}:3000']
+
+  event-service:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: event-service }
+    container_name: app-event-service
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/event-service/.env
+        required: false
+    ports: ['${EVENT_SERVICE_HOST_PORT}:3000']
+
+  konstructor:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: konstructor }
+    container_name: app-konstructor
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/konstructor/.env
+        required: false
+    ports: ['${KONSTRUCTOR_HOST_PORT}:3000']
 
   # ---------------- Инфраструктура ----------------
   redis:
     image: redis:7
     container_name: redis
-    ports:
-      - "6334:6379"
+    ports: ['${REDIS_HOST_PORT}:6379']
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 5
@@ -104,15 +199,14 @@ services:
       MYSQL_ROOT_PASSWORD: cfdx
       MYSQL_DATABASE: bitrix
       MYSQL_PASSWORD: cfdx
-    ports:
-      - "3306:3306"
+    ports: ['${DB_HOST_PORT}:3306']
     volumes:
       - db_data:/var/lib/mysql
-      - ./db_dev:/docker-entrypoint-initdb.d
+      - ../../db_dev:/docker-entrypoint-initdb.d
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pcfdx"]
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-pcfdx']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -121,8 +215,7 @@ services:
   gotenberg:
     image: gotenberg/gotenberg:8
     container_name: gotenberg
-    ports:
-      - "33030:3000"
+    ports: ['${GOTENBERG_HOST_PORT}:3000']
     networks:
       - app-network
     restart: unless-stopped

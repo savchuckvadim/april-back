@@ -1,0 +1,169 @@
+# ============================================================
+# Monorepo PROD stack: запускает приложения из готовых образов GHCR
+# (сборка — в GitHub Actions, сервер только pull). Локальной БД нет —
+# прод ходит во внешнюю БД через DATABASE_URL из ../../.env.
+#
+# Переменные интерполяции (берутся из шелл-окружения и/или --env-file):
+#   GHCR_OWNER=<github-owner>     # владелец пакетов ghcr.io
+#   IMAGE_TAG=latest             # или конкретный <sha> для пиннинга
+#   <APP>_HOST_PORT              # host-порты — из infra/compose/ports.env
+#
+# Деплой одного приложения (остальные не трогаются), из корня репо:
+#   docker compose --env-file infra/compose/ports.env \
+#     -f infra/compose/docker-compose.prod.yml pull admin
+#   docker compose --env-file infra/compose/ports.env \
+#     -f infra/compose/docker-compose.prod.yml up -d --no-deps admin
+# (GHCR_OWNER/IMAGE_TAG обычно экспортируются в шелле перед командой.)
+# ============================================================
+
+x-app-common: &app-common
+  restart: unless-stopped
+  depends_on:
+    redis:
+      condition: service_healthy
+  networks:
+    - app-network
+  volumes:
+    - ../../keys:/app/keys
+    - ../../storage:/app/storage
+
+# PORT=3000 одинаков для всех контейнеров (изолированы) — не дублируем по сервисам.
+x-app-env: &app-env
+  NODE_ENV: production
+  PORT: 3000
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+
+# Healthcheck одинаков для всех (порт всегда 3000).
+x-healthcheck: &app-healthcheck
+  test:
+    [
+      'CMD',
+      'node',
+      '-e',
+      "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+    ]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 40s
+
+x-app: &app-service
+  <<: *app-common
+  environment: *app-env
+  healthcheck: *app-healthcheck
+
+services:
+  back:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-back:${IMAGE_TAG:-latest}
+    container_name: app-back
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/back/.env
+        required: false
+    ports: ['${BACK_HOST_PORT}:3000']
+
+  kpi-report-sales:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-kpi-report-sales:${IMAGE_TAG:-latest}
+    container_name: app-kpi-report-sales
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/kpi-report-sales/.env
+        required: false
+    ports: ['${KPI_REPORT_SALES_HOST_PORT}:3000']
+
+  pbx-install:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-pbx-install:${IMAGE_TAG:-latest}
+    container_name: app-pbx-install
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/pbx-install/.env
+        required: false
+    ports: ['${PBX_INSTALL_HOST_PORT}:3000']
+
+  kpi-report-service:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-kpi-report-service:${IMAGE_TAG:-latest}
+    container_name: app-kpi-report-service
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/kpi-report-service/.env
+        required: false
+    ports: ['${KPI_REPORT_SERVICE_HOST_PORT}:3000']
+
+  admin:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-admin:${IMAGE_TAG:-latest}
+    container_name: app-admin
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/admin/.env
+        required: false
+    ports: ['${ADMIN_HOST_PORT}:3000']
+
+  event-sales:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-event-sales:${IMAGE_TAG:-latest}
+    container_name: app-event-sales
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/event-sales/.env
+        required: false
+    ports: ['${EVENT_SALES_HOST_PORT}:3000']
+
+  event-service:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-event-service:${IMAGE_TAG:-latest}
+    container_name: app-event-service
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/event-service/.env
+        required: false
+    ports: ['${EVENT_SERVICE_HOST_PORT}:3000']
+
+  konstructor:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-konstructor:${IMAGE_TAG:-latest}
+    container_name: app-konstructor
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/konstructor/.env
+        required: false
+    ports: ['${KONSTRUCTOR_HOST_PORT}:3000']
+
+  # ---------------- Инфраструктура ----------------
+  redis:
+    image: redis:7
+    container_name: redis
+    ports: ['${REDIS_HOST_PORT}:6379']
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    ports: ['${GOTENBERG_HOST_PORT}:3000']
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,212 @@
+name: Deploy monorepo (per-app, GHCR + matrix)
+
+# Изоляция «менялся один app — остальные не трогаем»:
+#  - detect: определяет изменённые приложения (dorny/paths-filter);
+#  - build:  matrix собирает/пушит в GHCR ТОЛЬКО изменённые apps;
+#  - deploy: на сервере pull + up -d --no-deps ТОЛЬКО изменённые apps.
+# Изменение в libs/**, prisma/**, package*.json и т.п. (фильтр shared) осознанно
+# пересобирает ВСЕ apps (общий код шарится между ними).
+
+on:
+    push:
+        branches:
+            - monorepo # после обкатки перенести на main
+    workflow_dispatch:
+        inputs:
+            apps:
+                description: 'Что собрать вручную: "all", или список через пробел/запятую (напр. "admin pbx-install"). Пусто = all.'
+                required: false
+                default: 'all'
+
+permissions:
+    contents: read
+    packages: write # GITHUB_TOKEN сможет пушить образы в ghcr.io этого репо
+
+jobs:
+    # ---------------------------------------------------------------
+    detect:
+        runs-on: ubuntu-latest
+        outputs:
+            apps: ${{ steps.set.outputs.apps }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      shared:
+                        - 'libs/**'
+                        - 'package*.json'
+                        - 'prisma/**'
+                        - 'tsconfig*.json'
+                        - 'nest-cli.json'
+                        - 'infra/docker/**'
+                        - '.dockerignore'
+                        - '.github/workflows/deploy-monorepo.yml'
+                      back: ['apps/back/**']
+                      kpi-report-sales: ['apps/kpi-report-sales/**']
+                      pbx-install: ['apps/pbx-install/**']
+                      kpi-report-service: ['apps/kpi-report-service/**']
+                      admin: ['apps/admin/**']
+                      event-sales: ['apps/event-sales/**']
+                      event-service: ['apps/event-service/**']
+                      konstructor: ['apps/konstructor/**']
+
+            - name: Вычислить список приложений для сборки
+              id: set
+              env:
+                  MANUAL_APPS: ${{ github.event.inputs.apps }}
+              run: |
+                  ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor"]'
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                    # Ручной запуск: "all"/пусто -> все; иначе список через пробел/запятую -> JSON.
+                    if [ -z "$MANUAL_APPS" ] || [ "$MANUAL_APPS" = "all" ]; then
+                      echo "Ручной запуск -> все приложения"
+                      echo "apps=$ALL" >> "$GITHUB_OUTPUT"
+                    else
+                      ARR=$(echo "$MANUAL_APPS" | tr ', ' '\n' | sed '/^$/d' | sed 's/.*/"&"/' | paste -sd, -)
+                      echo "Ручной запуск -> [$ARR]"
+                      echo "apps=[$ARR]" >> "$GITHUB_OUTPUT"
+                    fi
+                  elif [ "${{ steps.filter.outputs.shared }}" = "true" ]; then
+                    echo "Изменён общий код (shared) -> собираем все приложения"
+                    echo "apps=$ALL" >> "$GITHUB_OUTPUT"
+                  else
+                    # changes — JSON-массив сработавших фильтров (только app-имена, shared=false)
+                    echo "apps=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Показать решение detect
+              run: echo "apps=${{ steps.set.outputs.apps }}"
+
+    # ---------------------------------------------------------------
+    build:
+        needs: detect
+        if: needs.detect.outputs.apps != '[]'
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                app: ${{ fromJSON(needs.detect.outputs.apps) }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: docker/setup-buildx-action@v3
+
+            - name: Логин в GHCR (встроенный токен, без PAT)
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Owner в нижнем регистре (требование GHCR)
+              id: owner
+              run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+            - name: Выбрать Dockerfile (override или общий)
+              id: df
+              run: |
+                  f="infra/docker/${{ matrix.app }}/Dockerfile"
+                  [ -f "$f" ] || f="infra/docker/Dockerfile"
+                  echo "file=$f" >> "$GITHUB_OUTPUT"
+
+            - name: Build & push ${{ matrix.app }}
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ${{ steps.df.outputs.file }}
+                  build-args: APP=${{ matrix.app }}
+                  push: true
+                  tags: |
+                      ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:${{ github.sha }}
+                      ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:latest
+                  cache-from: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:buildcache
+                  cache-to: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:buildcache,mode=max
+
+    # ---------------------------------------------------------------
+    deploy:
+        needs: [detect, build]
+        if: needs.detect.outputs.apps != '[]'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy изменённых приложений по SSH
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.SERVER_IP }}
+                  username: ${{ secrets.SERVER_USER }}
+                  key: ${{ secrets.SERVER_SSH_KEY }}
+                  timeout: 30m
+                  command_timeout: 90m
+                  envs: APPS_JSON,IMAGE_TAG,GHCR_OWNER,GHCR_USER,GHCR_PAT
+              env:
+                  APPS_JSON: ${{ needs.detect.outputs.apps }}
+                  IMAGE_TAG: ${{ github.sha }}
+                  GHCR_OWNER: ${{ github.repository_owner }}
+                  GHCR_USER: ${{ github.actor }}
+                  GHCR_PAT: ${{ secrets.GHCR_PAT }}
+              # appleboy/ssh-action не поддерживает && в начале — используем set -e
+              script: |
+                  set -e
+                  PROD_DIR=/var/www/html/back-mono.april-app
+                  # host-порты берём из committed infra/compose/ports.env (--env-file)
+                  COMPOSE="docker compose --env-file infra/compose/ports.env -f infra/compose/docker-compose.prod.yml"
+
+                  # GHCR_OWNER нужен в нижнем регистре и для compose, и для login
+                  GHCR_OWNER=$(echo "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')
+                  export GHCR_OWNER IMAGE_TAG
+
+                  cd "$PROD_DIR"
+                  # Deploy-клон выравниваем жёстко под ветку (без merge/divergence).
+                  # .env/keys/storage в .gitignore — reset их не трогает.
+                  git fetch origin monorepo
+                  git reset --hard origin/monorepo
+
+                  # Логин нужен только для приватных образов GHCR. Если GHCR_PAT
+                  # не задан (пакеты публичные) — пропускаем, чтобы set -e не ронял деплой.
+                  if [ -n "$GHCR_PAT" ]; then
+                    echo "🔐 Логин в GHCR (read:packages)"
+                    echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+                  else
+                    echo "ℹ️ GHCR_PAT пуст — пропускаю docker login (образы должны быть публичными)"
+                  fi
+
+                  # JSON-массив -> список через пробел
+                  APPS=$(echo "$APPS_JSON" | tr -d '[]"' | tr ',' ' ')
+                  echo "🚀 Деплой приложений: $APPS (tag=$IMAGE_TAG)"
+
+                  # Инфраструктуру (redis/gotenberg) поднимаем заранее: ниже apps
+                  # стартуют с --no-deps, поэтому сами зависимости не поднимут.
+                  $COMPOSE up -d redis gotenberg
+
+                  wait_healthy () {
+                    local svc="$1" cname="app-$1" timeout=600 elapsed=0
+                    while true; do
+                      local status health
+                      status=$(docker inspect -f '{{.State.Status}}' "$cname" 2>/dev/null || echo missing)
+                      health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo unknown)
+                      if [ "$status" = "running" ] && { [ "$health" = "healthy" ] || [ "$health" = "none" ]; }; then
+                        echo "✅ $svc: running/$health"; return 0
+                      fi
+                      if [ "$elapsed" -ge "$timeout" ]; then
+                        echo "❌ Таймаут $svc (status=$status health=$health)"
+                        docker logs "$cname" --tail 200 || true
+                        return 1
+                      fi
+                      echo "⌛ $svc status=$status health=$health (${elapsed}s)"
+                      sleep 5; elapsed=$((elapsed + 5))
+                    done
+                  }
+
+                  for app in $APPS; do
+                    echo "📦 pull + up: $app"
+                    $COMPOSE pull "$app"
+                    $COMPOSE up -d --no-deps "$app"
+                    wait_healthy "$app"
+                  done
+
+                  docker image prune -f || true
+                  $COMPOSE ps

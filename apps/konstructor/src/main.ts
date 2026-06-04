@@ -1,8 +1,7 @@
-import { NestFactory } from '@nestjs/core';
+import { bootstrapApp } from '@/core';
 import { KonstructorModule } from './konstructor.module';
 
-async function bootstrap() {
-    const app = await NestFactory.create(KonstructorModule);
-    await app.listen(process.env.port ?? 3000);
-}
-bootstrap();
+bootstrapApp(KonstructorModule, {
+    name: 'konstructor',
+    defaultPort: 3007,
+}).catch(console.error);

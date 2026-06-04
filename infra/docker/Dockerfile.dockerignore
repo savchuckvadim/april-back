@@ -1,0 +1,58 @@
+# ============================================================
+# Игнор сборочного контекста ДЛЯ infra/docker/Dockerfile.
+# BuildKit ищет <dockerfile>.dockerignore рядом с Dockerfile, когда Dockerfile
+# лежит не в корне контекста. Этот файл гарантирует, что в контекст НЕ попадут
+# node_modules/.git/дампы (иначе контекст раздувается до гигабайтов).
+#
+# Контекст сборки = КОРЕНЬ репо (compose: context ../.., CI: context .).
+# Пути ниже — относительно корня репо.
+# ============================================================
+
+# --- тяжёлое: зависимости и история (главные виновники раздувания) ---
+**/node_modules
+node_modules
+.git
+.gitignore
+
+# --- артефакты сборки (генерируются ВНУТРИ образа) ---
+dist
+**/dist
+generated
+.nestjs
+coverage
+tmp
+temp
+
+# --- рантайм-данные (монтируются volume'ами, в образе не нужны) ---
+storage
+keys
+db_dev
+db_data
+loki-data
+logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# --- секреты (приходят из .env в рантайме, в образ не кладём) ---
+.env
+.env.*
+!.env.example
+**/.env
+!**/.env.example
+
+# --- инфра/CI/доки — для самой сборки не нужны ---
+infra/compose
+infra/legacy
+.github
+.vscode
+.idea
+*.swp
+*.swo
+docs
+*.md
+
+# --- прочие дубликаты/артефакты ---
+Dockerfile copy
+docker-compose copy.yml
+nest-vscode-debugging

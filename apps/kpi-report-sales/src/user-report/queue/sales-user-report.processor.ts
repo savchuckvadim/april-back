@@ -28,7 +28,7 @@ export class SalesUserReportQueueProcessor {
         private readonly ws: WsService, // WebSocket шлюз,
         private readonly service: SalesUserReportService,
     ) {
-        this.logger.log('constructor SALES_KPI_REPORT_GENERATE');
+        this.logger.log('constructor SALES USER-PERSONAL-KPI REPORT');
     }
 
     @Process(JobNames.SALES_USER_REPORT_GENERATE)

@@ -3,9 +3,10 @@
 # Универсальный Dockerfile монорепозитория.
 # Собирает и запускает ЛЮБОЕ приложение из apps/* по build-аргументу APP.
 #
-# Пример сборки:
-#   docker build -f Dockerfile.monorepo --build-arg APP=kpi-report-sales -t kpi-report-sales .
-# В docker-compose задаётся через build.args (см. docker-compose-dev-monorepo.yml).
+# Пример сборки (контекст — корень репо):
+#   docker build -f infra/docker/Dockerfile --build-arg APP=kpi-report-sales -t kpi-report-sales .
+# В docker-compose задаётся через build.args (см. infra/compose/docker-compose.dev.yml).
+# Per-app override: создайте infra/docker/<app>/Dockerfile и укажите его в compose/CI.
 # ============================================================
 
 FROM node:20-slim AS deps

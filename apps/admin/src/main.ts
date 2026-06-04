@@ -1,8 +1,6 @@
-import { NestFactory } from '@nestjs/core';
+import { bootstrapApp } from '@/core';
 import { AdminModule } from './admin.module';
 
-async function bootstrap() {
-    const app = await NestFactory.create(AdminModule);
-    await app.listen(process.env.port ?? 3000);
-}
-bootstrap();
+bootstrapApp(AdminModule, { name: 'admin', defaultPort: 3004 }).catch(
+    console.error,
+);

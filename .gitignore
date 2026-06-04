@@ -87,3 +87,9 @@ docker-compose-full-dev.yml
 
 .claude
 /.claude/**
+
+
+ports.env
+claude
+ai/
+CLAUDE.md
