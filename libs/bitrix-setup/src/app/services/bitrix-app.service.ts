@@ -26,7 +26,7 @@ import {
 import { EnabledAppDto } from '../dto/enaled-app.dto';
 // import { BitrixSecretService } from '../../secret/services/bitrix-secret.service';
 import { toBitrixAppDto } from '../lib/bx-app-dto.mapper';
-import { getErrorString } from '@/shared';
+import { delay, getErrorString } from '@/shared';
 
 @Injectable()
 export class BitrixAppService {
@@ -38,7 +38,8 @@ export class BitrixAppService {
         // private readonly secretService: BitrixSecretService, //секреты записываются в токен
     ) {}
 
-    getEnabledApps(): EnabledAppDto[] {
+    async getEnabledApps(): Promise<EnabledAppDto[]> {
+        await delay(1000);
         const app: EnabledAppDto = {
             code: BITRIX_APP_CODES.SALES,
             group: BITRIX_APP_GROUPS.SALES,

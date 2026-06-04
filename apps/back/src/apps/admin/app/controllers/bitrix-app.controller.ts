@@ -102,8 +102,8 @@ export class AdminBitrixAppController {
         type: [EnabledAppDto],
     })
     @Get('enabled')
-    getEnabledApps(): Promise<EnabledAppDto[]> {
-        const apps = this.bitrixAppService.getEnabledApps();
+    async getEnabledApps(): Promise<EnabledAppDto[]> {
+        const apps = await this.bitrixAppService.getEnabledApps();
         return apps;
     }
 
