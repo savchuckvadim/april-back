@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 // import { BitrixGeneralService } from '../general/bitrix-general.service';
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
-import {
-    IPCategory,
-    IPDeal,
-} from '@lib/portal/interfaces/portal.interface';
+import { IPCategory, IPDeal } from '@lib/portal/interfaces/portal.interface';
 
 // interface DealCategory {
 //     code: string;

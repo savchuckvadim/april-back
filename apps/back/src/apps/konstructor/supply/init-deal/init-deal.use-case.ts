@@ -8,11 +8,7 @@ import {
     IBXItem,
     IBxRpaItem,
 } from '@/modules/bitrix';
-import {
-    IPDeal,
-    IPSmart,
-    IRPA,
-} from '@lib/portal/interfaces/portal.interface';
+import { IPDeal, IPSmart, IRPA } from '@lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@lib/telegram/telegram.service';

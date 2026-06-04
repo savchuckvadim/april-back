@@ -1,7 +1,4 @@
-import {
-    InfoblockEntityDto,
-    InfoblockService,
-} from '@lib/garant/infoblock';
+import { InfoblockEntityDto, InfoblockService } from '@lib/garant/infoblock';
 import {
     Controller,
     Get,

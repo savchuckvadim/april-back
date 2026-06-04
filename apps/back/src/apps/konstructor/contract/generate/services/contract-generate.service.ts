@@ -10,10 +10,7 @@ import Docxtemplater from 'docxtemplater';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import {
-    ProviderService,
-    RqEntity,
-} from '@lib/portal-konstructor/provider';
+import { ProviderService, RqEntity } from '@lib/portal-konstructor/provider';
 // import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
 
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';

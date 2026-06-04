@@ -145,7 +145,7 @@ services:
   # ---------------- Инфраструктура ----------------
   redis:
     image: redis:7
-    container_name: redis
+    container_name: mono-redis
     ports: ['${REDIS_HOST_PORT}:6379']
     restart: unless-stopped
     healthcheck:
@@ -158,7 +158,7 @@ services:
 
   gotenberg:
     image: gotenberg/gotenberg:8
-    container_name: gotenberg
+    container_name: mono-gotenberg
     ports: ['${GOTENBERG_HOST_PORT}:3000']
     networks:
       - app-network

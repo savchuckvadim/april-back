@@ -50,4 +50,4 @@ import { PortalCategoryModule } from '@/modules/pbx-domain/category';
         PbxInstallModule,
     ],
 })
-export class AdminModule { }
+export class AdminModule {}

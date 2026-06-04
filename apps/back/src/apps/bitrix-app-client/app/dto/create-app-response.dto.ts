@@ -1,8 +1,5 @@
 import { BitrixAppDto } from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
-import {
-    BitrixTokenDto,
-    BitrixTokenEntity,
-} from '@lib/bitrix-setup/token';
+import { BitrixTokenDto, BitrixTokenEntity } from '@lib/bitrix-setup/token';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {

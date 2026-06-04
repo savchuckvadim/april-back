@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsEnum } from 'class-validator';
-import {
-    InfogroupType,
-    InfogroupProductType,
-} from '@lib/garant/infogroup/';
+import { InfogroupType, InfogroupProductType } from '@lib/garant/infogroup/';
 
 export class CreateInfogroupDto {
     @ApiProperty({
