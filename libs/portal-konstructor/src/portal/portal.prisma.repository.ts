@@ -7,6 +7,7 @@ import {
     PortalWithRelations,
 } from './lib/portal-entity.util';
 import { Prisma } from 'generated/prisma';
+import { convertToBigint } from '@lib/shared';
 
 @Injectable()
 export class PortalPrismaRepository implements PortalRepository {
@@ -24,7 +25,7 @@ export class PortalPrismaRepository implements PortalRepository {
                 C_REST_WEB_HOOK_URL: portal.cRestWebHookUrl!,
                 domain: portal.domain!,
                 key: portal.key!,
-                client_id: BigInt(portal.clientId!),
+                client_id: convertToBigint(portal.clientId!),
             },
         });
         return createPortalEntityFromPrisma(result);

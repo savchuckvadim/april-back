@@ -6,7 +6,6 @@ import {
     BtxCategoryService,
     BtxStageResponseDto,
 } from '@/modules/pbx-domain/category';
-import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
 import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
 import { PbxEntityType } from '@/shared/enums';
 import {
@@ -15,6 +14,8 @@ import {
 } from '@app/pbx-install/shared/utils/bitrix-category-stage.utils';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { SmartCategoryStageStrategy } from '../smart-categories/smart-category-stage.strategy';
+import { PortalSmartService } from '@lib/pbx-domain/portal-smart';
+import { convertToBigint } from '@lib/shared';
 
 /** Категория из Bitrix вместе с её стадиями. */
 export interface BxSmartCategoryWithStages {
@@ -81,7 +82,7 @@ export class PbxSmartCategoryMonitoringService {
             throw new NotFoundException('Portal not found');
         }
         const smart = await this.portalSmartService.findFirstByPortalTypeGroup(
-            BigInt(portal.id),
+            convertToBigint(portal.id),
             smartName,
             group,
         );
