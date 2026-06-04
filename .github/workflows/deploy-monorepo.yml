@@ -135,6 +135,13 @@ jobs:
         steps:
             - name: Deploy изменённых приложений по SSH
               uses: appleboy/ssh-action@v1.0.3
+              # env — на уровне шага (валидный ключ step); пробрасываем в SSH через envs.
+              env:
+                  APPS_JSON: ${{ needs.detect.outputs.apps }}
+                  IMAGE_TAG: ${{ github.sha }}
+                  GHCR_OWNER: ${{ github.repository_owner }}
+                  GHCR_USER: ${{ github.actor }}
+                  GHCR_PAT: ${{ secrets.GHCR_PAT }}
               with:
                   host: ${{ secrets.SERVER_IP }}
                   username: ${{ secrets.SERVER_USER }}
@@ -142,71 +149,65 @@ jobs:
                   timeout: 30m
                   command_timeout: 90m
                   envs: APPS_JSON,IMAGE_TAG,GHCR_OWNER,GHCR_USER,GHCR_PAT
-              env:
-                  APPS_JSON: ${{ needs.detect.outputs.apps }}
-                  IMAGE_TAG: ${{ github.sha }}
-                  GHCR_OWNER: ${{ github.repository_owner }}
-                  GHCR_USER: ${{ github.actor }}
-                  GHCR_PAT: ${{ secrets.GHCR_PAT }}
-              # appleboy/ssh-action не поддерживает && в начале — используем set -e
-              script: |
-                  set -e
-                  PROD_DIR=/var/www/html/back-mono.april-app
-                  # host-порты берём из committed infra/compose/ports.env (--env-file)
-                  COMPOSE="docker compose --env-file infra/compose/ports.env -f infra/compose/docker-compose.prod.yml"
+                  # script — ВХОДНОЙ параметр экшена, должен быть ВНУТРИ with.
+                  script: |
+                      set -e
+                      PROD_DIR=/var/www/html/back-mono.april-app
+                      # host-порты берём из committed infra/compose/ports.env (--env-file)
+                      COMPOSE="docker compose --env-file infra/compose/ports.env -f infra/compose/docker-compose.prod.yml"
 
-                  # GHCR_OWNER нужен в нижнем регистре и для compose, и для login
-                  GHCR_OWNER=$(echo "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')
-                  export GHCR_OWNER IMAGE_TAG
+                      # GHCR_OWNER нужен в нижнем регистре и для compose, и для login
+                      GHCR_OWNER=$(echo "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')
+                      export GHCR_OWNER IMAGE_TAG
 
-                  cd "$PROD_DIR"
-                  # Deploy-клон выравниваем жёстко под ветку (без merge/divergence).
-                  # .env/keys/storage в .gitignore — reset их не трогает.
-                  git fetch origin monorepo
-                  git reset --hard origin/monorepo
+                      cd "$PROD_DIR"
+                      # Deploy-клон выравниваем жёстко под ветку (без merge/divergence).
+                      # .env/keys/storage в .gitignore — reset их не трогает.
+                      git fetch origin monorepo
+                      git reset --hard origin/monorepo
 
-                  # Логин нужен только для приватных образов GHCR. Если GHCR_PAT
-                  # не задан (пакеты публичные) — пропускаем, чтобы set -e не ронял деплой.
-                  if [ -n "$GHCR_PAT" ]; then
-                    echo "🔐 Логин в GHCR (read:packages)"
-                    echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-                  else
-                    echo "ℹ️ GHCR_PAT пуст — пропускаю docker login (образы должны быть публичными)"
-                  fi
-
-                  # JSON-массив -> список через пробел
-                  APPS=$(echo "$APPS_JSON" | tr -d '[]"' | tr ',' ' ')
-                  echo "🚀 Деплой приложений: $APPS (tag=$IMAGE_TAG)"
-
-                  # Инфраструктуру (redis/gotenberg) поднимаем заранее: ниже apps
-                  # стартуют с --no-deps, поэтому сами зависимости не поднимут.
-                  $COMPOSE up -d redis gotenberg
-
-                  wait_healthy () {
-                    local svc="$1" cname="app-$1" timeout=600 elapsed=0
-                    while true; do
-                      local status health
-                      status=$(docker inspect -f '{{.State.Status}}' "$cname" 2>/dev/null || echo missing)
-                      health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo unknown)
-                      if [ "$status" = "running" ] && { [ "$health" = "healthy" ] || [ "$health" = "none" ]; }; then
-                        echo "✅ $svc: running/$health"; return 0
+                      # Логин нужен только для приватных образов GHCR. Если GHCR_PAT
+                      # не задан (пакеты публичные) — пропускаем, чтобы set -e не ронял деплой.
+                      if [ -n "$GHCR_PAT" ]; then
+                        echo "🔐 Логин в GHCR (read:packages)"
+                        echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+                      else
+                        echo "ℹ️ GHCR_PAT пуст — пропускаю docker login (образы должны быть публичными)"
                       fi
-                      if [ "$elapsed" -ge "$timeout" ]; then
-                        echo "❌ Таймаут $svc (status=$status health=$health)"
-                        docker logs "$cname" --tail 200 || true
-                        return 1
-                      fi
-                      echo "⌛ $svc status=$status health=$health (${elapsed}s)"
-                      sleep 5; elapsed=$((elapsed + 5))
-                    done
-                  }
 
-                  for app in $APPS; do
-                    echo "📦 pull + up: $app"
-                    $COMPOSE pull "$app"
-                    $COMPOSE up -d --no-deps "$app"
-                    wait_healthy "$app"
-                  done
+                      # JSON-массив -> список через пробел
+                      APPS=$(echo "$APPS_JSON" | tr -d '[]"' | tr ',' ' ')
+                      echo "🚀 Деплой приложений: $APPS (tag=$IMAGE_TAG)"
 
-                  docker image prune -f || true
-                  $COMPOSE ps
+                      # Инфраструктуру (redis/gotenberg) поднимаем заранее: ниже apps
+                      # стартуют с --no-deps, поэтому сами зависимости не поднимут.
+                      $COMPOSE up -d redis gotenberg
+
+                      wait_healthy () {
+                        local svc="$1" cname="app-$1" timeout=600 elapsed=0
+                        while true; do
+                          local status health
+                          status=$(docker inspect -f '{{.State.Status}}' "$cname" 2>/dev/null || echo missing)
+                          health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo unknown)
+                          if [ "$status" = "running" ] && { [ "$health" = "healthy" ] || [ "$health" = "none" ]; }; then
+                            echo "✅ $svc: running/$health"; return 0
+                          fi
+                          if [ "$elapsed" -ge "$timeout" ]; then
+                            echo "❌ Таймаут $svc (status=$status health=$health)"
+                            docker logs "$cname" --tail 200 || true
+                            return 1
+                          fi
+                          echo "⌛ $svc status=$status health=$health (${elapsed}s)"
+                          sleep 5; elapsed=$((elapsed + 5))
+                        done
+                      }
+
+                      for app in $APPS; do
+                        echo "📦 pull + up: $app"
+                        $COMPOSE pull "$app"
+                        $COMPOSE up -d --no-deps "$app"
+                        wait_healthy "$app"
+                      done
+
+                      docker image prune -f || true
+                      $COMPOSE ps
