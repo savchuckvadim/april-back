@@ -1,12 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
-import { AdminService } from './admin.service';
 
 @Controller()
 export class AdminController {
-    constructor(private readonly adminService: AdminService) {}
+    constructor() {}
 
     @Get()
     getHello(): string {
-        return this.adminService.getHello();
+        return 'hellou ';
     }
 }
