@@ -17,10 +17,10 @@
         "dev:kpi-report-sales": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start kpi-report-sales --watch",
         "dev:kpi-report-service": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start kpi-report-service --watch",
         "dev:pbx-install": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start pbx-install --watch",
-        "dev:event-report-sales": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-report-sales --watch",
-        "dev:event-report-service": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-report-sales --watch",
+        "dev:event-sales": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-sales --watch",
+        "dev:event-service": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-service --watch",
         "dev:admin": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start admin --watch",
-        "dev:all": "npm run dev:back & npm run dev:kpi-report-sales & npm run dev:pbx-install & npm run dev:event-report-sales & npm run dev:event-report-service & npm run dev:admin",
+        "dev:all": "npm run dev:back & npm run dev:kpi-report-sales & npm run dev:pbx-install & npm run dev:event-sales & npm run dev:event-service & npm run dev:admin",
 
         "start:debug": "nest start back --debug --watch",
         "start:prod": "node dist/apps/back/main",

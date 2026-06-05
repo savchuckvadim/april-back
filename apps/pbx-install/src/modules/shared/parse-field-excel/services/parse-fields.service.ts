@@ -54,6 +54,7 @@ export class ParseFieldsService {
                 multiple,
             ] = fieldValues;
 
+            //TODO: переделать на использование одного enum PbxFieldTypeEnum
             const fieldType:
                 | PbxSalesEventFieldType
                 | PbxSalesKonstructorFieldType = type as

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { QueueModule } from './modules/queue/queue.module';
+import { QueueModule } from '@lib/queue/queue.module';
 
 import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from '@lib/telegram/telegram.module';

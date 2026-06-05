@@ -48,6 +48,8 @@
       "@lib/bitrix-setup/*": ["libs/bitrix-setup/src/*"],
       "@lib/portal": ["libs/portal/src"],
       "@lib/portal/*": ["libs/portal/src/*"],
+      "@lib/queue": ["libs/queue/src"],
+      "@lib/queue/*": ["libs/queue/src/*"],
 
       // ---- Совместимость: старые импорты модулей -> новые библиотеки ----
       // (переходный слой, чтобы не править сотни импортов сразу;
@@ -72,6 +74,10 @@
       "@/modules/ai-rag/*": ["libs/ai-rag/src/*"],
       "src/modules/ai-rag": ["libs/ai-rag/src"],
       "src/modules/ai-rag/*": ["libs/ai-rag/src/*"],
+      "@/modules/queue": ["libs/queue/src"],
+      "@/modules/queue/*": ["libs/queue/src/*"],
+      "src/modules/queue": ["libs/queue/src"],
+      "src/modules/queue/*": ["libs/queue/src/*"],
       "@pbx": ["libs/pbx/src/index.ts"],
 
       // ---- pbx-domain: чистый слой PortalDB вынесен в libs/pbx-domain ----

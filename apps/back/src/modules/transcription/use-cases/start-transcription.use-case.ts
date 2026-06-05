@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { QueueDispatcherService } from '../../queue/dispatch/queue-dispatcher.service';
-import { QueueNames } from '../../queue/constants/queue-names.enum';
-import { TranscribeJobHandlerId } from '../../queue/constants/transcribe-job-handler-id.enum';
+import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
+import { QueueNames } from '@lib/queue/constants/queue-names.enum';
+import { TranscribeJobHandlerId } from '@lib/queue/constants/transcribe-job-handler-id.enum';
 import {
     TranscriptionRequestDto,
     TranscriptionResponseDto,

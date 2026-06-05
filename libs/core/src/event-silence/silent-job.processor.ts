@@ -1,9 +1,9 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Injectable, Logger } from '@nestjs/common';
-import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { EventSilentJobManagerService } from './silent-job-manager.service';
 import { EventSilentJobManagerData } from './event-silence.type';
+import { QueueNames } from '@lib/queue';
 
 /**
  * Универсальный воркер для очереди event-silent. Ловит все джобы (`@Process('*')`)
