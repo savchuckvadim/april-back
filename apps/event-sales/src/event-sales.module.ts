@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
-import { EventSalesController } from './event-sales.controller';
-import { EventSalesService } from './event-sales.service';
 import { EventModule } from './event.module';
 
 @Module({
@@ -16,7 +14,6 @@ import { EventModule } from './event.module';
         HealthModule,
         EventModule,
     ],
-    controllers: [EventSalesController],
-    providers: [EventSalesService, GlobalExceptionFilter],
+    providers: [GlobalExceptionFilter],
 })
 export class EventSalesModule {}

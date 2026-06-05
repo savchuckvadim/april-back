@@ -12,10 +12,10 @@ export enum EnumWorkStatusCode {
     fail = 'fail',
 }
 export enum EnumWorkStatusName {
-    В_работе = 'В работе',
-    Отложено = 'Отложено',
-    Продажа = 'Продажа',
-    Отказ = 'Отказ',
+    inJob = 'В работе',
+    setAside = 'Отложено',
+    success = 'Продажа',
+    fail = 'Отказ',
 }
 export type WorkStatus = {
     id: number;

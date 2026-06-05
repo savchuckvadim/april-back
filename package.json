@@ -8,6 +8,7 @@
     "scripts": {
         "build": "nest build back",
         "build:back": "nest build back",
+        "build:event-sales": "nest build event-sales",
         "build:kpi-report-sales": "nest build kpi-report-sales",
         "build:pbx-install": "nest build pbx-install",
         "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
@@ -21,7 +22,6 @@
         "dev:event-service": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-service --watch",
         "dev:admin": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start admin --watch",
         "dev:all": "npm run dev:back & npm run dev:kpi-report-sales & npm run dev:pbx-install & npm run dev:event-sales & npm run dev:event-service & npm run dev:admin",
-
         "start:debug": "nest start back --debug --watch",
         "start:prod": "node dist/apps/back/main",
         "start:prod:back": "node dist/apps/back/main",

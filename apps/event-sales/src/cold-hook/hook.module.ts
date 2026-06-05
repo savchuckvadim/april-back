@@ -12,4 +12,4 @@ import { EventSilenceModule } from '@/core';
     controllers: [EventSalesHookController],
     providers: [ColdHookSilinceEndpointService, ColdHooksHandlerService],
 })
-export class EventSalesHookModule {}
+export class ColdHookModule {}

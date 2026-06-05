@@ -3,7 +3,7 @@ import { IField, IFieldItem } from '@lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 import { GSIRK_DOMAIN } from '../../types/event-report.event-codes';
-import { EnumWorkStatusCode } from '../../../types/report-types';
+import { EnumWorkStatusCode } from '../../types/report-types';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;

@@ -7,7 +7,7 @@ import { convertToBigint } from '@lib/shared';
 
 @Injectable()
 export class AdminPortalPrismaRepository implements AdminPortalRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(portal: Partial<Portal>): Promise<Portal | null> {
         const result = await this.prisma.portal.create({

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx/pbx.service';
-import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
+import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { EventReportInitService } from '../services/init/event-report-init.service';
 import { EventReportContext } from '../services/context/event-report.context';
 import { EventReportEntityFlowService } from '../services/entity/event-report-entity-flow.service';

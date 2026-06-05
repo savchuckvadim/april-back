@@ -25,5 +25,4 @@ export enum QueueNames {
     ZAKUPKI_OFFER = 'zakupki-offer',
     KONSTRUCTOR = 'konstructor',
     CALL_ANALYSIS = 'call-analysis',
-
 }

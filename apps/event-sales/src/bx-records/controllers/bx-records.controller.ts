@@ -15,7 +15,7 @@ export class BxRecordsController {
     /**
      * TODO: get records by lead делается где-то в другом месте
      * перенести сюда
-     *
+     * раньше делался так C:\Projects\April\april-next\back\apps\event-sales\src\use-cases\bx-activity.use-case.ts
      */
     // @Post('lead')
     // async getRecordsByCompany(@Body() dto: BxRecordsByCompanyRequestDto) {

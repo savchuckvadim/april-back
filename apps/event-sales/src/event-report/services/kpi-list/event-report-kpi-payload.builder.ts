@@ -15,7 +15,7 @@ import {
 } from '../../types/event-report.event-codes';
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
-import { EnumWorkStatusCode } from '../../../types/report-types';
+import { EnumWorkStatusCode } from '../../types/report-types';
 
 /**
  * KPI-сценарии (см. event-report-service-map.md «Блок 4»):
