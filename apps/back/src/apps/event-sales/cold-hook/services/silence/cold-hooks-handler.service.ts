@@ -57,21 +57,15 @@ export class ColdHooksHandlerService {
              */
             const closedDealsResult =
                 await preColdDealFlowService.execute(companies);
-            this.logger.log(
-                `Closed deals: ${JSON.stringify(closedDealsResult)}`,
-            );
 
             /**
              * закрыть задачи
 
              */
 
-            const tasksResult = await tasksService.closeTasks(companiesIds);
-            this.logger.log(tasksResult);
+            await tasksService.closeTasks(companiesIds);
 
             if (portal) {
-                this.logger.log(domain);
-
                 /**
                  * Каждая компания = одна атомарная группа batch-команд.
                  * Буфер гарантирует, что все команды одной компании уходят
@@ -98,9 +92,7 @@ export class ColdHooksHandlerService {
                 }
 
                 await buffer.flush();
-                this.logger.log(
-                    `Batch result: ${JSON.stringify(buffer.getResults())}`,
-                );
+
                 return;
             } else {
                 throw new HttpException(

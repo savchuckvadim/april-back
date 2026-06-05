@@ -33,4 +33,17 @@ export enum EBXEntity {
     STORAGE = 'storage',
     WORKFLOW = 'workflow',
     CHECKLIST_ITEM = 'checklistitem',
+
+    // Chat bots
+    BOT = 'bot',
+    BOT_LIFECYCLE = '', // entity-less методы: imbot.register / imbot.unregister / imbot.update
+    COMMAND = 'command',
+    // imbot.v2 — сущности с PascalCase, как требует REST-строка метода
+    BOT_V2 = 'Bot',
+    CHAT_V2 = 'Chat',
+    COMMAND_V2 = 'Command',
+    CHAT_MESSAGE_V2 = 'Chat.Message',
+    REVISION = 'revision',
+    // imopenlines
+    BOT_SESSION = 'bot.session',
 }

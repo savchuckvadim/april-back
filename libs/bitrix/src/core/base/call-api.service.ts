@@ -36,6 +36,9 @@ export class CallApiService {
         let fullMethod = `${String(namespace)}.${String(entity)}.${String(method)}`;
         if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
             fullMethod = `${String(entity)}.${String(method)}`;
+        } else if (String(entity) === '') {
+            // entity-less методы, напр. imbot.register / imbot.update
+            fullMethod = `${String(namespace)}.${String(method)}`;
         }
 
         const response = await this.core.request<

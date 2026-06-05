@@ -60,6 +60,32 @@ import {
     BxDiskFolderService,
     BxDiskStorageService,
 } from './domain/disk';
+import { BxImBotService } from './domain/imbot/bot/services/bx-imbot-bot.service';
+import { BxImBotBatchService } from './domain/imbot/bot/services/bx-imbot-bot.batch.service';
+import { BxImBotMessageService } from './domain/imbot/message/services/bx-imbot-message.service';
+import { BxImBotMessageBatchService } from './domain/imbot/message/services/bx-imbot-message.batch.service';
+import { BxImBotCommandService } from './domain/imbot/command/services/bx-imbot-command.service';
+import { BxImBotCommandBatchService } from './domain/imbot/command/services/bx-imbot-command.batch.service';
+import { BxImBotChatService } from './domain/imbot/chat/services/bx-imbot-chat.service';
+import { BxImBotChatBatchService } from './domain/imbot/chat/services/bx-imbot-chat.batch.service';
+import { BxImBotDialogService } from './domain/imbot/dialog/services/bx-imbot-dialog.service';
+import { BxImBotDialogBatchService } from './domain/imbot/dialog/services/bx-imbot-dialog.batch.service';
+import { BxImBotV2BotService } from './domain/imbot-v2/bot/services/bx-imbot-v2-bot.service';
+import { BxImBotV2BotBatchService } from './domain/imbot-v2/bot/services/bx-imbot-v2-bot.batch.service';
+import { BxImBotV2MessageService } from './domain/imbot-v2/message/services/bx-imbot-v2-message.service';
+import { BxImBotV2MessageBatchService } from './domain/imbot-v2/message/services/bx-imbot-v2-message.batch.service';
+import { BxImBotV2CommandService } from './domain/imbot-v2/command/services/bx-imbot-v2-command.service';
+import { BxImBotV2CommandBatchService } from './domain/imbot-v2/command/services/bx-imbot-v2-command.batch.service';
+import { BxImBotV2ChatService } from './domain/imbot-v2/chat/services/bx-imbot-v2-chat.service';
+import { BxImBotV2ChatBatchService } from './domain/imbot-v2/chat/services/bx-imbot-v2-chat.batch.service';
+import { BxImBotV2FileService } from './domain/imbot-v2/file/services/bx-imbot-v2-file.service';
+import { BxImBotV2FileBatchService } from './domain/imbot-v2/file/services/bx-imbot-v2-file.batch.service';
+import { BxImBotV2EventService } from './domain/imbot-v2/event/services/bx-imbot-v2-event.service';
+import { BxImBotV2EventBatchService } from './domain/imbot-v2/event/services/bx-imbot-v2-event.batch.service';
+import { BxImBotV2RevisionService } from './domain/imbot-v2/revision/services/bx-imbot-v2-revision.service';
+import { BxImBotV2RevisionBatchService } from './domain/imbot-v2/revision/services/bx-imbot-v2-revision.batch.service';
+import { BxImOpenlinesBotSessionService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.service';
+import { BxImOpenlinesBotSessionBatchService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.batch.service';
 
 // @Injectable()
 export class BitrixService {
@@ -98,6 +124,19 @@ export class BitrixService {
         storage: BxDiskStorageService;
         folder: BxDiskFolderService;
     };
+    public imBot: BxImBotService;
+    public imBotMessage: BxImBotMessageService;
+    public imBotCommand: BxImBotCommandService;
+    public imBotChat: BxImBotChatService;
+    public imBotDialog: BxImBotDialogService;
+    public imBotV2Bot: BxImBotV2BotService;
+    public imBotV2Message: BxImBotV2MessageService;
+    public imBotV2Command: BxImBotV2CommandService;
+    public imBotV2Chat: BxImBotV2ChatService;
+    public imBotV2File: BxImBotV2FileService;
+    public imBotV2Event: BxImBotV2EventService;
+    public imBotV2Revision: BxImBotV2RevisionService;
+    public imOpenlinesSession: BxImOpenlinesBotSessionService;
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -126,6 +165,20 @@ export class BitrixService {
         file: null as unknown as BxFileBatchService,
         user: null as unknown as BxUserBatchService,
         dialog: null as unknown as BxDialogBatchService,
+        imBot: null as unknown as BxImBotBatchService,
+        imBotMessage: null as unknown as BxImBotMessageBatchService,
+        imBotCommand: null as unknown as BxImBotCommandBatchService,
+        imBotChat: null as unknown as BxImBotChatBatchService,
+        imBotDialog: null as unknown as BxImBotDialogBatchService,
+        imBotV2Bot: null as unknown as BxImBotV2BotBatchService,
+        imBotV2Message: null as unknown as BxImBotV2MessageBatchService,
+        imBotV2Command: null as unknown as BxImBotV2CommandBatchService,
+        imBotV2Chat: null as unknown as BxImBotV2ChatBatchService,
+        imBotV2File: null as unknown as BxImBotV2FileBatchService,
+        imBotV2Event: null as unknown as BxImBotV2EventBatchService,
+        imBotV2Revision: null as unknown as BxImBotV2RevisionBatchService,
+        imOpenlinesSession:
+            null as unknown as BxImOpenlinesBotSessionBatchService,
     };
     constructor(
         private readonly bxApi: BitrixBaseApi,
@@ -165,6 +218,19 @@ export class BitrixService {
         this.initUser();
         this.initDialog();
         this.initDisk();
+        this.initImBot();
+        this.initImBotMessage();
+        this.initImBotCommand();
+        this.initImBotChat();
+        this.initImBotDialog();
+        this.initImBotV2Bot();
+        this.initImBotV2Message();
+        this.initImBotV2Command();
+        this.initImBotV2Chat();
+        this.initImBotV2File();
+        this.initImBotV2Event();
+        this.initImBotV2Revision();
+        this.initImOpenlinesSession();
     }
 
     private initDeal() {
@@ -334,5 +400,106 @@ export class BitrixService {
             storage: this.cloner.clone(BxDiskStorageService, this.api),
             folder: this.cloner.clone(BxDiskFolderService, this.api),
         };
+    }
+
+    private initImBot() {
+        this.imBot = this.cloner.clone(BxImBotService, this.api);
+        this.batch.imBot = this.cloner.clone(BxImBotBatchService, this.api);
+    }
+    private initImBotMessage() {
+        this.imBotMessage = this.cloner.clone(BxImBotMessageService, this.api);
+        this.batch.imBotMessage = this.cloner.clone(
+            BxImBotMessageBatchService,
+            this.api,
+        );
+    }
+    private initImBotCommand() {
+        this.imBotCommand = this.cloner.clone(BxImBotCommandService, this.api);
+        this.batch.imBotCommand = this.cloner.clone(
+            BxImBotCommandBatchService,
+            this.api,
+        );
+    }
+    private initImBotChat() {
+        this.imBotChat = this.cloner.clone(BxImBotChatService, this.api);
+        this.batch.imBotChat = this.cloner.clone(
+            BxImBotChatBatchService,
+            this.api,
+        );
+    }
+    private initImBotDialog() {
+        this.imBotDialog = this.cloner.clone(BxImBotDialogService, this.api);
+        this.batch.imBotDialog = this.cloner.clone(
+            BxImBotDialogBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2Bot() {
+        this.imBotV2Bot = this.cloner.clone(BxImBotV2BotService, this.api);
+        this.batch.imBotV2Bot = this.cloner.clone(
+            BxImBotV2BotBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2Message() {
+        this.imBotV2Message = this.cloner.clone(
+            BxImBotV2MessageService,
+            this.api,
+        );
+        this.batch.imBotV2Message = this.cloner.clone(
+            BxImBotV2MessageBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2Command() {
+        this.imBotV2Command = this.cloner.clone(
+            BxImBotV2CommandService,
+            this.api,
+        );
+        this.batch.imBotV2Command = this.cloner.clone(
+            BxImBotV2CommandBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2Chat() {
+        this.imBotV2Chat = this.cloner.clone(BxImBotV2ChatService, this.api);
+        this.batch.imBotV2Chat = this.cloner.clone(
+            BxImBotV2ChatBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2File() {
+        this.imBotV2File = this.cloner.clone(BxImBotV2FileService, this.api);
+        this.batch.imBotV2File = this.cloner.clone(
+            BxImBotV2FileBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2Event() {
+        this.imBotV2Event = this.cloner.clone(BxImBotV2EventService, this.api);
+        this.batch.imBotV2Event = this.cloner.clone(
+            BxImBotV2EventBatchService,
+            this.api,
+        );
+    }
+    private initImBotV2Revision() {
+        this.imBotV2Revision = this.cloner.clone(
+            BxImBotV2RevisionService,
+            this.api,
+        );
+        this.batch.imBotV2Revision = this.cloner.clone(
+            BxImBotV2RevisionBatchService,
+            this.api,
+        );
+    }
+    private initImOpenlinesSession() {
+        this.imOpenlinesSession = this.cloner.clone(
+            BxImOpenlinesBotSessionService,
+            this.api,
+        );
+        this.batch.imOpenlinesSession = this.cloner.clone(
+            BxImOpenlinesBotSessionBatchService,
+            this.api,
+        );
     }
 }

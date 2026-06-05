@@ -9,6 +9,9 @@ import { BxFileDomainModule } from './file/bx-file.module';
 import { BxListItemDomainModule } from './list-item';
 import { BitrixChatDomainModule } from './chat/bx-chat-domain.module';
 import { BxTaskDomainModule } from './tasks/task/bx-tasks.module';
+import { BitrixImBotAggregateDomainModule } from './imbot/imbot-domain.module';
+import { BitrixImBotV2AggregateDomainModule } from './imbot-v2/imbot-v2-domain.module';
+import { BitrixImOpenlinesAggregateDomainModule } from './imopenlines/imopenlines-domain.module';
 @Module({
     imports: [
         BitrixActivityDomainModule,
@@ -21,6 +24,9 @@ import { BxTaskDomainModule } from './tasks/task/bx-tasks.module';
         BxListItemDomainModule,
         BitrixChatDomainModule,
         BxTaskDomainModule,
+        BitrixImBotAggregateDomainModule,
+        BitrixImBotV2AggregateDomainModule,
+        BitrixImOpenlinesAggregateDomainModule,
     ],
     exports: [
         BitrixActivityDomainModule,
@@ -33,6 +39,9 @@ import { BxTaskDomainModule } from './tasks/task/bx-tasks.module';
         BxListItemDomainModule,
         BitrixChatDomainModule,
         BxTaskDomainModule,
+        BitrixImBotAggregateDomainModule,
+        BitrixImBotV2AggregateDomainModule,
+        BitrixImOpenlinesAggregateDomainModule,
     ],
 })
 export class BitrixDomainModule {}

@@ -12,6 +12,9 @@ export enum EBxNamespace {
     IM = 'im',
     USER = 'user',
     BIZPROC = 'bizproc',
+    IMBOT = 'imbot',
+    IMBOT_V2 = 'imbot.v2',
+    IMOPENLINES = 'imopenlines',
 }
 
 export enum EBxMethod {
@@ -103,4 +106,37 @@ export enum EBxMethod {
     SHARE_TO_USER = 'sharetouser',
     DELETE_TREE = 'deletetree',
     PIN = 'pin',
+
+    // Chat bots (imbot.* / imbot.v2.* / imopenlines.*)
+    REGISTER = 'register',
+    UNREGISTER = 'unregister',
+    ANSWER = 'answer',
+    LIKE = 'like',
+    LEAVE = 'leave',
+    SEND = 'send',
+    SEND_TYPING = 'sendTyping',
+    SET_OWNER = 'setOwner',
+    SET_MANAGER = 'setManager',
+    UPDATE_TITLE = 'updateTitle',
+    UPDATE_AVATAR = 'updateAvatar',
+    USER_ADD = 'user.add',
+    USER_DELETE = 'user.delete',
+    USER_LIST = 'user.list',
+    MANAGER_ADD = 'manager.add',
+    MANAGER_DELETE = 'manager.delete',
+    GET_CONTEXT = 'getContext',
+    READ = 'read',
+    REACTION_ADD = 'Reaction.add',
+    REACTION_DELETE = 'Reaction.delete',
+    UPLOAD = 'upload',
+    DOWNLOAD = 'download',
+    UNSUBSCRIBE = 'unsubscribe',
+    INPUT_ACTION_NOTIFY = 'inputAction.notify',
+    TEXT_FIELD_ENABLED = 'textField.enabled',
+    REVISION_GET = 'revision.get',
+    // entity = 'bot.session', поэтому методы — голые (imopenlines.bot.session.finish)
+    SESSION_FINISH = 'finish',
+    SESSION_TRANSFER = 'transfer',
+    SESSION_OPERATOR = 'operator',
+    SESSION_MESSAGE_SEND = 'message.send',
 }

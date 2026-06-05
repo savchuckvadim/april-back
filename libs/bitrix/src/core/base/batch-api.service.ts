@@ -79,6 +79,9 @@ export class BatchApiService {
         let resultMethod = `${String(namespace)}.${String(entity)}.${String(method)}`;
         if (namespace === EBxNamespace.WITHOUT_NAMESPACE) {
             resultMethod = `${String(entity)}.${String(method)}`;
+        } else if (String(entity) === '') {
+            // entity-less методы, напр. imbot.register / imbot.update
+            resultMethod = `${String(namespace)}.${String(method)}`;
         }
 
         // Transform data to a plain object if necessary

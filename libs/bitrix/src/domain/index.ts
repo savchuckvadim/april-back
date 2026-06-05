@@ -7,3 +7,6 @@ export * from './rpa/item';
 export * from './rpa/type';
 export * from './rpa/stage';
 export * from './user';
+export * from './imbot';
+export * from './imbot-v2';
+export * from './imopenlines';

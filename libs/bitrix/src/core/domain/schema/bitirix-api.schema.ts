@@ -40,6 +40,22 @@ import {
     BxDiskFolderSchema,
     BxDiskStorageSchema,
 } from '@/modules/bitrix/domain/disk';
+import {
+    ImBotLifecycleSchema,
+    ImBotSchema,
+} from '../../../domain/imbot/bot/schema/bx-imbot-bot.schema';
+import { ImBotMessageSchema } from '../../../domain/imbot/message/schema/bx-imbot-message.schema';
+import { ImBotCommandSchema } from '../../../domain/imbot/command/schema/bx-imbot-command.schema';
+import { ImBotChatSchema } from '../../../domain/imbot/chat/schema/bx-imbot-chat.schema';
+import { ImBotDialogSchema } from '../../../domain/imbot/dialog/schema/bx-imbot-dialog.schema';
+import { ImBotV2BotSchema } from '../../../domain/imbot-v2/bot/schema/bx-imbot-v2-bot.schema';
+import { ImBotV2MessageSchema } from '../../../domain/imbot-v2/message/schema/bx-imbot-v2-message.schema';
+import { ImBotV2CommandSchema } from '../../../domain/imbot-v2/command/schema/bx-imbot-v2-command.schema';
+import { ImBotV2ChatSchema } from '../../../domain/imbot-v2/chat/schema/bx-imbot-v2-chat.schema';
+import { ImBotV2FileSchema } from '../../../domain/imbot-v2/file/schema/bx-imbot-v2-file.schema';
+import { ImBotV2EventSchema } from '../../../domain/imbot-v2/event/schema/bx-imbot-v2-event.schema';
+import { ImBotV2RevisionSchema } from '../../../domain/imbot-v2/revision/schema/bx-imbot-v2-revision.schema';
+import { ImOpenlinesBotSessionSchema } from '../../../domain/imopenlines/bot-session/schema/bx-imopenlines-bot-session.schema';
 
 export type BXApiSchema = {
     [EBxNamespace.CRM]: {
@@ -98,5 +114,25 @@ export type BXApiSchema = {
     };
     [EBxNamespace.IMV2]: {
         [EBXEntity.EVENT]: ImV2EventSchema;
+    };
+    [EBxNamespace.IMBOT]: {
+        [EBXEntity.BOT_LIFECYCLE]: ImBotLifecycleSchema;
+        [EBXEntity.BOT]: ImBotSchema;
+        [EBXEntity.MESSAGE]: ImBotMessageSchema;
+        [EBXEntity.COMMAND]: ImBotCommandSchema;
+        [EBXEntity.CHAT]: ImBotChatSchema;
+        [EBXEntity.DIALOG]: ImBotDialogSchema;
+    };
+    [EBxNamespace.IMBOT_V2]: {
+        [EBXEntity.BOT_V2]: ImBotV2BotSchema;
+        [EBXEntity.CHAT_V2]: ImBotV2ChatSchema;
+        [EBXEntity.COMMAND_V2]: ImBotV2CommandSchema;
+        [EBXEntity.CHAT_MESSAGE_V2]: ImBotV2MessageSchema;
+        [EBXEntity.FILE]: ImBotV2FileSchema;
+        [EBXEntity.EVENT]: ImBotV2EventSchema;
+        [EBXEntity.REVISION]: ImBotV2RevisionSchema;
+    };
+    [EBxNamespace.IMOPENLINES]: {
+        [EBXEntity.BOT_SESSION]: ImOpenlinesBotSessionSchema;
     };
 };
