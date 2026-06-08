@@ -1,6 +1,9 @@
 import dayjs, { Dayjs } from 'dayjs';
+import { Logger } from '@nestjs/common';
 import { ETimeZone } from './timezone';
 import { parsePortalInput } from './parse-portal-input';
+
+const logger = new Logger('PortalDeadline');
 
 const TASK_SERVER_TIMEZONE: ETimeZone = ETimeZone.EUROPE_MOSCOW;
 const TASK_DEADLINE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
@@ -33,11 +36,16 @@ export class PortalDeadline {
      * @throws Error если строка не парсится (см. parsePortalInput).
      */
     static fromPortalInput(raw: string, portalTz: ETimeZone): PortalDeadline {
-        return new PortalDeadline(
+        const deadline = new PortalDeadline(
             parsePortalInput(raw, portalTz),
             portalTz,
             raw,
         );
+        logger.debug(
+            `[DEADLINE][create] fromPortalInput raw="${raw}" portalTz=${portalTz} ` +
+                `→ ${JSON.stringify(deadline.debug())}`,
+        );
+        return deadline;
     }
 
     /**
@@ -68,9 +76,15 @@ export class PortalDeadline {
      * Формат `YYYY-MM-DD HH:mm:ss`.
      */
     toTaskDeadline(): string {
-        return this.instant
+        const taskDeadline = this.instant
             .tz(TASK_SERVER_TIMEZONE)
             .format(TASK_DEADLINE_FORMAT);
+        logger.debug(
+            `[DEADLINE][toTaskDeadline] instant(UTC)="${this.instant.toISOString()}" ` +
+                `→ Москва(${TASK_SERVER_TIMEZONE})="${taskDeadline}" ` +
+                `(формат для tasks.task.add — server-time Москва)`,
+        );
+        return taskDeadline;
     }
 
     /**
@@ -79,7 +93,15 @@ export class PortalDeadline {
      * Формат `DD.MM.YYYY HH:mm:ss`.
      */
     toCrmDateTime(): string {
-        return this.instant.tz(this.portalTz).format(CRM_DATETIME_FORMAT);
+        const crmDateTime = this.instant
+            .tz(this.portalTz)
+            .format(CRM_DATETIME_FORMAT);
+        logger.debug(
+            `[DEADLINE][toCrmDateTime] instant(UTC)="${this.instant.toISOString()}" ` +
+                `→ локаль портала(${this.portalTz})="${crmDateTime}" ` +
+                `(формат для CRM UF-полей)`,
+        );
+        return crmDateTime;
     }
 
     /**

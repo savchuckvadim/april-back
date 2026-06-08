@@ -2,11 +2,14 @@ import dayjs, { Dayjs } from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { Logger } from '@nestjs/common';
 import { ETimeZone } from './timezone';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+const logger = new Logger('parsePortalInput');
 
 /**
  * Форматы, в которых дата может прийти из hook'а Bitrix или с фронта.
@@ -39,5 +42,11 @@ export function parsePortalInput(raw: string, portalTz: ETimeZone): Dayjs {
             `parsePortalInput: не удалось распарсить дату "${raw}". Ожидаемые форматы: ${ACCEPTED_FORMATS.join(', ')}`,
         );
     }
-    return dayjs.tz(parsed.format('YYYY-MM-DDTHH:mm:ss'), portalTz);
+    const wallClock = parsed.format('YYYY-MM-DDTHH:mm:ss');
+    const instant = dayjs.tz(wallClock, portalTz);
+    logger.debug(
+        `[DEADLINE][parse] raw="${raw}" → wallClock="${wallClock}" ` +
+            `портал TZ=${portalTz} → instant(UTC)="${instant.toISOString()}"`,
+    );
+    return instant;
 }

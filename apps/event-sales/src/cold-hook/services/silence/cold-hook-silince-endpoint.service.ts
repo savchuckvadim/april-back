@@ -9,6 +9,7 @@ import {
     SILENCE_EVENT_PREFIX,
 } from '@lib/core/event-silence';
 import { JobNames } from '@lib/queue';
+import { ColdCallHookResponseDto } from '../../dto/cold-call-response.dto';
 
 @Injectable()
 export class ColdHookSilinceEndpointService {
@@ -19,12 +20,16 @@ export class ColdHookSilinceEndpointService {
         private readonly silentManager: EventSilentJobManagerService,
     ) {}
 
-    async createColdCallHook(domain: string, coldCallData: IColdCallData) {
+    async createColdCallHook(
+        domain: string,
+        coldCallData: IColdCallData,
+    ): Promise<ColdCallHookResponseDto> {
         const domainKey = domain.replace(/\./g, '_');
         const keyPrefix = `XO_event_sales_cold_call_${domainKey}_${coldCallData.responsible}`;
         this.logger.log(
-            `[silent] createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} ` +
-                `entityId=${coldCallData.entityId} rawDeadline="${coldCallData.deadline}"`,
+            `[DEADLINE][silent] createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} ` +
+                `entityType=${coldCallData.entityType} entityId=${coldCallData.entityId} ` +
+                `responsible=${coldCallData.responsible} rawDeadline="${coldCallData.deadline}"`,
         );
 
         const ddosItem: EventSilentJobManagerData<IColdCallData> = {
@@ -36,8 +41,17 @@ export class ColdHookSilinceEndpointService {
 
         await this.silentManager.handle<IColdCallData>(ddosItem);
         this.logger.log(
-            `[silent] createColdCallHook exit keyPrefix=${keyPrefix}`,
+            `[DEADLINE][silent] createColdCallHook exit keyPrefix=${keyPrefix} ` +
+                `rawDeadline="${coldCallData.deadline}" (буфер; реальная обработка асинхронна)`,
         );
+
+        return {
+            accepted: true,
+            domain,
+            keyPrefix,
+            rawDeadline: coldCallData.deadline,
+            message: 'Холодный звонок принят и поставлен в очередь обработки.',
+        };
     }
 
     @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_COLD_CALL}`, {

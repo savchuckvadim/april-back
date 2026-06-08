@@ -47,6 +47,11 @@ export class ColdTaskFlowService {
             UF_CRM_TASK: ufCrms,
             GROUP_ID: tasksGroupId,
         };
+        this.logger.log(
+            `[DEADLINE][task][SEND] company=${companyId} cmdKey=${addColdTaskKey} ` +
+                `tasks.task.add DEADLINE="${taskDeadline}" (Москва) ` +
+                `payload=${JSON.stringify(addColdTaskData)}`,
+        );
         buffer.queue(() =>
             this.bitrix.batch.task.add(addColdTaskKey, addColdTaskData),
         );

@@ -73,7 +73,7 @@ export class TelegramService {
         }
         return {
             chat_id: this.adminChatId,
-            text: `NEST ADMIN ERROR: ${cleanText}`,
+            text: `NEST Monorepo: ${cleanText}`,
             parse_mode: 'Markdown',
         };
     }

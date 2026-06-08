@@ -76,6 +76,12 @@ export class ColdDealFlowService {
             };
 
             if (baseDeal) {
+                this.logger.log(
+                    `[DEADLINE][deal][SEND] base deal.update company=${companyId} ` +
+                        `cmdKey=${updateBaseDealKey} dealId=${baseDeal.ID} ` +
+                        `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
+                        `payload=${JSON.stringify(baseUpdateDealData)}`,
+                );
                 buffer.queue(() =>
                     this.bitrix.batch.deal.update(
                         updateBaseDealKey,
@@ -87,6 +93,12 @@ export class ColdDealFlowService {
                     ),
                 );
             } else {
+                this.logger.log(
+                    `[DEADLINE][deal][SEND] base deal.set company=${companyId} ` +
+                        `cmdKey=${setBaseDealKey} ` +
+                        `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
+                        `payload=${JSON.stringify(baseUpdateDealData)}`,
+                );
                 buffer.queue(() =>
                     this.bitrix.batch.deal.set(
                         setBaseDealKey,
@@ -132,7 +144,12 @@ export class ColdDealFlowService {
                 COMPANY_ID: companyId.toString(),
                 ...coldDealEntityFieldValues,
             };
-            this.logger.log('coldAddDealData', coldAddDealData);
+            this.logger.log(
+                `[DEADLINE][deal][SEND] cold deal.set company=${companyId} ` +
+                    `cmdKey=${createColdKey} ` +
+                    `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
+                    `payload=${JSON.stringify(coldAddDealData)}`,
+            );
             buffer.queue(() =>
                 this.bitrix.batch.deal.set(createColdKey, coldAddDealData),
             );

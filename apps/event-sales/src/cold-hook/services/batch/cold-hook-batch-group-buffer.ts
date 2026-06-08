@@ -20,6 +20,7 @@
  *
  * Класс не @Injectable — создаётся через new в use-case/handler.
  */
+import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 
@@ -27,6 +28,8 @@ type QueuedCommand = () => void;
 
 export class ColdHookBatchGroupBuffer {
     private static readonly CHUNK_LIMIT = 50;
+
+    private readonly logger = new Logger(ColdHookBatchGroupBuffer.name);
 
     private currentGroup: QueuedCommand[] = [];
     private bufferSize = 0;
@@ -95,9 +98,16 @@ export class ColdHookBatchGroupBuffer {
         if (this.bufferSize === 0) {
             return;
         }
+        this.logger.log(
+            `[DEADLINE][batch][FLUSH] отправка HTTP-batch, команд=${this.bufferSize} ` +
+                `(сюда входят task.add c DEADLINE в Москве и deal/entity update c CRM-датой)`,
+        );
         const res = await this.bitrix.api.callBatchWithConcurrency(1);
         this.results.push(...res);
         this.bufferSize = 0;
+        this.logger.log(
+            `[DEADLINE][batch][FLUSH] HTTP-batch отправлен, получено результатов=${res.length}`,
+        );
     }
 
     /**

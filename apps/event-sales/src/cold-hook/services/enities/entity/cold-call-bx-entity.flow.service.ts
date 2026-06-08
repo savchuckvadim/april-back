@@ -38,6 +38,12 @@ export class ColdCallBxEntityFlowService {
         );
         const nextValues = eventEntity.getNextValues();
 
+        this.logger.log(
+            `[DEADLINE][entity][SEND] ${entityType}.update id=${entity.ID} ` +
+                `cmdKey=${eventPrefix}${entityType}_${entity.ID} ` +
+                `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
+                `nextValues=${JSON.stringify(nextValues)}`,
+        );
         buffer.queue(() =>
             this.bitrix.batch[entityType].update(
                 `${eventPrefix}${entityType}_${entity.ID}`,
