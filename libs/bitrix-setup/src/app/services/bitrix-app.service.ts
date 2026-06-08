@@ -14,8 +14,8 @@ import {
 
 import { BitrixAppRepository } from '../repositories/bitrix-app.repository';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
-import { PortalEntity } from '@lib/portal-konstructor/portal/portal.entity';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalEntity } from '@lib/portal-lib/store/portal.entity';
 import { BitrixTokenService } from '../../token/services/bitrix-token.service';
 import { BitrixTokenEntity, SetBitrixSecretDto } from '../../token';
 import {

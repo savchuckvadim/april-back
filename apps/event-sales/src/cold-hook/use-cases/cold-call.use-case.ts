@@ -1,6 +1,6 @@
 import { BitrixService, IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IColdCallData } from '../type/cold-hook-silence.interface';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     ColdCallBxEntityFlowService,
     IColdCallBxEntityData,
@@ -13,6 +13,7 @@ import {
     IColdTaskFlow,
 } from '../services/enities/task/cold-tasks.flow.service';
 import { ColdListFlowService } from '../services/enities/kpi-list/cold-list.flow.service';
+import { PortalDeadline } from '@lib/shared/lib/date';
 
 export class ColdCallUseCase {
     private readonly logger = new Logger(ColdCallUseCase.name);
@@ -36,6 +37,15 @@ export class ColdCallUseCase {
     ) {
         this.logger.log('flow', company?.ID);
 
+        const deadline = PortalDeadline.fromPortalInput(
+            data.deadline,
+            this.portal.getTimezone(),
+        );
+        this.logger.log(
+            `[deadline] raw="${data.deadline}" portalTz=${this.portal.getTimezone()} ` +
+                `company=${company?.ID} debug=${JSON.stringify(deadline.debug())}`,
+        );
+
         const dealsFlowService = new ColdDealFlowService(
             this.bitrix,
             this.portal,
@@ -54,7 +64,7 @@ export class ColdCallUseCase {
         );
         const entityFlowData: IColdCallBxEntityData = {
             name: data.name,
-            deadline: data.deadline,
+            deadline,
             responsibleId: data.responsible,
             xoCreated: data.created,
             entity: company,
@@ -69,7 +79,7 @@ export class ColdCallUseCase {
         );
 
         const taskFlowData: IColdTaskFlow = {
-            deadline: data.deadline,
+            deadline,
             responsibleId: Number(data.responsible),
             companyId: Number(company.ID),
             baseDealId,
@@ -86,7 +96,7 @@ export class ColdCallUseCase {
         listFlowService.flow(
             {
                 name: data.name,
-                deadline: data.deadline,
+                deadline,
                 createdId: data.created,
                 responsibleId: data.responsible,
                 companyId: company.ID,

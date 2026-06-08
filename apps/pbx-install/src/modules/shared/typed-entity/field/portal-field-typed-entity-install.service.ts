@@ -9,7 +9,7 @@ import {
     PbxFieldEntity,
     PbxFieldItemEntity,
     PbxFieldService,
-} from '@/modules/pbx-domain';
+} from '@lib/portal-lib/pbx-domain';
 import { getCamelBxFieldIdCase } from '../../utils/get-camel-case-bx-field.util';
 import { IPbxTypedFieldInstallData } from './typed-entity-field.types';
 

@@ -5,13 +5,11 @@ import {
     Body,
     Res,
     UseInterceptors,
-    HttpException,
-    HttpStatus,
 } from '@nestjs/common';
 import { ExcelReportService } from './services/kpi-report/kpi-report.service';
 import { Response } from 'express';
 import { DownLoadKpiReportDto } from './dto/get-excel-report.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 // import { TelegramService } from '@lib/telegram/telegram.service';
 
 @ApiTags('KPI Sales Report Download')

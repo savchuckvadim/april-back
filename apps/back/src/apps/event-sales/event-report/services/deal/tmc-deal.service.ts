@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
-import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventReportContext } from '../context/event-report.context';
 import { EventReportEntityFieldsModel } from '../entity/event-report-entity-fields.model';
 import {

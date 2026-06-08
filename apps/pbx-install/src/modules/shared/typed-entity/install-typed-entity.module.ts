@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@/modules/pbx';
-import { PbxDomainModule } from '@/modules/pbx-domain';
+import { PbxDomainModule } from '@lib/portal-lib/pbx-domain';
 import { ParseFieldExcelModule } from '../parse-field-excel';
 import { PortalFieldTypedEntityInstallService } from './field/portal-field-typed-entity-install.service';
 

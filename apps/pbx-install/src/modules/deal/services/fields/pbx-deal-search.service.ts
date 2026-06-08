@@ -3,7 +3,7 @@ import {
     PbxDealMergedField,
     PbxDealMonitoringService,
 } from './pbx-deal-monitoring.service';
-import { PbxFieldEntityDto } from '@/modules/pbx-domain';
+import { PbxFieldEntityDto } from '@lib/portal-lib/pbx-domain';
 
 import { IBXField } from '@/modules/bitrix';
 import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';

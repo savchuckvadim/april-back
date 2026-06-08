@@ -127,13 +127,13 @@
         "tsConfigPath": "libs/bitrix-auth/tsconfig.lib.json"
       }
     },
-    "pbx-domain": {
+    "portal-lib": {
       "type": "library",
-      "root": "libs/pbx-domain",
+      "root": "libs/portal-lib",
       "entryFile": "index",
-      "sourceRoot": "libs/pbx-domain/src",
+      "sourceRoot": "libs/portal-lib",
       "compilerOptions": {
-        "tsConfigPath": "libs/pbx-domain/tsconfig.lib.json"
+        "tsConfigPath": "libs/portal-lib/tsconfig.lib.json"
       }
     },
     "online": {
@@ -154,15 +154,6 @@
         "tsConfigPath": "libs/telegram/tsconfig.lib.json"
       }
     },
-    "portal-konstructor": {
-      "type": "library",
-      "root": "libs/portal-konstructor",
-      "entryFile": "index",
-      "sourceRoot": "libs/portal-konstructor/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/portal-konstructor/tsconfig.lib.json"
-      }
-    },
     "garant": {
       "type": "library",
       "root": "libs/garant",
@@ -179,15 +170,6 @@
       "sourceRoot": "libs/bitrix-setup/src",
       "compilerOptions": {
         "tsConfigPath": "libs/bitrix-setup/tsconfig.lib.json"
-      }
-    },
-    "portal": {
-      "type": "library",
-      "root": "libs/portal",
-      "entryFile": "index",
-      "sourceRoot": "libs/portal/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/portal/tsconfig.lib.json"
       }
     },
     "queue": {

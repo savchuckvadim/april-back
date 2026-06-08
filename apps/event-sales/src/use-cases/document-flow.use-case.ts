@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 // } from '../shared/deal-flow';
 import { IBXDeal } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
-import { BitrixDealService, BitrixEntityFlowService } from '../shared';
+import { BitrixDealService } from '../shared';
 
 interface EventDocumentFlowDto {
     domain: string;
@@ -26,9 +26,9 @@ export class EventDocumentFlowUseCase {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
         const portal = PortalModel.getPortal();
         const dealService = new BitrixDealService(bitrix);
-        const entityService = new BitrixEntityFlowService(bitrix);
+        // const entityService = new BitrixEntityFlowService(bitrix);
         console.log('dealService', dealService);
-        console.log('entityService', entityService);
+        // console.log('entityService', entityService);
         console.log('portal', portal);
         // const listService = new BitrixListService(bitrix, portal)
         return true;

@@ -1,0 +1,163 @@
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
+import { btx_categories } from 'generated/prisma';
+import { BtxCategoryRepository } from '../repositories/btx-category.repository';
+import { BtxStageRepository } from '@lib/portal-lib/pbx-domain/stage';
+import { CreateBtxCategoryDto } from '../dto/create-btx-category.dto';
+import { UpdateBtxCategoryDto } from '../dto/update-btx-category.dto';
+import { BtxCategoryResponseDto } from '../dto/btx-category-response.dto';
+import { PbxEntityType, getPrismaEntityTypeByType } from '@/shared/enums';
+import { portalCategoryEntityToResponseDto } from '../lib/portal-category-entity.util';
+
+@Injectable()
+export class BtxCategoryService {
+    constructor(
+        private readonly repository: BtxCategoryRepository,
+        private readonly stageRepository: BtxStageRepository,
+    ) {}
+
+    async create(dto: CreateBtxCategoryDto): Promise<BtxCategoryResponseDto> {
+        const category = await this.repository.create({
+            entity_type: dto.entity_type,
+            entity_id: BigInt(dto.entity_id),
+            parent_type: dto.parent_type,
+            type: dto.type,
+            group: dto.group,
+            title: dto.title,
+            name: dto.name,
+            bitrixId: dto.bitrixId,
+            bitrixCamelId: dto.bitrixCamelId,
+            code: dto.code,
+            isActive: dto.isActive,
+        });
+
+        if (!category) {
+            throw new BadRequestException('Failed to create category');
+        }
+
+        // Create stages if provided
+        if (dto.stages && dto.stages.length > 0) {
+            await this.stageRepository.createMany(
+                dto.stages.map(stage => ({
+                    btx_category_id: BigInt(category.id),
+                    name: stage.name,
+                    title: stage.title,
+                    code: stage.code,
+                    bitrixId: stage.bitrixId.toString(),
+                    color: stage.color,
+                    isActive: stage.isActive,
+                })),
+            );
+        }
+
+        // Fetch category with stages
+        const categoryWithStages = await this.repository.findById(
+            Number(category.id),
+        );
+        return portalCategoryEntityToResponseDto(categoryWithStages!);
+    }
+
+    /** Создаёт несколько категорий подряд; у каждой элемент массива — тот же контракт, что у `create` (в т.ч. опциональные `stages`). */
+    async createMany(
+        dtos: CreateBtxCategoryDto[],
+    ): Promise<BtxCategoryResponseDto[]> {
+        if (dtos.length === 0) {
+            throw new BadRequestException('At least one category is required');
+        }
+        const results: BtxCategoryResponseDto[] = [];
+        for (const dto of dtos) {
+            results.push(await this.create(dto));
+        }
+        return results;
+    }
+
+    async findById(id: number): Promise<BtxCategoryResponseDto> {
+        const category = await this.repository.findById(id);
+        if (!category) {
+            throw new NotFoundException(`Category with id ${id} not found`);
+        }
+        return portalCategoryEntityToResponseDto(category);
+    }
+
+    async findMany(): Promise<BtxCategoryResponseDto[]> {
+        const categories = await this.repository.findMany();
+        if (!categories) {
+            return [];
+        }
+        return categories.map(c => portalCategoryEntityToResponseDto(c));
+    }
+
+    async findByEntity(
+        entityType: PbxEntityType,
+        entityId: number,
+    ): Promise<BtxCategoryResponseDto[]> {
+        const prismaEntityType = getPrismaEntityTypeByType(entityType);
+        const categories = await this.repository.findByEntity(
+            prismaEntityType,
+            entityId,
+        );
+        if (!categories) {
+            return [];
+        }
+        return categories.map(c => portalCategoryEntityToResponseDto(c));
+    }
+
+    async findByEntityAndParentType(
+        entityType: string,
+        entityId: number,
+        parentType: string,
+    ): Promise<BtxCategoryResponseDto[]> {
+        const categories = await this.repository.findByEntityAndParentType(
+            entityType,
+            entityId,
+            parentType,
+        );
+        if (!categories) {
+            return [];
+        }
+        return categories.map(c => portalCategoryEntityToResponseDto(c));
+    }
+
+    async update(
+        id: number,
+        dto: UpdateBtxCategoryDto,
+    ): Promise<BtxCategoryResponseDto> {
+        const category = await this.repository.findById(id);
+        if (!category) {
+            throw new NotFoundException(`Category with id ${id} not found`);
+        }
+
+        const updateData: Partial<btx_categories> = {};
+        if (dto.parent_type !== undefined)
+            updateData.parent_type = dto.parent_type;
+        if (dto.type !== undefined) updateData.type = dto.type;
+        if (dto.group !== undefined) updateData.group = dto.group;
+        if (dto.title !== undefined) updateData.title = dto.title;
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.bitrixId !== undefined) updateData.bitrixId = dto.bitrixId;
+        if (dto.bitrixCamelId !== undefined)
+            updateData.bitrixCamelId = dto.bitrixCamelId;
+        if (dto.code !== undefined) updateData.code = dto.code;
+        if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+
+        const updatedCategory = await this.repository.update(id, updateData);
+        if (!updatedCategory) {
+            throw new BadRequestException('Failed to update category');
+        }
+        return portalCategoryEntityToResponseDto(updatedCategory);
+    }
+
+    async delete(id: number): Promise<void> {
+        const category = await this.repository.findById(id);
+        if (!category) {
+            throw new NotFoundException(`Category with id ${id} not found`);
+        }
+
+        // Delete stages first (cascade should handle this, but being explicit)
+        await this.stageRepository.deleteByCategoryId(id);
+        await this.repository.delete(id);
+    }
+}

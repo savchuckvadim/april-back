@@ -4,7 +4,7 @@ import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
 import { DepartmentBitrixService } from 'src/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { EDepartamentGroup } from '@lib/portal/interfaces/portal.interface';
+import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PBXService } from '@/modules/pbx';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts

@@ -4,8 +4,8 @@ import {
     PbxFieldEntity,
     PbxFieldService,
     PortalDealService,
-} from '@/modules/pbx-domain';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
+} from '@lib/portal-lib/pbx-domain';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import {
     BxEntityFieldManageService,

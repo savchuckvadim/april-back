@@ -1,4 +1,4 @@
-import { PortalService } from '@lib/portal/portal.service';
+import { PortalService } from '@lib/portal-lib/portal/portal.service';
 import { Injectable } from '@nestjs/common';
 import {
     BitrixServiceFactory,

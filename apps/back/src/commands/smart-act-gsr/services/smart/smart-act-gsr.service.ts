@@ -1,6 +1,6 @@
 import { IBXItem } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Injectable } from '@nestjs/common';
 import { CategorySmartActService } from './category-smart-act.service';
 

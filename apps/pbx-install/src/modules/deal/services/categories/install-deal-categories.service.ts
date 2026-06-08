@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BitrixOwnerTypeId } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
-import { PortalDealService } from '@/modules/pbx-domain';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
+import { PortalDealService } from '@lib/portal-lib/pbx-domain';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { Category } from '@app/pbx-install/shared';
 import {

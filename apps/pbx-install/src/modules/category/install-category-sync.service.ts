@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixOwnerTypeId, BitrixService } from '@/modules/bitrix';
-import { BtxCategoryRepository } from '@/modules/pbx-domain/category';
+import { BtxCategoryRepository } from '@lib/portal-lib/pbx-domain/category';
 import {
     BxCategoryRow,
     normalizeCode,

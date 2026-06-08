@@ -17,12 +17,7 @@ const TASK_DEADLINE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
  * с setTimezone('Europe/Moscow')).
  */
 export function toTaskDeadline(raw: string, portalTz: ETimeZone): string {
-    console.log('raw', raw);
-    console.log('portalTz', portalTz);
-
-    const resultDeadline = parsePortalInput(raw, portalTz)
+    return parsePortalInput(raw, portalTz)
         .tz(TASK_SERVER_TIMEZONE)
         .format(TASK_DEADLINE_FORMAT);
-    console.log('resultDeadline', resultDeadline);
-    return resultDeadline;
 }

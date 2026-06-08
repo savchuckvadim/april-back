@@ -1,4 +1,4 @@
-import { PortalEntity } from '@lib/portal-konstructor/portal/portal.entity';
+import { PortalEntity } from '@lib/portal-lib/store/portal.entity';
 import { BitrixTokenEntity } from '../../token';
 
 export interface IBitrixAppEntity {

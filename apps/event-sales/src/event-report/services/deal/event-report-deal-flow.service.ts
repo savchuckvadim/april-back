@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 import { SalesBaseDealService } from './sales-base-deal.service';
 import { SalesXoDealService } from './sales-xo-deal.service';

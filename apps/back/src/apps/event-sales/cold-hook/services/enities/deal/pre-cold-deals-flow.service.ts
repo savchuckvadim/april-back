@@ -6,7 +6,7 @@
  * не injactable вызывается через new
  */
 import { BitrixService, IBXCompany, IBXDeal } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PortalDealColdCategoryService } from './portal-deal-cold-category.service';
 import { EventColdCallEntityTargetFieldsModel } from '../entity/event-entity-fields.model';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';

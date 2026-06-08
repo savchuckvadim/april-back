@@ -1,5 +1,5 @@
 import { PbxSalesKpiListFieldItemCode } from '@/modules/pbx-sales-kpi-list/type/pbx-sales-kpi-list-field.type';
-import { PbxSalesEventFieldItemCode } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import { PbxSalesEventFieldItemCode } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 
 /**
  * Payload одного KPI-/History-элемента в логических кодах

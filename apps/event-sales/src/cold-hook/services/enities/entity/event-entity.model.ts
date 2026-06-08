@@ -1,29 +1,42 @@
 import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';
-import { findPbxSalesEventField } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
-import { IField } from '@lib/portal/interfaces/portal.interface';
+import { findPbxSalesEventField } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { Logger } from '@nestjs/common';
+import { PortalDeadline } from '@lib/shared/lib/date';
 
 export class EventEntityModel {
     private readonly logger = new Logger(EventEntityModel.name);
     private readonly eventTypeName = 'Холодный обзвон';
     private readonly eventComment: string;
+    /**
+     * Дедлайн в CRM datetime-формате (локаль портала) — единое значение
+     * для всех UF-полей, истории и комментария. Конвертация TZ инкапсулирована
+     * в {@link PortalDeadline}, сырую строку сюда уже не пишем.
+     */
+    private readonly eventDeadline: string;
     constructor(
         private readonly portal: PortalModel,
         private readonly entity: IBXCompany | IBXLead | IBXDeal | null, //null - когда создается новый элемент
         private readonly entityType: EnumColdCallEntityType,
 
         private readonly eventName: string,
-        private readonly eventDeadline: string,
+        private readonly deadline: PortalDeadline,
         private readonly eventResponsible: string,
         private readonly eventXoCreated: string,
     ) {
         if (!entity) {
             this.logger.log('создаем новую сущность' + entityType);
         }
+        this.eventDeadline = this.deadline.toCrmDateTime();
         this.eventComment = this.getComment();
+        this.logger.log(
+            `[deadline][entity] type=${entityType} entityId=${entity?.ID ?? 'new'} ` +
+                `eventDeadline(CRM)="${this.eventDeadline}" ` +
+                `debug=${JSON.stringify(this.deadline.debug())}`,
+        );
     }
 
     public getNextValues(): Record<string, number | string | string[]> {
@@ -161,13 +174,13 @@ export class EventEntityModel {
     }
 
     private getComment(): string {
-        const now = new Date();
-        const commentNow = now.toLocaleString('ru-RU', {
+        const commentNow = new Date().toLocaleString('ru-RU', {
             day: '2-digit',
             month: 'long',
             hour: 'numeric',
             minute: 'numeric',
             second: 'numeric',
+            timeZone: this.portal.getTimezone(),
         });
         const comment = commentNow + ' Запланирован на ' + this.eventDeadline;
         return comment;

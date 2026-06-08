@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { IBxRpaItem } from '@/modules/bitrix';
 
 @Injectable()

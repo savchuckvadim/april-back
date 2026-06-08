@@ -1,6 +1,6 @@
 import { BitrixService } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Injectable, Logger } from '@nestjs/common';
 import { BxDiskUploadFlowService } from './bx-disk-upload-flow.service';
 import { readFile } from 'fs/promises';

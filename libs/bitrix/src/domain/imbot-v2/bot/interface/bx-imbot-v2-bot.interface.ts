@@ -2,11 +2,11 @@
 // api-reference/chat-bots/chat-bots-v2/imbot.v2/bots
 
 export interface IBXImBotV2Properties {
-    name: string; // Имя бота
+    name: string; // Имя бота (обязательно)
     lastName?: string;
+    workPosition?: string; // Должность/описание
     color?: string;
-    email?: string;
-    position?: string; // Должность/описание
+    gender?: 'M' | 'F';
     avatar?: string; // Base64
     [key: string]: unknown;
 }

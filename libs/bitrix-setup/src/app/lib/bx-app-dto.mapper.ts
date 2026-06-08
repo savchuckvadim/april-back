@@ -1,4 +1,4 @@
-import { PortalDto } from '@lib/portal-konstructor/portal/portal.entity';
+import { PortalDto } from '@lib/portal-lib/store/portal.entity';
 import { BitrixAppDto } from '../dto/bitrix-app.dto';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
 

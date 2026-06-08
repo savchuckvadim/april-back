@@ -8,7 +8,7 @@ import { MailConfirmationService } from './services/mail.service';
 import { AuthController } from './controllers/auth.controller';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { MailModule } from '@/modules/mail/mail.module';
-import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { TokenModule } from './token/token.module';
 
 @Module({

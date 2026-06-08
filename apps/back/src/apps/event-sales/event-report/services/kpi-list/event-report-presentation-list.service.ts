@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { IBXListItemFields } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 

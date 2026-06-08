@@ -1,7 +1,7 @@
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
-import { IPBXList } from '@lib/portal/interfaces/portal.interface';
-import { ETimeZone } from '@/shared/lib/date';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { ETimeZone, PortalDeadline } from '@/shared/lib/date';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
 import {
     ColdListFlowService,
@@ -66,7 +66,10 @@ const buildList = (group: string, type: string): IPBXList => ({
 
 const baseData: IColdListFlowData = {
     name: 'от 26 мая 2026',
-    deadline: '2026-05-27T08:00:00+03:00',
+    deadline: PortalDeadline.fromPortalInput(
+        '27.05.2026 08:00:00',
+        ETimeZone.EUROPE_MOSCOW,
+    ),
     createdId: '1',
     responsibleId: '2',
     companyId: '111',

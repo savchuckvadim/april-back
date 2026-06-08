@@ -5,8 +5,8 @@ import {
     IPBXList,
     IPortal,
     IFieldItem,
-} from '@lib/portal/interfaces/portal.interface';
-import { PortalModel } from '@lib/portal/services/portal.model';
+} from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { OrkReportKpiData, OrkKpiFilter, KPIOrk } from '../dto/kpi.dto';
 // import { ActionOrkEventService } from '../services/action-service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';

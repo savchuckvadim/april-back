@@ -1,7 +1,7 @@
 import { Field, ListItem } from '../type/parse-field.type';
 import * as ExcelJS from 'exceljs';
-import { PbxSalesEventFieldType } from '@/modules/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
-import { PbxSalesKonstructorFieldType } from '@/modules/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
+import { PbxSalesEventFieldType } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import { PbxSalesKonstructorFieldType } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 import {
     FieldImportSheetRow,
     FieldItemImportSheetRow,

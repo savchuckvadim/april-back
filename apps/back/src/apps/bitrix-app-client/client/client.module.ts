@@ -4,7 +4,7 @@ import { ClientRepository } from './repositories/client.repository';
 import { BitrixClientService } from './services/bitrix-client.service';
 import { UserModule } from '../user/user.module';
 import { BitrixClientPortalService } from './services/bitrix-client-portal.service';
-import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { BitrixClientController } from './controllers/bitrix-client.controller';
 
 @Module({

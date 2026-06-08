@@ -1,8 +1,8 @@
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { Logger } from '@nestjs/common';
 import { ColdPortalDealModel } from './cold-portal-deal.model';
-import { PortalModel } from '@lib/portal/services/portal.model';
-import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
 import { IColdCallBxEntityData } from '../entity/cold-call-bx-entity.flow.service';
 import { EventEntityModel } from '../entity/event-entity.model';

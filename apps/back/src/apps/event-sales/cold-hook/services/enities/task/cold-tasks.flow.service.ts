@@ -1,5 +1,5 @@
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
 import { toTaskDeadline } from '@/shared/lib/date';

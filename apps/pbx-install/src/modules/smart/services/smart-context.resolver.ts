@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
-import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { PbxEntityType } from '@/shared/enums';
 import {
     TypedEntityFieldCtx,

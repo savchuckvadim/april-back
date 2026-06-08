@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DocumentSupplyInitFormDto } from '../dto/document-supply-init-form.dto';
-import { PortalService } from '@lib/portal';
+import { PortalService } from '@lib/portal-lib/portal';
 import { BitrixService } from '@/modules/bitrix';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
 import { ProductRowDto } from '../../document-generate/dto/product-row/product-row.dto';
 import { ProductDto } from '../../document-generate/dto/product/product.dto';
 import { ContractDto } from '../../dto/contract.dto';
 import { PBXService } from '@/modules/pbx';
-import { ProviderService } from '@lib/portal-konstructor/provider';
+import { ProviderService } from '@lib/portal-lib/konstructor/provider';
 
 @Injectable()
 export class InitFormService {

@@ -640,6 +640,14 @@ model Portal {
     C_REST_WEB_HOOK_URL    String?                  @db.Text
     number                 Int
     client_id              BigInt?                  @db.UnsignedBigInt
+    nestKey                String?                  @db.Text
+    nestKonstructorKey     String?                  @db.Text
+    nestReportKey          String?                  @db.Text
+    nestEventsKey          String?                  @db.Text
+    nestServiceKey         String?                  @db.Text
+    nestWebhooksKey        String?                  @db.Text
+    nestScheduleKey        String?                  @db.Text
+    vibeKey                String?                  @db.Text
     bitrix_apps            bitrix_apps[]
     bitrixlists            bitrixlists[]
     btx_companies          btx_companies[]
@@ -1091,7 +1099,7 @@ model bx_rqs {
     country_id     String?   @db.VarChar(255)
     is_active      Boolean   @default(true)
     sort           Int?
-    portal        Portal?   @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "bx_rqs_portal_id_foreign")
+    portal         Portal?   @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "bx_rqs_portal_id_foreign")
 
     @@index([portal_id], map: "bx_rqs_portal_id_foreign")
 }

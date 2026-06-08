@@ -8,7 +8,7 @@ import {
     DeletePortalRegionDto,
     UpdatePortalRegionDto,
 } from './dto/portal-region.dto';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 
 @Injectable()
 export class PortalRegionService {

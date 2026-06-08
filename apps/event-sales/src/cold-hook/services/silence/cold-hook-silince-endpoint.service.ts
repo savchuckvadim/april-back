@@ -23,7 +23,8 @@ export class ColdHookSilinceEndpointService {
         const domainKey = domain.replace(/\./g, '_');
         const keyPrefix = `XO_event_sales_cold_call_${domainKey}_${coldCallData.responsible}`;
         this.logger.log(
-            `[silent] createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} entityId=${coldCallData.entityId}`,
+            `[silent] createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} ` +
+                `entityId=${coldCallData.entityId} rawDeadline="${coldCallData.deadline}"`,
         );
 
         const ddosItem: EventSilentJobManagerData<IColdCallData> = {

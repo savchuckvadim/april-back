@@ -13,8 +13,8 @@ import { BitrixImEventFilterService } from './filters/bitrix-im-event-filter.ser
 import { TelegramBridgeService } from './telegram-bridge.service';
 import { TelegramReplyRouterService } from './telegram/telegram-reply-router.service';
 import { BridgeUserNameCacheService } from './bitrix/bridge-user-name-cache.service';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
-import { PortalEntity } from '@lib/portal-konstructor/portal/portal.entity';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalEntity } from '@lib/portal-lib/store/portal.entity';
 
 @Injectable()
 export class BridgeOrchestratorService implements OnModuleInit {

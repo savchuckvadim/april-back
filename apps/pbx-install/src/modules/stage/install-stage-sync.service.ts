@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService, IBXStatus } from '@/modules/bitrix';
-import { BtxStageRepository } from '@/modules/pbx-domain/stage';
+import { BtxStageRepository } from '@lib/portal-lib/pbx-domain/stage';
 import {
     normalizeBitrixStageColor,
     normalizeStatusListResult,

@@ -17,7 +17,7 @@ import { SmartProductRowService } from '../services/smart/smart-product-row.serv
 import { SmartDealProductRowService } from '../services/smart/smart-deal-product-row.service';
 import { getContractPeriodFieldBitrixId } from '../services/ork-deals/utils/get-contract-period-field.util';
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { SmartActTimelineChangeContractStartService } from '../services/timeline/smart-act.timeline.service';
 import type { ISmartActWarningTaskSendData } from '../services/task/smart-act-plan-warning.constants';
 import { buildSmartActWarningTasksFromPlan } from '../services/task/smart-act-plan-warning-from-plan.util';

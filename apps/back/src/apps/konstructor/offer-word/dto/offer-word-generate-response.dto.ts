@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RegionDto } from '../../document-generate';
-import { RqEntity } from '@lib/portal-konstructor/provider';
+import { RqEntity } from '@lib/portal-lib/konstructor/provider';
 import { WordTemplate } from '@/modules/offer-template/word';
 import { IInfblockGroupsRenderData } from '../../document-generate/infoblocks/infoblock-render-data.service';
 

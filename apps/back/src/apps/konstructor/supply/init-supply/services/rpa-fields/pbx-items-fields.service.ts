@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InitSupplyDto } from '../../dto/init-supply.dto';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { IBxRpaItem } from '@/modules/bitrix';
 import { PbxCompanyDto } from '../../dto/pbx-company.dto';
 import { EntityFormFieldDto } from '@/apps/konstructor/document-generate/dto/entity-form-field/entity-form-field.dto';

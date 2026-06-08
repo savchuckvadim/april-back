@@ -1,4 +1,4 @@
-import { IPBXList } from '@lib/portal/interfaces/portal.interface';
+import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { KpiEventItemModel } from './kpi-event-item.model';
 import { KpiEventPayload } from '../type/kpi-event-payload.type';
 

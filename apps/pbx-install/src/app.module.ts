@@ -9,7 +9,7 @@ import { PBXInstallModule } from './modules/pbx-install.module';
  * Корневой модуль приложения установки/синхронизации конфигурации Bitrix-портала.
  *
  * Архитектура: app зависит только от feature-модуля PBXInstallModule и общих
- * библиотек (libs/*). Доступ к PortalDB — через @lib/pbx-domain, к Bitrix — через
+ * библиотек (libs/*). Доступ к PortalDB — через @lib/portal-lib/pbx-domain, к Bitrix — через
  * @lib/bitrix (инстанс по domain выдаёт PBXService из @lib/pbx).
  */
 @Module({

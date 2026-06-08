@@ -1,7 +1,7 @@
 import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
 import { Injectable } from '@nestjs/common';
-import { PortalService } from '@lib/portal/portal.service';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalService } from '@lib/portal-lib/portal/portal.service';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix/core';
 import { ApiProperty } from '@nestjs/swagger';
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';

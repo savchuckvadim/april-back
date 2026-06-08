@@ -1,12 +1,11 @@
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
-import { ETimeZone } from '@lib/shared';
-import { toTaskDeadline } from '@lib/shared/lib/date';
+import { PortalDeadline } from '@lib/shared/lib/date';
 
 export interface IColdTaskFlow {
-    deadline: string;
+    deadline: PortalDeadline;
     name: string;
     responsibleId: number;
     companyId: number;
@@ -36,7 +35,11 @@ export class ColdTaskFlowService {
         const tasksGroupId = this.portal.getSalesTaskGroupId();
         this.logger.log(`Tasks group id: ${tasksGroupId}`);
         const ufCrms = this.getUfCrms(companyId, baseDealId, xoDealId);
-        const taskDeadline = toTaskDeadline(deadline, this.getTimeZone());
+        const taskDeadline = deadline.toTaskDeadline();
+        this.logger.log(
+            `[deadline][task] company=${companyId} DEADLINE="${taskDeadline}" ` +
+                `(server-time Москва) debug=${JSON.stringify(deadline.debug())}`,
+        );
         const addColdTaskData = {
             RESPONSIBLE_ID: responsibleId,
             TITLE: name,
@@ -47,12 +50,6 @@ export class ColdTaskFlowService {
         buffer.queue(() =>
             this.bitrix.batch.task.add(addColdTaskKey, addColdTaskData),
         );
-    }
-
-    private getTimeZone(): ETimeZone {
-        const timeZone = this.portal.getTimezone();
-        this.logger.log(`Timezone: ${timeZone}`);
-        return timeZone || ETimeZone.EUROPE_MOSCOW;
     }
 
     private getUfCrms(

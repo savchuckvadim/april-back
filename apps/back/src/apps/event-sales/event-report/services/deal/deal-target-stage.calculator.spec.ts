@@ -1,4 +1,4 @@
-import { IPCategory } from '@lib/portal/interfaces/portal.interface';
+import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
     getSalesBaseTargetStageCode,
     getXoTargetStageCode,

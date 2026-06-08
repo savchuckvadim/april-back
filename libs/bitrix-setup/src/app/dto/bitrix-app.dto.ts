@@ -16,7 +16,7 @@ import {
     BITRIX_APP_TYPES,
 } from '../enums/bitrix-app.enum';
 import { BitrixAppEntity } from '../model/bitrix-app.model';
-import { PortalDto } from '@lib/portal-konstructor/portal/portal.entity';
+import { PortalDto } from '@lib/portal-lib/store/portal.entity';
 
 export class CreateBitrixAppBaseDto {
     @ApiProperty({

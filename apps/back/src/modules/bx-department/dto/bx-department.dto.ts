@@ -1,6 +1,6 @@
 import { BXUserDto } from '@/apps/kpi-report-ork/event/dto/get-report-request.dto';
 import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
-import { EDepartamentGroup } from '@lib/portal/interfaces/portal.interface';
+import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional } from 'class-validator';

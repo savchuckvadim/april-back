@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
-import { PortalDealService } from '@/modules/pbx-domain';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalDealService } from '@lib/portal-lib/pbx-domain';
 import { PbxEntityType } from '@/shared';
 import { PBXService } from '@/modules/pbx';
 import { Field } from '../../../shared/parse-field-excel/type/parse-field.type';

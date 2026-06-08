@@ -5,7 +5,7 @@ import { InitRegionService } from './services/init.region.service';
 import { KonstructorInitController } from './konstructor-init.controller';
 import { InitComplectService } from './services/init-complect.service';
 import { InitInfoblockService } from './services/init-infoblock.service';
-import { PortalKonstructorModule } from '@lib/portal-konstructor/portal-konstructor.module';
+import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-konstructor.module';
 
 @Module({
     imports: [GarantModule, PortalKonstructorModule],

@@ -3,7 +3,7 @@ import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
 import {
     PortalSmartEntity,
     PortalSmartService,
-} from '@/modules/pbx-domain/portal-smart';
+} from '@lib/portal-lib/pbx-domain/portal-smart';
 import { IBXSmartFullType } from '@/modules/bitrix/domain/crm/smart-type';
 import { Injectable } from '@nestjs/common';
 

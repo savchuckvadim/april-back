@@ -5,8 +5,8 @@ import {
     BtxCategoryResponseDto,
     BtxCategoryService,
     BtxStageResponseDto,
-} from '@/modules/pbx-domain/category';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
+} from '@lib/portal-lib/pbx-domain/category';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PbxEntityType } from '@/shared/enums';
 import {
     BxCategoryRow,
@@ -14,7 +14,7 @@ import {
 } from '@app/pbx-install/shared/utils/bitrix-category-stage.utils';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { SmartCategoryStageStrategy } from '../smart-categories/smart-category-stage.strategy';
-import { PortalSmartService } from '@lib/pbx-domain/portal-smart';
+import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { convertToBigint } from '@lib/shared';
 
 /** Категория из Bitrix вместе с её стадиями. */

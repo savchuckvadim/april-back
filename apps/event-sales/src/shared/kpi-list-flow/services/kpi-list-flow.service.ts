@@ -1,6 +1,6 @@
 import { BitrixService } from '@/modules/bitrix';
-import { IPBXList } from '@lib/portal/interfaces/portal.interface';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
 import { ColdHookBatchGroupBuffer } from '../../../cold-hook/services/batch/cold-hook-batch-group-buffer';
 import { KpiEventItemModel } from '../models/kpi-event-item.model';

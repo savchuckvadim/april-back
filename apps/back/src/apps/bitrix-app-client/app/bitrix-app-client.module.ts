@@ -7,7 +7,7 @@ import { ClientModule } from '../client/client.module';
 import { AuthModule } from '../auth/auth.module';
 import { BitrixAppUiController } from './controllers/bitrix-app-ui.controller';
 import { BitrixSetupAppModule } from '@lib/bitrix-setup/app/bitrix-setup-app.module';
-import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { CookieModule } from '@/core/cookie/cookie.module';
 import { BitrixAppInstallController } from './controllers/bitrix-app-install.controller';
 import { PBXModule } from '@/modules/pbx';

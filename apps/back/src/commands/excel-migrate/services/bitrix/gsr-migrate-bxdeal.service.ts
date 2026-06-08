@@ -5,7 +5,7 @@ import { MigrateToBxDto } from '../../dto/migrate-to-bx.dto';
 import { GsrMigrateBitrixAbstract } from './gsr-migrate-bitrix-abstract.service';
 
 import { Injectable } from '@nestjs/common';
-import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 @Injectable()
 export class GsrMigrateBitrixDealService extends GsrMigrateBitrixAbstract {
     getDealCommand(

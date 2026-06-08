@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
-import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { InstallSmartCategoriesParams } from '@app/pbx-install/category/install-smart-template.types';
 import { normalizeCode } from '@app/pbx-install/shared/utils/bitrix-category-stage.utils';
 import { InstallCategorySyncService } from '@app/pbx-install/category/install-category-sync.service';

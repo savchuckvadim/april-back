@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BitrixService } from 'src/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 
 @Injectable()
 export class GsrMigrateBitrixAbstract {

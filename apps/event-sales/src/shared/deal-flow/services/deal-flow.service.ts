@@ -1,6 +1,6 @@
 import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { BitrixDealService } from './bitrix-deal.service';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
 
 export class DealFlowService {

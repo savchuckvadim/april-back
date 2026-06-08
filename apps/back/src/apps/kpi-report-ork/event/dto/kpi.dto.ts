@@ -10,7 +10,7 @@ import {
     IsDate,
 } from 'class-validator';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { IFieldItem } from '@lib/portal/interfaces/portal.interface';
+import { IFieldItem } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import {
     EnumOrkFilterCode,

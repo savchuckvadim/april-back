@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 
-import { EDepartamentGroup } from '@lib/portal/interfaces/portal.interface';
+import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiTags } from '@nestjs/swagger';
 import { BxDepartmentService } from './services/bx-department.service';
 import { BxDepartmentRequestDto } from './dto/bx-department.dto';

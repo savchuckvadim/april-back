@@ -1,0 +1,51 @@
+import { Module } from '@nestjs/common';
+import { AdminClientModule } from './client/client.module';
+import { AdminAppModule } from './app/app.module';
+import { AdminPortalModule } from './portal/portal.module';
+import { BtxDealModule } from './portal/btx-deals/btx-deal.module';
+import { BtxLeadModule } from './portal/btx-leads/btx-lead.module';
+import { BtxCompanyModule } from './portal/btx-companies/btx-company.module';
+import { BtxContactModule } from './portal/btx-contacts/btx-contact.module';
+import { BtxRpaModule } from './portal/btx-rpas/btx-rpa.module';
+import { BitrixFieldModule } from './portal/bitrixfields/bitrixfield.module';
+import { SmartModule } from './portal/smarts/smart.module';
+import { BxRqModule } from './portal/bx-rqs/bx-rq.module';
+import { TimezoneModule } from './portal/timezones/timezone.module';
+import { ContractModule } from './garant/contracts/contract.module';
+import { MeasureModule } from './garant/measures/measure.module';
+import { PortalMeasureModule } from './portal/portal-measures/portal-measure.module';
+import { PortalContractModule } from './portal/portal-contracts/portal-contract.module';
+import { AdminGarantRegionModule } from './garant/regions/admin-garant-region.module';
+import { AdminGarantComplectModule } from './garant/complect/admin-garant-complect.module';
+import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.module';
+import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
+import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
+import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
+
+@Module({
+    imports: [
+        AdminClientModule,
+        AdminAppModule,
+        AdminPortalModule,
+        BtxDealModule,
+        BtxLeadModule,
+        BtxCompanyModule,
+        BtxContactModule,
+        BtxRpaModule,
+        BitrixFieldModule,
+        SmartModule,
+        BxRqModule,
+        TimezoneModule,
+        PortalCategoryModule,
+        ContractModule,
+        MeasureModule,
+        PortalMeasureModule,
+        PortalContractModule,
+        AdminGarantRegionModule,
+        AdminGarantComplectModule,
+        AdminGarantSupplyModule,
+        AdminGarantInfogroupModule,
+        AdminGarantInfoblockModule,
+    ],
+})
+export class AdminAddModule {}

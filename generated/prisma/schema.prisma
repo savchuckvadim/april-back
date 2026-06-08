@@ -640,6 +640,14 @@ model Portal {
   C_REST_WEB_HOOK_URL    String?                  @db.Text
   number                 Int
   client_id              BigInt?                  @db.UnsignedBigInt
+  nestKey                String?                  @db.Text
+  nestKonstructorKey     String?                  @db.Text
+  nestReportKey          String?                  @db.Text
+  nestEventsKey          String?                  @db.Text
+  nestServiceKey         String?                  @db.Text
+  nestWebhooksKey        String?                  @db.Text
+  nestScheduleKey        String?                  @db.Text
+  vibeKey                String?                  @db.Text
   bitrix_apps            bitrix_apps[]
   bitrixlists            bitrixlists[]
   btx_companies          btx_companies[]

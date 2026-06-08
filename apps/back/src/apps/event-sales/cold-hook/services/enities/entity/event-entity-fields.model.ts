@@ -1,6 +1,6 @@
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';
-import { IField } from '@lib/portal/interfaces/portal.interface';
+import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 
 export class EventColdCallEntityTargetFieldsModel {

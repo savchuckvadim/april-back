@@ -1,8 +1,7 @@
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
-import dayjs from 'dayjs';
-import { ETimeZone, toCrmDateTime } from '@/shared/lib/date';
+import { nowCrmDateTime, PortalDeadline } from '@/shared/lib/date';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
 import { KpiListFlowService } from '../../../../shared/kpi-list-flow/services/kpi-list-flow.service';
 import { KpiEventPayload } from '../../../../shared/kpi-list-flow/type/kpi-event-payload.type';
@@ -10,8 +9,8 @@ import { KpiEventPayload } from '../../../../shared/kpi-list-flow/type/kpi-event
 export interface IColdListFlowData {
     /** Заголовок события («от 26 мая 2026») */
     name: string;
-    /** ISO/локальный deadline планируемого звонка */
-    deadline: string;
+    /** Дедлайн планируемого звонка (TZ-конвертация инкапсулирована). */
+    deadline: PortalDeadline;
     /** ID постановщика (автор) */
     createdId: string | number;
     /** ID ответственного */
@@ -59,13 +58,18 @@ export class ColdListFlowService {
     private buildPayload(data: IColdListFlowData): KpiEventPayload {
         const portalTz = this.portal.getTimezone();
         const eventTitle = `${EVENT_TITLE_PREFIX} ${data.name}`;
+        this.logger.log(
+            `[deadline][list] company=${data.companyId} ` +
+                `plan_date="${data.deadline.toCrmDateTime()}" (локаль портала) ` +
+                `event_date="${nowCrmDateTime(portalTz)}"`,
+        );
 
         return {
             name: eventTitle,
             values: {
-                event_date: this.nowCrmDateTime(portalTz),
+                event_date: nowCrmDateTime(portalTz),
                 event_title: eventTitle,
-                plan_date: toCrmDateTime(data.deadline, portalTz),
+                plan_date: data.deadline.toCrmDateTime(),
                 author: data.createdId,
                 responsible: data.responsibleId,
                 su: data.responsibleId,
@@ -89,14 +93,5 @@ export class ColdListFlowService {
             n1: `D_${data.baseDealId}`,
             n2: `D_${data.xoDealId}`,
         };
-    }
-
-    /**
-     * `toCrmDateTime` принимает только перечисленные входные форматы
-     * (см. parsePortalInput). `Date.toISOString()` с `Z` через dayjs strict
-     * не парсится, поэтому форматируем «сейчас» напрямую в TZ портала.
-     */
-    private nowCrmDateTime(portalTz: ETimeZone): string {
-        return dayjs().tz(portalTz).format('DD.MM.YYYY HH:mm:ss');
     }
 }

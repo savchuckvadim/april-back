@@ -17,8 +17,8 @@ import { InstallCategoryModule } from '@app/pbx-install/category/install-categor
 import { InstallStageModule } from '@app/pbx-install/stage/install-stage.module';
 import { InstallTypedEntityModule } from '@app/pbx-install/shared/typed-entity/install-typed-entity.module';
 import { PBXModule } from '@/modules/pbx';
-import { PortalKonstructorModule } from '@lib/portal-konstructor/portal-konstructor.module';
-import { PbxDomainModule } from '@/modules/pbx-domain/pbx-domain.module';
+import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-konstructor.module';
+import { PbxDomainModule } from '@lib/portal-lib/pbx-domain/pbx-domain.module';
 import { DeletePbxSmartUseCase } from '@app/pbx-install/smart/use-cases/delete-pbx-smart.use-case';
 import { GetPbxSmartUseCase } from '@app/pbx-install/smart/use-cases/get-pbx-smart.use-case';
 import { InstallSmartUseCase } from '@app/pbx-install/smart/use-cases/install-smart.use-case';

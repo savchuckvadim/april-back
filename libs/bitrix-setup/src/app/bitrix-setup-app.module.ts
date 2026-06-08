@@ -5,7 +5,7 @@ import { PrismaService } from 'src/core/prisma';
 import { BitrixAppService } from './services/bitrix-app.service';
 import { BitrixAppRepository } from './repositories/bitrix-app.repository';
 import { BitrixAppPrismaRepository } from './repositories/bitrix-app.prisma.repository';
-import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { TokenModule } from '../token/token.module';
 import { SecretModule } from '../secret/secret.module';
 

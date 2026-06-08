@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
     PbxDealCategoryCodeEnum,
     PortalDealServiceStageCodeEnum,
-} from '@lib/portal/services/types/deals/portal.deal.type';
+} from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import {
     OrkReportCompanyItemDto,
     OrkReportDealItemDto,
@@ -11,12 +11,13 @@ import {
     OrkReportDealsResponseDto,
 } from '../dto/ork-report-deals.dto';
 import { IBXCompany, IBXDeal } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     IBXFile,
     IBXFileItemField,
 } from '@/modules/bitrix/domain/file/bx-file.interface';
-import { IField } from '@lib/portal/interfaces/portal.interface';
+import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { countContractMonths, parseContractDate } from '@lib/shared/lib/date';
 
 @Injectable()
 export class OrkDealsReportService {
@@ -224,11 +225,14 @@ export class OrkDealsReportService {
     private getDuration(deal: IBXDeal, portal: PortalModel): number {
         const { from: rawFrom, to: rawTo } = this.getFromTo(deal, portal);
 
-        const from = new Date(String(rawFrom)).getTime();
-        const to = new Date(String(rawTo)).getTime();
-        return (
-            Number(((to - from) / (1000 * 60 * 60 * 24) / 30).toFixed(0)) || 1
-        ); // месяцы
+        const from = parseContractDate(rawFrom);
+        const to = parseContractDate(rawTo);
+        if (!from || !to) {
+            return 1;
+        }
+        // Точная длительность по календарным месяцам (округление остатка ≥15 дней).
+        // Минимум 1 месяц — duration используется как делитель в getMonthSum.
+        return countContractMonths(from, to) || 1;
     }
 
     private getDealStageName(

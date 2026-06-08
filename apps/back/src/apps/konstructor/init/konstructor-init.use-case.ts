@@ -19,7 +19,7 @@ import {
     RegionInitDto,
 } from './dto/response-init-data.dto';
 import { ContractService } from '@lib/garant/contract/contract.service';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { ContractDto } from '../dto/contract.dto';
 import { PortalContractEntity } from '@lib/garant/contract/portal-contract.entity';
 import { CONTRACT_CODE } from '../document-generate/type/contract.type';

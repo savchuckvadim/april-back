@@ -21,7 +21,7 @@ import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.mod
 import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
 import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
 import { PbxInstallModule } from './portal/pbx-install/pbx-install.module';
-import { PortalCategoryModule } from '@/modules/pbx-domain/category';
+import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
 
 @Module({
     imports: [

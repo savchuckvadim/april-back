@@ -6,7 +6,7 @@ import { IsArray } from 'class-validator';
 import { IsString } from 'class-validator';
 
 import { IsNumber } from 'class-validator';
-import { ProviderDto } from '@lib/portal-konstructor/provider';
+import { ProviderDto } from '@lib/portal-lib/konstructor/provider';
 
 class TemplateFieldDto {
     @IsNumber() id: number;

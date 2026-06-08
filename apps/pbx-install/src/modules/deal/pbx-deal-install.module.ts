@@ -1,12 +1,12 @@
 import { PBXModule } from '@/modules/pbx';
-import { PortalStoreModule } from '@lib/portal-konstructor/portal/portal-store.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { Module } from '@nestjs/common';
 import { PbxDealCategoryInstallMonitoringController } from './controllers/pbx-deal-category-install-monitoring.controller';
 import {
     PbxFieldModule,
     PortalCategoryModule,
     PortalDealModule,
-} from '@/modules/pbx-domain';
+} from '@lib/portal-lib/pbx-domain';
 import { ParseFieldExcelModule } from '../shared';
 
 import { PbxDealFieldInstallByParseUseCase } from './use-cases/field/pbx-deal-field-install-by-parse.use-case';

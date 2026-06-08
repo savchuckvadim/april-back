@@ -6,7 +6,7 @@ import { SheetDataToMigrateConverter } from './services/sheet-data-to-migrate.co
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { GsrMigrateBitrixDealService } from './services/bitrix/gsr-migrate-bxdeal.service';
 import { GsrMigrateBitrixCompanyService } from './services/bitrix/gsr-migrate-bxcompany.service';
 import { GsrMigrateBitrixProductRowService } from './services/bitrix/gsr-migrate-bxproduct-row.service';
@@ -14,7 +14,7 @@ import { GsrMigrateBitrixContactService } from './services/bitrix/gsr-migrate-bx
 import { BitrixService } from 'src/modules/bitrix';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { PbxDealCategoryCodeEnum } from '@lib/portal/services/types/deals/portal.deal.type';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { gsrMigrateDataDto } from './gsr.nigrate-dto';
 import { delay } from '@/shared/lib';
 

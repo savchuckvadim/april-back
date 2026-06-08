@@ -4,7 +4,7 @@ import {
     FieldItemCode,
     FieldItemCodesMap,
     FieldWithItems,
-} from '@/modules/pbx-domain/field/type/pbx-field-type.util';
+} from '@lib/portal-lib/pbx-domain/field/type/pbx-field-type.util';
 
 export const PBX_SALES_KPI_LIST_FIELDS = [
     {

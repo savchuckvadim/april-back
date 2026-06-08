@@ -43,7 +43,7 @@ export enum EBXEntity {
     CHAT_V2 = 'Chat',
     COMMAND_V2 = 'Command',
     CHAT_MESSAGE_V2 = 'Chat.Message',
-    REVISION = 'revision',
+    REVISION = 'Revision',
     // imopenlines
     BOT_SESSION = 'bot.session',
 }

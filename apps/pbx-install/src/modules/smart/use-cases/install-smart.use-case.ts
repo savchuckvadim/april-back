@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
+import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { ParseSmartService } from '../services/parse/parse-smart.service';
 import { InstallSmartDto } from '../dto/install-smart.dto';
 import { PBXService } from '@/modules/pbx';

@@ -2,10 +2,10 @@ import {
     ISmartActItemsByDealResult,
     TStageType,
 } from './smart-act-gsr.service';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { CategorySmartActService } from './category-smart-act.service';
 import { BitrixService, IBXItem } from '@/modules/bitrix';
-import { IPSmart } from '@lib/portal/interfaces/portal.interface';
+import { IPSmart } from '@lib/portal-lib/portal/interfaces/portal.interface';
 
 export interface ICreateSmartAct {
     dealId: number;

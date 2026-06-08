@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PortalCategoryModule } from '@/modules/pbx-domain/category';
+import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
 import { InstallCategorySyncService } from './install-category-sync.service';
 
 /**

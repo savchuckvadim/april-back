@@ -13,7 +13,7 @@ import { InitSupplyRpaPbxItemsFieldsService } from './services/rpa-fields/pbx-it
 import { InitSupplyFileService } from './services/file/init-supply-file.service';
 import { InitSupplyTimelineCommentService } from './services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { ProviderCommentService } from './services/rpa-timeline-comment/provider-comment.service';
-import { ProviderModule } from '@lib/portal-konstructor/provider';
+import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { ArmCommentService } from './services/rpa-timeline-comment/arm-comment.service';
 import { RqCommentService } from './services/rpa-timeline-comment/rq-comment.service';
 import { InfoblockConsaltingService } from './services/rpa-timeline-comment/infoblock/infoblock-consalting.service';

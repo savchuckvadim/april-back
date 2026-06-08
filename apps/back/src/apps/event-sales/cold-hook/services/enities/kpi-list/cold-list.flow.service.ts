@@ -1,5 +1,5 @@
 import { BitrixService } from '@/modules/bitrix';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import { ETimeZone, toCrmDateTime } from '@/shared/lib/date';

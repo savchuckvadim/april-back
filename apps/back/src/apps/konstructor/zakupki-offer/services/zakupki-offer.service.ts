@@ -22,7 +22,7 @@ import { RecipientDto } from 'src/apps/konstructor/document-generate';
 import { formatRuble } from '../../document-generate/lib/rubles.util';
 import { PBXService } from '@/modules/pbx/pbx.service';
 
-import { ProviderDto } from '@lib/portal-konstructor/provider';
+import { ProviderDto } from '@lib/portal-lib/konstructor/provider';
 import { DocumentTotalRowService } from '../../document-generate';
 import { BxTimelinePusherService } from '../../bx-timeliene-pusher/bx-timeline-pusher.service';
 import { InfoblocksRenderDataService } from '../../document-generate/infoblocks/infoblock-render-data.service';

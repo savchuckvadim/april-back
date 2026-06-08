@@ -5,7 +5,7 @@ import {
 } from '@/modules/bitrix';
 
 import { BitrixOwnerType } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
-import { IPSmart } from '@lib/portal/interfaces/portal.interface';
+import { IPSmart } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ListProductRowDto } from '@/modules/bitrix/domain/crm/product-row/dto/list-product-row.sto';
 
 export class CopyProductRowsService {

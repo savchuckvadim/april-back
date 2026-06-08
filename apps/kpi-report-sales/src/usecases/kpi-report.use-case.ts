@@ -5,9 +5,9 @@ import {
     IPBXList,
     IPortal,
     IFieldItem,
-} from '@lib/portal/interfaces/portal.interface';
+} from '@lib/portal-lib/portal/interfaces/portal.interface';
 
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../dto/kpi.dto';
 import { ActionService } from '../services/kpi-report/action-service';

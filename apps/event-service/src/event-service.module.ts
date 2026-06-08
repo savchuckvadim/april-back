@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { EventServiceController } from './event-service.controller';
 import { EventServiceService } from './event-service.service';
+import { EventServiceAppModule } from './event-service-app.module';
 
 @Module({
     imports: [
@@ -11,6 +12,7 @@ import { EventServiceService } from './event-service.service';
             envFilePath: ['apps/event-service/.env', '.env'],
         }),
         HealthModule,
+        EventServiceAppModule,
     ],
     controllers: [EventServiceController],
     providers: [EventServiceService, GlobalExceptionFilter],

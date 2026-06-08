@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { GsrMigrateBitrixAbstract } from './gsr-migrate-bitrix-abstract.service';
 import { MigrateToBxDto } from '../../dto/migrate-to-bx.dto';
 import { EBXEntity, EBxMethod, EBxNamespace } from 'src/modules/bitrix';
-import { IPPortalMeasure } from '@lib/portal/interfaces/portal.interface';
+import { IPPortalMeasure } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { IBXProductRow, IBXProductRowRow } from 'src/modules/bitrix';
 import { BitrixOwnerType } from 'src/modules/bitrix/domain/enums/bitrix-constants.enum';
 

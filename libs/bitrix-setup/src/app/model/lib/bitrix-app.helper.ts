@@ -1,7 +1,7 @@
 import { PrismaService } from 'src/core/prisma';
 import { BitrixAppEntity } from '../bitrix-app.model';
 import { createBitrixTokenEntityFromPrisma } from '@lib/bitrix-setup/token/model/lib/bitrix-token-model.util';
-import { createPortalEntityFromPrisma } from '@lib/portal-konstructor/portal/lib/portal-entity.util';
+import { createPortalEntityFromPrisma } from '@lib/portal-lib/store/lib/portal-entity.util';
 
 export const createBitrixAppEntityFromPrisma = (
     app: NonNullable<

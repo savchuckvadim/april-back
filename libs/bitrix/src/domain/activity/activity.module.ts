@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 // import { BitrixCoreModule } from '../../core/bitrix-core.module';
 // import { BitrixActivityCreateService } from './services/activity-create.service';
-// import { PortalModule } from '@lib/portal/portal.module';
+// import { PortalModule } from '@lib/portal-lib/portal/portal.module';
 
 @Module({
     // imports: [BitrixCoreModule, PortalModule],

@@ -1,4 +1,4 @@
-import { IPortal } from '@lib/portal/interfaces/portal.interface';
+import { IPortal } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { BXApiSchema, TBXRequest, TBXResponse } from '../domain';
 import {
     IBitrixBatchResponseResult,

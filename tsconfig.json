@@ -34,22 +34,30 @@
       "@lib/ai-rag/*": ["libs/ai-rag/src/*"],
       "@lib/bitrix-auth": ["libs/bitrix-auth/src"],
       "@lib/bitrix-auth/*": ["libs/bitrix-auth/src/*"],
-      "@lib/pbx-domain": ["libs/pbx-domain/src"],
-      "@lib/pbx-domain/*": ["libs/pbx-domain/src/*"],
       "@lib/online": ["libs/online/src"],
       "@lib/online/*": ["libs/online/src/*"],
       "@lib/telegram": ["libs/telegram/src"],
       "@lib/telegram/*": ["libs/telegram/src/*"],
-      "@lib/portal-konstructor": ["libs/portal-konstructor/src"],
-      "@lib/portal-konstructor/*": ["libs/portal-konstructor/src/*"],
       "@lib/garant": ["libs/garant/src"],
       "@lib/garant/*": ["libs/garant/src/*"],
       "@lib/bitrix-setup": ["libs/bitrix-setup/src"],
       "@lib/bitrix-setup/*": ["libs/bitrix-setup/src/*"],
-      "@lib/portal": ["libs/portal/src"],
-      "@lib/portal/*": ["libs/portal/src/*"],
       "@lib/queue": ["libs/queue/src"],
       "@lib/queue/*": ["libs/queue/src/*"],
+
+      // ---- portal-lib: единая библиотека Portal (portal + store + pbx-domain + konstructor) ----
+      // Канонический алиас. Старые @lib/portal, @lib/portal-konstructor,
+      // @lib/pbx-domain, @/modules/pbx-domain полностью заменены на него.
+      "@lib/portal-lib": ["libs/portal-lib/index.ts"],
+      "@lib/portal-lib/portal": ["libs/portal-lib/portal/src"],
+      "@lib/portal-lib/portal/*": ["libs/portal-lib/portal/src/*"],
+      "@lib/portal-lib/konstructor": ["libs/portal-lib/konstructor/src"],
+      "@lib/portal-lib/konstructor/*": ["libs/portal-lib/konstructor/src/*"],
+      "@lib/portal-lib/pbx-domain": ["libs/portal-lib/pbx/domain/src"],
+      "@lib/portal-lib/pbx-domain/*": ["libs/portal-lib/pbx/domain/src/*"],
+      "@lib/portal-lib/store": ["libs/portal-lib/store"],
+      "@lib/portal-lib/store/*": ["libs/portal-lib/store/*"],
+      "@lib/portal-lib/*": ["libs/portal-lib/*"],
 
       // ---- Совместимость: старые импорты модулей -> новые библиотеки ----
       // (переходный слой, чтобы не править сотни импортов сразу;
@@ -79,13 +87,6 @@
       "src/modules/queue": ["libs/queue/src"],
       "src/modules/queue/*": ["libs/queue/src/*"],
       "@pbx": ["libs/pbx/src/index.ts"],
-
-      // ---- pbx-domain: чистый слой PortalDB вынесен в libs/pbx-domain ----
-      // (старые импорты @/modules/pbx-domain перенаправлены на библиотеку)
-      "@/modules/pbx-domain": ["libs/pbx-domain/src"],
-      "@/modules/pbx-domain/*": ["libs/pbx-domain/src/*"],
-      "src/modules/pbx-domain": ["libs/pbx-domain/src"],
-      "src/modules/pbx-domain/*": ["libs/pbx-domain/src/*"],
 
       // ---- Приложение pbx-install (apps/pbx-install/src/modules) ----
       // самодостаточные внутренние импорты приложения установки

@@ -6,9 +6,9 @@ import {
     BtxCategoryService,
     BtxStageRepository,
     BtxStageResponseDto,
-} from '@/modules/pbx-domain';
-import { PortalSmartService } from '@/modules/pbx-domain/portal-smart';
-import { PortalStoreService } from '@lib/portal-konstructor/portal/portal-store.service';
+} from '@lib/portal-lib/pbx-domain';
+import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PbxEntityType, PbxEntityTypePrisma } from '@/shared/enums';
 import {
     MANAGE_DOMAIN_ALL,

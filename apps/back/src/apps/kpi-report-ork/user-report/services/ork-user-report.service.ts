@@ -6,8 +6,8 @@ import {
     OrkFieldsInput,
     OrkHistoryBxListService,
 } from '@/modules/pbx-ork-history-bx-list/service/ork-history-bx-list.service';
-import { IPBXList } from '@lib/portal/interfaces/portal.interface';
-import { PortalModel } from '@lib/portal/services/portal.model';
+import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     EnumOrkFieldCode,
     OrkFieldsType,

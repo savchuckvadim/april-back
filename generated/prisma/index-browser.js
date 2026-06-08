@@ -592,7 +592,15 @@ exports.Prisma.PortalScalarFieldEnum = {
   C_REST_CLIENT_SECRET: 'C_REST_CLIENT_SECRET',
   C_REST_WEB_HOOK_URL: 'C_REST_WEB_HOOK_URL',
   number: 'number',
-  client_id: 'client_id'
+  client_id: 'client_id',
+  nestKey: 'nestKey',
+  nestKonstructorKey: 'nestKonstructorKey',
+  nestReportKey: 'nestReportKey',
+  nestEventsKey: 'nestEventsKey',
+  nestServiceKey: 'nestServiceKey',
+  nestWebhooksKey: 'nestWebhooksKey',
+  nestScheduleKey: 'nestScheduleKey',
+  vibeKey: 'vibeKey'
 };
 
 exports.Prisma.Price_row_cellsScalarFieldEnum = {
@@ -1683,7 +1691,15 @@ exports.Prisma.PortalOrderByRelevanceFieldEnum = {
   key: 'key',
   C_REST_CLIENT_ID: 'C_REST_CLIENT_ID',
   C_REST_CLIENT_SECRET: 'C_REST_CLIENT_SECRET',
-  C_REST_WEB_HOOK_URL: 'C_REST_WEB_HOOK_URL'
+  C_REST_WEB_HOOK_URL: 'C_REST_WEB_HOOK_URL',
+  nestKey: 'nestKey',
+  nestKonstructorKey: 'nestKonstructorKey',
+  nestReportKey: 'nestReportKey',
+  nestEventsKey: 'nestEventsKey',
+  nestServiceKey: 'nestServiceKey',
+  nestWebhooksKey: 'nestWebhooksKey',
+  nestScheduleKey: 'nestScheduleKey',
+  vibeKey: 'vibeKey'
 };
 
 exports.Prisma.price_row_cellsOrderByRelevanceFieldEnum = {

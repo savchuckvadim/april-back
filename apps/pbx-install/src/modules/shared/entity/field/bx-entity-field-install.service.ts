@@ -1,5 +1,5 @@
 import { PBXService } from '@/modules/pbx';
-import { mapFieldTypeToBitrixType } from '@/modules/pbx-domain';
+import { mapFieldTypeToBitrixType } from '@lib/portal-lib/pbx-domain';
 import {
     BitrixEnumerationOption,
     BitrixService,

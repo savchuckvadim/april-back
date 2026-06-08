@@ -10,7 +10,7 @@
 //     IBitrixBatchResponseResult,
 //     IBitrixResponse,
 // } from '../interface/bitrix-api-http.intterface';
-// import { IPortal } from '@lib/portal/interfaces/portal.interface';
+// import { IPortal } from '@lib/portal-lib/portal/interfaces/portal.interface';
 // import { BXApiSchema, EBxNamespace, TBXRequest, TBXResponse } from '../domain';
 
 // export class BitrixBaseApiOld {

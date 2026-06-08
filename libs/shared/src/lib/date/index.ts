@@ -3,3 +3,5 @@ export * from './parse-portal-input';
 export * from './to-task-deadline';
 export * from './to-crm-datetime';
 export * from './to-ru-human';
+export * from './portal-deadline';
+export * from './contract-months';

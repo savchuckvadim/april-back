@@ -5,7 +5,7 @@ import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { StorageModule } from 'src/core/storage/storage.module';
 import { FileLinkModule } from 'src/core/file-link/file-link.module';
 import { LibreOfficeModule } from 'src/modules/libre-office/libre-office.module';
-import { ProviderModule } from '@lib/portal-konstructor/provider';
+import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { DocumentGenerateModule } from '../../document-generate/document-generate.module';
 import { DocumentProductRowService } from '../../document-generate/product-rows/product-row.service';
 import { ContractRqService } from './services/contract-rq.service';

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PortalStageModule } from '@/modules/pbx-domain/stage';
+import { PortalStageModule } from '@lib/portal-lib/pbx-domain/stage';
 import { BootstrapPortalCategoryStagesUseCase } from './use-cases/bootstrap-portal-category-stages.use-case';
 import { ReconcilePortalCategoryStagesUseCase } from './use-cases/reconcile-portal-category-stages.use-case';
 import { InstallStageSyncService } from './install-stage-sync.service';

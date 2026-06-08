@@ -2,7 +2,7 @@
 // import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 // // import { BitrixApiFactoryService } from 'src/modules/bitrix/core/queue/bitrix-api.factory.service';
 // import { BitrixActivityEntity } from '../entities/activity.entity';
-// // import { PortalService } from '@lib/portal/portal.service';
+// // import { PortalService } from '@lib/portal-lib/portal/portal.service';
 // // import { BitrixContextService } from 'src/modules/bitrix/services/bitrix-context.service';
 // import { PBXService } from '@/modules/pbx/pbx.service';
 
