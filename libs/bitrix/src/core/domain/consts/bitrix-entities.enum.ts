@@ -46,4 +46,6 @@ export enum EBXEntity {
     REVISION = 'Revision',
     // imopenlines
     BOT_SESSION = 'bot.session',
+    // sonet_group — entity-less методы: sonet_group.create / update / get / delete
+    SONET_GROUP = '',
 }

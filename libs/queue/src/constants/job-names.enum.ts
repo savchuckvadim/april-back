@@ -24,6 +24,7 @@ export enum JobNames {
     SERVICE_DEAL_INIT = 'service-deal-init',
     SERVICE_DEALS_ORDER = 'service-deals-order',
     SERVICE_GENERATE_ACTS = 'service-generate-acts',
+    SERVICE_CALL_EVENT = 'service-call-event',
 
     OFFER_WORD_EPHEMERAL_PDF_GENERATE = 'offer-word-ephemeral-pdf-generate',
 }

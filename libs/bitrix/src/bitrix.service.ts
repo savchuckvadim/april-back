@@ -86,6 +86,8 @@ import { BxImBotV2RevisionService } from './domain/imbot-v2/revision/services/bx
 import { BxImBotV2RevisionBatchService } from './domain/imbot-v2/revision/services/bx-imbot-v2-revision.batch.service';
 import { BxImOpenlinesBotSessionService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.service';
 import { BxImOpenlinesBotSessionBatchService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.batch.service';
+import { BxSonetGroupService } from './domain/sonet-group/services/sonet-group.service';
+import { BxSonetGroupBatchService } from './domain/sonet-group/services/sonet-group.batch.service';
 
 // @Injectable()
 export class BitrixService {
@@ -137,6 +139,7 @@ export class BitrixService {
     public imBotV2Event: BxImBotV2EventService;
     public imBotV2Revision: BxImBotV2RevisionService;
     public imOpenlinesSession: BxImOpenlinesBotSessionService;
+    public sonetGroup: BxSonetGroupService;
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -179,6 +182,7 @@ export class BitrixService {
         imBotV2Revision: null as unknown as BxImBotV2RevisionBatchService,
         imOpenlinesSession:
             null as unknown as BxImOpenlinesBotSessionBatchService,
+        sonetGroup: null as unknown as BxSonetGroupBatchService,
     };
     constructor(
         private readonly bxApi: BitrixBaseApi,
@@ -231,6 +235,7 @@ export class BitrixService {
         this.initImBotV2Event();
         this.initImBotV2Revision();
         this.initImOpenlinesSession();
+        this.initSonetGroup();
     }
 
     private initDeal() {
@@ -499,6 +504,14 @@ export class BitrixService {
         );
         this.batch.imOpenlinesSession = this.cloner.clone(
             BxImOpenlinesBotSessionBatchService,
+            this.api,
+        );
+    }
+
+    private initSonetGroup() {
+        this.sonetGroup = this.cloner.clone(BxSonetGroupService, this.api);
+        this.batch.sonetGroup = this.cloner.clone(
+            BxSonetGroupBatchService,
             this.api,
         );
     }

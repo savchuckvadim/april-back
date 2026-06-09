@@ -139,3 +139,11 @@ export interface IBXTask {
 export interface ITaskUpdateFields extends Partial<IBXTaskCreateFields> {
     [key: string]: any;
 }
+
+/**
+ * Поля комментария к задаче (`task.commentitem.add`).
+ */
+export interface ITaskCommentAddFields {
+    AUTHOR_ID: number | string;
+    POST_MESSAGE: string;
+}

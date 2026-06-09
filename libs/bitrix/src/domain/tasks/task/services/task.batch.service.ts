@@ -5,6 +5,7 @@ import {
     IBXTaskCreateFields,
     ITaskUpdateFields,
     IBXTask,
+    ITaskCommentAddFields,
 } from '../interface/task.interface';
 
 export class BxTaskBatchService {
@@ -56,6 +57,17 @@ export class BxTaskBatchService {
         fields: ITaskUpdateFields,
     ) {
         return this.repo.updateBtch(cmdCode, taskId, fields);
+    }
+
+    /**
+     * Добавляет комментарий к задаче (batch, `task.commentitem.add`)
+     */
+    commentAdd(
+        cmdCode: string,
+        taskId: number | string,
+        fields: ITaskCommentAddFields,
+    ) {
+        return this.repo.commentAddBtch(cmdCode, taskId, fields);
     }
 
     /**

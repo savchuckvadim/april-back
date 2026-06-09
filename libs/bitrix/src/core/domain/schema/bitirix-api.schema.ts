@@ -56,6 +56,7 @@ import { ImBotV2FileSchema } from '../../../domain/imbot-v2/file/schema/bx-imbot
 import { ImBotV2EventSchema } from '../../../domain/imbot-v2/event/schema/bx-imbot-v2-event.schema';
 import { ImBotV2RevisionSchema } from '../../../domain/imbot-v2/revision/schema/bx-imbot-v2-revision.schema';
 import { ImOpenlinesBotSessionSchema } from '../../../domain/imopenlines/bot-session/schema/bx-imopenlines-bot-session.schema';
+import { SonetGroupSchema } from '../../../domain/sonet-group/schema/sonet-group.schema';
 
 export type BXApiSchema = {
     [EBxNamespace.CRM]: {
@@ -134,5 +135,8 @@ export type BXApiSchema = {
     };
     [EBxNamespace.IMOPENLINES]: {
         [EBXEntity.BOT_SESSION]: ImOpenlinesBotSessionSchema;
+    };
+    [EBxNamespace.SONET_GROUP]: {
+        [EBXEntity.SONET_GROUP]: SonetGroupSchema;
     };
 };

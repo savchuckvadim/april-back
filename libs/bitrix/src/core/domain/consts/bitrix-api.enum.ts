@@ -15,6 +15,7 @@ export enum EBxNamespace {
     IMBOT = 'imbot',
     IMBOT_V2 = 'imbot.v2',
     IMOPENLINES = 'imopenlines',
+    SONET_GROUP = 'sonet_group',
 }
 
 export enum EBxMethod {

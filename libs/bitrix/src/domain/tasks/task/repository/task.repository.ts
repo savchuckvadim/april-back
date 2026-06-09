@@ -6,6 +6,7 @@ import {
     IBXTaskCreateFields,
     ITaskUpdateFields,
     IBXTask,
+    ITaskCommentAddFields,
 } from '../interface/task.interface';
 
 export class BxTaskRepository {
@@ -290,6 +291,22 @@ export class BxTaskRepository {
             EBxMethod.DEFER,
             { taskId },
         );
+    }
+
+    /**
+     * Добавляет комментарий к задаче (batch).
+     * Метод `task.commentitem.add` не входит в типизированную схему задач,
+     * поэтому используем generic-batch с явным именем метода.
+     */
+    commentAddBtch(
+        cmdCode: string,
+        taskId: number | string,
+        fields: ITaskCommentAddFields,
+    ) {
+        return this.bxApi.addCmdBatch(cmdCode, 'task.commentitem.add', {
+            TASKID: taskId,
+            FIELDS: fields,
+        });
     }
 
     /**

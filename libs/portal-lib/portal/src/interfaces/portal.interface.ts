@@ -254,7 +254,8 @@ export type EMeasureType = 'service' | 'product' | 'lic' | 'abon';
 
 export interface IPCallingTasksGroup {
     id: number;
-    type: 'sales' | 'service' | 'tmc';
+    // type: 'sales' | 'service' | 'tmc';
+    type: 'calling';
     group: 'sales' | 'service' | 'tmc';
     name: string;
     title: string;
