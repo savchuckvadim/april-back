@@ -7,6 +7,7 @@ import { PbxListInstallModule } from './list/pbx-list-install.module';
 import { PbxGroupInstallModule } from './group/pbx-group-install.module';
 import { PbxDepartamentInstallModule } from './department/pbx-departament-install.module';
 import { PbxRqInstallModule } from './rq/pbx-rq-install.module';
+import { PortalStoreModule } from '@lib/portal-lib';
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { PbxRqInstallModule } from './rq/pbx-rq-install.module';
         PbxGroupInstallModule,
         PbxDepartamentInstallModule,
         PbxRqInstallModule,
+        PortalStoreModule,
     ],
     exports: [
         PbxSmartInstallModule,

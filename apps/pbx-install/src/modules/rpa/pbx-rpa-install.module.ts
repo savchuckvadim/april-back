@@ -25,6 +25,7 @@ import { PbxRpaFieldManageUseCase } from './use-cases/field/pbx-rpa-field-manage
 import { PbxRpaCategoryInstallByParseUseCase } from './use-cases/category/pbx-rpa-category-install-by-parse.use-case';
 import { PbxRpaCategoryInstallByCategoryUseCase } from './use-cases/category/pbx-rpa-category-install-by-category.use-case';
 import { PbxRpaCategoryManageUseCase } from './use-cases/category/pbx-rpa-category-manage.use-case';
+import { PortalStoreModule } from '@lib/portal-lib';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { PbxRpaCategoryManageUseCase } from './use-cases/category/pbx-rpa-catego
         StorageModule,
         PbxDomainModule,
         InstallTypedEntityModule,
+        PortalStoreModule,
     ],
     controllers: [
         PbxRpaInstallController,
