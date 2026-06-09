@@ -22,6 +22,7 @@ import {
     BxItemSchema,
     TimelineCommentSchema,
     RequisiteSchema,
+    RequisitePresetSchema,
     ActivityTodoSchema,
 } from 'src/modules/bitrix';
 
@@ -73,6 +74,7 @@ export type BXApiSchema = {
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;
         [EBXEntity.REQUISITE]: RequisiteSchema;
+        [EBXEntity.REQUISITE_PRESET]: RequisitePresetSchema;
         [EBXEntity.ACTIVITY_TODO]: ActivityTodoSchema;
     };
     [EBxNamespace.RPA]: {

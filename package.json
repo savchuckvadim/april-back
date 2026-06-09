@@ -180,6 +180,7 @@
             "^(@/|src/)modules/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$2",
             "^(@/|src/)modules/ai-rag(|/.*)$": "<rootDir>/libs/ai-rag/src/$2",
             "^@apps/(.*)$": "<rootDir>/apps/back/src/apps/$1",
+            "^@app/pbx-install(|/.*)$": "<rootDir>/apps/pbx-install/src/modules/$1",
             "^@prisma$": "<rootDir>/generated/prisma/index.ts",
             "^generated/(.*)$": "<rootDir>/generated/$1",
             "^(@/|src/)(.*)$": "<rootDir>/apps/back/src/$2"

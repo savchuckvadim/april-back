@@ -19,6 +19,8 @@ import {
     BxTimelineBatchService,
     BxRequisiteService,
     BxRequisiteBatchService,
+    BxRequisitePresetService,
+    BxRequisitePresetBatchService,
 } from './domain/crm/';
 
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
@@ -102,6 +104,7 @@ export class BitrixService {
     public item: BxItemService;
     public timeline: BxTimelineService;
     public requisite: BxRequisiteService;
+    public requisitePreset: BxRequisitePresetService;
     public list: BxListService;
     public listItem: BxListItemService;
     public product: BxProductService;
@@ -150,6 +153,7 @@ export class BitrixService {
         category: null as unknown as BxCategoryBatchService,
         status: null as unknown as BxStatusBatchService,
         requisite: null as unknown as BxRequisiteBatchService,
+        requisitePreset: null as unknown as BxRequisitePresetBatchService,
         item: null as unknown as BxItemBatchService,
         timeline: null as unknown as BxTimelineBatchService,
         list: null as unknown as BxListBatchService,
@@ -202,6 +206,7 @@ export class BitrixService {
         this.initItem();
         this.initTimeline();
         this.initRequisite();
+        this.initRequisitePreset();
         this.initList();
         this.initListItem();
         this.initProduct();
@@ -289,6 +294,17 @@ export class BitrixService {
         this.requisite = this.cloner.clone(BxRequisiteService, this.api);
         this.batch.requisite = this.cloner.clone(
             BxRequisiteBatchService,
+            this.api,
+        );
+    }
+
+    private initRequisitePreset() {
+        this.requisitePreset = this.cloner.clone(
+            BxRequisitePresetService,
+            this.api,
+        );
+        this.batch.requisitePreset = this.cloner.clone(
+            BxRequisitePresetBatchService,
             this.api,
         );
     }

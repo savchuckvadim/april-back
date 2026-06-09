@@ -37,6 +37,9 @@ export enum EBxMethod {
     LIST = 'list',
     DELETE = 'delete',
 
+    // crm.requisite.preset.countries
+    COUNTRIES = 'countries',
+
     CONTACT_ITEMS_SET = 'contact.items.set',
     CONTACT_ADD = 'contact.add',
     CONTACT_ITEMS_GET = 'contact.items.get',

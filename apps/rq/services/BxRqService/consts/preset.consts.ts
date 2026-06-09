@@ -10,6 +10,12 @@ export interface PresetConfig {
     fiz: number;
 }
 
+/**
+ * Fallback-значения bitrix_id пресетов.
+ * Источник истины — таблица `bx_rqs` (заполняется установкой через
+ * `apps/pbx-install` → PortalRqService). Эти константы используются только
+ * если пресет на портале ещё не установлен/не зеркалирован в БД.
+ */
 export const DEFAULT_PRESET_IDS: PresetConfig = {
     org: PresetId.ORG,
     ip: PresetId.IP,

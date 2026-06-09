@@ -23,4 +23,8 @@ export class BxRpaStageRepository {
             typeId,
         });
     }
+
+    async delete(id: number | string): Promise<unknown> {
+        return this.bxApi.call('rpa.stage.delete', { id });
+    }
 }

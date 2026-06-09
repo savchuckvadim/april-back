@@ -29,4 +29,8 @@ export class BxRpaStageService {
     async listForType(typeId: number | string): Promise<unknown> {
         return this.repo.listForType(typeId);
     }
+
+    async delete(id: number | string): Promise<unknown> {
+        return this.repo.delete(id);
+    }
 }

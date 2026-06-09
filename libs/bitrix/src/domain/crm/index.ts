@@ -57,6 +57,9 @@ export * from './requisite/schema/bx-requisite.schema';
 export * from './requisite/services/bx-requisite.service';
 export * from './requisite/services/bx-requisite.batch.service';
 
+//crm.requisite.preset
+export * from './requisite-preset';
+
 //crm.timeline
 export * from './timeline/interface/bx-timeline.interface';
 export * from './timeline/schema/bx-timeline.schema';

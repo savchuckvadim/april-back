@@ -22,6 +22,7 @@ export enum EBXEntity {
     PRODUCT = 'product',
     RPA = 'rpa',
     REQUISITE = 'requisite',
+    REQUISITE_PRESET = 'requisite.preset',
     RECENT = 'recent',
     MESSAGE = 'message',
     DIALOG_MESSAGES = 'dialog.messages',
