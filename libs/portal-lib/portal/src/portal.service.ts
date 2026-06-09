@@ -5,6 +5,7 @@ import { Redis } from 'ioredis';
 import { APIOnlineClient } from '@lib/online';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { PortalModel } from './services/portal.model';
+import { getErrorString } from '@lib/shared';
 
 @Injectable()
 export class PortalService {
@@ -80,10 +81,11 @@ export class PortalService {
                 data: portal,
             };
         } catch (error) {
-            this.logger.error(`Error getting portal data: ${error.message}`);
+            const err = getErrorString(error);
+            this.logger.error(`Error getting portal data: ${err}`);
             return {
                 success: false,
-                error: error.message,
+                error: err,
             };
         }
     }

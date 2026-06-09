@@ -4,3 +4,5 @@ export * from './bx-expires-at.util';
 export * from './get-error-string.util';
 export * from './primitive-bigint.util';
 export * from './crypt.util';
+export * from './name';
+export * from './word';

@@ -18,7 +18,10 @@ import {
 
 /** Пара «имя + код» справочного значения (тип события/коммуникации/инициатива). */
 class CallingNameCodeDto {
-    @ApiProperty({ description: 'Человекочитаемое имя значения', example: 'Звонок' })
+    @ApiProperty({
+        description: 'Человекочитаемое имя значения',
+        example: 'Звонок',
+    })
     @IsString()
     name: string;
 
@@ -77,7 +80,10 @@ class CallingPlanDto {
     @IsString()
     deadline: string;
 
-    @ApiProperty({ description: 'Название/тема плана', example: 'Обучение по продукту' })
+    @ApiProperty({
+        description: 'Название/тема плана',
+        example: 'Обучение по продукту',
+    })
     @IsString()
     name: string;
 
@@ -91,7 +97,10 @@ class CallingPlanDto {
     @Type(() => CallingIdDto)
     responsibility: CallingIdDto;
 
-    @ApiPropertyOptional({ description: 'Контакт, связанный с планом', type: CallingIdDto })
+    @ApiPropertyOptional({
+        description: 'Контакт, связанный с планом',
+        type: CallingIdDto,
+    })
     @IsOptional()
     @ValidateNested()
     @Type(() => CallingIdDto)
@@ -142,7 +151,10 @@ class CallingReportResultsDto {
     @IsBoolean()
     edu: boolean;
 
-    @ApiProperty({ description: 'Проведено первичное обучение', example: false })
+    @ApiProperty({
+        description: 'Проведено первичное обучение',
+        example: false,
+    })
     @IsBoolean()
     edu_first: boolean;
 
@@ -166,16 +178,25 @@ class CallingReportDto {
     @IsEnum(CallingResultStatus)
     resultStatus?: CallingResultStatus;
 
-    @ApiProperty({ description: 'Комментарий менеджера по звонку', example: 'Договорились о встрече' })
+    @ApiProperty({
+        description: 'Комментарий менеджера по звонку',
+        example: 'Договорились о встрече',
+    })
     @IsString()
     description: string;
 
-    @ApiProperty({ description: 'Флаги состоявшихся событий', type: CallingReportResultsDto })
+    @ApiProperty({
+        description: 'Флаги состоявшихся событий',
+        type: CallingReportResultsDto,
+    })
     @ValidateNested()
     @Type(() => CallingReportResultsDto)
     results: CallingReportResultsDto;
 
-    @ApiPropertyOptional({ description: 'Контакт, по которому отчёт', type: CallingIdDto })
+    @ApiPropertyOptional({
+        description: 'Контакт, по которому отчёт',
+        type: CallingIdDto,
+    })
     @IsOptional()
     @ValidateNested()
     @Type(() => CallingIdDto)
@@ -205,7 +226,10 @@ export class CallingCurrentTaskDto {
     @IsString({ each: true })
     ufCrmTask: string[];
 
-    @ApiProperty({ description: 'Заголовок задачи', example: 'Обучение: April' })
+    @ApiProperty({
+        description: 'Заголовок задачи',
+        example: 'Обучение: April',
+    })
     @IsString()
     title: string;
 
@@ -217,7 +241,10 @@ export class CallingCurrentTaskDto {
     @IsString()
     eventType: string;
 
-    @ApiProperty({ description: 'Человекочитаемый тип задачи', example: 'Обучение' })
+    @ApiProperty({
+        description: 'Человекочитаемый тип задачи',
+        example: 'Обучение',
+    })
     @IsString()
     type: string;
 
@@ -232,13 +259,19 @@ export class CallingCurrentTaskDto {
 
 /** Привязка приложения (CALL_CARD): идентификатор сущности. */
 class CallingPlacementOptionsDto {
-    @ApiProperty({ description: 'ID компании (placement.options.ID)', example: 79753 })
+    @ApiProperty({
+        description: 'ID компании (placement.options.ID)',
+        example: 79753,
+    })
     @IsInt()
     ID: number;
 }
 
 class CallingPlacementDto {
-    @ApiProperty({ description: 'Опции размещения приложения', type: CallingPlacementOptionsDto })
+    @ApiProperty({
+        description: 'Опции размещения приложения',
+        type: CallingPlacementOptionsDto,
+    })
     @ValidateNested()
     @Type(() => CallingPlacementOptionsDto)
     options: CallingPlacementOptionsDto;
@@ -252,7 +285,10 @@ class CallingDepartamentUserDto {
 }
 
 class CallingDepartamentDto {
-    @ApiProperty({ description: 'Текущий пользователь, инициировавший событие', type: CallingDepartamentUserDto })
+    @ApiProperty({
+        description: 'Текущий пользователь, инициировавший событие',
+        type: CallingDepartamentUserDto,
+    })
     @ValidateNested()
     @Type(() => CallingDepartamentUserDto)
     currentUser: CallingDepartamentUserDto;
@@ -270,7 +306,10 @@ class CallingBxDto {
     @IsInt()
     companyId?: number;
 
-    @ApiPropertyOptional({ description: 'ID группы задач (воронки звонков)', example: 34 })
+    @ApiPropertyOptional({
+        description: 'ID группы задач (воронки звонков)',
+        example: 34,
+    })
     @IsOptional()
     @IsInt()
     taskGroupId?: number;
@@ -278,37 +317,58 @@ class CallingBxDto {
 
 /** Входное событие звонка отдела сервиса (хук Bitrix). */
 export class CallingEventDto {
-    @ApiProperty({ description: 'Домен портала Bitrix', example: 'april.bitrix24.ru' })
+    @ApiProperty({
+        description: 'Домен портала Bitrix',
+        example: 'april.bitrix24.ru',
+    })
     @IsString()
     domain: string;
 
-    @ApiProperty({ description: 'Отчёт по состоявшейся коммуникации', type: CallingReportDto })
+    @ApiProperty({
+        description: 'Отчёт по состоявшейся коммуникации',
+        type: CallingReportDto,
+    })
     @ValidateNested()
     @Type(() => CallingReportDto)
     report: CallingReportDto;
 
-    @ApiProperty({ description: 'Запланированное событие', type: CallingPlanDto })
+    @ApiProperty({
+        description: 'Запланированное событие',
+        type: CallingPlanDto,
+    })
     @ValidateNested()
     @Type(() => CallingPlanDto)
     plan: CallingPlanDto;
 
-    @ApiProperty({ description: 'Привязка приложения (CALL_CARD)', type: CallingPlacementDto })
+    @ApiProperty({
+        description: 'Привязка приложения (CALL_CARD)',
+        type: CallingPlacementDto,
+    })
     @ValidateNested()
     @Type(() => CallingPlacementDto)
     placement: CallingPlacementDto;
 
-    @ApiPropertyOptional({ description: 'Текущая задача, по которой отчёт', type: CallingCurrentTaskDto })
+    @ApiPropertyOptional({
+        description: 'Текущая задача, по которой отчёт',
+        type: CallingCurrentTaskDto,
+    })
     @IsOptional()
     @ValidateNested()
     @Type(() => CallingCurrentTaskDto)
     currentTask?: CallingCurrentTaskDto;
 
-    @ApiProperty({ description: 'Отдел / текущий пользователь', type: CallingDepartamentDto })
+    @ApiProperty({
+        description: 'Отдел / текущий пользователь',
+        type: CallingDepartamentDto,
+    })
     @ValidateNested()
     @Type(() => CallingDepartamentDto)
     departament: CallingDepartamentDto;
 
-    @ApiProperty({ description: 'CRM-идентификаторы события', type: CallingBxDto })
+    @ApiProperty({
+        description: 'CRM-идентификаторы события',
+        type: CallingBxDto,
+    })
     @ValidateNested()
     @Type(() => CallingBxDto)
     bx: CallingBxDto;

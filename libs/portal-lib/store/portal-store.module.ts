@@ -14,7 +14,11 @@ import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
 
 @Module({
     imports: [OnlineAdminModule, OnlineModule],
-    controllers: [PortalController, PortalOuterController, PortalKeysController],
+    controllers: [
+        PortalController,
+        PortalOuterController,
+        PortalKeysController,
+    ],
     providers: [
         {
             provide: PortalRepository,

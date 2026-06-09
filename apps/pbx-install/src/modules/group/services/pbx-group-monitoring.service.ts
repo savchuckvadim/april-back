@@ -30,7 +30,7 @@ export class PbxGroupMonitoringService {
         private readonly pbxService: PBXService,
         private readonly portalCallingService: PortalCallingService,
         private readonly portalService: PortalStoreService,
-    ) { }
+    ) {}
 
     async getPbxGroupData(domain: string): Promise<PbxGroupMonitoringResult> {
         const portal = await this.portalService.getPortalByDomain(domain);

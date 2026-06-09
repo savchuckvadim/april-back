@@ -21,7 +21,7 @@ export class DealActController {
     constructor(
         // private readonly useCase: ActNProductHandlerUseCase,
         private readonly smartActQueueService: SmartActQueueService,
-    ) { }
+    ) {}
 
     @Post('ork-deal-acts-webhook')
     @ApiOperation({

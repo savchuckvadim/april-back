@@ -101,6 +101,11 @@
       "src/apps/kpi-report": ["apps/kpi-report-sales/src"],
       "src/apps/kpi-report/*": ["apps/kpi-report-sales/src/*"],
 
+      // ---- Приложение rq (apps/rq) ----
+      // самодостаточные внутренние импорты приложения реквизитов
+      "@/apps/rq": ["apps/rq"],
+      "@/apps/rq/*": ["apps/rq/*"],
+
       // ---- Сгенерированный Prisma client ----
       "@prisma": ["./generated/prisma/index.ts"],
       "generated/*": ["./generated/*"],

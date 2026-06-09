@@ -3,7 +3,10 @@ import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { Module } from '@nestjs/common';
 import { PbxCompanyMonitoringService } from './services/pbx-company-monitoring.service';
 import { PbxCompanyInstallMonitoringController } from './controllers/pbx-comapany-install-monitoring.controller';
-import { PbxFieldModule, PortalCompanyModule } from '@lib/portal-lib/pbx-domain';
+import {
+    PbxFieldModule,
+    PortalCompanyModule,
+} from '@lib/portal-lib/pbx-domain';
 import { ParseFieldExcelModule } from '../shared';
 // import { ParseCompanyService } from './services/pbx-company-parse.service';
 import { PbxCompanySearchService } from './services/pbx-company-search.service';
