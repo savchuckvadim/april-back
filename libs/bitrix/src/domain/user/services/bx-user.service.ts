@@ -49,6 +49,16 @@ export class BxUserService {
         return await this.repo.getUserFieldList(id, select);
     }
 
+    /**
+     * Список определений пользовательских полей портала (user.userfield.list).
+     */
+    async listFields(
+        filter?: Record<string, unknown>,
+        order?: Record<string, 'asc' | 'desc' | 'ASC' | 'DESC'>,
+    ) {
+        return await this.repo.listFields(filter, order);
+    }
+
     async addUserField(fields: AddRequestType<IBXField>) {
         return await this.repo.addUserField(fields);
     }

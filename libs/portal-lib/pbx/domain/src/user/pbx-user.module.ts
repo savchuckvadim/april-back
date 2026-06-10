@@ -16,5 +16,6 @@ import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
         },
         PbxUserService,
     ],
+    exports: [PbxUserService],
 })
 export class PbxUserModule {}

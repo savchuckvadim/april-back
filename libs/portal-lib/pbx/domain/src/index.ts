@@ -6,3 +6,4 @@ export * from './portal-deal';
 export * from './portal-calling';
 export * from './portal-departament';
 export * from './portal-rq';
+export * from './user';

@@ -150,6 +150,25 @@ export class BxUserRepository {
         );
     }
 
+    /**
+     * Список определений пользовательских полей (user.userfield.list).
+     * В отличие от {@link getUserFieldList}, не фильтрует по конкретному пользователю —
+     * возвращает все UF_USR_*-поля портала. Принимает order/filter (lowercase),
+     * как требует REST-метод.
+     */
+    async listFields(
+        filter?: Record<string, unknown>,
+        order?: Record<string, 'asc' | 'desc' | 'ASC' | 'DESC'>,
+    ): Promise<{ result: IBXField[]; total?: number }> {
+        // user.userfield.list принимает order/filter (lowercase), что не совпадает
+        // с типизированной схемой ({ id, select }) — используем generic-вызов.
+        const response = await this.bxApi.call('user.userfield.list', {
+            order,
+            filter,
+        });
+        return response as { result: IBXField[]; total?: number };
+    }
+
     getUserFieldListBtch(
         cmdCode: string,
         id: number | string,

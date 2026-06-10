@@ -7,6 +7,8 @@ import { PbxListInstallModule } from './list/pbx-list-install.module';
 import { PbxGroupInstallModule } from './group/pbx-group-install.module';
 import { PbxDepartamentInstallModule } from './department/pbx-departament-install.module';
 import { PbxRqInstallModule } from './rq/pbx-rq-install.module';
+import { PbxTaskInstallModule } from './task/pbx-task-install.module';
+import { PbxUserInstallModule } from './user/pbx-user-install.module';
 import { PortalStoreModule } from '@lib/portal-lib';
 
 @Module({
@@ -19,6 +21,8 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxGroupInstallModule,
         PbxDepartamentInstallModule,
         PbxRqInstallModule,
+        PbxTaskInstallModule,
+        PbxUserInstallModule,
         PortalStoreModule,
     ],
     exports: [
@@ -30,6 +34,8 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxGroupInstallModule,
         PbxDepartamentInstallModule,
         PbxRqInstallModule,
+        PbxTaskInstallModule,
+        PbxUserInstallModule,
     ],
 })
 export class PBXInstallModule {}

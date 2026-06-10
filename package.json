@@ -178,6 +178,7 @@
             "^(@/|src/)core(|/.*)$": "<rootDir>/libs/core/src/$2",
             "^(@/|src/)modules/bitrix(|/.*)$": "<rootDir>/libs/bitrix/src/$2",
             "^(@/|src/)modules/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$2",
+            "^(@/|src/)modules/queue(|/.*)$": "<rootDir>/libs/queue/src/$2",
             "^(@/|src/)modules/ai-rag(|/.*)$": "<rootDir>/libs/ai-rag/src/$2",
             "^@apps/(.*)$": "<rootDir>/apps/back/src/apps/$1",
             "^@app/pbx-install(|/.*)$": "<rootDir>/apps/pbx-install/src/modules/$1",
@@ -190,6 +191,9 @@
         ],
         "coverageDirectory": "./coverage",
         "testEnvironment": "node",
+        "modulePaths": [
+            "<rootDir>"
+        ],
         "roots": [
             "<rootDir>/apps/",
             "<rootDir>/libs/"

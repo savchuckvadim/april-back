@@ -11,3 +11,4 @@ export * from './imbot';
 export * from './imbot-v2';
 export * from './imopenlines';
 export * from './sonet-group';
+export * from './tasks/task-userfield';
