@@ -1,6 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
+import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 import { PbxDepartamentMonitoringService } from '../services/pbx-departament-monitoring.service';
 
 @ApiTags('PBX Departament Install Monitoring')
@@ -9,6 +10,21 @@ export class PbxDepartamentInstallMonitoringController {
     constructor(
         private readonly monitoringService: PbxDepartamentMonitoringService,
     ) {}
+
+    @ApiOperation({
+        summary: 'Get all portal departments from Bitrix',
+        description:
+            'Возвращает список всех отделов портала из Bitrix (`department.get`), read-only. ' +
+            'По этому списку пользователь выбирает отдел и назначает его как ОП (sales) / ОС (service) ' +
+            'через `POST /pbx-departament-install/install/domain/:domain/group/:group`.',
+    })
+    @ApiParam({ name: 'domain', description: 'Домен портала' })
+    @Get('/domain/:domain/bitrix-departments')
+    async getAllBitrixDepartments(
+        @Param('domain') domain: string,
+    ): Promise<IBXDepartment[]> {
+        return await this.monitoringService.getAllBitrixDepartments(domain);
+    }
 
     @ApiOperation({
         summary: 'Get merged departaments state (PortalDB + read-only Bitrix)',

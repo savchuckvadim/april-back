@@ -34,6 +34,19 @@ export class PbxDepartamentMonitoringService {
         private readonly portalService: PortalStoreService,
     ) {}
 
+    /**
+     * Список всех отделов портала из Bitrix (`department.get`), read-only.
+     * Нужен, чтобы выбрать конкретный отдел и назначить его как ОП (sales) / ОС (service).
+     */
+    async getAllBitrixDepartments(domain: string): Promise<IBXDepartment[]> {
+        const portal = await this.portalService.getPortalByDomain(domain);
+        if (!portal) {
+            throw new NotFoundException('Portal not found');
+        }
+        const { bitrix } = await this.pbxService.init(domain);
+        return new DepartmentBitrixService(bitrix).getDepartmentsAll();
+    }
+
     async getPbxDepartamentData(
         domain: string,
     ): Promise<PbxDepartamentMonitoringResult> {
