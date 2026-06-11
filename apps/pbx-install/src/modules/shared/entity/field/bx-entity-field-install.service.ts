@@ -1,12 +1,19 @@
 import { PBXService } from '@/modules/pbx';
-import { mapFieldTypeToBitrixType } from '@lib/portal-lib/pbx-domain';
+import {
+    mapFieldTypeToBitrixType,
+    PbxFieldEntity,
+} from '@lib/portal-lib/pbx-domain';
 import {
     BitrixEnumerationOption,
     BitrixService,
     BxCompanyBatchService,
     BxCompanyService,
+    BxContactBatchService,
+    BxContactService,
     BxDealBatchService,
     BxDealService,
+    BxLeadBatchService,
+    BxLeadService,
     IBXField,
 } from '@/modules/bitrix';
 
@@ -51,12 +58,29 @@ export interface IBxEntityFieldsInstallResult {
     countFailed: number;
     countTotal: number;
 }
-export type IBxEntityInstallType = 'company' | 'deal';
+export type IBxEntityInstallType = 'company' | 'contact' | 'deal' | 'lead';
+
+/**
+ * Результат установки полей сущности: ответ установки в Bitrix (`bxResult`)
+ * и результат синхронизации полей с PortalDB (`portalFieldEntityInstallResult`).
+ */
+export interface IEntityFieldsInstallResult {
+    bxResult: IBxEntityFieldsInstallResult;
+    portalFieldEntityInstallResult: PbxFieldEntity[];
+}
 
 export class BxEntityFieldsInstallService {
     private bitrix!: BitrixService;
-    private bxEtityService!: BxCompanyService | BxDealService;
-    private bxEntityBatchService!: BxCompanyBatchService | BxDealBatchService;
+    private bxEtityService!:
+        | BxCompanyService
+        | BxContactService
+        | BxDealService
+        | BxLeadService;
+    private bxEntityBatchService!:
+        | BxCompanyBatchService
+        | BxContactBatchService
+        | BxDealBatchService
+        | BxLeadBatchService;
     private readonly entity: IBxEntityInstallType;
     private readonly domain: string;
     private readonly pbxService: PBXService;

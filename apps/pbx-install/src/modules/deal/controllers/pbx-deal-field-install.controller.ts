@@ -17,6 +17,9 @@ import {
     DeleteEntityFieldItemDto,
     DeleteEntityFieldsDto,
     EditEntityFieldItemDto,
+    IEntityFieldsInstallResult,
+    PerPortalFieldDeleteResult,
+    PerPortalFieldItemResult,
 } from '../../shared';
 import { PbxDealFieldInstallByParseUseCase } from '../use-cases/field/pbx-deal-field-install-by-parse.use-case';
 import { PbxDealFieldInstallByFieldUseCase } from '../use-cases/field/pbx-deal-field-install-by-field.use-case';
@@ -44,7 +47,7 @@ export class PbxDealFieldInstallController {
         @Param('domain') domain: string,
         @Param('group') group: PbxEntityGroupEnum,
         @Param('appName') appName: ParseEntityFieldsAppName,
-    ): Promise<any> {
+    ): Promise<IEntityFieldsInstallResult> {
         return await this.parseUseCase.installDealFields(
             domain,
             group,
@@ -69,7 +72,7 @@ export class PbxDealFieldInstallController {
     @Post('/install-fields/')
     async installDealFieldsByFieldsData(
         @Body() dto: InstallDealFieldDto,
-    ): Promise<any> {
+    ): Promise<IEntityFieldsInstallResult> {
         return await this.fieldseCase.installDealFields(dto);
     }
 
@@ -83,7 +86,9 @@ export class PbxDealFieldInstallController {
     })
     @ApiBody({ type: DeleteEntityFieldsDto })
     @Post('/delete-fields/')
-    async deleteDealFields(@Body() dto: DeleteEntityFieldsDto): Promise<any> {
+    async deleteDealFields(
+        @Body() dto: DeleteEntityFieldsDto,
+    ): Promise<PerPortalFieldDeleteResult[]> {
         return await this.manageUseCase.deleteFields(dto);
     }
 
@@ -98,7 +103,7 @@ export class PbxDealFieldInstallController {
     @Post('/delete-field-item/')
     async deleteDealFieldItem(
         @Body() dto: DeleteEntityFieldItemDto,
-    ): Promise<any> {
+    ): Promise<PerPortalFieldItemResult[]> {
         return await this.manageUseCase.deleteFieldItem(dto);
     }
 
@@ -111,7 +116,9 @@ export class PbxDealFieldInstallController {
     })
     @ApiBody({ type: EditEntityFieldItemDto })
     @Post('/edit-field-item/')
-    async editDealFieldItem(@Body() dto: EditEntityFieldItemDto): Promise<any> {
+    async editDealFieldItem(
+        @Body() dto: EditEntityFieldItemDto,
+    ): Promise<PerPortalFieldItemResult[]> {
         return await this.manageUseCase.editFieldItem(dto);
     }
 }

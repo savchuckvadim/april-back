@@ -8,6 +8,7 @@ import { PBXService } from '@/modules/pbx';
 import { InstallDealFieldDto } from '../../dto/install-deal-field.dto';
 import {
     BxEntityFieldsInstallService,
+    IEntityFieldsInstallResult,
     IPbxFieldInstallData,
     PortalEntityFieldInstallService,
 } from '../../../shared';
@@ -36,7 +37,9 @@ export class PbxDealFieldInstallByFieldUseCase {
         private readonly portalFieldEntityInstallService: PortalEntityFieldInstallService,
     ) {}
 
-    async installDealFields(dto: InstallDealFieldDto): Promise<any> {
+    async installDealFields(
+        dto: InstallDealFieldDto,
+    ): Promise<IEntityFieldsInstallResult> {
         const { domain, fields } = dto;
         // получаем предварительные данные чтобы получить теккущую сущность - deal
         const portal = await this.portalService.getPortalByDomain(domain);

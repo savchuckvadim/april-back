@@ -1,0 +1,100 @@
+import { Injectable } from '@nestjs/common';
+
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalContactService } from '@lib/portal-lib/pbx-domain';
+
+import { PbxEntityType } from '@/shared';
+import { PBXService } from '@/modules/pbx';
+import { InstallContactFieldDto } from '../dto/install-contact-field.dto';
+import {
+    BxEntityFieldsInstallService,
+    IEntityFieldsInstallResult,
+    IPbxFieldInstallData,
+    PortalEntityFieldInstallService,
+} from '../../shared';
+
+/**
+ * Установка полей для контакта в Bitrix
+ * 1. Получаем поля для установки из dto
+ * 2. Получаем все поля сущности из битрикс
+ * 3. Добавляем или обновляем в битриксе каждое поле из parsed
+ * 4. Отдельно собираем ошибки тех полей с которыми не получилось что-то сделать - чтобы позже по ним сделать retry
+ * 4. Получаем Contact из db по portalId
+ * 5. если контакта нет - создаем его
+ * 6. Получаем fields из db по Contact
+ * 7. Обновляем или добавляем поля в db по результатам битрикса
+ * 8. Если есть поля с ошибками - делаем retry
+ * 9. Если retry опять с ошибками - отправляем ошибку
+ *
+ */
+
+@Injectable()
+export class PbxContactInstallFieldUseCase {
+    constructor(
+        private readonly pbxService: PBXService,
+        private readonly portalService: PortalStoreService,
+        private readonly portalContactService: PortalContactService,
+        private readonly portalFieldEntityInstallService: PortalEntityFieldInstallService,
+    ) {}
+
+    async installContactFields(
+        dto: InstallContactFieldDto,
+    ): Promise<IEntityFieldsInstallResult> {
+        const { domain, fields } = dto;
+        // получаем предварительные данные чтобы получить теккущую сущность - contact
+        const portal = await this.portalService.getPortalByDomain(domain);
+        if (!portal) throw new Error('Portal not found');
+        const portalId = Number(portal.id);
+        // получаем текущую сущность - contact
+        let contact = await this.portalContactService.findByPortalId(portalId);
+        if (!contact) {
+            // если контакта нет - создаем его
+            contact = await this.portalContactService.create({
+                code: `'contact_'${domain}`,
+                name: 'contact',
+                title: 'contact',
+                portalId: portalId,
+            });
+        }
+        // получаем id контакта
+        const contactId = contact.id;
+
+        // получаем поля для установки из excel
+
+        // устанавливаем или обновляем поля в битрикс
+        // и получаем специальную предподготовленную смердженную Data
+        const bxFieldService = new BxEntityFieldsInstallService(
+            domain,
+            this.pbxService,
+            'contact',
+            fields,
+        );
+        // устанавливаем или обновляем поля в битрикс
+        const bxResult = await bxFieldService.installBxFields();
+
+        console.log('bxResult', bxResult);
+        // если не удалось изменить ни одного поля - выбрасываем ошибку
+        if (bxResult.countSuccess === 0) {
+            throw new Error('В битриксе не удалось изменить ни одного поля');
+        }
+        // фильтруем поля с undefined bxField
+        const clearFields = bxResult.results.filter(
+            field => field.bxField !== undefined,
+        ) as IPbxFieldInstallData[];
+
+        const portalFieldEntityInstallResult =
+            await this.portalFieldEntityInstallService.syncWithDb(
+                PbxEntityType.BTX_CONTACT,
+                contactId,
+                clearFields,
+            );
+        console.log(
+            'portalFieldEntityInstallResult',
+            portalFieldEntityInstallResult,
+        );
+        return {
+            bxResult,
+            portalFieldEntityInstallResult,
+        };
+    }
+}

@@ -7,6 +7,7 @@ import { PBXService } from '@/modules/pbx';
 import { Field } from '../../../shared/parse-field-excel/type/parse-field.type';
 import {
     BxEntityFieldsInstallService,
+    IEntityFieldsInstallResult,
     IPbxFieldInstallData,
     PortalEntityFieldInstallService,
 } from '../../../shared';
@@ -45,7 +46,7 @@ export class PbxDealFieldInstallByParseUseCase {
         group: PbxEntityGroupEnum,
         appName: ParseEntityFieldsAppName,
         codes?: string[],
-    ): Promise<any> {
+    ): Promise<IEntityFieldsInstallResult> {
         // получаем предварительные данные чтобы получить теккущую сущность - deal
         const portal = await this.portalService.getPortalByDomain(domain);
         if (!portal) throw new Error('Portal not found');

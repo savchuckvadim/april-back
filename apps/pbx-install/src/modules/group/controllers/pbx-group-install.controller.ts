@@ -1,13 +1,25 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+    ApiBody,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 
 import { PbxCallingGroupEnum } from '@lib/portal-lib/pbx/app-type';
+import { PortalCallingResponseDto } from '@lib/portal-lib/pbx-domain/portal-calling';
 import { PbxGroupInstallUseCase } from '../use-cases/pbx-group-install.use-case';
+import { PbxCallingSetBitrixIdUseCase } from '../use-cases/pbx-calling-set-bitrix-id.use-case';
+import { SetCallingBitrixIdDto } from '../dto/set-calling-bitrix-id.dto';
 
 @ApiTags('PBX Group Install')
 @Controller('pbx-group-install')
 export class PbxGroupInstallController {
-    constructor(private readonly useCase: PbxGroupInstallUseCase) {}
+    constructor(
+        private readonly useCase: PbxGroupInstallUseCase,
+        private readonly setBitrixIdUseCase: PbxCallingSetBitrixIdUseCase,
+    ) {}
 
     @ApiOperation({
         summary: 'Install calling group by portal and group',
@@ -31,5 +43,27 @@ export class PbxGroupInstallController {
         @Param('group') group: PbxCallingGroupEnum,
     ) {
         return await this.useCase.installGroup(domain, group);
+    }
+
+    @ApiOperation({
+        summary: 'Set bitrixId for a calling group by code (upsert)',
+        description:
+            'Ручная привязка: принимает код группы звонков (`group`) и `bitrixId`, ' +
+            'записывает `bitrixId` в строку `callings` по ключу type + group + portalId. ' +
+            'Если строка есть — обновляется только `bitrixId`; если нет — создаётся. ' +
+            'Ключ уникален: двух строк одной группы (например, двух `sales`) на портале быть не может. ' +
+            'В Bitrix ничего не создаётся и не меняется.',
+    })
+    @ApiBody({ type: SetCallingBitrixIdDto })
+    @ApiResponse({
+        status: 201,
+        description: 'Обновлённая строка группы звонков из PortalDB.',
+        type: PortalCallingResponseDto,
+    })
+    @Post('/set-bitrix-id/')
+    async setBitrixId(
+        @Body() dto: SetCallingBitrixIdDto,
+    ): Promise<PortalCallingResponseDto> {
+        return await this.setBitrixIdUseCase.setBitrixId(dto);
     }
 }

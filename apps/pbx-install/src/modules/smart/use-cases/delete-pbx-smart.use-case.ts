@@ -19,7 +19,8 @@ import { convertToBigint } from '@/shared';
  * @param domain - domain of portal
  * @param smartGroup - group of smart
  * @param withBitrix - if true, delete in bitrix
- * @returns {Promise<{deleted: string, bxSmart: string, portalSmarts: any}>}
+ * @returns Промис с id удалённого смарта (`deleted`), а также актуальными списками
+ *          смартов из Bitrix (`bxSmarts`) и PortalDB (`portalSmarts`) после удаления.
  * @example
  * const result = await this.deletePbxSmartUseCase.execute(
  *     SmartNameEnum.SALES,

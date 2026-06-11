@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { PbxCompanyInstallModule } from './company/pbx-company-install.module';
+import { PbxContactInstallModule } from './contact/pbx-contact-install.module';
 import { PbxDealInstallModule } from './deal/pbx-deal-install.module';
+import { PbxLeadInstallModule } from './lead/pbx-lead-install.module';
 import { PbxSmartInstallModule } from './smart/pbx-smart-install.module';
 import { PbxRpaInstallModule } from './rpa/pbx-rpa-install.module';
 import { PbxListInstallModule } from './list/pbx-list-install.module';
@@ -16,7 +18,9 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxSmartInstallModule,
         PbxRpaInstallModule,
         PbxCompanyInstallModule,
+        PbxContactInstallModule,
         PbxDealInstallModule,
+        PbxLeadInstallModule,
         PbxListInstallModule,
         PbxGroupInstallModule,
         PbxDepartamentInstallModule,
@@ -29,7 +33,9 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxSmartInstallModule,
         PbxRpaInstallModule,
         PbxCompanyInstallModule,
+        PbxContactInstallModule,
         PbxDealInstallModule,
+        PbxLeadInstallModule,
         PbxListInstallModule,
         PbxGroupInstallModule,
         PbxDepartamentInstallModule,

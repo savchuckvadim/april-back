@@ -3,7 +3,10 @@ import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SmartGroupEnum, SmartNameEnum } from '../dto/install-smart.dto';
 import { DeletePbxSmartUseCase } from '../use-cases/delete-pbx-smart.use-case';
-import { GetPbxSmartUseCase } from '../use-cases/get-pbx-smart.use-case';
+import {
+    GetPbxSmartByNameResponseDto,
+    GetPbxSmartUseCase,
+} from '../use-cases/get-pbx-smart.use-case';
 import { InstallSmartUseCase } from '../use-cases/install-smart.use-case';
 
 @ApiTags('PBX Smart Install')
@@ -36,7 +39,7 @@ export class PbxSmartInstallController {
         @Param('domain') domain: string,
         @Param('smartName') smartName: SmartNameEnum,
         @Param('withBitrix') withBitrix: boolean,
-    ): Promise<any> {
+    ): Promise<GetPbxSmartByNameResponseDto> {
         const getPbxSmartDto = {
             domain,
             smartName,
@@ -54,7 +57,7 @@ export class PbxSmartInstallController {
         @Param('domain') domain: string,
         @Param('smartName') smartName: SmartNameEnum,
         @Param('group') group: SmartGroupEnum,
-    ): Promise<any> {
+    ) {
         return await this.installSmartUseCase.execute({
             domain,
             smartName,
@@ -77,7 +80,7 @@ export class PbxSmartInstallController {
         @Param('smartName') smartName: SmartNameEnum,
         @Param('smartGroup') smartGroup: SmartGroupEnum,
         @Query('withBitrix') withBitrix: boolean = false,
-    ): Promise<any> {
+    ) {
         return await this.deletePbxSmartUseCase.execute(
             smartName,
             domain,
@@ -85,13 +88,4 @@ export class PbxSmartInstallController {
             withBitrix,
         );
     }
-
-    // @ApiOperation({ summary: 'Install smart' })
-    // @ApiParam({ name: 'id', description: 'ID of the item' })
-    // @ApiParam({ name: 'entityTypeId', description: 'Entity type ID' })
-    // @ApiParam({ name: 'domain', enum: ['april-garant.bitrix24.ru', 'https://pbx.ru'], description: 'Domain of the portal' })
-    // @Get('test/item/:id/:entityTypeId/:domain')
-    // async testItem(@Param('id') id: number, @Param('entityTypeId') entityTypeId: string, @Param('domain') domain: string): Promise<any> {
-    //     return await this.installSmartService.testItem(id, entityTypeId, domain);
-    // }
 }

@@ -19,6 +19,9 @@ import {
     DeleteEntityFieldItemDto,
     DeleteEntityFieldsDto,
     EditEntityFieldItemDto,
+    IEntityFieldsInstallResult,
+    PerPortalFieldDeleteResult,
+    PerPortalFieldItemResult,
 } from '../../shared';
 
 @ApiTags('PBX Company Install')
@@ -44,7 +47,7 @@ export class PbxCompanyInstallController {
         @Param('domain') domain: string,
         @Param('group') group: PbxEntityGroupEnum,
         @Param('appName') appName: ParseEntityFieldsAppName,
-    ): Promise<any> {
+    ): Promise<IEntityFieldsInstallResult> {
         return await this.useCase.installCompanyFields(domain, group, appName);
     }
 
@@ -65,7 +68,7 @@ export class PbxCompanyInstallController {
     @Post('/install-fields/')
     async installCompanyFieldsByFieldsData(
         @Body() dto: InstallCompanyFieldDto,
-    ): Promise<any> {
+    ): Promise<IEntityFieldsInstallResult> {
         return await this.fieldseCase.installCompanyFields(dto);
     }
 
@@ -81,7 +84,7 @@ export class PbxCompanyInstallController {
     @Post('/delete-fields/')
     async deleteCompanyFields(
         @Body() dto: DeleteEntityFieldsDto,
-    ): Promise<any> {
+    ): Promise<PerPortalFieldDeleteResult[]> {
         return await this.manageUseCase.deleteFields(dto);
     }
 
@@ -96,7 +99,7 @@ export class PbxCompanyInstallController {
     @Post('/delete-field-item/')
     async deleteCompanyFieldItem(
         @Body() dto: DeleteEntityFieldItemDto,
-    ): Promise<any> {
+    ): Promise<PerPortalFieldItemResult[]> {
         return await this.manageUseCase.deleteFieldItem(dto);
     }
 
@@ -111,7 +114,7 @@ export class PbxCompanyInstallController {
     @Post('/edit-field-item/')
     async editCompanyFieldItem(
         @Body() dto: EditEntityFieldItemDto,
-    ): Promise<any> {
+    ): Promise<PerPortalFieldItemResult[]> {
         return await this.manageUseCase.editFieldItem(dto);
     }
 }

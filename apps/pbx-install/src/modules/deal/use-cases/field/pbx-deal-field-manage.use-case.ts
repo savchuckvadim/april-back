@@ -15,22 +15,9 @@ import {
     DeleteEntityFieldsDto,
     EditEntityFieldItemDto,
     MANAGE_DOMAIN_ALL,
+    PerPortalFieldDeleteResult,
+    PerPortalFieldItemResult,
 } from '../../../shared';
-
-interface PerPortalDeleteResult {
-    domain: string;
-    portalId: number;
-    bx: BxFieldDeleteResult[];
-    deletedDbFieldIds: string[];
-    notFoundCodes: string[];
-}
-
-interface PerPortalItemResult {
-    domain: string;
-    portalId: number;
-    bx: BxFieldItemOperationResult;
-    db: { ok: boolean; itemId?: string; error?: string };
-}
 
 /**
  * Manage-операции над полями сделки Bitrix-портала.
@@ -55,9 +42,9 @@ export class PbxDealFieldManageUseCase {
 
     async deleteFields(
         dto: DeleteEntityFieldsDto,
-    ): Promise<PerPortalDeleteResult[]> {
+    ): Promise<PerPortalFieldDeleteResult[]> {
         const domains = await this.resolveDomains(dto.domain);
-        const results: PerPortalDeleteResult[] = [];
+        const results: PerPortalFieldDeleteResult[] = [];
         for (const domain of domains) {
             const portal = await this.portalService.getPortalByDomain(domain);
             if (!portal) {
@@ -102,9 +89,9 @@ export class PbxDealFieldManageUseCase {
 
     async deleteFieldItem(
         dto: DeleteEntityFieldItemDto,
-    ): Promise<PerPortalItemResult[]> {
+    ): Promise<PerPortalFieldItemResult[]> {
         const domains = await this.resolveDomains(dto.domain);
-        const results: PerPortalItemResult[] = [];
+        const results: PerPortalFieldItemResult[] = [];
         for (const domain of domains) {
             const portal = await this.portalService.getPortalByDomain(domain);
             if (!portal) {
@@ -171,9 +158,9 @@ export class PbxDealFieldManageUseCase {
 
     async editFieldItem(
         dto: EditEntityFieldItemDto,
-    ): Promise<PerPortalItemResult[]> {
+    ): Promise<PerPortalFieldItemResult[]> {
         const domains = await this.resolveDomains(dto.domain);
-        const results: PerPortalItemResult[] = [];
+        const results: PerPortalFieldItemResult[] = [];
         for (const domain of domains) {
             const portal = await this.portalService.getPortalByDomain(domain);
             if (!portal) {

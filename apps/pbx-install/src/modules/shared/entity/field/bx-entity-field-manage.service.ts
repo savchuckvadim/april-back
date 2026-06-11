@@ -4,8 +4,12 @@ import {
     BitrixService,
     BxCompanyBatchService,
     BxCompanyService,
+    BxContactBatchService,
+    BxContactService,
     BxDealBatchService,
     BxDealService,
+    BxLeadBatchService,
+    BxLeadService,
     IBXField,
 } from '@/modules/bitrix';
 import { IBxEntityInstallType } from './bx-entity-field-install.service';
@@ -26,6 +30,23 @@ export interface BxFieldItemOperationResult {
     error?: string;
 }
 
+/** Результат удаления полей сущности на одном портале (PortalDB + Bitrix). */
+export interface PerPortalFieldDeleteResult {
+    domain: string;
+    portalId: number;
+    bx: BxFieldDeleteResult[];
+    deletedDbFieldIds: string[];
+    notFoundCodes: string[];
+}
+
+/** Результат manage-операции над одним list-item полем сущности на одном портале. */
+export interface PerPortalFieldItemResult {
+    domain: string;
+    portalId: number;
+    bx: BxFieldItemOperationResult;
+    db: { ok: boolean; itemId?: string; error?: string };
+}
+
 /**
  * Сервис для manage-операций над пользовательскими полями сущностей CRM в Bitrix.
  * Работает и для company, и для deal — выбор сущности по {@link IBxEntityInstallType}.
@@ -34,8 +55,16 @@ export interface BxFieldItemOperationResult {
  */
 export class BxEntityFieldManageService {
     private bitrix!: BitrixService;
-    private bxEntityService!: BxCompanyService | BxDealService;
-    private bxEntityBatchService!: BxCompanyBatchService | BxDealBatchService;
+    private bxEntityService!:
+        | BxCompanyService
+        | BxContactService
+        | BxDealService
+        | BxLeadService;
+    private bxEntityBatchService!:
+        | BxCompanyBatchService
+        | BxContactBatchService
+        | BxDealBatchService
+        | BxLeadBatchService;
     private readonly entity: IBxEntityInstallType;
     private readonly domain: string;
     private readonly pbxService: PBXService;

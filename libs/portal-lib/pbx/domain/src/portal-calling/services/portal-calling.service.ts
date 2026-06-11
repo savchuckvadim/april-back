@@ -91,6 +91,44 @@ export class PortalCallingService {
         });
     }
 
+    /**
+     * Привязать `bitrixId` к группе звонков по ключу type + group + portalId (upsert).
+     *
+     * Ключ уникален, поэтому на портале не может быть двух строк одной группы:
+     * - строка есть → обновляем только `bitrixId` (имя/заголовок не трогаем);
+     * - строки нет → создаём её с `defaults.name`/`defaults.title` и переданным `bitrixId`.
+     */
+    async setBitrixIdByKey(
+        portalId: number,
+        group: ECallingGroup,
+        bitrixId: number,
+        defaults: { name: string; title: string },
+    ): Promise<PortalCallingResponseDto> {
+        const existing = await this.repository.findByTypeGroupPortal(
+            CALLING_TYPE,
+            group,
+            portalId,
+        );
+        if (existing) {
+            const row = await this.repository.update(
+                Number(existing.id),
+                portalCallingPrismaUpdatePatch({
+                    bitrixId,
+                } as UpdatePortalCallingDto),
+            );
+            return portalCallingEntityToResponseDto(
+                portalCallingEntityFromPrisma(row),
+            );
+        }
+        return this.create({
+            portalId,
+            group,
+            name: defaults.name,
+            title: defaults.title,
+            bitrixId,
+        });
+    }
+
     async delete(id: number): Promise<void> {
         await this.findById(id);
         await this.repository.delete(id);

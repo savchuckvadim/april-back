@@ -32,8 +32,8 @@ export class BxContactService {
         return await this.repo.update(contactId, data);
     }
 
-    async getFieldsList(filter: { [key: string]: any }, select?: string[]) {
-        return await this.repo.getFieldList(filter, select);
+    async getFieldsList(filter?: { [key: string]: any }, select?: string[]) {
+        return await this.repo.getFieldList(filter || {}, select);
     }
 
     async getField(id: number | string) {
