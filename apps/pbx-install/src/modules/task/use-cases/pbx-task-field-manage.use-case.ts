@@ -8,6 +8,7 @@ import {
     MANAGE_DOMAIN_ALL,
 } from '../../shared';
 import { PbxTaskParseService } from '../services/pbx-task-parse.service';
+import { rethrowTaskUserFieldError } from '../errors/task-userfield-access.util';
 
 interface PerPortalTaskDeleteResult {
     domain: string;
@@ -56,11 +57,15 @@ export class PbxTaskFieldManageUseCase {
                 domain,
                 this.pbxService,
             );
-            const bx =
-                bxFieldNames.length > 0
-                    ? await manage.deleteFields(bxFieldNames)
-                    : [];
-            results.push({ domain, bx, notFoundCodes });
+            try {
+                const bx =
+                    bxFieldNames.length > 0
+                        ? await manage.deleteFields(bxFieldNames)
+                        : [];
+                results.push({ domain, bx, notFoundCodes });
+            } catch (error) {
+                rethrowTaskUserFieldError(error);
+            }
         }
         return results;
     }

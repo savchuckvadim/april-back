@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { BxTaskFieldsInstallService } from '../../shared';
 import { InstallTaskFieldDto } from '../dto/install-task-field.dto';
+import { rethrowTaskUserFieldError } from '../errors/task-userfield-access.util';
 
 /**
  * Установка полей задачи в Bitrix по уже подготовленному массиву полей (из тела запроса).
@@ -18,10 +19,16 @@ export class PbxTaskInstallFieldUseCase {
             this.pbxService,
             fields,
         );
-        const bxResult = await bxFieldService.installBxFields();
-        if (bxResult.countSuccess === 0) {
-            throw new Error('В битриксе не удалось изменить ни одного поля');
+        try {
+            const bxResult = await bxFieldService.installBxFields();
+            if (bxResult.countSuccess === 0) {
+                throw new Error(
+                    'В битриксе не удалось изменить ни одного поля',
+                );
+            }
+            return { bxResult };
+        } catch (error) {
+            rethrowTaskUserFieldError(error);
         }
-        return { bxResult };
     }
 }

@@ -55,6 +55,38 @@ export class BitrixCore {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    /**
+     * Логировать ли тело ответа/запроса Bitrix при ошибке.
+     * Включено по умолчанию; выключается переменной окружения
+     * BITRIX_LOG_ERROR_PAYLOAD=false (или 0/off/no).
+     */
+    protected isErrorPayloadLogEnabled(): boolean {
+        const flag = process.env.BITRIX_LOG_ERROR_PAYLOAD?.toLowerCase().trim();
+        return !(
+            flag === 'false' ||
+            flag === '0' ||
+            flag === 'off' ||
+            flag === 'no'
+        );
+    }
+
+    /**
+     * Безопасно сериализует тело ответа/запроса Bitrix для логов
+     * (обрезает длинные значения, не падает на циклических ссылках).
+     */
+    protected stringifyResponse(value: unknown): string {
+        try {
+            const text =
+                typeof value === 'string' ? value : JSON.stringify(value);
+            const MAX = 1000;
+            return text && text.length > MAX
+                ? `${text.slice(0, MAX)}…(truncated)`
+                : (text ?? 'undefined');
+        } catch {
+            return '[unserializable]';
+        }
+    }
+
     public async request<T = any>(
         method: string,
         data: any,
@@ -93,7 +125,17 @@ export class BitrixCore {
         const responseText =
             e?.response?.data ?? e?.toString?.() ?? String(error);
 
-        this.logger.error(`Error calling Bitrix [${method}]: ${message}`);
+        const status = (error as AxiosError).response?.status;
+        const payload = this.isErrorPayloadLogEnabled()
+            ? ` | response: ${this.stringifyResponse(responseText)}` +
+              ` | request: ${this.stringifyResponse(data)}`
+            : '';
+        this.logger.error(
+            `Error calling Bitrix [${method}]` +
+                (status ? ` (HTTP ${status})` : '') +
+                `: ${message}` +
+                payload,
+        );
         await this.telegramBot.sendMessageAdminError(
             `Bitrix API error (${method}): ${JSON.stringify(responseText)}`,
         );
