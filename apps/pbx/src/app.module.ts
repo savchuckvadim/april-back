@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { RedisModule } from '@/core/redis/redis.module';
 import { PbxCacheModule } from './pbx-cache/pbx-cache.module';
+import { BxDepartmentModule } from 'libs/bx-department';
 
 /**
  * Корневой модуль приложения pbx.
@@ -25,7 +26,9 @@ import { PbxCacheModule } from './pbx-cache/pbx-cache.module';
         HealthModule,
         RedisModule,
         PbxCacheModule,
+        BxDepartmentModule,
     ],
     providers: [GlobalExceptionFilter],
+    exports: [BxDepartmentModule],
 })
 export class AppModule {}
