@@ -54,13 +54,16 @@ jobs:
                       event-sales: ['apps/event-sales/**']
                       event-service: ['apps/event-service/**']
                       konstructor: ['apps/konstructor/**']
+                      rq: ['apps/rq/**']
+                      pbx: ['apps/pbx/**']
+                      bot: ['apps/bot/**']
 
             - name: Вычислить список приложений для сборки
               id: set
               env:
                   MANUAL_APPS: ${{ github.event.inputs.apps }}
               run: |
-                  ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor"]'
+                  ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor","rq","pbx","bot"]'
                   if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
                     # Ручной запуск: "all"/пусто -> все; иначе список через пробел/запятую -> JSON.
                     if [ -z "$MANUAL_APPS" ] || [ "$MANUAL_APPS" = "all" ]; then

@@ -176,10 +176,70 @@ services:
         required: false
     ports: ['${KONSTRUCTOR_HOST_PORT}:3000']
 
+  rq:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: rq }
+    container_name: app-rq
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/rq/.env
+        required: false
+    ports: ['${RQ_HOST_PORT}:3000']
+
+  pbx:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: pbx }
+    container_name: app-pbx
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/pbx/.env
+        required: false
+    ports: ['${PBX_HOST_PORT}:3000']
+
+  bot:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: bot }
+    container_name: app-bot
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/bot/.env
+        required: false
+    ports: ['${BOT_HOST_PORT}:3000']
+
   # ---------------- Инфраструктура ----------------
+  # Redis с персистентностью: AOF (appendfsync everysec) + RDB-снапшоты.
+  # Данные лежат в именованном volume redis_data (/data), поэтому переживают
+  # перезапуск и полное удаление контейнера. Нужно для pbx-cache (бессрочные
+  # общие данные портала между приложениями).
   redis:
     image: redis:7
     container_name: redis
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--appendfsync',
+        'everysec',
+        '--save',
+        '900 1',
+        '--save',
+        '300 10',
+        '--save',
+        '60 10000',
+      ]
     ports: ['${REDIS_HOST_PORT}:6379']
     restart: unless-stopped
     healthcheck:
@@ -189,6 +249,8 @@ services:
       retries: 5
     networks:
       - app-network
+    volumes:
+      - redis_data:/data
 
   # Локальная dev-БД. На проде подключаемся к внешней БД через DATABASE_URL.
   db:
@@ -222,6 +284,7 @@ services:
 
 volumes:
   db_data:
+  redis_data:
 
 networks:
   app-network:

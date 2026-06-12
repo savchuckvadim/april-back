@@ -37,6 +37,33 @@
         "tsConfigPath": "apps/pbx-install/tsconfig.app.json"
       }
     },
+    "rq": {
+      "type": "application",
+      "root": "apps/rq",
+      "entryFile": "main",
+      "sourceRoot": "apps/rq/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/rq/tsconfig.app.json"
+      }
+    },
+    "pbx": {
+      "type": "application",
+      "root": "apps/pbx",
+      "entryFile": "main",
+      "sourceRoot": "apps/pbx/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/pbx/tsconfig.app.json"
+      }
+    },
+    "bot": {
+      "type": "application",
+      "root": "apps/bot",
+      "entryFile": "main",
+      "sourceRoot": "apps/bot/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/bot/tsconfig.app.json"
+      }
+    },
     "event-sales": {
       "type": "application",
       "root": "apps/event-sales",
@@ -100,7 +127,7 @@
         "tsConfigPath": "libs/core/tsconfig.lib.json"
       }
     },
-    "pbx": {
+    "pbx-lib": {
       "type": "library",
       "root": "libs/pbx",
       "entryFile": "index",

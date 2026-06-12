@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "../../dist/apps/rq"
+  },
+  "include": ["src/**/*", "*.ts", "dto/**/*", "enums/**/*", "install/**/*", "services/**/*", "shared/**/*", "types/**/*", "use-cases/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}
