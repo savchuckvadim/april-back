@@ -43,8 +43,18 @@ export class RqMonitoringUseCase {
         const dbPresets = await this.portalRqService.findByPortalId(portalId);
 
         const presets: RqPresetMonitorRowDto[] = RQ_PRESET_TEMPLATE.map(tpl => {
-            const bx = bxPresets.find(p => p.XML_ID === tpl.xmlId);
             const db = dbPresets.find(d => d.code === tpl.code);
+            const dbBitrixId =
+                db?.bitrixId != null ? Number(db.bitrixId) : null;
+            // Сопоставляем с Bitrix по XML_ID, а если пресет создан не нашим
+            // установщиком (пустой/другой XML_ID) — по сохранённому в `bx_rqs`
+            // bitrix_id. Иначе уже установленный пресет ложно показывался как
+            // отсутствующий в Bitrix.
+            const bx =
+                bxPresets.find(p => p.XML_ID === tpl.xmlId) ??
+                (dbBitrixId != null
+                    ? bxPresets.find(p => Number(p.ID) === dbBitrixId)
+                    : undefined);
             const bitrixId = bx ? Number(bx.ID) : null;
             return {
                 code: tpl.code,
@@ -53,8 +63,8 @@ export class RqMonitoringUseCase {
                 inBitrix: !!bx,
                 bitrixId,
                 inDb: !!db,
-                dbBitrixId: db?.bitrixId ?? null,
-                inSync: !!bx && !!db && bitrixId === db?.bitrixId,
+                dbBitrixId,
+                inSync: bitrixId != null && dbBitrixId != null && bitrixId === dbBitrixId,
             };
         });
 
