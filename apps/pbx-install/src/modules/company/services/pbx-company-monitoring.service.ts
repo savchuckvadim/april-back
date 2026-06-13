@@ -36,6 +36,8 @@ export class PbxCompanyMonitoringService {
     ): Promise<PbxCompanyMonitoringResult> {
         const { bitrix } = await this.pbxService.init(domain);
         const portal = await this.portalService.getPortalByDomain(domain);
+        console.log('domain', domain);
+        console.log('portal', portal);
         if (!portal) {
             throw new NotFoundException('Portal not found');
         }

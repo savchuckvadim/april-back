@@ -13,35 +13,38 @@ export class PbxUserEntityDto {
         this.fields = user.fields.map(field => new PbxFieldEntityDto(field));
     }
     @ApiProperty({
-        description: 'User ID',
+        description: 'Внутренний идентификатор пользователя в PortalDB.',
         example: '1',
         type: String,
     })
     @IsString()
     id: string;
     @ApiProperty({
-        description: 'User code',
+        description:
+            'Код пользователя — идентификатор пользователя в Bitrix-портале.',
         example: '123',
         type: String,
     })
     @IsString()
     code: string;
     @ApiProperty({
-        description: 'User created at',
+        description: 'Дата создания записи пользователя (ISO 8601).',
         example: '2024-01-01T00:00:00.000Z',
         type: String,
     })
     @IsString()
     createdAt: string;
     @ApiProperty({
-        description: 'User updated at',
+        description:
+            'Дата последнего обновления записи пользователя (ISO 8601).',
         example: '2024-01-01T00:00:00.000Z',
         type: String,
     })
     @IsString()
     updatedAt: string;
     @ApiProperty({
-        description: 'User fields',
+        description:
+            'Поля пользователя (UF_USR_*), синхронизированные с PortalDB.',
         type: [PbxFieldEntityDto],
     })
     @IsArray()

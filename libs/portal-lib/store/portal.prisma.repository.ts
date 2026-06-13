@@ -105,6 +105,16 @@ export class PortalPrismaRepository implements PortalRepository {
                 clients: true,
             },
         });
+        console.log('findByDomain domain ', domain);
+        console.log('findByDomain result ', result);
+        const many = await this.prisma.portal.findMany({
+            include: {
+                agents: true,
+                templates: true,
+                clients: true,
+            },
+        });
+        console.log('findByDomain many ', many);
         if (!result) return null;
         return createPortalEntityFromPrisma(result as PortalWithRelations);
     }

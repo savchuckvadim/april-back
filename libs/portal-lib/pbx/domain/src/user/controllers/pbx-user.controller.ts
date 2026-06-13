@@ -1,6 +1,13 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiTags,
+} from '@nestjs/swagger';
 import { PbxUserService } from '../services/pbx-user.service';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PbxUserEntityDto } from '../dto/pbx-user-entity.dto';
 import { PbxUserCreateDto } from '../dto/pbx-user-create.dto';
 import { PbxUserUpdateDto } from '../dto/pbx-user-update.dto';
@@ -10,10 +17,13 @@ import { PbxUserUpdateDto } from '../dto/pbx-user-update.dto';
 export class PbxUserController {
     constructor(private readonly pbxUserService: PbxUserService) {}
 
-    @ApiOperation({ summary: 'Get all users' })
-    @ApiResponse({
-        status: 200,
-        description: 'Users found',
+    @ApiOperation({
+        summary: 'Список всех PBX-пользователей',
+        description:
+            'Возвращает всех пользователей PortalDB вместе с их полями (fields).',
+    })
+    @ApiOkResponse({
+        description: 'Список пользователей найден.',
         type: [PbxUserEntityDto],
     })
     @Get('all')
@@ -21,45 +31,70 @@ export class PbxUserController {
         return await this.pbxUserService.findAll();
     }
 
-    @ApiOperation({ summary: 'Get user by ID' })
-    @ApiResponse({
-        status: 200,
-        description: 'User found',
+    @ApiOperation({
+        summary: 'Получить пользователя по ID',
+        description:
+            'Находит пользователя PortalDB по его внутреннему идентификатору (id).',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'Внутренний идентификатор пользователя в PortalDB.',
+        example: '1',
+    })
+    @ApiOkResponse({
+        description: 'Пользователь найден.',
         type: PbxUserEntityDto,
     })
     @Get(':id')
     async getUserById(@Param('id') id: string): Promise<PbxUserEntityDto> {
         return await this.pbxUserService.findById(id);
     }
-    @ApiOperation({ summary: 'Get user by portal ID' })
-    @ApiResponse({
-        status: 200,
-        description: 'User found',
+
+    @ApiOperation({
+        summary: 'Получить пользователя по ID портала или по домену',
+        description:
+            'Если параметр состоит только из цифр — поиск выполняется по ' +
+            'portalId, иначе — по домену портала (например, ' +
+            'april-dev.bitrix24.ru). Один эндпоинт закрывает оба сценария ' +
+            'и снимает конфликт маршрутов portal/:portalId и portal/:domain.',
+    })
+    @ApiParam({
+        name: 'portalIdOrDomain',
+        description:
+            'ID портала (только цифры) либо домен портала ' +
+            '(april-dev.bitrix24.ru).',
+        example: 'april-dev.bitrix24.ru',
+    })
+    @ApiOkResponse({
+        description: 'Пользователь найден.',
         type: PbxUserEntityDto,
     })
-    @Get('portal/:portalId')
-    async getUserByPortalId(
-        @Param('portalId') portalId: string,
+    @Get('portal/:portalIdOrDomain')
+    async getUserByPortal(
+        @Param('portalIdOrDomain') portalIdOrDomain: string,
     ): Promise<PbxUserEntityDto> {
-        return await this.pbxUserService.findByPortalId(portalId);
-    }
-    @ApiOperation({ summary: 'Get user by portal domain' })
-    @ApiResponse({
-        status: 200,
-        description: 'User found',
-        type: PbxUserEntityDto,
-    })
-    @Get('portal/:portalDomain')
-    async getUserByPortalDomain(
-        @Param('portalDomain') portalDomain: string,
-    ): Promise<PbxUserEntityDto> {
-        return await this.pbxUserService.findByPortalDomain(portalDomain);
+        return /^\d+$/.test(portalIdOrDomain)
+            ? await this.pbxUserService.findByPortalId(portalIdOrDomain)
+            : await this.pbxUserService.findByPortalDomain(portalIdOrDomain);
     }
 
-    @ApiOperation({ summary: 'Create user by domain' })
-    @ApiResponse({
-        status: 201,
-        description: 'User created',
+    @ApiOperation({
+        summary: 'Создать пользователя по домену портала',
+        description:
+            'Создаёт пользователя в PortalDB, привязывая его к порталу, ' +
+            'найденному по домену.',
+    })
+    @ApiParam({
+        name: 'domain',
+        description: 'Домен портала (april-dev.bitrix24.ru).',
+        example: 'april-dev.bitrix24.ru',
+    })
+    @ApiBody({
+        type: PbxUserUpdateDto,
+        description: 'Данные пользователя (code) для создания.',
+    })
+    @ApiCreatedResponse({
+        description: 'Пользователь создан.',
         type: PbxUserEntityDto,
     })
     @Post('domain/:domain')
@@ -70,10 +105,17 @@ export class PbxUserController {
         return await this.pbxUserService.createByDomain(user.code, domain);
     }
 
-    @ApiOperation({ summary: 'Create user' })
-    @ApiResponse({
-        status: 201,
-        description: 'User created',
+    @ApiOperation({
+        summary: 'Создать пользователя',
+        description:
+            'Создаёт пользователя в PortalDB по code и явному portalId.',
+    })
+    @ApiBody({
+        type: PbxUserCreateDto,
+        description: 'code пользователя и portalId портала.',
+    })
+    @ApiCreatedResponse({
+        description: 'Пользователь создан.',
         type: PbxUserEntityDto,
     })
     @Post()
@@ -86,10 +128,21 @@ export class PbxUserController {
         );
     }
 
-    @ApiOperation({ summary: 'Update user' })
-    @ApiResponse({
-        status: 200,
-        description: 'User updated',
+    @ApiOperation({
+        summary: 'Обновить пользователя',
+        description: 'Обновляет данные пользователя PortalDB по его id.',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'Внутренний идентификатор пользователя в PortalDB.',
+        example: '1',
+    })
+    @ApiBody({
+        type: PbxUserUpdateDto,
+        description: 'Новые данные пользователя (code).',
+    })
+    @ApiOkResponse({
+        description: 'Пользователь обновлён.',
         type: PbxUserEntityDto,
     })
     @Put(':id')
