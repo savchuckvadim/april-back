@@ -4,11 +4,15 @@ import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { PbxFieldModule, PbxUserModule } from '@lib/portal-lib/pbx-domain';
 import { InstallEntityModule } from '../shared/entity/install-entity.module';
 import { PbxUserFieldInstallController } from './controllers/pbx-user-field-install.controller';
+import { PbxUserBitrixController } from './controllers/pbx-user-bitrix.controller';
+import { PbxUserInstallMonitoringController } from './controllers/pbx-user-install-monitoring.controller';
 import { PbxUserParseService } from './services/pbx-user-parse.service';
 import { PbxUserEntityService } from './services/pbx-user-entity.service';
+import { PbxUserMonitoringService } from './services/pbx-user-monitoring.service';
 import { PbxUserInstallUseCase } from './use-cases/pbx-user-install.use-case';
 import { PbxUserInstallFieldUseCase } from './use-cases/pbx-user-install-field.use-case';
 import { PbxUserFieldManageUseCase } from './use-cases/pbx-user-field-manage.use-case';
+import { PbxUserBitrixUseCase } from './use-cases/pbx-user-bitrix.use-case';
 
 /**
  * Модуль установки пользовательских полей ПОЛЬЗОВАТЕЛЯ в Bitrix
@@ -22,13 +26,19 @@ import { PbxUserFieldManageUseCase } from './use-cases/pbx-user-field-manage.use
         PbxUserModule,
         InstallEntityModule,
     ],
-    controllers: [PbxUserFieldInstallController],
+    controllers: [
+        PbxUserFieldInstallController,
+        PbxUserBitrixController,
+        PbxUserInstallMonitoringController,
+    ],
     providers: [
         PbxUserParseService,
         PbxUserEntityService,
+        PbxUserMonitoringService,
         PbxUserInstallUseCase,
         PbxUserInstallFieldUseCase,
         PbxUserFieldManageUseCase,
+        PbxUserBitrixUseCase,
     ],
 })
 export class PbxUserInstallModule {}

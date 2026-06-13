@@ -4,11 +4,12 @@ import { PbxUserPrismaRepository } from './repositories/pbx-user.prisma.reposito
 import { PbxFieldModule } from '../field';
 import { PbxUserService } from './services/pbx-user.service';
 import { PbxUserController } from './controllers/pbx-user.controller';
+import { PbxUserFieldController } from './controllers/pbx-user-field.controller';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 
 @Module({
     imports: [PbxFieldModule, PortalStoreModule],
-    controllers: [PbxUserController],
+    controllers: [PbxUserController, PbxUserFieldController],
     providers: [
         {
             provide: PbxUserRepository,
