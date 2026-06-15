@@ -24,6 +24,14 @@ export interface PbxCompanyMonitoringResult {
     portalFieldsWithoutMerged: PbxFieldEntityDto[];
     bitrixFieldsWithoutMerged: IBXField[];
 }
+export interface PbxCompanyMonitoringPerPortal
+    extends PbxCompanyMonitoringResult {
+    domain: string;
+}
+export interface PbxCompanyMonitoringAllResult {
+    perPortal: PbxCompanyMonitoringPerPortal[];
+    errors: { domain: string; error: string }[];
+}
 @Injectable()
 export class PbxCompanyMonitoringService {
     constructor(
@@ -31,13 +39,33 @@ export class PbxCompanyMonitoringService {
         private readonly portalCompanyService: PortalCompanyService,
         private readonly portalService: PortalStoreService,
     ) {}
+    /** Картина «шаблон/PortalDB/Bitrix» по всем порталам (агрегированно). */
+    async getAllPortals(): Promise<PbxCompanyMonitoringAllResult> {
+        const portals = (await this.portalService.getPortals()) ?? [];
+        const perPortal: PbxCompanyMonitoringPerPortal[] = [];
+        const errors: { domain: string; error: string }[] = [];
+        for (const portal of portals) {
+            const domain = portal.domain;
+            if (!domain) continue;
+            try {
+                const data =
+                    await this.getPbxCompanyDataByAllPortalFields(domain);
+                perPortal.push({ domain, ...data });
+            } catch (e) {
+                errors.push({
+                    domain,
+                    error: e instanceof Error ? e.message : String(e),
+                });
+            }
+        }
+        return { perPortal, errors };
+    }
+
     async getPbxCompanyDataByAllPortalFields(
         domain: string,
     ): Promise<PbxCompanyMonitoringResult> {
         const { bitrix } = await this.pbxService.init(domain);
         const portal = await this.portalService.getPortalByDomain(domain);
-        console.log('domain', domain);
-        console.log('portal', portal);
         if (!portal) {
             throw new NotFoundException('Portal not found');
         }

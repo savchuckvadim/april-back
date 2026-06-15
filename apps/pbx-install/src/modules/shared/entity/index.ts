@@ -8,3 +8,4 @@ export * from './field/bx-task-field-manage.service';
 export * from './field/bx-user-field-manage.service';
 export * from './install-entity.module';
 export * from './dto/manage-entity-field.dto';
+export * from './dto/delete-bx-fields-by-codes.dto';

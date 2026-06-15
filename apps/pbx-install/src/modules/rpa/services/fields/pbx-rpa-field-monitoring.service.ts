@@ -22,7 +22,9 @@ export interface PbxRpaFieldMonitoringResult {
 
 /**
  * Сводка полей одного RPA: PortalDB (`t_fields`, entity = `BTX_RPA`) против Bitrix
- * (`userfieldconfig.list({ moduleId: 'rpa', filter: { entityId: RPA_<typeId> } })`).
+ * (`userfieldconfig` по `moduleId: 'rpa'`, `entityId: RPA_<typeId>`, читается
+ * постранично через `getAll` — иначе Bitrix отдаёт максимум ~50 полей на страницу
+ * и часть полей пропадает из сводки).
  */
 @Injectable()
 export class PbxRpaFieldMonitoringService {
@@ -55,13 +57,9 @@ export class PbxRpaFieldMonitoringService {
             PbxEntityTypePrisma.BTX_RPA,
             rpa.id,
         );
-        const listResponse = await bitrix.userFieldConfig.list({
-            moduleId: 'rpa',
-            filter: { entityId: bitrixEntityId },
+        const bitrixFields = await bitrix.userFieldConfig.getAll('rpa', {
+            entityId: bitrixEntityId,
         });
-        const bitrixFields =
-            (listResponse.result as { fields?: IUserFieldConfig[] } | undefined)
-                ?.fields ?? [];
 
         const merged: PbxRpaMergedField[] = [];
         const matchedPortalIds = new Set<string>();

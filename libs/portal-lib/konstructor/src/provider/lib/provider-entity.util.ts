@@ -3,6 +3,7 @@ import {
     ProviderEntity,
     ProviderEntityWithRq,
     RqEntity,
+    RqInput,
 } from '../provider.entity';
 
 export function createProviderEntityFromPrisma(
@@ -59,10 +60,60 @@ export function createRqEntity(
         rqEntity.bik = String(rq.bik || '');
         rqEntity.rs = String(rq.rs || '');
         rqEntity.ks = String(rq.ks || '');
+        rqEntity.bankAdress = String(rq.bankAdress || '');
+        rqEntity.bankOther = String(rq.bankOther || '');
         rqEntity.withTax = withTax;
     }
     return rqEntity;
 }
+
+/**
+ * Маппит входные реквизиты в скалярные поля таблицы `rqs`.
+ * `undefined`-поля Prisma игнорирует — функция подходит и для create, и для update.
+ */
+export function mapRqInputToData(input: Partial<RqInput>): RqWritableData {
+    return {
+        type: input.type,
+        name: input.name,
+        number: input.number,
+        fullname: input.fullname,
+        shortname: input.shortname,
+        director: input.director,
+        position: input.position,
+        accountant: input.accountant,
+        based: input.based,
+        inn: input.inn,
+        kpp: input.kpp,
+        ogrn: input.ogrn,
+        ogrnip: input.ogrnip,
+        personName: input.personName,
+        document: input.document,
+        docSer: input.docSer,
+        docNum: input.docNum,
+        docDate: input.docDate,
+        docIssuedBy: input.docIssuedBy,
+        docDepCode: input.docDepCode,
+        registredAdress: input.registredAdress,
+        primaryAdresss: input.primaryAdresss,
+        email: input.email,
+        garantEmail: input.garantEmail,
+        phone: input.phone,
+        assigned: input.assigned,
+        assignedPhone: input.assignedPhone,
+        other: input.other,
+        bank: input.bank,
+        bik: input.bik,
+        rs: input.rs,
+        ks: input.ks,
+        bankAdress: input.bankAdress,
+        bankOther: input.bankOther,
+    };
+}
+
+/** Скалярные записываемые поля таблицы `rqs` (без id/связей). */
+export type RqWritableData = {
+    [K in keyof RqInput]?: string;
+};
 
 export function createProviderEntityWithRqFromPrisma(
     providers: NonNullable<

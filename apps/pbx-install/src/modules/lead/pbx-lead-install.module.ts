@@ -16,6 +16,8 @@ import { PbxLeadFieldInstallByFieldUseCase } from './use-cases/field/pbx-lead-fi
 import { PbxLeadFieldManageUseCase } from './use-cases/field/pbx-lead-field-manage.use-case';
 import { PbxLeadFieldInstallController } from './controllers/pbx-lead-field-install.controller';
 import { PbxLeadFieldInstallMonitoringController } from './controllers/pbx-lead-field-install-monitoring.controller';
+import { PbxLeadFieldBitrixController } from './controllers/pbx-lead-field-bitrix.controller';
+import { PbxLeadFieldBitrixUseCase } from './use-cases/field/pbx-lead-field-bitrix.use-case';
 
 import { EnsureLeadCategoryService } from './services/stages/ensure-lead-category.service';
 import { PbxLeadStageMonitoringService } from './services/stages/pbx-lead-stage-monitoring.service';
@@ -36,11 +38,13 @@ import { PbxLeadStageInstallMonitoringController } from './controllers/pbx-lead-
     controllers: [
         PbxLeadFieldInstallMonitoringController,
         PbxLeadFieldInstallController,
+        PbxLeadFieldBitrixController,
         PbxLeadStageInstallMonitoringController,
         PbxLeadStageInstallController,
     ],
     providers: [
         PbxLeadMonitoringService,
+        PbxLeadFieldBitrixUseCase,
         PbxLeadSearchService,
         PbxLeadFieldInstallByParseUseCase,
         PbxLeadFieldInstallByFieldUseCase,

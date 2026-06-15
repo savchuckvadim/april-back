@@ -15,6 +15,8 @@ import { PbxCompanyInstallController } from './controllers/pbx-comapany-install.
 import { InstallEntityModule } from '../shared/entity/install-entity.module';
 import { PbxCompanyInstallFieldUseCase } from './use-cases/pbx-company-install-field.use-case';
 import { PbxCompanyFieldManageUseCase } from './use-cases/pbx-company-field-manage.use-case';
+import { PbxCompanyBitrixUseCase } from './use-cases/pbx-company-bitrix.use-case';
+import { PbxCompanyBitrixController } from './controllers/pbx-company-bitrix.controller';
 
 @Module({
     imports: [
@@ -28,6 +30,7 @@ import { PbxCompanyFieldManageUseCase } from './use-cases/pbx-company-field-mana
     controllers: [
         PbxCompanyInstallMonitoringController,
         PbxCompanyInstallController,
+        PbxCompanyBitrixController,
     ],
     providers: [
         PbxCompanyMonitoringService,
@@ -37,6 +40,7 @@ import { PbxCompanyFieldManageUseCase } from './use-cases/pbx-company-field-mana
         PbxCompanyInstallUseCase,
         PbxCompanyInstallFieldUseCase,
         PbxCompanyFieldManageUseCase,
+        PbxCompanyBitrixUseCase,
     ],
 })
 export class PbxCompanyInstallModule {}

@@ -15,6 +15,8 @@ import { PbxContactInstallController } from './controllers/pbx-contact-install.c
 import { InstallEntityModule } from '../shared/entity/install-entity.module';
 import { PbxContactInstallFieldUseCase } from './use-cases/pbx-contact-install-field.use-case';
 import { PbxContactFieldManageUseCase } from './use-cases/pbx-contact-field-manage.use-case';
+import { PbxContactBitrixUseCase } from './use-cases/pbx-contact-bitrix.use-case';
+import { PbxContactBitrixController } from './controllers/pbx-contact-bitrix.controller';
 
 @Module({
     imports: [
@@ -28,6 +30,7 @@ import { PbxContactFieldManageUseCase } from './use-cases/pbx-contact-field-mana
     controllers: [
         PbxContactInstallMonitoringController,
         PbxContactInstallController,
+        PbxContactBitrixController,
     ],
     providers: [
         PbxContactMonitoringService,
@@ -37,6 +40,7 @@ import { PbxContactFieldManageUseCase } from './use-cases/pbx-contact-field-mana
         PbxContactInstallUseCase,
         PbxContactInstallFieldUseCase,
         PbxContactFieldManageUseCase,
+        PbxContactBitrixUseCase,
     ],
 })
 export class PbxContactInstallModule {}

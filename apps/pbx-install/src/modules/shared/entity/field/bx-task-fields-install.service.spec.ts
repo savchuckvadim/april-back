@@ -22,7 +22,9 @@ describe('BxTaskFieldsInstallService', () => {
 
     const buildBitrix = () => ({
         taskUserField: { getList },
-        batch: { taskUserField: { addBtch, updateBtch, deleteBtch: jest.fn() } },
+        batch: {
+            taskUserField: { addBtch, updateBtch, deleteBtch: jest.fn() },
+        },
         api: { callBatchWithConcurrency: callBatch },
     });
 
@@ -41,13 +43,9 @@ describe('BxTaskFieldsInstallService', () => {
     });
 
     it('создаёт поле UF_TASK_EVENT_COMMENT, если его нет', async () => {
-        getList
-            .mockResolvedValueOnce({ result: [] })
-            .mockResolvedValueOnce({
-                result: [
-                    { FIELD_NAME: 'UF_TASK_EVENT_COMMENT', ID: '1325' },
-                ],
-            });
+        getList.mockResolvedValueOnce({ result: [] }).mockResolvedValueOnce({
+            result: [{ FIELD_NAME: 'UF_TASK_EVENT_COMMENT', ID: '1325' }],
+        });
         callBatch.mockResolvedValue([{ result: { event_comment: 1325 } }]);
 
         const service = new BxTaskFieldsInstallService(

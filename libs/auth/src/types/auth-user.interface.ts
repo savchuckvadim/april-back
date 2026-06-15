@@ -1,0 +1,30 @@
+import { Role } from './role.enum';
+
+/**
+ * Аутентифицированный субъект, который гард кладёт в `request.user` и который
+ * потребители получают через декоратор `@CurrentUser()`.
+ *
+ * Поля `clientId`/`portalId` опциональны и заполняются только для будущей
+ * клиентской авторизации (привязка пользователя к client + portal Bitrix).
+ * Для SuperUser они отсутствуют.
+ */
+export interface AuthUser {
+    /** Идентификатор субъекта (для SuperUser — его login). */
+    sub: string;
+    /** Логин субъекта. */
+    login: string;
+    /** Роль субъекта. */
+    role: Role;
+    /** Идентификатор клиента (будущая клиентская авторизация). */
+    clientId?: number;
+    /** Идентификатор портала Bitrix (будущая клиентская авторизация). */
+    portalId?: number;
+}
+
+/** Полезная нагрузка JWT — совпадает с {@link AuthUser} плюс стандартные claim-ы. */
+export interface AuthJwtPayload extends AuthUser {
+    /** Время выпуска (issued at), сек. — проставляется библиотекой jsonwebtoken. */
+    iat?: number;
+    /** Время истечения (expiration), сек. — проставляется библиотекой jsonwebtoken. */
+    exp?: number;
+}

@@ -24,7 +24,9 @@ export interface PbxSmartFieldMonitoringResult {
 
 /**
  * Сводка полей одного смарта на портале: портал-БД (`t_fields`) против Bitrix
- * (`userfieldconfig.list({ filter: { entityId: CRM_<smartTypeId> } })`).
+ * (`userfieldconfig` по `entityId: CRM_<smartTypeId>`, читается постранично через
+ * `getAll` — иначе Bitrix отдаёт максимум ~50 полей на страницу и часть полей
+ * пропадает из сводки).
  *
  * Аналог {@link PbxDealMonitoringService}, только адресует смарт через
  * `(domain, smartName, group)` (на портале может быть много смартов).
@@ -65,13 +67,9 @@ export class PbxSmartFieldMonitoringService {
             PbxEntityTypePrisma.SMART,
             smart.id,
         );
-        const listResponse = await bitrix.userFieldConfig.list({
-            moduleId: 'crm',
-            filter: { entityId: bitrixEntityId },
+        const bitrixFields = await bitrix.userFieldConfig.getAll('crm', {
+            entityId: bitrixEntityId,
         });
-        const bitrixFields =
-            (listResponse.result as { fields?: IUserFieldConfig[] } | undefined)
-                ?.fields ?? [];
 
         const merged: PbxSmartMergedField[] = [];
         const matchedPortalIds = new Set<string>();

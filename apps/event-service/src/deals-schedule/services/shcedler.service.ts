@@ -79,7 +79,7 @@ export class SchedulerService {
         const minutes = date.getMinutes();
         const seconds = date.getSeconds();
         await this.telegramService.sendMessage(
-            `⏰ EVERY_WEEK SCHEDLER Actualize Deals Fin Services start ${hours}:${minutes}:${seconds} ${timezone}`,
+            `⏰ EVERY_WEEK  Actualize Deals Fin Services start ${hours}:${minutes}:${seconds} ${timezone}`,
         );
 
         try {

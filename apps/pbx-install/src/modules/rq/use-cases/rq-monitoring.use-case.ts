@@ -64,7 +64,10 @@ export class RqMonitoringUseCase {
                 bitrixId,
                 inDb: !!db,
                 dbBitrixId,
-                inSync: bitrixId != null && dbBitrixId != null && bitrixId === dbBitrixId,
+                inSync:
+                    bitrixId != null &&
+                    dbBitrixId != null &&
+                    bitrixId === dbBitrixId,
             };
         });
 

@@ -3,6 +3,8 @@ import { PbxSmartInstallController } from '@app/pbx-install/smart/controller/pbx
 import { PbxSmartParseTemplateController } from '@app/pbx-install/smart/controller/pbx-smart-parse-template.controller';
 import { PbxSmartFieldInstallController } from '@app/pbx-install/smart/controller/pbx-smart-field-install.controller';
 import { PbxSmartFieldInstallMonitoringController } from '@app/pbx-install/smart/controller/pbx-smart-field-install-monitoring.controller';
+import { PbxSmartFieldBitrixController } from '@app/pbx-install/smart/controller/pbx-smart-field-bitrix.controller';
+import { PbxSmartFieldBitrixUseCase } from './use-cases/field/pbx-smart-field-bitrix.use-case';
 import { PbxSmartCategoryInstallController } from '@app/pbx-install/smart/controller/pbx-smart-category-install.controller';
 import { PbxSmartCategoryInstallMonitoringController } from '@app/pbx-install/smart/controller/pbx-smart-category-install-monitoring.controller';
 import { ParseSmartService } from '@app/pbx-install/smart/services/parse/parse-smart.service';
@@ -47,11 +49,13 @@ import { StorageModule } from '@/core/storage/storage.module';
         PbxSmartParseTemplateController,
         PbxSmartFieldInstallController,
         PbxSmartFieldInstallMonitoringController,
+        PbxSmartFieldBitrixController,
         PbxSmartCategoryInstallController,
         PbxSmartCategoryInstallMonitoringController,
     ],
     providers: [
         ParseSmartService,
+        PbxSmartFieldBitrixUseCase,
         SmartContextResolver,
         InstallSmartUseCase,
         InstallSmartCategoriesService,

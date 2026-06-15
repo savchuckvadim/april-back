@@ -47,6 +47,7 @@
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./apps/back/test/jest-e2e.json",
         "key:generate": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
+        "auth:hash": "node -e \"const b=require('bcrypt');const p=process.argv[1];if(!p){console.error('usage: pnpm run auth:hash -- <password>');process.exit(1);}console.log(b.hashSync(p,10));\"",
         "prisma:pull": "prisma db pull",
         "prisma:generate": "prisma generate",
         "prisma:studio": "prisma studio"
@@ -168,6 +169,7 @@
         },
         "moduleNameMapper": {
             "^@lib/shared(|/.*)$": "<rootDir>/libs/shared/src/$1",
+            "^@lib/auth(|/.*)$": "<rootDir>/libs/auth/src/$1",
             "^@lib/core(|/.*)$": "<rootDir>/libs/core/src/$1",
             "^@lib/bitrix(|/.*)$": "<rootDir>/libs/bitrix/src/$1",
             "^@lib/bitrix-auth(|/.*)$": "<rootDir>/libs/bitrix-auth/src/$1",

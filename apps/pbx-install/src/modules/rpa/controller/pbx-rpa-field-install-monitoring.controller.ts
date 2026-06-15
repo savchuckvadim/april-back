@@ -15,7 +15,9 @@ export class PbxRpaFieldInstallMonitoringController {
     @ApiOperation({
         summary: 'Monitoring: RPA fields by domain',
         description:
-            'Смерженное состояние полей RPA: PortalDB (`t_fields`) против Bitrix (`userfieldconfig`).',
+            'Смерженное состояние полей RPA: PortalDB (`t_fields`) против полного ' +
+            'постраничного состояния Bitrix по `userfieldconfig` (читается через `getAll`, ' +
+            'а не одной страницей `list`, иначе поля сверх ~50 на страницу не попадают в сводку).',
     })
     @ApiParam({ name: 'domain', description: 'Домен портала' })
     @ApiParam({ name: 'rpaName', enum: RpaNameEnum })

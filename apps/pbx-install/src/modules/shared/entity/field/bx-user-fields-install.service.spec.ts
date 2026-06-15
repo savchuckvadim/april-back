@@ -18,7 +18,13 @@ const ENUM_FIELD: Field = {
     appType: 'user',
     type: 'enumeration',
     list: [
-        { VALUE: 'Новый', DEL: 'N', XML_ID: 'st_new', CODE: 'st_new', SORT: 10 },
+        {
+            VALUE: 'Новый',
+            DEL: 'N',
+            XML_ID: 'st_new',
+            CODE: 'st_new',
+            SORT: 10,
+        },
     ],
     code: 'status',
     bxFieldName: 'STATUS',
@@ -55,11 +61,9 @@ describe('BxUserFieldsInstallService', () => {
     });
 
     it('создаёт поле UF_USR_EVENT_COMMENT, если его нет', async () => {
-        listFields
-            .mockResolvedValueOnce({ result: [] })
-            .mockResolvedValueOnce({
-                result: [{ FIELD_NAME: 'UF_USR_EVENT_COMMENT', ID: '50' }],
-            });
+        listFields.mockResolvedValueOnce({ result: [] }).mockResolvedValueOnce({
+            result: [{ FIELD_NAME: 'UF_USR_EVENT_COMMENT', ID: '50' }],
+        });
         callBatch.mockResolvedValue([{ result: { event_comment: 50 } }]);
 
         const service = new BxUserFieldsInstallService(

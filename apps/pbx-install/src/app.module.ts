@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
 import { HealthModule } from '@/core';
+import { AuthModule } from '@lib/auth';
 import { PBXInstallModule } from './modules/pbx-install.module';
 
 /**
@@ -30,6 +31,10 @@ import { PBXInstallModule } from './modules/pbx-install.module';
         }),
         PrismaModule,
         HealthModule,
+        // Авторизация (SuperUser, JWT). По умолчанию выключена (AUTH_ENABLED=false) —
+        // всё работает как раньше. Глобальные гарды защищают все эндпоинты, кроме
+        // @Public() (вход) и health.
+        AuthModule.forRoot(),
         PBXInstallModule,
     ],
     providers: [GlobalExceptionFilter],

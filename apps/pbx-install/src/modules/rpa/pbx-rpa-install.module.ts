@@ -7,6 +7,8 @@ import { PbxRpaInstallController } from './controller/pbx-rpa-install.controller
 import { PbxRpaParseTemplateController } from './controller/pbx-rpa-parse-template.controller';
 import { PbxRpaFieldInstallController } from './controller/pbx-rpa-field-install.controller';
 import { PbxRpaFieldInstallMonitoringController } from './controller/pbx-rpa-field-install-monitoring.controller';
+import { PbxRpaFieldBitrixController } from './controller/pbx-rpa-field-bitrix.controller';
+import { PbxRpaFieldBitrixUseCase } from './use-cases/field/pbx-rpa-field-bitrix.use-case';
 import { PbxRpaCategoryInstallController } from './controller/pbx-rpa-category-install.controller';
 import { PbxRpaCategoryInstallMonitoringController } from './controller/pbx-rpa-category-install-monitoring.controller';
 import { ParseRpaService } from './services/parse/parse-rpa.service';
@@ -40,11 +42,13 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxRpaParseTemplateController,
         PbxRpaFieldInstallController,
         PbxRpaFieldInstallMonitoringController,
+        PbxRpaFieldBitrixController,
         PbxRpaCategoryInstallController,
         PbxRpaCategoryInstallMonitoringController,
     ],
     providers: [
         ParseRpaService,
+        PbxRpaFieldBitrixUseCase,
         RpaContextResolver,
         InstallRpaCategoriesService,
         PbxRpaFieldMonitoringService,

@@ -5,6 +5,8 @@ import {
     ApiParam,
     ApiTags,
 } from '@nestjs/swagger';
+import { InstallEntityFieldDto } from '../../shared';
+import { PbxUserParseService } from '../services/pbx-user-parse.service';
 import { PbxUserMonitoringService } from '../services/pbx-user-monitoring.service';
 import {
     PbxUserMonitoringAllResponseDto,
@@ -19,7 +21,40 @@ import {
 @ApiTags('PBX User Install Monitoring')
 @Controller('pbx-user-install-monitoring')
 export class PbxUserInstallMonitoringController {
-    constructor(private readonly monitoringService: PbxUserMonitoringService) {}
+    constructor(
+        private readonly monitoringService: PbxUserMonitoringService,
+        private readonly parseService: PbxUserParseService,
+    ) {}
+
+    @ApiOperation({
+        summary: 'Поля пользователя из констант (шаблон)',
+        description:
+            'Вернуть все поля пользователя из констант приложения (USER_FIELDS) ' +
+            'в формате "parsed field" (`Field`). Источник — код, без Bitrix и БД.',
+    })
+    @ApiOkResponse({
+        type: [InstallEntityFieldDto],
+        description: 'Массив всех полей пользователя из констант.',
+    })
+    @Get('/parse')
+    getUserFields(): InstallEntityFieldDto[] {
+        return this.parseService.getFields() as InstallEntityFieldDto[];
+    }
+
+    @ApiOperation({
+        summary: 'Поля пользователя из констант, помеченные к установке',
+        description:
+            'Вернуть только поля пользователя с `isNeedUpdate = true` ' +
+            '(именно они уходят в Bitrix при установке).',
+    })
+    @ApiOkResponse({
+        type: [InstallEntityFieldDto],
+        description: 'Массив полей пользователя к установке (`isNeedUpdate`).',
+    })
+    @Get('/parse/install')
+    getUserFieldsForInstall(): InstallEntityFieldDto[] {
+        return this.parseService.getFieldsForInstall() as InstallEntityFieldDto[];
+    }
 
     @ApiOperation({
         summary: 'Полная картина полей пользователя по домену (3 слоя)',

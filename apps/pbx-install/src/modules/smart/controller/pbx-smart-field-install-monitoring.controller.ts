@@ -25,7 +25,8 @@ export class PbxSmartFieldInstallMonitoringController {
         summary: 'Get smart fields data by domain, smartName and group',
         description:
             'Получить "Smart Field Data" для конкретного смарта на портале: ' +
-            'портал-БД (`t_fields`) + Bitrix (`userfieldconfig.list` для `CRM_<smartTypeId>`), ' +
+            'портал-БД (`t_fields`) + полное постраничное состояние Bitrix ' +
+            '(`userfieldconfig` для `CRM_<smartTypeId>`, читается через `getAll`), ' +
             'смердженные по `fieldName` ↔ `t_fields.bitrixId`.',
     })
     @ApiParam({ name: 'domain', description: 'Domain of the portal' })

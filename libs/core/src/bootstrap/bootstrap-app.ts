@@ -9,6 +9,7 @@ import * as bodyParser from 'body-parser';
 import { GlobalExceptionFilter } from '../filters/global-exception.filter';
 import { ResponseInterceptor } from '../interceptors/response.interceptor';
 import { cors } from '../config/cors/cors.config';
+import { swaggerBasicAuth } from './swagger-basic-auth.middleware';
 
 export interface BootstrapOptions {
     /** Имя приложения — для Swagger-заголовка/тега и логов. */
@@ -21,6 +22,16 @@ export interface BootstrapOptions {
     swaggerPath?: string;
     /** Лимит тела запроса. По умолчанию '150mb'. */
     bodyLimit?: string;
+    /**
+     * HTTP Basic-защита страницы Swagger UI. Если не задано — читается из env
+     * (`SWAGGER_AUTH_ENABLED` / `SWAGGER_USER` / `SWAGGER_PASSWORD`).
+     * При выключенном флаге доки открыты, как и раньше (обратная совместимость).
+     */
+    swaggerAuth?: {
+        enabled?: boolean;
+        user?: string;
+        password?: string;
+    };
     /**
      * Хук для специфичной настройки app (cookieParser, WS-адаптер и т.п.)
      * — вызывается после стандартной настройки, перед listen().
@@ -83,11 +94,27 @@ export async function bootstrapApp(
         )
         .setVersion(process.env.SWAGGER_VERSION ?? '1.0')
         .addTag(options.name)
+        .addBearerAuth()
         .build();
     const documentOptions: SwaggerDocumentOptions = {
         operationIdFactory: (controllerKey: string, methodKey: string) =>
             `${controllerKey.replace(/Controller$/i, '')}_${methodKey}`,
     };
+
+    // HTTP Basic-защита самой страницы Swagger UI (до setup, на её путь).
+    const swaggerAuthEnabled =
+        options.swaggerAuth?.enabled ??
+        process.env.SWAGGER_AUTH_ENABLED === 'true';
+    const swaggerUser = options.swaggerAuth?.user ?? process.env.SWAGGER_USER;
+    const swaggerPassword =
+        options.swaggerAuth?.password ?? process.env.SWAGGER_PASSWORD;
+    if (swaggerAuthEnabled && swaggerUser && swaggerPassword) {
+        app.use(
+            `/${swaggerPath}`,
+            swaggerBasicAuth({ user: swaggerUser, password: swaggerPassword }),
+        );
+    }
+
     SwaggerModule.setup(swaggerPath, app, () =>
         SwaggerModule.createDocument(app, documentConfig, documentOptions),
     );

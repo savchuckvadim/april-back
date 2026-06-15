@@ -38,6 +38,17 @@ export class PbxDealFieldInstallMonitoringController {
     }
 
     @ApiOperation({
+        summary: 'Get deal data for all portals',
+        description:
+            'Картина полей Deal (шаблон/PortalDB/Bitrix) по всем порталам. ' +
+            'Порталы с ошибкой получения данных возвращаются в списке errors.',
+    })
+    @Get('all')
+    async getAllPortals() {
+        return await this.monitoringService.getAllPortals();
+    }
+
+    @ApiOperation({
         summary: 'Get deal fields parse data',
         description: 'Получить данные для установки "fields" для "Deal"',
     })

@@ -37,6 +37,17 @@ export class PbxContactInstallMonitoringController {
     }
 
     @ApiOperation({
+        summary: 'Get contact data for all portals',
+        description:
+            'Картина полей Contact (шаблон/PortalDB/Bitrix) по всем порталам. ' +
+            'Порталы с ошибкой получения данных возвращаются в списке errors.',
+    })
+    @Get('all')
+    async getAllPortals() {
+        return await this.monitoringService.getAllPortals();
+    }
+
+    @ApiOperation({
         summary: 'Get contact fields parse data',
         description: 'Получить данные для установки "fields" для "Contact"',
     })

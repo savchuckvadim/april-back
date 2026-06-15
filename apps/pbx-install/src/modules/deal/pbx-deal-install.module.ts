@@ -22,6 +22,8 @@ import { DealCategoryStageStrategy } from './services/categories/deal-category-s
 import { InstallDealCategoriesService } from './services/categories/install-deal-categories.service';
 import { PbxDealFieldInstallMonitoringController } from './controllers/pbx-deal-field-install-monitoring.controller';
 import { PbxDealFieldInstallController } from './controllers/pbx-deal-field-install.controller';
+import { PbxDealFieldBitrixController } from './controllers/pbx-deal-field-bitrix.controller';
+import { PbxDealFieldBitrixUseCase } from './use-cases/field/pbx-deal-field-bitrix.use-case';
 import { PbxDealCategoryInstallController } from './controllers/pbx-deal-category-install.controller';
 import { PbxDealCategoryInstallByParseUseCase } from './use-cases/category/pbx-deal-category-install-by-parse.use-case';
 import { PbxDealCategoryInstallByCategoryUseCase } from './use-cases/category/pbx-deal-category-install-by-category.use-case';
@@ -46,9 +48,11 @@ import { InstallStageModule } from '../stage';
         PbxDealCategoryInstallMonitoringController,
         PbxDealFieldInstallController,
         PbxDealCategoryInstallController,
+        PbxDealFieldBitrixController,
     ],
     providers: [
         ParseCategoryService,
+        PbxDealFieldBitrixUseCase,
         PbxDealMonitoringService,
         PbxDealSearchService,
         PbxDealCategoryMonitoringService,

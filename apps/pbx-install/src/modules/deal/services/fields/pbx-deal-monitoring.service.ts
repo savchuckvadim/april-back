@@ -24,6 +24,13 @@ export interface PbxDealMonitoringResult {
     portalFieldsWithoutMerged: PbxFieldEntityDto[];
     bitrixFieldsWithoutMerged: IBXField[];
 }
+export interface PbxDealMonitoringPerPortal extends PbxDealMonitoringResult {
+    domain: string;
+}
+export interface PbxDealMonitoringAllResult {
+    perPortal: PbxDealMonitoringPerPortal[];
+    errors: { domain: string; error: string }[];
+}
 @Injectable()
 export class PbxDealMonitoringService {
     constructor(
@@ -31,6 +38,27 @@ export class PbxDealMonitoringService {
         private readonly portalDealService: PortalDealService,
         private readonly portalService: PortalStoreService,
     ) {}
+    /** Картина «шаблон/PortalDB/Bitrix» по всем порталам (агрегированно). */
+    async getAllPortals(): Promise<PbxDealMonitoringAllResult> {
+        const portals = (await this.portalService.getPortals()) ?? [];
+        const perPortal: PbxDealMonitoringPerPortal[] = [];
+        const errors: { domain: string; error: string }[] = [];
+        for (const portal of portals) {
+            const domain = portal.domain;
+            if (!domain) continue;
+            try {
+                const data = await this.getPbxDealDataByAllPortalFields(domain);
+                perPortal.push({ domain, ...data });
+            } catch (e) {
+                errors.push({
+                    domain,
+                    error: e instanceof Error ? e.message : String(e),
+                });
+            }
+        }
+        return { perPortal, errors };
+    }
+
     async getPbxDealDataByAllPortalFields(
         domain: string,
     ): Promise<PbxDealMonitoringResult> {

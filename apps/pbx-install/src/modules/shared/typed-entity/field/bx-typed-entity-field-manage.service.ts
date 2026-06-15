@@ -200,14 +200,12 @@ export class BxTypedEntityFieldManageService {
     }
 
     private async listCurrent(): Promise<IUserFieldConfig[]> {
-        const response = await this.bitrix.userFieldConfig.list({
-            moduleId: this.ctx.moduleId,
-            filter: { entityId: this.ctx.bitrixEntityId },
+        // Постранично (`getAll`), а не одной страницей `list`: иначе поле сверх ~50 на
+        // страницу не найдётся в `findByFieldName`. См.
+        // docs/tasks/rpa-smart-field-monitoring-pagination.md.
+        return await this.bitrix.userFieldConfig.getAll(this.ctx.moduleId, {
+            entityId: this.ctx.bitrixEntityId,
         });
-        const result = response.result as
-            | { fields?: IUserFieldConfig[] }
-            | undefined;
-        return result?.fields ?? [];
     }
 
     private async findByFieldName(

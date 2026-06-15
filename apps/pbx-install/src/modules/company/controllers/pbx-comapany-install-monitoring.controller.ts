@@ -37,6 +37,17 @@ export class PbxCompanyInstallMonitoringController {
     }
 
     @ApiOperation({
+        summary: 'Get company data for all portals',
+        description:
+            'Картина полей Company (шаблон/PortalDB/Bitrix) по всем порталам. ' +
+            'Порталы с ошибкой получения данных возвращаются в списке errors.',
+    })
+    @Get('all')
+    async getAllPortals() {
+        return await this.monitoringService.getAllPortals();
+    }
+
+    @ApiOperation({
         summary: 'Get company fields parse data',
         description: 'Получить данные для установки "fields" для "Company"',
     })
