@@ -3,6 +3,10 @@ import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { RpaGroupEnum, RpaNameEnum } from '../dto/install-rpa.dto';
 import { PbxRpaFieldMonitoringService } from '../services/fields/pbx-rpa-field-monitoring.service';
 import { PbxRpaFieldSearchService } from '../services/fields/pbx-rpa-field-search.service';
+import {
+    PbxRpaFieldOverviewService,
+    RpaOverviewResult,
+} from '../services/fields/pbx-rpa-field-overview.service';
 
 @ApiTags('PBX RPA Field Install Monitoring')
 @Controller('pbx-rpa-field-install')
@@ -10,7 +14,21 @@ export class PbxRpaFieldInstallMonitoringController {
     constructor(
         private readonly monitoringService: PbxRpaFieldMonitoringService,
         private readonly searchService: PbxRpaFieldSearchService,
+        private readonly overviewService: PbxRpaFieldOverviewService,
     ) {}
+
+    @ApiOperation({
+        summary: 'Полная сводка полей RPA по всем порталам',
+        description:
+            'Все порталы × все rpaName × все group: по каждому полю — шаблон ' +
+            '(истина) / PortalDB / живой Bitrix и статус. Поля, установленные в ' +
+            'Bitrix без шаблона, помечаются `bitrix_only` (кандидат на merge ' +
+            'Bitrix→DB). Комбо без шаблона и без установки не включаются.',
+    })
+    @Get('all')
+    async getAllPortals(): Promise<RpaOverviewResult> {
+        return await this.overviewService.getAllPortals();
+    }
 
     @ApiOperation({
         summary: 'Monitoring: RPA fields by domain',

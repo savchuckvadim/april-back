@@ -11,6 +11,10 @@ import {
     PbxSmartFieldSearchResultResponse,
     PbxSmartFieldSearchService,
 } from '../services/fields/pbx-smart-field-search.service';
+import {
+    PbxSmartFieldOverviewService,
+    SmartOverviewResult,
+} from '../services/fields/pbx-smart-field-overview.service';
 
 @ApiTags('PBX Smart Field Install Monitoring')
 @Controller('pbx-smart-field-install-monitoring')
@@ -19,7 +23,21 @@ export class PbxSmartFieldInstallMonitoringController {
         private readonly monitoringService: PbxSmartFieldMonitoringService,
         private readonly parseSmartService: ParseSmartService,
         private readonly searchService: PbxSmartFieldSearchService,
+        private readonly overviewService: PbxSmartFieldOverviewService,
     ) {}
+
+    @ApiOperation({
+        summary: 'Полная сводка полей смартов по всем порталам',
+        description:
+            'Все порталы × все smartName × все group: по каждому полю — шаблон ' +
+            '(истина) / PortalDB / живой Bitrix и статус. Поля, установленные в ' +
+            'Bitrix без шаблона, помечаются `bitrix_only` (кандидат на merge ' +
+            'Bitrix→DB). Комбо без шаблона и без установки не включаются.',
+    })
+    @Get('all')
+    async getAllPortals(): Promise<SmartOverviewResult> {
+        return await this.overviewService.getAllPortals();
+    }
 
     @ApiOperation({
         summary: 'Get smart fields data by domain, smartName and group',

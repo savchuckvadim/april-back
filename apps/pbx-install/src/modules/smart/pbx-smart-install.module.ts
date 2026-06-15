@@ -12,6 +12,7 @@ import { InstallSmartCategoriesService } from './services/smart-categories/insta
 import { SmartCategoryStageStrategy } from './services/smart-categories/smart-category-stage.strategy';
 import { SmartContextResolver } from './services/smart-context.resolver';
 import { PbxSmartFieldMonitoringService } from './services/fields/pbx-smart-field-monitoring.service';
+import { PbxSmartFieldOverviewService } from './services/fields/pbx-smart-field-overview.service';
 import { PbxSmartFieldSearchService } from './services/fields/pbx-smart-field-search.service';
 import { PbxSmartCategoryMonitoringService } from './services/categories/pbx-smart-category-monitoring.service';
 import { PbxSmartCategorySearchService } from './services/categories/pbx-smart-category-search.service';
@@ -61,6 +62,7 @@ import { StorageModule } from '@/core/storage/storage.module';
         InstallSmartCategoriesService,
         SmartCategoryStageStrategy,
         PbxSmartFieldMonitoringService,
+        PbxSmartFieldOverviewService,
         PbxSmartFieldSearchService,
         PbxSmartCategoryMonitoringService,
         PbxSmartCategorySearchService,

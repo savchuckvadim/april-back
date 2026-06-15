@@ -15,6 +15,7 @@ import { ParseRpaService } from './services/parse/parse-rpa.service';
 import { RpaContextResolver } from './services/rpa-context.resolver';
 import { InstallRpaCategoriesService } from './services/rpa-categories/install-rpa-categories.service';
 import { PbxRpaFieldMonitoringService } from './services/fields/pbx-rpa-field-monitoring.service';
+import { PbxRpaFieldOverviewService } from './services/fields/pbx-rpa-field-overview.service';
 import { PbxRpaFieldSearchService } from './services/fields/pbx-rpa-field-search.service';
 import { PbxRpaCategoryMonitoringService } from './services/categories/pbx-rpa-category-monitoring.service';
 import { PbxRpaCategorySearchService } from './services/categories/pbx-rpa-category-search.service';
@@ -52,6 +53,7 @@ import { PortalStoreModule } from '@lib/portal-lib';
         RpaContextResolver,
         InstallRpaCategoriesService,
         PbxRpaFieldMonitoringService,
+        PbxRpaFieldOverviewService,
         PbxRpaFieldSearchService,
         PbxRpaCategoryMonitoringService,
         PbxRpaCategorySearchService,
