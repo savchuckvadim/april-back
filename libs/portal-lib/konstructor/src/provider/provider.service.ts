@@ -10,6 +10,10 @@ import {
 export class ProviderService {
     constructor(private readonly providerRepository: ProviderRepository) {}
 
+    async findMany(): Promise<RqEntity[]> {
+        return (await this.providerRepository.findMany()) ?? [];
+    }
+
     async findById(id: number): Promise<RqEntity | null> {
         return await this.providerRepository.findById(id);
     }

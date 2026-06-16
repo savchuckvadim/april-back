@@ -13,7 +13,7 @@ describe('PbxSmartFieldOverviewService', () => {
             init: jest.fn().mockResolvedValue({
                 bitrix: {
                     userFieldConfig: {
-                        getAll: jest.fn().mockResolvedValue([
+                        getAllWithItems: jest.fn().mockResolvedValue([
                             { fieldName: 'UF_CRM_8_A', xmlId: 'a' },
                             {
                                 fieldName: 'UF_CRM_8_BX',

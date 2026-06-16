@@ -13,7 +13,7 @@ describe('PbxRpaFieldOverviewService', () => {
             init: jest.fn().mockResolvedValue({
                 bitrix: {
                     userFieldConfig: {
-                        getAll: jest.fn().mockResolvedValue([
+                        getAllWithItems: jest.fn().mockResolvedValue([
                             { fieldName: 'UF_RPA_A', xmlId: 'a' },
                             {
                                 fieldName: 'UF_RPA_BX',

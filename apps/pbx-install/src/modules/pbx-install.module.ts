@@ -12,6 +12,7 @@ import { PbxRqInstallModule } from './rq/pbx-rq-install.module';
 import { PbxTaskInstallModule } from './task/pbx-task-install.module';
 import { PbxUserInstallModule } from './user/pbx-user-install.module';
 import { PortalStoreModule } from '@lib/portal-lib';
+import { ProviderModule } from '@lib/portal-lib/konstructor';
 
 @Module({
     imports: [
@@ -28,6 +29,7 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxTaskInstallModule,
         PbxUserInstallModule,
         PortalStoreModule,
+        ProviderModule,
     ],
     exports: [
         PbxSmartInstallModule,
@@ -42,6 +44,7 @@ import { PortalStoreModule } from '@lib/portal-lib';
         PbxRqInstallModule,
         PbxTaskInstallModule,
         PbxUserInstallModule,
+        ProviderModule,
     ],
 })
 export class PBXInstallModule {}

@@ -3,8 +3,9 @@ import { ProviderService } from './provider.service';
 import { ProviderRepository } from './provider.repository';
 import { ProviderPrismaRepository } from './provider.prisma.repository';
 import { ProviderController } from './provider.controller';
+import { ProviderAdminController } from './provider.admin.controller';
 @Module({
-    controllers: [ProviderController],
+    controllers: [ProviderController, ProviderAdminController],
     providers: [
         ProviderService,
         {

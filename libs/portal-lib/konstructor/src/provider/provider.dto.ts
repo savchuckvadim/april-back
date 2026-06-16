@@ -13,6 +13,11 @@ import {
     RqEntity,
     RqInput,
 } from './provider.entity';
+import {
+    PROVIDER_TYPE_VALUES,
+    ProviderSelectOption,
+    ProviderType,
+} from './provider.const';
 
 class LogoDto {
     @IsString() name: string;
@@ -507,3 +512,45 @@ export class RqResponseDto extends RqEntity {}
 
 /** Ответ с поставщиком и его реквизитами. */
 export class ProviderWithRqResponseDto extends ProviderEntityWithRq {}
+
+/** Одна позиция выпадающего списка (select) для админки. */
+export class ProviderSelectOptionDto implements ProviderSelectOption {
+    constructor(option: ProviderSelectOption) {
+        this.value = option.value;
+        this.label = option.label;
+    }
+
+    @ApiProperty({
+        description:
+            'Машинное значение типа — именно его нужно отправлять в поле ' +
+            '`type` при создании/обновлении поставщика и реквизитов.',
+        example: 'org',
+        enum: PROVIDER_TYPE_VALUES,
+        type: String,
+    })
+    value: ProviderType;
+
+    @ApiProperty({
+        description: 'Человекочитаемая подпись пункта для отрисовки в select.',
+        example: 'Организация',
+        type: String,
+    })
+    label: string;
+}
+
+/**
+ * Справочник всех перечислимых (enum) данных поставщика для наполнения
+ * select'ов в админке. Сейчас это типы поставщика/реквизитов.
+ */
+export class ProviderEnumsResponseDto {
+    constructor(types: readonly ProviderSelectOption[]) {
+        this.types = types.map(option => new ProviderSelectOptionDto(option));
+    }
+
+    @ApiProperty({
+        description:
+            'Опции для select`а типа поставщика/реквизитов (поле `type`).',
+        type: [ProviderSelectOptionDto],
+    })
+    types: ProviderSelectOptionDto[];
+}

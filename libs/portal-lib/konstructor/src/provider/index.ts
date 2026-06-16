@@ -1,4 +1,5 @@
 export * from './provider.entity';
+export * from './provider.const';
 export * from './provider.service';
 export * from './provider.module';
 export * from './provider.dto';
@@ -6,4 +7,4 @@ export * from './provider.prisma.repository';
 export * from './provider.repository';
 export * from './lib/provider-entity.util';
 export * from './provider.controller';
-export * from './provider.service';
+export * from './provider.admin.controller';
