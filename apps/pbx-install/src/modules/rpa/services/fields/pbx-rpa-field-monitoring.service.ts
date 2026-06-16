@@ -57,9 +57,10 @@ export class PbxRpaFieldMonitoringService {
             PbxEntityTypePrisma.BTX_RPA,
             rpa.id,
         );
-        const bitrixFields = await bitrix.userFieldConfig.getAll('rpa', {
-            entityId: bitrixEntityId,
-        });
+        const bitrixFields = await bitrix.userFieldConfig.getAllWithItems(
+            'rpa',
+            { entityId: bitrixEntityId },
+        );
 
         const merged: PbxRpaMergedField[] = [];
         const matchedPortalIds = new Set<string>();

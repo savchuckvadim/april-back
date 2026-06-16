@@ -117,7 +117,7 @@ export class PbxRpaFieldOverviewService {
                     PbxEntityTypePrisma.BTX_RPA,
                     row.id,
                 );
-                bxFields = await bitrix.userFieldConfig.getAll('rpa', {
+                bxFields = await bitrix.userFieldConfig.getAllWithItems('rpa', {
                     entityId: `RPA_${rpaTypeId}`,
                 });
             }

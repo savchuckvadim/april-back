@@ -6,7 +6,10 @@ import {
     UserFieldConfigListDto,
     UserFieldConfigUpdateDto,
 } from '../dto/userfieldconfig.dto';
-import { IUserFieldConfig } from '../interface/userfieldconfig.interface';
+import {
+    EUserFieldType,
+    IUserFieldConfig,
+} from '../interface/userfieldconfig.interface';
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
 export class BxUserFieldConfigService {
@@ -62,5 +65,30 @@ export class BxUserFieldConfigService {
             items.push(...result.fields);
         }
         return items;
+    }
+
+    /**
+     * Как `getAll`, но для enumeration-полей дотягивает `enum`-элементы.
+     *
+     * `userfieldconfig.list` (на котором построен `getAll`) НЕ возвращает enum-элементы,
+     * поэтому для каждого enumeration-поля без `enum` делается отдельный `get`
+     * (он, в отличие от `list`, отдаёт `enum` с Bitrix-id). Нужно, например, чтобы при
+     * установке/мониторинге enum-значения попадали в PortalDB (`bitrixfield_items`).
+     */
+    async getAllWithItems(
+        moduleId: 'crm' | 'rpa',
+        filter: Partial<IUserFieldConfig>,
+    ): Promise<IUserFieldConfig[]> {
+        const fields = await this.getAll(moduleId, filter);
+        for (const field of fields) {
+            if (field.userTypeId !== EUserFieldType.ENUMERATION) continue;
+            if (field.enum && field.enum.length > 0) continue;
+            if (field.id == null) continue;
+            const { result } = await this.get({ moduleId, id: field.id });
+            if (result?.field?.enum) {
+                field.enum = result.field.enum;
+            }
+        }
+        return fields;
     }
 }

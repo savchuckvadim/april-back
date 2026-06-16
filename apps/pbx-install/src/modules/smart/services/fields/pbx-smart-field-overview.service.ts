@@ -130,9 +130,10 @@ export class PbxSmartFieldOverviewService {
                         PbxEntityTypePrisma.SMART,
                         row.id,
                     );
-                    bxFields = await bitrix.userFieldConfig.getAll('crm', {
-                        entityId: `CRM_${smartBitrixId}`,
-                    });
+                    bxFields = await bitrix.userFieldConfig.getAllWithItems(
+                        'crm',
+                        { entityId: `CRM_${smartBitrixId}` },
+                    );
                 }
 
                 const fields = this.merge(template, dbFields, bxFields);

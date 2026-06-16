@@ -200,12 +200,14 @@ export class BxTypedEntityFieldManageService {
     }
 
     private async listCurrent(): Promise<IUserFieldConfig[]> {
-        // Постранично (`getAll`), а не одной страницей `list`: иначе поле сверх ~50 на
+        // Постранично (`getAllWithItems`), а не одной страницей `list`: иначе поле сверх ~50 на
         // страницу не найдётся в `findByFieldName`. См.
         // docs/tasks/rpa-smart-field-monitoring-pagination.md.
-        return await this.bitrix.userFieldConfig.getAll(this.ctx.moduleId, {
-            entityId: this.ctx.bitrixEntityId,
-        });
+        // `WithItems` — чтобы у enumeration-полей были доступны enum-элементы для управления.
+        return await this.bitrix.userFieldConfig.getAllWithItems(
+            this.ctx.moduleId,
+            { entityId: this.ctx.bitrixEntityId },
+        );
     }
 
     private async findByFieldName(

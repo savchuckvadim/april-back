@@ -88,12 +88,15 @@ export class BxTypedEntityFieldsInstallService {
     }
 
     private async listCurrent(): Promise<IUserFieldConfig[]> {
-        // Постранично (`getAll`), а не одной страницей `list`: иначе уже существующее
+        // Постранично (`getAllWithItems`), а не одной страницей `list`: иначе уже существующее
         // в Bitrix поле сверх ~50 на страницу не найдётся в `existing` и будет добавлено
         // повторно (дубликат). См. docs/tasks/rpa-smart-field-monitoring-pagination.md.
-        return await this.bitrix.userFieldConfig.getAll(this.ctx.moduleId, {
-            entityId: this.ctx.bitrixEntityId,
-        });
+        // `WithItems` — чтобы enum-элементы (которые `list` не отдаёт) попадали в PortalDB
+        // и чтобы сверка существующих enum-элементов при update не плодила дубликаты.
+        return await this.bitrix.userFieldConfig.getAllWithItems(
+            this.ctx.moduleId,
+            { entityId: this.ctx.bitrixEntityId },
+        );
     }
 
     private enqueueBatch(

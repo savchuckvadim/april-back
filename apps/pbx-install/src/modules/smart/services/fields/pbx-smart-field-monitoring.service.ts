@@ -67,9 +67,10 @@ export class PbxSmartFieldMonitoringService {
             PbxEntityTypePrisma.SMART,
             smart.id,
         );
-        const bitrixFields = await bitrix.userFieldConfig.getAll('crm', {
-            entityId: bitrixEntityId,
-        });
+        const bitrixFields = await bitrix.userFieldConfig.getAllWithItems(
+            'crm',
+            { entityId: bitrixEntityId },
+        );
 
         const merged: PbxSmartMergedField[] = [];
         const matchedPortalIds = new Set<string>();
