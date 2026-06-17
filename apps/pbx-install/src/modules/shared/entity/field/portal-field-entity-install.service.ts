@@ -83,12 +83,47 @@ export class PortalEntityFieldInstallService {
                 const pbxFieldItemEntity = new PbxFieldItemEntity();
                 pbxFieldItemEntity.name = item.VALUE;
                 pbxFieldItemEntity.title = item.VALUE;
-                pbxFieldItemEntity.code = item.XML_ID?.toString() || '';
+                // code берём из шаблона (parsedField.list), а не из bx XML_ID:
+                // у ранее созданных в Bitrix элементов XML_ID может быть авто-хэшем,
+                // и в БД должен попасть человекочитаемый CODE из excel.
+                pbxFieldItemEntity.code =
+                    this.resolveItemCode(field, item) ||
+                    item.XML_ID?.toString() ||
+                    '';
                 pbxFieldItemEntity.bitrixId = Number(item.ID);
                 return pbxFieldItemEntity;
             });
             return list.filter(item => item !== null);
         }
         return [];
+    }
+
+    /**
+     * Находит код элемента списка из шаблона (excel) по соответствию с элементом
+     * Bitrix — сначала по XML_ID, затем по отображаемому названию (VALUE).
+     * Возвращает undefined, если соответствия в шаблоне нет.
+     */
+    private resolveItemCode(
+        field: IPbxFieldInstallData,
+        bxItem: { VALUE?: string; XML_ID?: string },
+    ): string | undefined {
+        const parsedItem = field.parsedField.list?.find(
+            i =>
+                this.alnumOnly(i.XML_ID) === this.alnumOnly(bxItem.XML_ID) ||
+                this.alnumOnly(i.VALUE) === this.alnumOnly(bxItem.VALUE),
+        );
+        return parsedItem?.CODE;
+    }
+
+    /** Нормализация строки для сравнения: только буквы/цифры любого алфавита, lower-case. */
+    private alnumOnly(value: string | undefined): string {
+        if (!value) {
+            return '';
+        }
+        return value
+            .normalize('NFD')
+            .replace(/\p{M}/gu, '')
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}]+/gu, '');
     }
 }

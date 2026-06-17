@@ -318,12 +318,14 @@ export class BxEntityFieldsInstallService {
                 SORT: String(item.SORT),
                 VALUE: item.VALUE,
                 DEF: 'N',
+                // XML_ID = код из excel и для новых, и для существующих элементов,
+                // чтобы XML_ID в Bitrix всегда совпадал с CODE шаблона (а не с
+                // авто-сгенерированным хэшем). Значения сделок ссылаются на числовой
+                // ID элемента, поэтому переписать XML_ID существующего элемента безопасно.
+                XML_ID: item.CODE,
             };
-            if (!bitrixItem) {
-                // если поле не существует в битриксе, то добавляем его с кодом из excel
-                data.XML_ID = item.CODE;
-            } else {
-                // если поле существует в битриксе, то обновляем его передавая id из битрикса
+            if (bitrixItem) {
+                // если элемент уже существует в битриксе — обновляем его по id из битрикса
                 data.ID = bitrixItem.ID;
             }
             result.push(data as BitrixEnumerationOption);
