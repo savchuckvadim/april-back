@@ -94,7 +94,7 @@ export class OrkDealsService {
         assignedById?: string,
         dealId?: number,
     ): Promise<IOrkDeals> {
-        // console.log('getting all deals by assigned by id', assignedById);
+        console.log('getting all deals by assigned by id', assignedById);
         // const openDeals = await this.dealQueryService.getAllDealsByAssigned(
         //     assignedById,
         //     dealId,
@@ -118,7 +118,7 @@ export class OrkDealsService {
         );
         // const successDeals =
         //     await this.dealQueryService.getSuccessDealsByAssigned(assignedById);
-        console.log('preparedDeals', preparedDeals);
+
         const preparedOpenDealsCount = preparedDeals?.length;
         console.log('preparedOpenDealsCount', preparedOpenDealsCount);
         return {

@@ -18,6 +18,8 @@ export interface IDealWithRows {
     smartItems: ISmartActItemsByDealResult;
 }
 const assignedById = '221';
+const TEST_DEALS_COUNT_LIMIT = 10;
+const WITH_DEALS_COUNTLIMIT = false;
 // const assignedById = undefined;
 @Injectable()
 export class OrkActsUpdateUseCase {
@@ -25,7 +27,7 @@ export class OrkActsUpdateUseCase {
         private readonly pbx: PBXService,
         private readonly orkDealsService: OrkDealsService,
         private readonly smartActGsrService: SmartActGsrService,
-    ) {}
+    ) { }
 
     async execute(
         domain: string,
@@ -46,10 +48,13 @@ export class OrkActsUpdateUseCase {
          * Ограничения для тестов
          *
          */
-        const openDeals = deals.openDeals.items.filter(
-            (d, index) => index < 10,
-        );
-
+        // const openDeals = deals.openDeals.items.filter(
+        //     (d, index) => index < 10,
+        // );
+        const dealsItems = deals.openDeals.items;
+        const openDeals = WITH_DEALS_COUNTLIMIT
+            ? dealsItems.slice(0, TEST_DEALS_COUNT_LIMIT)
+            : dealsItems;
         // const openDeals = deals.openDeals.items;
         const dealsWithRows: IDealWithRows[] = [];
         for (const deal of openDeals) {

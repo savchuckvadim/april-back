@@ -46,6 +46,32 @@
    "name": "Штука", "shortName": "шт", "fullName": "Штука" }]
 ```
 
+### Сводка единиц измерения: PortalDB ↔ Bitrix (pbx)
+`GET /pbx-portal-measure-monitoring/domain/:domain`
+
+`pbx = PortalDB + Bitrix` (что реально в Bitrix клиента). Единый тип данных: фронт по
+нему рисует и текущее состояние, и форму. Сопоставление по `bitrixId` ↔ Bitrix `ID`.
+```json
+{
+  "mergedMeasures": [
+    {
+      "key": "5",
+      "portal": { "id": 1, "measure_id": 1, "portal_id": 7, "bitrixId": "5",
+                  "name": "Штука", "shortName": "шт", "fullName": "Штука" },
+      "bitrix": { "id": 5, "code": "796", "title": "Штука", "symbol": "шт", "isDefault": true }
+    }
+  ],
+  "portalMeasuresWithoutMerged": [],
+  "bitrixMeasuresWithoutMerged": [],
+  "globalMeasures": [
+    { "id": 1, "name": "Штука", "shortName": "шт", "fullName": "Штука", "code": "796", "type": null }
+  ]
+}
+```
+- `mergedMeasures` — по строке на единицу: колонка `portal` (PortalDB) и колонка `bitrix` (реальный Bitrix); любая сторона может быть `null`;
+- `portalMeasuresWithoutMerged` / `bitrixMeasuresWithoutMerged` — удобные подвыборки «есть только с одной стороны»;
+- `globalMeasures` — глобальный справочник для формы (что можно добавить и синхронизировать).
+
 ### Initial-данные формы создания договора
 `GET /pbx-portal-contract/form/domain/:domain`
 ```json
