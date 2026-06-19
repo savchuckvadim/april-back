@@ -19,7 +19,7 @@ export class SmartActProcessor {
     @Process(JobNames.SERVICE_GENERATE_ACTS)
     async handle(job: Job<SmartActJobData>) {
         const domain = job.data.domain;
-        const withTasks = job.data.withTasks ?? true;
+        const withTasks = job.data.withTasks ? true : false;
         await this.useCase.execute(domain, Number(job.data.dealId), withTasks);
     }
 }

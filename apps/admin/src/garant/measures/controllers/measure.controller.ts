@@ -9,7 +9,8 @@ import {
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { MeasureService } from '../services/measure.service';
+import { measures } from 'generated/prisma';
+import { MeasureService } from '@lib/portal-lib/konstructor';
 import { CreateMeasureDto } from '../dto/create-measure.dto';
 import { UpdateMeasureDto } from '../dto/update-measure.dto';
 import { MeasureResponseDto } from '../dto/measure-response.dto';
@@ -29,8 +30,14 @@ export class AdminGarantMeasureController {
     async createMeasure(
         @Body() createMeasureDto: CreateMeasureDto,
     ): Promise<MeasureResponseDto> {
-        const measure = await this.measureService.create(createMeasureDto);
-        return measure;
+        const measure = await this.measureService.create({
+            name: createMeasureDto.name,
+            shortName: createMeasureDto.shortName,
+            fullName: createMeasureDto.fullName,
+            code: createMeasureDto.code,
+            type: createMeasureDto.type,
+        });
+        return this.mapToResponseDto(measure);
     }
 
     @ApiOperation({ summary: 'Get measure by ID' })
@@ -44,7 +51,7 @@ export class AdminGarantMeasureController {
         @Param('id', ParseIntPipe) id: number,
     ): Promise<MeasureResponseDto> {
         const measure = await this.measureService.findById(id);
-        return measure;
+        return this.mapToResponseDto(measure);
     }
 
     @ApiOperation({ summary: 'Get all measures' })
@@ -56,7 +63,7 @@ export class AdminGarantMeasureController {
     @Get()
     async getAllMeasures(): Promise<MeasureResponseDto[]> {
         const measures = await this.measureService.findMany();
-        return measures;
+        return measures.map(m => this.mapToResponseDto(m));
     }
 
     @ApiOperation({ summary: 'Update measure' })
@@ -70,8 +77,14 @@ export class AdminGarantMeasureController {
         @Param('id', ParseIntPipe) id: number,
         @Body() updateMeasureDto: UpdateMeasureDto,
     ): Promise<MeasureResponseDto> {
-        const measure = await this.measureService.update(id, updateMeasureDto);
-        return measure;
+        const measure = await this.measureService.update(id, {
+            name: updateMeasureDto.name,
+            shortName: updateMeasureDto.shortName,
+            fullName: updateMeasureDto.fullName,
+            code: updateMeasureDto.code,
+            type: updateMeasureDto.type,
+        });
+        return this.mapToResponseDto(measure);
     }
 
     @ApiOperation({ summary: 'Delete measure' })
@@ -85,5 +98,18 @@ export class AdminGarantMeasureController {
     ): Promise<boolean> {
         await this.measureService.delete(id);
         return true;
+    }
+
+    private mapToResponseDto(measure: measures): MeasureResponseDto {
+        return {
+            id: Number(measure.id),
+            name: measure.name,
+            shortName: measure.shortName,
+            fullName: measure.fullName,
+            code: measure.code,
+            type: measure.type,
+            created_at: measure.created_at,
+            updated_at: measure.updated_at,
+        };
     }
 }

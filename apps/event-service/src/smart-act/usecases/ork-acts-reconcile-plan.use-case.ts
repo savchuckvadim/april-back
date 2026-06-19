@@ -75,17 +75,14 @@ export class OrkActsReconcilePlanUseCase {
         domain: string,
         dealId?: number,
     ): Promise<{ plans: IDealReconcilePlan[] }> {
-        console.log('OrkActsReconcilePlanUseCase execute');
         const { dealsWithRows } = await this.orkActsUpdateUseCase.execute(
             domain,
             Number(dealId),
         );
         const plans = dealsWithRows.map(item => {
             const result = this.buildDealPlan(item);
-            console.log('OrkActsReconcilePlanUseCase result', result);
             return result;
         });
-        console.log('OrkActsReconcilePlanUseCase plans', plans);
         return { plans };
     }
 

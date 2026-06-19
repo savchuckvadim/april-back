@@ -10,7 +10,8 @@ import {
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PortalMeasureService } from '../services/portal-measure.service';
+import { portal_measure } from 'generated/prisma';
+import { PortalMeasureService } from '@lib/portal-lib/konstructor';
 import { CreatePortalMeasureDto } from '../dto/create-portal-measure.dto';
 import { UpdatePortalMeasureDto } from '../dto/update-portal-measure.dto';
 import { PortalMeasureResponseDto } from '../dto/portal-measure-response.dto';
@@ -31,10 +32,15 @@ export class PortalMeasureController {
     async createPortalMeasure(
         @Body() createPortalMeasureDto: CreatePortalMeasureDto,
     ): Promise<PortalMeasureResponseDto> {
-        const portalMeasure = await this.portalMeasureService.create(
-            createPortalMeasureDto,
-        );
-        return portalMeasure;
+        const portalMeasure = await this.portalMeasureService.create({
+            measure_id: BigInt(createPortalMeasureDto.measure_id),
+            portal_id: BigInt(createPortalMeasureDto.portal_id),
+            bitrixId: createPortalMeasureDto.bitrixId,
+            name: createPortalMeasureDto.name,
+            shortName: createPortalMeasureDto.shortName,
+            fullName: createPortalMeasureDto.fullName,
+        });
+        return this.mapToResponseDto(portalMeasure);
     }
 
     @ApiOperation({ summary: 'Get portal measure by ID' })
@@ -48,7 +54,7 @@ export class PortalMeasureController {
         @Param('id', ParseIntPipe) id: number,
     ): Promise<PortalMeasureResponseDto> {
         const portalMeasure = await this.portalMeasureService.findById(id);
-        return portalMeasure;
+        return this.mapToResponseDto(portalMeasure);
     }
 
     @ApiOperation({ summary: 'Get all portal measures' })
@@ -62,7 +68,7 @@ export class PortalMeasureController {
         @Query() query: GetPortalMeasuresQueryDto,
     ): Promise<PortalMeasureResponseDto[]> {
         const { portalId, measureId } = query;
-        let portalMeasures: PortalMeasureResponseDto[];
+        let portalMeasures: portal_measure[];
         if (portalId) {
             portalMeasures = await this.portalMeasureService.findByPortalId(
                 Number(portalId),
@@ -75,7 +81,7 @@ export class PortalMeasureController {
             portalMeasures = await this.portalMeasureService.findMany();
         }
 
-        return portalMeasures;
+        return portalMeasures.map(m => this.mapToResponseDto(m));
     }
 
     @ApiOperation({ summary: 'Update portal measure' })
@@ -89,11 +95,21 @@ export class PortalMeasureController {
         @Param('id', ParseIntPipe) id: number,
         @Body() updatePortalMeasureDto: UpdatePortalMeasureDto,
     ): Promise<PortalMeasureResponseDto> {
-        const portalMeasure = await this.portalMeasureService.update(
-            id,
-            updatePortalMeasureDto,
-        );
-        return portalMeasure;
+        const portalMeasure = await this.portalMeasureService.update(id, {
+            measure_id:
+                updatePortalMeasureDto.measure_id !== undefined
+                    ? BigInt(updatePortalMeasureDto.measure_id)
+                    : undefined,
+            portal_id:
+                updatePortalMeasureDto.portal_id !== undefined
+                    ? BigInt(updatePortalMeasureDto.portal_id)
+                    : undefined,
+            bitrixId: updatePortalMeasureDto.bitrixId,
+            name: updatePortalMeasureDto.name,
+            shortName: updatePortalMeasureDto.shortName,
+            fullName: updatePortalMeasureDto.fullName,
+        });
+        return this.mapToResponseDto(portalMeasure);
     }
 
     @ApiOperation({ summary: 'Delete portal measure' })
@@ -107,5 +123,21 @@ export class PortalMeasureController {
     ): Promise<boolean> {
         await this.portalMeasureService.delete(id);
         return true;
+    }
+
+    private mapToResponseDto(
+        portalMeasure: portal_measure,
+    ): PortalMeasureResponseDto {
+        return {
+            id: Number(portalMeasure.id),
+            measure_id: Number(portalMeasure.measure_id),
+            portal_id: Number(portalMeasure.portal_id),
+            bitrixId: portalMeasure.bitrixId,
+            name: portalMeasure.name,
+            shortName: portalMeasure.shortName,
+            fullName: portalMeasure.fullName,
+            created_at: portalMeasure.created_at,
+            updated_at: portalMeasure.updated_at,
+        };
     }
 }

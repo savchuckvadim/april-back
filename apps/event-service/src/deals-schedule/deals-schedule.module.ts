@@ -13,6 +13,6 @@ import { SmartActModule } from '../smart-act';
         SmartActModule,
     ],
     providers: [SchedulerService],
-    exports: [SmartActModule], //для того чтобы выставить контроллер для webhook наружу
+    // exports: [SmartActModule], //для того чтобы выставить контроллер для webhook наружу
 })
 export class DealsScheduleModule {}

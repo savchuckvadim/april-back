@@ -17,8 +17,8 @@ export interface IDealWithRows {
     productCoefficient: number;
     smartItems: ISmartActItemsByDealResult;
 }
-// const assignedById = '221';
-const assignedById = undefined;
+const assignedById = '221';
+// const assignedById = undefined;
 @Injectable()
 export class OrkActsUpdateUseCase {
     constructor(

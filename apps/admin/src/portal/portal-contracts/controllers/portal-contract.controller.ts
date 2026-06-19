@@ -10,7 +10,8 @@ import {
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PortalContractService } from '../services/portal-contract.service';
+import { portal_contracts } from 'generated/prisma';
+import { PortalContractService } from '@lib/portal-lib/konstructor';
 import { CreatePortalContractDto } from '../dto/create-portal-contract.dto';
 import { UpdatePortalContractDto } from '../dto/update-portal-contract.dto';
 import { PortalContractResponseDto } from '../dto/portal-contract-response.dto';
@@ -33,10 +34,22 @@ export class PortalContractController {
     async createPortalContract(
         @Body() createPortalContractDto: CreatePortalContractDto,
     ): Promise<PortalContractResponseDto> {
-        const portalContract = await this.portalContractService.create(
-            createPortalContractDto,
-        );
-        return portalContract;
+        const portalContract = await this.portalContractService.create({
+            portal_id: BigInt(createPortalContractDto.portal_id),
+            contract_id: BigInt(createPortalContractDto.contract_id),
+            portal_measure_id: BigInt(
+                createPortalContractDto.portal_measure_id,
+            ),
+            bitrixfield_item_id: BigInt(
+                createPortalContractDto.bitrixfield_item_id,
+            ),
+            title: createPortalContractDto.title,
+            template: createPortalContractDto.template,
+            order: createPortalContractDto.order,
+            productName: createPortalContractDto.productName,
+            description: createPortalContractDto.description,
+        });
+        return new PortalContractResponseDto(portalContract);
     }
 
     @ApiOperation({ summary: 'Get portal contract by ID' })
@@ -50,7 +63,7 @@ export class PortalContractController {
         @Param('id', ParseIntPipe) id: number,
     ): Promise<PortalContractResponseDto> {
         const portalContract = await this.portalContractService.findById(id);
-        return portalContract;
+        return new PortalContractResponseDto(portalContract);
     }
 
     @ApiOperation({ summary: 'Get all portal contracts' })
@@ -63,7 +76,7 @@ export class PortalContractController {
     async getListPortalContracts(
         @Query() query: GetPortalContractsQueryDto,
     ): Promise<PortalContractResponseDto[]> {
-        let portalContracts: PortalContractResponseDto[];
+        let portalContracts: portal_contracts[];
         const { portalId, contractId } = query;
         if (portalId) {
             portalContracts = await this.portalContractService.findByPortalId(
@@ -77,7 +90,7 @@ export class PortalContractController {
             portalContracts = await this.portalContractService.findMany();
         }
 
-        return portalContracts;
+        return portalContracts.map(c => new PortalContractResponseDto(c));
     }
 
     @ApiOperation({ summary: 'Update portal contract' })
@@ -91,11 +104,30 @@ export class PortalContractController {
         @Param('id', ParseIntPipe) id: number,
         @Body() updatePortalContractDto: UpdatePortalContractDto,
     ): Promise<PortalContractResponseDto> {
-        const portalContract = await this.portalContractService.update(
-            id,
-            updatePortalContractDto,
-        );
-        return portalContract;
+        const portalContract = await this.portalContractService.update(id, {
+            portal_id:
+                updatePortalContractDto.portal_id !== undefined
+                    ? BigInt(updatePortalContractDto.portal_id)
+                    : undefined,
+            contract_id:
+                updatePortalContractDto.contract_id !== undefined
+                    ? BigInt(updatePortalContractDto.contract_id)
+                    : undefined,
+            portal_measure_id:
+                updatePortalContractDto.portal_measure_id !== undefined
+                    ? BigInt(updatePortalContractDto.portal_measure_id)
+                    : undefined,
+            bitrixfield_item_id:
+                updatePortalContractDto.bitrixfield_item_id !== undefined
+                    ? BigInt(updatePortalContractDto.bitrixfield_item_id)
+                    : undefined,
+            title: updatePortalContractDto.title,
+            template: updatePortalContractDto.template,
+            order: updatePortalContractDto.order,
+            productName: updatePortalContractDto.productName,
+            description: updatePortalContractDto.description,
+        });
+        return new PortalContractResponseDto(portalContract);
     }
 
     @ApiOperation({ summary: 'Delete portal contract' })

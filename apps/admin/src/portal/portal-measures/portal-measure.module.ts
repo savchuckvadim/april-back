@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '@/core/prisma/prisma.module';
-import { PortalMeasureService } from './services/portal-measure.service';
-import { PortalMeasureRepository } from './repositories/portal-measure.repository';
-import { PortalMeasurePrismaRepository } from './repositories/portal-measure.prisma.repository';
+import { PortalMeasureModule as KonstructorPortalMeasureModule } from '@lib/portal-lib/konstructor';
 import { PortalMeasureController } from './controllers/portal-measure.controller';
 
+/**
+ * Admin-обёртка над доменным {@link KonstructorPortalMeasureModule}: только контроллер
+ * и маппинг в DTO, вся доменная логика — в libs/portal-lib/konstructor.
+ */
 @Module({
-    imports: [PrismaModule],
-    providers: [
-        PortalMeasureService,
-        {
-            provide: PortalMeasureRepository,
-            useClass: PortalMeasurePrismaRepository,
-        },
-    ],
+    imports: [KonstructorPortalMeasureModule],
     controllers: [PortalMeasureController],
-    exports: [PortalMeasureService, PortalMeasureRepository],
 })
 export class PortalMeasureModule {}

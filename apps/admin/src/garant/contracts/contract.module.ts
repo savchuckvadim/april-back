@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '@/core/prisma/prisma.module';
-import { ContractService } from './services/contract.service';
-import { ContractRepository } from './repositories/contract.repository';
-import { ContractPrismaRepository } from './repositories/contract.prisma.repository';
+import { ContractModule as KonstructorContractModule } from '@lib/portal-lib/konstructor';
 import { ContractController } from './controllers/contract.controller';
 
+/**
+ * Admin-обёртка над доменным {@link KonstructorContractModule}: только контроллер
+ * и маппинг в DTO, вся доменная логика — в libs/portal-lib/konstructor.
+ */
 @Module({
-    imports: [PrismaModule],
-    providers: [
-        ContractService,
-        {
-            provide: ContractRepository,
-            useClass: ContractPrismaRepository,
-        },
-    ],
+    imports: [KonstructorContractModule],
     controllers: [ContractController],
-    exports: [ContractService, ContractRepository],
 })
 export class ContractModule {}

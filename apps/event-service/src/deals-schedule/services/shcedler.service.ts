@@ -5,6 +5,7 @@ import { MoveDealQueueService } from '../../deals-move/services/move-deal-queue.
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { DealsOrderQueueService } from '../../deals-order/services/queue/deals-order-queue.service';
 import { SmartActQueueService } from '../../smart-act/services';
+import { actualizeDealsFinReportPusher } from '../utils/actualizar-deals-finreport.pusher';
 
 @Injectable()
 export class SchedulerService {
@@ -40,7 +41,7 @@ export class SchedulerService {
         }
     }
 
-    @Cron('0 0 10 * * 1', { timeZone: 'Europe/Moscow' }) // Monday 10:00
+    // @Cron('0 0 10 * * 1', { timeZone: 'Europe/Moscow' }) // Monday 10:00
     @Cron('0 0 15 * * 5', { timeZone: 'Europe/Moscow' }) // Friday 15:00
     // @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Europe/Moscow' })
     async checkDealsEveryWeek() {
@@ -93,31 +94,49 @@ export class SchedulerService {
         }
     }
 
-    // @Cron('0 0 20 * * 3', { timeZone: 'Europe/Moscow' }) // Wednesday 20:
-    // // @Cron(CronExpression.EVERY_DAY_AT_11PM, { timeZone: 'Europe/Moscow' }) // Wednesday 20:00
-    // // @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Europe/Moscow' })
-    // async actualizeDealsFinServicesWithoutTasks() {
-    //     const domain = 'gsr.bitrix24.ru';
-    //     const now = new Date();
-    //     const timezone = 'Europe/Moscow';
-    //     const date = new Date(
-    //         now.toLocaleString('en-US', { timeZone: timezone }),
-    //     );
-    //     const hours = date.getHours();
-    //     const minutes = date.getMinutes();
-    //     const seconds = date.getSeconds();
-    //     await this.telegramService.sendMessage(
-    //         `⏰ EVERY_WEEK SCHEDLER Actualize Deals Fin Services start ${hours}:${minutes}:${seconds} ${timezone}`,
-    //     );
+    // @Cron('0 0 20 * * 2', { timeZone: 'Europe/Moscow' }) // Friday 20:00 пока на вторник
+    @Cron(CronExpression.MONDAY_TO_FRIDAY_AT_8PM, { timeZone: 'Europe/Moscow' }) // c понедельника по пятницу без задач
+    // @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Europe/Moscow' }) // c понедельника по пятницу без задач
+    async actualizeDealsFinServicesWithoutTasks() {
+        const domain = 'gsr.bitrix24.ru';
+        const withTasks = false;
+        const message = 'Actualize Deals Fin Services Without Tasks';
+        const name = 'ActualizeDealsFinServicesWithoutTasks';
+        this.logger.log('pre pusher every 10 minutes');
 
-    //     try {
-    //         console.log('Actualize Deals Fin Services Without Tasks');
-    //         const withTasks = false; //запускает с назначением задач
-    //         // withTasks=true — ставим задачи-предупреждения; передайте false, чтобы только синхронизировать акты без задач.
-    //         await this.smartActQueueService.send(domain, withTasks, undefined);
-    //     } catch (err) {
-    //         await this.telegramService.sendMessage('SCHEDLER Ошибка');
-    //         this.logger.error('Ошибка в handleDailyTasks', err);
-    //     }
-    // }
+        await actualizeDealsFinReportPusher({
+            telegramService: this.telegramService,
+            loggerService: this.logger,
+            callBack: async () =>
+                await this.smartActQueueService.send(
+                    domain,
+                    withTasks,
+                    undefined,
+                ),
+            message,
+            name,
+            // withTasks,
+        });
+        // const now = new Date();
+        // const timezone = 'Europe/Moscow';
+        // const date = new Date(
+        //     now.toLocaleString('en-US', { timeZone: timezone }),
+        // );
+        // const hours = date.getHours();
+        // const minutes = date.getMinutes();
+        // const seconds = date.getSeconds();
+        // await this.telegramService.sendMessage(
+        //     `⏰ EVERY_WEEK  Actualize Deals Fin Services start ${hours}:${minutes}:${seconds} ${timezone}`,
+        // );
+
+        // try {
+        //     console.log('Actualize Deals Fin Services With Tasks');
+        //     const withTasks = true; //запускает с назначением задач
+        //     // withTasks=true — ставим задачи-предупреждения; передайте false, чтобы только синхронизировать акты без задач.
+        //     await this.smartActQueueService.send(domain, withTasks, undefined);
+        // } catch (err) {
+        //     await this.telegramService.sendMessage('SCHEDLER Ошибка');
+        //     this.logger.error('Ошибка в handleDailyTasks', err);
+        // }
+    }
 }
