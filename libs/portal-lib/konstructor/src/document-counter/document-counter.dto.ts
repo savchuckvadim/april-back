@@ -10,7 +10,7 @@ import {
 import { Transform } from 'class-transformer';
 import { CounterType } from './lib/counter-type.enum';
 
-export class CreateCounterDto {
+export class CreateDocumentCounterDto {
     @ApiProperty()
     @IsNotEmpty()
     @IsInt()

@@ -13,6 +13,9 @@ export function createTemplateBaseEntityFromPrisma(
     entity.id = data.id.toString();
     entity.name = data.name;
     entity.code = data.code;
+    entity.type = data.type;
+    entity.link = data.link;
+    entity.portalId = data.portalId.toString();
 
     entity.created_at = data.created_at;
     entity.updated_at = data.updated_at;

@@ -5,6 +5,7 @@ import { PortalMeasureModule } from '@lib/portal-lib/konstructor';
 import { PbxPortalMeasureController } from './controllers/pbx-portal-measure.controller';
 import { PbxPortalMeasureMonitoringController } from './controllers/pbx-portal-measure-monitoring.controller';
 import { SyncPortalMeasuresUseCase } from './use-cases/sync-portal-measures.use-case';
+import { ManagePortalMeasureUseCase } from './use-cases/manage-portal-measure.use-case';
 import { PbxPortalMeasureMonitoringService } from './services/pbx-portal-measure-monitoring.service';
 
 /**
@@ -18,7 +19,15 @@ import { PbxPortalMeasureMonitoringService } from './services/pbx-portal-measure
         PbxPortalMeasureController,
         PbxPortalMeasureMonitoringController,
     ],
-    providers: [SyncPortalMeasuresUseCase, PbxPortalMeasureMonitoringService],
-    exports: [SyncPortalMeasuresUseCase, PbxPortalMeasureMonitoringService],
+    providers: [
+        SyncPortalMeasuresUseCase,
+        ManagePortalMeasureUseCase,
+        PbxPortalMeasureMonitoringService,
+    ],
+    exports: [
+        SyncPortalMeasuresUseCase,
+        ManagePortalMeasureUseCase,
+        PbxPortalMeasureMonitoringService,
+    ],
 })
 export class PbxPortalMeasureModule {}

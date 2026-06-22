@@ -9,5 +9,6 @@ import { FieldRepository } from './field.repository';
             useClass: FieldPrismaRepository,
         },
     ],
+    exports: [FieldRepository],
 })
 export class FieldModule {}

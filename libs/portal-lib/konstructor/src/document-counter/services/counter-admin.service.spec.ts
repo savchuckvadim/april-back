@@ -5,7 +5,7 @@ import { CounterAdminService } from './counter-admin.service';
 import { CounterRepository } from '../repository/counter.repository';
 import { CounterWithRqs, RqWithCounters } from '../lib/counter.types';
 import { CounterType } from '../lib/counter-type.enum';
-import { CreateCounterDto } from '../document-counter.dto';
+import { CreateDocumentCounterDto } from '../document-counter.dto';
 
 const buildCounter = (
     overrides: Partial<CounterWithRqs> = {},
@@ -67,7 +67,7 @@ describe('CounterAdminService', () => {
                 rq_id: 10,
                 name: 'n',
                 title: 't',
-            } as CreateCounterDto;
+            } as CreateDocumentCounterDto;
             repo.create.mockResolvedValue(buildCounter());
 
             const result = await service.create(dto);

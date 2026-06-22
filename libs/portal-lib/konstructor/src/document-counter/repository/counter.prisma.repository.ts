@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@/core/prisma';
+import { PrismaService } from 'src/core/prisma';
 import { rq_counter } from 'generated/prisma';
 import { CounterRepository } from './counter.repository';
 import {
@@ -8,13 +8,13 @@ import {
     RqWithCounters,
 } from '../lib/counter.types';
 import { CounterType } from '../lib/counter-type.enum';
-import { CreateCounterDto } from '../document-counter.dto';
+import { CreateDocumentCounterDto } from '../document-counter.dto';
 
 @Injectable()
 export class CounterPrismaRepository implements CounterRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(dto: CreateCounterDto): Promise<CounterWithRqs> {
+    async create(dto: CreateDocumentCounterDto): Promise<CounterWithRqs> {
         const counter = await this.prisma.counters.create({
             data: {
                 name: dto.name,

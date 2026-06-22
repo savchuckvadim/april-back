@@ -27,7 +27,7 @@ export class OrkActsUpdateUseCase {
         private readonly pbx: PBXService,
         private readonly orkDealsService: OrkDealsService,
         private readonly smartActGsrService: SmartActGsrService,
-    ) { }
+    ) {}
 
     async execute(
         domain: string,

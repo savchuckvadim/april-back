@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CounterRepository } from '../repository/counter.repository';
-import { CreateCounterDto } from '../document-counter.dto';
+import { CreateDocumentCounterDto } from '../document-counter.dto';
 import { SerializedCounter } from '../lib/counter.types';
 import {
     serializeCounter,
@@ -12,7 +12,7 @@ import { buildCounterFormInitial } from '../lib/counter-form.const';
 export class CounterAdminService {
     constructor(private readonly repo: CounterRepository) {}
 
-    async create(dto: CreateCounterDto): Promise<SerializedCounter | null> {
+    async create(dto: CreateDocumentCounterDto): Promise<SerializedCounter | null> {
         const result = await this.repo.create(dto);
         return serializeCounter(result);
     }

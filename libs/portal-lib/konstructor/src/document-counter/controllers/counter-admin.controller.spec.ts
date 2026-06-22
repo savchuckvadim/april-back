@@ -2,7 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CounterAdminController } from './counter-admin.controller';
 import { CounterAdminService } from '../services/counter-admin.service';
-import { CreateCounterDto } from '../document-counter.dto';
+import { CreateDocumentCounterDto } from '../document-counter.dto';
 import { SerializedCounter } from '../lib/counter.types';
 
 describe('CounterAdminController', () => {
@@ -95,7 +95,7 @@ describe('CounterAdminController', () => {
             rq_id: 10,
             name: 'n',
             title: 't',
-        } as CreateCounterDto;
+        } as CreateDocumentCounterDto;
         const counter = { id: '1' } as unknown as SerializedCounter;
         adminService.create.mockResolvedValue(counter);
 

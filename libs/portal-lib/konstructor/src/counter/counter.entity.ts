@@ -3,6 +3,7 @@ import { TemplateBaseEntity } from '../template-base/template-base.entity';
 export class CounterEntity {
     id: string;
     name: string;
+    title: string;
     code: string;
     description: string | null;
     created_at: Date | null;

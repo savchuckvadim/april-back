@@ -12,9 +12,9 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CounterAdminService } from '../services/counter-admin.service';
-import { CreateCounterDto } from '../document-counter.dto';
+import { CreateDocumentCounterDto } from '../document-counter.dto';
 import {
-    CounterResponseDto,
+    DocumentCounterResponseDto,
     CounterByRqItemDto,
     DeleteCounterResponseDto,
 } from '../dto/counter-response.dto';
@@ -39,7 +39,7 @@ export class CounterAdminController {
     @ApiResponse({
         status: 200,
         description: 'All counters',
-        type: [CounterResponseDto],
+        type: [DocumentCounterResponseDto],
     })
     @Get('all')
     async getAllCounters() {
@@ -64,7 +64,7 @@ export class CounterAdminController {
     @ApiResponse({
         status: 200,
         description: 'Counter found',
-        type: CounterResponseDto,
+        type: DocumentCounterResponseDto,
     })
     @ApiResponse({ status: 404, description: 'Counter not found' })
     @Get(':counterId')
@@ -77,12 +77,12 @@ export class CounterAdminController {
     @ApiResponse({
         status: 201,
         description: 'Counter created',
-        type: CounterResponseDto,
+        type: DocumentCounterResponseDto,
     })
     @ApiResponse({ status: 404, description: 'Rq not found' })
     @Post()
     @UsePipes(new ValidationPipe({ transform: true }))
-    async create(@Body() dto: CreateCounterDto) {
+    async create(@Body() dto: CreateDocumentCounterDto) {
         const counter = await this.adminService.create(dto);
         return { success: true, data: { counter } };
     }

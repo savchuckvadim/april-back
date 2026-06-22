@@ -5,10 +5,10 @@ import {
     RqWithCounters,
 } from '../lib/counter.types';
 import { CounterType } from '../lib/counter-type.enum';
-import { CreateCounterDto } from '../document-counter.dto';
+import { CreateDocumentCounterDto } from '../document-counter.dto';
 
 export abstract class CounterRepository {
-    abstract create(dto: CreateCounterDto): Promise<CounterWithRqs>;
+    abstract create(dto: CreateDocumentCounterDto): Promise<CounterWithRqs>;
 
     abstract findById(counterId: number): Promise<CounterWithRqs | null>;
 

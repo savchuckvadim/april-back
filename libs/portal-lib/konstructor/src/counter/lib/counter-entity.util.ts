@@ -22,6 +22,7 @@ type TemplateCounterRow = {
 type CounterPrismaData = {
     id: { toString(): string };
     name: string;
+    title?: string | null;
     code?: string | null;
     description?: string | null;
     created_at: Date | null;
@@ -35,6 +36,7 @@ export function createCounterEntityFromPrisma(
     const entity = new CounterEntity();
     entity.id = data.id.toString();
     entity.name = data.name;
+    entity.title = data.title ?? '';
     entity.code = data.code ?? '';
     entity.description = data.description ?? null;
     entity.created_at = data.created_at;

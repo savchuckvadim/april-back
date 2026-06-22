@@ -73,7 +73,7 @@ export class CounterRqDto {
     size: number;
 }
 
-export class CounterResponseDto {
+export class DocumentCounterResponseDto {
     @ApiProperty({ example: '1' })
     id: string;
 

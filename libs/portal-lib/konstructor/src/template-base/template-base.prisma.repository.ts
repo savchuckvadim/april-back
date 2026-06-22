@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
-import { TemplateBaseRepository } from './template-base.repository';
+import {
+    CreateTemplateBaseData,
+    TemplateBaseRepository,
+    UpdateTemplateBaseData,
+} from './template-base.repository';
 import {
     TemplateBaseEntity,
     TemplateBasePortalEntity,
@@ -93,5 +97,70 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
         return result.map(template =>
             createTemplateBaseEntityFromPrisma(template),
         );
+    }
+
+    async create(data: CreateTemplateBaseData): Promise<TemplateBaseEntity> {
+        const result = await this.prisma.template.create({
+            data: {
+                name: data.name,
+                code: data.code,
+                type: data.type,
+                link: data.link ?? null,
+                portalId: BigInt(data.portalId),
+            },
+        });
+
+        return createTemplateBaseEntityFromPrisma(result);
+    }
+
+    async update(
+        id: number,
+        data: UpdateTemplateBaseData,
+    ): Promise<TemplateBaseEntity> {
+        const result = await this.prisma.template.update({
+            where: { id: BigInt(id) },
+            data: {
+                ...(data.name !== undefined && { name: data.name }),
+                ...(data.code !== undefined && { code: data.code }),
+                ...(data.type !== undefined && { type: data.type }),
+                ...(data.link !== undefined && { link: data.link }),
+                ...(data.portalId !== undefined && {
+                    portalId: BigInt(data.portalId),
+                }),
+            },
+        });
+
+        return createTemplateBaseEntityFromPrisma(result);
+    }
+
+    async delete(id: number): Promise<void> {
+        await this.prisma.template.delete({ where: { id: BigInt(id) } });
+    }
+
+    async attachField(templateId: number, fieldId: number): Promise<void> {
+        const existing = await this.prisma.templateField.findFirst({
+            where: {
+                template_id: BigInt(templateId),
+                field_id: BigInt(fieldId),
+            },
+            select: { id: true },
+        });
+        if (existing) return;
+
+        await this.prisma.templateField.create({
+            data: {
+                template_id: BigInt(templateId),
+                field_id: BigInt(fieldId),
+            },
+        });
+    }
+
+    async detachField(templateId: number, fieldId: number): Promise<void> {
+        await this.prisma.templateField.deleteMany({
+            where: {
+                template_id: BigInt(templateId),
+                field_id: BigInt(fieldId),
+            },
+        });
     }
 }

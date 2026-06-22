@@ -5,6 +5,9 @@ export class TemplateBaseEntity {
     id: string;
     name: string;
     code: string;
+    type?: string;
+    link?: string | null;
+    portalId?: string;
     description: string | null;
     isActive: boolean;
     created_at: Date | null;

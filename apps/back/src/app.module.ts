@@ -48,7 +48,7 @@ import { EventSalesBxRecordsModule } from './apps/event-sales/bx-records/bx-reco
 import { DocumentSupplyReportModule } from './apps/konstructor/document-supply-report/document-supply-report.module';
 import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { InvoiceTemplateModule } from './modules/invoice-template/invoice-template.module';
-import { DocumentCounterModule } from './modules/document-counter/document-counter.module';
+import { DocumentCounterModule } from '@lib/portal-lib/konstructor';
 import { PbxRegistryModule } from './modules/pbx-registry';
 import { CommandSmartActGsrModule } from './commands/smart-act-gsr/smart-act-gsr.module';
 // import { MissedCallsTodoModule } from './commands/missed-calls-todo/missed-calls-todo.module';

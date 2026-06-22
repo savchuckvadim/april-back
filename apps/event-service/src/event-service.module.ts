@@ -8,7 +8,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
     imports: [
-
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: ['apps/event-service/.env', '.env'],
