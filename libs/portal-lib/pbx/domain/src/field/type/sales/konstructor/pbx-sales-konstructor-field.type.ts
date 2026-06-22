@@ -832,6 +832,27 @@ export const PBX_SALES_KONSTRUCTOR_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    {
+        // Особое deal-поле: «тип договора». Это обычное pbx enum-поле сделки,
+        // но его items (виды договора) свои на каждом портале — подмножество
+        // глобальных `contracts`. Поэтому статически типизируем только само поле,
+        // а элементы читаются в рантайме из `bitrixfield_items`
+        // (см. PortalContractFormService). `portal_contracts` ссылается на
+        // выбранный item через `bitrixfield_item_id`.
+        name: 'Тип договора',
+        appType: 'document',
+        type: 'enumeration',
+        list: [],
+        code: 'contract_type',
+        lead: '',
+        company: '',
+        deal: 'CONTRACT_TYPE',
+        smart: '',
+        order: 300,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
 ] as const;
 
 export type PbxSalesKonstructorField =

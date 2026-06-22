@@ -45,6 +45,12 @@ export * from './status/services/bx-status.service';
 export * from './status/services/bx-status.batch.service';
 export * from './status/dto/status-entity.dto';
 
+//crm.measure
+export * from './measure/interface/bx-measure.interface';
+export * from './measure/schema/bx-measure.schema';
+export * from './measure/services/bx-measure.service';
+export * from './measure/services/bx-measure.batch.service';
+
 //crm.item
 export * from './item/interface/item.interface';
 export * from './item/schema/bx-item.schema';

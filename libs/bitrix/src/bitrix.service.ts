@@ -13,6 +13,8 @@ import {
     BxCategoryBatchService,
     BxStatusService,
     BxStatusBatchService,
+    BxMeasureService,
+    BxMeasureBatchService,
     BxItemService,
     BxItemBatchService,
     BxTimelineService,
@@ -105,6 +107,7 @@ export class BitrixService {
     public contact: BxContactService;
     public category: BxCategoryService;
     public status: BxStatusService;
+    public measure: BxMeasureService;
     public item: BxItemService;
     public timeline: BxTimelineService;
     public requisite: BxRequisiteService;
@@ -157,6 +160,7 @@ export class BitrixService {
         contact: null as unknown as BxContactBatchService,
         category: null as unknown as BxCategoryBatchService,
         status: null as unknown as BxStatusBatchService,
+        measure: null as unknown as BxMeasureBatchService,
         requisite: null as unknown as BxRequisiteBatchService,
         requisitePreset: null as unknown as BxRequisitePresetBatchService,
         item: null as unknown as BxItemBatchService,
@@ -209,6 +213,7 @@ export class BitrixService {
         this.initContact();
         this.initCategory();
         this.initStatus();
+        this.initMeasure();
         this.initItem();
         this.initTimeline();
         this.initRequisite();
@@ -285,6 +290,10 @@ export class BitrixService {
     private initStatus() {
         this.status = this.cloner.clone(BxStatusService, this.api);
         this.batch.status = this.cloner.clone(BxStatusBatchService, this.api);
+    }
+    private initMeasure() {
+        this.measure = this.cloner.clone(BxMeasureService, this.api);
+        this.batch.measure = this.cloner.clone(BxMeasureBatchService, this.api);
     }
     private initItem() {
         this.item = this.cloner.clone(BxItemService, this.api);

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BxMeasure } from '../types/bx-measure.type';
 import { PortalMeasureResponseDto } from './portal-measure-response.dto';
-import { MeasureResponseDto } from './measure-response.dto';
+import { MeasureResponseDto } from '../../measure/dto/measure-response.dto';
 
 /** Единица измерения из Bitrix клиента (нормализованная). */
 export class BxMeasureDto implements BxMeasure {

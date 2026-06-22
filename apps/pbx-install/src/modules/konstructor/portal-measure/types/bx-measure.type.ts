@@ -1,16 +1,4 @@
-/**
- * Сырой элемент единицы измерения из Bitrix (`crm.measure.list` → `result.measures`).
- * Поля приходят в SCREAMING_CASE. Все опциональны — нормализуем при маппинге.
- */
-export interface BxMeasureRow {
-    ID?: string | number;
-    CODE?: string | number;
-    MEASURE_TITLE?: string;
-    SYMBOL_RUS?: string;
-    SYMBOL_INTL?: string;
-    SYMBOL_LETTER_INTL?: string;
-    IS_DEFAULT?: string;
-}
+import { IBxMeasure } from '@/modules/bitrix';
 
 /** Нормализованная единица измерения из Bitrix клиента. */
 export interface BxMeasure {
@@ -26,8 +14,8 @@ export interface BxMeasure {
     isDefault: boolean;
 }
 
-/** Привести сырой элемент Bitrix к {@link BxMeasure}. */
-export function toBxMeasure(row: BxMeasureRow): BxMeasure {
+/** Привести сырой элемент Bitrix (`crm.measure.*`) к {@link BxMeasure}. */
+export function toBxMeasure(row: IBxMeasure): BxMeasure {
     return {
         id: Number(row.ID ?? 0),
         code: String(row.CODE ?? ''),

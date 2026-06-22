@@ -15,6 +15,8 @@ import { PortalStoreModule } from '@lib/portal-lib';
 import { ProviderModule } from '@lib/portal-lib/konstructor';
 import { PbxPortalMeasureModule } from './konstructor/portal-measure/pbx-portal-measure.module';
 import { PbxPortalContractModule } from './konstructor/portal-contract/pbx-portal-contract.module';
+import { PbxMeasureModule } from './konstructor/measure/pbx-measure.module';
+import { PbxContractModule } from './konstructor/contract/pbx-contract.module';
 
 @Module({
     imports: [
@@ -34,6 +36,8 @@ import { PbxPortalContractModule } from './konstructor/portal-contract/pbx-porta
         ProviderModule,
         PbxPortalMeasureModule,
         PbxPortalContractModule,
+        PbxMeasureModule,
+        PbxContractModule,
     ],
     exports: [
         PbxSmartInstallModule,
@@ -51,6 +55,8 @@ import { PbxPortalContractModule } from './konstructor/portal-contract/pbx-porta
         ProviderModule,
         PbxPortalMeasureModule,
         PbxPortalContractModule,
+        PbxMeasureModule,
+        PbxContractModule,
     ],
 })
 export class PBXInstallModule {}

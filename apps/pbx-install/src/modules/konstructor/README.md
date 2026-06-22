@@ -30,7 +30,22 @@
   (`mergedMeasures[] {key, portal|null, bitrix|null}`, `portalMeasuresWithoutMerged`,
   `bitrixMeasuresWithoutMerged`, `globalMeasures`)
 
-## 2. `portal-contract/` — договоры портала
+## 2. `measure/` и `contract/` — глобальные справочники (read-only)
+
+Модули: `PbxMeasureModule` (`@Controller('pbx-measure')`),
+`PbxContractModule` (`@Controller('pbx-contract')`).
+
+Глобальные мастер-данные (общие для всех порталов). Из pbx-install — **только чтение**
+(тонкая обёртка над lib-сервисами `MeasureService`/`ContractService`); редактирование — в admin.
+
+Эндпоинты:
+- `GET /pbx-measure`, `GET /pbx-measure/:id` → `MeasureResponseDto`
+- `GET /pbx-contract`, `GET /pbx-contract/:id` → `ContractResponseDto`
+
+Почему мало методов (по 2 GET): это справочники, pbx-install их только читает (для форм
+и синхронизации), запись — единая точка в admin; вся логика в одном lib-сервисе.
+
+## 3. `portal-contract/` — договоры портала
 
 Модуль: `PbxPortalContractModule` (`@Controller('pbx-portal-contract')`).
 
@@ -77,9 +92,12 @@
    единицу использует договор; перед созданием договоров логично прогнать sync единиц измерения.
 4. **Редактирование/удаление** — admin CRUD.
 
-### Глобальные справочники (admin)
-- CRUD `measures` (`/admin/garant/measures`) и `contracts` (`/admin/contracts`) — мастер-данные,
-  из которых наполняются портальные сущности.
+### Глобальные справочники
+- **Чтение из pbx-install** (для форм/выбора): `GET /pbx-measure[/:id]`, `GET /pbx-contract[/:id]`.
+  Используются как источник опций select-ов/автокомплита: единица измерения и вид договора.
+- **CRUD — только в admin**: `measures` (`/admin/garant/measures`) и `contracts`
+  (`/admin/contracts`). Это мастер-данные, из которых наполняются портальные сущности;
+  единая точка редактирования.
 
 ### Рекомендуемый сценарий
 1. Заполнить глобальные `measures`/`contracts`.

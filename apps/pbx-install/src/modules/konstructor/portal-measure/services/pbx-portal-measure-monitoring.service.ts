@@ -6,13 +6,13 @@ import {
     PortalMeasureService,
 } from '@lib/portal-lib/konstructor';
 import { PortalMeasureResponseDto } from '../dto/portal-measure-response.dto';
-import { MeasureResponseDto } from '../dto/measure-response.dto';
+import { MeasureResponseDto } from '../../measure/dto/measure-response.dto';
 import {
     BxMeasureDto,
     PbxMeasureDto,
     PbxMeasureMonitoringResponseDto,
 } from '../dto/pbx-measure-monitoring-response.dto';
-import { BxMeasure, BxMeasureRow, toBxMeasure } from '../types/bx-measure.type';
+import { BxMeasure, toBxMeasure } from '../types/bx-measure.type';
 
 /**
  * Сводка единиц измерения портала: `pbx = portalDB + bitrix`.
@@ -87,9 +87,7 @@ export class PbxPortalMeasureMonitoringService {
 
     private async loadBitrixMeasures(domain: string): Promise<BxMeasure[]> {
         const { bitrix } = await this.pbxService.init(domain);
-        const res = (await bitrix.api.call('crm.measure.list', {})) as {
-            result?: { measures?: BxMeasureRow[] };
-        };
+        const res = await bitrix.measure.getList();
         const rows = res.result?.measures ?? [];
         return rows.map(toBxMeasure);
     }

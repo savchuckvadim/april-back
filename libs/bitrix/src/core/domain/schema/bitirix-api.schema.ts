@@ -20,6 +20,7 @@ import {
     BxCategorySchema,
     BxStatusSchema,
     BxItemSchema,
+    BxMeasureSchema,
     TimelineCommentSchema,
     RequisiteSchema,
     RequisitePresetSchema,
@@ -70,6 +71,7 @@ export type BXApiSchema = {
         [EBXEntity.ACTIVITY]: ActivitySchema;
         [EBXEntity.CATEGORY]: BxCategorySchema;
         [EBXEntity.STATUS]: BxStatusSchema;
+        [EBXEntity.MEASURE]: BxMeasureSchema;
         [EBXEntity.ITEM]: BxItemSchema;
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;

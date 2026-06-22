@@ -18,6 +18,7 @@ export enum EBXEntity {
     FILE = 'file',
     CATEGORY = 'category',
     STATUS = 'status',
+    MEASURE = 'measure',
     STAGE = 'stage',
     PRODUCT = 'product',
     RPA = 'rpa',

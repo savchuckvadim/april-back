@@ -1,7 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { measures } from 'generated/prisma';
 
-/** Глобальная единица измерения (`measures`) — справочник для добавления на портал. */
+/**
+ * Глобальная единица измерения (`measures`).
+ *
+ * Read-only справочник. Для фронта — источник опций при выборе единицы измерения
+ * (select/автокомплит) и мастер-данные, из которых наполняется `portal_measure`
+ * (см. синхронизацию в `portal-measure`).
+ */
 export class MeasureResponseDto {
     constructor(measure: measures) {
         this.id = Number(measure.id);

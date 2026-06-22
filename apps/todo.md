@@ -22,3 +22,10 @@ ai, event, kpi-report, bitrix vibecode и тд
 вносить изменения, актуализировать в C:\Projects\April\april-next\back\nest-cli.json
 
 все приложения пока не полноценные - чисто шабллоны но работающие с со своими докер композами
+
+
+---
+konstructor (measure/contract, portal-measure/contract): детальные задачи —
+apps/pbx-install/src/modules/konstructor/TASKS.md
+(sync поля сделки contract_type; создание portal_contract из pbx-install;
+полный переезд admin в единственный экземпляр + новый фронт API-клиент)

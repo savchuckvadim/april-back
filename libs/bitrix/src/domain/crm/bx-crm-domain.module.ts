@@ -6,6 +6,7 @@ import { BitrixProductRowDomainModule } from './product-row/bx-product-row.modul
 import { BitrixContactDomainModule } from './contact/bx-contact.module';
 import { BitrixCategoryDomainModule } from './category/bx-category.module';
 import { BitrixStatusDomainModule } from './status/bx-status.module';
+import { BitrixMeasureDomainModule } from './measure/bx-measure.module';
 import { BitrixItemDomainModule } from './item/bx-item.module';
 import { BxTimelineModule } from './timeline/bx-timeline.module';
 import { BitrixSmartTypeDomainModule } from './smart-type/bx-smart-type-domain.module';
@@ -18,6 +19,7 @@ import { BitrixActivityTodoDomainModule } from './activity-todo/bx-activity-todo
         BitrixContactDomainModule,
         BitrixCategoryDomainModule,
         BitrixStatusDomainModule,
+        BitrixMeasureDomainModule,
         BitrixItemDomainModule,
         BxTimelineModule,
         BitrixSmartTypeDomainModule,
@@ -31,6 +33,7 @@ import { BitrixActivityTodoDomainModule } from './activity-todo/bx-activity-todo
         BitrixContactDomainModule,
         BitrixCategoryDomainModule,
         BitrixStatusDomainModule,
+        BitrixMeasureDomainModule,
         BitrixItemDomainModule,
         BxTimelineModule,
         BxFieldService,

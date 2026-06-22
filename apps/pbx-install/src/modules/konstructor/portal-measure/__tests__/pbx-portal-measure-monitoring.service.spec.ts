@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { PbxPortalMeasureMonitoringService } from '../services/pbx-portal-measure-monitoring.service';
 
 describe('PbxPortalMeasureMonitoringService', () => {
-    let apiCall: jest.Mock;
+    let measureGetList: jest.Mock;
     let pbxService: { init: jest.Mock };
     let portalService: { getPortalByDomain: jest.Mock };
     let portalMeasureService: { findByPortalId: jest.Mock };
@@ -21,11 +21,11 @@ describe('PbxPortalMeasureMonitoringService', () => {
     });
 
     beforeEach(() => {
-        apiCall = jest.fn();
+        measureGetList = jest.fn();
         pbxService = {
-            init: jest
-                .fn()
-                .mockResolvedValue({ bitrix: { api: { call: apiCall } } }),
+            init: jest.fn().mockResolvedValue({
+                bitrix: { measure: { getList: measureGetList } },
+            }),
         };
         portalService = {
             getPortalByDomain: jest.fn().mockResolvedValue({ id: '42' }),
@@ -46,7 +46,7 @@ describe('PbxPortalMeasureMonitoringService', () => {
         portalMeasureService.findByPortalId.mockResolvedValue([
             portalMeasure(),
         ]);
-        apiCall.mockResolvedValue({
+        measureGetList.mockResolvedValue({
             result: {
                 measures: [
                     {
@@ -61,7 +61,7 @@ describe('PbxPortalMeasureMonitoringService', () => {
 
         const res = await service.getByDomain('a.bx24.ru');
 
-        expect(apiCall).toHaveBeenCalledWith('crm.measure.list', {});
+        expect(measureGetList).toHaveBeenCalledTimes(1);
         expect(res.mergedMeasures).toHaveLength(1);
         expect(res.mergedMeasures[0].portal?.id).toBe(1);
         expect(res.mergedMeasures[0].bitrix?.id).toBe(5);
@@ -71,7 +71,7 @@ describe('PbxPortalMeasureMonitoringService', () => {
 
     it('единицу Bitrix без пары в PortalDB кладёт в bitrixMeasuresWithoutMerged', async () => {
         portalMeasureService.findByPortalId.mockResolvedValue([]);
-        apiCall.mockResolvedValue({
+        measureGetList.mockResolvedValue({
             result: { measures: [{ ID: 9, MEASURE_TITLE: 'Метр' }] },
         });
 
@@ -87,7 +87,7 @@ describe('PbxPortalMeasureMonitoringService', () => {
         portalMeasureService.findByPortalId.mockResolvedValue([
             portalMeasure({ id: BigInt(2), bitrixId: null }),
         ]);
-        apiCall.mockResolvedValue({ result: { measures: [] } });
+        measureGetList.mockResolvedValue({ result: { measures: [] } });
 
         const res = await service.getByDomain('a.bx24.ru');
 

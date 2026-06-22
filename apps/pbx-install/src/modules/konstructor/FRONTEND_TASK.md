@@ -26,7 +26,32 @@
 
 ---
 
-## 2. Эндпоинты pbx-install (по `domain`)
+## 2. Эндпоинты pbx-install: глобальные справочники (read-only)
+
+Это мастер-данные (общие для всех порталов). Из pbx-install — **только чтение**:
+источник опций для select-ов/автокомплита и основа для синхронизации/создания.
+Редактирование справочников — в admin (см. §4).
+
+### Единицы измерения (справочник)
+- `GET /pbx-measure` → `MeasureResponseDto[]`
+- `GET /pbx-measure/:id` → `MeasureResponseDto`
+```json
+{ "id": 1, "name": "Штука", "shortName": "шт", "fullName": "Штука", "code": "796", "type": "base" }
+```
+Функционал на фронте: выпадающий список/поиск единицы измерения; показ деталей; источник
+для «добавить на портал» и синхронизации (`pbx-portal-measure/sync`).
+
+### Виды договоров (справочник)
+- `GET /pbx-contract` → `ContractResponseDto[]`
+- `GET /pbx-contract/:id` → `ContractResponseDto`
+```json
+{ "id": 1, "name": "Поставка", "number": 1, "title": "Договор поставки",
+  "code": "SUPPLY", "type": "base", "withPrepayment": true, "discount": 1.0, "order": 1 }
+```
+Функционал на фронте: выбор вида договора при создании `portal_contract` (relation
+`contract_id`); показ деталей вида договора.
+
+## 3. Эндпоинты pbx-install (по `domain`)
 
 ### Синхронизация единиц измерения
 `GET /pbx-portal-measure/sync/domain/:domain`
@@ -94,7 +119,7 @@
 
 ---
 
-## 3. Эндпоинты admin (CRUD, по числовым id)
+## 4. Эндпоинты admin (CRUD, по числовым id)
 
 ### Глобальные единицы измерения — `measures`
 - `GET /admin/garant/measures` — список
@@ -121,7 +146,7 @@
 
 ---
 
-## 4. Форма создания `portal_contract`
+## 5. Форма создания `portal_contract`
 
 Поля формы:
 
