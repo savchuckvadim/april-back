@@ -19,6 +19,7 @@ import { PortalMeasurePrismaRepository } from './portal-measure.prisma.repositor
         PortalMeasureService,
         PortalMeasureSyncService,
         PortalMeasureRepository,
+        MeasureModule,
     ],
 })
 export class PortalMeasureModule {}
