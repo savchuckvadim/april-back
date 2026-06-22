@@ -21,6 +21,7 @@ import { PbxTemplateBaseUseCase } from '../use-cases/pbx-template-base.use-case'
 import { CreateTemplateBaseDto } from '../dto/create-template-base.dto';
 import { UpdateTemplateBaseDto } from '../dto/update-template-base.dto';
 import { TemplateBaseResponseDto } from '../dto/template-base-response.dto';
+import { UpsertTemplateCounterDto } from '../dto/upsert-template-counter.dto';
 
 /**
  * CRUD-управление шаблонами конструктора (`templates`) и их связями с полями
@@ -39,6 +40,22 @@ export class PbxTemplateBaseController {
     @Get()
     async list(): Promise<TemplateBaseResponseDto[]> {
         const templates = await this.useCase.list();
+        return templates.map(t => new TemplateBaseResponseDto(t));
+    }
+
+    @ApiOperation({
+        summary: 'Шаблоны портала',
+        description:
+            'Шаблоны конструктора (`templates`) портала по `portalId` со ' +
+            'связанными полями и счётчиками.',
+    })
+    @ApiParam({ name: 'portalId', description: 'ID портала', type: Number })
+    @ApiOkResponse({ type: [TemplateBaseResponseDto] })
+    @Get('portal/:portalId')
+    async listByPortal(
+        @Param('portalId', ParseIntPipe) portalId: number,
+    ): Promise<TemplateBaseResponseDto[]> {
+        const templates = await this.useCase.listByPortalId(portalId);
         return templates.map(t => new TemplateBaseResponseDto(t));
     }
 
@@ -129,6 +146,60 @@ export class PbxTemplateBaseController {
         @Param('fieldId', ParseIntPipe) fieldId: number,
     ): Promise<TemplateBaseResponseDto> {
         const template = await this.useCase.detachField(id, fieldId);
+        return new TemplateBaseResponseDto(template);
+    }
+
+    @ApiOperation({
+        summary: 'Привязать счётчик к шаблону',
+        description:
+            'Создаёт связь `template_counter` между шаблоном и счётчиком с ' +
+            'pivot-данными. Идемпотентно: повторный вызов обновляет pivot.',
+    })
+    @ApiParam({ name: 'id', description: 'ID шаблона', type: Number })
+    @ApiParam({ name: 'counterId', description: 'ID счётчика', type: Number })
+    @ApiBody({ type: UpsertTemplateCounterDto })
+    @ApiOkResponse({ type: TemplateBaseResponseDto })
+    @Post(':id/counters/:counterId')
+    async attachCounter(
+        @Param('id', ParseIntPipe) id: number,
+        @Param('counterId', ParseIntPipe) counterId: number,
+        @Body() dto: UpsertTemplateCounterDto,
+    ): Promise<TemplateBaseResponseDto> {
+        const template = await this.useCase.attachCounter(id, counterId, dto);
+        return new TemplateBaseResponseDto(template);
+    }
+
+    @ApiOperation({
+        summary: 'Обновить pivot счётчика шаблона',
+        description: 'Частично обновляет pivot связи `template_counter`.',
+    })
+    @ApiParam({ name: 'id', description: 'ID шаблона', type: Number })
+    @ApiParam({ name: 'counterId', description: 'ID счётчика', type: Number })
+    @ApiBody({ type: UpsertTemplateCounterDto })
+    @ApiOkResponse({ type: TemplateBaseResponseDto })
+    @Patch(':id/counters/:counterId')
+    async updateCounter(
+        @Param('id', ParseIntPipe) id: number,
+        @Param('counterId', ParseIntPipe) counterId: number,
+        @Body() dto: UpsertTemplateCounterDto,
+    ): Promise<TemplateBaseResponseDto> {
+        const template = await this.useCase.updateCounter(id, counterId, dto);
+        return new TemplateBaseResponseDto(template);
+    }
+
+    @ApiOperation({
+        summary: 'Отвязать счётчик от шаблона',
+        description: 'Удаляет связь `template_counter` между шаблоном и счётчиком.',
+    })
+    @ApiParam({ name: 'id', description: 'ID шаблона', type: Number })
+    @ApiParam({ name: 'counterId', description: 'ID счётчика', type: Number })
+    @ApiOkResponse({ type: TemplateBaseResponseDto })
+    @Delete(':id/counters/:counterId')
+    async detachCounter(
+        @Param('id', ParseIntPipe) id: number,
+        @Param('counterId', ParseIntPipe) counterId: number,
+    ): Promise<TemplateBaseResponseDto> {
+        const template = await this.useCase.detachCounter(id, counterId);
         return new TemplateBaseResponseDto(template);
     }
 }

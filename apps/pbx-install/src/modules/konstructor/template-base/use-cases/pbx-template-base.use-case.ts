@@ -3,6 +3,7 @@ import {
     CreateTemplateBaseData,
     TemplateBaseEntity,
     TemplateBaseRepository,
+    TemplateCounterPivotData,
     UpdateTemplateBaseData,
 } from '@lib/portal-lib/konstructor';
 
@@ -17,6 +18,11 @@ export class PbxTemplateBaseUseCase {
 
     async list(): Promise<TemplateBaseEntity[]> {
         return (await this.repository.findManyWithRelations()) ?? [];
+    }
+
+    /** Шаблоны портала (`templates`) по `portalId` со связями. */
+    async listByPortalId(portalId: number): Promise<TemplateBaseEntity[]> {
+        return (await this.repository.findManyByPortalId(portalId)) ?? [];
     }
 
     async getById(id: number): Promise<TemplateBaseEntity> {
@@ -59,6 +65,35 @@ export class PbxTemplateBaseUseCase {
     ): Promise<TemplateBaseEntity> {
         await this.getById(templateId);
         await this.repository.detachField(templateId, fieldId);
+        return this.getById(templateId);
+    }
+
+    async attachCounter(
+        templateId: number,
+        counterId: number,
+        data: TemplateCounterPivotData,
+    ): Promise<TemplateBaseEntity> {
+        await this.getById(templateId);
+        await this.repository.attachCounter(templateId, counterId, data);
+        return this.getById(templateId);
+    }
+
+    async updateCounter(
+        templateId: number,
+        counterId: number,
+        data: TemplateCounterPivotData,
+    ): Promise<TemplateBaseEntity> {
+        await this.getById(templateId);
+        await this.repository.updateCounter(templateId, counterId, data);
+        return this.getById(templateId);
+    }
+
+    async detachCounter(
+        templateId: number,
+        counterId: number,
+    ): Promise<TemplateBaseEntity> {
+        await this.getById(templateId);
+        await this.repository.detachCounter(templateId, counterId);
         return this.getById(templateId);
     }
 }

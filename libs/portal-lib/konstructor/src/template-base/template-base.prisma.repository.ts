@@ -3,6 +3,7 @@ import { PrismaService } from 'src/core/prisma';
 import {
     CreateTemplateBaseData,
     TemplateBaseRepository,
+    TemplateCounterPivotData,
     UpdateTemplateBaseData,
 } from './template-base.repository';
 import {
@@ -20,8 +21,8 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
         const result = await this.prisma.template.findUnique({
             where: { id: BigInt(id) },
             include: {
-                template_counter: true,
-                template_field: true,
+                template_counter: { include: { counters: true } },
+                template_field: { include: { fields: true } },
             },
         });
 
@@ -84,11 +85,27 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
             createTemplateBasePortalEntityFromPrisma(template, fields),
         );
     }
+    async findManyByPortalId(
+        portalId: number,
+    ): Promise<TemplateBaseEntity[] | null> {
+        const result = await this.prisma.template.findMany({
+            where: { portalId: BigInt(portalId) },
+            include: {
+                template_counter: { include: { counters: true } },
+                template_field: { include: { fields: true } },
+            },
+        });
+
+        return result.map(template =>
+            createTemplateBaseEntityFromPrisma(template),
+        );
+    }
+
     async findManyWithRelations(): Promise<TemplateBaseEntity[] | null> {
         const result = await this.prisma.template.findMany({
             include: {
-                template_counter: true,
-                template_field: true,
+                template_counter: { include: { counters: true } },
+                template_field: { include: { fields: true } },
             },
         });
 
@@ -162,5 +179,65 @@ export class TemplateBasePrismaRepository implements TemplateBaseRepository {
                 field_id: BigInt(fieldId),
             },
         });
+    }
+
+    async attachCounter(
+        templateId: number,
+        counterId: number,
+        data: TemplateCounterPivotData,
+    ): Promise<void> {
+        const pivot = this.buildCounterPivot(data);
+        await this.prisma.template_counter.upsert({
+            where: {
+                template_id_counter_id: {
+                    template_id: BigInt(templateId),
+                    counter_id: BigInt(counterId),
+                },
+            },
+            create: {
+                template_id: BigInt(templateId),
+                counter_id: BigInt(counterId),
+                ...pivot,
+            },
+            update: pivot,
+        });
+    }
+
+    async updateCounter(
+        templateId: number,
+        counterId: number,
+        data: TemplateCounterPivotData,
+    ): Promise<void> {
+        await this.prisma.template_counter.update({
+            where: {
+                template_id_counter_id: {
+                    template_id: BigInt(templateId),
+                    counter_id: BigInt(counterId),
+                },
+            },
+            data: this.buildCounterPivot(data),
+        });
+    }
+
+    async detachCounter(templateId: number, counterId: number): Promise<void> {
+        await this.prisma.template_counter.deleteMany({
+            where: {
+                template_id: BigInt(templateId),
+                counter_id: BigInt(counterId),
+            },
+        });
+    }
+
+    /** Только переданные pivot-поля (для частичного create/update). */
+    private buildCounterPivot(data: TemplateCounterPivotData) {
+        return {
+            ...(data.value !== undefined && { value: data.value }),
+            ...(data.prefix !== undefined && { prefix: data.prefix }),
+            ...(data.day !== undefined && { day: data.day }),
+            ...(data.year !== undefined && { year: data.year }),
+            ...(data.month !== undefined && { month: data.month }),
+            ...(data.count !== undefined && { count: data.count }),
+            ...(data.size !== undefined && { size: data.size }),
+        };
     }
 }
