@@ -1,11 +1,20 @@
-import { Template, TemplateField, template_counter, counters, Field } from 'generated/prisma';
+import {
+    Template,
+    TemplateField,
+    template_counter,
+    counters,
+    Field,
+} from 'generated/prisma';
 import {
     TemplateBaseEntity,
     TemplateBaseLightEntity,
     TemplateBasePortalEntity,
 } from '../template-base.entity';
 import { FieldEntity } from '../../field/field.entity';
-import { CounterEntity, TemplateCounterEntity } from '../../counter/counter.entity';
+import {
+    CounterEntity,
+    TemplateCounterEntity,
+} from '../../counter/counter.entity';
 import { PrismaService } from 'src/core/prisma';
 
 /**

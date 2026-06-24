@@ -189,7 +189,8 @@ export class PbxTemplateBaseController {
 
     @ApiOperation({
         summary: 'Отвязать счётчик от шаблона',
-        description: 'Удаляет связь `template_counter` между шаблоном и счётчиком.',
+        description:
+            'Удаляет связь `template_counter` между шаблоном и счётчиком.',
     })
     @ApiParam({ name: 'id', description: 'ID шаблона', type: Number })
     @ApiParam({ name: 'counterId', description: 'ID счётчика', type: Number })

@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { portal_measure } from 'generated/prisma';
-import { PortalMeasureService } from '@lib/portal-lib/konstructor';
+import {
+    PortalMeasureBackfillResult,
+    PortalMeasureService,
+} from '@lib/portal-lib/konstructor';
 import { UpdatePortalMeasureDto } from '../dto/update-portal-measure.dto';
 
 /**
@@ -26,5 +29,13 @@ export class ManagePortalMeasureUseCase {
 
     async remove(id: number): Promise<void> {
         await this.portalMeasureService.delete(id);
+    }
+
+    /**
+     * Заполняет `NULL` таймстампы у существующих строк `portal_measure`.
+     * Ремонт «дыр», возникших до подключения авто-таймстампов. Идемпотентно.
+     */
+    async backfillTimestamps(): Promise<PortalMeasureBackfillResult> {
+        return this.portalMeasureService.backfillTimestamps();
     }
 }

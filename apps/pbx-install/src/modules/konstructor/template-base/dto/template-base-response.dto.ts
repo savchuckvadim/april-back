@@ -57,7 +57,11 @@ export class TemplateCounterDto {
     })
     prefix?: string | null;
 
-    @ApiProperty({ description: 'Учитывать день', example: false, type: Boolean })
+    @ApiProperty({
+        description: 'Учитывать день',
+        example: false,
+        type: Boolean,
+    })
     day: boolean;
 
     @ApiProperty({ description: 'Учитывать год', example: true, type: Boolean })

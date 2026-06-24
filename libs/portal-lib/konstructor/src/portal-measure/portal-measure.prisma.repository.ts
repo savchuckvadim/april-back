@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { portal_measure } from 'generated/prisma';
 import { PrismaService } from 'src/core/prisma';
-import { PortalMeasureRepository } from './portal-measure.repository';
+import {
+    PortalMeasureBackfillResult,
+    PortalMeasureRepository,
+} from './portal-measure.repository';
 
 @Injectable()
 export class PortalMeasurePrismaRepository implements PortalMeasureRepository {
@@ -121,5 +124,27 @@ export class PortalMeasurePrismaRepository implements PortalMeasureRepository {
             where: { id: BigInt(id) },
         });
         return result ? true : false;
+    }
+
+    async backfillNullTimestamps(): Promise<PortalMeasureBackfillResult> {
+        const now = new Date();
+
+        // Заполняем created_at у строк, где он NULL.
+        // `updated_at` у этих же строк проставит расширение Prisma автоматически.
+        const created = await this.prisma.portal_measure.updateMany({
+            where: { created_at: null },
+            data: { created_at: now },
+        });
+
+        // Добиваем строки, где created_at уже был, но updated_at остался NULL.
+        const updated = await this.prisma.portal_measure.updateMany({
+            where: { updated_at: null },
+            data: { updated_at: now },
+        });
+
+        return {
+            createdAtFilled: created.count,
+            updatedAtFilled: updated.count,
+        };
     }
 }

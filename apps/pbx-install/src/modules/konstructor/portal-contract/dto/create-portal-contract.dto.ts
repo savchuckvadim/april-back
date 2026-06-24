@@ -1,11 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-    IsInt,
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    Min,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 /**
  * Тело запроса на создание договора портала (`portal_contracts`).
@@ -25,7 +19,8 @@ export class CreatePortalContractDto {
     contract_id: number;
 
     @ApiProperty({
-        description: 'ID портальной единицы измерения (relation portal_measure_id)',
+        description:
+            'ID портальной единицы измерения (relation portal_measure_id)',
         example: 1,
         type: Number,
     })
@@ -34,7 +29,8 @@ export class CreatePortalContractDto {
     portal_measure_id: number;
 
     @ApiProperty({
-        description: 'ID item-а bitrix-поля contract_type (relation bitrixfield_item_id)',
+        description:
+            'ID item-а bitrix-поля contract_type (relation bitrixfield_item_id)',
         example: 1,
         type: Number,
     })

@@ -7,6 +7,7 @@ import {
     Param,
     ParseIntPipe,
     Patch,
+    Post,
 } from '@nestjs/common';
 import {
     ApiBody,
@@ -20,6 +21,7 @@ import { SyncPortalMeasuresUseCase } from '../use-cases/sync-portal-measures.use
 import { ManagePortalMeasureUseCase } from '../use-cases/manage-portal-measure.use-case';
 import { PortalMeasureSyncResponseDto } from '../dto/portal-measure-sync-response.dto';
 import { PortalMeasureResponseDto } from '../dto/portal-measure-response.dto';
+import { PortalMeasureBackfillResponseDto } from '../dto/portal-measure-backfill-response.dto';
 import { UpdatePortalMeasureDto } from '../dto/update-portal-measure.dto';
 
 @ApiTags('PBX Portal Measure')
@@ -62,11 +64,31 @@ export class PbxPortalMeasureController {
     }
 
     @ApiOperation({
+        summary: 'Заполнить пустые таймстампы portal_measure',
+        description:
+            'Ремонтная ручка: проставляет `created_at`/`updated_at` строкам ' +
+            '`portal_measure`, у которых они `NULL` (записи, созданные до ' +
+            'подключения авто-таймстампов). Идемпотентно: повторный вызов ' +
+            'затрагивает только оставшиеся пустыми строки.',
+    })
+    @ApiOkResponse({ type: PortalMeasureBackfillResponseDto })
+    @HttpCode(200)
+    @Post('/backfill-timestamps')
+    async backfillTimestamps(): Promise<PortalMeasureBackfillResponseDto> {
+        const result = await this.manageUseCase.backfillTimestamps();
+        return new PortalMeasureBackfillResponseDto(result);
+    }
+
+    @ApiOperation({
         summary: 'Обновить единицу измерения портала',
         description:
             'Частично обновляет `portal_measure` по id (человекочитаемые поля и `bitrixId`).',
     })
-    @ApiParam({ name: 'id', description: 'ID единицы измерения портала', type: Number })
+    @ApiParam({
+        name: 'id',
+        description: 'ID единицы измерения портала',
+        type: Number,
+    })
     @ApiBody({ type: UpdatePortalMeasureDto })
     @ApiOkResponse({ type: PortalMeasureResponseDto })
     @Patch(':id')
@@ -82,7 +104,11 @@ export class PbxPortalMeasureController {
         summary: 'Удалить единицу измерения портала',
         description: 'Удаляет `portal_measure` по id.',
     })
-    @ApiParam({ name: 'id', description: 'ID единицы измерения портала', type: Number })
+    @ApiParam({
+        name: 'id',
+        description: 'ID единицы измерения портала',
+        type: Number,
+    })
     @ApiNoContentResponse({ description: 'Единица измерения портала удалена' })
     @HttpCode(204)
     @Delete(':id')

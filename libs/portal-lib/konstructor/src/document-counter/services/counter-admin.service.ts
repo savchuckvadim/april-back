@@ -12,7 +12,9 @@ import { buildCounterFormInitial } from '../lib/counter-form.const';
 export class CounterAdminService {
     constructor(private readonly repo: CounterRepository) {}
 
-    async create(dto: CreateDocumentCounterDto): Promise<SerializedCounter | null> {
+    async create(
+        dto: CreateDocumentCounterDto,
+    ): Promise<SerializedCounter | null> {
         const result = await this.repo.create(dto);
         return serializeCounter(result);
     }

@@ -4,7 +4,10 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { portal_measure } from 'generated/prisma';
-import { PortalMeasureRepository } from './portal-measure.repository';
+import {
+    PortalMeasureBackfillResult,
+    PortalMeasureRepository,
+} from './portal-measure.repository';
 
 /**
  * Доменный сервис портальных единиц измерения (`portal_measure`).
@@ -64,5 +67,13 @@ export class PortalMeasureService {
     async delete(id: number): Promise<void> {
         await this.findById(id);
         await this.repository.delete(id);
+    }
+
+    /**
+     * Ремонт существующих строк: заполняет `NULL` таймстампы. Нужен для записей,
+     * созданных до подключения авто-таймстампов. Идемпотентно.
+     */
+    async backfillTimestamps(): Promise<PortalMeasureBackfillResult> {
+        return this.repository.backfillNullTimestamps();
     }
 }
