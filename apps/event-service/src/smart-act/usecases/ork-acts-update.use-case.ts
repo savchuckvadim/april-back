@@ -48,9 +48,7 @@ export class OrkActsUpdateUseCase {
          * Ограничения для тестов
          *
          */
-        // const openDeals = deals.openDeals.items.filter(
-        //     (d, index) => index < 10,
-        // );
+
         const dealsItems = deals.openDeals.items;
         const openDeals = WITH_DEALS_COUNTLIMIT
             ? dealsItems.slice(0, TEST_DEALS_COUNT_LIMIT)

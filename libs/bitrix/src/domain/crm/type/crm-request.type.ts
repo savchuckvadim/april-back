@@ -40,6 +40,9 @@ export type CrmItemListRequestType<T extends BitrixOwnerTypeId | string> = {
     entityTypeId: T;
     filter?: Partial<T>;
     select?: string[];
+    order?: Record<string, 'ASC' | 'DESC'>;
+    /** Смещение страницы; -1 отключает подсчёт total для быстрой постраничной выборки. */
+    start?: number;
 };
 
 export type CrmItemGetRequestType<T extends BitrixOwnerTypeId | string> = {

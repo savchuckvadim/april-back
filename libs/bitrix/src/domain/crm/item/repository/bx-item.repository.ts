@@ -52,6 +52,48 @@ export class BxItemRepository {
         );
     }
 
+    /**
+     * Возвращает ВСЕ элементы смарт-процесса, листая страницы по 50 (предел crm.item.list).
+     * Пагинация курсором по id (filter['>id'] + order id ASC, start: -1) — без этого
+     * для длинных выборок (>50) видна только первая страница.
+     */
+    async listAll(
+        entityTypeId: string,
+        filter: Partial<IBXItem> = {},
+        select?: string[],
+    ): Promise<IBXItem[]> {
+        const PAGE_SIZE = 50;
+        const items: IBXItem[] = [];
+        let lastId: number | undefined;
+        let hasMore = true;
+        while (hasMore) {
+            const cursorFilter: Partial<IBXItem> =
+                lastId == null ? filter : { ...filter, '>id': lastId };
+            const page = await this.bxApi.callType(
+                EBxNamespace.CRM,
+                EBXEntity.ITEM,
+                EBxMethod.LIST,
+                {
+                    entityTypeId,
+                    filter: cursorFilter,
+                    select,
+                    order: { id: 'ASC' },
+                    start: -1,
+                },
+            );
+            const pageItems = page?.result?.items ?? [];
+            for (const item of pageItems) {
+                items.push(item);
+                const numericId = Number(item.id);
+                if (Number.isFinite(numericId)) {
+                    lastId = numericId;
+                }
+            }
+            hasMore = pageItems.length >= PAGE_SIZE;
+        }
+        return items;
+    }
+
     async get(id: number | string, entityTypeId: string, select?: string[]) {
         return this.bxApi.callType(
             EBxNamespace.CRM,

@@ -32,6 +32,15 @@ export class BxItemService {
         return await this.repo.list(entityTypeId, filter, select);
     }
 
+    /** Все элементы смарт-процесса с автопагинацией (обходит лимит 50 у crm.item.list). */
+    async listAll(
+        entityTypeId: string,
+        filter?: Partial<IBXItem>,
+        select?: string[],
+    ): Promise<IBXItem[]> {
+        return await this.repo.listAll(entityTypeId, filter, select);
+    }
+
     async get(id: number | string, entityTypeId: string, select?: string[]) {
         return await this.repo.get(id, entityTypeId, select);
     }

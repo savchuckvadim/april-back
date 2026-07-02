@@ -59,14 +59,15 @@ export class SmartActGsrService {
                 count: 0,
             };
         }
-        const smartItemsRaw = await bitrix.item.list(
+        // listAll, а не list: crm.item.list отдаёт максимум 50 за страницу, поэтому для
+        // длинных договоров (>50 месяцев) без пагинации видна только первая страница актов —
+        // остальные акты считаются «отсутствующими» и пересоздаются дублями на каждом прогоне.
+        const smartItems = await bitrix.item.listAll(
             targetSmart.entityTypeId.toString(),
             {
                 parentId2: dealId,
             },
         );
-
-        const smartItems = smartItemsRaw.result.items;
 
         return {
             items: smartItems.map(item => this.getActSmartItemResult(item)),
@@ -124,18 +125,18 @@ export class SmartActGsrService {
         };
     }
 
-    private async getCategoriesData(domain: string) {
-        const { PortalModel } = await this.pbx.init(domain);
-        const targetSmart = this.getSmartActType(PortalModel);
-        if (!targetSmart?.entityTypeId) {
-            return null;
-        }
-        const data = await this.categorySmartActService.getCategorySmartAct(
-            domain,
-            targetSmart,
-        );
-        return data;
-    }
+    // private async getCategoriesData(domain: string) {
+    //     const { PortalModel } = await this.pbx.init(domain);
+    //     const targetSmart = this.getSmartActType(PortalModel);
+    //     if (!targetSmart?.entityTypeId) {
+    //         return null;
+    //     }
+    //     const data = await this.categorySmartActService.getCategorySmartAct(
+    //         domain,
+    //         targetSmart,
+    //     );
+    //     return data;
+    // }
 
     private getItemStageType(item: IBXItem): TStageType {
         if (this.categorySmartActService.isNewStage(item)) {

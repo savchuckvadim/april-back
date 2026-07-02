@@ -40,9 +40,10 @@ export class ColdTaskFlowService {
             `[deadline][task] company=${companyId} DEADLINE="${taskDeadline}" ` +
                 `(server-time Москва) debug=${JSON.stringify(deadline.debug())}`,
         );
+        const fullXoName = `Холодный обзвон ${name}`;
         const addColdTaskData = {
             RESPONSIBLE_ID: responsibleId,
-            TITLE: name,
+            TITLE: fullXoName,
             DEADLINE: taskDeadline,
             UF_CRM_TASK: ufCrms,
             GROUP_ID: tasksGroupId,
