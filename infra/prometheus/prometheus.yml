@@ -1,0 +1,37 @@
+# Prometheus монорепо: скрейпит /api/metrics всех приложений (@lib/metrics).
+# Метки app/env вешают сами приложения (defaultLabels), поэтому здесь только
+# перечень целей. Цели = имена compose-сервисов (одинаковы в dev и prod);
+# лежащий/не поднятый сервис просто отображается как target down — это не ошибка.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'apps'
+    metrics_path: /api/metrics
+    static_configs:
+      - targets:
+          - back:3000
+          - admin:3000
+          - bot:3000
+          - pbx:3000
+          - pbx-install:3000
+          - rq:3000
+          - konstructor:3000
+          - event-sales:3000
+          - event-service:3000
+          - kpi-report-sales:3000
+          - kpi-report-service:3000
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Сценарий base (docker-compose.base.yml): приложения запущены ЛОКАЛЬНО
+  # (nest start), а Prometheus — в контейнере. Раскомментируйте и перечислите
+  # локальные порты нужных приложений (defaultPort из apps/<app>/src/main.ts).
+  # - job_name: 'apps-local'
+  #   metrics_path: /api/metrics
+  #   static_configs:
+  #     - targets:
+  #         - host.docker.internal:3000

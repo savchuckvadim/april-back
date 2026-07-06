@@ -5,3 +5,4 @@ export * from './bitrix-service.factory';
 export * from './core/base/bitrix-base-api';
 export * from './core/interface/bitrix-credentials.interface';
 export * from './auth/bitrix-token-provider.port';
+export * from './consts/';

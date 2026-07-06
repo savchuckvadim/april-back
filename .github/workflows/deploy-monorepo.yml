@@ -182,9 +182,13 @@ jobs:
                       APPS=$(echo "$APPS_JSON" | tr -d '[]"' | tr ',' ' ')
                       echo "🚀 Деплой приложений: $APPS (tag=$IMAGE_TAG)"
 
-                      # Инфраструктуру (redis/gotenberg) поднимаем заранее: ниже apps
-                      # стартуют с --no-deps, поэтому сами зависимости не поднимут.
-                      $COMPOSE up -d redis gotenberg
+                      # Инфраструктуру поднимаем заранее: ниже apps стартуют с --no-deps,
+                      # поэтому сами зависимости не поднимут.
+                      #  - clickhouse  — хранилище логов (@lib/logger, docs/LOGGING.md), схему создаёт сам;
+                      #  - prometheus  — метрики приложений (@lib/metrics, docs/METRICS.md);
+                      #  - grafana     — UI (метрики + логи), datasource'ы из infra/grafana/provisioning.
+                      # Apps от них не зависят (fail-open) — их сбой деплой не блокирует.
+                      $COMPOSE up -d redis gotenberg clickhouse prometheus grafana
 
                       wait_healthy () {
                         local svc="$1" cname="app-$1" timeout=600 elapsed=0

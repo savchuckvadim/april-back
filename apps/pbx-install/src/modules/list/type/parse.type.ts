@@ -2,11 +2,12 @@ import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-fiel
 
 export interface List {
     id: string;
+    /** Человекочитаемое название (NAME в Bitrix, name/title в БД) */
     name: string;
-    code: string; //type_group
+    /** IBLOCK_CODE из шаблона (kpi, history, service_history, presentation) */
+    code: string;
     type: string;
     group: string;
-    isActive: boolean;
     order: number;
     fields: Field[];
 }
@@ -17,12 +18,8 @@ export enum ListGroupEnum {
     GENERAL = 'general',
 }
 
+/** Папка шаблона: `install/<group>/list/<folder>/data.xlsx` */
 export enum ListFolderEnum {
-    HISTORY_KPI = 'history-kpi',
-    PRESENTATION = 'presentation',
-}
-
-export enum ListNameEnum {
     KPI = 'kpi',
     HISTORY = 'history',
     PRESENTATION = 'presentation',

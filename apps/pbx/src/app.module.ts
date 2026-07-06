@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
+import { MetricsModule } from '@lib/metrics';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { RedisModule } from '@/core/redis/redis.module';
 import { PbxCacheModule } from './pbx-cache/pbx-cache.module';
@@ -23,6 +25,8 @@ import { BxDepartmentModule } from 'libs/bx-department';
             envFilePath: ['apps/pbx/.env', '.env'],
             ignoreEnvFile: false,
         }),
+        LoggerModule.forRoot({ appName: 'pbx' }),
+        MetricsModule.forRoot({ appName: 'pbx' }),
         HealthModule,
         RedisModule,
         PbxCacheModule,

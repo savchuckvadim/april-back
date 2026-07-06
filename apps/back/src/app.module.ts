@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { QueueModule } from '@lib/queue/queue.module';
 
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
 import { TelegramModule } from '@lib/telegram/telegram.module';
 import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
 import { RedisModule } from '@/core/redis/redis.module';
@@ -15,7 +16,7 @@ import { WsModule } from '@/core/ws/ws.module';
 import { QueuePingModule } from './apps/queue-ping/queue-ping.module';
 import { EventServiceAppModule } from './apps/event-service';
 import { KonstructorModule } from './apps/konstructor/konstructor.module';
-import { MetricsModule } from '@/core/metrics/metrics.module';
+import { MetricsModule } from '@lib/metrics';
 
 import { TranscriptionModule } from './modules/transcription/transcription.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -81,11 +82,12 @@ const WITH_TELEGRAM = process.env['WITH_TELEGRAM'] === 'true';
                 }),
             ],
         }),
+        LoggerModule.forRoot({ appName: 'back' }),
         ScheduleModule.forRoot(),
         EventEmitterModule.forRoot(),
         CookieModule,
         PrismaModule,
-        MetricsModule,
+        MetricsModule.forRoot({ appName: 'back' }),
         WsModule,
         QueueModule,
         MailModule,

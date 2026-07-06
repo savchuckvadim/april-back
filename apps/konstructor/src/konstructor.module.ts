@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
+import { MetricsModule } from '@lib/metrics';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { KonstructorController } from './konstructor.controller';
 import { KonstructorService } from './konstructor.service';
@@ -10,6 +12,8 @@ import { KonstructorService } from './konstructor.service';
             isGlobal: true,
             envFilePath: ['apps/konstructor/.env', '.env'],
         }),
+        LoggerModule.forRoot({ appName: 'konstructor' }),
+        MetricsModule.forRoot({ appName: 'konstructor' }),
         HealthModule,
     ],
     controllers: [KonstructorController],

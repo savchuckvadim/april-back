@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
+import { MetricsModule } from '@lib/metrics';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { BitrixBotModule } from './bitrix/bitrix-bot.module';
 import { TelegramBotModule } from './telegram/telegram-bot.module';
@@ -22,6 +24,8 @@ import { TelegramBotModule } from './telegram/telegram-bot.module';
             envFilePath: ['apps/bot/.env', '.env'],
             ignoreEnvFile: false,
         }),
+        LoggerModule.forRoot({ appName: 'bot' }),
+        MetricsModule.forRoot({ appName: 'bot' }),
         HealthModule,
         BitrixBotModule,
         TelegramBotModule,

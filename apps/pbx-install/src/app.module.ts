@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
+import { MetricsModule } from '@lib/metrics';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
 import { HealthModule } from '@/core';
@@ -29,6 +31,8 @@ import { PBXInstallModule } from './modules/pbx-install.module';
                 }),
             ],
         }),
+        LoggerModule.forRoot({ appName: 'pbx-install' }),
+        MetricsModule.forRoot({ appName: 'pbx-install' }),
         PrismaModule,
         HealthModule,
         // Авторизация (SuperUser, JWT). По умолчанию выключена (AUTH_ENABLED=false) —

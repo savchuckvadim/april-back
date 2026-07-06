@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
+import { MetricsModule } from '@lib/metrics';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { RqModule } from '../rq.module';
@@ -19,6 +21,8 @@ import { RqModule } from '../rq.module';
             envFilePath: ['apps/rq/.env', '.env'],
             ignoreEnvFile: false,
         }),
+        LoggerModule.forRoot({ appName: 'rq' }),
+        MetricsModule.forRoot({ appName: 'rq' }),
         PrismaModule,
         HealthModule,
         RqModule,

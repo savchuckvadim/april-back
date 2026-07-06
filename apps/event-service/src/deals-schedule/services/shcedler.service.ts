@@ -16,7 +16,7 @@ export class SchedulerService {
         private readonly dealsOrderQueueService: DealsOrderQueueService,
         private readonly smartActQueueService: SmartActQueueService,
         private readonly telegramService: TelegramService,
-    ) { }
+    ) {}
 
     @Cron(CronExpression.EVERY_5_HOURS, { timeZone: 'Europe/Moscow' })
     async handleDailyTasks() {

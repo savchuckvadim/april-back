@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { AppLoggerService } from '@lib/logger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
 import { ResponseInterceptor } from '@/core/interceptors/response.interceptor';
@@ -15,12 +16,18 @@ dayjs.extend(localizedFormat);
 dayjs.locale('ru');
 
 async function bootstrap() {
+    // bufferLogs: логи до useLogger копятся и выводятся через @lib/logger.
     const app = await NestFactory.create(AppModule, {
         cors: cors,
-        logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+        bufferLogs: true,
         snapshot: true,
-        // logger: WinstonModule.createLogger({ instance: winstonLogger }),
     });
+
+    // Централизованный логгер монорепо: метки app/env, уровни из env,
+    // Telegram/ClickHouse-транспорты (LoggerModule.forRoot в AppModule).
+    app.useLogger(app.get(AppLoggerService));
+    app.flushLogs();
+    app.enableShutdownHooks();
 
     app.useGlobalPipes(
         new ValidationPipe({
@@ -75,7 +82,6 @@ async function bootstrap() {
     //documentation
     getSwaggerConfig(app);
 
-    app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
     app.use(cookieParser());
 
     await app.listen(process.env.PORT ?? 3000);

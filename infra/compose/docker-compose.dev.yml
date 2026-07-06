@@ -20,8 +20,17 @@
 #     (required:false — если файла нет, не падаем). environment ниже перекрывает env_file.
 # ============================================================
 
+# Ротация stdout-логов контейнеров: без неё json-file растёт бесконечно
+# и забивает диск. Максимум 3 файла по 10MB на контейнер.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
 x-app-common: &app-common
   restart: unless-stopped
+  logging: *default-logging
   depends_on:
     redis:
       condition: service_healthy
@@ -41,6 +50,9 @@ x-app-env: &app-env
   REDIS_HOST: redis
   REDIS_PORT: 6379
   DATABASE_URL: mysql://root:cfdx@db:3306/bitrix
+  # Внутри docker-сети ClickHouse доступен по имени сервиса (перекрывает
+  # localhost-URL из корневого .env, который нужен для локального nest start).
+  CLICKHOUSE_URL: http://clickhouse:8123
 
 # Healthcheck одинаков для всех (порт всегда 3000) — один якорь на всех.
 x-healthcheck: &app-healthcheck
@@ -242,6 +254,7 @@ services:
       ]
     ports: ['${REDIS_HOST_PORT}:6379']
     restart: unless-stopped
+    logging: *default-logging
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -257,6 +270,7 @@ services:
     image: mysql:8.0
     container_name: app_db
     restart: unless-stopped
+    logging: *default-logging
     environment:
       MYSQL_ROOT_PASSWORD: cfdx
       MYSQL_DATABASE: bitrix
@@ -273,6 +287,34 @@ services:
       timeout: 3s
       retries: 10
 
+  # Хранилище логов всех приложений (@lib/logger -> ClickHouse, HTTP :8123).
+  # Схема (logs.app_logs, TTL 30 дней) создаётся сама при первом старте из
+  # infra/clickhouse/init. Креды (CLICKHOUSE_USER/PASSWORD/DB) — из ../../.env
+  # (env_file, а не ${}-интерполяция: она видит только ports.env/шелл).
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: mono-clickhouse
+    restart: unless-stopped
+    logging: *default-logging
+    env_file:
+      - path: ../../.env
+        required: true
+    ports: ['${CLICKHOUSE_HOST_PORT}:8123']
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ../clickhouse/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - app-network
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8123/ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Конвертация Office -> PDF (LibreOffice внутри). Nest ходит на http://gotenberg:3000
   gotenberg:
     image: gotenberg/gotenberg:8
@@ -281,10 +323,60 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    logging: *default-logging
+
+  # Метрики приложений: скрейпит /api/metrics всех apps (@lib/metrics).
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    restart: unless-stopped
+    logging: *default-logging
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=2GB'
+    volumes:
+      - prometheus_data:/prometheus
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ['${PROMETHEUS_HOST_PORT}:9090']
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9090/-/healthy']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # UI наблюдаемости (метрики Prometheus + логи ClickHouse), провижининг —
+  # infra/grafana/provisioning; админ-доступ GF_SECURITY_ADMIN_* из ../../.env.
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: grafana
+    restart: unless-stopped
+    logging: *default-logging
+    env_file:
+      - path: ../../.env
+        required: true
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+    ports: ['${GRAFANA_HOST_PORT}:3000']
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 volumes:
   db_data:
   redis_data:
+  clickhouse_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   app-network:

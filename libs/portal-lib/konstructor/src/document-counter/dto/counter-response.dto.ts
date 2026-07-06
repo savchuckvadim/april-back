@@ -12,10 +12,10 @@ export class CounterPivotDto {
     })
     type: CounterType | null;
 
-    @ApiProperty({ example: 'INV', nullable: true })
+    @ApiProperty({ example: 'INV', nullable: true, type: String })
     prefix: string | null;
 
-    @ApiProperty({ example: null, nullable: true })
+    @ApiProperty({ example: null, nullable: true, type: String })
     postfix: string | null;
 
     @ApiProperty({ example: false })
@@ -38,7 +38,11 @@ export class CounterRqDto {
     @ApiProperty({ example: '1' })
     rq_id: string;
 
-    @ApiProperty({ example: 'ООО Рога и Копыта', nullable: true })
+    @ApiProperty({
+        example: 'ООО Рога и Копыта',
+        nullable: true,
+        type: String,
+    })
     rq_name: string | null;
 
     @ApiProperty({ example: 0 })
@@ -51,10 +55,10 @@ export class CounterRqDto {
     })
     type: CounterType | null;
 
-    @ApiProperty({ example: 'INV', nullable: true })
+    @ApiProperty({ example: 'INV', nullable: true, type: String })
     prefix: string | null;
 
-    @ApiProperty({ example: null, nullable: true })
+    @ApiProperty({ example: null, nullable: true, type: String })
     postfix: string | null;
 
     @ApiProperty({ example: false })

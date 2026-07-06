@@ -1,4 +1,9 @@
-import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
+import {
+    BATCH_LINE_BREAK_SYMBOL,
+    IBXCompany,
+    IBXDeal,
+    IBXLead,
+} from '@/modules/bitrix';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';
@@ -76,7 +81,7 @@ export class EventEntityModel {
                         result[bitrixId] = this.getNextStringHistory();
                         break;
                     case ColdEntityCodesEnum.op_mhistory:
-                        result[bitrixId] = this.getNextStringMHistory();
+                        result[bitrixId] = this.getNextMHistory();
                         break;
                     case ColdEntityCodesEnum.op_current_status:
                         result[bitrixId] = this.getEventName();
@@ -123,20 +128,15 @@ export class EventEntityModel {
         const currentValue: string = (this.getCurrentValueByCode(
             ColdEntityCodesEnum.op_history,
         ) ?? '') as string;
-        return (
-            currentValue + this.eventComment + '\n' + this.eventDeadline + '\n'
-        );
+        return `${currentValue} ${this.eventComment}`;
     }
-    private getNextStringMHistory() {
+    private getNextMHistory(): string[] {
         const currentValue: string[] = (this.getCurrentValueByCode(
             ColdEntityCodesEnum.op_mhistory,
         ) ?? []) as string[];
-        let nextValue = this.eventComment + '\n' + this.eventDeadline;
-
-        if (currentValue) {
-            nextValue = currentValue.join('\n') + '\n' + nextValue;
-        }
-        return nextValue;
+        const nextValue = this.eventComment;
+        currentValue.unshift(nextValue);
+        return currentValue;
     }
 
     private getNextOpWorkStatus() {
@@ -182,7 +182,12 @@ export class EventEntityModel {
             second: 'numeric',
             timeZone: this.portal.getTimezone(),
         });
-        const comment = commentNow + ' Запланирован на ' + this.eventDeadline;
+        const comment =
+            commentNow +
+            ' ХО: ' +
+            this.eventName +
+            ' Запланирован на ' +
+            this.eventDeadline;
         return comment;
     }
 }

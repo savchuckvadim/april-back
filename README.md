@@ -2,6 +2,16 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
+## Документация
+
+- [docs/LOGGING.md](docs/LOGGING.md) — **логирование**: как работает, конфиги,
+  кастомные поля, ClickHouse, прод-деплой ([библиотека @lib/logger](libs/logger/README.md))
+- [docs/METRICS.md](docs/METRICS.md) — **метрики**: Prometheus, Grafana, свои
+  метрики, дашборды, PromQL ([библиотека @lib/metrics](libs/metrics/README.md))
+- [docs/DOCKER_LOGS.md](docs/DOCKER_LOGS.md) — просмотр docker-логов
+- [infra/README.md](infra/README.md) — контейнеризация и деплой
+- [docs/MONOREPO.md](docs/MONOREPO.md) — устройство монорепо
+
 src/
 │
 ├── main.ts

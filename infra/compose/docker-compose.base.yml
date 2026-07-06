@@ -26,6 +26,14 @@ x-healthcheck: &app-healthcheck
   retries: 5
   start_period: 40s
 
+# Ротация stdout-логов контейнеров: без неё json-file растёт бесконечно
+# и забивает диск. Максимум 3 файла по 10MB на контейнер.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
 services:
   # ---------------- Приложения монорепо ----------------
   # ---------------- Инфраструктура ----------------
@@ -34,6 +42,7 @@ services:
     container_name: redis
     ports: ["6379:6379"]
     restart: unless-stopped
+    logging: *default-logging
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -47,6 +56,7 @@ services:
     image: mysql:8.0
     container_name: app_db
     restart: unless-stopped
+    logging: *default-logging
     environment:
       MYSQL_ROOT_PASSWORD: cfdx
       MYSQL_DATABASE: bitrix
@@ -71,9 +81,90 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    logging: *default-logging
+
+  # Хранилище логов (@lib/logger -> ClickHouse). Схема (logs.app_logs, TTL 30 дней)
+  # создаётся сама при первом старте из infra/clickhouse/init.
+  # Приложение запускается ЛОКАЛЬНО (nest start) -> в .env для этого сценария
+  # CLICKHOUSE_URL=http://localhost:8123 (а не http://clickhouse:8123, как в docker).
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clickhouse
+    restart: unless-stopped
+    logging: *default-logging
+    env_file:
+      - path: ../../.env
+        required: false
+    ports: ["8123:8123"]
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ../clickhouse/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - app-network
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Метрики. Приложения в base-сценарии запущены локально — цели для их
+  # скрейпа раскомментируйте в infra/prometheus/prometheus.yml (job apps-local,
+  # host.docker.internal). Цели apps-in-docker будут просто down — это ок.
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    restart: unless-stopped
+    logging: *default-logging
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=2GB'
+    volumes:
+      - prometheus_data:/prometheus
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # UI наблюдаемости (метрики Prometheus + логи ClickHouse).
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: grafana
+    restart: unless-stopped
+    logging: *default-logging
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+    ports: ["3010:3000"]
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 volumes:
   db_data:
+  clickhouse_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   app-network:

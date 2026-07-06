@@ -216,6 +216,24 @@
       "compilerOptions": {
         "tsConfigPath": "libs/queue/tsconfig.lib.json"
       }
+    },
+    "logger": {
+      "type": "library",
+      "root": "libs/logger",
+      "entryFile": "index",
+      "sourceRoot": "libs/logger/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/logger/tsconfig.lib.json"
+      }
+    },
+    "metrics": {
+      "type": "library",
+      "root": "libs/metrics",
+      "entryFile": "index",
+      "sourceRoot": "libs/metrics/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/metrics/tsconfig.lib.json"
+      }
     }
   }
 }

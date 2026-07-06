@@ -46,6 +46,10 @@
       "@lib/bitrix-setup/*": ["libs/bitrix-setup/src/*"],
       "@lib/queue": ["libs/queue/src"],
       "@lib/queue/*": ["libs/queue/src/*"],
+      "@lib/logger": ["libs/logger/src"],
+      "@lib/logger/*": ["libs/logger/src/*"],
+      "@lib/metrics": ["libs/metrics/src"],
+      "@lib/metrics/*": ["libs/metrics/src/*"],
 
       // ---- portal-lib: единая библиотека Portal (portal + store + pbx-domain + konstructor) ----
       // Канонический алиас. Старые @lib/portal, @lib/portal-konstructor,

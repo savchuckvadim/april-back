@@ -9,11 +9,22 @@ infra/
     Dockerfile.dockerignore  # игнор контекста (Dockerfile вне корня → нужен рядом с ним)
     <app>/Dockerfile      # ОПЦИОНАЛЬНО: override для app со своими сис-зависимостями
   compose/
-    docker-compose.dev.yml   # локально: все 8 apps + redis + db + gotenberg (build на месте)
-    docker-compose.prod.yml  # прод: образы из GHCR + redis + gotenberg (внешняя БД)
+    docker-compose.base.yml  # только инфра (redis + db + gotenberg + clickhouse) — приложения запускаются локально (nest start)
+    docker-compose.dev.yml   # локально: все apps + redis + db + gotenberg + clickhouse (build на месте)
+    docker-compose.prod.yml  # прод: образы из GHCR + redis + gotenberg + clickhouse (внешняя БД)
     ports.env                # host-порты приложений (коммитится, подключается через --env-file)
+  clickhouse/
+    init/01-logs.sql      # схема хранилища логов (создаётся сама при первом старте контейнера)
+  prometheus/
+    prometheus.yml        # цели скрейпа метрик (/api/metrics всех apps)
+  grafana/
+    provisioning/         # автонастройка datasource'ов Grafana (Prometheus + ClickHouse)
   legacy/               # архив старых одиночных Dockerfile/compose (не используются)
 ```
+
+> Наблюдаемость: логи — ротация stdout (json-file 3×10MB, якорь `x-logging`)
+> + ClickHouse с TTL 30 дней ([docs/LOGGING.md](../docs/LOGGING.md)); метрики —
+> Prometheus (30d/2GB) + Grafana UI ([docs/METRICS.md](../docs/METRICS.md)).
 
 ## Порты
 

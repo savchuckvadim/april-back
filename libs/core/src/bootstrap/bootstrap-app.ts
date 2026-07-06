@@ -6,6 +6,7 @@ import {
     SwaggerModule,
 } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
+import { AppLoggerService } from '@lib/logger';
 import { GlobalExceptionFilter } from '../filters/global-exception.filter';
 import { ResponseInterceptor } from '../interceptors/response.interceptor';
 import { cors } from '../config/cors/cors.config';
@@ -51,10 +52,27 @@ export async function bootstrapApp(
     rootModule: Parameters<typeof NestFactory.create>[0],
     options: BootstrapOptions,
 ): Promise<INestApplication> {
+    // bufferLogs: логи до useLogger копятся и выводятся уже через наш логгер.
     const app = await NestFactory.create(rootModule, {
         cors,
-        logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+        bufferLogs: true,
     });
+
+    // Централизованный логгер (@lib/logger): метки app/env, уровни из env,
+    // Telegram/ClickHouse-транспорты. Если приложение ещё не подключило
+    // LoggerModule.forRoot(...) — откатываемся на дефолтный консольный логгер.
+    // strict:false обязателен: app обёрнут в ExceptionsZone-proxy (см. ниже
+    // про GlobalExceptionFilter) — строгий app.get() убил бы процесс.
+    try {
+        app.useLogger(app.get(AppLoggerService, { strict: false }));
+    } catch {
+        app.useLogger(['error', 'warn', 'log', 'debug', 'verbose']);
+    }
+    app.flushLogs();
+
+    // Корректное завершение (SIGTERM от docker): даёт транспортам логгера
+    // дослать буферы (OnApplicationShutdown) перед остановкой процесса.
+    app.enableShutdownHooks();
 
     // Приоритет: явный options -> переменная окружения (apps/<app>/.env / compose)
     // -> дефолт. Так per-app .env реально управляет префиксом/Swagger без дублей.

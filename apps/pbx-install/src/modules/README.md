@@ -103,7 +103,17 @@
 - `PBX Company Install` (`pbx-company-install`): `install/domain/:domain/group/:group/appName/:appName`, `install-fields/`, `delete-fields/`, `delete-field-item/`, `edit-field-item/`
 - `PBX Company Install Monitoring`: `domain/:domain`, `parse/:appName/:group`, `search/:domain/:group/:search`
 
-**Списки (List)** — `pbx-list-install` присутствует, но контроллеры закомментированы → **WIP**, на фронте пока не использовать.
+**Списки (List)** — универсальные списки Bitrix (`lists.*`), несколько на портале, без воронок/стадий. Список адресуется `type` + `group` (ключ строки `bitrixlists`), шаблон — папкой `listName` (`install/<group>/list/<listName>/data.xlsx`).
+- `PBX List Install` (`pbx-list-install`):
+  - `GET  domain/:domain` — все списки портала (PortalDB + Bitrix)
+  - `GET  domain/:domain/list/:type/group/:group` — один список с полями из PortalDB
+  - `GET  install/domain/:domain/listName/:listName/group/:group` — **установить список** (инфоблок + поля + зеркало в БД); существующий ищется по кандидатам кода (`code` из шаблона, `group_type`, `type`) — дубликаты не плодятся
+  - `DELETE install/domain/:domain/list/:type/group/:group?withBitrix=` — удалить (каскад в PortalDB, опционально инфоблок в Bitrix)
+- `PBX List Field Install` (`pbx-list-field-install`): `install/domain/:domain/listName/:listName/group/:group`, `install-fields/`, `delete-fields/`, `delete-field-item/`, `edit-field-item/` (manage поддерживает `domain: "all"`)
+- `PBX List Field Install Monitoring` (`pbx-list-field-install-monitoring`): `all`, `domain/:domain/list/:type/group/:group` (merge PortalDB ↔ Bitrix по CODE свойства), `search/:domain/:listName/:group/:search`
+- `PBX List Parse Template` (`pbx-list-parse-template`): `parse/:listName/:group` — предпросмотр шаблона
+
+> Особенности списков: поля — свойства инфоблока (`lists.field.*`, адресация `FIELD_ID = PROPERTY_N`), в PortalDB `bitrixCamelId` поля хранит именно `PROPERTY_N` (его легаси-потребители передают в `lists.element.add`), а `bitrixId` — CODE свойства. Тип `multiple` из шаблона = строковое поле с `MULTIPLE=Y`.
 
 ### 1.6. Важные нюансы для UI
 

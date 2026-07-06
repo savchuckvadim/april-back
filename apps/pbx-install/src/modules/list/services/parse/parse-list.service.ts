@@ -2,19 +2,21 @@ import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { unwrapExcelCellValue } from '@app/pbx-install/shared';
-import { ParseSmartFieldsService } from '@app/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
 import { List, ListFolderEnum, ListGroupEnum } from '../../type/parse.type';
+import { ListImportSheetRow } from '../../type/list-sheet.type';
+import { ParseListFieldsService } from './parse-list-fields.service';
 
-/** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
-type ListImportSheetRow = readonly [
-    string, // id
-    string, // type
-    string, // group
-    string, // name
-    string, // code
-    string, // isActive TRUE | FALSE
-    string, // order
-];
+/** Имена листов в шаблоне `install/<group>/list/<folder>/data.xlsx` */
+const LISTS_SHEET = 'lists';
+const FIELDS_SHEET = 'fields';
+const FIELD_ITEMS_SHEET = 'fieldsItems';
+
+/** Список эталона с указанием источника (папки шаблона) */
+export interface ListTemplateSource {
+    listName: ListFolderEnum;
+    group: ListGroupEnum;
+    list: List;
+}
 
 @Injectable()
 export class ParseListService {
@@ -22,7 +24,7 @@ export class ParseListService {
     private readonly installPath = 'install';
     constructor(
         private readonly storageService: StorageService,
-        private readonly parseFieldsService: ParseSmartFieldsService,
+        private readonly parseListFieldsService: ParseListFieldsService,
     ) {}
 
     async getParsedData(
@@ -42,23 +44,64 @@ export class ParseListService {
             fileName,
         );
         if (!exists) {
-            throw new NotFoundException('File not found');
+            throw new NotFoundException(
+                `List template not found: ${fullPath}/${fileName}`,
+            );
         }
-        const data = await this.parseData(path);
-        return data;
+        return await this.parseData(path);
+    }
+
+    /**
+     * Весь эталон: перебор folder × group, отсутствующие шаблоны пропускаются.
+     * Каждый список аннотирован источником (папкой) — он нужен фронту для
+     * точечной установки через install/domain/:domain/listName/:listName/group/:group.
+     */
+    async getAllTemplates(): Promise<ListTemplateSource[]> {
+        const result: ListTemplateSource[] = [];
+        for (const listName of Object.values(ListFolderEnum)) {
+            for (const group of Object.values(ListGroupEnum)) {
+                let lists: List[];
+                try {
+                    lists = await this.getParsedData(listName, group);
+                } catch (e) {
+                    if (e instanceof NotFoundException) {
+                        continue;
+                    }
+                    throw e;
+                }
+                result.push(...lists.map(list => ({ listName, group, list })));
+            }
+        }
+        return result;
     }
 
     private async parseData(path: string): Promise<List[]> {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(path);
-        // const colorsSheet = workbook.worksheets[0];
-        const listsSheet = workbook.worksheets[1];
-        const fieldsSheet = workbook.worksheets[2];
-        const fieldItemsSheet = workbook.worksheets[3];
+        const listsSheet = this.getSheet(workbook, LISTS_SHEET, path);
+        const fieldsSheet = this.getSheet(workbook, FIELDS_SHEET, path);
+        const fieldItemsSheet = this.getSheet(
+            workbook,
+            FIELD_ITEMS_SHEET,
+            path,
+        );
 
-        const data = this.createLists(listsSheet, fieldsSheet, fieldItemsSheet);
+        return this.createLists(listsSheet, fieldsSheet, fieldItemsSheet);
+    }
 
-        return data;
+    private getSheet(
+        workbook: ExcelJS.Workbook,
+        name: string,
+        path: string,
+    ): ExcelJS.Worksheet {
+        const sheet = workbook.getWorksheet(name);
+        if (!sheet) {
+            this.logger.error(`Sheet "${name}" not found in ${path}`);
+            throw new NotFoundException(
+                `Sheet "${name}" not found in list template`,
+            );
+        }
+        return sheet;
     }
 
     private createLists(
@@ -66,18 +109,15 @@ export class ParseListService {
         fieldsSheet: ExcelJS.Worksheet,
         fieldItemsSheet: ExcelJS.Worksheet,
     ): List[] {
-        const resultLists: List[] = [];
-        const baseListsData = this.getBaseListsData(listsSheet);
-
-        baseListsData.forEach(list => {
-            list.fields = this.parseFieldsService.getFieldsData(
-                fieldsSheet,
-                fieldItemsSheet,
-            );
-            resultLists.push(list);
-        });
-
-        return resultLists;
+        // Все списки одного файла разделяют общий набор полей
+        const fields = this.parseListFieldsService.getFieldsData(
+            fieldsSheet,
+            fieldItemsSheet,
+        );
+        return this.getBaseListsData(listsSheet).map(list => ({
+            ...list,
+            fields,
+        }));
     }
 
     private getBaseListsData(listsSheet: ExcelJS.Worksheet): List[] {
@@ -92,20 +132,18 @@ export class ParseListService {
                 .slice(1)
                 .map(unwrapExcelCellValue) as unknown as ListImportSheetRow;
 
-            const [id, type, group, name, code, isActive, order] = values;
+            const [id, type, group, name, code, order] = values;
+            if (!type || !code) return;
 
-            const list: List = {
-                id,
-                type,
-                group,
-                name,
-                code,
-                isActive: Boolean(isActive),
+            resultLists.push({
+                id: String(id),
+                type: String(type),
+                group: String(group),
+                name: String(name),
+                code: String(code),
                 order: Number(order),
                 fields: [],
-            };
-
-            resultLists.push(list);
+            });
         });
 
         return resultLists;

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@lib/logger';
+import { MetricsModule } from '@lib/metrics';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
@@ -37,6 +39,8 @@ import { HealthController } from './health.controller';
                 }),
             ],
         }),
+        LoggerModule.forRoot({ appName: 'kpi-report-sales' }),
+        MetricsModule.forRoot({ appName: 'kpi-report-sales' }),
         ScheduleModule.forRoot(),
         EventEmitterModule.forRoot(),
         PrismaModule,

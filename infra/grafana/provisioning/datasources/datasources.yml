@@ -1,0 +1,28 @@
+# Автопровижининг источников данных Grafana (монтируется в /etc/grafana/provisioning).
+# ${VAR} разворачиваются из окружения контейнера grafana (env_file ../../.env).
+apiVersion: 1
+
+datasources:
+  # Метрики приложений (RPS, латентность, ресурсы) — PromQL.
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  # Логи приложений (logs.app_logs, пишет @lib/logger) — SQL.
+  # Плагин ставится при старте контейнера (GF_INSTALL_PLUGINS).
+  - name: ClickHouse Logs
+    uid: clickhouse-logs
+    type: grafana-clickhouse-datasource
+    editable: false
+    jsonData:
+      host: clickhouse
+      port: 8123
+      protocol: http
+      username: ${CLICKHOUSE_USER}
+      defaultDatabase: logs
+    secureJsonData:
+      password: ${CLICKHOUSE_PASSWORD}

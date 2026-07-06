@@ -4,6 +4,7 @@ import { PbxUserModule } from './user/pbx-user.module';
 import { PortalCategoryModule } from './category/category.module';
 import { PortalStageModule } from './stage/stage.module';
 import { PortalSmartModule } from './portal-smart/portal-smart.module';
+import { PortalListModule } from './portal-list/portal-list.module';
 import { PortalRpaModule } from './portal-rpa/portal-rpa.module';
 import { PortalCompanyModule } from './portal-company/portal-company.module';
 import { PortalContactModule } from './portal-contact/portal-contact.module';
@@ -19,6 +20,7 @@ import { PortalRqModule } from './portal-rq/portal-rq.module';
         PortalCategoryModule,
         PortalStageModule,
         PortalSmartModule,
+        PortalListModule,
         PortalRpaModule,
         PortalCompanyModule,
         PortalContactModule,
@@ -33,6 +35,7 @@ import { PortalRqModule } from './portal-rq/portal-rq.module';
         PortalCategoryModule,
         PortalStageModule,
         PortalSmartModule,
+        PortalListModule,
         PortalRpaModule,
         PortalCompanyModule,
         PortalContactModule,
