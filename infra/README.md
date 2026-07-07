@@ -12,7 +12,7 @@ infra/
     docker-compose.base.yml  # только инфра (redis + db + gotenberg + clickhouse) — приложения запускаются локально (nest start)
     docker-compose.dev.yml   # локально: все apps + redis + db + gotenberg + clickhouse (build на месте)
     docker-compose.prod.yml  # прод: образы из GHCR + redis + gotenberg + clickhouse (внешняя БД)
-    ports.env                # host-порты приложений (коммитится, подключается через --env-file)
+    ports.env                # host-порты (в .gitignore! у сервера своя копия; в git — ports.env.example)
   clickhouse/
     init/01-logs.sql      # схема хранилища логов (создаётся сама при первом старте контейнера)
   prometheus/

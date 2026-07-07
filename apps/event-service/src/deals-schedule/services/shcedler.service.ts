@@ -67,33 +67,6 @@ export class SchedulerService {
     }
     //TODO smart act - обрабатывать акты по расписанию- раз в неделю
 
-    // @Cron('0 0 20 * * 2', { timeZone: 'Europe/Moscow' }) // Friday 20:00 пока на вторник
-    // // @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Europe/Moscow' })
-    // async actualizeDealsFinServices() {
-    //     const domain = 'gsr.bitrix24.ru';
-    //     const now = new Date();
-    //     const timezone = 'Europe/Moscow';
-    //     const date = new Date(
-    //         now.toLocaleString('en-US', { timeZone: timezone }),
-    //     );
-    //     const hours = date.getHours();
-    //     const minutes = date.getMinutes();
-    //     const seconds = date.getSeconds();
-    //     await this.telegramService.sendMessage(
-    //         `⏰ EVERY_WEEK  Actualize Deals Fin Services start ${hours}:${minutes}:${seconds} ${timezone}`,
-    //     );
-
-    //     try {
-    //         console.log('Actualize Deals Fin Services With Tasks');
-    //         const withTasks = true; //запускает с назначением задач
-    //         // withTasks=true — ставим задачи-предупреждения; передайте false, чтобы только синхронизировать акты без задач.
-    //         await this.smartActQueueService.send(domain, withTasks, undefined);
-    //     } catch (err) {
-    //         await this.telegramService.sendMessage('SCHEDLER Ошибка');
-    //         this.logger.error('Ошибка в handleDailyTasks', err);
-    //     }
-    // }
-
     /*
      * для gsr пересчитывает акты
      *

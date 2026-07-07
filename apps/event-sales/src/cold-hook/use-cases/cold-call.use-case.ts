@@ -5,7 +5,7 @@ import {
     ColdCallBxEntityFlowService,
     IColdCallBxEntityData,
 } from '../services/enities/entity/cold-call-bx-entity.flow.service';
-import { Logger } from '@nestjs/common';
+// import { Logger } from '@nestjs/common';
 import { ColdDealFlowService } from '../services/enities/deal/cold-deal.flow.service';
 import { ColdHookBatchGroupBuffer } from '../services/batch/cold-hook-batch-group-buffer';
 import {
@@ -16,7 +16,7 @@ import { ColdListFlowService } from '../services/enities/kpi-list/cold-list.flow
 import { PortalDeadline } from '@lib/shared/lib/date';
 
 export class ColdCallUseCase {
-    private readonly logger = new Logger(ColdCallUseCase.name);
+    // private readonly logger = new Logger(ColdCallUseCase.name);
     constructor(
         private readonly portal: PortalModel,
         private readonly bitrix: BitrixService,
@@ -35,15 +35,9 @@ export class ColdCallUseCase {
         lead: IBXLead | null,
         buffer: ColdHookBatchGroupBuffer,
     ) {
-        this.logger.log('flow', company?.ID);
-
         const deadline = PortalDeadline.fromPortalInput(
             data.deadline,
             this.portal.getTimezone(),
-        );
-        this.logger.log(
-            `[deadline] raw="${data.deadline}" portalTz=${this.portal.getTimezone()} ` +
-                `company=${company?.ID} debug=${JSON.stringify(deadline.debug())}`,
         );
 
         const dealsFlowService = new ColdDealFlowService(

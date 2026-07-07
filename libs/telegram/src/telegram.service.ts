@@ -1,11 +1,10 @@
 import { HttpService } from '@nestjs/axios';
-import { Global, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { TelegramSendMessageDto } from './telegram.dto';
 
 const publicUrl = 'https://back.april-dev.ru/api/telegram';
-@Global()
 @Injectable()
 export class TelegramService {
     private adminChatId: string;

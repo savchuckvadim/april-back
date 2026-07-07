@@ -1,9 +1,4 @@
-import {
-    BATCH_LINE_BREAK_SYMBOL,
-    IBXCompany,
-    IBXDeal,
-    IBXLead,
-} from '@/modules/bitrix';
+import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { ColdEntityCodesEnum } from './cold-entity.type';

@@ -26,10 +26,15 @@ export class ColdHooksHandlerService {
         domain: string,
         hooks: IColdHookSilenceHandlerData['collected'],
     ): Promise<void> {
+        const startedAt = Date.now();
+        const hooksCount = hooks ? Object.keys(hooks).length : 0;
         try {
-            this.logger.log('hooks');
-            if (!hooks || Object.keys(hooks).length === 0) {
-                this.logger.log('No Cold Hooks to create');
+            this.logger.log('Cold hooks handling started', {
+                domain,
+                hooksCount,
+            });
+            if (!hooks || hooksCount === 0) {
+                this.logger.log('No Cold Hooks to create', { domain });
                 return;
             }
             const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
@@ -53,7 +58,7 @@ export class ColdHooksHandlerService {
 
             /**
              * Закрываем все сделки перед созданием новых
-             * пока что заккоментил - отключил
+             *
              */
             const closedDealsResult =
                 await preColdDealFlowService.execute(companies);
@@ -94,6 +99,13 @@ export class ColdHooksHandlerService {
                 this.logger.log(
                     `Batch result: ${JSON.stringify(buffer.getResults())}`,
                 );
+                this.logger.log('Cold hooks handling finished', {
+                    telegram: true,
+                    domain,
+                    hooksCount,
+                    companiesCount: companies.length,
+                    durationMs: Date.now() - startedAt,
+                });
                 return;
             } else {
                 throw new HttpException(
@@ -105,6 +117,7 @@ export class ColdHooksHandlerService {
             const { message, stack } = getErrorDetails(err);
             this.logger.error(
                 'Error in Cold Hooks Silence Handler Service',
+                { domain, hooksCount, durationMs: Date.now() - startedAt },
                 message,
             );
             this.logger.error(stack);
