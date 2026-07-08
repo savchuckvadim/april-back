@@ -68,11 +68,12 @@ describe('BxListFieldsInstallService', () => {
             'test.bitrix24.ru',
             pbxService,
             { IBLOCK_ID: 41 },
+            { type: 'kpi', group: 'sales' },
             fields,
         );
     }
 
-    it('новое поле → addField с маппингом типа и ключом batch = code', async () => {
+    it('новое поле → addField с полным легаси-CODE и ключом batch = code', async () => {
         getListFields.mockResolvedValue({ result: {} });
 
         await service([multipleField]).installFields();
@@ -82,7 +83,7 @@ describe('BxListFieldsInstallService', () => {
             { IBLOCK_ID: 41 },
             expect.objectContaining({
                 NAME: 'Контакты',
-                CODE: 'PRES_PLAN_CONTACTS',
+                CODE: 'sales_kpi_pres_plan_contacts',
                 TYPE: 'S',
                 MULTIPLE: 'Y',
                 SORT: 100,
@@ -91,7 +92,35 @@ describe('BxListFieldsInstallService', () => {
         expect(updateField).not.toHaveBeenCalled();
     });
 
-    it('существующее поле (по CODE) → updateField с сохранением текущего TYPE', async () => {
+    it('легаси-поле с полным CODE (sales_kpi_event_type) матчится и обновляется', async () => {
+        getListFields.mockResolvedValue({
+            result: {
+                PROPERTY_55: {
+                    ID: '55',
+                    NAME: 'Старое имя',
+                    CODE: 'sales_kpi_event_type',
+                    TYPE: 'L',
+                    MULTIPLE: 'N',
+                    DISPLAY_VALUES_FORM: { '457': 'Звонок' },
+                },
+            },
+        });
+
+        await service([enumField]).installFields();
+
+        expect(addField).not.toHaveBeenCalled();
+        expect(updateField).toHaveBeenCalledWith(
+            'event_type',
+            { IBLOCK_ID: 41 },
+            'PROPERTY_55',
+            expect.objectContaining({
+                NAME: 'Тип События',
+                CODE: 'sales_kpi_event_type',
+            }),
+        );
+    });
+
+    it('поле с ошибочным CODE=EVENT_TYPE матчится по btx-кандидату и мигрирует на полный CODE', async () => {
         getListFields.mockResolvedValue({
             result: {
                 PROPERTY_101: {
@@ -111,7 +140,39 @@ describe('BxListFieldsInstallService', () => {
             'event_type',
             { IBLOCK_ID: 41 },
             'PROPERTY_101',
-            expect.objectContaining({ NAME: 'Тип События', TYPE: 'L' }),
+            expect.objectContaining({
+                NAME: 'Тип События',
+                TYPE: 'L',
+                CODE: 'sales_kpi_event_type',
+            }),
+        );
+    });
+
+    it('при update сохраняются TYPE/MULTIPLE/IS_REQUIRED существующего поля', async () => {
+        getListFields.mockResolvedValue({
+            result: {
+                PROPERTY_60: {
+                    ID: '60',
+                    NAME: 'Контакты',
+                    CODE: 'sales_kpi_pres_plan_contacts',
+                    TYPE: 'S',
+                    MULTIPLE: 'N',
+                    IS_REQUIRED: 'Y',
+                },
+            },
+        });
+
+        await service([multipleField]).installFields();
+
+        expect(updateField).toHaveBeenCalledWith(
+            'pres_plan_contacts',
+            { IBLOCK_ID: 41 },
+            'PROPERTY_60',
+            expect.objectContaining({
+                MULTIPLE: 'N',
+                IS_REQUIRED: 'Y',
+                TYPE: 'S',
+            }),
         );
     });
 

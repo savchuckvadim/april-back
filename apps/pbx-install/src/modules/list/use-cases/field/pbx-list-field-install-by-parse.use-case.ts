@@ -84,6 +84,7 @@ export class PbxListFieldInstallByParseUseCase {
             domain,
             this.pbxService,
             { IBLOCK_ID: ctx.listBitrixId },
+            listInfo,
             fields,
         );
         const bxResult = await bxFieldService.installFields();
@@ -98,6 +99,7 @@ export class PbxListFieldInstallByParseUseCase {
         ) as IPbxListFieldInstallData[];
         const portalFieldEntityInstallResult = await this.portalSync.syncWithDb(
             bigintConvertToNumber(ctx.listDbId),
+            listInfo,
             clearFields,
         );
 

@@ -5,12 +5,16 @@ import {
     PortalListEntity,
     PortalListService,
 } from '@lib/portal-lib/pbx-domain';
-import { IBXList } from '@/modules/bitrix';
+import { IBXList, IBXListFieldDescription } from '@/modules/bitrix';
 import {
     ListTemplateSource,
     ParseListService,
 } from '../services/parse/parse-list.service';
 import { List } from '../type/parse.type';
+import {
+    fullListFieldCode,
+    listFieldCodeCandidates,
+} from '../lib/list-field-code.util';
 import {
     ListFieldMonitorRowDto,
     ListMonitorRowDto,
@@ -134,20 +138,43 @@ export class ListMonitoringUseCase {
         bitrixId: number | null,
         db: PortalListEntity | null,
     ): Promise<ListFieldMonitorRowDto[]> {
-        const bxFieldIdByCode = await this.fetchBxFieldIds(domain, bitrixId);
+        const bxFieldsByCode = await this.fetchBxFields(domain, bitrixId);
+        const listKey = { type: template.type, group: template.group };
 
         return template.fields.map(field => {
-            const bxCode = field.bxFieldName.toUpperCase();
-            const fieldId = bxFieldIdByCode.get(bxCode) ?? null;
-            const dbField = db?.fields.find(f => f.code === field.code) ?? null;
+            const fullCode = fullListFieldCode(listKey, field.code);
+            // Bitrix: по кандидатам кода (полный легаси, btx-код шаблона, короткий)
+            const candidates = listFieldCodeCandidates(listKey, field);
+            let bxRef: { fieldId: string; d: IBXListFieldDescription } | null =
+                null;
+            for (const candidate of candidates) {
+                const found = bxFieldsByCode.get(candidate);
+                if (found) {
+                    bxRef = found;
+                    break;
+                }
+            }
+            // PortalDB: code хранится полным; короткий — fallback для старых записей
+            const dbField =
+                db?.fields.find(
+                    f => f.code === fullCode || f.code === field.code,
+                ) ?? null;
+            const fieldId = bxRef?.fieldId ?? null;
             const dbFieldId = dbField ? dbField.bitrixCamelId : null;
             return {
                 code: field.code,
+                fullCode,
                 name: field.name,
                 bxFieldName: field.bxFieldName,
-                inBitrix: fieldId !== null,
+                type: String(field.type),
+                inBitrix: bxRef !== null,
                 fieldId,
+                bitrixCode: bxRef ? String(bxRef.d.CODE ?? '') : null,
+                bitrixName: bxRef ? String(bxRef.d.NAME ?? '') : null,
+                bitrixType: bxRef ? String(bxRef.d.TYPE ?? '') : null,
+                bitrixMultiple: bxRef ? bxRef.d.MULTIPLE === 'Y' : null,
                 inDb: dbField !== null,
+                dbCode: dbField ? dbField.code : null,
                 dbFieldId,
                 inSync:
                     fieldId !== null &&
@@ -157,12 +184,15 @@ export class ListMonitoringUseCase {
         });
     }
 
-    /** CODE свойства → FIELD_ID (PROPERTY_N) из Bitrix; пусто, если списка нет. */
-    private async fetchBxFieldIds(
+    /** UPPERCASE CODE свойства → { FIELD_ID, описание }; пусто, если списка нет. */
+    private async fetchBxFields(
         domain: string,
         bitrixId: number | null,
-    ): Promise<Map<string, string>> {
-        const map = new Map<string, string>();
+    ): Promise<Map<string, { fieldId: string; d: IBXListFieldDescription }>> {
+        const map = new Map<
+            string,
+            { fieldId: string; d: IBXListFieldDescription }
+        >();
         if (bitrixId === null) {
             return map;
         }
@@ -175,7 +205,10 @@ export class ListMonitoringUseCase {
                 response.result ?? {},
             )) {
                 if (description.CODE) {
-                    map.set(String(description.CODE).toUpperCase(), fieldId);
+                    map.set(String(description.CODE).toUpperCase(), {
+                        fieldId,
+                        d: description,
+                    });
                 }
             }
         } catch (e) {

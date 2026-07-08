@@ -29,7 +29,11 @@ export class BxListInstallService {
         private readonly pbxService: PBXService,
     ) {}
 
-    async ensureList(parsedList: List): Promise<IBxEnsuredList> {
+    async ensureList(
+        parsedList: List,
+        /** IBLOCK_ID из строки `bitrixlists`, если зеркало уже существует */
+        knownBitrixId?: number | null,
+    ): Promise<IBxEnsuredList> {
         const { bitrix } = await this.pbxService.init(this.domain);
         const candidates = this.getCodeCandidates(parsedList);
 
@@ -37,9 +41,14 @@ export class BxListInstallService {
         const existingLists: IBXList[] = Array.isArray(response.result)
             ? response.result
             : [];
-        const existing = existingLists.find(l =>
-            candidates.includes(this.getListCode(l)),
-        );
+        // Сначала по кандидатам кода; если список создан не нашим установщиком
+        // (другой код, например легаси service_ork_history) — по сохранённому
+        // в БД IBLOCK_ID, чтобы не плодить дубликат инфоблока.
+        const existing =
+            existingLists.find(l => candidates.includes(this.getListCode(l))) ??
+            (knownBitrixId != null
+                ? existingLists.find(l => Number(l.ID) === knownBitrixId)
+                : undefined);
 
         if (existing) {
             const code = this.getListCode(existing) || parsedList.code;

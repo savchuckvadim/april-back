@@ -113,7 +113,7 @@
 - `PBX List Field Install Monitoring` (`pbx-list-field-install-monitoring`): `all`, `domain/:domain/list/:type/group/:group` (merge PortalDB ↔ Bitrix по CODE свойства), `search/:domain/:listName/:group/:search`
 - `PBX List Parse Template` (`pbx-list-parse-template`): `parse/:listName/:group` — предпросмотр шаблона
 
-> Особенности списков: поля — свойства инфоблока (`lists.field.*`, адресация `FIELD_ID = PROPERTY_N`), в PortalDB `bitrixCamelId` поля хранит именно `PROPERTY_N` (его легаси-потребители передают в `lists.element.add`), а `bitrixId` — CODE свойства. Тип `multiple` из шаблона = строковое поле с `MULTIPLE=Y`.
+> Особенности списков: поля — свойства инфоблока (`lists.field.*`, адресация `FIELD_ID = PROPERTY_N`). CODE свойства в Bitrix и `code`/`bitrixId` в PortalDB — **полный легаси-код** `${group}_${type}_${code}` (например `sales_kpi_event_date`) — по нему `portal.model.getIdByCodeFieldList` находит поле; `bitrixCamelId` хранит `PROPERTY_N` (его легаси-потребители передают в `lists.element.add`). Существующее свойство ищется по кандидатам CODE (полный, btx-код шаблона, короткий) — дубликаты не плодятся, ошибочные CODE мигрируются на полный при update. Тип `multiple` из шаблона = строковое поле с `MULTIPLE=Y`; у существующих полей TYPE/MULTIPLE/IS_REQUIRED при update не меняются.
 
 ### 1.6. Важные нюансы для UI
 

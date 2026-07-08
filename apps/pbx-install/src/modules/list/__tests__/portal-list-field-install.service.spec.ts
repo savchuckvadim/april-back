@@ -60,7 +60,9 @@ describe('PortalListFieldInstallService', () => {
     });
 
     it('маппит поле в PbxFieldEntity с адресацией списка', async () => {
-        await service.syncWithDb(5, [installData]);
+        await service.syncWithDb(5, { type: 'kpi', group: 'sales' }, [
+            installData,
+        ]);
 
         expect(upsertFields).toHaveBeenCalledTimes(1);
         const [entities] = upsertFields.mock.calls[0] as [
@@ -70,15 +72,17 @@ describe('PortalListFieldInstallService', () => {
             entity_type: PbxEntityTypePrisma.BITRIX_LIST,
             entity_id: 5,
             parent_type: 'calling',
-            code: 'event_type',
-            bitrixId: 'EVENT_TYPE',
+            code: 'sales_kpi_event_type',
+            bitrixId: 'sales_kpi_event_type',
             bitrixCamelId: 'PROPERTY_101',
             isPlural: false,
         });
     });
 
     it('items: только значения из шаблона, bitrixId = id значения в Bitrix', async () => {
-        await service.syncWithDb(5, [installData]);
+        await service.syncWithDb(5, { type: 'kpi', group: 'sales' }, [
+            installData,
+        ]);
 
         const [entities] = upsertFields.mock.calls[0] as [
             Array<{ items: Array<Record<string, unknown>> }>,
@@ -98,7 +102,9 @@ describe('PortalListFieldInstallService', () => {
             parsedField: { ...parsedField, type: 'string', list: [] },
         };
 
-        await service.syncWithDb(5, [stringData]);
+        await service.syncWithDb(5, { type: 'kpi', group: 'sales' }, [
+            stringData,
+        ]);
 
         const [entities] = upsertFields.mock.calls[0] as [
             Array<{ items: unknown[] }>,

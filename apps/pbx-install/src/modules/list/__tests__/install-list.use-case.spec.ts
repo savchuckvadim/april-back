@@ -14,7 +14,10 @@ import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-fiel
 describe('InstallListUseCase', () => {
     let useCase: InstallListUseCase;
     let parseListService: { getParsedData: jest.Mock };
-    let portalListService: { upsertFromBitrix: jest.Mock };
+    let portalListService: {
+        upsertFromBitrix: jest.Mock;
+        findRowByDomainAndKeys: jest.Mock;
+    };
     let portalSync: { syncWithDb: jest.Mock };
     let getList: jest.Mock;
     let add: jest.Mock;
@@ -92,6 +95,9 @@ describe('InstallListUseCase', () => {
                 callOrder.push('db.upsert');
                 return Promise.resolve({ id: BigInt(5) });
             }),
+            findRowByDomainAndKeys: jest
+                .fn()
+                .mockRejectedValue(new Error('List not found')),
         };
         portalSync = {
             syncWithDb: jest.fn().mockResolvedValue([]),
@@ -147,9 +153,11 @@ describe('InstallListUseCase', () => {
         expect(addField).toHaveBeenCalledTimes(1);
         const addFieldCall = addField.mock.calls[0] as unknown[];
         expect(addFieldCall[0]).toBe('event_date');
-        expect(portalSync.syncWithDb).toHaveBeenCalledWith(5, [
-            expect.objectContaining({ code: 'event_date' }),
-        ]);
+        expect(portalSync.syncWithDb).toHaveBeenCalledWith(
+            5,
+            { type: 'presentation', group: 'sales', code: 'presentation' },
+            [expect.objectContaining({ code: 'event_date' })],
+        );
         expect(result.installed).toHaveLength(1);
         expect(result.installed[0].portalListId).toBe(5);
     });

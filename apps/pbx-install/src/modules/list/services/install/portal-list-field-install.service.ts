@@ -9,6 +9,10 @@ import {
     IBxListFieldRef,
     IBxListInstalledFieldResult,
 } from './bx-list-fields-install.service';
+import {
+    ListFieldCodeKey,
+    fullListFieldCode,
+} from '../../lib/list-field-code.util';
 
 /** Результат установки поля списка с гарантированно найденным bxField */
 export interface IPbxListFieldInstallData extends IBxListInstalledFieldResult {
@@ -20,9 +24,10 @@ export interface IPbxListFieldInstallData extends IBxListInstalledFieldResult {
  *
  * Отличия от PortalEntityFieldInstallService (UF-поля):
  * - entity_type всегда BITRIX_LIST, entity_id — id строки `bitrixlists`;
- * - bitrixId — CODE свойства (EVENT_TYPE), bitrixCamelId — FIELD_ID
- *   (PROPERTY_N) без camel-преобразования: именно его легаси-потребители
- *   передают в lists.element.add / lists.field.get;
+ * - code и bitrixId — полный легаси-код `${group}_${type}_${code}`
+ *   (по нему `portal.model.getIdByCodeFieldList` ищет поле);
+ * - bitrixCamelId — FIELD_ID (PROPERTY_N) без camel-преобразования: именно
+ *   его легаси-потребители передают в lists.element.add / lists.field.get;
  * - items enum-полей берутся из DISPLAY_VALUES_FORM ({id: value}).
  */
 @Injectable()
@@ -31,10 +36,11 @@ export class PortalListFieldInstallService {
 
     async syncWithDb(
         listDbId: number,
+        listKey: ListFieldCodeKey,
         fields: IPbxListFieldInstallData[],
     ): Promise<PbxFieldEntity[]> {
         const pbxFieldEntities = fields.map(field =>
-            this.getPbxFieldEntity(field, listDbId),
+            this.getPbxFieldEntity(field, listDbId, listKey),
         );
         return await this.pbxFieldService.upsertFields(pbxFieldEntities);
     }
@@ -42,17 +48,19 @@ export class PortalListFieldInstallService {
     private getPbxFieldEntity(
         field: IPbxListFieldInstallData,
         listDbId: number,
+        listKey: ListFieldCodeKey,
     ): PbxFieldEntity {
+        const fullCode = fullListFieldCode(listKey, field.parsedField.code);
         const entity = new PbxFieldEntity();
         entity.entity_type = PbxEntityTypePrisma.BITRIX_LIST;
         entity.parent_type = field.parsedField.appType;
         entity.entity_id = listDbId;
         entity.name = field.parsedField.name;
         entity.title = field.parsedField.name;
-        entity.code = field.parsedField.code;
+        entity.code = fullCode;
         entity.type = field.parsedField.type;
         entity.isPlural = field.parsedField.isMultiple;
-        entity.bitrixId = field.parsedField.bxFieldName;
+        entity.bitrixId = fullCode;
         entity.bitrixCamelId = field.bxField.fieldId;
         entity.items =
             field.parsedField.type === 'enumeration'

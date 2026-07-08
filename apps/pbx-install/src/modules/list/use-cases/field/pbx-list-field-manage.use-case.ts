@@ -20,6 +20,7 @@ import {
     ListContextResolver,
 } from '../../services/list-context.resolver';
 import { BxListFieldManageService } from '../../services/install/bx-list-field-manage.service';
+import { fullListFieldCode } from '../../lib/list-field-code.util';
 
 /**
  * Manage-операции над полями списков Bitrix-портала
@@ -58,13 +59,21 @@ export class PbxListFieldManageUseCase {
             if (!ctx) {
                 continue;
             }
+            // В БД code хранится полным (`${group}_${type}_${code}`);
+            // короткие коды из dto дополняем полными кандидатами
+            const codeCandidates = this.buildCodeCandidates(dto, dto.codes);
             const dbFields = await this.pbxFieldService.findByEntityIdAndCodes(
                 PbxEntityTypePrisma.BITRIX_LIST,
                 ctx.listDbId,
-                dto.codes,
+                codeCandidates,
             );
             const notFoundCodes = dto.codes.filter(
-                c => !dbFields.some(f => f.code === c),
+                c =>
+                    !dbFields.some(
+                        f =>
+                            f.code === c ||
+                            f.code === fullListFieldCode(dto, c),
+                    ),
             );
             const manage = this.createManageService(domain, ctx);
             const bx = await manage.deleteFields(
@@ -146,7 +155,7 @@ export class PbxListFieldManageUseCase {
             if (!ctx) {
                 continue;
             }
-            const dbField = await this.findDbField(ctx, dto.fieldCode);
+            const dbField = await this.findDbField(ctx, dto, dto.fieldCode);
             if (!dbField) {
                 results.push({
                     domain,
@@ -217,14 +226,28 @@ export class PbxListFieldManageUseCase {
 
     private async findDbField(
         ctx: ListContext,
+        list: { type: string; group: string },
         code: string,
     ): Promise<PbxFieldEntity | null> {
         const fields = await this.pbxFieldService.findByEntityIdAndCodes(
             PbxEntityTypePrisma.BITRIX_LIST,
             ctx.listDbId,
-            [code],
+            this.buildCodeCandidates(list, [code]),
         );
         return fields[0] ?? null;
+    }
+
+    /** Короткие коды из dto + их полные легаси-варианты `${group}_${type}_${code}`. */
+    private buildCodeCandidates(
+        list: { type: string; group: string },
+        codes: string[],
+    ): string[] {
+        const candidates = new Set<string>();
+        for (const code of codes) {
+            candidates.add(code);
+            candidates.add(fullListFieldCode(list, code));
+        }
+        return [...candidates];
     }
 
     private async deleteDbFields(

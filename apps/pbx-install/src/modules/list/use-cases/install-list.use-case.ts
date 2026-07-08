@@ -84,7 +84,11 @@ export class InstallListUseCase {
         parsedList: List,
     ): Promise<InstalledListResultDto> {
         const bxListInstall = new BxListInstallService(domain, this.pbxService);
-        const ensured = await bxListInstall.ensureList(parsedList);
+        const knownBitrixId = await this.findKnownBitrixId(domain, parsedList);
+        const ensured = await bxListInstall.ensureList(
+            parsedList,
+            knownBitrixId,
+        );
 
         const row = await this.portalListService.upsertFromBitrix(domain, {
             type: parsedList.type,
@@ -109,6 +113,7 @@ export class InstallListUseCase {
                 domain,
                 this.pbxService,
                 { IBLOCK_ID: ensured.bitrixId },
+                listKey,
                 fields,
             );
             const bxResult = await bxFieldsInstall.installFields();
@@ -123,6 +128,7 @@ export class InstallListUseCase {
             const portalFieldEntityInstallResult =
                 await this.portalListFieldInstallService.syncWithDb(
                     bigintConvertToNumber(row.id),
+                    listKey,
                     clearFields,
                 );
             fieldsResult = toFieldsInstallResultDto(
@@ -142,5 +148,22 @@ export class InstallListUseCase {
             portalListId: bigintConvertToNumber(row.id),
             fields: fieldsResult,
         };
+    }
+
+    /** IBLOCK_ID из существующей строки `bitrixlists` (если зеркало уже есть). */
+    private async findKnownBitrixId(
+        domain: string,
+        parsedList: List,
+    ): Promise<number | null> {
+        try {
+            const row = await this.portalListService.findRowByDomainAndKeys(
+                domain,
+                parsedList.type,
+                parsedList.group,
+            );
+            return bigintConvertToNumber(row.bitrixId);
+        } catch {
+            return null;
+        }
     }
 }

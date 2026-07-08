@@ -505,17 +505,31 @@ export class PerPortalListFieldItemResultDto {
 
 /** Статус одного поля списка: эталон × Bitrix × БД. */
 export class ListFieldMonitorRowDto {
-    @ApiProperty({ description: 'Код поля', example: 'event_type' })
+    @ApiProperty({
+        description: 'Короткий код поля из шаблона',
+        example: 'event_type',
+    })
     code!: string;
+
+    @ApiProperty({
+        description:
+            'Полный эталонный CODE свойства (`${group}_${type}_${code}`) — ' +
+            'таким он должен быть в Bitrix и в PortalDB',
+        example: 'sales_kpi_event_type',
+    })
+    fullCode!: string;
 
     @ApiProperty({ description: 'Название поля', example: 'Тип События' })
     name!: string;
 
     @ApiProperty({
-        description: 'CODE свойства в Bitrix',
+        description: 'btx-код из Excel-шаблона',
         example: 'EVENT_TYPE',
     })
     bxFieldName!: string;
+
+    @ApiProperty({ description: 'Тип поля из шаблона', example: 'enumeration' })
+    type!: string;
 
     @ApiProperty({ description: 'Есть в Bitrix', example: true })
     inBitrix!: boolean;
@@ -528,8 +542,48 @@ export class ListFieldMonitorRowDto {
     })
     fieldId!: string | null;
 
+    @ApiProperty({
+        description: 'Фактический CODE свойства в Bitrix (у сматченного поля)',
+        example: 'sales_kpi_event_type',
+        nullable: true,
+        type: String,
+    })
+    bitrixCode!: string | null;
+
+    @ApiProperty({
+        description: 'Фактическое название свойства в Bitrix',
+        example: 'Тип События',
+        nullable: true,
+        type: String,
+    })
+    bitrixName!: string | null;
+
+    @ApiProperty({
+        description: 'Фактический тип свойства в Bitrix (S, L, N, S:DateTime…)',
+        example: 'L',
+        nullable: true,
+        type: String,
+    })
+    bitrixType!: string | null;
+
+    @ApiProperty({
+        description: 'Множественность свойства в Bitrix',
+        example: false,
+        nullable: true,
+        type: Boolean,
+    })
+    bitrixMultiple!: boolean | null;
+
     @ApiProperty({ description: 'Есть в PortalDB', example: true })
     inDb!: boolean;
+
+    @ApiProperty({
+        description: 'code, сохранённый в PortalDB (`bitrixfields.code`)',
+        example: 'sales_kpi_event_type',
+        nullable: true,
+        type: String,
+    })
+    dbCode!: string | null;
 
     @ApiProperty({
         description: 'FIELD_ID, сохранённый в PortalDB (bitrixCamelId)',
@@ -539,7 +593,11 @@ export class ListFieldMonitorRowDto {
     })
     dbFieldId!: string | null;
 
-    @ApiProperty({ description: 'Bitrix и БД совпадают', example: true })
+    @ApiProperty({
+        description:
+            'Bitrix и БД согласованы: поле есть с обеих сторон и FIELD_ID совпадает',
+        example: true,
+    })
     inSync!: boolean;
 }
 

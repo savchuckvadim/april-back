@@ -11,6 +11,11 @@ import {
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { mapParseTypeToListFieldType } from './list-field-type.mapper';
+import {
+    ListFieldCodeKey,
+    fullListFieldCode,
+    listFieldCodeCandidates,
+} from '../../lib/list-field-code.util';
 
 /** Ссылка на поле списка в Bitrix: FIELD_ID (PROPERTY_N) + описание */
 export interface IBxListFieldRef {
@@ -58,6 +63,8 @@ export class BxListFieldsInstallService {
         private readonly domain: string,
         private readonly pbxService: PBXService,
         private readonly listAddress: BxListAddressInput,
+        /** Ключ списка — из него строится полный CODE свойств (`${group}_${type}_${code}`) */
+        private readonly listKey: ListFieldCodeKey,
         private readonly parseFields: Field[],
     ) {}
 
@@ -107,15 +114,26 @@ export class BxListFieldsInstallService {
         }
     }
 
-    /** Существующее поле ищется по CODE свойства (= bxFieldName шаблона) */
+    /**
+     * Существующее поле ищется по кандидатам CODE: полный легаси-код
+     * (`sales_kpi_crm_company`), btx-код шаблона (`CRM_COMPANY` — так
+     * ошибочно писала ранняя версия), короткий код. Иначе на легаси-порталах
+     * плодились дубликаты свойств.
+     */
     private findExisting(
         existingFields: BxListFieldsGetResponse,
         parseField: Field,
     ): IBxListFieldRef | undefined {
-        const targetCode = parseField.bxFieldName.toUpperCase();
-        for (const [fieldId, description] of Object.entries(existingFields)) {
-            if (String(description.CODE ?? '').toUpperCase() === targetCode) {
-                return { fieldId, description };
+        const candidates = listFieldCodeCandidates(this.listKey, parseField);
+        for (const candidate of candidates) {
+            for (const [fieldId, description] of Object.entries(
+                existingFields,
+            )) {
+                if (
+                    String(description.CODE ?? '').toUpperCase() === candidate
+                ) {
+                    return { fieldId, description };
+                }
             }
         }
         return undefined;
@@ -128,11 +146,18 @@ export class BxListFieldsInstallService {
         const mapping = mapParseTypeToListFieldType(parseField.type);
         const payload: IBXListFieldPayload = {
             NAME: parseField.name,
-            CODE: parseField.bxFieldName,
+            // Полный легаси-код: и миграция ошибочно созданных CODE=EVENT_DATE
+            CODE: fullListFieldCode(this.listKey, parseField.code),
             SORT: parseField.order,
-            IS_REQUIRED: 'N',
-            MULTIPLE: mapping.MULTIPLE,
-            // Тип поля Bitrix менять запрещает — при update сохраняем текущий
+            // Тип/множественность/обязательность существующего поля не трогаем:
+            // TYPE Bitrix менять запрещает, а MULTIPLE/IS_REQUIRED могли быть
+            // настроены на портале (ранее update перетирал множественность)
+            IS_REQUIRED: existing
+                ? (existing.description.IS_REQUIRED ?? 'N')
+                : 'N',
+            MULTIPLE: existing
+                ? (existing.description.MULTIPLE ?? mapping.MULTIPLE)
+                : mapping.MULTIPLE,
             TYPE: existing
                 ? (existing.description.TYPE as IBXListFieldPayload['TYPE'])
                 : mapping.TYPE,
