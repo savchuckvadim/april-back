@@ -503,6 +503,70 @@ export class PerPortalListFieldItemResultDto {
     db!: ListFieldItemDbResultDto;
 }
 
+/** Значение эталонного enum-поля (из Excel-шаблона). */
+export class ListTemplateItemDto {
+    @ApiProperty({ description: 'Код значения', example: 'call' })
+    code!: string;
+
+    @ApiProperty({ description: 'Отображаемое значение', example: 'Звонок' })
+    value!: string;
+
+    @ApiProperty({ description: 'Сортировка', example: 20, type: Number })
+    sort!: number;
+}
+
+/** Значение enum-свойства в Bitrix. */
+export class BitrixListFieldItemDto {
+    @ApiProperty({ description: 'ID значения в Bitrix', example: '457' })
+    id!: string;
+
+    @ApiProperty({ description: 'Отображаемое значение', example: 'Звонок' })
+    value!: string;
+}
+
+/** Полное описание свойства списка в Bitrix (для деталей мониторинга). */
+export class BitrixListFieldDetailsDto {
+    @ApiProperty({
+        description: 'FIELD_ID (PROPERTY_N)',
+        example: 'PROPERTY_101',
+    })
+    fieldId!: string;
+
+    @ApiProperty({
+        description: 'CODE свойства',
+        example: 'sales_kpi_event_type',
+        nullable: true,
+        type: String,
+    })
+    code!: string | null;
+
+    @ApiProperty({ description: 'Название свойства', example: 'Тип События' })
+    name!: string;
+
+    @ApiProperty({ description: 'Тип свойства', example: 'L' })
+    type!: string;
+
+    @ApiProperty({ description: 'Множественное', example: false })
+    multiple!: boolean;
+
+    @ApiProperty({ description: 'Обязательное', example: false })
+    isRequired!: boolean;
+
+    @ApiProperty({
+        description: 'Сортировка',
+        example: '40',
+        nullable: true,
+        type: String,
+    })
+    sort!: string | null;
+
+    @ApiProperty({
+        description: 'Значения enum-свойства',
+        type: [BitrixListFieldItemDto],
+    })
+    items!: BitrixListFieldItemDto[];
+}
+
 /** Статус одного поля списка: эталон × Bitrix × БД. */
 export class ListFieldMonitorRowDto {
     @ApiProperty({
@@ -599,6 +663,26 @@ export class ListFieldMonitorRowDto {
         example: true,
     })
     inSync!: boolean;
+
+    @ApiProperty({
+        description: 'Значения enum-поля из эталона',
+        type: [ListTemplateItemDto],
+    })
+    templateItems!: ListTemplateItemDto[];
+
+    @ApiProperty({
+        description: 'Полное описание сматченного свойства в Bitrix',
+        type: BitrixListFieldDetailsDto,
+        nullable: true,
+    })
+    bitrix!: BitrixListFieldDetailsDto | null;
+
+    @ApiProperty({
+        description: 'Зеркало поля в PortalDB со значениями',
+        type: PortalListFieldDto,
+        nullable: true,
+    })
+    db!: PortalListFieldDto | null;
 }
 
 /** Статус одного списка: эталон × Bitrix × БД. */

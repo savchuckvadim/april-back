@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import {
     PbxFieldEntity,
@@ -32,6 +32,8 @@ export interface IPbxListFieldInstallData extends IBxListInstalledFieldResult {
  */
 @Injectable()
 export class PortalListFieldInstallService {
+    private readonly logger = new Logger(PortalListFieldInstallService.name);
+
     constructor(private readonly pbxFieldService: PbxFieldService) {}
 
     async syncWithDb(
@@ -39,10 +41,66 @@ export class PortalListFieldInstallService {
         listKey: ListFieldCodeKey,
         fields: IPbxListFieldInstallData[],
     ): Promise<PbxFieldEntity[]> {
+        await this.cleanupStaleMirrors(listDbId, listKey, fields);
+
         const pbxFieldEntities = fields.map(field =>
             this.getPbxFieldEntity(field, listDbId, listKey),
         );
-        return await this.pbxFieldService.upsertFields(pbxFieldEntities);
+        const result =
+            await this.pbxFieldService.upsertFields(pbxFieldEntities);
+        this.logger.log(
+            `syncWithDb list=${listKey.group}_${listKey.type} (id=${listDbId}): ` +
+                `upserted ${result.length}/${fields.length} fields ` +
+                `[${result.map(f => f.code).join(', ')}]`,
+        );
+        return result;
+    }
+
+    /**
+     * Чистка устаревших зеркал этого списка: ранняя версия установщика писала
+     * `code` коротким (`event_date`) или btx-кодом (`EVENT_DATE`) — upsert по
+     * новому полному коду создал бы вторую запись, а мусорная осталась бы.
+     * Удаляем только записи, чей code совпадает с коротким/btx-кодом полей
+     * шаблона (легаси-записи с полными кодами не трогаем).
+     */
+    private async cleanupStaleMirrors(
+        listDbId: number,
+        listKey: ListFieldCodeKey,
+        fields: IPbxListFieldInstallData[],
+    ): Promise<void> {
+        const existing = await this.pbxFieldService.findByEntityId(
+            PbxEntityTypePrisma.BITRIX_LIST,
+            BigInt(listDbId),
+        );
+        if (existing.length === 0) {
+            return;
+        }
+        const staleCodes = new Set(
+            fields.flatMap(f => [
+                f.parsedField.code,
+                f.parsedField.bxFieldName,
+            ]),
+        );
+        const fullCodes = new Set(
+            fields.map(f => fullListFieldCode(listKey, f.parsedField.code)),
+        );
+        const stale = existing.filter(
+            e =>
+                e.id !== undefined &&
+                !fullCodes.has(e.code) &&
+                staleCodes.has(e.code),
+        );
+        if (stale.length === 0) {
+            return;
+        }
+        await this.pbxFieldService.deleteFieldsByIds(
+            stale.map(e => BigInt(e.id as string)),
+        );
+        this.logger.log(
+            `syncWithDb list=${listKey.group}_${listKey.type} (id=${listDbId}): ` +
+                `removed ${stale.length} stale mirrors ` +
+                `[${stale.map(e => e.code).join(', ')}]`,
+        );
     }
 
     private getPbxFieldEntity(

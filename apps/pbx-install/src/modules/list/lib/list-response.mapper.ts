@@ -1,9 +1,10 @@
-import { PortalListEntity } from '@lib/portal-lib/pbx-domain';
+import { PbxFieldEntity, PortalListEntity } from '@lib/portal-lib/pbx-domain';
 import { IBxListFieldsInstallResult } from '../services/install/bx-list-fields-install.service';
 import {
     ListFieldsInstallResultDto,
     ListKeyDto,
     PortalListDto,
+    PortalListFieldDto,
 } from '../dto/list-response.dto';
 
 /** Пустой результат установки полей (нечего ставить). */
@@ -46,6 +47,26 @@ export function toFieldsInstallResultDto(
     };
 }
 
+/** Поле списка из PortalDB → типизированный DTO ответа. */
+export function toPortalListFieldDto(
+    field: PbxFieldEntity,
+): PortalListFieldDto {
+    return {
+        id: field.id ?? null,
+        name: field.name,
+        code: field.code,
+        type: String(field.type),
+        isPlural: field.isPlural,
+        bitrixId: field.bitrixId,
+        bitrixCamelId: field.bitrixCamelId,
+        items: (field.items ?? []).map(item => ({
+            name: item.name,
+            code: item.code,
+            bitrixId: item.bitrixId,
+        })),
+    };
+}
+
 /** Entity списка из PortalDB → типизированный DTO ответа. */
 export function toPortalListDto(entity: PortalListEntity): PortalListDto {
     return {
@@ -57,19 +78,6 @@ export function toPortalListDto(entity: PortalListEntity): PortalListDto {
         title: entity.title,
         bitrixId: entity.bitrixId,
         code: entity.code,
-        fields: entity.fields.map(field => ({
-            id: field.id ?? null,
-            name: field.name,
-            code: field.code,
-            type: String(field.type),
-            isPlural: field.isPlural,
-            bitrixId: field.bitrixId,
-            bitrixCamelId: field.bitrixCamelId,
-            items: (field.items ?? []).map(item => ({
-                name: item.name,
-                code: item.code,
-                bitrixId: item.bitrixId,
-            })),
-        })),
+        fields: entity.fields.map(toPortalListFieldDto),
     };
 }

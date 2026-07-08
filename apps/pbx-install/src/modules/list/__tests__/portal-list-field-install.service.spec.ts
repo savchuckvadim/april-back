@@ -12,6 +12,8 @@ import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-fiel
 describe('PortalListFieldInstallService', () => {
     let service: PortalListFieldInstallService;
     let upsertFields: jest.Mock;
+    let findByEntityId: jest.Mock;
+    let deleteFieldsByIds: jest.Mock;
 
     const parsedField: Field = {
         name: 'Тип События',
@@ -54,8 +56,12 @@ describe('PortalListFieldInstallService', () => {
 
     beforeEach(() => {
         upsertFields = jest.fn().mockResolvedValue([]);
+        findByEntityId = jest.fn().mockResolvedValue([]);
+        deleteFieldsByIds = jest.fn().mockResolvedValue(undefined);
         service = new PortalListFieldInstallService({
             upsertFields,
+            findByEntityId,
+            deleteFieldsByIds,
         } as unknown as PbxFieldService);
     });
 
@@ -94,6 +100,25 @@ describe('PortalListFieldInstallService', () => {
                 bitrixId: 457,
             }),
         ]);
+    });
+
+    it('устаревшие зеркала с коротким/btx-кодом удаляются, легаси с полным — нет', async () => {
+        findByEntityId.mockResolvedValue([
+            { id: '10', code: 'event_type' }, // короткий код ранней версии
+            { id: '11', code: 'EVENT_TYPE' }, // btx-код ранней версии
+            { id: '12', code: 'sales_kpi_event_type' }, // корректный полный
+            { id: '13', code: 'sales_kpi_other_legacy' }, // чужое легаси-поле
+        ]);
+
+        await service.syncWithDb(5, { type: 'kpi', group: 'sales' }, [
+            installData,
+        ]);
+
+        expect(deleteFieldsByIds).toHaveBeenCalledWith([
+            BigInt(10),
+            BigInt(11),
+        ]);
+        expect(upsertFields).toHaveBeenCalledTimes(1);
     });
 
     it('не-enum поле получает пустые items', async () => {

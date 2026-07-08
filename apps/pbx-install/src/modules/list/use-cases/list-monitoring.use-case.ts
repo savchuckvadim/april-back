@@ -15,6 +15,7 @@ import {
     fullListFieldCode,
     listFieldCodeCandidates,
 } from '../lib/list-field-code.util';
+import { toPortalListFieldDto } from '../lib/list-response.mapper';
 import {
     ListFieldMonitorRowDto,
     ListMonitorRowDto,
@@ -180,6 +181,29 @@ export class ListMonitoringUseCase {
                     fieldId !== null &&
                     dbFieldId !== null &&
                     fieldId === dbFieldId,
+                templateItems: (field.list ?? []).map(item => ({
+                    code: item.CODE,
+                    value: item.VALUE,
+                    sort: item.SORT,
+                })),
+                bitrix: bxRef
+                    ? {
+                          fieldId: bxRef.fieldId,
+                          code: bxRef.d.CODE ? String(bxRef.d.CODE) : null,
+                          name: String(bxRef.d.NAME ?? ''),
+                          type: String(bxRef.d.TYPE ?? ''),
+                          multiple: bxRef.d.MULTIPLE === 'Y',
+                          isRequired: bxRef.d.IS_REQUIRED === 'Y',
+                          sort:
+                              bxRef.d.SORT != null
+                                  ? String(bxRef.d.SORT)
+                                  : null,
+                          items: Object.entries(
+                              bxRef.d.DISPLAY_VALUES_FORM ?? {},
+                          ).map(([id, value]) => ({ id, value })),
+                      }
+                    : null,
+                db: dbField ? toPortalListFieldDto(dbField) : null,
             };
         });
     }
