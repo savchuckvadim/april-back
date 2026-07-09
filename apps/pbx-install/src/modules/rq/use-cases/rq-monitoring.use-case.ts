@@ -9,6 +9,7 @@ import {
     RqParseResponseDto,
     RqPresetMonitorRowDto,
 } from '../dto/rq-response.dto';
+import { matchBitrixPreset } from '../utils/rq-preset-match.util';
 
 /**
  * Чтение текущего состояния реквизитной части: смерженный вид Bitrix
@@ -46,15 +47,11 @@ export class RqMonitoringUseCase {
             const db = dbPresets.find(d => d.code === tpl.code);
             const dbBitrixId =
                 db?.bitrixId != null ? Number(db.bitrixId) : null;
-            // Сопоставляем с Bitrix по XML_ID, а если пресет создан не нашим
-            // установщиком (пустой/другой XML_ID) — по сохранённому в `bx_rqs`
-            // bitrix_id. Иначе уже установленный пресет ложно показывался как
-            // отсутствующий в Bitrix.
-            const bx =
-                bxPresets.find(p => p.XML_ID === tpl.xmlId) ??
-                (dbBitrixId != null
-                    ? bxPresets.find(p => Number(p.ID) === dbBitrixId)
-                    : undefined);
+            // Единый матчер с install-синхронизацией (db-id → XML_ID → имя),
+            // чтобы мониторинг и установка никогда не расходились. Bitrix не
+            // сохраняет кастомный XML_ID у пресетов реквизитов, поэтому
+            // существующие пресеты подхватываются по привязке из БД или имени.
+            const bx = matchBitrixPreset(bxPresets, tpl, dbBitrixId)?.preset;
             const bitrixId = bx ? Number(bx.ID) : null;
             return {
                 code: tpl.code,

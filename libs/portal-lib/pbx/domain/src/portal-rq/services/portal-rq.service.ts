@@ -41,6 +41,18 @@ export class PortalRqService {
         );
     }
 
+    /** Строка по бизнес-коду + порталу; `null`, если зеркала ещё нет. */
+    async findByCodePortalOrNull(
+        portalId: number,
+        code: string,
+    ): Promise<PortalRqResponseDto | null> {
+        const row = await this.repository.findByCodePortal(code, portalId);
+        if (!row) {
+            return null;
+        }
+        return portalRqEntityToResponseDto(portalRqEntityFromPrisma(row));
+    }
+
     async findMany(): Promise<PortalRqResponseDto[]> {
         const rows = await this.repository.findMany();
         return rows.map(r =>

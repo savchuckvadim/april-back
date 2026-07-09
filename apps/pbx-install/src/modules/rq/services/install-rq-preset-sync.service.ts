@@ -3,6 +3,7 @@ import { BitrixService } from '@/modules/bitrix';
 import { PortalRqService } from '@lib/portal-lib/pbx-domain/portal-rq';
 import type { RqPresetTemplate } from '@/apps/rq/install';
 import { RqPresetSyncResultDto } from '../dto/rq-response.dto';
+import { matchBitrixPreset } from '../utils/rq-preset-match.util';
 
 /**
  * Установка/синхронизация пресета реквизита (`crm.requisite.preset.*`) +
@@ -25,7 +26,16 @@ export class InstallRqPresetSyncService {
     ): Promise<RqPresetSyncResultDto> {
         const list = await bitrix.requisitePreset.getList({});
         const presets = list.result ?? [];
-        const existing = presets.find(p => p.XML_ID === tpl.xmlId);
+
+        // Привязка из bx_rqs (в т.ч. ручная) участвует в матчинге первой.
+        const dbRow = await this.portalRqService.findByCodePortalOrNull(
+            portalId,
+            tpl.code,
+        );
+        const dbBitrixId =
+            dbRow?.bitrixId != null ? Number(dbRow.bitrixId) : null;
+
+        const match = matchBitrixPreset(presets, tpl, dbBitrixId);
 
         const fields = {
             ENTITY_TYPE_ID: tpl.entityTypeId,
@@ -38,10 +48,19 @@ export class InstallRqPresetSyncService {
 
         let bitrixId: number;
         let created: boolean;
-        if (existing) {
-            bitrixId = Number(existing.ID);
-            await bitrix.requisitePreset.update(bitrixId, fields);
+        if (match) {
+            // Adopt: берём существующий пресет (в т.ч. системный 1/3/5),
+            // а не создаём дубль. Отказ Bitrix обновить системный пресет
+            // не валит синхронизацию — привязка в БД важнее.
+            bitrixId = Number(match.preset.ID);
             created = false;
+            try {
+                await bitrix.requisitePreset.update(bitrixId, fields);
+            } catch (e) {
+                this.logger.warn(
+                    `RQ preset ${tpl.code}: update of adopted bitrixId=${bitrixId} failed, keeping binding: ${e instanceof Error ? e.message : String(e)}`,
+                );
+            }
         } else {
             const addRes = await bitrix.requisitePreset.add(fields);
             bitrixId = Number(addRes.result);
@@ -49,7 +68,7 @@ export class InstallRqPresetSyncService {
         }
 
         this.logger.log(
-            `RQ preset ${tpl.code} (${tpl.xmlId}) ${created ? 'created' : 'updated'} bitrixId=${bitrixId}`,
+            `RQ preset ${tpl.code} (${tpl.xmlId}) ${created ? 'created' : `adopted by ${match!.rule}`} bitrixId=${bitrixId}`,
         );
 
         const portalResult = await this.portalRqService.upsertByCodePortal(

@@ -10,6 +10,7 @@ import { PbxRqManageController } from './controllers/pbx-rq-manage.controller';
 import { InstallRqUseCase } from './use-cases/install-rq.use-case';
 import { RqMonitoringUseCase } from './use-cases/rq-monitoring.use-case';
 import { RqManageUseCase } from './use-cases/rq-manage.use-case';
+import { RqSetPresetBitrixIdUseCase } from './use-cases/rq-set-preset-bitrix-id.use-case';
 import { InstallRqPresetSyncService } from './services/install-rq-preset-sync.service';
 import { InstallRqFieldSyncService } from './services/install-rq-field-sync.service';
 
@@ -29,6 +30,7 @@ import { InstallRqFieldSyncService } from './services/install-rq-field-sync.serv
         InstallRqUseCase,
         RqMonitoringUseCase,
         RqManageUseCase,
+        RqSetPresetBitrixIdUseCase,
         InstallRqPresetSyncService,
         InstallRqFieldSyncService,
     ],

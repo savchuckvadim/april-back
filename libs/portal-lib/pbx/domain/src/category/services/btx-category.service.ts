@@ -21,7 +21,7 @@ export class BtxCategoryService {
 
     async create(dto: CreateBtxCategoryDto): Promise<BtxCategoryResponseDto> {
         const category = await this.repository.create({
-            entity_type: dto.entity_type,
+            entity_type: getPrismaEntityTypeByType(dto.entity_type),
             entity_id: BigInt(dto.entity_id),
             parent_type: dto.parent_type,
             type: dto.type,
