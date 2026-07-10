@@ -30,6 +30,10 @@
       "@lib/core/*": ["libs/core/src/*"],
       "@lib/bitrix": ["libs/bitrix/src"],
       "@lib/bitrix/*": ["libs/bitrix/src/*"],
+      "@lib/bitrix-v3": ["libs/bitrix-v3/src"],
+      "@lib/bitrix-v3/*": ["libs/bitrix-v3/src/*"],
+      "@lib/bx-department": ["libs/bx-department"],
+      "@lib/bx-department/*": ["libs/bx-department/*"],
       "@lib/pbx": ["libs/pbx/src"],
       "@lib/pbx/*": ["libs/pbx/src/*"],
       "@lib/ai-rag": ["libs/ai-rag/src"],
@@ -92,6 +96,10 @@
       "@/modules/queue/*": ["libs/queue/src/*"],
       "src/modules/queue": ["libs/queue/src"],
       "src/modules/queue/*": ["libs/queue/src/*"],
+      "@/modules/bx-department": ["libs/bx-department"],
+      "@/modules/bx-department/*": ["libs/bx-department/*"],
+      "src/modules/bx-department": ["libs/bx-department"],
+      "src/modules/bx-department/*": ["libs/bx-department/*"],
       "@pbx": ["libs/pbx/src/index.ts"],
 
       // ---- Приложение pbx-install (apps/pbx-install/src/modules) ----

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GigaChat, GigaChatEmbeddings } from 'langchain-gigachat';
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChainBuilderService } from '../../application/chain-builder.service';
 import { LlmProvider } from '../../domain/interfaces/llm-provider.interface';
 import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.service';
@@ -48,6 +49,9 @@ export class GigaChatProvider implements LlmProvider {
                 domain,
                 kind,
             );
+            // Upcast через unknown: прямая проверка GigaChat -> BaseChatModel
+            // упирается в лимит глубины дженериков TS (флаки TS2589 при сборке)
+            const llm = this.getLlm() as unknown as BaseChatModel;
 
             if (this.longDialogueService.needsChunkedProcessing(query)) {
                 this.logger.log(
@@ -56,24 +60,21 @@ export class GigaChatProvider implements LlmProvider {
                 return kind === 'resume'
                     ? this.longDialogueService.runResume(
                           query,
-                          this.getLlm(),
+                          llm,
                           retriever,
                       )
                     : this.longDialogueService.runRecommendation(
                           query,
-                          this.getLlm(),
+                          llm,
                           retriever,
                       );
             }
 
             const chain =
                 kind === 'resume'
-                    ? await this.chainBuilder.buildResumeChain(
-                          this.getLlm(),
-                          retriever,
-                      )
+                    ? await this.chainBuilder.buildResumeChain(llm, retriever)
                     : await this.chainBuilder.buildRecommendationChain(
-                          this.getLlm(),
+                          llm,
                           retriever,
                       );
             const result = await chain.invoke({ input: query, context: '' });

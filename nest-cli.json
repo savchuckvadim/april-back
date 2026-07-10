@@ -163,6 +163,24 @@
         "tsConfigPath": "libs/bitrix-auth/tsconfig.lib.json"
       }
     },
+    "bitrix-v3": {
+      "type": "library",
+      "root": "libs/bitrix-v3",
+      "entryFile": "index",
+      "sourceRoot": "libs/bitrix-v3/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/bitrix-v3/tsconfig.lib.json"
+      }
+    },
+    "bx-department": {
+      "type": "library",
+      "root": "libs/bx-department",
+      "entryFile": "index",
+      "sourceRoot": "libs/bx-department",
+      "compilerOptions": {
+        "tsConfigPath": "libs/bx-department/tsconfig.lib.json"
+      }
+    },
     "portal-lib": {
       "type": "library",
       "root": "libs/portal-lib",

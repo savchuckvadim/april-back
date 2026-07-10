@@ -3,7 +3,7 @@ import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interfa
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional } from 'class-validator';
 
 export enum EClients {
     dev = 'april-dev.bitrix24.ru',
@@ -11,6 +11,7 @@ export enum EClients {
     gsr = 'gsr.bitrix24.ru',
     gsirk = 'gsirk.bitrix24.ru',
     alfacentr = 'alfacentr.bitrix24.ru',
+    garantservisvoronezh = 'garantservisvoronezh.bitrix24.ru',
 }
 
 export class DomaintDto {

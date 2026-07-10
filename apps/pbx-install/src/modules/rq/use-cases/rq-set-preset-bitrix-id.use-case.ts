@@ -58,9 +58,7 @@ export class RqSetPresetBitrixIdUseCase {
 
         const tpl = RQ_PRESET_TEMPLATE.find(t => t.code === dto.code);
         if (!tpl) {
-            throw new NotFoundException(
-                `Unknown RQ preset code: ${dto.code}`,
-            );
+            throw new NotFoundException(`Unknown RQ preset code: ${dto.code}`);
         }
         return this.portalRqService.create({
             portalId,
