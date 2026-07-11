@@ -630,48 +630,57 @@ model portal_measure {
 }
 
 model Portal {
-  id                     BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at             DateTime?                @db.Timestamp(0)
-  updated_at             DateTime?                @db.Timestamp(0)
-  domain                 String?                  @db.Text
-  key                    String?                  @db.Text
-  C_REST_CLIENT_ID       String?                  @db.Text
-  C_REST_CLIENT_SECRET   String?                  @db.Text
-  C_REST_WEB_HOOK_URL    String?                  @db.Text
-  number                 Int
-  client_id              BigInt?                  @db.UnsignedBigInt
-  nestKey                String?                  @db.Text
-  nestKonstructorKey     String?                  @db.Text
-  nestReportKey          String?                  @db.Text
-  nestEventsKey          String?                  @db.Text
-  nestServiceKey         String?                  @db.Text
-  nestWebhooksKey        String?                  @db.Text
-  nestScheduleKey        String?                  @db.Text
-  vibeKey                String?                  @db.Text
-  bitrix_apps            bitrix_apps[]
-  bitrixlists            bitrixlists[]
-  btx_companies          btx_companies[]
-  btx_contacts           btx_contacts[]
-  btx_deals              btx_deals[]
-  btx_leads              btx_leads[]
-  btx_rpas               btx_rpas[]
-  btx_users              BtxUser[]
-  callings               callings[]
-  departaments           departaments[]
-  offerTemplateImages    OfferTemplateImage[]
-  offerTemplatePortal    OfferTemplatePortal[]
-  offer_zakupki_settings offer_zakupki_settings[]
-  portal_contracts       portal_contracts[]
-  portal_measure         portal_measure[]
-  portal_region          portal_region[]
-  clients                Client?                  @relation("ClientPortals", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portals_client_id_foreign")
-  smarts                 smarts[]
-  timezones              timezones[]
-  userSelectedTemplates  UserSelectedTemplate[]
-  agents                 agents[]                 @relation("PortalProviders")
-  templates              Template[]               @relation("PortalTemplates")
-  invoiceTemplates       InvoiceTemplate[]
-  bxRqs                  bx_rqs[]
+  id                             BigInt                           @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at                     DateTime?                        @db.Timestamp(0)
+  updated_at                     DateTime?                        @db.Timestamp(0)
+  domain                         String?                          @db.Text
+  key                            String?                          @db.Text
+  C_REST_CLIENT_ID               String?                          @db.Text
+  C_REST_CLIENT_SECRET           String?                          @db.Text
+  C_REST_WEB_HOOK_URL            String?                          @db.Text
+  number                         Int
+  client_id                      BigInt?                          @db.UnsignedBigInt
+  nestKey                        String?                          @db.Text
+  nestKonstructorKey             String?                          @db.Text
+  nestReportKey                  String?                          @db.Text
+  nestEventsKey                  String?                          @db.Text
+  nestServiceKey                 String?                          @db.Text
+  nestWebhooksKey                String?                          @db.Text
+  nestScheduleKey                String?                          @db.Text
+  vibeKey                        String?                          @db.Text
+  // Маркетплейс: идентичность и допуск портала (member_id хранится ОТКРЫТО — не шифровать)
+  member_id                      String?                          @unique(map: "portals_member_id_unique") @db.VarChar(255)
+  source                         String                           @default("legacy") @db.VarChar(255)
+  approval_status                String?                          @db.VarChar(255)
+  approved_at                    DateTime?                        @db.Timestamp(0)
+  approved_by                    String?                          @db.VarChar(255)
+  bitrix_apps                    bitrix_apps[]
+  bitrixlists                    bitrixlists[]
+  btx_companies                  btx_companies[]
+  btx_contacts                   btx_contacts[]
+  btx_deals                      btx_deals[]
+  btx_leads                      btx_leads[]
+  btx_rpas                       btx_rpas[]
+  btx_users                      BtxUser[]
+  callings                       callings[]
+  departaments                   departaments[]
+  offerTemplateImages            OfferTemplateImage[]
+  offerTemplatePortal            OfferTemplatePortal[]
+  offer_zakupki_settings         offer_zakupki_settings[]
+  portal_contracts               portal_contracts[]
+  portal_measure                 portal_measure[]
+  portal_region                  portal_region[]
+  clients                        Client?                          @relation("ClientPortals", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portals_client_id_foreign")
+  smarts                         smarts[]
+  timezones                      timezones[]
+  userSelectedTemplates          UserSelectedTemplate[]
+  agents                         agents[]                         @relation("PortalProviders")
+  templates                      Template[]                       @relation("PortalTemplates")
+  invoiceTemplates               InvoiceTemplate[]
+  bxRqs                          bx_rqs[]
+  marketplace_installs           marketplace_installs[]
+  portal_products                portal_products[]
+  marketplace_install_components marketplace_install_components[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
@@ -979,6 +988,7 @@ model bitrix_apps {
   bitrix_app_placements bitrix_app_placements[]
   portals               Portal                  @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "bitrix_apps_portal_id_foreign")
   bitrix_tokens         bitrix_tokens[]
+  marketplace_installs  marketplace_installs[]
 
   @@index([portal_id], map: "bitrix_apps_portal_id_foreign")
 }
@@ -1714,4 +1724,97 @@ enum invoice_templates_type {
   pdf
   html
   other
+}
+
+// ==================== Bitrix Marketplace («Менеджер Гарант») ====================
+// Маркетплейс-мир самостоятелен: bitrix_apps/bitrix_tokens — легаси локальных
+// приложений, здесь НЕ используются (FK bitrix_app_id — мостик для миграции).
+// Шифрование токенов — на стороне Nest; portals.member_id — открытым текстом.
+
+/// Установка маркетплейс-приложения на портал (одна строка = одна установка)
+model marketplace_installs {
+  id                             String                           @id @db.Char(36)
+  created_at                     DateTime?                        @db.Timestamp(0)
+  updated_at                     DateTime?                        @db.Timestamp(0)
+  portal_id                      BigInt                           @db.UnsignedBigInt
+  bitrix_app_id                  BigInt?                          @db.UnsignedBigInt
+  app_code                       String                           @db.VarChar(255)
+  domain                         String?                          @db.VarChar(255)
+  install_status                 String                           @default("pending") @db.VarChar(255)
+  error_step                     String?                          @db.VarChar(255)
+  error_detail                   String?                          @db.LongText
+  scope                          String?                          @db.LongText
+  version                        String?                          @db.VarChar(255)
+  lang                           String?                          @db.VarChar(10)
+  license_status                 String?                          @db.VarChar(1)
+  payment_expired                Boolean?
+  license_days                   Int?
+  license_checked_at             DateTime?                        @db.Timestamp(0)
+  access_token                   String?                          @db.LongText
+  refresh_token                  String?                          @db.LongText
+  expires_at                     DateTime?                        @db.Timestamp(0)
+  application_token              String?                          @db.LongText
+  installed_at                   DateTime?                        @db.Timestamp(0)
+  uninstalled_at                 DateTime?                        @db.Timestamp(0)
+  marketplace_install_components marketplace_install_components[]
+  bitrix_apps                    bitrix_apps?                     @relation(fields: [bitrix_app_id], references: [id], onUpdate: NoAction, map: "marketplace_installs_bitrix_app_id_foreign")
+  portals                        Portal                           @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "marketplace_installs_portal_id_foreign")
+
+  @@unique([portal_id, app_code], map: "marketplace_installs_portal_id_app_code_unique")
+  @@index([bitrix_app_id], map: "marketplace_installs_bitrix_app_id_foreign")
+  @@index([install_status], map: "marketplace_installs_install_status_index")
+}
+
+/// Продукты внутри приложения (sales/service): доступ по договору с вендором
+model portal_products {
+  id           String    @id @db.Char(36)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+  portal_id    BigInt    @db.UnsignedBigInt
+  product_code String    @db.VarChar(255)
+  edition      String?   @db.VarChar(255)
+  status       String    @default("inactive") @db.VarChar(255)
+  activated_at DateTime? @db.Timestamp(0)
+  paid_until   DateTime? @db.Timestamp(0)
+  portals      Portal    @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_products_portal_id_foreign")
+
+  @@unique([portal_id, product_code], map: "portal_products_portal_id_product_code_unique")
+}
+
+/// По-компонентные статусы провижининга pbx-сущностей (unavailable+tariff_restriction — запрет тарифом)
+model marketplace_install_components {
+  id                     String               @id @db.Char(36)
+  created_at             DateTime?            @db.Timestamp(0)
+  updated_at             DateTime?            @db.Timestamp(0)
+  marketplace_install_id String               @db.Char(36)
+  portal_id              BigInt               @db.UnsignedBigInt
+  product_code           String               @db.VarChar(32)
+  component_type         String               @db.VarChar(64)
+  component_code         String               @default("")
+  status                 String               @default("pending") @db.VarChar(255)
+  reason_code            String?              @db.VarChar(255)
+  error_detail           String?              @db.LongText
+  attempts               Int                  @default(0) @db.UnsignedInt
+  last_attempt_at        DateTime?            @db.Timestamp(0)
+  marketplace_installs   marketplace_installs @relation(fields: [marketplace_install_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "marketplace_install_components_marketplace_install_id_foreign")
+  portals                Portal               @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "marketplace_install_components_portal_id_foreign")
+
+  @@unique([marketplace_install_id, product_code, component_type, component_code], map: "mp_install_components_unique")
+  @@index([portal_id, status], map: "marketplace_install_components_portal_id_status_index")
+}
+
+/// Журнал входящих событий Битрикса (payload — с маскированными токенами)
+model bitrix_app_events {
+  id           String    @id @db.Char(36)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+  member_id    String?   @db.VarChar(255)
+  domain       String?   @db.VarChar(255)
+  event        String    @db.VarChar(255)
+  status       String    @default("received") @db.VarChar(255)
+  error_detail String?   @db.LongText
+  payload      String?   @db.LongText
+
+  @@index([event], map: "bitrix_app_events_event_index")
+  @@index([member_id], map: "bitrix_app_events_member_id_index")
 }

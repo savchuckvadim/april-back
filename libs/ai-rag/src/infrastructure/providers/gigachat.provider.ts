@@ -58,11 +58,7 @@ export class GigaChatProvider implements LlmProvider {
                     `GigaChat ${kind}: длинный транскрипт (${query.length} симв.) → map-reduce`,
                 );
                 return kind === 'resume'
-                    ? this.longDialogueService.runResume(
-                          query,
-                          llm,
-                          retriever,
-                      )
+                    ? this.longDialogueService.runResume(query, llm, retriever)
                     : this.longDialogueService.runRecommendation(
                           query,
                           llm,

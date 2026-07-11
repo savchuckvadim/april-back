@@ -6,6 +6,8 @@ import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { RedisModule } from '@/core/redis/redis.module';
 import { PbxCacheModule } from './pbx-cache/pbx-cache.module';
 import { BxDepartmentModule } from 'libs/bx-department';
+import { MarketplaceModule } from './marketplace/marketplace.module';
+import { PrismaModule } from '@lib/core/prisma/prisma.module';
 
 /**
  * Корневой модуль приложения pbx.
@@ -24,15 +26,26 @@ import { BxDepartmentModule } from 'libs/bx-department';
             isGlobal: true,
             envFilePath: ['apps/pbx/.env', '.env'],
             ignoreEnvFile: false,
+            load: [
+                () => ({
+                    REDIS_URL: process.env.REDIS_URL,
+                    REDIS_HOST: process.env.REDIS_HOST,
+                    REDIS_PORT: process.env.REDIS_PORT,
+                    REDIS_USER: process.env.REDIS_USER,
+                    REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+                }),
+            ],
         }),
         LoggerModule.forRoot({ appName: 'pbx' }),
         MetricsModule.forRoot({ appName: 'pbx' }),
+        PrismaModule,
         HealthModule,
         RedisModule,
         PbxCacheModule,
         BxDepartmentModule,
+        MarketplaceModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule],
 })
-export class AppModule {}
+export class AppModule { }

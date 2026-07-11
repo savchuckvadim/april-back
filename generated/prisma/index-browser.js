@@ -20,12 +20,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.16.3
- * Query Engine version: bb420e667c1820a8c05a38023385f6cc7ef8e83a
+ * Prisma Client JS version: 6.17.1
+ * Query Engine version: 272a37d34178c2894197e17273bf937f25acdeac
  */
 Prisma.prismaVersion = {
-  client: "6.16.3",
-  engine: "bb420e667c1820a8c05a38023385f6cc7ef8e83a"
+  client: "6.17.1",
+  engine: "272a37d34178c2894197e17273bf937f25acdeac"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -600,7 +600,12 @@ exports.Prisma.PortalScalarFieldEnum = {
   nestServiceKey: 'nestServiceKey',
   nestWebhooksKey: 'nestWebhooksKey',
   nestScheduleKey: 'nestScheduleKey',
-  vibeKey: 'vibeKey'
+  vibeKey: 'vibeKey',
+  member_id: 'member_id',
+  source: 'source',
+  approval_status: 'approval_status',
+  approved_at: 'approved_at',
+  approved_by: 'approved_by'
 };
 
 exports.Prisma.Price_row_cellsScalarFieldEnum = {
@@ -1396,6 +1401,72 @@ exports.Prisma.InvoiceTemplateScalarFieldEnum = {
   creator_bitrix_user_id: 'creator_bitrix_user_id'
 };
 
+exports.Prisma.Marketplace_installsScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  portal_id: 'portal_id',
+  bitrix_app_id: 'bitrix_app_id',
+  app_code: 'app_code',
+  domain: 'domain',
+  install_status: 'install_status',
+  error_step: 'error_step',
+  error_detail: 'error_detail',
+  scope: 'scope',
+  version: 'version',
+  lang: 'lang',
+  license_status: 'license_status',
+  payment_expired: 'payment_expired',
+  license_days: 'license_days',
+  license_checked_at: 'license_checked_at',
+  access_token: 'access_token',
+  refresh_token: 'refresh_token',
+  expires_at: 'expires_at',
+  application_token: 'application_token',
+  installed_at: 'installed_at',
+  uninstalled_at: 'uninstalled_at'
+};
+
+exports.Prisma.Portal_productsScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  portal_id: 'portal_id',
+  product_code: 'product_code',
+  edition: 'edition',
+  status: 'status',
+  activated_at: 'activated_at',
+  paid_until: 'paid_until'
+};
+
+exports.Prisma.Marketplace_install_componentsScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  marketplace_install_id: 'marketplace_install_id',
+  portal_id: 'portal_id',
+  product_code: 'product_code',
+  component_type: 'component_type',
+  component_code: 'component_code',
+  status: 'status',
+  reason_code: 'reason_code',
+  error_detail: 'error_detail',
+  attempts: 'attempts',
+  last_attempt_at: 'last_attempt_at'
+};
+
+exports.Prisma.Bitrix_app_eventsScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  member_id: 'member_id',
+  domain: 'domain',
+  event: 'event',
+  status: 'status',
+  error_detail: 'error_detail',
+  payload: 'payload'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1699,7 +1770,11 @@ exports.Prisma.PortalOrderByRelevanceFieldEnum = {
   nestServiceKey: 'nestServiceKey',
   nestWebhooksKey: 'nestWebhooksKey',
   nestScheduleKey: 'nestScheduleKey',
-  vibeKey: 'vibeKey'
+  vibeKey: 'vibeKey',
+  member_id: 'member_id',
+  source: 'source',
+  approval_status: 'approval_status',
+  approved_by: 'approved_by'
 };
 
 exports.Prisma.price_row_cellsOrderByRelevanceFieldEnum = {
@@ -2188,6 +2263,50 @@ exports.Prisma.InvoiceTemplateOrderByRelevanceFieldEnum = {
   code: 'code',
   description: 'description'
 };
+
+exports.Prisma.marketplace_installsOrderByRelevanceFieldEnum = {
+  id: 'id',
+  app_code: 'app_code',
+  domain: 'domain',
+  install_status: 'install_status',
+  error_step: 'error_step',
+  error_detail: 'error_detail',
+  scope: 'scope',
+  version: 'version',
+  lang: 'lang',
+  license_status: 'license_status',
+  access_token: 'access_token',
+  refresh_token: 'refresh_token',
+  application_token: 'application_token'
+};
+
+exports.Prisma.portal_productsOrderByRelevanceFieldEnum = {
+  id: 'id',
+  product_code: 'product_code',
+  edition: 'edition',
+  status: 'status'
+};
+
+exports.Prisma.marketplace_install_componentsOrderByRelevanceFieldEnum = {
+  id: 'id',
+  marketplace_install_id: 'marketplace_install_id',
+  product_code: 'product_code',
+  component_type: 'component_type',
+  component_code: 'component_code',
+  status: 'status',
+  reason_code: 'reason_code',
+  error_detail: 'error_detail'
+};
+
+exports.Prisma.bitrix_app_eventsOrderByRelevanceFieldEnum = {
+  id: 'id',
+  member_id: 'member_id',
+  domain: 'domain',
+  event: 'event',
+  status: 'status',
+  error_detail: 'error_detail',
+  payload: 'payload'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -2337,7 +2456,11 @@ exports.Prisma.ModelName = {
   OfferTemplatePage: 'OfferTemplatePage',
   roles: 'roles',
   BtxUser: 'BtxUser',
-  InvoiceTemplate: 'InvoiceTemplate'
+  InvoiceTemplate: 'InvoiceTemplate',
+  marketplace_installs: 'marketplace_installs',
+  portal_products: 'portal_products',
+  marketplace_install_components: 'marketplace_install_components',
+  bitrix_app_events: 'bitrix_app_events'
 };
 
 /**

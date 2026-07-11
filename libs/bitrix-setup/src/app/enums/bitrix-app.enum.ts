@@ -33,6 +33,8 @@ export enum BITRIX_APP_GROUPS {
 export enum BITRIX_APP_CODES {
     SALES = 'sales_full',
     SERVICE = 'service_full',
+    /** Тиражное маркетплейс-приложение «Менеджер Гарант» (одно на портал, продукты внутри) */
+    GARANT = 'garant_manager',
 }
 
 export enum API_ENDPOINTS {

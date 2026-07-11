@@ -418,6 +418,26 @@ export type BtxUser = $Result.DefaultSelection<Prisma.$BtxUserPayload>
  * 
  */
 export type InvoiceTemplate = $Result.DefaultSelection<Prisma.$InvoiceTemplatePayload>
+/**
+ * Model marketplace_installs
+ * Установка маркетплейс-приложения на портал (одна строка = одна установка)
+ */
+export type marketplace_installs = $Result.DefaultSelection<Prisma.$marketplace_installsPayload>
+/**
+ * Model portal_products
+ * Продукты внутри приложения (sales/service): доступ по договору с вендором
+ */
+export type portal_products = $Result.DefaultSelection<Prisma.$portal_productsPayload>
+/**
+ * Model marketplace_install_components
+ * По-компонентные статусы провижининга pbx-сущностей (unavailable+tariff_restriction — запрет тарифом)
+ */
+export type marketplace_install_components = $Result.DefaultSelection<Prisma.$marketplace_install_componentsPayload>
+/**
+ * Model bitrix_app_events
+ * Журнал входящих событий Битрикса (payload — с маскированными токенами)
+ */
+export type bitrix_app_events = $Result.DefaultSelection<Prisma.$bitrix_app_eventsPayload>
 
 /**
  * Enums
@@ -1488,6 +1508,46 @@ export class PrismaClient<
     * ```
     */
   get invoiceTemplate(): Prisma.InvoiceTemplateDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.marketplace_installs`: Exposes CRUD operations for the **marketplace_installs** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Marketplace_installs
+    * const marketplace_installs = await prisma.marketplace_installs.findMany()
+    * ```
+    */
+  get marketplace_installs(): Prisma.marketplace_installsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portal_products`: Exposes CRUD operations for the **portal_products** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Portal_products
+    * const portal_products = await prisma.portal_products.findMany()
+    * ```
+    */
+  get portal_products(): Prisma.portal_productsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.marketplace_install_components`: Exposes CRUD operations for the **marketplace_install_components** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Marketplace_install_components
+    * const marketplace_install_components = await prisma.marketplace_install_components.findMany()
+    * ```
+    */
+  get marketplace_install_components(): Prisma.marketplace_install_componentsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.bitrix_app_events`: Exposes CRUD operations for the **bitrix_app_events** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Bitrix_app_events
+    * const bitrix_app_events = await prisma.bitrix_app_events.findMany()
+    * ```
+    */
+  get bitrix_app_events(): Prisma.bitrix_app_eventsDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1546,8 +1606,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.16.3
-   * Query Engine version: bb420e667c1820a8c05a38023385f6cc7ef8e83a
+   * Prisma Client JS version: 6.17.1
+   * Query Engine version: 272a37d34178c2894197e17273bf937f25acdeac
    */
   export type PrismaVersion = {
     client: string
@@ -2008,7 +2068,11 @@ export namespace Prisma {
     OfferTemplatePage: 'OfferTemplatePage',
     roles: 'roles',
     BtxUser: 'BtxUser',
-    InvoiceTemplate: 'InvoiceTemplate'
+    InvoiceTemplate: 'InvoiceTemplate',
+    marketplace_installs: 'marketplace_installs',
+    portal_products: 'portal_products',
+    marketplace_install_components: 'marketplace_install_components',
+    bitrix_app_events: 'bitrix_app_events'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2027,7 +2091,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -7377,6 +7441,270 @@ export namespace Prisma {
           }
         }
       }
+      marketplace_installs: {
+        payload: Prisma.$marketplace_installsPayload<ExtArgs>
+        fields: Prisma.marketplace_installsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.marketplace_installsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.marketplace_installsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>
+          }
+          findFirst: {
+            args: Prisma.marketplace_installsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.marketplace_installsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>
+          }
+          findMany: {
+            args: Prisma.marketplace_installsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>[]
+          }
+          create: {
+            args: Prisma.marketplace_installsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>
+          }
+          createMany: {
+            args: Prisma.marketplace_installsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.marketplace_installsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>
+          }
+          update: {
+            args: Prisma.marketplace_installsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>
+          }
+          deleteMany: {
+            args: Prisma.marketplace_installsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.marketplace_installsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.marketplace_installsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_installsPayload>
+          }
+          aggregate: {
+            args: Prisma.Marketplace_installsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMarketplace_installs>
+          }
+          groupBy: {
+            args: Prisma.marketplace_installsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Marketplace_installsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.marketplace_installsCountArgs<ExtArgs>
+            result: $Utils.Optional<Marketplace_installsCountAggregateOutputType> | number
+          }
+        }
+      }
+      portal_products: {
+        payload: Prisma.$portal_productsPayload<ExtArgs>
+        fields: Prisma.portal_productsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.portal_productsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.portal_productsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>
+          }
+          findFirst: {
+            args: Prisma.portal_productsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.portal_productsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>
+          }
+          findMany: {
+            args: Prisma.portal_productsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>[]
+          }
+          create: {
+            args: Prisma.portal_productsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>
+          }
+          createMany: {
+            args: Prisma.portal_productsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.portal_productsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>
+          }
+          update: {
+            args: Prisma.portal_productsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>
+          }
+          deleteMany: {
+            args: Prisma.portal_productsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.portal_productsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.portal_productsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_productsPayload>
+          }
+          aggregate: {
+            args: Prisma.Portal_productsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortal_products>
+          }
+          groupBy: {
+            args: Prisma.portal_productsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Portal_productsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.portal_productsCountArgs<ExtArgs>
+            result: $Utils.Optional<Portal_productsCountAggregateOutputType> | number
+          }
+        }
+      }
+      marketplace_install_components: {
+        payload: Prisma.$marketplace_install_componentsPayload<ExtArgs>
+        fields: Prisma.marketplace_install_componentsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.marketplace_install_componentsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.marketplace_install_componentsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>
+          }
+          findFirst: {
+            args: Prisma.marketplace_install_componentsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.marketplace_install_componentsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>
+          }
+          findMany: {
+            args: Prisma.marketplace_install_componentsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>[]
+          }
+          create: {
+            args: Prisma.marketplace_install_componentsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>
+          }
+          createMany: {
+            args: Prisma.marketplace_install_componentsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.marketplace_install_componentsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>
+          }
+          update: {
+            args: Prisma.marketplace_install_componentsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>
+          }
+          deleteMany: {
+            args: Prisma.marketplace_install_componentsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.marketplace_install_componentsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.marketplace_install_componentsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$marketplace_install_componentsPayload>
+          }
+          aggregate: {
+            args: Prisma.Marketplace_install_componentsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMarketplace_install_components>
+          }
+          groupBy: {
+            args: Prisma.marketplace_install_componentsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Marketplace_install_componentsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.marketplace_install_componentsCountArgs<ExtArgs>
+            result: $Utils.Optional<Marketplace_install_componentsCountAggregateOutputType> | number
+          }
+        }
+      }
+      bitrix_app_events: {
+        payload: Prisma.$bitrix_app_eventsPayload<ExtArgs>
+        fields: Prisma.bitrix_app_eventsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.bitrix_app_eventsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.bitrix_app_eventsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>
+          }
+          findFirst: {
+            args: Prisma.bitrix_app_eventsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.bitrix_app_eventsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>
+          }
+          findMany: {
+            args: Prisma.bitrix_app_eventsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>[]
+          }
+          create: {
+            args: Prisma.bitrix_app_eventsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>
+          }
+          createMany: {
+            args: Prisma.bitrix_app_eventsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.bitrix_app_eventsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>
+          }
+          update: {
+            args: Prisma.bitrix_app_eventsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>
+          }
+          deleteMany: {
+            args: Prisma.bitrix_app_eventsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.bitrix_app_eventsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.bitrix_app_eventsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$bitrix_app_eventsPayload>
+          }
+          aggregate: {
+            args: Prisma.Bitrix_app_eventsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBitrix_app_events>
+          }
+          groupBy: {
+            args: Prisma.bitrix_app_eventsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Bitrix_app_eventsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.bitrix_app_eventsCountArgs<ExtArgs>
+            result: $Utils.Optional<Bitrix_app_eventsCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -7554,6 +7882,10 @@ export namespace Prisma {
     roles?: rolesOmit
     btxUser?: BtxUserOmit
     invoiceTemplate?: InvoiceTemplateOmit
+    marketplace_installs?: marketplace_installsOmit
+    portal_products?: portal_productsOmit
+    marketplace_install_components?: marketplace_install_componentsOmit
+    bitrix_app_events?: bitrix_app_eventsOmit
   }
 
   /* Types for Logging */
@@ -8155,6 +8487,9 @@ export namespace Prisma {
     templates: number
     invoiceTemplates: number
     bxRqs: number
+    marketplace_installs: number
+    portal_products: number
+    marketplace_install_components: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8181,6 +8516,9 @@ export namespace Prisma {
     templates?: boolean | PortalCountOutputTypeCountTemplatesArgs
     invoiceTemplates?: boolean | PortalCountOutputTypeCountInvoiceTemplatesArgs
     bxRqs?: boolean | PortalCountOutputTypeCountBxRqsArgs
+    marketplace_installs?: boolean | PortalCountOutputTypeCountMarketplace_installsArgs
+    portal_products?: boolean | PortalCountOutputTypeCountPortal_productsArgs
+    marketplace_install_components?: boolean | PortalCountOutputTypeCountMarketplace_install_componentsArgs
   }
 
   // Custom InputTypes
@@ -8355,6 +8693,27 @@ export namespace Prisma {
     where?: bx_rqsWhereInput
   }
 
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountMarketplace_installsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: marketplace_installsWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountPortal_productsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: portal_productsWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountMarketplace_install_componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: marketplace_install_componentsWhereInput
+  }
+
 
   /**
    * Count Type RqsCountOutputType
@@ -8474,11 +8833,13 @@ export namespace Prisma {
   export type Bitrix_appsCountOutputType = {
     bitrix_app_placements: number
     bitrix_tokens: number
+    marketplace_installs: number
   }
 
   export type Bitrix_appsCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bitrix_app_placements?: boolean | Bitrix_appsCountOutputTypeCountBitrix_app_placementsArgs
     bitrix_tokens?: boolean | Bitrix_appsCountOutputTypeCountBitrix_tokensArgs
+    marketplace_installs?: boolean | Bitrix_appsCountOutputTypeCountMarketplace_installsArgs
   }
 
   // Custom InputTypes
@@ -8504,6 +8865,13 @@ export namespace Prisma {
    */
   export type Bitrix_appsCountOutputTypeCountBitrix_tokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: bitrix_tokensWhereInput
+  }
+
+  /**
+   * Bitrix_appsCountOutputType without action
+   */
+  export type Bitrix_appsCountOutputTypeCountMarketplace_installsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: marketplace_installsWhereInput
   }
 
 
@@ -8775,6 +9143,37 @@ export namespace Prisma {
    */
   export type OfferTemplatePageCountOutputTypeCountOfferTemplatePageStickersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: OfferTemplatePageStickerWhereInput
+  }
+
+
+  /**
+   * Count Type Marketplace_installsCountOutputType
+   */
+
+  export type Marketplace_installsCountOutputType = {
+    marketplace_install_components: number
+  }
+
+  export type Marketplace_installsCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    marketplace_install_components?: boolean | Marketplace_installsCountOutputTypeCountMarketplace_install_componentsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * Marketplace_installsCountOutputType without action
+   */
+  export type Marketplace_installsCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Marketplace_installsCountOutputType
+     */
+    select?: Marketplace_installsCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * Marketplace_installsCountOutputType without action
+   */
+  export type Marketplace_installsCountOutputTypeCountMarketplace_install_componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: marketplace_install_componentsWhereInput
   }
 
 
@@ -43384,6 +43783,11 @@ export namespace Prisma {
     nestWebhooksKey: string | null
     nestScheduleKey: string | null
     vibeKey: string | null
+    member_id: string | null
+    source: string | null
+    approval_status: string | null
+    approved_at: Date | null
+    approved_by: string | null
   }
 
   export type PortalMaxAggregateOutputType = {
@@ -43405,6 +43809,11 @@ export namespace Prisma {
     nestWebhooksKey: string | null
     nestScheduleKey: string | null
     vibeKey: string | null
+    member_id: string | null
+    source: string | null
+    approval_status: string | null
+    approved_at: Date | null
+    approved_by: string | null
   }
 
   export type PortalCountAggregateOutputType = {
@@ -43426,6 +43835,11 @@ export namespace Prisma {
     nestWebhooksKey: number
     nestScheduleKey: number
     vibeKey: number
+    member_id: number
+    source: number
+    approval_status: number
+    approved_at: number
+    approved_by: number
     _all: number
   }
 
@@ -43461,6 +43875,11 @@ export namespace Prisma {
     nestWebhooksKey?: true
     nestScheduleKey?: true
     vibeKey?: true
+    member_id?: true
+    source?: true
+    approval_status?: true
+    approved_at?: true
+    approved_by?: true
   }
 
   export type PortalMaxAggregateInputType = {
@@ -43482,6 +43901,11 @@ export namespace Prisma {
     nestWebhooksKey?: true
     nestScheduleKey?: true
     vibeKey?: true
+    member_id?: true
+    source?: true
+    approval_status?: true
+    approved_at?: true
+    approved_by?: true
   }
 
   export type PortalCountAggregateInputType = {
@@ -43503,6 +43927,11 @@ export namespace Prisma {
     nestWebhooksKey?: true
     nestScheduleKey?: true
     vibeKey?: true
+    member_id?: true
+    source?: true
+    approval_status?: true
+    approved_at?: true
+    approved_by?: true
     _all?: true
   }
 
@@ -43611,6 +44040,11 @@ export namespace Prisma {
     nestWebhooksKey: string | null
     nestScheduleKey: string | null
     vibeKey: string | null
+    member_id: string | null
+    source: string
+    approval_status: string | null
+    approved_at: Date | null
+    approved_by: string | null
     _count: PortalCountAggregateOutputType | null
     _avg: PortalAvgAggregateOutputType | null
     _sum: PortalSumAggregateOutputType | null
@@ -43651,6 +44085,11 @@ export namespace Prisma {
     nestWebhooksKey?: boolean
     nestScheduleKey?: boolean
     vibeKey?: boolean
+    member_id?: boolean
+    source?: boolean
+    approval_status?: boolean
+    approved_at?: boolean
+    approved_by?: boolean
     bitrix_apps?: boolean | Portal$bitrix_appsArgs<ExtArgs>
     bitrixlists?: boolean | Portal$bitrixlistsArgs<ExtArgs>
     btx_companies?: boolean | Portal$btx_companiesArgs<ExtArgs>
@@ -43675,6 +44114,9 @@ export namespace Prisma {
     templates?: boolean | Portal$templatesArgs<ExtArgs>
     invoiceTemplates?: boolean | Portal$invoiceTemplatesArgs<ExtArgs>
     bxRqs?: boolean | Portal$bxRqsArgs<ExtArgs>
+    marketplace_installs?: boolean | Portal$marketplace_installsArgs<ExtArgs>
+    portal_products?: boolean | Portal$portal_productsArgs<ExtArgs>
+    marketplace_install_components?: boolean | Portal$marketplace_install_componentsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -43699,9 +44141,14 @@ export namespace Prisma {
     nestWebhooksKey?: boolean
     nestScheduleKey?: boolean
     vibeKey?: boolean
+    member_id?: boolean
+    source?: boolean
+    approval_status?: boolean
+    approved_at?: boolean
+    approved_by?: boolean
   }
 
-  export type PortalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "domain" | "key" | "C_REST_CLIENT_ID" | "C_REST_CLIENT_SECRET" | "C_REST_WEB_HOOK_URL" | "number" | "client_id" | "nestKey" | "nestKonstructorKey" | "nestReportKey" | "nestEventsKey" | "nestServiceKey" | "nestWebhooksKey" | "nestScheduleKey" | "vibeKey", ExtArgs["result"]["portal"]>
+  export type PortalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "domain" | "key" | "C_REST_CLIENT_ID" | "C_REST_CLIENT_SECRET" | "C_REST_WEB_HOOK_URL" | "number" | "client_id" | "nestKey" | "nestKonstructorKey" | "nestReportKey" | "nestEventsKey" | "nestServiceKey" | "nestWebhooksKey" | "nestScheduleKey" | "vibeKey" | "member_id" | "source" | "approval_status" | "approved_at" | "approved_by", ExtArgs["result"]["portal"]>
   export type PortalInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bitrix_apps?: boolean | Portal$bitrix_appsArgs<ExtArgs>
     bitrixlists?: boolean | Portal$bitrixlistsArgs<ExtArgs>
@@ -43727,6 +44174,9 @@ export namespace Prisma {
     templates?: boolean | Portal$templatesArgs<ExtArgs>
     invoiceTemplates?: boolean | Portal$invoiceTemplatesArgs<ExtArgs>
     bxRqs?: boolean | Portal$bxRqsArgs<ExtArgs>
+    marketplace_installs?: boolean | Portal$marketplace_installsArgs<ExtArgs>
+    portal_products?: boolean | Portal$portal_productsArgs<ExtArgs>
+    marketplace_install_components?: boolean | Portal$marketplace_install_componentsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -43757,6 +44207,9 @@ export namespace Prisma {
       templates: Prisma.$TemplatePayload<ExtArgs>[]
       invoiceTemplates: Prisma.$InvoiceTemplatePayload<ExtArgs>[]
       bxRqs: Prisma.$bx_rqsPayload<ExtArgs>[]
+      marketplace_installs: Prisma.$marketplace_installsPayload<ExtArgs>[]
+      portal_products: Prisma.$portal_productsPayload<ExtArgs>[]
+      marketplace_install_components: Prisma.$marketplace_install_componentsPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -43777,6 +44230,11 @@ export namespace Prisma {
       nestWebhooksKey: string | null
       nestScheduleKey: string | null
       vibeKey: string | null
+      member_id: string | null
+      source: string
+      approval_status: string | null
+      approved_at: Date | null
+      approved_by: string | null
     }, ExtArgs["result"]["portal"]>
     composites: {}
   }
@@ -44141,6 +44599,9 @@ export namespace Prisma {
     templates<T extends Portal$templatesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$templatesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     invoiceTemplates<T extends Portal$invoiceTemplatesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$invoiceTemplatesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoiceTemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     bxRqs<T extends Portal$bxRqsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$bxRqsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$bx_rqsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    marketplace_installs<T extends Portal$marketplace_installsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$marketplace_installsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    portal_products<T extends Portal$portal_productsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    marketplace_install_components<T extends Portal$marketplace_install_componentsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$marketplace_install_componentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -44188,6 +44649,11 @@ export namespace Prisma {
     readonly nestWebhooksKey: FieldRef<"Portal", 'String'>
     readonly nestScheduleKey: FieldRef<"Portal", 'String'>
     readonly vibeKey: FieldRef<"Portal", 'String'>
+    readonly member_id: FieldRef<"Portal", 'String'>
+    readonly source: FieldRef<"Portal", 'String'>
+    readonly approval_status: FieldRef<"Portal", 'String'>
+    readonly approved_at: FieldRef<"Portal", 'DateTime'>
+    readonly approved_by: FieldRef<"Portal", 'String'>
   }
     
 
@@ -45099,6 +45565,78 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: Bx_rqsScalarFieldEnum | Bx_rqsScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.marketplace_installs
+   */
+  export type Portal$marketplace_installsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    where?: marketplace_installsWhereInput
+    orderBy?: marketplace_installsOrderByWithRelationInput | marketplace_installsOrderByWithRelationInput[]
+    cursor?: marketplace_installsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Marketplace_installsScalarFieldEnum | Marketplace_installsScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.portal_products
+   */
+  export type Portal$portal_productsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    where?: portal_productsWhereInput
+    orderBy?: portal_productsOrderByWithRelationInput | portal_productsOrderByWithRelationInput[]
+    cursor?: portal_productsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Portal_productsScalarFieldEnum | Portal_productsScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.marketplace_install_components
+   */
+  export type Portal$marketplace_install_componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    where?: marketplace_install_componentsWhereInput
+    orderBy?: marketplace_install_componentsOrderByWithRelationInput | marketplace_install_componentsOrderByWithRelationInput[]
+    cursor?: marketplace_install_componentsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Marketplace_install_componentsScalarFieldEnum | Marketplace_install_componentsScalarFieldEnum[]
   }
 
   /**
@@ -62029,6 +62567,7 @@ export namespace Prisma {
     bitrix_app_placements?: boolean | bitrix_apps$bitrix_app_placementsArgs<ExtArgs>
     portals?: boolean | PortalDefaultArgs<ExtArgs>
     bitrix_tokens?: boolean | bitrix_apps$bitrix_tokensArgs<ExtArgs>
+    marketplace_installs?: boolean | bitrix_apps$marketplace_installsArgs<ExtArgs>
     _count?: boolean | Bitrix_appsCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["bitrix_apps"]>
 
@@ -62050,6 +62589,7 @@ export namespace Prisma {
     bitrix_app_placements?: boolean | bitrix_apps$bitrix_app_placementsArgs<ExtArgs>
     portals?: boolean | PortalDefaultArgs<ExtArgs>
     bitrix_tokens?: boolean | bitrix_apps$bitrix_tokensArgs<ExtArgs>
+    marketplace_installs?: boolean | bitrix_apps$marketplace_installsArgs<ExtArgs>
     _count?: boolean | Bitrix_appsCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -62059,6 +62599,7 @@ export namespace Prisma {
       bitrix_app_placements: Prisma.$bitrix_app_placementsPayload<ExtArgs>[]
       portals: Prisma.$PortalPayload<ExtArgs>
       bitrix_tokens: Prisma.$bitrix_tokensPayload<ExtArgs>[]
+      marketplace_installs: Prisma.$marketplace_installsPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -62412,6 +62953,7 @@ export namespace Prisma {
     bitrix_app_placements<T extends bitrix_apps$bitrix_app_placementsArgs<ExtArgs> = {}>(args?: Subset<T, bitrix_apps$bitrix_app_placementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$bitrix_app_placementsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     portals<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     bitrix_tokens<T extends bitrix_apps$bitrix_tokensArgs<ExtArgs> = {}>(args?: Subset<T, bitrix_apps$bitrix_tokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$bitrix_tokensPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    marketplace_installs<T extends bitrix_apps$marketplace_installsArgs<ExtArgs> = {}>(args?: Subset<T, bitrix_apps$marketplace_installsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -62837,6 +63379,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: Bitrix_tokensScalarFieldEnum | Bitrix_tokensScalarFieldEnum[]
+  }
+
+  /**
+   * bitrix_apps.marketplace_installs
+   */
+  export type bitrix_apps$marketplace_installsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    where?: marketplace_installsWhereInput
+    orderBy?: marketplace_installsOrderByWithRelationInput | marketplace_installsOrderByWithRelationInput[]
+    cursor?: marketplace_installsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Marketplace_installsScalarFieldEnum | Marketplace_installsScalarFieldEnum[]
   }
 
   /**
@@ -95689,6 +96255,4220 @@ export namespace Prisma {
 
 
   /**
+   * Model marketplace_installs
+   */
+
+  export type AggregateMarketplace_installs = {
+    _count: Marketplace_installsCountAggregateOutputType | null
+    _avg: Marketplace_installsAvgAggregateOutputType | null
+    _sum: Marketplace_installsSumAggregateOutputType | null
+    _min: Marketplace_installsMinAggregateOutputType | null
+    _max: Marketplace_installsMaxAggregateOutputType | null
+  }
+
+  export type Marketplace_installsAvgAggregateOutputType = {
+    portal_id: number | null
+    bitrix_app_id: number | null
+    license_days: number | null
+  }
+
+  export type Marketplace_installsSumAggregateOutputType = {
+    portal_id: bigint | null
+    bitrix_app_id: bigint | null
+    license_days: number | null
+  }
+
+  export type Marketplace_installsMinAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    bitrix_app_id: bigint | null
+    app_code: string | null
+    domain: string | null
+    install_status: string | null
+    error_step: string | null
+    error_detail: string | null
+    scope: string | null
+    version: string | null
+    lang: string | null
+    license_status: string | null
+    payment_expired: boolean | null
+    license_days: number | null
+    license_checked_at: Date | null
+    access_token: string | null
+    refresh_token: string | null
+    expires_at: Date | null
+    application_token: string | null
+    installed_at: Date | null
+    uninstalled_at: Date | null
+  }
+
+  export type Marketplace_installsMaxAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    bitrix_app_id: bigint | null
+    app_code: string | null
+    domain: string | null
+    install_status: string | null
+    error_step: string | null
+    error_detail: string | null
+    scope: string | null
+    version: string | null
+    lang: string | null
+    license_status: string | null
+    payment_expired: boolean | null
+    license_days: number | null
+    license_checked_at: Date | null
+    access_token: string | null
+    refresh_token: string | null
+    expires_at: Date | null
+    application_token: string | null
+    installed_at: Date | null
+    uninstalled_at: Date | null
+  }
+
+  export type Marketplace_installsCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    portal_id: number
+    bitrix_app_id: number
+    app_code: number
+    domain: number
+    install_status: number
+    error_step: number
+    error_detail: number
+    scope: number
+    version: number
+    lang: number
+    license_status: number
+    payment_expired: number
+    license_days: number
+    license_checked_at: number
+    access_token: number
+    refresh_token: number
+    expires_at: number
+    application_token: number
+    installed_at: number
+    uninstalled_at: number
+    _all: number
+  }
+
+
+  export type Marketplace_installsAvgAggregateInputType = {
+    portal_id?: true
+    bitrix_app_id?: true
+    license_days?: true
+  }
+
+  export type Marketplace_installsSumAggregateInputType = {
+    portal_id?: true
+    bitrix_app_id?: true
+    license_days?: true
+  }
+
+  export type Marketplace_installsMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    bitrix_app_id?: true
+    app_code?: true
+    domain?: true
+    install_status?: true
+    error_step?: true
+    error_detail?: true
+    scope?: true
+    version?: true
+    lang?: true
+    license_status?: true
+    payment_expired?: true
+    license_days?: true
+    license_checked_at?: true
+    access_token?: true
+    refresh_token?: true
+    expires_at?: true
+    application_token?: true
+    installed_at?: true
+    uninstalled_at?: true
+  }
+
+  export type Marketplace_installsMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    bitrix_app_id?: true
+    app_code?: true
+    domain?: true
+    install_status?: true
+    error_step?: true
+    error_detail?: true
+    scope?: true
+    version?: true
+    lang?: true
+    license_status?: true
+    payment_expired?: true
+    license_days?: true
+    license_checked_at?: true
+    access_token?: true
+    refresh_token?: true
+    expires_at?: true
+    application_token?: true
+    installed_at?: true
+    uninstalled_at?: true
+  }
+
+  export type Marketplace_installsCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    bitrix_app_id?: true
+    app_code?: true
+    domain?: true
+    install_status?: true
+    error_step?: true
+    error_detail?: true
+    scope?: true
+    version?: true
+    lang?: true
+    license_status?: true
+    payment_expired?: true
+    license_days?: true
+    license_checked_at?: true
+    access_token?: true
+    refresh_token?: true
+    expires_at?: true
+    application_token?: true
+    installed_at?: true
+    uninstalled_at?: true
+    _all?: true
+  }
+
+  export type Marketplace_installsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which marketplace_installs to aggregate.
+     */
+    where?: marketplace_installsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_installs to fetch.
+     */
+    orderBy?: marketplace_installsOrderByWithRelationInput | marketplace_installsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: marketplace_installsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_installs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_installs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned marketplace_installs
+    **/
+    _count?: true | Marketplace_installsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Marketplace_installsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Marketplace_installsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Marketplace_installsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Marketplace_installsMaxAggregateInputType
+  }
+
+  export type GetMarketplace_installsAggregateType<T extends Marketplace_installsAggregateArgs> = {
+        [P in keyof T & keyof AggregateMarketplace_installs]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMarketplace_installs[P]>
+      : GetScalarType<T[P], AggregateMarketplace_installs[P]>
+  }
+
+
+
+
+  export type marketplace_installsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: marketplace_installsWhereInput
+    orderBy?: marketplace_installsOrderByWithAggregationInput | marketplace_installsOrderByWithAggregationInput[]
+    by: Marketplace_installsScalarFieldEnum[] | Marketplace_installsScalarFieldEnum
+    having?: marketplace_installsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Marketplace_installsCountAggregateInputType | true
+    _avg?: Marketplace_installsAvgAggregateInputType
+    _sum?: Marketplace_installsSumAggregateInputType
+    _min?: Marketplace_installsMinAggregateInputType
+    _max?: Marketplace_installsMaxAggregateInputType
+  }
+
+  export type Marketplace_installsGroupByOutputType = {
+    id: string
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint
+    bitrix_app_id: bigint | null
+    app_code: string
+    domain: string | null
+    install_status: string
+    error_step: string | null
+    error_detail: string | null
+    scope: string | null
+    version: string | null
+    lang: string | null
+    license_status: string | null
+    payment_expired: boolean | null
+    license_days: number | null
+    license_checked_at: Date | null
+    access_token: string | null
+    refresh_token: string | null
+    expires_at: Date | null
+    application_token: string | null
+    installed_at: Date | null
+    uninstalled_at: Date | null
+    _count: Marketplace_installsCountAggregateOutputType | null
+    _avg: Marketplace_installsAvgAggregateOutputType | null
+    _sum: Marketplace_installsSumAggregateOutputType | null
+    _min: Marketplace_installsMinAggregateOutputType | null
+    _max: Marketplace_installsMaxAggregateOutputType | null
+  }
+
+  type GetMarketplace_installsGroupByPayload<T extends marketplace_installsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Marketplace_installsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Marketplace_installsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Marketplace_installsGroupByOutputType[P]>
+            : GetScalarType<T[P], Marketplace_installsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type marketplace_installsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    bitrix_app_id?: boolean
+    app_code?: boolean
+    domain?: boolean
+    install_status?: boolean
+    error_step?: boolean
+    error_detail?: boolean
+    scope?: boolean
+    version?: boolean
+    lang?: boolean
+    license_status?: boolean
+    payment_expired?: boolean
+    license_days?: boolean
+    license_checked_at?: boolean
+    access_token?: boolean
+    refresh_token?: boolean
+    expires_at?: boolean
+    application_token?: boolean
+    installed_at?: boolean
+    uninstalled_at?: boolean
+    marketplace_install_components?: boolean | marketplace_installs$marketplace_install_componentsArgs<ExtArgs>
+    bitrix_apps?: boolean | marketplace_installs$bitrix_appsArgs<ExtArgs>
+    portals?: boolean | PortalDefaultArgs<ExtArgs>
+    _count?: boolean | Marketplace_installsCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketplace_installs"]>
+
+
+
+  export type marketplace_installsSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    bitrix_app_id?: boolean
+    app_code?: boolean
+    domain?: boolean
+    install_status?: boolean
+    error_step?: boolean
+    error_detail?: boolean
+    scope?: boolean
+    version?: boolean
+    lang?: boolean
+    license_status?: boolean
+    payment_expired?: boolean
+    license_days?: boolean
+    license_checked_at?: boolean
+    access_token?: boolean
+    refresh_token?: boolean
+    expires_at?: boolean
+    application_token?: boolean
+    installed_at?: boolean
+    uninstalled_at?: boolean
+  }
+
+  export type marketplace_installsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "bitrix_app_id" | "app_code" | "domain" | "install_status" | "error_step" | "error_detail" | "scope" | "version" | "lang" | "license_status" | "payment_expired" | "license_days" | "license_checked_at" | "access_token" | "refresh_token" | "expires_at" | "application_token" | "installed_at" | "uninstalled_at", ExtArgs["result"]["marketplace_installs"]>
+  export type marketplace_installsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    marketplace_install_components?: boolean | marketplace_installs$marketplace_install_componentsArgs<ExtArgs>
+    bitrix_apps?: boolean | marketplace_installs$bitrix_appsArgs<ExtArgs>
+    portals?: boolean | PortalDefaultArgs<ExtArgs>
+    _count?: boolean | Marketplace_installsCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $marketplace_installsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "marketplace_installs"
+    objects: {
+      marketplace_install_components: Prisma.$marketplace_install_componentsPayload<ExtArgs>[]
+      bitrix_apps: Prisma.$bitrix_appsPayload<ExtArgs> | null
+      portals: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      created_at: Date | null
+      updated_at: Date | null
+      portal_id: bigint
+      bitrix_app_id: bigint | null
+      app_code: string
+      domain: string | null
+      install_status: string
+      error_step: string | null
+      error_detail: string | null
+      scope: string | null
+      version: string | null
+      lang: string | null
+      license_status: string | null
+      payment_expired: boolean | null
+      license_days: number | null
+      license_checked_at: Date | null
+      access_token: string | null
+      refresh_token: string | null
+      expires_at: Date | null
+      application_token: string | null
+      installed_at: Date | null
+      uninstalled_at: Date | null
+    }, ExtArgs["result"]["marketplace_installs"]>
+    composites: {}
+  }
+
+  type marketplace_installsGetPayload<S extends boolean | null | undefined | marketplace_installsDefaultArgs> = $Result.GetResult<Prisma.$marketplace_installsPayload, S>
+
+  type marketplace_installsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<marketplace_installsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Marketplace_installsCountAggregateInputType | true
+    }
+
+  export interface marketplace_installsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['marketplace_installs'], meta: { name: 'marketplace_installs' } }
+    /**
+     * Find zero or one Marketplace_installs that matches the filter.
+     * @param {marketplace_installsFindUniqueArgs} args - Arguments to find a Marketplace_installs
+     * @example
+     * // Get one Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends marketplace_installsFindUniqueArgs>(args: SelectSubset<T, marketplace_installsFindUniqueArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Marketplace_installs that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {marketplace_installsFindUniqueOrThrowArgs} args - Arguments to find a Marketplace_installs
+     * @example
+     * // Get one Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends marketplace_installsFindUniqueOrThrowArgs>(args: SelectSubset<T, marketplace_installsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Marketplace_installs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_installsFindFirstArgs} args - Arguments to find a Marketplace_installs
+     * @example
+     * // Get one Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends marketplace_installsFindFirstArgs>(args?: SelectSubset<T, marketplace_installsFindFirstArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Marketplace_installs that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_installsFindFirstOrThrowArgs} args - Arguments to find a Marketplace_installs
+     * @example
+     * // Get one Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends marketplace_installsFindFirstOrThrowArgs>(args?: SelectSubset<T, marketplace_installsFindFirstOrThrowArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Marketplace_installs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_installsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.findMany()
+     * 
+     * // Get first 10 Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const marketplace_installsWithIdOnly = await prisma.marketplace_installs.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends marketplace_installsFindManyArgs>(args?: SelectSubset<T, marketplace_installsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Marketplace_installs.
+     * @param {marketplace_installsCreateArgs} args - Arguments to create a Marketplace_installs.
+     * @example
+     * // Create one Marketplace_installs
+     * const Marketplace_installs = await prisma.marketplace_installs.create({
+     *   data: {
+     *     // ... data to create a Marketplace_installs
+     *   }
+     * })
+     * 
+     */
+    create<T extends marketplace_installsCreateArgs>(args: SelectSubset<T, marketplace_installsCreateArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Marketplace_installs.
+     * @param {marketplace_installsCreateManyArgs} args - Arguments to create many Marketplace_installs.
+     * @example
+     * // Create many Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends marketplace_installsCreateManyArgs>(args?: SelectSubset<T, marketplace_installsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Marketplace_installs.
+     * @param {marketplace_installsDeleteArgs} args - Arguments to delete one Marketplace_installs.
+     * @example
+     * // Delete one Marketplace_installs
+     * const Marketplace_installs = await prisma.marketplace_installs.delete({
+     *   where: {
+     *     // ... filter to delete one Marketplace_installs
+     *   }
+     * })
+     * 
+     */
+    delete<T extends marketplace_installsDeleteArgs>(args: SelectSubset<T, marketplace_installsDeleteArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Marketplace_installs.
+     * @param {marketplace_installsUpdateArgs} args - Arguments to update one Marketplace_installs.
+     * @example
+     * // Update one Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends marketplace_installsUpdateArgs>(args: SelectSubset<T, marketplace_installsUpdateArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Marketplace_installs.
+     * @param {marketplace_installsDeleteManyArgs} args - Arguments to filter Marketplace_installs to delete.
+     * @example
+     * // Delete a few Marketplace_installs
+     * const { count } = await prisma.marketplace_installs.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends marketplace_installsDeleteManyArgs>(args?: SelectSubset<T, marketplace_installsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Marketplace_installs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_installsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends marketplace_installsUpdateManyArgs>(args: SelectSubset<T, marketplace_installsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Marketplace_installs.
+     * @param {marketplace_installsUpsertArgs} args - Arguments to update or create a Marketplace_installs.
+     * @example
+     * // Update or create a Marketplace_installs
+     * const marketplace_installs = await prisma.marketplace_installs.upsert({
+     *   create: {
+     *     // ... data to create a Marketplace_installs
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Marketplace_installs we want to update
+     *   }
+     * })
+     */
+    upsert<T extends marketplace_installsUpsertArgs>(args: SelectSubset<T, marketplace_installsUpsertArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Marketplace_installs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_installsCountArgs} args - Arguments to filter Marketplace_installs to count.
+     * @example
+     * // Count the number of Marketplace_installs
+     * const count = await prisma.marketplace_installs.count({
+     *   where: {
+     *     // ... the filter for the Marketplace_installs we want to count
+     *   }
+     * })
+    **/
+    count<T extends marketplace_installsCountArgs>(
+      args?: Subset<T, marketplace_installsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Marketplace_installsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Marketplace_installs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Marketplace_installsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Marketplace_installsAggregateArgs>(args: Subset<T, Marketplace_installsAggregateArgs>): Prisma.PrismaPromise<GetMarketplace_installsAggregateType<T>>
+
+    /**
+     * Group by Marketplace_installs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_installsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends marketplace_installsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: marketplace_installsGroupByArgs['orderBy'] }
+        : { orderBy?: marketplace_installsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, marketplace_installsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMarketplace_installsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the marketplace_installs model
+   */
+  readonly fields: marketplace_installsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for marketplace_installs.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__marketplace_installsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    marketplace_install_components<T extends marketplace_installs$marketplace_install_componentsArgs<ExtArgs> = {}>(args?: Subset<T, marketplace_installs$marketplace_install_componentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    bitrix_apps<T extends marketplace_installs$bitrix_appsArgs<ExtArgs> = {}>(args?: Subset<T, marketplace_installs$bitrix_appsArgs<ExtArgs>>): Prisma__bitrix_appsClient<$Result.GetResult<Prisma.$bitrix_appsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    portals<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the marketplace_installs model
+   */
+  interface marketplace_installsFieldRefs {
+    readonly id: FieldRef<"marketplace_installs", 'String'>
+    readonly created_at: FieldRef<"marketplace_installs", 'DateTime'>
+    readonly updated_at: FieldRef<"marketplace_installs", 'DateTime'>
+    readonly portal_id: FieldRef<"marketplace_installs", 'BigInt'>
+    readonly bitrix_app_id: FieldRef<"marketplace_installs", 'BigInt'>
+    readonly app_code: FieldRef<"marketplace_installs", 'String'>
+    readonly domain: FieldRef<"marketplace_installs", 'String'>
+    readonly install_status: FieldRef<"marketplace_installs", 'String'>
+    readonly error_step: FieldRef<"marketplace_installs", 'String'>
+    readonly error_detail: FieldRef<"marketplace_installs", 'String'>
+    readonly scope: FieldRef<"marketplace_installs", 'String'>
+    readonly version: FieldRef<"marketplace_installs", 'String'>
+    readonly lang: FieldRef<"marketplace_installs", 'String'>
+    readonly license_status: FieldRef<"marketplace_installs", 'String'>
+    readonly payment_expired: FieldRef<"marketplace_installs", 'Boolean'>
+    readonly license_days: FieldRef<"marketplace_installs", 'Int'>
+    readonly license_checked_at: FieldRef<"marketplace_installs", 'DateTime'>
+    readonly access_token: FieldRef<"marketplace_installs", 'String'>
+    readonly refresh_token: FieldRef<"marketplace_installs", 'String'>
+    readonly expires_at: FieldRef<"marketplace_installs", 'DateTime'>
+    readonly application_token: FieldRef<"marketplace_installs", 'String'>
+    readonly installed_at: FieldRef<"marketplace_installs", 'DateTime'>
+    readonly uninstalled_at: FieldRef<"marketplace_installs", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * marketplace_installs findUnique
+   */
+  export type marketplace_installsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_installs to fetch.
+     */
+    where: marketplace_installsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_installs findUniqueOrThrow
+   */
+  export type marketplace_installsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_installs to fetch.
+     */
+    where: marketplace_installsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_installs findFirst
+   */
+  export type marketplace_installsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_installs to fetch.
+     */
+    where?: marketplace_installsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_installs to fetch.
+     */
+    orderBy?: marketplace_installsOrderByWithRelationInput | marketplace_installsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for marketplace_installs.
+     */
+    cursor?: marketplace_installsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_installs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_installs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of marketplace_installs.
+     */
+    distinct?: Marketplace_installsScalarFieldEnum | Marketplace_installsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_installs findFirstOrThrow
+   */
+  export type marketplace_installsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_installs to fetch.
+     */
+    where?: marketplace_installsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_installs to fetch.
+     */
+    orderBy?: marketplace_installsOrderByWithRelationInput | marketplace_installsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for marketplace_installs.
+     */
+    cursor?: marketplace_installsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_installs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_installs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of marketplace_installs.
+     */
+    distinct?: Marketplace_installsScalarFieldEnum | Marketplace_installsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_installs findMany
+   */
+  export type marketplace_installsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_installs to fetch.
+     */
+    where?: marketplace_installsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_installs to fetch.
+     */
+    orderBy?: marketplace_installsOrderByWithRelationInput | marketplace_installsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing marketplace_installs.
+     */
+    cursor?: marketplace_installsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_installs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_installs.
+     */
+    skip?: number
+    distinct?: Marketplace_installsScalarFieldEnum | Marketplace_installsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_installs create
+   */
+  export type marketplace_installsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a marketplace_installs.
+     */
+    data: XOR<marketplace_installsCreateInput, marketplace_installsUncheckedCreateInput>
+  }
+
+  /**
+   * marketplace_installs createMany
+   */
+  export type marketplace_installsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many marketplace_installs.
+     */
+    data: marketplace_installsCreateManyInput | marketplace_installsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * marketplace_installs update
+   */
+  export type marketplace_installsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a marketplace_installs.
+     */
+    data: XOR<marketplace_installsUpdateInput, marketplace_installsUncheckedUpdateInput>
+    /**
+     * Choose, which marketplace_installs to update.
+     */
+    where: marketplace_installsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_installs updateMany
+   */
+  export type marketplace_installsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update marketplace_installs.
+     */
+    data: XOR<marketplace_installsUpdateManyMutationInput, marketplace_installsUncheckedUpdateManyInput>
+    /**
+     * Filter which marketplace_installs to update
+     */
+    where?: marketplace_installsWhereInput
+    /**
+     * Limit how many marketplace_installs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * marketplace_installs upsert
+   */
+  export type marketplace_installsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the marketplace_installs to update in case it exists.
+     */
+    where: marketplace_installsWhereUniqueInput
+    /**
+     * In case the marketplace_installs found by the `where` argument doesn't exist, create a new marketplace_installs with this data.
+     */
+    create: XOR<marketplace_installsCreateInput, marketplace_installsUncheckedCreateInput>
+    /**
+     * In case the marketplace_installs was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<marketplace_installsUpdateInput, marketplace_installsUncheckedUpdateInput>
+  }
+
+  /**
+   * marketplace_installs delete
+   */
+  export type marketplace_installsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+    /**
+     * Filter which marketplace_installs to delete.
+     */
+    where: marketplace_installsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_installs deleteMany
+   */
+  export type marketplace_installsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which marketplace_installs to delete
+     */
+    where?: marketplace_installsWhereInput
+    /**
+     * Limit how many marketplace_installs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * marketplace_installs.marketplace_install_components
+   */
+  export type marketplace_installs$marketplace_install_componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    where?: marketplace_install_componentsWhereInput
+    orderBy?: marketplace_install_componentsOrderByWithRelationInput | marketplace_install_componentsOrderByWithRelationInput[]
+    cursor?: marketplace_install_componentsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Marketplace_install_componentsScalarFieldEnum | Marketplace_install_componentsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_installs.bitrix_apps
+   */
+  export type marketplace_installs$bitrix_appsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_apps
+     */
+    select?: bitrix_appsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_apps
+     */
+    omit?: bitrix_appsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: bitrix_appsInclude<ExtArgs> | null
+    where?: bitrix_appsWhereInput
+  }
+
+  /**
+   * marketplace_installs without action
+   */
+  export type marketplace_installsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_installs
+     */
+    select?: marketplace_installsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_installs
+     */
+    omit?: marketplace_installsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_installsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model portal_products
+   */
+
+  export type AggregatePortal_products = {
+    _count: Portal_productsCountAggregateOutputType | null
+    _avg: Portal_productsAvgAggregateOutputType | null
+    _sum: Portal_productsSumAggregateOutputType | null
+    _min: Portal_productsMinAggregateOutputType | null
+    _max: Portal_productsMaxAggregateOutputType | null
+  }
+
+  export type Portal_productsAvgAggregateOutputType = {
+    portal_id: number | null
+  }
+
+  export type Portal_productsSumAggregateOutputType = {
+    portal_id: bigint | null
+  }
+
+  export type Portal_productsMinAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    product_code: string | null
+    edition: string | null
+    status: string | null
+    activated_at: Date | null
+    paid_until: Date | null
+  }
+
+  export type Portal_productsMaxAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    product_code: string | null
+    edition: string | null
+    status: string | null
+    activated_at: Date | null
+    paid_until: Date | null
+  }
+
+  export type Portal_productsCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    portal_id: number
+    product_code: number
+    edition: number
+    status: number
+    activated_at: number
+    paid_until: number
+    _all: number
+  }
+
+
+  export type Portal_productsAvgAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type Portal_productsSumAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type Portal_productsMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    product_code?: true
+    edition?: true
+    status?: true
+    activated_at?: true
+    paid_until?: true
+  }
+
+  export type Portal_productsMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    product_code?: true
+    edition?: true
+    status?: true
+    activated_at?: true
+    paid_until?: true
+  }
+
+  export type Portal_productsCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    product_code?: true
+    edition?: true
+    status?: true
+    activated_at?: true
+    paid_until?: true
+    _all?: true
+  }
+
+  export type Portal_productsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which portal_products to aggregate.
+     */
+    where?: portal_productsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_products to fetch.
+     */
+    orderBy?: portal_productsOrderByWithRelationInput | portal_productsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: portal_productsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_products from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_products.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned portal_products
+    **/
+    _count?: true | Portal_productsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Portal_productsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Portal_productsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Portal_productsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Portal_productsMaxAggregateInputType
+  }
+
+  export type GetPortal_productsAggregateType<T extends Portal_productsAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortal_products]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortal_products[P]>
+      : GetScalarType<T[P], AggregatePortal_products[P]>
+  }
+
+
+
+
+  export type portal_productsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: portal_productsWhereInput
+    orderBy?: portal_productsOrderByWithAggregationInput | portal_productsOrderByWithAggregationInput[]
+    by: Portal_productsScalarFieldEnum[] | Portal_productsScalarFieldEnum
+    having?: portal_productsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Portal_productsCountAggregateInputType | true
+    _avg?: Portal_productsAvgAggregateInputType
+    _sum?: Portal_productsSumAggregateInputType
+    _min?: Portal_productsMinAggregateInputType
+    _max?: Portal_productsMaxAggregateInputType
+  }
+
+  export type Portal_productsGroupByOutputType = {
+    id: string
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint
+    product_code: string
+    edition: string | null
+    status: string
+    activated_at: Date | null
+    paid_until: Date | null
+    _count: Portal_productsCountAggregateOutputType | null
+    _avg: Portal_productsAvgAggregateOutputType | null
+    _sum: Portal_productsSumAggregateOutputType | null
+    _min: Portal_productsMinAggregateOutputType | null
+    _max: Portal_productsMaxAggregateOutputType | null
+  }
+
+  type GetPortal_productsGroupByPayload<T extends portal_productsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Portal_productsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Portal_productsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Portal_productsGroupByOutputType[P]>
+            : GetScalarType<T[P], Portal_productsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type portal_productsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    product_code?: boolean
+    edition?: boolean
+    status?: boolean
+    activated_at?: boolean
+    paid_until?: boolean
+    portals?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portal_products"]>
+
+
+
+  export type portal_productsSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    product_code?: boolean
+    edition?: boolean
+    status?: boolean
+    activated_at?: boolean
+    paid_until?: boolean
+  }
+
+  export type portal_productsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "product_code" | "edition" | "status" | "activated_at" | "paid_until", ExtArgs["result"]["portal_products"]>
+  export type portal_productsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portals?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $portal_productsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "portal_products"
+    objects: {
+      portals: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      created_at: Date | null
+      updated_at: Date | null
+      portal_id: bigint
+      product_code: string
+      edition: string | null
+      status: string
+      activated_at: Date | null
+      paid_until: Date | null
+    }, ExtArgs["result"]["portal_products"]>
+    composites: {}
+  }
+
+  type portal_productsGetPayload<S extends boolean | null | undefined | portal_productsDefaultArgs> = $Result.GetResult<Prisma.$portal_productsPayload, S>
+
+  type portal_productsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<portal_productsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Portal_productsCountAggregateInputType | true
+    }
+
+  export interface portal_productsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['portal_products'], meta: { name: 'portal_products' } }
+    /**
+     * Find zero or one Portal_products that matches the filter.
+     * @param {portal_productsFindUniqueArgs} args - Arguments to find a Portal_products
+     * @example
+     * // Get one Portal_products
+     * const portal_products = await prisma.portal_products.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends portal_productsFindUniqueArgs>(args: SelectSubset<T, portal_productsFindUniqueArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Portal_products that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {portal_productsFindUniqueOrThrowArgs} args - Arguments to find a Portal_products
+     * @example
+     * // Get one Portal_products
+     * const portal_products = await prisma.portal_products.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends portal_productsFindUniqueOrThrowArgs>(args: SelectSubset<T, portal_productsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Portal_products that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_productsFindFirstArgs} args - Arguments to find a Portal_products
+     * @example
+     * // Get one Portal_products
+     * const portal_products = await prisma.portal_products.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends portal_productsFindFirstArgs>(args?: SelectSubset<T, portal_productsFindFirstArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Portal_products that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_productsFindFirstOrThrowArgs} args - Arguments to find a Portal_products
+     * @example
+     * // Get one Portal_products
+     * const portal_products = await prisma.portal_products.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends portal_productsFindFirstOrThrowArgs>(args?: SelectSubset<T, portal_productsFindFirstOrThrowArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Portal_products that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_productsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Portal_products
+     * const portal_products = await prisma.portal_products.findMany()
+     * 
+     * // Get first 10 Portal_products
+     * const portal_products = await prisma.portal_products.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portal_productsWithIdOnly = await prisma.portal_products.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends portal_productsFindManyArgs>(args?: SelectSubset<T, portal_productsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Portal_products.
+     * @param {portal_productsCreateArgs} args - Arguments to create a Portal_products.
+     * @example
+     * // Create one Portal_products
+     * const Portal_products = await prisma.portal_products.create({
+     *   data: {
+     *     // ... data to create a Portal_products
+     *   }
+     * })
+     * 
+     */
+    create<T extends portal_productsCreateArgs>(args: SelectSubset<T, portal_productsCreateArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Portal_products.
+     * @param {portal_productsCreateManyArgs} args - Arguments to create many Portal_products.
+     * @example
+     * // Create many Portal_products
+     * const portal_products = await prisma.portal_products.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends portal_productsCreateManyArgs>(args?: SelectSubset<T, portal_productsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Portal_products.
+     * @param {portal_productsDeleteArgs} args - Arguments to delete one Portal_products.
+     * @example
+     * // Delete one Portal_products
+     * const Portal_products = await prisma.portal_products.delete({
+     *   where: {
+     *     // ... filter to delete one Portal_products
+     *   }
+     * })
+     * 
+     */
+    delete<T extends portal_productsDeleteArgs>(args: SelectSubset<T, portal_productsDeleteArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Portal_products.
+     * @param {portal_productsUpdateArgs} args - Arguments to update one Portal_products.
+     * @example
+     * // Update one Portal_products
+     * const portal_products = await prisma.portal_products.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends portal_productsUpdateArgs>(args: SelectSubset<T, portal_productsUpdateArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Portal_products.
+     * @param {portal_productsDeleteManyArgs} args - Arguments to filter Portal_products to delete.
+     * @example
+     * // Delete a few Portal_products
+     * const { count } = await prisma.portal_products.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends portal_productsDeleteManyArgs>(args?: SelectSubset<T, portal_productsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Portal_products.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_productsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Portal_products
+     * const portal_products = await prisma.portal_products.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends portal_productsUpdateManyArgs>(args: SelectSubset<T, portal_productsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Portal_products.
+     * @param {portal_productsUpsertArgs} args - Arguments to update or create a Portal_products.
+     * @example
+     * // Update or create a Portal_products
+     * const portal_products = await prisma.portal_products.upsert({
+     *   create: {
+     *     // ... data to create a Portal_products
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Portal_products we want to update
+     *   }
+     * })
+     */
+    upsert<T extends portal_productsUpsertArgs>(args: SelectSubset<T, portal_productsUpsertArgs<ExtArgs>>): Prisma__portal_productsClient<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Portal_products.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_productsCountArgs} args - Arguments to filter Portal_products to count.
+     * @example
+     * // Count the number of Portal_products
+     * const count = await prisma.portal_products.count({
+     *   where: {
+     *     // ... the filter for the Portal_products we want to count
+     *   }
+     * })
+    **/
+    count<T extends portal_productsCountArgs>(
+      args?: Subset<T, portal_productsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Portal_productsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Portal_products.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Portal_productsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Portal_productsAggregateArgs>(args: Subset<T, Portal_productsAggregateArgs>): Prisma.PrismaPromise<GetPortal_productsAggregateType<T>>
+
+    /**
+     * Group by Portal_products.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_productsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends portal_productsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: portal_productsGroupByArgs['orderBy'] }
+        : { orderBy?: portal_productsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, portal_productsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortal_productsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the portal_products model
+   */
+  readonly fields: portal_productsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for portal_products.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__portal_productsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portals<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the portal_products model
+   */
+  interface portal_productsFieldRefs {
+    readonly id: FieldRef<"portal_products", 'String'>
+    readonly created_at: FieldRef<"portal_products", 'DateTime'>
+    readonly updated_at: FieldRef<"portal_products", 'DateTime'>
+    readonly portal_id: FieldRef<"portal_products", 'BigInt'>
+    readonly product_code: FieldRef<"portal_products", 'String'>
+    readonly edition: FieldRef<"portal_products", 'String'>
+    readonly status: FieldRef<"portal_products", 'String'>
+    readonly activated_at: FieldRef<"portal_products", 'DateTime'>
+    readonly paid_until: FieldRef<"portal_products", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * portal_products findUnique
+   */
+  export type portal_productsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_products to fetch.
+     */
+    where: portal_productsWhereUniqueInput
+  }
+
+  /**
+   * portal_products findUniqueOrThrow
+   */
+  export type portal_productsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_products to fetch.
+     */
+    where: portal_productsWhereUniqueInput
+  }
+
+  /**
+   * portal_products findFirst
+   */
+  export type portal_productsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_products to fetch.
+     */
+    where?: portal_productsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_products to fetch.
+     */
+    orderBy?: portal_productsOrderByWithRelationInput | portal_productsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for portal_products.
+     */
+    cursor?: portal_productsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_products from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_products.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of portal_products.
+     */
+    distinct?: Portal_productsScalarFieldEnum | Portal_productsScalarFieldEnum[]
+  }
+
+  /**
+   * portal_products findFirstOrThrow
+   */
+  export type portal_productsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_products to fetch.
+     */
+    where?: portal_productsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_products to fetch.
+     */
+    orderBy?: portal_productsOrderByWithRelationInput | portal_productsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for portal_products.
+     */
+    cursor?: portal_productsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_products from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_products.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of portal_products.
+     */
+    distinct?: Portal_productsScalarFieldEnum | Portal_productsScalarFieldEnum[]
+  }
+
+  /**
+   * portal_products findMany
+   */
+  export type portal_productsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_products to fetch.
+     */
+    where?: portal_productsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_products to fetch.
+     */
+    orderBy?: portal_productsOrderByWithRelationInput | portal_productsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing portal_products.
+     */
+    cursor?: portal_productsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_products from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_products.
+     */
+    skip?: number
+    distinct?: Portal_productsScalarFieldEnum | Portal_productsScalarFieldEnum[]
+  }
+
+  /**
+   * portal_products create
+   */
+  export type portal_productsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a portal_products.
+     */
+    data: XOR<portal_productsCreateInput, portal_productsUncheckedCreateInput>
+  }
+
+  /**
+   * portal_products createMany
+   */
+  export type portal_productsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many portal_products.
+     */
+    data: portal_productsCreateManyInput | portal_productsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * portal_products update
+   */
+  export type portal_productsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a portal_products.
+     */
+    data: XOR<portal_productsUpdateInput, portal_productsUncheckedUpdateInput>
+    /**
+     * Choose, which portal_products to update.
+     */
+    where: portal_productsWhereUniqueInput
+  }
+
+  /**
+   * portal_products updateMany
+   */
+  export type portal_productsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update portal_products.
+     */
+    data: XOR<portal_productsUpdateManyMutationInput, portal_productsUncheckedUpdateManyInput>
+    /**
+     * Filter which portal_products to update
+     */
+    where?: portal_productsWhereInput
+    /**
+     * Limit how many portal_products to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * portal_products upsert
+   */
+  export type portal_productsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the portal_products to update in case it exists.
+     */
+    where: portal_productsWhereUniqueInput
+    /**
+     * In case the portal_products found by the `where` argument doesn't exist, create a new portal_products with this data.
+     */
+    create: XOR<portal_productsCreateInput, portal_productsUncheckedCreateInput>
+    /**
+     * In case the portal_products was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<portal_productsUpdateInput, portal_productsUncheckedUpdateInput>
+  }
+
+  /**
+   * portal_products delete
+   */
+  export type portal_productsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+    /**
+     * Filter which portal_products to delete.
+     */
+    where: portal_productsWhereUniqueInput
+  }
+
+  /**
+   * portal_products deleteMany
+   */
+  export type portal_productsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which portal_products to delete
+     */
+    where?: portal_productsWhereInput
+    /**
+     * Limit how many portal_products to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * portal_products without action
+   */
+  export type portal_productsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_products
+     */
+    select?: portal_productsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_products
+     */
+    omit?: portal_productsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_productsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model marketplace_install_components
+   */
+
+  export type AggregateMarketplace_install_components = {
+    _count: Marketplace_install_componentsCountAggregateOutputType | null
+    _avg: Marketplace_install_componentsAvgAggregateOutputType | null
+    _sum: Marketplace_install_componentsSumAggregateOutputType | null
+    _min: Marketplace_install_componentsMinAggregateOutputType | null
+    _max: Marketplace_install_componentsMaxAggregateOutputType | null
+  }
+
+  export type Marketplace_install_componentsAvgAggregateOutputType = {
+    portal_id: number | null
+    attempts: number | null
+  }
+
+  export type Marketplace_install_componentsSumAggregateOutputType = {
+    portal_id: bigint | null
+    attempts: number | null
+  }
+
+  export type Marketplace_install_componentsMinAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    marketplace_install_id: string | null
+    portal_id: bigint | null
+    product_code: string | null
+    component_type: string | null
+    component_code: string | null
+    status: string | null
+    reason_code: string | null
+    error_detail: string | null
+    attempts: number | null
+    last_attempt_at: Date | null
+  }
+
+  export type Marketplace_install_componentsMaxAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    marketplace_install_id: string | null
+    portal_id: bigint | null
+    product_code: string | null
+    component_type: string | null
+    component_code: string | null
+    status: string | null
+    reason_code: string | null
+    error_detail: string | null
+    attempts: number | null
+    last_attempt_at: Date | null
+  }
+
+  export type Marketplace_install_componentsCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    marketplace_install_id: number
+    portal_id: number
+    product_code: number
+    component_type: number
+    component_code: number
+    status: number
+    reason_code: number
+    error_detail: number
+    attempts: number
+    last_attempt_at: number
+    _all: number
+  }
+
+
+  export type Marketplace_install_componentsAvgAggregateInputType = {
+    portal_id?: true
+    attempts?: true
+  }
+
+  export type Marketplace_install_componentsSumAggregateInputType = {
+    portal_id?: true
+    attempts?: true
+  }
+
+  export type Marketplace_install_componentsMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    marketplace_install_id?: true
+    portal_id?: true
+    product_code?: true
+    component_type?: true
+    component_code?: true
+    status?: true
+    reason_code?: true
+    error_detail?: true
+    attempts?: true
+    last_attempt_at?: true
+  }
+
+  export type Marketplace_install_componentsMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    marketplace_install_id?: true
+    portal_id?: true
+    product_code?: true
+    component_type?: true
+    component_code?: true
+    status?: true
+    reason_code?: true
+    error_detail?: true
+    attempts?: true
+    last_attempt_at?: true
+  }
+
+  export type Marketplace_install_componentsCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    marketplace_install_id?: true
+    portal_id?: true
+    product_code?: true
+    component_type?: true
+    component_code?: true
+    status?: true
+    reason_code?: true
+    error_detail?: true
+    attempts?: true
+    last_attempt_at?: true
+    _all?: true
+  }
+
+  export type Marketplace_install_componentsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which marketplace_install_components to aggregate.
+     */
+    where?: marketplace_install_componentsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_install_components to fetch.
+     */
+    orderBy?: marketplace_install_componentsOrderByWithRelationInput | marketplace_install_componentsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: marketplace_install_componentsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_install_components from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_install_components.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned marketplace_install_components
+    **/
+    _count?: true | Marketplace_install_componentsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Marketplace_install_componentsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Marketplace_install_componentsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Marketplace_install_componentsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Marketplace_install_componentsMaxAggregateInputType
+  }
+
+  export type GetMarketplace_install_componentsAggregateType<T extends Marketplace_install_componentsAggregateArgs> = {
+        [P in keyof T & keyof AggregateMarketplace_install_components]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMarketplace_install_components[P]>
+      : GetScalarType<T[P], AggregateMarketplace_install_components[P]>
+  }
+
+
+
+
+  export type marketplace_install_componentsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: marketplace_install_componentsWhereInput
+    orderBy?: marketplace_install_componentsOrderByWithAggregationInput | marketplace_install_componentsOrderByWithAggregationInput[]
+    by: Marketplace_install_componentsScalarFieldEnum[] | Marketplace_install_componentsScalarFieldEnum
+    having?: marketplace_install_componentsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Marketplace_install_componentsCountAggregateInputType | true
+    _avg?: Marketplace_install_componentsAvgAggregateInputType
+    _sum?: Marketplace_install_componentsSumAggregateInputType
+    _min?: Marketplace_install_componentsMinAggregateInputType
+    _max?: Marketplace_install_componentsMaxAggregateInputType
+  }
+
+  export type Marketplace_install_componentsGroupByOutputType = {
+    id: string
+    created_at: Date | null
+    updated_at: Date | null
+    marketplace_install_id: string
+    portal_id: bigint
+    product_code: string
+    component_type: string
+    component_code: string
+    status: string
+    reason_code: string | null
+    error_detail: string | null
+    attempts: number
+    last_attempt_at: Date | null
+    _count: Marketplace_install_componentsCountAggregateOutputType | null
+    _avg: Marketplace_install_componentsAvgAggregateOutputType | null
+    _sum: Marketplace_install_componentsSumAggregateOutputType | null
+    _min: Marketplace_install_componentsMinAggregateOutputType | null
+    _max: Marketplace_install_componentsMaxAggregateOutputType | null
+  }
+
+  type GetMarketplace_install_componentsGroupByPayload<T extends marketplace_install_componentsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Marketplace_install_componentsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Marketplace_install_componentsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Marketplace_install_componentsGroupByOutputType[P]>
+            : GetScalarType<T[P], Marketplace_install_componentsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type marketplace_install_componentsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    marketplace_install_id?: boolean
+    portal_id?: boolean
+    product_code?: boolean
+    component_type?: boolean
+    component_code?: boolean
+    status?: boolean
+    reason_code?: boolean
+    error_detail?: boolean
+    attempts?: boolean
+    last_attempt_at?: boolean
+    marketplace_installs?: boolean | marketplace_installsDefaultArgs<ExtArgs>
+    portals?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketplace_install_components"]>
+
+
+
+  export type marketplace_install_componentsSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    marketplace_install_id?: boolean
+    portal_id?: boolean
+    product_code?: boolean
+    component_type?: boolean
+    component_code?: boolean
+    status?: boolean
+    reason_code?: boolean
+    error_detail?: boolean
+    attempts?: boolean
+    last_attempt_at?: boolean
+  }
+
+  export type marketplace_install_componentsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "marketplace_install_id" | "portal_id" | "product_code" | "component_type" | "component_code" | "status" | "reason_code" | "error_detail" | "attempts" | "last_attempt_at", ExtArgs["result"]["marketplace_install_components"]>
+  export type marketplace_install_componentsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    marketplace_installs?: boolean | marketplace_installsDefaultArgs<ExtArgs>
+    portals?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $marketplace_install_componentsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "marketplace_install_components"
+    objects: {
+      marketplace_installs: Prisma.$marketplace_installsPayload<ExtArgs>
+      portals: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      created_at: Date | null
+      updated_at: Date | null
+      marketplace_install_id: string
+      portal_id: bigint
+      product_code: string
+      component_type: string
+      component_code: string
+      status: string
+      reason_code: string | null
+      error_detail: string | null
+      attempts: number
+      last_attempt_at: Date | null
+    }, ExtArgs["result"]["marketplace_install_components"]>
+    composites: {}
+  }
+
+  type marketplace_install_componentsGetPayload<S extends boolean | null | undefined | marketplace_install_componentsDefaultArgs> = $Result.GetResult<Prisma.$marketplace_install_componentsPayload, S>
+
+  type marketplace_install_componentsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<marketplace_install_componentsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Marketplace_install_componentsCountAggregateInputType | true
+    }
+
+  export interface marketplace_install_componentsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['marketplace_install_components'], meta: { name: 'marketplace_install_components' } }
+    /**
+     * Find zero or one Marketplace_install_components that matches the filter.
+     * @param {marketplace_install_componentsFindUniqueArgs} args - Arguments to find a Marketplace_install_components
+     * @example
+     * // Get one Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends marketplace_install_componentsFindUniqueArgs>(args: SelectSubset<T, marketplace_install_componentsFindUniqueArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Marketplace_install_components that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {marketplace_install_componentsFindUniqueOrThrowArgs} args - Arguments to find a Marketplace_install_components
+     * @example
+     * // Get one Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends marketplace_install_componentsFindUniqueOrThrowArgs>(args: SelectSubset<T, marketplace_install_componentsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Marketplace_install_components that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_install_componentsFindFirstArgs} args - Arguments to find a Marketplace_install_components
+     * @example
+     * // Get one Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends marketplace_install_componentsFindFirstArgs>(args?: SelectSubset<T, marketplace_install_componentsFindFirstArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Marketplace_install_components that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_install_componentsFindFirstOrThrowArgs} args - Arguments to find a Marketplace_install_components
+     * @example
+     * // Get one Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends marketplace_install_componentsFindFirstOrThrowArgs>(args?: SelectSubset<T, marketplace_install_componentsFindFirstOrThrowArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Marketplace_install_components that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_install_componentsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.findMany()
+     * 
+     * // Get first 10 Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const marketplace_install_componentsWithIdOnly = await prisma.marketplace_install_components.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends marketplace_install_componentsFindManyArgs>(args?: SelectSubset<T, marketplace_install_componentsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Marketplace_install_components.
+     * @param {marketplace_install_componentsCreateArgs} args - Arguments to create a Marketplace_install_components.
+     * @example
+     * // Create one Marketplace_install_components
+     * const Marketplace_install_components = await prisma.marketplace_install_components.create({
+     *   data: {
+     *     // ... data to create a Marketplace_install_components
+     *   }
+     * })
+     * 
+     */
+    create<T extends marketplace_install_componentsCreateArgs>(args: SelectSubset<T, marketplace_install_componentsCreateArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Marketplace_install_components.
+     * @param {marketplace_install_componentsCreateManyArgs} args - Arguments to create many Marketplace_install_components.
+     * @example
+     * // Create many Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends marketplace_install_componentsCreateManyArgs>(args?: SelectSubset<T, marketplace_install_componentsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Marketplace_install_components.
+     * @param {marketplace_install_componentsDeleteArgs} args - Arguments to delete one Marketplace_install_components.
+     * @example
+     * // Delete one Marketplace_install_components
+     * const Marketplace_install_components = await prisma.marketplace_install_components.delete({
+     *   where: {
+     *     // ... filter to delete one Marketplace_install_components
+     *   }
+     * })
+     * 
+     */
+    delete<T extends marketplace_install_componentsDeleteArgs>(args: SelectSubset<T, marketplace_install_componentsDeleteArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Marketplace_install_components.
+     * @param {marketplace_install_componentsUpdateArgs} args - Arguments to update one Marketplace_install_components.
+     * @example
+     * // Update one Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends marketplace_install_componentsUpdateArgs>(args: SelectSubset<T, marketplace_install_componentsUpdateArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Marketplace_install_components.
+     * @param {marketplace_install_componentsDeleteManyArgs} args - Arguments to filter Marketplace_install_components to delete.
+     * @example
+     * // Delete a few Marketplace_install_components
+     * const { count } = await prisma.marketplace_install_components.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends marketplace_install_componentsDeleteManyArgs>(args?: SelectSubset<T, marketplace_install_componentsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Marketplace_install_components.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_install_componentsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends marketplace_install_componentsUpdateManyArgs>(args: SelectSubset<T, marketplace_install_componentsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Marketplace_install_components.
+     * @param {marketplace_install_componentsUpsertArgs} args - Arguments to update or create a Marketplace_install_components.
+     * @example
+     * // Update or create a Marketplace_install_components
+     * const marketplace_install_components = await prisma.marketplace_install_components.upsert({
+     *   create: {
+     *     // ... data to create a Marketplace_install_components
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Marketplace_install_components we want to update
+     *   }
+     * })
+     */
+    upsert<T extends marketplace_install_componentsUpsertArgs>(args: SelectSubset<T, marketplace_install_componentsUpsertArgs<ExtArgs>>): Prisma__marketplace_install_componentsClient<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Marketplace_install_components.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_install_componentsCountArgs} args - Arguments to filter Marketplace_install_components to count.
+     * @example
+     * // Count the number of Marketplace_install_components
+     * const count = await prisma.marketplace_install_components.count({
+     *   where: {
+     *     // ... the filter for the Marketplace_install_components we want to count
+     *   }
+     * })
+    **/
+    count<T extends marketplace_install_componentsCountArgs>(
+      args?: Subset<T, marketplace_install_componentsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Marketplace_install_componentsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Marketplace_install_components.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Marketplace_install_componentsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Marketplace_install_componentsAggregateArgs>(args: Subset<T, Marketplace_install_componentsAggregateArgs>): Prisma.PrismaPromise<GetMarketplace_install_componentsAggregateType<T>>
+
+    /**
+     * Group by Marketplace_install_components.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {marketplace_install_componentsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends marketplace_install_componentsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: marketplace_install_componentsGroupByArgs['orderBy'] }
+        : { orderBy?: marketplace_install_componentsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, marketplace_install_componentsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMarketplace_install_componentsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the marketplace_install_components model
+   */
+  readonly fields: marketplace_install_componentsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for marketplace_install_components.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__marketplace_install_componentsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    marketplace_installs<T extends marketplace_installsDefaultArgs<ExtArgs> = {}>(args?: Subset<T, marketplace_installsDefaultArgs<ExtArgs>>): Prisma__marketplace_installsClient<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    portals<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the marketplace_install_components model
+   */
+  interface marketplace_install_componentsFieldRefs {
+    readonly id: FieldRef<"marketplace_install_components", 'String'>
+    readonly created_at: FieldRef<"marketplace_install_components", 'DateTime'>
+    readonly updated_at: FieldRef<"marketplace_install_components", 'DateTime'>
+    readonly marketplace_install_id: FieldRef<"marketplace_install_components", 'String'>
+    readonly portal_id: FieldRef<"marketplace_install_components", 'BigInt'>
+    readonly product_code: FieldRef<"marketplace_install_components", 'String'>
+    readonly component_type: FieldRef<"marketplace_install_components", 'String'>
+    readonly component_code: FieldRef<"marketplace_install_components", 'String'>
+    readonly status: FieldRef<"marketplace_install_components", 'String'>
+    readonly reason_code: FieldRef<"marketplace_install_components", 'String'>
+    readonly error_detail: FieldRef<"marketplace_install_components", 'String'>
+    readonly attempts: FieldRef<"marketplace_install_components", 'Int'>
+    readonly last_attempt_at: FieldRef<"marketplace_install_components", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * marketplace_install_components findUnique
+   */
+  export type marketplace_install_componentsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_install_components to fetch.
+     */
+    where: marketplace_install_componentsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_install_components findUniqueOrThrow
+   */
+  export type marketplace_install_componentsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_install_components to fetch.
+     */
+    where: marketplace_install_componentsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_install_components findFirst
+   */
+  export type marketplace_install_componentsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_install_components to fetch.
+     */
+    where?: marketplace_install_componentsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_install_components to fetch.
+     */
+    orderBy?: marketplace_install_componentsOrderByWithRelationInput | marketplace_install_componentsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for marketplace_install_components.
+     */
+    cursor?: marketplace_install_componentsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_install_components from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_install_components.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of marketplace_install_components.
+     */
+    distinct?: Marketplace_install_componentsScalarFieldEnum | Marketplace_install_componentsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_install_components findFirstOrThrow
+   */
+  export type marketplace_install_componentsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_install_components to fetch.
+     */
+    where?: marketplace_install_componentsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_install_components to fetch.
+     */
+    orderBy?: marketplace_install_componentsOrderByWithRelationInput | marketplace_install_componentsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for marketplace_install_components.
+     */
+    cursor?: marketplace_install_componentsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_install_components from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_install_components.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of marketplace_install_components.
+     */
+    distinct?: Marketplace_install_componentsScalarFieldEnum | Marketplace_install_componentsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_install_components findMany
+   */
+  export type marketplace_install_componentsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * Filter, which marketplace_install_components to fetch.
+     */
+    where?: marketplace_install_componentsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of marketplace_install_components to fetch.
+     */
+    orderBy?: marketplace_install_componentsOrderByWithRelationInput | marketplace_install_componentsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing marketplace_install_components.
+     */
+    cursor?: marketplace_install_componentsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` marketplace_install_components from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` marketplace_install_components.
+     */
+    skip?: number
+    distinct?: Marketplace_install_componentsScalarFieldEnum | Marketplace_install_componentsScalarFieldEnum[]
+  }
+
+  /**
+   * marketplace_install_components create
+   */
+  export type marketplace_install_componentsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a marketplace_install_components.
+     */
+    data: XOR<marketplace_install_componentsCreateInput, marketplace_install_componentsUncheckedCreateInput>
+  }
+
+  /**
+   * marketplace_install_components createMany
+   */
+  export type marketplace_install_componentsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many marketplace_install_components.
+     */
+    data: marketplace_install_componentsCreateManyInput | marketplace_install_componentsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * marketplace_install_components update
+   */
+  export type marketplace_install_componentsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a marketplace_install_components.
+     */
+    data: XOR<marketplace_install_componentsUpdateInput, marketplace_install_componentsUncheckedUpdateInput>
+    /**
+     * Choose, which marketplace_install_components to update.
+     */
+    where: marketplace_install_componentsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_install_components updateMany
+   */
+  export type marketplace_install_componentsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update marketplace_install_components.
+     */
+    data: XOR<marketplace_install_componentsUpdateManyMutationInput, marketplace_install_componentsUncheckedUpdateManyInput>
+    /**
+     * Filter which marketplace_install_components to update
+     */
+    where?: marketplace_install_componentsWhereInput
+    /**
+     * Limit how many marketplace_install_components to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * marketplace_install_components upsert
+   */
+  export type marketplace_install_componentsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the marketplace_install_components to update in case it exists.
+     */
+    where: marketplace_install_componentsWhereUniqueInput
+    /**
+     * In case the marketplace_install_components found by the `where` argument doesn't exist, create a new marketplace_install_components with this data.
+     */
+    create: XOR<marketplace_install_componentsCreateInput, marketplace_install_componentsUncheckedCreateInput>
+    /**
+     * In case the marketplace_install_components was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<marketplace_install_componentsUpdateInput, marketplace_install_componentsUncheckedUpdateInput>
+  }
+
+  /**
+   * marketplace_install_components delete
+   */
+  export type marketplace_install_componentsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+    /**
+     * Filter which marketplace_install_components to delete.
+     */
+    where: marketplace_install_componentsWhereUniqueInput
+  }
+
+  /**
+   * marketplace_install_components deleteMany
+   */
+  export type marketplace_install_componentsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which marketplace_install_components to delete
+     */
+    where?: marketplace_install_componentsWhereInput
+    /**
+     * Limit how many marketplace_install_components to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * marketplace_install_components without action
+   */
+  export type marketplace_install_componentsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the marketplace_install_components
+     */
+    select?: marketplace_install_componentsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the marketplace_install_components
+     */
+    omit?: marketplace_install_componentsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: marketplace_install_componentsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model bitrix_app_events
+   */
+
+  export type AggregateBitrix_app_events = {
+    _count: Bitrix_app_eventsCountAggregateOutputType | null
+    _min: Bitrix_app_eventsMinAggregateOutputType | null
+    _max: Bitrix_app_eventsMaxAggregateOutputType | null
+  }
+
+  export type Bitrix_app_eventsMinAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    member_id: string | null
+    domain: string | null
+    event: string | null
+    status: string | null
+    error_detail: string | null
+    payload: string | null
+  }
+
+  export type Bitrix_app_eventsMaxAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    member_id: string | null
+    domain: string | null
+    event: string | null
+    status: string | null
+    error_detail: string | null
+    payload: string | null
+  }
+
+  export type Bitrix_app_eventsCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    member_id: number
+    domain: number
+    event: number
+    status: number
+    error_detail: number
+    payload: number
+    _all: number
+  }
+
+
+  export type Bitrix_app_eventsMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    member_id?: true
+    domain?: true
+    event?: true
+    status?: true
+    error_detail?: true
+    payload?: true
+  }
+
+  export type Bitrix_app_eventsMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    member_id?: true
+    domain?: true
+    event?: true
+    status?: true
+    error_detail?: true
+    payload?: true
+  }
+
+  export type Bitrix_app_eventsCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    member_id?: true
+    domain?: true
+    event?: true
+    status?: true
+    error_detail?: true
+    payload?: true
+    _all?: true
+  }
+
+  export type Bitrix_app_eventsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which bitrix_app_events to aggregate.
+     */
+    where?: bitrix_app_eventsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of bitrix_app_events to fetch.
+     */
+    orderBy?: bitrix_app_eventsOrderByWithRelationInput | bitrix_app_eventsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: bitrix_app_eventsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` bitrix_app_events from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` bitrix_app_events.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned bitrix_app_events
+    **/
+    _count?: true | Bitrix_app_eventsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Bitrix_app_eventsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Bitrix_app_eventsMaxAggregateInputType
+  }
+
+  export type GetBitrix_app_eventsAggregateType<T extends Bitrix_app_eventsAggregateArgs> = {
+        [P in keyof T & keyof AggregateBitrix_app_events]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBitrix_app_events[P]>
+      : GetScalarType<T[P], AggregateBitrix_app_events[P]>
+  }
+
+
+
+
+  export type bitrix_app_eventsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: bitrix_app_eventsWhereInput
+    orderBy?: bitrix_app_eventsOrderByWithAggregationInput | bitrix_app_eventsOrderByWithAggregationInput[]
+    by: Bitrix_app_eventsScalarFieldEnum[] | Bitrix_app_eventsScalarFieldEnum
+    having?: bitrix_app_eventsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Bitrix_app_eventsCountAggregateInputType | true
+    _min?: Bitrix_app_eventsMinAggregateInputType
+    _max?: Bitrix_app_eventsMaxAggregateInputType
+  }
+
+  export type Bitrix_app_eventsGroupByOutputType = {
+    id: string
+    created_at: Date | null
+    updated_at: Date | null
+    member_id: string | null
+    domain: string | null
+    event: string
+    status: string
+    error_detail: string | null
+    payload: string | null
+    _count: Bitrix_app_eventsCountAggregateOutputType | null
+    _min: Bitrix_app_eventsMinAggregateOutputType | null
+    _max: Bitrix_app_eventsMaxAggregateOutputType | null
+  }
+
+  type GetBitrix_app_eventsGroupByPayload<T extends bitrix_app_eventsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Bitrix_app_eventsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Bitrix_app_eventsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Bitrix_app_eventsGroupByOutputType[P]>
+            : GetScalarType<T[P], Bitrix_app_eventsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type bitrix_app_eventsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    member_id?: boolean
+    domain?: boolean
+    event?: boolean
+    status?: boolean
+    error_detail?: boolean
+    payload?: boolean
+  }, ExtArgs["result"]["bitrix_app_events"]>
+
+
+
+  export type bitrix_app_eventsSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    member_id?: boolean
+    domain?: boolean
+    event?: boolean
+    status?: boolean
+    error_detail?: boolean
+    payload?: boolean
+  }
+
+  export type bitrix_app_eventsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "member_id" | "domain" | "event" | "status" | "error_detail" | "payload", ExtArgs["result"]["bitrix_app_events"]>
+
+  export type $bitrix_app_eventsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "bitrix_app_events"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      created_at: Date | null
+      updated_at: Date | null
+      member_id: string | null
+      domain: string | null
+      event: string
+      status: string
+      error_detail: string | null
+      payload: string | null
+    }, ExtArgs["result"]["bitrix_app_events"]>
+    composites: {}
+  }
+
+  type bitrix_app_eventsGetPayload<S extends boolean | null | undefined | bitrix_app_eventsDefaultArgs> = $Result.GetResult<Prisma.$bitrix_app_eventsPayload, S>
+
+  type bitrix_app_eventsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<bitrix_app_eventsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Bitrix_app_eventsCountAggregateInputType | true
+    }
+
+  export interface bitrix_app_eventsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['bitrix_app_events'], meta: { name: 'bitrix_app_events' } }
+    /**
+     * Find zero or one Bitrix_app_events that matches the filter.
+     * @param {bitrix_app_eventsFindUniqueArgs} args - Arguments to find a Bitrix_app_events
+     * @example
+     * // Get one Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends bitrix_app_eventsFindUniqueArgs>(args: SelectSubset<T, bitrix_app_eventsFindUniqueArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Bitrix_app_events that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {bitrix_app_eventsFindUniqueOrThrowArgs} args - Arguments to find a Bitrix_app_events
+     * @example
+     * // Get one Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends bitrix_app_eventsFindUniqueOrThrowArgs>(args: SelectSubset<T, bitrix_app_eventsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Bitrix_app_events that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {bitrix_app_eventsFindFirstArgs} args - Arguments to find a Bitrix_app_events
+     * @example
+     * // Get one Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends bitrix_app_eventsFindFirstArgs>(args?: SelectSubset<T, bitrix_app_eventsFindFirstArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Bitrix_app_events that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {bitrix_app_eventsFindFirstOrThrowArgs} args - Arguments to find a Bitrix_app_events
+     * @example
+     * // Get one Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends bitrix_app_eventsFindFirstOrThrowArgs>(args?: SelectSubset<T, bitrix_app_eventsFindFirstOrThrowArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Bitrix_app_events that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {bitrix_app_eventsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.findMany()
+     * 
+     * // Get first 10 Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const bitrix_app_eventsWithIdOnly = await prisma.bitrix_app_events.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends bitrix_app_eventsFindManyArgs>(args?: SelectSubset<T, bitrix_app_eventsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Bitrix_app_events.
+     * @param {bitrix_app_eventsCreateArgs} args - Arguments to create a Bitrix_app_events.
+     * @example
+     * // Create one Bitrix_app_events
+     * const Bitrix_app_events = await prisma.bitrix_app_events.create({
+     *   data: {
+     *     // ... data to create a Bitrix_app_events
+     *   }
+     * })
+     * 
+     */
+    create<T extends bitrix_app_eventsCreateArgs>(args: SelectSubset<T, bitrix_app_eventsCreateArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Bitrix_app_events.
+     * @param {bitrix_app_eventsCreateManyArgs} args - Arguments to create many Bitrix_app_events.
+     * @example
+     * // Create many Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends bitrix_app_eventsCreateManyArgs>(args?: SelectSubset<T, bitrix_app_eventsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Bitrix_app_events.
+     * @param {bitrix_app_eventsDeleteArgs} args - Arguments to delete one Bitrix_app_events.
+     * @example
+     * // Delete one Bitrix_app_events
+     * const Bitrix_app_events = await prisma.bitrix_app_events.delete({
+     *   where: {
+     *     // ... filter to delete one Bitrix_app_events
+     *   }
+     * })
+     * 
+     */
+    delete<T extends bitrix_app_eventsDeleteArgs>(args: SelectSubset<T, bitrix_app_eventsDeleteArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Bitrix_app_events.
+     * @param {bitrix_app_eventsUpdateArgs} args - Arguments to update one Bitrix_app_events.
+     * @example
+     * // Update one Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends bitrix_app_eventsUpdateArgs>(args: SelectSubset<T, bitrix_app_eventsUpdateArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Bitrix_app_events.
+     * @param {bitrix_app_eventsDeleteManyArgs} args - Arguments to filter Bitrix_app_events to delete.
+     * @example
+     * // Delete a few Bitrix_app_events
+     * const { count } = await prisma.bitrix_app_events.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends bitrix_app_eventsDeleteManyArgs>(args?: SelectSubset<T, bitrix_app_eventsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Bitrix_app_events.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {bitrix_app_eventsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends bitrix_app_eventsUpdateManyArgs>(args: SelectSubset<T, bitrix_app_eventsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Bitrix_app_events.
+     * @param {bitrix_app_eventsUpsertArgs} args - Arguments to update or create a Bitrix_app_events.
+     * @example
+     * // Update or create a Bitrix_app_events
+     * const bitrix_app_events = await prisma.bitrix_app_events.upsert({
+     *   create: {
+     *     // ... data to create a Bitrix_app_events
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Bitrix_app_events we want to update
+     *   }
+     * })
+     */
+    upsert<T extends bitrix_app_eventsUpsertArgs>(args: SelectSubset<T, bitrix_app_eventsUpsertArgs<ExtArgs>>): Prisma__bitrix_app_eventsClient<$Result.GetResult<Prisma.$bitrix_app_eventsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Bitrix_app_events.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {bitrix_app_eventsCountArgs} args - Arguments to filter Bitrix_app_events to count.
+     * @example
+     * // Count the number of Bitrix_app_events
+     * const count = await prisma.bitrix_app_events.count({
+     *   where: {
+     *     // ... the filter for the Bitrix_app_events we want to count
+     *   }
+     * })
+    **/
+    count<T extends bitrix_app_eventsCountArgs>(
+      args?: Subset<T, bitrix_app_eventsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Bitrix_app_eventsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Bitrix_app_events.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Bitrix_app_eventsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Bitrix_app_eventsAggregateArgs>(args: Subset<T, Bitrix_app_eventsAggregateArgs>): Prisma.PrismaPromise<GetBitrix_app_eventsAggregateType<T>>
+
+    /**
+     * Group by Bitrix_app_events.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {bitrix_app_eventsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends bitrix_app_eventsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: bitrix_app_eventsGroupByArgs['orderBy'] }
+        : { orderBy?: bitrix_app_eventsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, bitrix_app_eventsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBitrix_app_eventsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the bitrix_app_events model
+   */
+  readonly fields: bitrix_app_eventsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for bitrix_app_events.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__bitrix_app_eventsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the bitrix_app_events model
+   */
+  interface bitrix_app_eventsFieldRefs {
+    readonly id: FieldRef<"bitrix_app_events", 'String'>
+    readonly created_at: FieldRef<"bitrix_app_events", 'DateTime'>
+    readonly updated_at: FieldRef<"bitrix_app_events", 'DateTime'>
+    readonly member_id: FieldRef<"bitrix_app_events", 'String'>
+    readonly domain: FieldRef<"bitrix_app_events", 'String'>
+    readonly event: FieldRef<"bitrix_app_events", 'String'>
+    readonly status: FieldRef<"bitrix_app_events", 'String'>
+    readonly error_detail: FieldRef<"bitrix_app_events", 'String'>
+    readonly payload: FieldRef<"bitrix_app_events", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * bitrix_app_events findUnique
+   */
+  export type bitrix_app_eventsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * Filter, which bitrix_app_events to fetch.
+     */
+    where: bitrix_app_eventsWhereUniqueInput
+  }
+
+  /**
+   * bitrix_app_events findUniqueOrThrow
+   */
+  export type bitrix_app_eventsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * Filter, which bitrix_app_events to fetch.
+     */
+    where: bitrix_app_eventsWhereUniqueInput
+  }
+
+  /**
+   * bitrix_app_events findFirst
+   */
+  export type bitrix_app_eventsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * Filter, which bitrix_app_events to fetch.
+     */
+    where?: bitrix_app_eventsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of bitrix_app_events to fetch.
+     */
+    orderBy?: bitrix_app_eventsOrderByWithRelationInput | bitrix_app_eventsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for bitrix_app_events.
+     */
+    cursor?: bitrix_app_eventsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` bitrix_app_events from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` bitrix_app_events.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of bitrix_app_events.
+     */
+    distinct?: Bitrix_app_eventsScalarFieldEnum | Bitrix_app_eventsScalarFieldEnum[]
+  }
+
+  /**
+   * bitrix_app_events findFirstOrThrow
+   */
+  export type bitrix_app_eventsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * Filter, which bitrix_app_events to fetch.
+     */
+    where?: bitrix_app_eventsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of bitrix_app_events to fetch.
+     */
+    orderBy?: bitrix_app_eventsOrderByWithRelationInput | bitrix_app_eventsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for bitrix_app_events.
+     */
+    cursor?: bitrix_app_eventsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` bitrix_app_events from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` bitrix_app_events.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of bitrix_app_events.
+     */
+    distinct?: Bitrix_app_eventsScalarFieldEnum | Bitrix_app_eventsScalarFieldEnum[]
+  }
+
+  /**
+   * bitrix_app_events findMany
+   */
+  export type bitrix_app_eventsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * Filter, which bitrix_app_events to fetch.
+     */
+    where?: bitrix_app_eventsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of bitrix_app_events to fetch.
+     */
+    orderBy?: bitrix_app_eventsOrderByWithRelationInput | bitrix_app_eventsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing bitrix_app_events.
+     */
+    cursor?: bitrix_app_eventsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` bitrix_app_events from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` bitrix_app_events.
+     */
+    skip?: number
+    distinct?: Bitrix_app_eventsScalarFieldEnum | Bitrix_app_eventsScalarFieldEnum[]
+  }
+
+  /**
+   * bitrix_app_events create
+   */
+  export type bitrix_app_eventsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * The data needed to create a bitrix_app_events.
+     */
+    data: XOR<bitrix_app_eventsCreateInput, bitrix_app_eventsUncheckedCreateInput>
+  }
+
+  /**
+   * bitrix_app_events createMany
+   */
+  export type bitrix_app_eventsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many bitrix_app_events.
+     */
+    data: bitrix_app_eventsCreateManyInput | bitrix_app_eventsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * bitrix_app_events update
+   */
+  export type bitrix_app_eventsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * The data needed to update a bitrix_app_events.
+     */
+    data: XOR<bitrix_app_eventsUpdateInput, bitrix_app_eventsUncheckedUpdateInput>
+    /**
+     * Choose, which bitrix_app_events to update.
+     */
+    where: bitrix_app_eventsWhereUniqueInput
+  }
+
+  /**
+   * bitrix_app_events updateMany
+   */
+  export type bitrix_app_eventsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update bitrix_app_events.
+     */
+    data: XOR<bitrix_app_eventsUpdateManyMutationInput, bitrix_app_eventsUncheckedUpdateManyInput>
+    /**
+     * Filter which bitrix_app_events to update
+     */
+    where?: bitrix_app_eventsWhereInput
+    /**
+     * Limit how many bitrix_app_events to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * bitrix_app_events upsert
+   */
+  export type bitrix_app_eventsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * The filter to search for the bitrix_app_events to update in case it exists.
+     */
+    where: bitrix_app_eventsWhereUniqueInput
+    /**
+     * In case the bitrix_app_events found by the `where` argument doesn't exist, create a new bitrix_app_events with this data.
+     */
+    create: XOR<bitrix_app_eventsCreateInput, bitrix_app_eventsUncheckedCreateInput>
+    /**
+     * In case the bitrix_app_events was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<bitrix_app_eventsUpdateInput, bitrix_app_eventsUncheckedUpdateInput>
+  }
+
+  /**
+   * bitrix_app_events delete
+   */
+  export type bitrix_app_eventsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+    /**
+     * Filter which bitrix_app_events to delete.
+     */
+    where: bitrix_app_eventsWhereUniqueInput
+  }
+
+  /**
+   * bitrix_app_events deleteMany
+   */
+  export type bitrix_app_eventsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which bitrix_app_events to delete
+     */
+    where?: bitrix_app_eventsWhereInput
+    /**
+     * Limit how many bitrix_app_events to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * bitrix_app_events without action
+   */
+  export type bitrix_app_eventsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the bitrix_app_events
+     */
+    select?: bitrix_app_eventsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the bitrix_app_events
+     */
+    omit?: bitrix_app_eventsOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -96281,7 +101061,12 @@ export namespace Prisma {
     nestServiceKey: 'nestServiceKey',
     nestWebhooksKey: 'nestWebhooksKey',
     nestScheduleKey: 'nestScheduleKey',
-    vibeKey: 'vibeKey'
+    vibeKey: 'vibeKey',
+    member_id: 'member_id',
+    source: 'source',
+    approval_status: 'approval_status',
+    approved_at: 'approved_at',
+    approved_by: 'approved_by'
   };
 
   export type PortalScalarFieldEnum = (typeof PortalScalarFieldEnum)[keyof typeof PortalScalarFieldEnum]
@@ -97221,6 +102006,84 @@ export namespace Prisma {
   export type InvoiceTemplateScalarFieldEnum = (typeof InvoiceTemplateScalarFieldEnum)[keyof typeof InvoiceTemplateScalarFieldEnum]
 
 
+  export const Marketplace_installsScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    portal_id: 'portal_id',
+    bitrix_app_id: 'bitrix_app_id',
+    app_code: 'app_code',
+    domain: 'domain',
+    install_status: 'install_status',
+    error_step: 'error_step',
+    error_detail: 'error_detail',
+    scope: 'scope',
+    version: 'version',
+    lang: 'lang',
+    license_status: 'license_status',
+    payment_expired: 'payment_expired',
+    license_days: 'license_days',
+    license_checked_at: 'license_checked_at',
+    access_token: 'access_token',
+    refresh_token: 'refresh_token',
+    expires_at: 'expires_at',
+    application_token: 'application_token',
+    installed_at: 'installed_at',
+    uninstalled_at: 'uninstalled_at'
+  };
+
+  export type Marketplace_installsScalarFieldEnum = (typeof Marketplace_installsScalarFieldEnum)[keyof typeof Marketplace_installsScalarFieldEnum]
+
+
+  export const Portal_productsScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    portal_id: 'portal_id',
+    product_code: 'product_code',
+    edition: 'edition',
+    status: 'status',
+    activated_at: 'activated_at',
+    paid_until: 'paid_until'
+  };
+
+  export type Portal_productsScalarFieldEnum = (typeof Portal_productsScalarFieldEnum)[keyof typeof Portal_productsScalarFieldEnum]
+
+
+  export const Marketplace_install_componentsScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    marketplace_install_id: 'marketplace_install_id',
+    portal_id: 'portal_id',
+    product_code: 'product_code',
+    component_type: 'component_type',
+    component_code: 'component_code',
+    status: 'status',
+    reason_code: 'reason_code',
+    error_detail: 'error_detail',
+    attempts: 'attempts',
+    last_attempt_at: 'last_attempt_at'
+  };
+
+  export type Marketplace_install_componentsScalarFieldEnum = (typeof Marketplace_install_componentsScalarFieldEnum)[keyof typeof Marketplace_install_componentsScalarFieldEnum]
+
+
+  export const Bitrix_app_eventsScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    member_id: 'member_id',
+    domain: 'domain',
+    event: 'event',
+    status: 'status',
+    error_detail: 'error_detail',
+    payload: 'payload'
+  };
+
+  export type Bitrix_app_eventsScalarFieldEnum = (typeof Bitrix_app_eventsScalarFieldEnum)[keyof typeof Bitrix_app_eventsScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -97626,7 +102489,11 @@ export namespace Prisma {
     nestServiceKey: 'nestServiceKey',
     nestWebhooksKey: 'nestWebhooksKey',
     nestScheduleKey: 'nestScheduleKey',
-    vibeKey: 'vibeKey'
+    vibeKey: 'vibeKey',
+    member_id: 'member_id',
+    source: 'source',
+    approval_status: 'approval_status',
+    approved_by: 'approved_by'
   };
 
   export type PortalOrderByRelevanceFieldEnum = (typeof PortalOrderByRelevanceFieldEnum)[keyof typeof PortalOrderByRelevanceFieldEnum]
@@ -98246,6 +103113,62 @@ export namespace Prisma {
   };
 
   export type InvoiceTemplateOrderByRelevanceFieldEnum = (typeof InvoiceTemplateOrderByRelevanceFieldEnum)[keyof typeof InvoiceTemplateOrderByRelevanceFieldEnum]
+
+
+  export const marketplace_installsOrderByRelevanceFieldEnum: {
+    id: 'id',
+    app_code: 'app_code',
+    domain: 'domain',
+    install_status: 'install_status',
+    error_step: 'error_step',
+    error_detail: 'error_detail',
+    scope: 'scope',
+    version: 'version',
+    lang: 'lang',
+    license_status: 'license_status',
+    access_token: 'access_token',
+    refresh_token: 'refresh_token',
+    application_token: 'application_token'
+  };
+
+  export type marketplace_installsOrderByRelevanceFieldEnum = (typeof marketplace_installsOrderByRelevanceFieldEnum)[keyof typeof marketplace_installsOrderByRelevanceFieldEnum]
+
+
+  export const portal_productsOrderByRelevanceFieldEnum: {
+    id: 'id',
+    product_code: 'product_code',
+    edition: 'edition',
+    status: 'status'
+  };
+
+  export type portal_productsOrderByRelevanceFieldEnum = (typeof portal_productsOrderByRelevanceFieldEnum)[keyof typeof portal_productsOrderByRelevanceFieldEnum]
+
+
+  export const marketplace_install_componentsOrderByRelevanceFieldEnum: {
+    id: 'id',
+    marketplace_install_id: 'marketplace_install_id',
+    product_code: 'product_code',
+    component_type: 'component_type',
+    component_code: 'component_code',
+    status: 'status',
+    reason_code: 'reason_code',
+    error_detail: 'error_detail'
+  };
+
+  export type marketplace_install_componentsOrderByRelevanceFieldEnum = (typeof marketplace_install_componentsOrderByRelevanceFieldEnum)[keyof typeof marketplace_install_componentsOrderByRelevanceFieldEnum]
+
+
+  export const bitrix_app_eventsOrderByRelevanceFieldEnum: {
+    id: 'id',
+    member_id: 'member_id',
+    domain: 'domain',
+    event: 'event',
+    status: 'status',
+    error_detail: 'error_detail',
+    payload: 'payload'
+  };
+
+  export type bitrix_app_eventsOrderByRelevanceFieldEnum = (typeof bitrix_app_eventsOrderByRelevanceFieldEnum)[keyof typeof bitrix_app_eventsOrderByRelevanceFieldEnum]
 
 
   /**
@@ -101337,6 +106260,11 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableFilter<"Portal"> | string | null
     vibeKey?: StringNullableFilter<"Portal"> | string | null
+    member_id?: StringNullableFilter<"Portal"> | string | null
+    source?: StringFilter<"Portal"> | string
+    approval_status?: StringNullableFilter<"Portal"> | string | null
+    approved_at?: DateTimeNullableFilter<"Portal"> | Date | string | null
+    approved_by?: StringNullableFilter<"Portal"> | string | null
     bitrix_apps?: Bitrix_appsListRelationFilter
     bitrixlists?: BitrixlistsListRelationFilter
     btx_companies?: Btx_companiesListRelationFilter
@@ -101361,6 +106289,9 @@ export namespace Prisma {
     templates?: TemplateListRelationFilter
     invoiceTemplates?: InvoiceTemplateListRelationFilter
     bxRqs?: Bx_rqsListRelationFilter
+    marketplace_installs?: Marketplace_installsListRelationFilter
+    portal_products?: Portal_productsListRelationFilter
+    marketplace_install_components?: Marketplace_install_componentsListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -101382,6 +106313,11 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrderInput | SortOrder
     nestScheduleKey?: SortOrderInput | SortOrder
     vibeKey?: SortOrderInput | SortOrder
+    member_id?: SortOrderInput | SortOrder
+    source?: SortOrder
+    approval_status?: SortOrderInput | SortOrder
+    approved_at?: SortOrderInput | SortOrder
+    approved_by?: SortOrderInput | SortOrder
     bitrix_apps?: bitrix_appsOrderByRelationAggregateInput
     bitrixlists?: bitrixlistsOrderByRelationAggregateInput
     btx_companies?: btx_companiesOrderByRelationAggregateInput
@@ -101406,11 +106342,15 @@ export namespace Prisma {
     templates?: TemplateOrderByRelationAggregateInput
     invoiceTemplates?: InvoiceTemplateOrderByRelationAggregateInput
     bxRqs?: bx_rqsOrderByRelationAggregateInput
+    marketplace_installs?: marketplace_installsOrderByRelationAggregateInput
+    portal_products?: portal_productsOrderByRelationAggregateInput
+    marketplace_install_components?: marketplace_install_componentsOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
   export type PortalWhereUniqueInput = Prisma.AtLeast<{
     id?: bigint | number
+    member_id?: string
     AND?: PortalWhereInput | PortalWhereInput[]
     OR?: PortalWhereInput[]
     NOT?: PortalWhereInput | PortalWhereInput[]
@@ -101431,6 +106371,10 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableFilter<"Portal"> | string | null
     vibeKey?: StringNullableFilter<"Portal"> | string | null
+    source?: StringFilter<"Portal"> | string
+    approval_status?: StringNullableFilter<"Portal"> | string | null
+    approved_at?: DateTimeNullableFilter<"Portal"> | Date | string | null
+    approved_by?: StringNullableFilter<"Portal"> | string | null
     bitrix_apps?: Bitrix_appsListRelationFilter
     bitrixlists?: BitrixlistsListRelationFilter
     btx_companies?: Btx_companiesListRelationFilter
@@ -101455,7 +106399,10 @@ export namespace Prisma {
     templates?: TemplateListRelationFilter
     invoiceTemplates?: InvoiceTemplateListRelationFilter
     bxRqs?: Bx_rqsListRelationFilter
-  }, "id">
+    marketplace_installs?: Marketplace_installsListRelationFilter
+    portal_products?: Portal_productsListRelationFilter
+    marketplace_install_components?: Marketplace_install_componentsListRelationFilter
+  }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
     id?: SortOrder
@@ -101476,6 +106423,11 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrderInput | SortOrder
     nestScheduleKey?: SortOrderInput | SortOrder
     vibeKey?: SortOrderInput | SortOrder
+    member_id?: SortOrderInput | SortOrder
+    source?: SortOrder
+    approval_status?: SortOrderInput | SortOrder
+    approved_at?: SortOrderInput | SortOrder
+    approved_by?: SortOrderInput | SortOrder
     _count?: PortalCountOrderByAggregateInput
     _avg?: PortalAvgOrderByAggregateInput
     _max?: PortalMaxOrderByAggregateInput
@@ -101505,6 +106457,11 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     vibeKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+    member_id?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+    source?: StringWithAggregatesFilter<"Portal"> | string
+    approval_status?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+    approved_at?: DateTimeNullableWithAggregatesFilter<"Portal"> | Date | string | null
+    approved_by?: StringNullableWithAggregatesFilter<"Portal"> | string | null
   }
 
   export type price_row_cellsWhereInput = {
@@ -103011,6 +107968,7 @@ export namespace Prisma {
     bitrix_app_placements?: Bitrix_app_placementsListRelationFilter
     portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
     bitrix_tokens?: Bitrix_tokensListRelationFilter
+    marketplace_installs?: Marketplace_installsListRelationFilter
   }
 
   export type bitrix_appsOrderByWithRelationInput = {
@@ -103025,6 +107983,7 @@ export namespace Prisma {
     bitrix_app_placements?: bitrix_app_placementsOrderByRelationAggregateInput
     portals?: PortalOrderByWithRelationInput
     bitrix_tokens?: bitrix_tokensOrderByRelationAggregateInput
+    marketplace_installs?: marketplace_installsOrderByRelationAggregateInput
     _relevance?: bitrix_appsOrderByRelevanceInput
   }
 
@@ -103043,6 +108002,7 @@ export namespace Prisma {
     bitrix_app_placements?: Bitrix_app_placementsListRelationFilter
     portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
     bitrix_tokens?: Bitrix_tokensListRelationFilter
+    marketplace_installs?: Marketplace_installsListRelationFilter
   }, "id">
 
   export type bitrix_appsOrderByWithAggregationInput = {
@@ -106362,6 +111322,415 @@ export namespace Prisma {
     portal_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
     agent_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
+  }
+
+  export type marketplace_installsWhereInput = {
+    AND?: marketplace_installsWhereInput | marketplace_installsWhereInput[]
+    OR?: marketplace_installsWhereInput[]
+    NOT?: marketplace_installsWhereInput | marketplace_installsWhereInput[]
+    id?: StringFilter<"marketplace_installs"> | string
+    created_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    portal_id?: BigIntFilter<"marketplace_installs"> | bigint | number
+    bitrix_app_id?: BigIntNullableFilter<"marketplace_installs"> | bigint | number | null
+    app_code?: StringFilter<"marketplace_installs"> | string
+    domain?: StringNullableFilter<"marketplace_installs"> | string | null
+    install_status?: StringFilter<"marketplace_installs"> | string
+    error_step?: StringNullableFilter<"marketplace_installs"> | string | null
+    error_detail?: StringNullableFilter<"marketplace_installs"> | string | null
+    scope?: StringNullableFilter<"marketplace_installs"> | string | null
+    version?: StringNullableFilter<"marketplace_installs"> | string | null
+    lang?: StringNullableFilter<"marketplace_installs"> | string | null
+    license_status?: StringNullableFilter<"marketplace_installs"> | string | null
+    payment_expired?: BoolNullableFilter<"marketplace_installs"> | boolean | null
+    license_days?: IntNullableFilter<"marketplace_installs"> | number | null
+    license_checked_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    access_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    refresh_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    expires_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    application_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    installed_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    uninstalled_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    marketplace_install_components?: Marketplace_install_componentsListRelationFilter
+    bitrix_apps?: XOR<Bitrix_appsNullableScalarRelationFilter, bitrix_appsWhereInput> | null
+    portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type marketplace_installsOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrderInput | SortOrder
+    app_code?: SortOrder
+    domain?: SortOrderInput | SortOrder
+    install_status?: SortOrder
+    error_step?: SortOrderInput | SortOrder
+    error_detail?: SortOrderInput | SortOrder
+    scope?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    lang?: SortOrderInput | SortOrder
+    license_status?: SortOrderInput | SortOrder
+    payment_expired?: SortOrderInput | SortOrder
+    license_days?: SortOrderInput | SortOrder
+    license_checked_at?: SortOrderInput | SortOrder
+    access_token?: SortOrderInput | SortOrder
+    refresh_token?: SortOrderInput | SortOrder
+    expires_at?: SortOrderInput | SortOrder
+    application_token?: SortOrderInput | SortOrder
+    installed_at?: SortOrderInput | SortOrder
+    uninstalled_at?: SortOrderInput | SortOrder
+    marketplace_install_components?: marketplace_install_componentsOrderByRelationAggregateInput
+    bitrix_apps?: bitrix_appsOrderByWithRelationInput
+    portals?: PortalOrderByWithRelationInput
+    _relevance?: marketplace_installsOrderByRelevanceInput
+  }
+
+  export type marketplace_installsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id_app_code?: marketplace_installsPortal_idApp_codeCompoundUniqueInput
+    AND?: marketplace_installsWhereInput | marketplace_installsWhereInput[]
+    OR?: marketplace_installsWhereInput[]
+    NOT?: marketplace_installsWhereInput | marketplace_installsWhereInput[]
+    created_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    portal_id?: BigIntFilter<"marketplace_installs"> | bigint | number
+    bitrix_app_id?: BigIntNullableFilter<"marketplace_installs"> | bigint | number | null
+    app_code?: StringFilter<"marketplace_installs"> | string
+    domain?: StringNullableFilter<"marketplace_installs"> | string | null
+    install_status?: StringFilter<"marketplace_installs"> | string
+    error_step?: StringNullableFilter<"marketplace_installs"> | string | null
+    error_detail?: StringNullableFilter<"marketplace_installs"> | string | null
+    scope?: StringNullableFilter<"marketplace_installs"> | string | null
+    version?: StringNullableFilter<"marketplace_installs"> | string | null
+    lang?: StringNullableFilter<"marketplace_installs"> | string | null
+    license_status?: StringNullableFilter<"marketplace_installs"> | string | null
+    payment_expired?: BoolNullableFilter<"marketplace_installs"> | boolean | null
+    license_days?: IntNullableFilter<"marketplace_installs"> | number | null
+    license_checked_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    access_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    refresh_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    expires_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    application_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    installed_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    uninstalled_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    marketplace_install_components?: Marketplace_install_componentsListRelationFilter
+    bitrix_apps?: XOR<Bitrix_appsNullableScalarRelationFilter, bitrix_appsWhereInput> | null
+    portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "portal_id_app_code">
+
+  export type marketplace_installsOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrderInput | SortOrder
+    app_code?: SortOrder
+    domain?: SortOrderInput | SortOrder
+    install_status?: SortOrder
+    error_step?: SortOrderInput | SortOrder
+    error_detail?: SortOrderInput | SortOrder
+    scope?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    lang?: SortOrderInput | SortOrder
+    license_status?: SortOrderInput | SortOrder
+    payment_expired?: SortOrderInput | SortOrder
+    license_days?: SortOrderInput | SortOrder
+    license_checked_at?: SortOrderInput | SortOrder
+    access_token?: SortOrderInput | SortOrder
+    refresh_token?: SortOrderInput | SortOrder
+    expires_at?: SortOrderInput | SortOrder
+    application_token?: SortOrderInput | SortOrder
+    installed_at?: SortOrderInput | SortOrder
+    uninstalled_at?: SortOrderInput | SortOrder
+    _count?: marketplace_installsCountOrderByAggregateInput
+    _avg?: marketplace_installsAvgOrderByAggregateInput
+    _max?: marketplace_installsMaxOrderByAggregateInput
+    _min?: marketplace_installsMinOrderByAggregateInput
+    _sum?: marketplace_installsSumOrderByAggregateInput
+  }
+
+  export type marketplace_installsScalarWhereWithAggregatesInput = {
+    AND?: marketplace_installsScalarWhereWithAggregatesInput | marketplace_installsScalarWhereWithAggregatesInput[]
+    OR?: marketplace_installsScalarWhereWithAggregatesInput[]
+    NOT?: marketplace_installsScalarWhereWithAggregatesInput | marketplace_installsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"marketplace_installs"> | string
+    created_at?: DateTimeNullableWithAggregatesFilter<"marketplace_installs"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"marketplace_installs"> | Date | string | null
+    portal_id?: BigIntWithAggregatesFilter<"marketplace_installs"> | bigint | number
+    bitrix_app_id?: BigIntNullableWithAggregatesFilter<"marketplace_installs"> | bigint | number | null
+    app_code?: StringWithAggregatesFilter<"marketplace_installs"> | string
+    domain?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    install_status?: StringWithAggregatesFilter<"marketplace_installs"> | string
+    error_step?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    error_detail?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    scope?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    version?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    lang?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    license_status?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    payment_expired?: BoolNullableWithAggregatesFilter<"marketplace_installs"> | boolean | null
+    license_days?: IntNullableWithAggregatesFilter<"marketplace_installs"> | number | null
+    license_checked_at?: DateTimeNullableWithAggregatesFilter<"marketplace_installs"> | Date | string | null
+    access_token?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    refresh_token?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    expires_at?: DateTimeNullableWithAggregatesFilter<"marketplace_installs"> | Date | string | null
+    application_token?: StringNullableWithAggregatesFilter<"marketplace_installs"> | string | null
+    installed_at?: DateTimeNullableWithAggregatesFilter<"marketplace_installs"> | Date | string | null
+    uninstalled_at?: DateTimeNullableWithAggregatesFilter<"marketplace_installs"> | Date | string | null
+  }
+
+  export type portal_productsWhereInput = {
+    AND?: portal_productsWhereInput | portal_productsWhereInput[]
+    OR?: portal_productsWhereInput[]
+    NOT?: portal_productsWhereInput | portal_productsWhereInput[]
+    id?: StringFilter<"portal_products"> | string
+    created_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    portal_id?: BigIntFilter<"portal_products"> | bigint | number
+    product_code?: StringFilter<"portal_products"> | string
+    edition?: StringNullableFilter<"portal_products"> | string | null
+    status?: StringFilter<"portal_products"> | string
+    activated_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    paid_until?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type portal_productsOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    edition?: SortOrderInput | SortOrder
+    status?: SortOrder
+    activated_at?: SortOrderInput | SortOrder
+    paid_until?: SortOrderInput | SortOrder
+    portals?: PortalOrderByWithRelationInput
+    _relevance?: portal_productsOrderByRelevanceInput
+  }
+
+  export type portal_productsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id_product_code?: portal_productsPortal_idProduct_codeCompoundUniqueInput
+    AND?: portal_productsWhereInput | portal_productsWhereInput[]
+    OR?: portal_productsWhereInput[]
+    NOT?: portal_productsWhereInput | portal_productsWhereInput[]
+    created_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    portal_id?: BigIntFilter<"portal_products"> | bigint | number
+    product_code?: StringFilter<"portal_products"> | string
+    edition?: StringNullableFilter<"portal_products"> | string | null
+    status?: StringFilter<"portal_products"> | string
+    activated_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    paid_until?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "portal_id_product_code">
+
+  export type portal_productsOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    edition?: SortOrderInput | SortOrder
+    status?: SortOrder
+    activated_at?: SortOrderInput | SortOrder
+    paid_until?: SortOrderInput | SortOrder
+    _count?: portal_productsCountOrderByAggregateInput
+    _avg?: portal_productsAvgOrderByAggregateInput
+    _max?: portal_productsMaxOrderByAggregateInput
+    _min?: portal_productsMinOrderByAggregateInput
+    _sum?: portal_productsSumOrderByAggregateInput
+  }
+
+  export type portal_productsScalarWhereWithAggregatesInput = {
+    AND?: portal_productsScalarWhereWithAggregatesInput | portal_productsScalarWhereWithAggregatesInput[]
+    OR?: portal_productsScalarWhereWithAggregatesInput[]
+    NOT?: portal_productsScalarWhereWithAggregatesInput | portal_productsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"portal_products"> | string
+    created_at?: DateTimeNullableWithAggregatesFilter<"portal_products"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"portal_products"> | Date | string | null
+    portal_id?: BigIntWithAggregatesFilter<"portal_products"> | bigint | number
+    product_code?: StringWithAggregatesFilter<"portal_products"> | string
+    edition?: StringNullableWithAggregatesFilter<"portal_products"> | string | null
+    status?: StringWithAggregatesFilter<"portal_products"> | string
+    activated_at?: DateTimeNullableWithAggregatesFilter<"portal_products"> | Date | string | null
+    paid_until?: DateTimeNullableWithAggregatesFilter<"portal_products"> | Date | string | null
+  }
+
+  export type marketplace_install_componentsWhereInput = {
+    AND?: marketplace_install_componentsWhereInput | marketplace_install_componentsWhereInput[]
+    OR?: marketplace_install_componentsWhereInput[]
+    NOT?: marketplace_install_componentsWhereInput | marketplace_install_componentsWhereInput[]
+    id?: StringFilter<"marketplace_install_components"> | string
+    created_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    marketplace_install_id?: StringFilter<"marketplace_install_components"> | string
+    portal_id?: BigIntFilter<"marketplace_install_components"> | bigint | number
+    product_code?: StringFilter<"marketplace_install_components"> | string
+    component_type?: StringFilter<"marketplace_install_components"> | string
+    component_code?: StringFilter<"marketplace_install_components"> | string
+    status?: StringFilter<"marketplace_install_components"> | string
+    reason_code?: StringNullableFilter<"marketplace_install_components"> | string | null
+    error_detail?: StringNullableFilter<"marketplace_install_components"> | string | null
+    attempts?: IntFilter<"marketplace_install_components"> | number
+    last_attempt_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    marketplace_installs?: XOR<Marketplace_installsScalarRelationFilter, marketplace_installsWhereInput>
+    portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type marketplace_install_componentsOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    marketplace_install_id?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    component_type?: SortOrder
+    component_code?: SortOrder
+    status?: SortOrder
+    reason_code?: SortOrderInput | SortOrder
+    error_detail?: SortOrderInput | SortOrder
+    attempts?: SortOrder
+    last_attempt_at?: SortOrderInput | SortOrder
+    marketplace_installs?: marketplace_installsOrderByWithRelationInput
+    portals?: PortalOrderByWithRelationInput
+    _relevance?: marketplace_install_componentsOrderByRelevanceInput
+  }
+
+  export type marketplace_install_componentsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    marketplace_install_id_product_code_component_type_component_code?: marketplace_install_componentsMarketplace_install_idProduct_codeComponent_typeComponent_codeCompoundUniqueInput
+    AND?: marketplace_install_componentsWhereInput | marketplace_install_componentsWhereInput[]
+    OR?: marketplace_install_componentsWhereInput[]
+    NOT?: marketplace_install_componentsWhereInput | marketplace_install_componentsWhereInput[]
+    created_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    marketplace_install_id?: StringFilter<"marketplace_install_components"> | string
+    portal_id?: BigIntFilter<"marketplace_install_components"> | bigint | number
+    product_code?: StringFilter<"marketplace_install_components"> | string
+    component_type?: StringFilter<"marketplace_install_components"> | string
+    component_code?: StringFilter<"marketplace_install_components"> | string
+    status?: StringFilter<"marketplace_install_components"> | string
+    reason_code?: StringNullableFilter<"marketplace_install_components"> | string | null
+    error_detail?: StringNullableFilter<"marketplace_install_components"> | string | null
+    attempts?: IntFilter<"marketplace_install_components"> | number
+    last_attempt_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    marketplace_installs?: XOR<Marketplace_installsScalarRelationFilter, marketplace_installsWhereInput>
+    portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "marketplace_install_id_product_code_component_type_component_code">
+
+  export type marketplace_install_componentsOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    marketplace_install_id?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    component_type?: SortOrder
+    component_code?: SortOrder
+    status?: SortOrder
+    reason_code?: SortOrderInput | SortOrder
+    error_detail?: SortOrderInput | SortOrder
+    attempts?: SortOrder
+    last_attempt_at?: SortOrderInput | SortOrder
+    _count?: marketplace_install_componentsCountOrderByAggregateInput
+    _avg?: marketplace_install_componentsAvgOrderByAggregateInput
+    _max?: marketplace_install_componentsMaxOrderByAggregateInput
+    _min?: marketplace_install_componentsMinOrderByAggregateInput
+    _sum?: marketplace_install_componentsSumOrderByAggregateInput
+  }
+
+  export type marketplace_install_componentsScalarWhereWithAggregatesInput = {
+    AND?: marketplace_install_componentsScalarWhereWithAggregatesInput | marketplace_install_componentsScalarWhereWithAggregatesInput[]
+    OR?: marketplace_install_componentsScalarWhereWithAggregatesInput[]
+    NOT?: marketplace_install_componentsScalarWhereWithAggregatesInput | marketplace_install_componentsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"marketplace_install_components"> | string
+    created_at?: DateTimeNullableWithAggregatesFilter<"marketplace_install_components"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"marketplace_install_components"> | Date | string | null
+    marketplace_install_id?: StringWithAggregatesFilter<"marketplace_install_components"> | string
+    portal_id?: BigIntWithAggregatesFilter<"marketplace_install_components"> | bigint | number
+    product_code?: StringWithAggregatesFilter<"marketplace_install_components"> | string
+    component_type?: StringWithAggregatesFilter<"marketplace_install_components"> | string
+    component_code?: StringWithAggregatesFilter<"marketplace_install_components"> | string
+    status?: StringWithAggregatesFilter<"marketplace_install_components"> | string
+    reason_code?: StringNullableWithAggregatesFilter<"marketplace_install_components"> | string | null
+    error_detail?: StringNullableWithAggregatesFilter<"marketplace_install_components"> | string | null
+    attempts?: IntWithAggregatesFilter<"marketplace_install_components"> | number
+    last_attempt_at?: DateTimeNullableWithAggregatesFilter<"marketplace_install_components"> | Date | string | null
+  }
+
+  export type bitrix_app_eventsWhereInput = {
+    AND?: bitrix_app_eventsWhereInput | bitrix_app_eventsWhereInput[]
+    OR?: bitrix_app_eventsWhereInput[]
+    NOT?: bitrix_app_eventsWhereInput | bitrix_app_eventsWhereInput[]
+    id?: StringFilter<"bitrix_app_events"> | string
+    created_at?: DateTimeNullableFilter<"bitrix_app_events"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"bitrix_app_events"> | Date | string | null
+    member_id?: StringNullableFilter<"bitrix_app_events"> | string | null
+    domain?: StringNullableFilter<"bitrix_app_events"> | string | null
+    event?: StringFilter<"bitrix_app_events"> | string
+    status?: StringFilter<"bitrix_app_events"> | string
+    error_detail?: StringNullableFilter<"bitrix_app_events"> | string | null
+    payload?: StringNullableFilter<"bitrix_app_events"> | string | null
+  }
+
+  export type bitrix_app_eventsOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    member_id?: SortOrderInput | SortOrder
+    domain?: SortOrderInput | SortOrder
+    event?: SortOrder
+    status?: SortOrder
+    error_detail?: SortOrderInput | SortOrder
+    payload?: SortOrderInput | SortOrder
+    _relevance?: bitrix_app_eventsOrderByRelevanceInput
+  }
+
+  export type bitrix_app_eventsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: bitrix_app_eventsWhereInput | bitrix_app_eventsWhereInput[]
+    OR?: bitrix_app_eventsWhereInput[]
+    NOT?: bitrix_app_eventsWhereInput | bitrix_app_eventsWhereInput[]
+    created_at?: DateTimeNullableFilter<"bitrix_app_events"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"bitrix_app_events"> | Date | string | null
+    member_id?: StringNullableFilter<"bitrix_app_events"> | string | null
+    domain?: StringNullableFilter<"bitrix_app_events"> | string | null
+    event?: StringFilter<"bitrix_app_events"> | string
+    status?: StringFilter<"bitrix_app_events"> | string
+    error_detail?: StringNullableFilter<"bitrix_app_events"> | string | null
+    payload?: StringNullableFilter<"bitrix_app_events"> | string | null
+  }, "id">
+
+  export type bitrix_app_eventsOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    member_id?: SortOrderInput | SortOrder
+    domain?: SortOrderInput | SortOrder
+    event?: SortOrder
+    status?: SortOrder
+    error_detail?: SortOrderInput | SortOrder
+    payload?: SortOrderInput | SortOrder
+    _count?: bitrix_app_eventsCountOrderByAggregateInput
+    _max?: bitrix_app_eventsMaxOrderByAggregateInput
+    _min?: bitrix_app_eventsMinOrderByAggregateInput
+  }
+
+  export type bitrix_app_eventsScalarWhereWithAggregatesInput = {
+    AND?: bitrix_app_eventsScalarWhereWithAggregatesInput | bitrix_app_eventsScalarWhereWithAggregatesInput[]
+    OR?: bitrix_app_eventsScalarWhereWithAggregatesInput[]
+    NOT?: bitrix_app_eventsScalarWhereWithAggregatesInput | bitrix_app_eventsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"bitrix_app_events"> | string
+    created_at?: DateTimeNullableWithAggregatesFilter<"bitrix_app_events"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"bitrix_app_events"> | Date | string | null
+    member_id?: StringNullableWithAggregatesFilter<"bitrix_app_events"> | string | null
+    domain?: StringNullableWithAggregatesFilter<"bitrix_app_events"> | string | null
+    event?: StringWithAggregatesFilter<"bitrix_app_events"> | string
+    status?: StringWithAggregatesFilter<"bitrix_app_events"> | string
+    error_detail?: StringNullableWithAggregatesFilter<"bitrix_app_events"> | string | null
+    payload?: StringNullableWithAggregatesFilter<"bitrix_app_events"> | string | null
   }
 
   export type agentsCreateInput = {
@@ -109695,6 +115064,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -109719,6 +115093,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -109740,6 +115117,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -109763,6 +115145,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUpdateInput = {
@@ -109783,6 +115168,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -109807,6 +115197,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -109828,6 +115221,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -109851,6 +115249,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -109872,6 +115273,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
   }
 
   export type PortalUpdateManyMutationInput = {
@@ -109892,6 +115298,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PortalUncheckedUpdateManyInput = {
@@ -109913,6 +115324,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type price_row_cellsCreateInput = {
@@ -111614,6 +117030,7 @@ export namespace Prisma {
     bitrix_app_placements?: bitrix_app_placementsCreateNestedManyWithoutBitrix_appsInput
     portals: PortalCreateNestedOneWithoutBitrix_appsInput
     bitrix_tokens?: bitrix_tokensCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsUncheckedCreateInput = {
@@ -111627,6 +117044,7 @@ export namespace Prisma {
     status: string
     bitrix_app_placements?: bitrix_app_placementsUncheckedCreateNestedManyWithoutBitrix_appsInput
     bitrix_tokens?: bitrix_tokensUncheckedCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsUpdateInput = {
@@ -111640,6 +117058,7 @@ export namespace Prisma {
     bitrix_app_placements?: bitrix_app_placementsUpdateManyWithoutBitrix_appsNestedInput
     portals?: PortalUpdateOneRequiredWithoutBitrix_appsNestedInput
     bitrix_tokens?: bitrix_tokensUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_appsUncheckedUpdateInput = {
@@ -111653,6 +117072,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     bitrix_app_placements?: bitrix_app_placementsUncheckedUpdateManyWithoutBitrix_appsNestedInput
     bitrix_tokens?: bitrix_tokensUncheckedUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_appsCreateManyInput = {
@@ -115502,6 +120922,467 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
+  export type marketplace_installsCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutMarketplace_installsInput
+    bitrix_apps?: bitrix_appsCreateNestedOneWithoutMarketplace_installsInput
+    portals: PortalCreateNestedOneWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsUncheckedCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    bitrix_app_id?: bigint | number | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutMarketplace_installsNestedInput
+    bitrix_apps?: bitrix_appsUpdateOneWithoutMarketplace_installsNestedInput
+    portals?: PortalUpdateOneRequiredWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrix_app_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsCreateManyInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    bitrix_app_id?: bigint | number | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+  }
+
+  export type marketplace_installsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_installsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrix_app_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_productsCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    edition?: string | null
+    status?: string
+    activated_at?: Date | string | null
+    paid_until?: Date | string | null
+    portals: PortalCreateNestedOneWithoutPortal_productsInput
+  }
+
+  export type portal_productsUncheckedCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    product_code: string
+    edition?: string | null
+    status?: string
+    activated_at?: Date | string | null
+    paid_until?: Date | string | null
+  }
+
+  export type portal_productsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portals?: PortalUpdateOneRequiredWithoutPortal_productsNestedInput
+  }
+
+  export type portal_productsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_productsCreateManyInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    product_code: string
+    edition?: string | null
+    status?: string
+    activated_at?: Date | string | null
+    paid_until?: Date | string | null
+  }
+
+  export type portal_productsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_productsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_install_componentsCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+    marketplace_installs: marketplace_installsCreateNestedOneWithoutMarketplace_install_componentsInput
+    portals: PortalCreateNestedOneWithoutMarketplace_install_componentsInput
+  }
+
+  export type marketplace_install_componentsUncheckedCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    marketplace_install_id: string
+    portal_id: bigint | number
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+  }
+
+  export type marketplace_install_componentsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_installs?: marketplace_installsUpdateOneRequiredWithoutMarketplace_install_componentsNestedInput
+    portals?: PortalUpdateOneRequiredWithoutMarketplace_install_componentsNestedInput
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_install_componentsCreateManyInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    marketplace_install_id: string
+    portal_id: bigint | number
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+  }
+
+  export type marketplace_install_componentsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type bitrix_app_eventsCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    member_id?: string | null
+    domain?: string | null
+    event: string
+    status?: string
+    error_detail?: string | null
+    payload?: string | null
+  }
+
+  export type bitrix_app_eventsUncheckedCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    member_id?: string | null
+    domain?: string | null
+    event: string
+    status?: string
+    error_detail?: string | null
+    payload?: string | null
+  }
+
+  export type bitrix_app_eventsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    payload?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type bitrix_app_eventsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    payload?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type bitrix_app_eventsCreateManyInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    member_id?: string | null
+    domain?: string | null
+    event: string
+    status?: string
+    error_detail?: string | null
+    payload?: string | null
+  }
+
+  export type bitrix_app_eventsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    payload?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type bitrix_app_eventsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    payload?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type BigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -118093,6 +123974,24 @@ export namespace Prisma {
     none?: bx_rqsWhereInput
   }
 
+  export type Marketplace_installsListRelationFilter = {
+    every?: marketplace_installsWhereInput
+    some?: marketplace_installsWhereInput
+    none?: marketplace_installsWhereInput
+  }
+
+  export type Portal_productsListRelationFilter = {
+    every?: portal_productsWhereInput
+    some?: portal_productsWhereInput
+    none?: portal_productsWhereInput
+  }
+
+  export type Marketplace_install_componentsListRelationFilter = {
+    every?: marketplace_install_componentsWhereInput
+    some?: marketplace_install_componentsWhereInput
+    none?: marketplace_install_componentsWhereInput
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -118173,6 +124072,18 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type marketplace_installsOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type portal_productsOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type marketplace_install_componentsOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type PortalOrderByRelevanceInput = {
     fields: PortalOrderByRelevanceFieldEnum | PortalOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -118198,6 +124109,11 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrder
     nestScheduleKey?: SortOrder
     vibeKey?: SortOrder
+    member_id?: SortOrder
+    source?: SortOrder
+    approval_status?: SortOrder
+    approved_at?: SortOrder
+    approved_by?: SortOrder
   }
 
   export type PortalAvgOrderByAggregateInput = {
@@ -118225,6 +124141,11 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrder
     nestScheduleKey?: SortOrder
     vibeKey?: SortOrder
+    member_id?: SortOrder
+    source?: SortOrder
+    approval_status?: SortOrder
+    approved_at?: SortOrder
+    approved_by?: SortOrder
   }
 
   export type PortalMinOrderByAggregateInput = {
@@ -118246,6 +124167,11 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrder
     nestScheduleKey?: SortOrder
     vibeKey?: SortOrder
+    member_id?: SortOrder
+    source?: SortOrder
+    approval_status?: SortOrder
+    approved_at?: SortOrder
+    approved_by?: SortOrder
   }
 
   export type PortalSumOrderByAggregateInput = {
@@ -121922,6 +127848,285 @@ export namespace Prisma {
     _max?: NestedEnuminvoice_templates_typeFilter<$PrismaModel>
   }
 
+  export type Bitrix_appsNullableScalarRelationFilter = {
+    is?: bitrix_appsWhereInput | null
+    isNot?: bitrix_appsWhereInput | null
+  }
+
+  export type marketplace_installsOrderByRelevanceInput = {
+    fields: marketplace_installsOrderByRelevanceFieldEnum | marketplace_installsOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type marketplace_installsPortal_idApp_codeCompoundUniqueInput = {
+    portal_id: bigint | number
+    app_code: string
+  }
+
+  export type marketplace_installsCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrder
+    app_code?: SortOrder
+    domain?: SortOrder
+    install_status?: SortOrder
+    error_step?: SortOrder
+    error_detail?: SortOrder
+    scope?: SortOrder
+    version?: SortOrder
+    lang?: SortOrder
+    license_status?: SortOrder
+    payment_expired?: SortOrder
+    license_days?: SortOrder
+    license_checked_at?: SortOrder
+    access_token?: SortOrder
+    refresh_token?: SortOrder
+    expires_at?: SortOrder
+    application_token?: SortOrder
+    installed_at?: SortOrder
+    uninstalled_at?: SortOrder
+  }
+
+  export type marketplace_installsAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrder
+    license_days?: SortOrder
+  }
+
+  export type marketplace_installsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrder
+    app_code?: SortOrder
+    domain?: SortOrder
+    install_status?: SortOrder
+    error_step?: SortOrder
+    error_detail?: SortOrder
+    scope?: SortOrder
+    version?: SortOrder
+    lang?: SortOrder
+    license_status?: SortOrder
+    payment_expired?: SortOrder
+    license_days?: SortOrder
+    license_checked_at?: SortOrder
+    access_token?: SortOrder
+    refresh_token?: SortOrder
+    expires_at?: SortOrder
+    application_token?: SortOrder
+    installed_at?: SortOrder
+    uninstalled_at?: SortOrder
+  }
+
+  export type marketplace_installsMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrder
+    app_code?: SortOrder
+    domain?: SortOrder
+    install_status?: SortOrder
+    error_step?: SortOrder
+    error_detail?: SortOrder
+    scope?: SortOrder
+    version?: SortOrder
+    lang?: SortOrder
+    license_status?: SortOrder
+    payment_expired?: SortOrder
+    license_days?: SortOrder
+    license_checked_at?: SortOrder
+    access_token?: SortOrder
+    refresh_token?: SortOrder
+    expires_at?: SortOrder
+    application_token?: SortOrder
+    installed_at?: SortOrder
+    uninstalled_at?: SortOrder
+  }
+
+  export type marketplace_installsSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    bitrix_app_id?: SortOrder
+    license_days?: SortOrder
+  }
+
+  export type portal_productsOrderByRelevanceInput = {
+    fields: portal_productsOrderByRelevanceFieldEnum | portal_productsOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type portal_productsPortal_idProduct_codeCompoundUniqueInput = {
+    portal_id: bigint | number
+    product_code: string
+  }
+
+  export type portal_productsCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    edition?: SortOrder
+    status?: SortOrder
+    activated_at?: SortOrder
+    paid_until?: SortOrder
+  }
+
+  export type portal_productsAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type portal_productsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    edition?: SortOrder
+    status?: SortOrder
+    activated_at?: SortOrder
+    paid_until?: SortOrder
+  }
+
+  export type portal_productsMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    edition?: SortOrder
+    status?: SortOrder
+    activated_at?: SortOrder
+    paid_until?: SortOrder
+  }
+
+  export type portal_productsSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type Marketplace_installsScalarRelationFilter = {
+    is?: marketplace_installsWhereInput
+    isNot?: marketplace_installsWhereInput
+  }
+
+  export type marketplace_install_componentsOrderByRelevanceInput = {
+    fields: marketplace_install_componentsOrderByRelevanceFieldEnum | marketplace_install_componentsOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type marketplace_install_componentsMarketplace_install_idProduct_codeComponent_typeComponent_codeCompoundUniqueInput = {
+    marketplace_install_id: string
+    product_code: string
+    component_type: string
+    component_code: string
+  }
+
+  export type marketplace_install_componentsCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    marketplace_install_id?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    component_type?: SortOrder
+    component_code?: SortOrder
+    status?: SortOrder
+    reason_code?: SortOrder
+    error_detail?: SortOrder
+    attempts?: SortOrder
+    last_attempt_at?: SortOrder
+  }
+
+  export type marketplace_install_componentsAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    attempts?: SortOrder
+  }
+
+  export type marketplace_install_componentsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    marketplace_install_id?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    component_type?: SortOrder
+    component_code?: SortOrder
+    status?: SortOrder
+    reason_code?: SortOrder
+    error_detail?: SortOrder
+    attempts?: SortOrder
+    last_attempt_at?: SortOrder
+  }
+
+  export type marketplace_install_componentsMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    marketplace_install_id?: SortOrder
+    portal_id?: SortOrder
+    product_code?: SortOrder
+    component_type?: SortOrder
+    component_code?: SortOrder
+    status?: SortOrder
+    reason_code?: SortOrder
+    error_detail?: SortOrder
+    attempts?: SortOrder
+    last_attempt_at?: SortOrder
+  }
+
+  export type marketplace_install_componentsSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    attempts?: SortOrder
+  }
+
+  export type bitrix_app_eventsOrderByRelevanceInput = {
+    fields: bitrix_app_eventsOrderByRelevanceFieldEnum | bitrix_app_eventsOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type bitrix_app_eventsCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    member_id?: SortOrder
+    domain?: SortOrder
+    event?: SortOrder
+    status?: SortOrder
+    error_detail?: SortOrder
+    payload?: SortOrder
+  }
+
+  export type bitrix_app_eventsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    member_id?: SortOrder
+    domain?: SortOrder
+    event?: SortOrder
+    status?: SortOrder
+    error_detail?: SortOrder
+    payload?: SortOrder
+  }
+
+  export type bitrix_app_eventsMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    member_id?: SortOrder
+    domain?: SortOrder
+    event?: SortOrder
+    status?: SortOrder
+    error_detail?: SortOrder
+    payload?: SortOrder
+  }
+
   export type PortalCreateNestedOneWithoutAgentsInput = {
     create?: XOR<PortalCreateWithoutAgentsInput, PortalUncheckedCreateWithoutAgentsInput>
     connectOrCreate?: PortalCreateOrConnectWithoutAgentsInput
@@ -123557,6 +129762,27 @@ export namespace Prisma {
     connect?: bx_rqsWhereUniqueInput | bx_rqsWhereUniqueInput[]
   }
 
+  export type marketplace_installsCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<marketplace_installsCreateWithoutPortalsInput, marketplace_installsUncheckedCreateWithoutPortalsInput> | marketplace_installsCreateWithoutPortalsInput[] | marketplace_installsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutPortalsInput | marketplace_installsCreateOrConnectWithoutPortalsInput[]
+    createMany?: marketplace_installsCreateManyPortalsInputEnvelope
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+  }
+
+  export type portal_productsCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<portal_productsCreateWithoutPortalsInput, portal_productsUncheckedCreateWithoutPortalsInput> | portal_productsCreateWithoutPortalsInput[] | portal_productsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_productsCreateOrConnectWithoutPortalsInput | portal_productsCreateOrConnectWithoutPortalsInput[]
+    createMany?: portal_productsCreateManyPortalsInputEnvelope
+    connect?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+  }
+
+  export type marketplace_install_componentsCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutPortalsInput, marketplace_install_componentsUncheckedCreateWithoutPortalsInput> | marketplace_install_componentsCreateWithoutPortalsInput[] | marketplace_install_componentsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutPortalsInput | marketplace_install_componentsCreateOrConnectWithoutPortalsInput[]
+    createMany?: marketplace_install_componentsCreateManyPortalsInputEnvelope
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -123716,6 +129942,27 @@ export namespace Prisma {
     connectOrCreate?: bx_rqsCreateOrConnectWithoutPortalInput | bx_rqsCreateOrConnectWithoutPortalInput[]
     createMany?: bx_rqsCreateManyPortalInputEnvelope
     connect?: bx_rqsWhereUniqueInput | bx_rqsWhereUniqueInput[]
+  }
+
+  export type marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<marketplace_installsCreateWithoutPortalsInput, marketplace_installsUncheckedCreateWithoutPortalsInput> | marketplace_installsCreateWithoutPortalsInput[] | marketplace_installsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutPortalsInput | marketplace_installsCreateOrConnectWithoutPortalsInput[]
+    createMany?: marketplace_installsCreateManyPortalsInputEnvelope
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+  }
+
+  export type portal_productsUncheckedCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<portal_productsCreateWithoutPortalsInput, portal_productsUncheckedCreateWithoutPortalsInput> | portal_productsCreateWithoutPortalsInput[] | portal_productsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_productsCreateOrConnectWithoutPortalsInput | portal_productsCreateOrConnectWithoutPortalsInput[]
+    createMany?: portal_productsCreateManyPortalsInputEnvelope
+    connect?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+  }
+
+  export type marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutPortalsInput, marketplace_install_componentsUncheckedCreateWithoutPortalsInput> | marketplace_install_componentsCreateWithoutPortalsInput[] | marketplace_install_componentsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutPortalsInput | marketplace_install_componentsCreateOrConnectWithoutPortalsInput[]
+    createMany?: marketplace_install_componentsCreateManyPortalsInputEnvelope
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -124050,6 +130297,48 @@ export namespace Prisma {
     deleteMany?: bx_rqsScalarWhereInput | bx_rqsScalarWhereInput[]
   }
 
+  export type marketplace_installsUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<marketplace_installsCreateWithoutPortalsInput, marketplace_installsUncheckedCreateWithoutPortalsInput> | marketplace_installsCreateWithoutPortalsInput[] | marketplace_installsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutPortalsInput | marketplace_installsCreateOrConnectWithoutPortalsInput[]
+    upsert?: marketplace_installsUpsertWithWhereUniqueWithoutPortalsInput | marketplace_installsUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: marketplace_installsCreateManyPortalsInputEnvelope
+    set?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    disconnect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    delete?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    update?: marketplace_installsUpdateWithWhereUniqueWithoutPortalsInput | marketplace_installsUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: marketplace_installsUpdateManyWithWhereWithoutPortalsInput | marketplace_installsUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: marketplace_installsScalarWhereInput | marketplace_installsScalarWhereInput[]
+  }
+
+  export type portal_productsUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<portal_productsCreateWithoutPortalsInput, portal_productsUncheckedCreateWithoutPortalsInput> | portal_productsCreateWithoutPortalsInput[] | portal_productsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_productsCreateOrConnectWithoutPortalsInput | portal_productsCreateOrConnectWithoutPortalsInput[]
+    upsert?: portal_productsUpsertWithWhereUniqueWithoutPortalsInput | portal_productsUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: portal_productsCreateManyPortalsInputEnvelope
+    set?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    disconnect?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    delete?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    connect?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    update?: portal_productsUpdateWithWhereUniqueWithoutPortalsInput | portal_productsUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: portal_productsUpdateManyWithWhereWithoutPortalsInput | portal_productsUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: portal_productsScalarWhereInput | portal_productsScalarWhereInput[]
+  }
+
+  export type marketplace_install_componentsUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutPortalsInput, marketplace_install_componentsUncheckedCreateWithoutPortalsInput> | marketplace_install_componentsCreateWithoutPortalsInput[] | marketplace_install_componentsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutPortalsInput | marketplace_install_componentsCreateOrConnectWithoutPortalsInput[]
+    upsert?: marketplace_install_componentsUpsertWithWhereUniqueWithoutPortalsInput | marketplace_install_componentsUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: marketplace_install_componentsCreateManyPortalsInputEnvelope
+    set?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    disconnect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    delete?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    update?: marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput | marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput | marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -124370,6 +130659,48 @@ export namespace Prisma {
     update?: bx_rqsUpdateWithWhereUniqueWithoutPortalInput | bx_rqsUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: bx_rqsUpdateManyWithWhereWithoutPortalInput | bx_rqsUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: bx_rqsScalarWhereInput | bx_rqsScalarWhereInput[]
+  }
+
+  export type marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<marketplace_installsCreateWithoutPortalsInput, marketplace_installsUncheckedCreateWithoutPortalsInput> | marketplace_installsCreateWithoutPortalsInput[] | marketplace_installsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutPortalsInput | marketplace_installsCreateOrConnectWithoutPortalsInput[]
+    upsert?: marketplace_installsUpsertWithWhereUniqueWithoutPortalsInput | marketplace_installsUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: marketplace_installsCreateManyPortalsInputEnvelope
+    set?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    disconnect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    delete?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    update?: marketplace_installsUpdateWithWhereUniqueWithoutPortalsInput | marketplace_installsUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: marketplace_installsUpdateManyWithWhereWithoutPortalsInput | marketplace_installsUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: marketplace_installsScalarWhereInput | marketplace_installsScalarWhereInput[]
+  }
+
+  export type portal_productsUncheckedUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<portal_productsCreateWithoutPortalsInput, portal_productsUncheckedCreateWithoutPortalsInput> | portal_productsCreateWithoutPortalsInput[] | portal_productsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_productsCreateOrConnectWithoutPortalsInput | portal_productsCreateOrConnectWithoutPortalsInput[]
+    upsert?: portal_productsUpsertWithWhereUniqueWithoutPortalsInput | portal_productsUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: portal_productsCreateManyPortalsInputEnvelope
+    set?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    disconnect?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    delete?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    connect?: portal_productsWhereUniqueInput | portal_productsWhereUniqueInput[]
+    update?: portal_productsUpdateWithWhereUniqueWithoutPortalsInput | portal_productsUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: portal_productsUpdateManyWithWhereWithoutPortalsInput | portal_productsUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: portal_productsScalarWhereInput | portal_productsScalarWhereInput[]
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutPortalsInput, marketplace_install_componentsUncheckedCreateWithoutPortalsInput> | marketplace_install_componentsCreateWithoutPortalsInput[] | marketplace_install_componentsUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutPortalsInput | marketplace_install_componentsCreateOrConnectWithoutPortalsInput[]
+    upsert?: marketplace_install_componentsUpsertWithWhereUniqueWithoutPortalsInput | marketplace_install_componentsUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: marketplace_install_componentsCreateManyPortalsInputEnvelope
+    set?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    disconnect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    delete?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    update?: marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput | marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput | marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
   }
 
   export type countersCreateNestedOneWithoutRq_counterInput = {
@@ -124784,6 +131115,13 @@ export namespace Prisma {
     connect?: bitrix_tokensWhereUniqueInput | bitrix_tokensWhereUniqueInput[]
   }
 
+  export type marketplace_installsCreateNestedManyWithoutBitrix_appsInput = {
+    create?: XOR<marketplace_installsCreateWithoutBitrix_appsInput, marketplace_installsUncheckedCreateWithoutBitrix_appsInput> | marketplace_installsCreateWithoutBitrix_appsInput[] | marketplace_installsUncheckedCreateWithoutBitrix_appsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutBitrix_appsInput | marketplace_installsCreateOrConnectWithoutBitrix_appsInput[]
+    createMany?: marketplace_installsCreateManyBitrix_appsInputEnvelope
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+  }
+
   export type bitrix_app_placementsUncheckedCreateNestedManyWithoutBitrix_appsInput = {
     create?: XOR<bitrix_app_placementsCreateWithoutBitrix_appsInput, bitrix_app_placementsUncheckedCreateWithoutBitrix_appsInput> | bitrix_app_placementsCreateWithoutBitrix_appsInput[] | bitrix_app_placementsUncheckedCreateWithoutBitrix_appsInput[]
     connectOrCreate?: bitrix_app_placementsCreateOrConnectWithoutBitrix_appsInput | bitrix_app_placementsCreateOrConnectWithoutBitrix_appsInput[]
@@ -124796,6 +131134,13 @@ export namespace Prisma {
     connectOrCreate?: bitrix_tokensCreateOrConnectWithoutBitrix_appsInput | bitrix_tokensCreateOrConnectWithoutBitrix_appsInput[]
     createMany?: bitrix_tokensCreateManyBitrix_appsInputEnvelope
     connect?: bitrix_tokensWhereUniqueInput | bitrix_tokensWhereUniqueInput[]
+  }
+
+  export type marketplace_installsUncheckedCreateNestedManyWithoutBitrix_appsInput = {
+    create?: XOR<marketplace_installsCreateWithoutBitrix_appsInput, marketplace_installsUncheckedCreateWithoutBitrix_appsInput> | marketplace_installsCreateWithoutBitrix_appsInput[] | marketplace_installsUncheckedCreateWithoutBitrix_appsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutBitrix_appsInput | marketplace_installsCreateOrConnectWithoutBitrix_appsInput[]
+    createMany?: marketplace_installsCreateManyBitrix_appsInputEnvelope
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
   }
 
   export type bitrix_app_placementsUpdateManyWithoutBitrix_appsNestedInput = {
@@ -124834,6 +131179,20 @@ export namespace Prisma {
     deleteMany?: bitrix_tokensScalarWhereInput | bitrix_tokensScalarWhereInput[]
   }
 
+  export type marketplace_installsUpdateManyWithoutBitrix_appsNestedInput = {
+    create?: XOR<marketplace_installsCreateWithoutBitrix_appsInput, marketplace_installsUncheckedCreateWithoutBitrix_appsInput> | marketplace_installsCreateWithoutBitrix_appsInput[] | marketplace_installsUncheckedCreateWithoutBitrix_appsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutBitrix_appsInput | marketplace_installsCreateOrConnectWithoutBitrix_appsInput[]
+    upsert?: marketplace_installsUpsertWithWhereUniqueWithoutBitrix_appsInput | marketplace_installsUpsertWithWhereUniqueWithoutBitrix_appsInput[]
+    createMany?: marketplace_installsCreateManyBitrix_appsInputEnvelope
+    set?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    disconnect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    delete?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    update?: marketplace_installsUpdateWithWhereUniqueWithoutBitrix_appsInput | marketplace_installsUpdateWithWhereUniqueWithoutBitrix_appsInput[]
+    updateMany?: marketplace_installsUpdateManyWithWhereWithoutBitrix_appsInput | marketplace_installsUpdateManyWithWhereWithoutBitrix_appsInput[]
+    deleteMany?: marketplace_installsScalarWhereInput | marketplace_installsScalarWhereInput[]
+  }
+
   export type bitrix_app_placementsUncheckedUpdateManyWithoutBitrix_appsNestedInput = {
     create?: XOR<bitrix_app_placementsCreateWithoutBitrix_appsInput, bitrix_app_placementsUncheckedCreateWithoutBitrix_appsInput> | bitrix_app_placementsCreateWithoutBitrix_appsInput[] | bitrix_app_placementsUncheckedCreateWithoutBitrix_appsInput[]
     connectOrCreate?: bitrix_app_placementsCreateOrConnectWithoutBitrix_appsInput | bitrix_app_placementsCreateOrConnectWithoutBitrix_appsInput[]
@@ -124860,6 +131219,20 @@ export namespace Prisma {
     update?: bitrix_tokensUpdateWithWhereUniqueWithoutBitrix_appsInput | bitrix_tokensUpdateWithWhereUniqueWithoutBitrix_appsInput[]
     updateMany?: bitrix_tokensUpdateManyWithWhereWithoutBitrix_appsInput | bitrix_tokensUpdateManyWithWhereWithoutBitrix_appsInput[]
     deleteMany?: bitrix_tokensScalarWhereInput | bitrix_tokensScalarWhereInput[]
+  }
+
+  export type marketplace_installsUncheckedUpdateManyWithoutBitrix_appsNestedInput = {
+    create?: XOR<marketplace_installsCreateWithoutBitrix_appsInput, marketplace_installsUncheckedCreateWithoutBitrix_appsInput> | marketplace_installsCreateWithoutBitrix_appsInput[] | marketplace_installsUncheckedCreateWithoutBitrix_appsInput[]
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutBitrix_appsInput | marketplace_installsCreateOrConnectWithoutBitrix_appsInput[]
+    upsert?: marketplace_installsUpsertWithWhereUniqueWithoutBitrix_appsInput | marketplace_installsUpsertWithWhereUniqueWithoutBitrix_appsInput[]
+    createMany?: marketplace_installsCreateManyBitrix_appsInputEnvelope
+    set?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    disconnect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    delete?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    connect?: marketplace_installsWhereUniqueInput | marketplace_installsWhereUniqueInput[]
+    update?: marketplace_installsUpdateWithWhereUniqueWithoutBitrix_appsInput | marketplace_installsUpdateWithWhereUniqueWithoutBitrix_appsInput[]
+    updateMany?: marketplace_installsUpdateManyWithWhereWithoutBitrix_appsInput | marketplace_installsUpdateManyWithWhereWithoutBitrix_appsInput[]
+    deleteMany?: marketplace_installsScalarWhereInput | marketplace_installsScalarWhereInput[]
   }
 
   export type bitrix_appsCreateNestedOneWithoutBitrix_tokensInput = {
@@ -125908,6 +132281,120 @@ export namespace Prisma {
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutInvoiceTemplatesInput, PortalUpdateWithoutInvoiceTemplatesInput>, PortalUncheckedUpdateWithoutInvoiceTemplatesInput>
   }
 
+  export type marketplace_install_componentsCreateNestedManyWithoutMarketplace_installsInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput> | marketplace_install_componentsCreateWithoutMarketplace_installsInput[] | marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput | marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput[]
+    createMany?: marketplace_install_componentsCreateManyMarketplace_installsInputEnvelope
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+  }
+
+  export type bitrix_appsCreateNestedOneWithoutMarketplace_installsInput = {
+    create?: XOR<bitrix_appsCreateWithoutMarketplace_installsInput, bitrix_appsUncheckedCreateWithoutMarketplace_installsInput>
+    connectOrCreate?: bitrix_appsCreateOrConnectWithoutMarketplace_installsInput
+    connect?: bitrix_appsWhereUniqueInput
+  }
+
+  export type PortalCreateNestedOneWithoutMarketplace_installsInput = {
+    create?: XOR<PortalCreateWithoutMarketplace_installsInput, PortalUncheckedCreateWithoutMarketplace_installsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutMarketplace_installsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type marketplace_install_componentsUncheckedCreateNestedManyWithoutMarketplace_installsInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput> | marketplace_install_componentsCreateWithoutMarketplace_installsInput[] | marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput | marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput[]
+    createMany?: marketplace_install_componentsCreateManyMarketplace_installsInputEnvelope
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+  }
+
+  export type marketplace_install_componentsUpdateManyWithoutMarketplace_installsNestedInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput> | marketplace_install_componentsCreateWithoutMarketplace_installsInput[] | marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput | marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput[]
+    upsert?: marketplace_install_componentsUpsertWithWhereUniqueWithoutMarketplace_installsInput | marketplace_install_componentsUpsertWithWhereUniqueWithoutMarketplace_installsInput[]
+    createMany?: marketplace_install_componentsCreateManyMarketplace_installsInputEnvelope
+    set?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    disconnect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    delete?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    update?: marketplace_install_componentsUpdateWithWhereUniqueWithoutMarketplace_installsInput | marketplace_install_componentsUpdateWithWhereUniqueWithoutMarketplace_installsInput[]
+    updateMany?: marketplace_install_componentsUpdateManyWithWhereWithoutMarketplace_installsInput | marketplace_install_componentsUpdateManyWithWhereWithoutMarketplace_installsInput[]
+    deleteMany?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
+  }
+
+  export type bitrix_appsUpdateOneWithoutMarketplace_installsNestedInput = {
+    create?: XOR<bitrix_appsCreateWithoutMarketplace_installsInput, bitrix_appsUncheckedCreateWithoutMarketplace_installsInput>
+    connectOrCreate?: bitrix_appsCreateOrConnectWithoutMarketplace_installsInput
+    upsert?: bitrix_appsUpsertWithoutMarketplace_installsInput
+    disconnect?: bitrix_appsWhereInput | boolean
+    delete?: bitrix_appsWhereInput | boolean
+    connect?: bitrix_appsWhereUniqueInput
+    update?: XOR<XOR<bitrix_appsUpdateToOneWithWhereWithoutMarketplace_installsInput, bitrix_appsUpdateWithoutMarketplace_installsInput>, bitrix_appsUncheckedUpdateWithoutMarketplace_installsInput>
+  }
+
+  export type PortalUpdateOneRequiredWithoutMarketplace_installsNestedInput = {
+    create?: XOR<PortalCreateWithoutMarketplace_installsInput, PortalUncheckedCreateWithoutMarketplace_installsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutMarketplace_installsInput
+    upsert?: PortalUpsertWithoutMarketplace_installsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutMarketplace_installsInput, PortalUpdateWithoutMarketplace_installsInput>, PortalUncheckedUpdateWithoutMarketplace_installsInput>
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateManyWithoutMarketplace_installsNestedInput = {
+    create?: XOR<marketplace_install_componentsCreateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput> | marketplace_install_componentsCreateWithoutMarketplace_installsInput[] | marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput[]
+    connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput | marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput[]
+    upsert?: marketplace_install_componentsUpsertWithWhereUniqueWithoutMarketplace_installsInput | marketplace_install_componentsUpsertWithWhereUniqueWithoutMarketplace_installsInput[]
+    createMany?: marketplace_install_componentsCreateManyMarketplace_installsInputEnvelope
+    set?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    disconnect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    delete?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+    update?: marketplace_install_componentsUpdateWithWhereUniqueWithoutMarketplace_installsInput | marketplace_install_componentsUpdateWithWhereUniqueWithoutMarketplace_installsInput[]
+    updateMany?: marketplace_install_componentsUpdateManyWithWhereWithoutMarketplace_installsInput | marketplace_install_componentsUpdateManyWithWhereWithoutMarketplace_installsInput[]
+    deleteMany?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
+  }
+
+  export type PortalCreateNestedOneWithoutPortal_productsInput = {
+    create?: XOR<PortalCreateWithoutPortal_productsInput, PortalUncheckedCreateWithoutPortal_productsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutPortal_productsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutPortal_productsNestedInput = {
+    create?: XOR<PortalCreateWithoutPortal_productsInput, PortalUncheckedCreateWithoutPortal_productsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutPortal_productsInput
+    upsert?: PortalUpsertWithoutPortal_productsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutPortal_productsInput, PortalUpdateWithoutPortal_productsInput>, PortalUncheckedUpdateWithoutPortal_productsInput>
+  }
+
+  export type marketplace_installsCreateNestedOneWithoutMarketplace_install_componentsInput = {
+    create?: XOR<marketplace_installsCreateWithoutMarketplace_install_componentsInput, marketplace_installsUncheckedCreateWithoutMarketplace_install_componentsInput>
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutMarketplace_install_componentsInput
+    connect?: marketplace_installsWhereUniqueInput
+  }
+
+  export type PortalCreateNestedOneWithoutMarketplace_install_componentsInput = {
+    create?: XOR<PortalCreateWithoutMarketplace_install_componentsInput, PortalUncheckedCreateWithoutMarketplace_install_componentsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutMarketplace_install_componentsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type marketplace_installsUpdateOneRequiredWithoutMarketplace_install_componentsNestedInput = {
+    create?: XOR<marketplace_installsCreateWithoutMarketplace_install_componentsInput, marketplace_installsUncheckedCreateWithoutMarketplace_install_componentsInput>
+    connectOrCreate?: marketplace_installsCreateOrConnectWithoutMarketplace_install_componentsInput
+    upsert?: marketplace_installsUpsertWithoutMarketplace_install_componentsInput
+    connect?: marketplace_installsWhereUniqueInput
+    update?: XOR<XOR<marketplace_installsUpdateToOneWithWhereWithoutMarketplace_install_componentsInput, marketplace_installsUpdateWithoutMarketplace_install_componentsInput>, marketplace_installsUncheckedUpdateWithoutMarketplace_install_componentsInput>
+  }
+
+  export type PortalUpdateOneRequiredWithoutMarketplace_install_componentsNestedInput = {
+    create?: XOR<PortalCreateWithoutMarketplace_install_componentsInput, PortalUncheckedCreateWithoutMarketplace_install_componentsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutMarketplace_install_componentsInput
+    upsert?: PortalUpsertWithoutMarketplace_install_componentsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutMarketplace_install_componentsInput, PortalUpdateWithoutMarketplace_install_componentsInput>, PortalUncheckedUpdateWithoutMarketplace_install_componentsInput>
+  }
+
   export type NestedBigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -126426,6 +132913,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -126449,6 +132941,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -126470,6 +132965,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -126492,6 +132992,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -126673,6 +133176,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -126696,6 +133204,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -126717,6 +133228,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -126739,6 +133255,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -127110,6 +133629,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
     btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
@@ -127133,6 +133657,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -127154,6 +133681,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
     btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
@@ -127176,6 +133708,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -127212,6 +133747,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
     btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
@@ -127235,6 +133775,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -127256,6 +133799,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
     btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
@@ -127278,6 +133826,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -127364,6 +133915,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
@@ -127387,6 +133943,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -127408,6 +133967,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
@@ -127430,6 +133994,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -127466,6 +134033,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
@@ -127489,6 +134061,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -127510,6 +134085,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
@@ -127532,6 +134112,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -127552,6 +134135,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -127575,6 +134163,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -127596,6 +134187,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -127618,6 +134214,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -127654,6 +134253,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -127677,6 +134281,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -127698,6 +134305,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -127720,6 +134332,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -127740,6 +134355,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -127763,6 +134383,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -127784,6 +134407,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -127806,6 +134434,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -127842,6 +134473,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -127865,6 +134501,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -127886,6 +134525,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -127908,6 +134552,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -127928,6 +134575,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -127951,6 +134603,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -127972,6 +134627,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -127994,6 +134654,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -128030,6 +134693,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -128053,6 +134721,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -128074,6 +134745,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -128096,6 +134772,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -128200,6 +134879,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -128223,6 +134907,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -128244,6 +134931,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -128266,6 +134958,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -128302,6 +134997,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -128325,6 +135025,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -128346,6 +135049,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -128368,6 +135076,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -128388,6 +135099,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -128411,6 +135127,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -128431,6 +135150,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -128454,6 +135178,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -128548,6 +135275,11 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableFilter<"Portal"> | string | null
     vibeKey?: StringNullableFilter<"Portal"> | string | null
+    member_id?: StringNullableFilter<"Portal"> | string | null
+    source?: StringFilter<"Portal"> | string
+    approval_status?: StringNullableFilter<"Portal"> | string | null
+    approved_at?: DateTimeNullableFilter<"Portal"> | Date | string | null
+    approved_by?: StringNullableFilter<"Portal"> | string | null
   }
 
   export type UserUpsertWithWhereUniqueWithoutClientsInput = {
@@ -128791,6 +135523,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -128814,6 +135551,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -128835,6 +135575,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -128857,6 +135602,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -128893,6 +135641,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -128916,6 +135669,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -128937,6 +135693,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -128959,6 +135720,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -131064,6 +137828,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -131087,6 +137856,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -131108,6 +137880,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -131130,6 +137907,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -131287,6 +138067,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -131310,6 +138095,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -131331,6 +138119,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -131353,6 +138146,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -131473,6 +138269,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -131496,6 +138297,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -131517,6 +138321,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -131539,6 +138348,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -131624,6 +138436,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -131647,6 +138464,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -131668,6 +138488,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -131690,6 +138515,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -131702,6 +138530,7 @@ export namespace Prisma {
     status: string
     bitrix_app_placements?: bitrix_app_placementsCreateNestedManyWithoutBitrix_appsInput
     bitrix_tokens?: bitrix_tokensCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsUncheckedCreateWithoutPortalsInput = {
@@ -131714,6 +138543,7 @@ export namespace Prisma {
     status: string
     bitrix_app_placements?: bitrix_app_placementsUncheckedCreateNestedManyWithoutBitrix_appsInput
     bitrix_tokens?: bitrix_tokensUncheckedCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsCreateOrConnectWithoutPortalsInput = {
@@ -132575,6 +139405,140 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type marketplace_installsCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutMarketplace_installsInput
+    bitrix_apps?: bitrix_appsCreateNestedOneWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsUncheckedCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    bitrix_app_id?: bigint | number | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsCreateOrConnectWithoutPortalsInput = {
+    where: marketplace_installsWhereUniqueInput
+    create: XOR<marketplace_installsCreateWithoutPortalsInput, marketplace_installsUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type marketplace_installsCreateManyPortalsInputEnvelope = {
+    data: marketplace_installsCreateManyPortalsInput | marketplace_installsCreateManyPortalsInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type portal_productsCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    edition?: string | null
+    status?: string
+    activated_at?: Date | string | null
+    paid_until?: Date | string | null
+  }
+
+  export type portal_productsUncheckedCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    edition?: string | null
+    status?: string
+    activated_at?: Date | string | null
+    paid_until?: Date | string | null
+  }
+
+  export type portal_productsCreateOrConnectWithoutPortalsInput = {
+    where: portal_productsWhereUniqueInput
+    create: XOR<portal_productsCreateWithoutPortalsInput, portal_productsUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type portal_productsCreateManyPortalsInputEnvelope = {
+    data: portal_productsCreateManyPortalsInput | portal_productsCreateManyPortalsInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type marketplace_install_componentsCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+    marketplace_installs: marketplace_installsCreateNestedOneWithoutMarketplace_install_componentsInput
+  }
+
+  export type marketplace_install_componentsUncheckedCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    marketplace_install_id: string
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+  }
+
+  export type marketplace_install_componentsCreateOrConnectWithoutPortalsInput = {
+    where: marketplace_install_componentsWhereUniqueInput
+    create: XOR<marketplace_install_componentsCreateWithoutPortalsInput, marketplace_install_componentsUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type marketplace_install_componentsCreateManyPortalsInputEnvelope = {
+    data: marketplace_install_componentsCreateManyPortalsInput | marketplace_install_componentsCreateManyPortalsInput[]
+    skipDuplicates?: boolean
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -133316,6 +140280,117 @@ export namespace Prisma {
     sort?: IntNullableFilter<"bx_rqs"> | number | null
   }
 
+  export type marketplace_installsUpsertWithWhereUniqueWithoutPortalsInput = {
+    where: marketplace_installsWhereUniqueInput
+    update: XOR<marketplace_installsUpdateWithoutPortalsInput, marketplace_installsUncheckedUpdateWithoutPortalsInput>
+    create: XOR<marketplace_installsCreateWithoutPortalsInput, marketplace_installsUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type marketplace_installsUpdateWithWhereUniqueWithoutPortalsInput = {
+    where: marketplace_installsWhereUniqueInput
+    data: XOR<marketplace_installsUpdateWithoutPortalsInput, marketplace_installsUncheckedUpdateWithoutPortalsInput>
+  }
+
+  export type marketplace_installsUpdateManyWithWhereWithoutPortalsInput = {
+    where: marketplace_installsScalarWhereInput
+    data: XOR<marketplace_installsUpdateManyMutationInput, marketplace_installsUncheckedUpdateManyWithoutPortalsInput>
+  }
+
+  export type marketplace_installsScalarWhereInput = {
+    AND?: marketplace_installsScalarWhereInput | marketplace_installsScalarWhereInput[]
+    OR?: marketplace_installsScalarWhereInput[]
+    NOT?: marketplace_installsScalarWhereInput | marketplace_installsScalarWhereInput[]
+    id?: StringFilter<"marketplace_installs"> | string
+    created_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    portal_id?: BigIntFilter<"marketplace_installs"> | bigint | number
+    bitrix_app_id?: BigIntNullableFilter<"marketplace_installs"> | bigint | number | null
+    app_code?: StringFilter<"marketplace_installs"> | string
+    domain?: StringNullableFilter<"marketplace_installs"> | string | null
+    install_status?: StringFilter<"marketplace_installs"> | string
+    error_step?: StringNullableFilter<"marketplace_installs"> | string | null
+    error_detail?: StringNullableFilter<"marketplace_installs"> | string | null
+    scope?: StringNullableFilter<"marketplace_installs"> | string | null
+    version?: StringNullableFilter<"marketplace_installs"> | string | null
+    lang?: StringNullableFilter<"marketplace_installs"> | string | null
+    license_status?: StringNullableFilter<"marketplace_installs"> | string | null
+    payment_expired?: BoolNullableFilter<"marketplace_installs"> | boolean | null
+    license_days?: IntNullableFilter<"marketplace_installs"> | number | null
+    license_checked_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    access_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    refresh_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    expires_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    application_token?: StringNullableFilter<"marketplace_installs"> | string | null
+    installed_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+    uninstalled_at?: DateTimeNullableFilter<"marketplace_installs"> | Date | string | null
+  }
+
+  export type portal_productsUpsertWithWhereUniqueWithoutPortalsInput = {
+    where: portal_productsWhereUniqueInput
+    update: XOR<portal_productsUpdateWithoutPortalsInput, portal_productsUncheckedUpdateWithoutPortalsInput>
+    create: XOR<portal_productsCreateWithoutPortalsInput, portal_productsUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type portal_productsUpdateWithWhereUniqueWithoutPortalsInput = {
+    where: portal_productsWhereUniqueInput
+    data: XOR<portal_productsUpdateWithoutPortalsInput, portal_productsUncheckedUpdateWithoutPortalsInput>
+  }
+
+  export type portal_productsUpdateManyWithWhereWithoutPortalsInput = {
+    where: portal_productsScalarWhereInput
+    data: XOR<portal_productsUpdateManyMutationInput, portal_productsUncheckedUpdateManyWithoutPortalsInput>
+  }
+
+  export type portal_productsScalarWhereInput = {
+    AND?: portal_productsScalarWhereInput | portal_productsScalarWhereInput[]
+    OR?: portal_productsScalarWhereInput[]
+    NOT?: portal_productsScalarWhereInput | portal_productsScalarWhereInput[]
+    id?: StringFilter<"portal_products"> | string
+    created_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    portal_id?: BigIntFilter<"portal_products"> | bigint | number
+    product_code?: StringFilter<"portal_products"> | string
+    edition?: StringNullableFilter<"portal_products"> | string | null
+    status?: StringFilter<"portal_products"> | string
+    activated_at?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+    paid_until?: DateTimeNullableFilter<"portal_products"> | Date | string | null
+  }
+
+  export type marketplace_install_componentsUpsertWithWhereUniqueWithoutPortalsInput = {
+    where: marketplace_install_componentsWhereUniqueInput
+    update: XOR<marketplace_install_componentsUpdateWithoutPortalsInput, marketplace_install_componentsUncheckedUpdateWithoutPortalsInput>
+    create: XOR<marketplace_install_componentsCreateWithoutPortalsInput, marketplace_install_componentsUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput = {
+    where: marketplace_install_componentsWhereUniqueInput
+    data: XOR<marketplace_install_componentsUpdateWithoutPortalsInput, marketplace_install_componentsUncheckedUpdateWithoutPortalsInput>
+  }
+
+  export type marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput = {
+    where: marketplace_install_componentsScalarWhereInput
+    data: XOR<marketplace_install_componentsUpdateManyMutationInput, marketplace_install_componentsUncheckedUpdateManyWithoutPortalsInput>
+  }
+
+  export type marketplace_install_componentsScalarWhereInput = {
+    AND?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
+    OR?: marketplace_install_componentsScalarWhereInput[]
+    NOT?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
+    id?: StringFilter<"marketplace_install_components"> | string
+    created_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+    marketplace_install_id?: StringFilter<"marketplace_install_components"> | string
+    portal_id?: BigIntFilter<"marketplace_install_components"> | bigint | number
+    product_code?: StringFilter<"marketplace_install_components"> | string
+    component_type?: StringFilter<"marketplace_install_components"> | string
+    component_code?: StringFilter<"marketplace_install_components"> | string
+    status?: StringFilter<"marketplace_install_components"> | string
+    reason_code?: StringNullableFilter<"marketplace_install_components"> | string | null
+    error_detail?: StringNullableFilter<"marketplace_install_components"> | string | null
+    attempts?: IntFilter<"marketplace_install_components"> | number
+    last_attempt_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+  }
+
   export type countersCreateWithoutRq_counterInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -133686,6 +140761,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -133709,6 +140789,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -133730,6 +140813,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -133752,6 +140840,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -133788,6 +140879,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -133811,6 +140907,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -133832,6 +140931,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -133854,6 +140958,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -134308,6 +141415,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -134331,6 +141443,9 @@ export namespace Prisma {
     agents?: agentsCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -134352,6 +141467,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -134374,6 +141494,9 @@ export namespace Prisma {
     agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -134442,6 +141565,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -134465,6 +141593,9 @@ export namespace Prisma {
     agents?: agentsUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -134486,6 +141617,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -134508,6 +141644,9 @@ export namespace Prisma {
     agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -134528,6 +141667,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -134551,6 +141695,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -134572,6 +141719,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -134594,6 +141746,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -134630,6 +141785,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -134653,6 +141813,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -134674,6 +141837,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -134696,6 +141864,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -134768,6 +141939,7 @@ export namespace Prisma {
     status: string
     portals: PortalCreateNestedOneWithoutBitrix_appsInput
     bitrix_tokens?: bitrix_tokensCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsUncheckedCreateWithoutBitrix_app_placementsInput = {
@@ -134780,6 +141952,7 @@ export namespace Prisma {
     code: string
     status: string
     bitrix_tokens?: bitrix_tokensUncheckedCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsCreateOrConnectWithoutBitrix_app_placementsInput = {
@@ -134808,6 +141981,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     portals?: PortalUpdateOneRequiredWithoutBitrix_appsNestedInput
     bitrix_tokens?: bitrix_tokensUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_appsUncheckedUpdateWithoutBitrix_app_placementsInput = {
@@ -134820,6 +141994,7 @@ export namespace Prisma {
     code?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     bitrix_tokens?: bitrix_tokensUncheckedUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_app_placementsCreateWithoutBitrix_appsInput = {
@@ -134876,6 +142051,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
     btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
@@ -134899,6 +142079,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -134920,6 +142103,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
     btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
@@ -134942,6 +142130,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -134982,6 +142173,68 @@ export namespace Prisma {
 
   export type bitrix_tokensCreateManyBitrix_appsInputEnvelope = {
     data: bitrix_tokensCreateManyBitrix_appsInput | bitrix_tokensCreateManyBitrix_appsInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type marketplace_installsCreateWithoutBitrix_appsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutMarketplace_installsInput
+    portals: PortalCreateNestedOneWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsUncheckedCreateWithoutBitrix_appsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsCreateOrConnectWithoutBitrix_appsInput = {
+    where: marketplace_installsWhereUniqueInput
+    create: XOR<marketplace_installsCreateWithoutBitrix_appsInput, marketplace_installsUncheckedCreateWithoutBitrix_appsInput>
+  }
+
+  export type marketplace_installsCreateManyBitrix_appsInputEnvelope = {
+    data: marketplace_installsCreateManyBitrix_appsInput | marketplace_installsCreateManyBitrix_appsInput[]
     skipDuplicates?: boolean
   }
 
@@ -135047,6 +142300,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
     btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
@@ -135070,6 +142328,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -135091,6 +142352,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
     btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
@@ -135113,6 +142379,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -135148,6 +142417,22 @@ export namespace Prisma {
     bitrix_app_id?: BigIntFilter<"bitrix_tokens"> | bigint | number
   }
 
+  export type marketplace_installsUpsertWithWhereUniqueWithoutBitrix_appsInput = {
+    where: marketplace_installsWhereUniqueInput
+    update: XOR<marketplace_installsUpdateWithoutBitrix_appsInput, marketplace_installsUncheckedUpdateWithoutBitrix_appsInput>
+    create: XOR<marketplace_installsCreateWithoutBitrix_appsInput, marketplace_installsUncheckedCreateWithoutBitrix_appsInput>
+  }
+
+  export type marketplace_installsUpdateWithWhereUniqueWithoutBitrix_appsInput = {
+    where: marketplace_installsWhereUniqueInput
+    data: XOR<marketplace_installsUpdateWithoutBitrix_appsInput, marketplace_installsUncheckedUpdateWithoutBitrix_appsInput>
+  }
+
+  export type marketplace_installsUpdateManyWithWhereWithoutBitrix_appsInput = {
+    where: marketplace_installsScalarWhereInput
+    data: XOR<marketplace_installsUpdateManyMutationInput, marketplace_installsUncheckedUpdateManyWithoutBitrix_appsInput>
+  }
+
   export type bitrix_appsCreateWithoutBitrix_tokensInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -135158,6 +142443,7 @@ export namespace Prisma {
     status: string
     bitrix_app_placements?: bitrix_app_placementsCreateNestedManyWithoutBitrix_appsInput
     portals: PortalCreateNestedOneWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsUncheckedCreateWithoutBitrix_tokensInput = {
@@ -135170,6 +142456,7 @@ export namespace Prisma {
     code: string
     status: string
     bitrix_app_placements?: bitrix_app_placementsUncheckedCreateNestedManyWithoutBitrix_appsInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutBitrix_appsInput
   }
 
   export type bitrix_appsCreateOrConnectWithoutBitrix_tokensInput = {
@@ -135198,6 +142485,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     bitrix_app_placements?: bitrix_app_placementsUpdateManyWithoutBitrix_appsNestedInput
     portals?: PortalUpdateOneRequiredWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_appsUncheckedUpdateWithoutBitrix_tokensInput = {
@@ -135210,6 +142498,7 @@ export namespace Prisma {
     code?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     bitrix_app_placements?: bitrix_app_placementsUncheckedUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type PortalCreateWithoutBtx_contactsInput = {
@@ -135230,6 +142519,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -135253,6 +142547,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -135274,6 +142571,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -135296,6 +142598,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -135332,6 +142637,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -135355,6 +142665,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -135376,6 +142689,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -135398,6 +142716,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -135418,6 +142739,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -135441,6 +142767,9 @@ export namespace Prisma {
     agents?: agentsCreateNestedManyWithoutPortalInput
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -135462,6 +142791,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -135484,6 +142818,9 @@ export namespace Prisma {
     agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -135520,6 +142857,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -135543,6 +142885,9 @@ export namespace Prisma {
     agents?: agentsUpdateManyWithoutPortalNestedInput
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -135564,6 +142909,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -135586,6 +142936,9 @@ export namespace Prisma {
     agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -137317,6 +144670,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -137340,6 +144698,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -137361,6 +144722,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -137383,6 +144749,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -137498,6 +144867,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -137521,6 +144895,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -137542,6 +144919,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -137564,6 +144946,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -137840,6 +145225,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -137863,6 +145253,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -137884,6 +145277,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -137906,6 +145304,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -137942,6 +145343,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -137965,6 +145371,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -137986,6 +145395,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -138008,6 +145422,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -138163,6 +145580,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -138186,6 +145608,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -138207,6 +145632,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -138229,6 +145659,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -138344,6 +145777,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -138367,6 +145805,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -138388,6 +145829,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -138410,6 +145856,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -138430,6 +145879,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -138453,6 +145907,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -138474,6 +145931,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -138496,6 +145958,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -138563,6 +146028,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -138586,6 +146056,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -138607,6 +146080,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -138629,6 +146107,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -138878,6 +146359,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -138901,6 +146387,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -138922,6 +146411,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -138944,6 +146438,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -139068,6 +146565,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -139091,6 +146593,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -139112,6 +146617,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -139134,6 +146644,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -139884,6 +147397,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -139907,6 +147425,9 @@ export namespace Prisma {
     templates?: TemplateCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -139928,6 +147449,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -139950,6 +147476,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -139986,6 +147515,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -140009,6 +147543,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -140030,6 +147567,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -140052,6 +147594,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -140103,6 +147648,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
@@ -140126,6 +147676,9 @@ export namespace Prisma {
     agents?: agentsCreateNestedManyWithoutPortalInput
     templates?: TemplateCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -140147,6 +147700,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
     bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
     bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
     btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
@@ -140169,6 +147727,9 @@ export namespace Prisma {
     agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
     templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -140242,6 +147803,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -140265,6 +147831,9 @@ export namespace Prisma {
     agents?: agentsUpdateManyWithoutPortalNestedInput
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -140286,6 +147855,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -140308,6 +147882,913 @@ export namespace Prisma {
     agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+    portals: PortalCreateNestedOneWithoutMarketplace_install_componentsInput
+  }
+
+  export type marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+  }
+
+  export type marketplace_install_componentsCreateOrConnectWithoutMarketplace_installsInput = {
+    where: marketplace_install_componentsWhereUniqueInput
+    create: XOR<marketplace_install_componentsCreateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput>
+  }
+
+  export type marketplace_install_componentsCreateManyMarketplace_installsInputEnvelope = {
+    data: marketplace_install_componentsCreateManyMarketplace_installsInput | marketplace_install_componentsCreateManyMarketplace_installsInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type bitrix_appsCreateWithoutMarketplace_installsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    group: string
+    type: string
+    code: string
+    status: string
+    bitrix_app_placements?: bitrix_app_placementsCreateNestedManyWithoutBitrix_appsInput
+    portals: PortalCreateNestedOneWithoutBitrix_appsInput
+    bitrix_tokens?: bitrix_tokensCreateNestedManyWithoutBitrix_appsInput
+  }
+
+  export type bitrix_appsUncheckedCreateWithoutMarketplace_installsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    group: string
+    type: string
+    code: string
+    status: string
+    bitrix_app_placements?: bitrix_app_placementsUncheckedCreateNestedManyWithoutBitrix_appsInput
+    bitrix_tokens?: bitrix_tokensUncheckedCreateNestedManyWithoutBitrix_appsInput
+  }
+
+  export type bitrix_appsCreateOrConnectWithoutMarketplace_installsInput = {
+    where: bitrix_appsWhereUniqueInput
+    create: XOR<bitrix_appsCreateWithoutMarketplace_installsInput, bitrix_appsUncheckedCreateWithoutMarketplace_installsInput>
+  }
+
+  export type PortalCreateWithoutMarketplace_installsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutMarketplace_installsInput, PortalUncheckedCreateWithoutMarketplace_installsInput>
+  }
+
+  export type marketplace_install_componentsUpsertWithWhereUniqueWithoutMarketplace_installsInput = {
+    where: marketplace_install_componentsWhereUniqueInput
+    update: XOR<marketplace_install_componentsUpdateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedUpdateWithoutMarketplace_installsInput>
+    create: XOR<marketplace_install_componentsCreateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedCreateWithoutMarketplace_installsInput>
+  }
+
+  export type marketplace_install_componentsUpdateWithWhereUniqueWithoutMarketplace_installsInput = {
+    where: marketplace_install_componentsWhereUniqueInput
+    data: XOR<marketplace_install_componentsUpdateWithoutMarketplace_installsInput, marketplace_install_componentsUncheckedUpdateWithoutMarketplace_installsInput>
+  }
+
+  export type marketplace_install_componentsUpdateManyWithWhereWithoutMarketplace_installsInput = {
+    where: marketplace_install_componentsScalarWhereInput
+    data: XOR<marketplace_install_componentsUpdateManyMutationInput, marketplace_install_componentsUncheckedUpdateManyWithoutMarketplace_installsInput>
+  }
+
+  export type bitrix_appsUpsertWithoutMarketplace_installsInput = {
+    update: XOR<bitrix_appsUpdateWithoutMarketplace_installsInput, bitrix_appsUncheckedUpdateWithoutMarketplace_installsInput>
+    create: XOR<bitrix_appsCreateWithoutMarketplace_installsInput, bitrix_appsUncheckedCreateWithoutMarketplace_installsInput>
+    where?: bitrix_appsWhereInput
+  }
+
+  export type bitrix_appsUpdateToOneWithWhereWithoutMarketplace_installsInput = {
+    where?: bitrix_appsWhereInput
+    data: XOR<bitrix_appsUpdateWithoutMarketplace_installsInput, bitrix_appsUncheckedUpdateWithoutMarketplace_installsInput>
+  }
+
+  export type bitrix_appsUpdateWithoutMarketplace_installsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    group?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrix_app_placements?: bitrix_app_placementsUpdateManyWithoutBitrix_appsNestedInput
+    portals?: PortalUpdateOneRequiredWithoutBitrix_appsNestedInput
+    bitrix_tokens?: bitrix_tokensUpdateManyWithoutBitrix_appsNestedInput
+  }
+
+  export type bitrix_appsUncheckedUpdateWithoutMarketplace_installsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    group?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrix_app_placements?: bitrix_app_placementsUncheckedUpdateManyWithoutBitrix_appsNestedInput
+    bitrix_tokens?: bitrix_tokensUncheckedUpdateManyWithoutBitrix_appsNestedInput
+  }
+
+  export type PortalUpsertWithoutMarketplace_installsInput = {
+    update: XOR<PortalUpdateWithoutMarketplace_installsInput, PortalUncheckedUpdateWithoutMarketplace_installsInput>
+    create: XOR<PortalCreateWithoutMarketplace_installsInput, PortalUncheckedCreateWithoutMarketplace_installsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutMarketplace_installsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutMarketplace_installsInput, PortalUncheckedUpdateWithoutMarketplace_installsInput>
+  }
+
+  export type PortalUpdateWithoutMarketplace_installsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type PortalCreateWithoutPortal_productsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalUncheckedCreateWithoutPortal_productsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalCreateOrConnectWithoutPortal_productsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutPortal_productsInput, PortalUncheckedCreateWithoutPortal_productsInput>
+  }
+
+  export type PortalUpsertWithoutPortal_productsInput = {
+    update: XOR<PortalUpdateWithoutPortal_productsInput, PortalUncheckedUpdateWithoutPortal_productsInput>
+    create: XOR<PortalCreateWithoutPortal_productsInput, PortalUncheckedCreateWithoutPortal_productsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutPortal_productsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutPortal_productsInput, PortalUncheckedUpdateWithoutPortal_productsInput>
+  }
+
+  export type PortalUpdateWithoutPortal_productsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutPortal_productsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+    bitrix_apps?: bitrix_appsCreateNestedOneWithoutMarketplace_installsInput
+    portals: PortalCreateNestedOneWithoutMarketplace_installsInput
+  }
+
+  export type marketplace_installsUncheckedCreateWithoutMarketplace_install_componentsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    bitrix_app_id?: bigint | number | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+  }
+
+  export type marketplace_installsCreateOrConnectWithoutMarketplace_install_componentsInput = {
+    where: marketplace_installsWhereUniqueInput
+    create: XOR<marketplace_installsCreateWithoutMarketplace_install_componentsInput, marketplace_installsUncheckedCreateWithoutMarketplace_install_componentsInput>
+  }
+
+  export type PortalCreateWithoutMarketplace_install_componentsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutMarketplace_install_componentsInput, PortalUncheckedCreateWithoutMarketplace_install_componentsInput>
+  }
+
+  export type marketplace_installsUpsertWithoutMarketplace_install_componentsInput = {
+    update: XOR<marketplace_installsUpdateWithoutMarketplace_install_componentsInput, marketplace_installsUncheckedUpdateWithoutMarketplace_install_componentsInput>
+    create: XOR<marketplace_installsCreateWithoutMarketplace_install_componentsInput, marketplace_installsUncheckedCreateWithoutMarketplace_install_componentsInput>
+    where?: marketplace_installsWhereInput
+  }
+
+  export type marketplace_installsUpdateToOneWithWhereWithoutMarketplace_install_componentsInput = {
+    where?: marketplace_installsWhereInput
+    data: XOR<marketplace_installsUpdateWithoutMarketplace_install_componentsInput, marketplace_installsUncheckedUpdateWithoutMarketplace_install_componentsInput>
+  }
+
+  export type marketplace_installsUpdateWithoutMarketplace_install_componentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bitrix_apps?: bitrix_appsUpdateOneWithoutMarketplace_installsNestedInput
+    portals?: PortalUpdateOneRequiredWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsUncheckedUpdateWithoutMarketplace_install_componentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrix_app_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalUpsertWithoutMarketplace_install_componentsInput = {
+    update: XOR<PortalUpdateWithoutMarketplace_install_componentsInput, PortalUncheckedUpdateWithoutMarketplace_install_componentsInput>
+    create: XOR<PortalCreateWithoutMarketplace_install_componentsInput, PortalUncheckedCreateWithoutMarketplace_install_componentsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutMarketplace_install_componentsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutMarketplace_install_componentsInput, PortalUncheckedUpdateWithoutMarketplace_install_componentsInput>
+  }
+
+  export type PortalUpdateWithoutMarketplace_install_componentsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -140554,6 +149035,11 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
   }
 
   export type UserCreateManyClientsInput = {
@@ -140591,6 +149077,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
@@ -140614,6 +149105,9 @@ export namespace Prisma {
     templates?: TemplateUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -140634,6 +149128,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
     bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
     bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
     btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
@@ -140657,6 +149156,9 @@ export namespace Prisma {
     templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
     invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -140677,6 +149179,11 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type UserUpdateWithoutClientsInput = {
@@ -142487,6 +150994,57 @@ export namespace Prisma {
     sort?: number | null
   }
 
+  export type marketplace_installsCreateManyPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    bitrix_app_id?: bigint | number | null
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+  }
+
+  export type portal_productsCreateManyPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    product_code: string
+    edition?: string | null
+    status?: string
+    activated_at?: Date | string | null
+    paid_until?: Date | string | null
+  }
+
+  export type marketplace_install_componentsCreateManyPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    marketplace_install_id: string
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -142497,6 +151055,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     bitrix_app_placements?: bitrix_app_placementsUpdateManyWithoutBitrix_appsNestedInput
     bitrix_tokens?: bitrix_tokensUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_appsUncheckedUpdateWithoutPortalsInput = {
@@ -142509,6 +151068,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     bitrix_app_placements?: bitrix_app_placementsUncheckedUpdateManyWithoutBitrix_appsNestedInput
     bitrix_tokens?: bitrix_tokensUncheckedUpdateManyWithoutBitrix_appsNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutBitrix_appsNestedInput
   }
 
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsInput = {
@@ -143418,6 +151978,161 @@ export namespace Prisma {
     sort?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
+  export type marketplace_installsUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutMarketplace_installsNestedInput
+    bitrix_apps?: bitrix_appsUpdateOneWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsUncheckedUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bitrix_app_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsUncheckedUpdateManyWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bitrix_app_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_productsUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_productsUncheckedUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_productsUncheckedUpdateManyWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    edition?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    activated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paid_until?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_install_componentsUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_installs?: marketplace_installsUpdateOneRequiredWithoutMarketplace_install_componentsNestedInput
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_id?: StringFieldUpdateOperationsInput | string
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateManyWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_id?: StringFieldUpdateOperationsInput | string
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type rq_counterCreateManyRqsInput = {
     counter_id: bigint | number
     type?: string | null
@@ -143634,6 +152349,31 @@ export namespace Prisma {
     member_id?: string | null
   }
 
+  export type marketplace_installsCreateManyBitrix_appsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    app_code: string
+    domain?: string | null
+    install_status?: string
+    error_step?: string | null
+    error_detail?: string | null
+    scope?: string | null
+    version?: string | null
+    lang?: string | null
+    license_status?: string | null
+    payment_expired?: boolean | null
+    license_days?: number | null
+    license_checked_at?: Date | string | null
+    access_token?: string | null
+    refresh_token?: string | null
+    expires_at?: Date | string | null
+    application_token?: string | null
+    installed_at?: Date | string | null
+    uninstalled_at?: Date | string | null
+  }
+
   export type bitrix_app_placementsUpdateWithoutBitrix_appsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -143710,6 +152450,83 @@ export namespace Prisma {
     expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     application_token?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type marketplace_installsUpdateWithoutBitrix_appsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutMarketplace_installsNestedInput
+    portals?: PortalUpdateOneRequiredWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsUncheckedUpdateWithoutBitrix_appsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutMarketplace_installsNestedInput
+  }
+
+  export type marketplace_installsUncheckedUpdateManyWithoutBitrix_appsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    app_code?: StringFieldUpdateOperationsInput | string
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    install_status?: StringFieldUpdateOperationsInput | string
+    error_step?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    lang?: NullableStringFieldUpdateOperationsInput | string | null
+    license_status?: NullableStringFieldUpdateOperationsInput | string | null
+    payment_expired?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    license_days?: NullableIntFieldUpdateOperationsInput | number | null
+    license_checked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    access_token?: NullableStringFieldUpdateOperationsInput | string | null
+    refresh_token?: NullableStringFieldUpdateOperationsInput | string | null
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    application_token?: NullableStringFieldUpdateOperationsInput | string | null
+    installed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uninstalled_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type complect_infoblockCreateManyComplectsInput = {
@@ -144482,6 +153299,66 @@ export namespace Prisma {
     background?: NullableStringFieldUpdateOperationsInput | string | null
     colors?: NullableStringFieldUpdateOperationsInput | string | null
     image_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type marketplace_install_componentsCreateManyMarketplace_installsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id: bigint | number
+    product_code: string
+    component_type: string
+    component_code?: string
+    status?: string
+    reason_code?: string | null
+    error_detail?: string | null
+    attempts?: number
+    last_attempt_at?: Date | string | null
+  }
+
+  export type marketplace_install_componentsUpdateWithoutMarketplace_installsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portals?: PortalUpdateOneRequiredWithoutMarketplace_install_componentsNestedInput
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateWithoutMarketplace_installsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type marketplace_install_componentsUncheckedUpdateManyWithoutMarketplace_installsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    product_code?: StringFieldUpdateOperationsInput | string
+    component_type?: StringFieldUpdateOperationsInput | string
+    component_code?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reason_code?: NullableStringFieldUpdateOperationsInput | string | null
+    error_detail?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
 
