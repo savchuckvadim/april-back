@@ -1,4 +1,11 @@
-import { Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Post,
+    Req,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
@@ -36,5 +43,21 @@ export class MarketplaceEventController {
                 ? (req.body as Record<string, unknown>)
                 : undefined;
         return this.lifecycleService.handleEvent(body);
+    }
+
+    /**
+     * GET/HEAD — проверка доступности URL (валидаторы). Сами события
+     * Битрикс шлёт ТОЛЬКО POST-ом (документация event.bind) — GET событий
+     * не обрабатывает и в журнал не пишет.
+     */
+    @ApiOperation({
+        summary:
+            'GET/HEAD доступности event-URL (валидатор); событий не обрабатывает',
+    })
+    @ApiOkResponse({ description: '200 ok' })
+    @HttpCode(HttpStatus.OK)
+    @Get('event')
+    eventProbe(): { status: 'ok'; endpoint: string } {
+        return { status: 'ok', endpoint: 'bitrix-marketplace/event' };
     }
 }

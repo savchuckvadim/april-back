@@ -154,6 +154,25 @@ export class MarketplaceRouterController {
         );
     }
 
+    @ApiOperation({
+        summary: 'GET/HEAD-вариант хука (валидаторы и GET-вызовы Битрикса)',
+    })
+    @ApiOkResponse({
+        description: 'Хук принят',
+        type: MarketplaceHookResultDto,
+    })
+    @Get('hook/list/:code')
+    listHookGet(
+        @Param('code') code: string,
+        @Req() req: Request,
+    ): MarketplaceHookResultDto {
+        return this.routerService.handleListHook(
+            code,
+            undefined,
+            this.query(req),
+        );
+    }
+
     private redirect(res: Response, result: MarketplaceRouteResultDto) {
         return res.redirect(HttpStatus.FOUND, result.redirectUrl);
     }
