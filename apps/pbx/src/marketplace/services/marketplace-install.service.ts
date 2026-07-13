@@ -1,68 +1,128 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BitrixAppService } from '@lib/bitrix-setup/app/services/bitrix-app.service';
-import {
-    BITRIX_APP_CODES,
-    BITRIX_APP_GROUPS,
-    BITRIX_APP_STATUSES,
-    BITRIX_APP_TYPES,
-} from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
-import { CreateBitrixAppWithTokenDto } from '@lib/bitrix-setup/app/dto/bitrix-app.dto';
-import { BitrixTokenDto } from '@lib/bitrix-setup/token/dto/bitrix-token.dto';
+import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
 import {
     BitrixInstallRequestSource,
     BitrixInstallTokenPayload,
-    getExpiresAtIso,
-    InstallChannel,
     isInstallable,
     parseInstallParams,
 } from '../lib/parse-install-params.util';
+import { maskedJson } from '../lib/mask-payload.util';
 import { MarketplaceInstallResultDto } from '../dto/marketplace-install.dto';
+import {
+    InstallStatus,
+    MarketplaceInstallRepository,
+} from '../persistence/marketplace-install.repository';
+import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
+import {
+    MARKETPLACE_LIFECYCLE_EVENTS,
+    MarketplaceComponentType,
+    SALES_PLACEMENTS,
+    SALES_SMART_SCENARIOS,
+} from '../config/marketplace-manifest';
 
 /**
- * Установка тиражного маркетплейс-приложения («Менеджер Гарант»).
+ * Установка маркетплейс-приложения «Менеджер Гарант» — полный пайплайн:
  *
- * Отличия от легаси-флоу (apps/back/bitrix-app-client — НЕ трогаем):
- *  - портал НЕ обязан существовать заранее: storeOrUpdateAppWithToken
- *    сам создаёт запись портала по домену (provisioning при установке);
- *  - status=success только если токены реально сохранены;
- *  - application_token при установке СОХРАНЯЕТСЯ (не сверяется — при
- *    переустановке Битрикс выдаёт новый; сверка нужна для событий
- *    жизненного цикла, это следующий этап);
- *  - код приложения единый (BITRIX_APP_CODES.GARANT), продукты — внутри.
+ *  [1] tokens_stored     — портал (member_id-first) + установка + токены
+ *  [2] events_bound      — event.bind: ONAPPUNINSTALL/ONAPPUPDATE/ONAPPPAYMENT
+ *  [3] placements_bound  — placement.bind плейсментов продукта sales
+ *  [4] умные сценарии    — ставит сам Битрикс из архива карточки решения;
+ *                          здесь только фиксация состава (skipped/bitrix_archive)
+ *  [5] installed         — provisioning pbx-сущностей: ЗАГЛУШКА (компонент
+ *                          pbx_entities помечается pending; фактическая
+ *                          установка и смена статусов — следующий этап)
+ *
+ * Хранение — ТОЛЬКО маркетплейс-таблицы (marketplace_installs и др.);
+ * легаси bitrix_apps/bitrix_tokens не используются.
+ * Любой шаг с ошибкой → install_status=error + error_step, но iframe-флоу
+ * всё равно получает redirect (страница установки покажет ошибку).
  */
 @Injectable()
 export class MarketplaceInstallService {
     private readonly logger = new Logger(MarketplaceInstallService.name);
 
-    /** Куда редиректить iframe мастера установки после сохранения токенов */
+    /** Куда редиректить iframe мастера установки после сохранения */
     readonly installRedirectUrl: string;
+    /** Публичный URL этого API (для HANDLER'ов event.bind/placement.bind) */
+    readonly apiPublicUrl: string;
+
+    readonly appCode = BITRIX_APP_CODES.GARANT as string;
 
     constructor(
-        private readonly bitrixAppService: BitrixAppService,
+        private readonly repository: MarketplaceInstallRepository,
+        private readonly bxClient: MarketplaceBxClient,
         private readonly configService: ConfigService,
     ) {
         this.installRedirectUrl =
             this.configService.get<string>(
                 'MARKETPLACE_INSTALL_REDIRECT_URL',
             ) ?? 'https://bitrix.april-app.ru/install';
+        this.apiPublicUrl =
+            this.configService.get<string>('MARKETPLACE_API_PUBLIC_URL') ??
+            'https://api.pbx.april-app.ru';
     }
 
     /**
-     * Приём установки напрямую от Битрикса (оба канала:
-     * ONAPPINSTALL и iframe PLACEMENT=DEFAULT). Идемпотентно.
+     * Установка напрямую от Битрикса (оба канала: ONAPPINSTALL callback
+     * и iframe мастера установки PLACEMENT=DEFAULT). Идемпотентно.
      */
     async installFromBitrixRequest(
         body: BitrixInstallRequestSource,
         query: BitrixInstallRequestSource,
     ): Promise<MarketplaceInstallResultDto> {
         const payload = parseInstallParams(body, query);
-        const base: MarketplaceInstallResultDto = {
-            status: 'fail',
-            channel: payload.channel,
-            domain: payload.domain,
+        await this.repository.logEvent({
             memberId: payload.member_id,
-        };
+            domain: payload.domain,
+            event: `INSTALL_${payload.channel.toUpperCase()}`,
+            status: 'received',
+            payload: maskedJson({ body, query }),
+        });
+        return this.runInstallPipeline(payload);
+    }
+
+    /**
+     * Сохранение/обновление токенов из открытия приложения/плейсмента
+     * (каждый запуск iframe несёт свежую пару AUTH_ID/REFRESH_ID).
+     * Статус установки назад не откатывается — только токены/домен/lang.
+     */
+    async storeFromPayload(
+        payload: BitrixInstallTokenPayload,
+    ): Promise<MarketplaceInstallResultDto> {
+        const base = this.baseResult(payload);
+        if (!isInstallable(payload)) {
+            return {
+                ...base,
+                message: 'Не хватает токенов в запросе открытия',
+            };
+        }
+        try {
+            const portal = await this.repository.upsertPortal({
+                memberId: payload.member_id,
+                domain: payload.domain,
+            });
+            const install = await this.repository.upsertInstall(
+                this.buildUpsertInput(portal.id, payload),
+            );
+            return { ...base, status: 'success', appId: install.id };
+        } catch (error) {
+            this.logger.error(
+                `storeFromPayload failed: domain=${payload.domain ?? '-'}`,
+                error instanceof Error ? error.stack : String(error),
+            );
+            return {
+                ...base,
+                message: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
+    /** Полный пайплайн установки (шаги 1–5, см. док-комментарий класса) */
+    private async runInstallPipeline(
+        payload: BitrixInstallTokenPayload,
+    ): Promise<MarketplaceInstallResultDto> {
+        const base = this.baseResult(payload);
 
         if (!isInstallable(payload)) {
             this.logger.warn(
@@ -74,114 +134,211 @@ export class MarketplaceInstallService {
             };
         }
 
-        return this.storeInstall(this.buildDtoFromPayload(payload), base);
+        const domain = payload.domain as string;
+        const accessToken = payload.access_token as string;
+        let step = 'tokens';
+        let installId: string | undefined;
+
+        try {
+            // [1] Портал + установка + токены
+            const portal = await this.repository.upsertPortal({
+                memberId: payload.member_id,
+                domain,
+            });
+            const install = await this.repository.upsertInstall(
+                this.buildUpsertInput(portal.id, payload),
+            );
+            installId = install.id;
+
+            // [2] События жизненного цикла
+            step = 'events';
+            await this.bindLifecycleEvents(domain, accessToken);
+            await this.repository.updateInstallStatus(
+                install.id,
+                InstallStatus.EVENTS_BOUND,
+            );
+
+            // [3] Плейсменты продукта sales
+            step = 'placements';
+            await this.bindSalesPlacements(
+                domain,
+                accessToken,
+                install.id,
+                portal.id,
+            );
+            await this.repository.updateInstallStatus(
+                install.id,
+                InstallStatus.PLACEMENTS_BOUND,
+            );
+
+            // [4] Умные сценарии — ЗАГЛУШКА (фиксируем состав, не устанавливаем)
+            step = 'smart_scenarios';
+            await this.registerSmartScenarioStubs(install.id, portal.id);
+
+            // [5] Provisioning pbx-сущностей — ЗАГЛУШКА (следующий этап);
+            // компонент фиксируется, статус установки завершаем.
+            step = 'finish';
+            await this.repository.upsertComponents(install.id, portal.id, [
+                {
+                    productCode: 'sales',
+                    componentType: MarketplaceComponentType.PBX_ENTITIES,
+                    componentCode: '',
+                    status: 'pending',
+                    reasonCode: 'stub',
+                    errorDetail:
+                        'Установка pbx-сущностей будет запускаться фоном (заглушка)',
+                },
+            ]);
+            await this.repository.updateInstallStatus(
+                install.id,
+                InstallStatus.INSTALLED,
+            );
+
+            await this.repository.logEvent({
+                memberId: payload.member_id,
+                domain,
+                event: `INSTALL_${payload.channel.toUpperCase()}`,
+                status: 'processed',
+            });
+            this.logger.log(
+                `Install completed: domain=${domain} member_id=${payload.member_id ?? '-'} install=${install.id}`,
+            );
+            return { ...base, status: 'success', appId: install.id };
+        } catch (error) {
+            const detail =
+                error instanceof Error ? error.message : String(error);
+            this.logger.error(
+                `Install failed at step=${step}: domain=${domain}`,
+                error instanceof Error ? error.stack : String(error),
+            );
+            if (installId) {
+                await this.repository.updateInstallStatus(
+                    installId,
+                    InstallStatus.ERROR,
+                    step,
+                    detail,
+                );
+            }
+            await this.repository.logEvent({
+                memberId: payload.member_id,
+                domain,
+                event: `INSTALL_${payload.channel.toUpperCase()}`,
+                status: 'error',
+                errorDetail: `step=${step}: ${detail}`,
+            });
+            return { ...base, message: detail };
+        }
+    }
+
+    /** event.bind lifecycle-событий на /api/bitrix-marketplace/event */
+    private async bindLifecycleEvents(
+        domain: string,
+        accessToken: string,
+    ): Promise<void> {
+        const handler = `${this.apiPublicUrl}/api/bitrix-marketplace/event`;
+        for (const event of MARKETPLACE_LIFECYCLE_EVENTS) {
+            const result = await this.bxClient.bindEvent(
+                domain,
+                accessToken,
+                event,
+                handler,
+            );
+            if (!result.ok) {
+                throw new Error(
+                    `event.bind ${event} failed: ${result.error ?? ''} ${result.errorDescription ?? ''}`,
+                );
+            }
+        }
+    }
+
+    /** placement.bind плейсментов sales; статусы — по-компонентно */
+    private async bindSalesPlacements(
+        domain: string,
+        accessToken: string,
+        installId: string,
+        portalId: bigint,
+    ): Promise<void> {
+        for (const item of SALES_PLACEMENTS) {
+            const handler = `${this.apiPublicUrl}/api/bitrix-marketplace/placement/${item.code}`;
+            const result = await this.bxClient.bindPlacement(
+                domain,
+                accessToken,
+                item.placement,
+                handler,
+                item.title,
+                item.description,
+            );
+            await this.repository.upsertComponents(installId, portalId, [
+                {
+                    productCode: item.product,
+                    componentType: MarketplaceComponentType.PLACEMENT,
+                    componentCode: `${item.placement}:${item.code}`,
+                    status: result.ok ? 'installed' : 'error',
+                    reasonCode: result.ok ? undefined : 'bitrix_error',
+                    errorDetail: result.ok
+                        ? undefined
+                        : `${result.error ?? ''} ${result.errorDescription ?? ''}`.trim(),
+                },
+            ]);
+            if (!result.ok) {
+                throw new Error(
+                    `placement.bind ${item.placement}/${item.code} failed: ${result.error ?? ''}`,
+                );
+            }
+        }
     }
 
     /**
-     * Сохранение/обновление токенов из УЖЕ разобранного payload
-     * (используется роутером открытий: каждый запуск iframe приносит
-     * свежую пару AUTH_ID/REFRESH_ID — обновляем сохранённую).
+     * Умные сценарии ставит сам Битрикс из архива, приложенного к карточке
+     * решения (экспорт с портала вендора) — бэк их НЕ устанавливает.
+     * Здесь только фиксация состава для экрана прогресса.
      */
-    async storeFromPayload(
+    private async registerSmartScenarioStubs(
+        installId: string,
+        portalId: bigint,
+    ): Promise<void> {
+        await this.repository.upsertComponents(
+            installId,
+            portalId,
+            SALES_SMART_SCENARIOS.map(scenario => ({
+                productCode: scenario.product,
+                componentType: MarketplaceComponentType.SMART_SCENARIO,
+                componentCode: scenario.code,
+                status: 'skipped' as const,
+                reasonCode: 'bitrix_archive',
+                errorDetail: `Сценарий «${scenario.title}» устанавливается Битриксом из архива карточки решения`,
+            })),
+        );
+    }
+
+    private buildUpsertInput(
+        portalId: bigint,
         payload: BitrixInstallTokenPayload,
-    ): Promise<MarketplaceInstallResultDto> {
-        const base: MarketplaceInstallResultDto = {
+    ) {
+        return {
+            portalId,
+            appCode: this.appCode,
+            domain: payload.domain,
+            lang: payload.lang,
+            tokens: {
+                accessToken: payload.access_token as string,
+                refreshToken: payload.refresh_token as string,
+                expiresAt: new Date(
+                    Date.now() + (payload.expires_in ?? 3600) * 1000,
+                ),
+                applicationToken: payload.application_token,
+            },
+        };
+    }
+
+    private baseResult(
+        payload: BitrixInstallTokenPayload,
+    ): MarketplaceInstallResultDto {
+        return {
             status: 'fail',
             channel: payload.channel,
             domain: payload.domain,
             memberId: payload.member_id,
         };
-        if (!isInstallable(payload)) {
-            return {
-                ...base,
-                message: 'Не хватает токенов в запросе открытия',
-            };
-        }
-        return this.storeInstall(this.buildDtoFromPayload(payload), base);
-    }
-
-    private buildDtoFromPayload(
-        payload: BitrixInstallTokenPayload,
-    ): CreateBitrixAppWithTokenDto {
-        return {
-            code: BITRIX_APP_CODES.GARANT,
-            domain: payload.domain as string,
-            group: BITRIX_APP_GROUPS.GENERAL,
-            type: BITRIX_APP_TYPES.FULL,
-            status: BITRIX_APP_STATUSES.ACTIVE,
-            token: {
-                access_token: payload.access_token,
-                refresh_token: payload.refresh_token,
-                expires_at: getExpiresAtIso(payload.expires_in),
-                application_token: payload.application_token,
-                member_id: payload.member_id,
-            } as BitrixTokenDto,
-        };
-    }
-
-    /**
-     * Приём установки от фронта (front/apps/bitrix шлёт DTO перед
-     * installFinish) — маркетплейс-аналог легаси sales-manager.
-     */
-    async installFromFront(
-        dto: CreateBitrixAppWithTokenDto,
-    ): Promise<MarketplaceInstallResultDto> {
-        const base: MarketplaceInstallResultDto = {
-            status: 'fail',
-            channel: InstallChannel.FRONT,
-            domain: dto.domain,
-            memberId: dto.token?.member_id,
-        };
-        return this.storeInstall(dto, base);
-    }
-
-    private async storeInstall(
-        dto: CreateBitrixAppWithTokenDto,
-        base: MarketplaceInstallResultDto,
-    ): Promise<MarketplaceInstallResultDto> {
-        try {
-            const existingAppId = await this.findExistingAppId(
-                dto.domain,
-                dto.code,
-            );
-            const result =
-                await this.bitrixAppService.storeOrUpdateAppWithToken(
-                    dto,
-                    existingAppId,
-                );
-            this.logger.log(
-                `Install stored: domain=${dto.domain} code=${dto.code} appId=${String(result.app.id)}`,
-            );
-            return {
-                ...base,
-                status: 'success',
-                appId: String(result.app.id),
-            };
-        } catch (error) {
-            this.logger.error(
-                `Install failed: domain=${dto.domain} code=${dto.code}`,
-                error instanceof Error ? error.stack : String(error),
-            );
-            return {
-                ...base,
-                message: error instanceof Error ? error.message : String(error),
-            };
-        }
-    }
-
-    /** Ищет существующую запись приложения, чтобы upsert не плодил дубли. */
-    private async findExistingAppId(
-        domain: string,
-        code: BITRIX_APP_CODES,
-    ): Promise<bigint | undefined> {
-        try {
-            const app = await this.bitrixAppService.getApp({ domain, code });
-            return app?.id ? BigInt(app.id) : undefined;
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                return undefined;
-            }
-            throw error;
-        }
     }
 }

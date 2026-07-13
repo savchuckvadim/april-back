@@ -51,6 +51,41 @@ export class MarketplaceRouteResultDto {
     placement?: string;
 }
 
+export const MARKETPLACE_EVENT_STATUSES = [
+    'processed',
+    'rejected',
+    'ignored',
+    'error',
+] as const;
+
+export class MarketplaceEventResultDto {
+    @ApiProperty({
+        description: 'Результат обработки события жизненного цикла',
+        example: 'processed',
+        enum: MARKETPLACE_EVENT_STATUSES,
+    })
+    @IsEnum(MARKETPLACE_EVENT_STATUSES)
+    status: (typeof MARKETPLACE_EVENT_STATUSES)[number];
+
+    @ApiPropertyOptional({
+        description: 'Имя события',
+        example: 'ONAPPUNINSTALL',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    event?: string;
+
+    @ApiPropertyOptional({
+        description: 'Сообщение (причина reject/error)',
+        example: 'application_token не совпадает',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    message?: string;
+}
+
 export class MarketplaceHookResultDto {
     @ApiProperty({
         description: 'Статус приёма хука',
