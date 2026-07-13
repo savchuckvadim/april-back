@@ -66,6 +66,7 @@ export type BxPlace =
     | 'CRM_LEAD_DETAIL_TAB'
     | 'CRM_CONTACT_DETAIL_TAB'
     | 'TASK_VIEW_TAB'
+    | 'LEFT_MENU' // пункт в левом меню (сайдбар) основного окна Битрикса
     | (string & {});
 
 export interface WidgetManifestItem {
@@ -85,8 +86,8 @@ export interface WidgetManifestItem {
 
 /**
  * Виджеты продукта sales.
- * Места — из легаси-привязок (event_sales жил и в сделке, и в компании).
- * ⚠️ Место для report-sales уточняется владельцем (см. реестр, раздел 3).
+ * Места — из легаси-привязок (event_sales жил и в сделке, и в компании);
+ * отчёты — пункт в левом меню (LEFT_MENU), подтверждено владельцем.
  */
 export const SALES_WIDGETS = [
     {
@@ -106,9 +107,9 @@ export const SALES_WIDGETS = [
     {
         product: MarketplaceProduct.SALES,
         code: 'report-sales',
-        title: 'Гарант: Отчёты',
+        title: 'Гарант: Отчёт ОП KPI',
         description: 'Отчёты отдела продаж',
-        places: ['CRM_COMPANY_DETAIL_TAB'],
+        places: ['LEFT_MENU'],
     },
 ] as const satisfies readonly WidgetManifestItem[];
 
