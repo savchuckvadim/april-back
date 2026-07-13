@@ -14,10 +14,10 @@ import {
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
 import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
+import { MarketplacePlacementSyncService } from './marketplace-placement-sync.service';
 import {
     MARKETPLACE_LIFECYCLE_EVENTS,
     MarketplaceComponentType,
-    SALES_PLACEMENTS,
     SALES_SMART_SCENARIOS,
 } from '../config/marketplace-manifest';
 
@@ -26,7 +26,8 @@ import {
  *
  *  [1] tokens_stored     — портал (member_id-first) + установка + токены
  *  [2] events_bound      — event.bind: ONAPPUNINSTALL/ONAPPUPDATE/ONAPPPAYMENT
- *  [3] placements_bound  — placement.bind плейсментов продукта sales
+ *  [3] placements_bound  — diff-синхронизация привязок виджетов
+ *                          (эталон-манифест ↔ placement.list Битрикса)
  *  [4] умные сценарии    — ставит сам Битрикс из архива карточки решения;
  *                          здесь только фиксация состава (skipped/bitrix_archive)
  *  [5] installed         — provisioning pbx-сущностей: ЗАГЛУШКА (компонент
@@ -52,6 +53,7 @@ export class MarketplaceInstallService {
     constructor(
         private readonly repository: MarketplaceInstallRepository,
         private readonly bxClient: MarketplaceBxClient,
+        private readonly placementSync: MarketplacePlacementSyncService,
         private readonly configService: ConfigService,
     ) {
         this.installRedirectUrl =
@@ -158,9 +160,9 @@ export class MarketplaceInstallService {
                 InstallStatus.EVENTS_BOUND,
             );
 
-            // [3] Плейсменты продукта sales
+            // [3] Привязки виджетов: diff-синхронизация эталона с порталом
             step = 'placements';
-            await this.bindSalesPlacements(
+            await this.placementSync.syncPlacements(
                 domain,
                 accessToken,
                 install.id,
@@ -246,43 +248,6 @@ export class MarketplaceInstallService {
             if (!result.ok) {
                 throw new Error(
                     `event.bind ${event} failed: ${result.error ?? ''} ${result.errorDescription ?? ''}`,
-                );
-            }
-        }
-    }
-
-    /** placement.bind плейсментов sales; статусы — по-компонентно */
-    private async bindSalesPlacements(
-        domain: string,
-        accessToken: string,
-        installId: string,
-        portalId: bigint,
-    ): Promise<void> {
-        for (const item of SALES_PLACEMENTS) {
-            const handler = `${this.apiPublicUrl}/api/bitrix-marketplace/placement/${item.code}`;
-            const result = await this.bxClient.bindPlacement(
-                domain,
-                accessToken,
-                item.placement,
-                handler,
-                item.title,
-                item.description,
-            );
-            await this.repository.upsertComponents(installId, portalId, [
-                {
-                    productCode: item.product,
-                    componentType: MarketplaceComponentType.PLACEMENT,
-                    componentCode: `${item.placement}:${item.code}`,
-                    status: result.ok ? 'installed' : 'error',
-                    reasonCode: result.ok ? undefined : 'bitrix_error',
-                    errorDetail: result.ok
-                        ? undefined
-                        : `${result.error ?? ''} ${result.errorDescription ?? ''}`.trim(),
-                },
-            ]);
-            if (!result.ok) {
-                throw new Error(
-                    `placement.bind ${item.placement}/${item.code} failed: ${result.error ?? ''}`,
                 );
             }
         }

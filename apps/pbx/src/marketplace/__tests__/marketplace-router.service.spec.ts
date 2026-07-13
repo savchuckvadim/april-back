@@ -53,9 +53,9 @@ describe('MarketplaceRouterService', () => {
         expect(url.searchParams.get('status')).toBe('success');
     });
 
-    it('открытие плейсмента: redirect на базу плейсментов с кодом и PLACEMENT_OPTIONS', async () => {
+    it('открытие плейсмента: redirect на базу плейсментов с кодом из манифеста и PLACEMENT_OPTIONS', async () => {
         const result = await service.handlePlacementOpen(
-            'CRM_DEAL_DETAIL_TAB',
+            'event-sales',
             {
                 ...openBody,
                 PLACEMENT: 'CRM_DEAL_DETAIL_TAB',
@@ -65,9 +65,27 @@ describe('MarketplaceRouterService', () => {
         );
 
         const url = new URL(result.redirectUrl);
-        expect(url.pathname).toBe('/portal/placement/CRM_DEAL_DETAIL_TAB');
+        expect(url.pathname).toBe('/portal/placement/event-sales');
         expect(url.searchParams.get('placement_options')).toBe('{"ID":"1"}');
         expect(result.placement).toBe('CRM_DEAL_DETAIL_TAB');
+    });
+
+    it('неизвестный код плейсмента: fail + redirect в кабинет с reason=unknown_placement, токены не сохраняются', async () => {
+        const result = await service.handlePlacementOpen(
+            'no-such-widget',
+            openBody,
+            openQuery,
+        );
+
+        expect(result.status).toBe('fail');
+        expect(installService.storeFromPayload).not.toHaveBeenCalled();
+
+        const url = new URL(result.redirectUrl);
+        expect(url.origin + url.pathname).toBe(
+            'https://bitrix.april-app.ru/bitrix/cabinet',
+        );
+        expect(url.searchParams.get('reason')).toBe('unknown_placement');
+        expect(url.searchParams.get('status')).toBe('fail');
     });
 
     it('открытие без токенов: fail в статусе, но redirect всё равно строится', async () => {

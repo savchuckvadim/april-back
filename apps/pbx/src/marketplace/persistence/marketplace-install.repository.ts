@@ -218,6 +218,35 @@ export class MarketplaceInstallRepository {
         });
     }
 
+    /** Установка по текущему домену портала (для admin-операций) */
+    async findInstallByDomain(
+        domain: string,
+        appCode: string,
+    ): Promise<(marketplace_installs & { portals: Portal }) | null> {
+        return this.prisma.marketplace_installs.findFirst({
+            where: {
+                app_code: appCode,
+                portals: { domain },
+            },
+            include: { portals: true },
+        });
+    }
+
+    /** Расшифрованный access_token установки (для admin-refresh привязок) */
+    getAccessToken(install: marketplace_installs): string | null {
+        if (!install.access_token) {
+            return null;
+        }
+        try {
+            return decrypt(install.access_token);
+        } catch {
+            this.logger.warn(
+                `access_token decrypt failed: install=${install.id}`,
+            );
+            return null;
+        }
+    }
+
     /** Расшифрованный application_token установки (для сверки событий) */
     getApplicationToken(install: marketplace_installs): string | null {
         if (!install.application_token) {

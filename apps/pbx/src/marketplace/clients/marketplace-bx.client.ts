@@ -116,6 +116,37 @@ export class MarketplaceBxClient {
         return result;
     }
 
+    /**
+     * placement.list — текущие привязки НАШЕГО приложения на портале
+     * (Битрикс возвращает только встройки, сделанные этим приложением).
+     */
+    async listPlacements(
+        domain: string,
+        accessToken: string,
+    ): Promise<MarketplaceBxCallResult> {
+        return this.call(
+            domain,
+            accessToken,
+            MarketplaceBxMethod.PLACEMENT_LIST,
+            {},
+        );
+    }
+
+    /** placement.unbind по паре (PLACEMENT, HANDLER) */
+    async unbindPlacement(
+        domain: string,
+        accessToken: string,
+        placement: string,
+        handler: string,
+    ): Promise<MarketplaceBxCallResult> {
+        return this.call(
+            domain,
+            accessToken,
+            MarketplaceBxMethod.PLACEMENT_UNBIND,
+            { PLACEMENT: placement, HANDLER: handler },
+        );
+    }
+
     /** placement.bind (повторный bind того же HANDLER = успех) */
     async bindPlacement(
         domain: string,

@@ -7,6 +7,7 @@ import {
 } from '../lib/parse-install-params.util';
 import { MarketplaceInstallService } from './marketplace-install.service';
 import { MarketplaceRouteResultDto } from '../dto/marketplace-router.dto';
+import { isKnownWidgetCode } from '../config/marketplace-manifest';
 
 /**
  * Маршрутизация открытий маркетплейс-приложения «Менеджер Гарант».
@@ -58,13 +59,37 @@ export class MarketplaceRouterService {
         };
     }
 
-    /** Открытие плейсмента (виджета) по коду места встройки. */
+    /**
+     * Открытие виджета по НАШЕМУ коду из эталона-манифеста
+     * (SalesWidgetCode: event-sales | konstructor | report-sales).
+     * Один виджет открывается из ЛЮБОГО из своих мест встройки —
+     * конкретное место приходит в POST-поле PLACEMENT.
+     * Неизвестный код = рассинхрон эталона с привязками на порталах:
+     * warning в лог + redirect в кабинет с reason=unknown_placement.
+     */
     async handlePlacementOpen(
         code: string,
         body: BitrixInstallRequestSource,
         query: BitrixInstallRequestSource,
     ): Promise<MarketplaceRouteResultDto> {
         const payload = parseOpenParams(body, query);
+
+        if (!isKnownWidgetCode(code)) {
+            this.logger.warn(
+                `Unknown placement code="${code}" domain=${payload.domain ?? '-'} member_id=${payload.member_id ?? '-'} — код отсутствует в манифесте`,
+            );
+            return {
+                status: 'fail',
+                redirectUrl: this.buildRedirectUrl(
+                    this.appRedirectUrl,
+                    payload,
+                    { status: 'fail', reason: 'unknown_placement' },
+                ),
+                domain: payload.domain,
+                memberId: payload.member_id,
+                placement: payload.placement ?? code,
+            };
+        }
         const stored = await this.installService.storeFromPayload(payload);
         const target = `${this.placementRedirectBase}/${encodeURIComponent(code)}`;
         return {

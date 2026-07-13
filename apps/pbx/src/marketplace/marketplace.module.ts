@@ -2,12 +2,16 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { MarketplaceInstallController } from './controllers/marketplace-install.controller';
 import { MarketplaceRouterController } from './controllers/marketplace-router.controller';
 import { MarketplaceEventController } from './controllers/marketplace-event.controller';
+import { MarketplaceAdminController } from './controllers/marketplace-admin.controller';
 import { MarketplaceInstallService } from './services/marketplace-install.service';
 import { MarketplaceRouterService } from './services/marketplace-router.service';
 import { MarketplaceLifecycleService } from './services/marketplace-lifecycle.service';
+import { MarketplacePlacementSyncService } from './services/marketplace-placement-sync.service';
+import { MarketplaceAdminService } from './services/marketplace-admin.service';
 import { MarketplaceInstallRepository } from './persistence/marketplace-install.repository';
 import { MarketplaceBxClient } from './clients/marketplace-bx.client';
 import { BitrixRequestLoggerMiddleware } from './lib/bitrix-request-logger.middleware';
+import { AdminKeyGuard } from './lib/admin-key.guard';
 
 /**
  * Модуль маркетплейс-приложения «Менеджер Гарант».
@@ -29,13 +33,17 @@ import { BitrixRequestLoggerMiddleware } from './lib/bitrix-request-logger.middl
         MarketplaceInstallController,
         MarketplaceRouterController,
         MarketplaceEventController,
+        MarketplaceAdminController,
     ],
     providers: [
         MarketplaceInstallService,
         MarketplaceRouterService,
         MarketplaceLifecycleService,
+        MarketplacePlacementSyncService,
+        MarketplaceAdminService,
         MarketplaceInstallRepository,
         MarketplaceBxClient,
+        AdminKeyGuard,
     ],
     exports: [MarketplaceInstallService, MarketplaceRouterService],
 })

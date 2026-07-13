@@ -8,13 +8,19 @@ import {
     Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiTags,
+} from '@nestjs/swagger';
 import { MarketplaceRouterService } from '../services/marketplace-router.service';
 import {
     MarketplaceHookResultDto,
     MarketplaceRouteResultDto,
 } from '../dto/marketplace-router.dto';
 import { BitrixInstallRequestSource } from '../lib/parse-install-params.util';
+import { SALES_WIDGET_CODES } from '../config/marketplace-manifest';
 
 /**
  * Маршрутизация открытий из Битрикса на фронт.
@@ -25,7 +31,21 @@ import { BitrixInstallRequestSource } from '../lib/parse-install-params.util';
  * фронт можно переносить без перерегистрации в Битриксе.
  * Битрикс открывает iframe по POST; GET-варианты — на случай
  * обновления страницы пользователем внутри iframe.
+ *
+ * :code — код ВИДЖЕТА (закрытый список из эталона-манифеста
+ * config/marketplace-manifest.ts → SALES_WIDGET_CODES):
+ * event-sales | konstructor | report-sales. Один виджет может быть
+ * встроен в несколько мест (places[] манифеста) — все места ходят
+ * на один и тот же :code; неизвестный код — рассинхрон эталона
+ * (warning в лог + redirect в кабинет с reason).
  */
+const PLACEMENT_CODE_API_PARAM = {
+    name: 'code',
+    description:
+        'Код виджета из эталона-манифеста (все места встройки виджета ходят на этот код)',
+    enum: [...SALES_WIDGET_CODES],
+    example: SALES_WIDGET_CODES[0],
+} as const;
 @ApiTags('Bitrix Marketplace Router')
 @Controller('bitrix-marketplace')
 export class MarketplaceRouterController {
@@ -68,8 +88,9 @@ export class MarketplaceRouterController {
 
     @ApiOperation({
         summary:
-            'Открытие плейсмента (виджета) по коду места → redirect на страницу плейсмента фронта',
+            'Открытие плейсмента (виджета) по коду из манифеста → redirect на страницу плейсмента фронта',
     })
+    @ApiParam(PLACEMENT_CODE_API_PARAM)
     @ApiOkResponse({
         description: 'Redirect (302) на фронт плейсмента',
         type: MarketplaceRouteResultDto,
@@ -91,6 +112,7 @@ export class MarketplaceRouterController {
     }
 
     @ApiOperation({ summary: 'GET-вариант открытия плейсмента' })
+    @ApiParam(PLACEMENT_CODE_API_PARAM)
     @ApiOkResponse({
         description: 'Redirect (302) на фронт плейсмента',
         type: MarketplaceRouteResultDto,

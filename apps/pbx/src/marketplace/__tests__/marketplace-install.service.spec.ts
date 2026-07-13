@@ -6,10 +6,8 @@ import {
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
 import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
-import {
-    MARKETPLACE_LIFECYCLE_EVENTS,
-    SALES_PLACEMENTS,
-} from '../config/marketplace-manifest';
+import { MarketplacePlacementSyncService } from '../services/marketplace-placement-sync.service';
+import { MARKETPLACE_LIFECYCLE_EVENTS } from '../config/marketplace-manifest';
 
 type RepoMock = jest.Mocked<
     Pick<
@@ -24,11 +22,15 @@ type RepoMock = jest.Mocked<
 type BxMock = jest.Mocked<
     Pick<MarketplaceBxClient, 'bindEvent' | 'bindPlacement'>
 >;
+type SyncMock = jest.Mocked<
+    Pick<MarketplacePlacementSyncService, 'syncPlacements'>
+>;
 
 describe('MarketplaceInstallService (пайплайн установки)', () => {
     let service: MarketplaceInstallService;
     let repo: RepoMock;
     let bx: BxMock;
+    let sync: SyncMock;
 
     const onAppInstallBody = {
         event: 'ONAPPINSTALL',
@@ -56,6 +58,14 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             bindEvent: jest.fn().mockResolvedValue({ ok: true }),
             bindPlacement: jest.fn().mockResolvedValue({ ok: true }),
         };
+        sync = {
+            syncPlacements: jest.fn().mockResolvedValue({
+                bound: 4,
+                unbound: 0,
+                errors: 0,
+                total: 4,
+            }),
+        };
         const configService = {
             get: jest.fn().mockReturnValue(undefined),
         } as unknown as ConfigService;
@@ -63,6 +73,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         service = new MarketplaceInstallService(
             repo as unknown as MarketplaceInstallRepository,
             bx as unknown as MarketplaceBxClient,
+            sync as unknown as MarketplacePlacementSyncService,
             configService,
         );
     });
@@ -92,8 +103,13 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             'ONAPPUNINSTALL',
             'https://api.pbx.april-app.ru/api/bitrix-marketplace/event',
         );
-        // все плейсменты sales привязаны
-        expect(bx.bindPlacement).toHaveBeenCalledTimes(SALES_PLACEMENTS.length);
+        // привязки виджетов синхронизированы с эталоном
+        expect(sync.syncPlacements).toHaveBeenCalledWith(
+            'portal.bitrix24.ru',
+            'at',
+            'install-uuid',
+            BigInt(1),
+        );
         // финальный статус — installed
         expect(repo.updateInstallStatus).toHaveBeenLastCalledWith(
             'install-uuid',
@@ -130,12 +146,10 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         expect(bx.bindEvent).not.toHaveBeenCalled();
     });
 
-    it('ошибка placement.bind → status=error с шагом placements', async () => {
-        bx.bindPlacement.mockResolvedValue({
-            ok: false,
-            error: 'ERROR',
-            errorDescription: 'boom',
-        });
+    it('ошибка синхронизации привязок → status=error с шагом placements', async () => {
+        sync.syncPlacements.mockRejectedValue(
+            new Error('placement.bind failed: CRM_DEAL_DETAIL_TAB/event-sales'),
+        );
 
         const result = await service.installFromBitrixRequest(
             onAppInstallBody,
@@ -148,17 +162,6 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             InstallStatus.ERROR,
             'placements',
             expect.stringContaining('placement.bind'),
-        );
-        // компонент зафиксирован с ошибкой
-        expect(repo.upsertComponents).toHaveBeenCalledWith(
-            'install-uuid',
-            BigInt(1),
-            expect.arrayContaining([
-                expect.objectContaining({
-                    status: 'error',
-                    reasonCode: 'bitrix_error',
-                }),
-            ]),
         );
     });
 
@@ -193,5 +196,6 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         expect(repo.upsertInstall).toHaveBeenCalled();
         expect(repo.updateInstallStatus).not.toHaveBeenCalled();
         expect(bx.bindEvent).not.toHaveBeenCalled();
+        expect(sync.syncPlacements).not.toHaveBeenCalled();
     });
 });

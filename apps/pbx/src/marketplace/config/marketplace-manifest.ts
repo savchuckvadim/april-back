@@ -1,14 +1,36 @@
 /**
- * Манифест маркетплейс-приложения «Менеджер Гарант».
+ * Манифест маркетплейс-приложения «Менеджер Гарант» — ЭТАЛОН состава.
  *
- * Состав продуктов (плейсменты, сценарии, компоненты) — КОД, а не БД:
- * он одинаков для всех порталов и версионируется вместе с приложением.
- * В БД хранятся только факты: доступ (portal_products) и статусы
- * установки (marketplace_install_components).
+ * Модель: ВИДЖЕТ (наше встраиваемое мини-приложение: код, страница фронта,
+ * название) × МЕСТА ВСТРОЙКИ (places[] — где виджет показывается в Битриксе).
+ * Один виджет может быть встроен в несколько мест; места со временем
+ * меняются (убрать из компании, добавить в задачу) — это правка places[]
+ * + синхронизация (см. ниже), а НЕ новый виджет.
  *
- * ⚠️ Коды и названия плейсментов — ЧЕРНОВИК (уточняются владельцем,
- * см. ai/marketplace/APP_PUBLICATION_DATA.md, раздел 3): места встройки
- * заявляются в карточке решения и должны совпадать с манифестом.
+ * Эталон живёт в коде (одинаков для всех порталов, версионируется с
+ * приложением). Факт на конкретном портале — в самом Битриксе
+ * (placement.list) и в зеркале marketplace_install_components.
+ * Выравнивание факт→эталон делает MarketplacePlacementSyncService
+ * (diff: bind недостающих пар, unbind лишних) — при установке и по
+ * admin-запросу POST /bitrix-marketplace/admin/placements/refresh.
+ *
+ * ══════════ КАК ИЗМЕНИТЬ СОСТАВ ВИДЖЕТОВ/МЕСТ ══════════
+ * 1. Новый виджет — элемент в SALES_WIDGETS (code уникальный, kebab-case).
+ *    Смена мест у виджета — правка его places[] (добавить/убрать место).
+ *    Тип SalesWidgetCode, Swagger-enum роутера, guard и тесты подхватят
+ *    изменения АВТОМАТИЧЕСКИ (всё выводится из массива).
+ * 2. Для нового виджета — страница фронта:
+ *    `${MARKETPLACE_PLACEMENT_REDIRECT_BASE}/<code>`.
+ * 3. Деплой бэка (и фронта, если п.2).
+ * 4. Существующие порталы: дернуть refresh-синхронизацию
+ *    (POST /api/bitrix-marketplace/admin/placements/refresh, заголовок
+ *    X-Admin-Key) — она сама забиндит новое и отвяжет убранное.
+ *    Новые установки получают актуальный эталон автоматически.
+ * 5. Карточка решения: заявленные места встройки должны соответствовать
+ *    эталону (после публикации правка карточки = повторная модерация).
+ *    Обновить ai/marketplace/APP_PUBLICATION_DATA.md (раздел 3).
+ * 6. pnpm run lint + npx jest apps/pbx/src/marketplace.
+ * ════════════════════════════════════════════════════════
  */
 
 export enum MarketplaceProduct {
@@ -32,42 +54,106 @@ export const MARKETPLACE_LIFECYCLE_EVENTS = [
 export type MarketplaceLifecycleEvent =
     (typeof MARKETPLACE_LIFECYCLE_EVENTS)[number];
 
-export interface PlacementManifestItem {
+/**
+ * Места встройки Битрикс24, которые использует приложение.
+ * Известные — с автокомплитом; `string & {}` оставляет тип открытым
+ * для любых других мест из справочника Битрикса
+ * (https://apidocs.bitrix24.ru/api-reference/widgets/placements.html).
+ */
+export type BxPlace =
+    | 'CRM_DEAL_DETAIL_TAB'
+    | 'CRM_COMPANY_DETAIL_TAB'
+    | 'CRM_LEAD_DETAIL_TAB'
+    | 'CRM_CONTACT_DETAIL_TAB'
+    | 'TASK_VIEW_TAB'
+    | (string & {});
+
+export interface WidgetManifestItem {
     /** Продукт, которому принадлежит виджет */
     product: MarketplaceProduct;
-    /** Место встройки Битрикс24 (PLACEMENT) */
-    placement: string;
-    /** Наш код виджета — станет частью HANDLER-URL и component_code */
+    /**
+     * Код виджета — единая страница фронта и HANDLER-URL
+     * `/api/bitrix-marketplace/placement/<code>` для ВСЕХ мест встройки
+     */
     code: string;
     /** Название вкладки/виджета в интерфейсе Битрикс24 */
     title: string;
     description?: string;
+    /** Места встройки (может быть несколько; меняются правкой + refresh) */
+    places: readonly BxPlace[];
 }
 
-/** Плейсменты продукта sales — биндятся при установке приложения */
-export const SALES_PLACEMENTS: PlacementManifestItem[] = [
+/**
+ * Виджеты продукта sales.
+ * Места — из легаси-привязок (event_sales жил и в сделке, и в компании).
+ * ⚠️ Место для report-sales уточняется владельцем (см. реестр, раздел 3).
+ */
+export const SALES_WIDGETS = [
     {
         product: MarketplaceProduct.SALES,
-        placement: 'CRM_DEAL_DETAIL_TAB',
         code: 'event-sales',
         title: 'Гарант: Звонки',
-        description: 'Виджет звонков и событий по сделке',
+        description: 'Виджет звонков и событий',
+        places: ['CRM_DEAL_DETAIL_TAB', 'CRM_COMPANY_DETAIL_TAB'],
     },
     {
         product: MarketplaceProduct.SALES,
-        placement: 'CRM_DEAL_DETAIL_TAB',
         code: 'konstructor',
         title: 'Гарант: Конструктор КП',
         description: 'Конструктор коммерческих предложений',
+        places: ['CRM_DEAL_DETAIL_TAB'],
     },
     {
         product: MarketplaceProduct.SALES,
-        placement: 'CRM_COMPANY_DETAIL_TAB',
         code: 'report-sales',
         title: 'Гарант: Отчёты',
         description: 'Отчёты отдела продаж',
+        places: ['CRM_COMPANY_DETAIL_TAB'],
     },
-];
+] as const satisfies readonly WidgetManifestItem[];
+
+/**
+ * Код виджета — ЗАКРЫТОЕ перечисление, выводится из манифеста:
+ * 'event-sales' | 'konstructor' | 'report-sales'.
+ * Ровно эти коды регистрируются как HANDLER-URL в placement.bind;
+ * неизвестный код в роутере = рассинхрон эталона с привязками.
+ */
+export type SalesWidgetCode = (typeof SALES_WIDGETS)[number]['code'];
+
+/** Все допустимые коды виджетов (для Swagger и валидации) */
+export const SALES_WIDGET_CODES: readonly SalesWidgetCode[] = SALES_WIDGETS.map(
+    item => item.code,
+);
+
+/** Type guard: известен ли код виджета эталону */
+export function isKnownWidgetCode(code: string): code is SalesWidgetCode {
+    return SALES_WIDGETS.some(item => item.code === code);
+}
+
+/** Виджет эталона по коду */
+export function findWidgetByCode(code: string): WidgetManifestItem | undefined {
+    return SALES_WIDGETS.find(item => item.code === code);
+}
+
+/** Целевая привязка: пара «виджет × место встройки» */
+export interface DesiredBinding {
+    widget: WidgetManifestItem;
+    place: BxPlace;
+}
+
+/**
+ * Развёртка эталона в плоский список целевых привязок для продуктов —
+ * то, что должно быть забиндено на портале (вход diff-синхронизации).
+ */
+export function getDesiredBindings(
+    products: readonly MarketplaceProduct[],
+): DesiredBinding[] {
+    return SALES_WIDGETS.filter(widget =>
+        products.includes(widget.product),
+    ).flatMap((widget: WidgetManifestItem) =>
+        widget.places.map((place: BxPlace) => ({ widget, place })),
+    );
+}
 
 export interface SmartScenarioManifestItem {
     product: MarketplaceProduct;
@@ -96,10 +182,3 @@ export const SALES_SMART_SCENARIOS: SmartScenarioManifestItem[] = [
         title: 'Сценарий: холодный обзвон',
     },
 ];
-
-/** Плейсменты продукта (для активации service — этап 6.9 плана) */
-export function getProductPlacements(
-    product: MarketplaceProduct,
-): PlacementManifestItem[] {
-    return SALES_PLACEMENTS.filter(item => item.product === product);
-}
