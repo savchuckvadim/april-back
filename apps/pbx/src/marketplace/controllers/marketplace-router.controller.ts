@@ -20,7 +20,7 @@ import {
     MarketplaceRouteResultDto,
 } from '../dto/marketplace-router.dto';
 import { BitrixInstallRequestSource } from '../lib/parse-install-params.util';
-import { SALES_WIDGET_CODES } from '../config/marketplace-manifest';
+import { MARKETPLACE_WIDGET_CODES } from '../config/marketplace-manifest';
 
 /**
  * Маршрутизация открытий из Битрикса на фронт.
@@ -33,18 +33,19 @@ import { SALES_WIDGET_CODES } from '../config/marketplace-manifest';
  * обновления страницы пользователем внутри iframe.
  *
  * :code — код ВИДЖЕТА (закрытый список из эталона-манифеста
- * config/marketplace-manifest.ts → SALES_WIDGET_CODES):
- * event-sales | konstructor | report-sales. Один виджет может быть
- * встроен в несколько мест (places[] манифеста) — все места ходят
- * на один и тот же :code; неизвестный код — рассинхрон эталона
+ * config/marketplace-manifest.ts → MARKETPLACE_WIDGET_CODES).
+ * Один виджет может быть встроен в несколько мест (places[] манифеста) —
+ * все места ходят на один и тот же :code; фронты виджетов живут на
+ * разных доменах (frontUrl манифеста, подмена через env
+ * MARKETPLACE_WIDGET_URL_<КОД>); неизвестный код — рассинхрон эталона
  * (warning в лог + redirect в кабинет с reason).
  */
 const PLACEMENT_CODE_API_PARAM = {
     name: 'code',
     description:
-        'Код виджета из эталона-манифеста (все места встройки виджета ходят на этот код)',
-    enum: [...SALES_WIDGET_CODES],
-    example: SALES_WIDGET_CODES[0],
+        'Код виджета из эталона-манифеста (все места встройки виджета ходят на этот код; redirect — на frontUrl виджета)',
+    enum: [...MARKETPLACE_WIDGET_CODES],
+    example: MARKETPLACE_WIDGET_CODES[0],
 } as const;
 @ApiTags('Bitrix Marketplace Router')
 @Controller('bitrix-marketplace')

@@ -1,4 +1,4 @@
-import { bootstrapApp } from '@/core';
+import { bootstrapApp } from '@lib/core';
 import { KpiReportServiceModule } from './kpi-report-service.module';
 
 bootstrapApp(KpiReportServiceModule, {

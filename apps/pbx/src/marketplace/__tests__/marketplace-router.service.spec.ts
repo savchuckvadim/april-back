@@ -53,7 +53,7 @@ describe('MarketplaceRouterService', () => {
         expect(url.searchParams.get('status')).toBe('success');
     });
 
-    it('открытие плейсмента: redirect на базу плейсментов с кодом из манифеста и PLACEMENT_OPTIONS', async () => {
+    it('открытие виджета: redirect на frontUrl виджета из эталона (свой домен) + PLACEMENT_OPTIONS', async () => {
         const result = await service.handlePlacementOpen(
             'event-sales',
             {
@@ -65,9 +65,50 @@ describe('MarketplaceRouterService', () => {
         );
 
         const url = new URL(result.redirectUrl);
-        expect(url.pathname).toBe('/portal/placement/event-sales');
+        // цель — frontUrl виджета из манифеста, НЕ домен кабинета
+        expect(url.origin + url.pathname).toBe(
+            'https://front.april-app.ru/event/prod/placement.php',
+        );
         expect(url.searchParams.get('placement_options')).toBe('{"ID":"1"}');
+        expect(url.searchParams.get('domain')).toBe('portal.bitrix24.ru');
         expect(result.placement).toBe('CRM_DEAL_DETAIL_TAB');
+    });
+
+    it('env-подмена frontUrl: MARKETPLACE_WIDGET_URL_<КОД> приоритетнее манифеста', async () => {
+        const configService = {
+            get: jest.fn((key: string) =>
+                key === 'MARKETPLACE_WIDGET_URL_EVENT_SALES'
+                    ? 'https://new-front.example.com/events'
+                    : undefined,
+            ),
+        } as unknown as ConfigService;
+        const overridden = new MarketplaceRouterService(
+            installService as unknown as MarketplaceInstallService,
+            configService,
+        );
+
+        const result = await overridden.handlePlacementOpen(
+            'event-sales',
+            openBody,
+            openQuery,
+        );
+
+        const url = new URL(result.redirectUrl);
+        expect(url.origin + url.pathname).toBe(
+            'https://new-front.example.com/events',
+        );
+    });
+
+    it('report-sales редиректит на свой домен (next.april-app.ru)', async () => {
+        const result = await service.handlePlacementOpen(
+            'report-sales',
+            openBody,
+            openQuery,
+        );
+        const url = new URL(result.redirectUrl);
+        expect(url.origin + url.pathname).toBe(
+            'https://next.april-app.ru/kpi-sales/report',
+        );
     });
 
     it('неизвестный код плейсмента: fail + redirect в кабинет с reason=unknown_placement, токены не сохраняются', async () => {

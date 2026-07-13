@@ -28,6 +28,7 @@
         "dev:event-sales": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-sales --watch",
         "dev:event-service": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start event-service --watch",
         "dev:admin": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start admin --watch",
+        "dev:konstructor": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start konstructor --watch",
         "dev:rq": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start rq --watch",
         "dev:pbx": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start pbx --watch",
         "dev:bot": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start bot --watch",
@@ -202,6 +203,7 @@
             "^@lib/bx-department(|/.*)$": "<rootDir>/libs/bx-department/$1",
             "^@apps/(.*)$": "<rootDir>/apps/back/src/apps/$1",
             "^@app/pbx-install(|/.*)$": "<rootDir>/apps/pbx-install/src/modules/$1",
+            "^@app/konstructor(|/.*)$": "<rootDir>/apps/konstructor/src/$1",
             "^@prisma$": "<rootDir>/generated/prisma/index.ts",
             "^generated/(.*)$": "<rootDir>/generated/$1",
             "^(@/|src/)(.*)$": "<rootDir>/apps/back/src/$2"

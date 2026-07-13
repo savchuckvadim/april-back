@@ -7,17 +7,23 @@ import {
 } from '../lib/parse-install-params.util';
 import { MarketplaceInstallService } from './marketplace-install.service';
 import { MarketplaceRouteResultDto } from '../dto/marketplace-router.dto';
-import { isKnownWidgetCode } from '../config/marketplace-manifest';
+import {
+    findWidgetByCode,
+    isKnownWidgetCode,
+} from '../config/marketplace-manifest';
 
 /**
  * Маршрутизация открытий маркетплейс-приложения «Менеджер Гарант».
  *
- * Битрикс открывает и основное приложение, и все плейсменты POST-ом
+ * Битрикс открывает и основное приложение, и все виджеты POST-ом
  * (в теле — AUTH_ID/REFRESH_ID/member_id/DOMAIN/PLACEMENT). Сервис:
  *  1) сохраняет/обновляет токены из каждого открытия (бесплатный refresh);
- *  2) строит redirect на фронт; URL фронта подменяется через env —
- *     в Битриксе зарегистрирован стабильный URL бэка, маршрутизация
- *     за ним меняется без перерегистрации в карточке/placement.bind.
+ *  2) строит redirect на фронт. Фронты виджетов живут на РАЗНЫХ доменах:
+ *     цель берётся из эталона-манифеста (frontUrl виджета) и подменяется
+ *     env-переменной MARKETPLACE_WIDGET_URL_<КОД> (дефисы → подчёркивания,
+ *     напр. MARKETPLACE_WIDGET_URL_EVENT_SALES) БЕЗ деплоя. В Битриксе
+ *     зарегистрированы только стабильные URL бэка — перерегистрация
+ *     привязок при смене фронтов не нужна.
  */
 @Injectable()
 export class MarketplaceRouterService {
@@ -25,8 +31,6 @@ export class MarketplaceRouterService {
 
     /** Фронт основного приложения (кабинет в левом меню Битрикса) */
     readonly appRedirectUrl: string;
-    /** База фронта плейсментов: `${base}/<code>` */
-    readonly placementRedirectBase: string;
 
     constructor(
         private readonly installService: MarketplaceInstallService,
@@ -35,10 +39,19 @@ export class MarketplaceRouterService {
         this.appRedirectUrl =
             this.configService.get<string>('MARKETPLACE_APP_REDIRECT_URL') ??
             'https://bitrix.april-app.ru/bitrix/cabinet';
-        this.placementRedirectBase =
-            this.configService.get<string>(
-                'MARKETPLACE_PLACEMENT_REDIRECT_BASE',
-            ) ?? 'https://bitrix.april-app.ru/portal/placement';
+    }
+
+    /** Целевой URL фронта виджета: env-подмена приоритетнее манифеста */
+    resolveWidgetFrontUrl(code: string, manifestUrl: string): string {
+        const envKey = `MARKETPLACE_WIDGET_URL_${code.toUpperCase().replace(/-/g, '_')}`;
+        const override = this.configService.get<string>(envKey);
+        if (override) {
+            this.logger.log(
+                `Widget "${code}": frontUrl подменён через ${envKey}`,
+            );
+            return override;
+        }
+        return manifestUrl;
     }
 
     /** Открытие основного приложения (левое меню Битрикса). */
@@ -90,8 +103,12 @@ export class MarketplaceRouterService {
                 placement: payload.placement ?? code,
             };
         }
+        const widget = findWidgetByCode(code);
         const stored = await this.installService.storeFromPayload(payload);
-        const target = `${this.placementRedirectBase}/${encodeURIComponent(code)}`;
+        const target = this.resolveWidgetFrontUrl(
+            code,
+            widget?.frontUrl ?? this.appRedirectUrl,
+        );
         return {
             status: stored.status,
             redirectUrl: this.buildRedirectUrl(target, payload, {

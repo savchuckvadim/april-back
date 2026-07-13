@@ -1,22 +1,33 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { LoggerModule } from '@lib/logger';
-import { MetricsModule } from '@lib/metrics';
-import { GlobalExceptionFilter, HealthModule } from '@/core';
-import { KonstructorController } from './konstructor.controller';
-import { KonstructorService } from './konstructor.service';
-
+import { InitSupplyController } from './supply/init-supply/init-supply.controller';
+import { InitSupplyService } from './supply/init-supply/init-supply.service';
+import { InitSupplyUseCase } from './supply/init-supply/init-supply.use-case';
+import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
+import { ContractGenerateModule } from './contract/generate/contract-generate.module';
+import { OfferModule } from './offer/offer.module';
+import { GarantModule } from '@lib/garant/garant.module';
+import { KonstructorInitModule } from './init/konstructor-init.module';
+import { PBXModule } from '@lib/pbx';
+import { InitSupplyModule } from './supply/init-supply/init-supply.module';
+import { SupplyInitDealModule } from './supply/init-deal/supply-init-deal.module';
 @Module({
     imports: [
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: ['apps/konstructor/.env', '.env'],
-        }),
-        LoggerModule.forRoot({ appName: 'konstructor' }),
-        MetricsModule.forRoot({ appName: 'konstructor' }),
-        HealthModule,
+        ZakupkiOfferModule,
+        ContractGenerateModule,
+        OfferModule,
+        GarantModule,
+        KonstructorInitModule,
+        PBXModule,
+        InitSupplyModule,
+        SupplyInitDealModule,
     ],
-    controllers: [KonstructorController],
-    providers: [KonstructorService, GlobalExceptionFilter],
+
+    exports: [
+        ZakupkiOfferModule,
+        ContractGenerateModule,
+        OfferModule,
+        KonstructorInitModule,
+        SupplyInitDealModule,
+    ],
 })
 export class KonstructorModule {}

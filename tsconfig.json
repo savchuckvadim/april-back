@@ -107,9 +107,14 @@
       "@app/pbx-install": ["apps/pbx-install/src/modules"],
       "@app/pbx-install/*": ["apps/pbx-install/src/modules/*"],
 
+      // ---- Приложение konstructor (apps/konstructor/src) ----
+      // самодостаточные внутренние импорты конструктора документов
+      "@app/konstructor": ["apps/konstructor/src"],
+      "@app/konstructor/*": ["apps/konstructor/src/*"],
+
       // ---- Совместимость: вынесенные приложения ----
-      // back ещё импортирует общие DTO kpi-report (kpi-report-ork);
-      // долг: вынести общие типы в библиотеку.
+      // Общие DTO (BitrixUser, FieldItem, PlacementDto) вынесены в @lib/shared;
+      // алиас остаётся для старых импортов back (kpi-report-ork в back).
       "@/apps/kpi-report": ["apps/kpi-report-sales/src"],
       "@/apps/kpi-report/*": ["apps/kpi-report-sales/src/*"],
       "src/apps/kpi-report": ["apps/kpi-report-sales/src"],

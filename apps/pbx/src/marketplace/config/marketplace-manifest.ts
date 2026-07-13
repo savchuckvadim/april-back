@@ -1,11 +1,18 @@
 /**
  * Манифест маркетплейс-приложения «Менеджер Гарант» — ЭТАЛОН состава.
  *
- * Модель: ВИДЖЕТ (наше встраиваемое мини-приложение: код, страница фронта,
+ * Модель: ВИДЖЕТ (наше встраиваемое мини-приложение: код, фронт-страница,
  * название) × МЕСТА ВСТРОЙКИ (places[] — где виджет показывается в Битриксе).
  * Один виджет может быть встроен в несколько мест; места со временем
  * меняются (убрать из компании, добавить в задачу) — это правка places[]
  * + синхронизация (см. ниже), а НЕ новый виджет.
+ *
+ * ФРОНТЫ ВИДЖЕТОВ ЖИВУТ НА РАЗНЫХ ДОМЕНАХ (frontUrl у каждого виджета).
+ * В Битриксе зарегистрированы только СТАБИЛЬНЫЕ URL нашего роутера
+ * (/api/bitrix-marketplace/placement/<code>) — он принимает POST/GET
+ * и редиректит на frontUrl. Куда редиректить — подменяемо БЕЗ
+ * перерегистрации привязок: правкой frontUrl здесь (деплой) или
+ * env-переменной MARKETPLACE_WIDGET_URL_<КОД> (без деплоя, см. роутер).
  *
  * Эталон живёт в коде (одинаков для всех порталов, версионируется с
  * приложением). Факт на конкретном портале — в самом Битриксе
@@ -15,21 +22,24 @@
  * admin-запросу POST /bitrix-marketplace/admin/placements/refresh.
  *
  * ══════════ КАК ИЗМЕНИТЬ СОСТАВ ВИДЖЕТОВ/МЕСТ ══════════
- * 1. Новый виджет — элемент в SALES_WIDGETS (code уникальный, kebab-case).
- *    Смена мест у виджета — правка его places[] (добавить/убрать место).
- *    Тип SalesWidgetCode, Swagger-enum роутера, guard и тесты подхватят
- *    изменения АВТОМАТИЧЕСКИ (всё выводится из массива).
- * 2. Для нового виджета — страница фронта:
- *    `${MARKETPLACE_PLACEMENT_REDIRECT_BASE}/<code>`.
- * 3. Деплой бэка (и фронта, если п.2).
+ * 1. Новый виджет — элемент в MARKETPLACE_WIDGETS (code уникальный,
+ *    kebab-case; frontUrl — полный URL страницы виджета).
+ *    Смена мест — правка places[]; смена фронта — правка frontUrl
+ *    (или env MARKETPLACE_WIDGET_URL_<КОД> без деплоя).
+ *    Тип MarketplaceWidgetCode, Swagger-enum роутера, guard и тесты
+ *    подхватят изменения АВТОМАТИЧЕСКИ (всё выводится из массива).
+ * 2. Страница по frontUrl должна работать в iframe (открывается GET-ом
+ *    после redirect; контекст — query: domain, member_id, lang, status,
+ *    placement_options — либо клиентски через b24jssdk).
+ * 3. Деплой бэка.
  * 4. Существующие порталы: дернуть refresh-синхронизацию
  *    (POST /api/bitrix-marketplace/admin/placements/refresh, заголовок
  *    X-Admin-Key) — она сама забиндит новое и отвяжет убранное.
- *    Новые установки получают актуальный эталон автоматически.
+ *    Смена frontUrl синхронизации НЕ требует (привязки не меняются).
  * 5. Карточка решения: заявленные места встройки должны соответствовать
  *    эталону (после публикации правка карточки = повторная модерация).
  *    Обновить ai/marketplace/APP_PUBLICATION_DATA.md (раздел 3).
- * 6. pnpm run lint + npx jest apps/pbx/src/marketplace.
+ * 6. npm run lint + npx jest apps/pbx/src/marketplace.
  * ════════════════════════════════════════════════════════
  */
 
@@ -73,7 +83,7 @@ export interface WidgetManifestItem {
     /** Продукт, которому принадлежит виджет */
     product: MarketplaceProduct;
     /**
-     * Код виджета — единая страница фронта и HANDLER-URL
+     * Код виджета — стабильный HANDLER-URL
      * `/api/bitrix-marketplace/placement/<code>` для ВСЕХ мест встройки
      */
     code: string;
@@ -82,20 +92,30 @@ export interface WidgetManifestItem {
     description?: string;
     /** Места встройки (может быть несколько; меняются правкой + refresh) */
     places: readonly BxPlace[];
+    /**
+     * Полный URL фронта виджета (домены у виджетов РАЗНЫЕ; URL может
+     * меняться — правка здесь или env MARKETPLACE_WIDGET_URL_<КОД>).
+     * Открывается GET-ом после redirect роутера.
+     */
+    frontUrl: string;
 }
 
 /**
- * Виджеты продукта sales.
- * Места — из легаси-привязок (event_sales жил и в сделке, и в компании);
+ * Все виджеты приложения (sales — биндятся при установке;
+ * service — при активации продукта, план этап 6.9; их места встройки
+ * уточняются при запуске service).
+ * Места sales — из легаси-привязок (event жил и в сделке, и в компании);
  * отчёты — пункт в левом меню (LEFT_MENU), подтверждено владельцем.
+ * frontUrl — актуальные адреса на 2026-07-13 (могут меняться).
  */
-export const SALES_WIDGETS = [
+export const MARKETPLACE_WIDGETS = [
     {
         product: MarketplaceProduct.SALES,
         code: 'event-sales',
         title: 'Гарант: Звонки',
         description: 'Виджет звонков и событий',
         places: ['CRM_DEAL_DETAIL_TAB', 'CRM_COMPANY_DETAIL_TAB'],
+        frontUrl: 'https://front.april-app.ru/event/prod/placement.php',
     },
     {
         product: MarketplaceProduct.SALES,
@@ -103,6 +123,7 @@ export const SALES_WIDGETS = [
         title: 'Гарант: Конструктор КП',
         description: 'Конструктор коммерческих предложений',
         places: ['CRM_DEAL_DETAIL_TAB'],
+        frontUrl: 'https://front.april-app.ru/konstructor/prod/placement.php',
     },
     {
         product: MarketplaceProduct.SALES,
@@ -110,30 +131,55 @@ export const SALES_WIDGETS = [
         title: 'Гарант: Отчёт ОП KPI',
         description: 'Отчёты отдела продаж',
         places: ['LEFT_MENU'],
+        frontUrl: 'https://next.april-app.ru/kpi-sales/report',
+    },
+    {
+        product: MarketplaceProduct.SERVICE,
+        code: 'event-service',
+        title: 'Гарант: Звонки (сервис)',
+        description: 'Виджет звонков сервисного направления',
+        places: ['CRM_DEAL_DETAIL_TAB', 'CRM_COMPANY_DETAIL_TAB'],
+        frontUrl: 'https://front.april-app.ru/event_service/ss/placement.php',
+    },
+    {
+        product: MarketplaceProduct.SERVICE,
+        code: 'konstructor-service',
+        title: 'Гарант: Конструктор КП (сервис)',
+        description: 'Конструктор КП сервисного направления',
+        places: ['CRM_DEAL_DETAIL_TAB'],
+        frontUrl:
+            'https://front.april-app.ru/konstructor/service/placement.php',
+    },
+    {
+        product: MarketplaceProduct.SERVICE,
+        code: 'report-service',
+        title: 'Гарант: Отчёт КЦ KPI',
+        description: 'Отчёты сервисного направления',
+        places: ['LEFT_MENU'],
+        frontUrl: 'https://april-bitrix-kpi-service.vercel.app/api/bitrix/app',
     },
 ] as const satisfies readonly WidgetManifestItem[];
 
 /**
- * Код виджета — ЗАКРЫТОЕ перечисление, выводится из манифеста:
- * 'event-sales' | 'konstructor' | 'report-sales'.
+ * Код виджета — ЗАКРЫТОЕ перечисление, выводится из эталона.
  * Ровно эти коды регистрируются как HANDLER-URL в placement.bind;
  * неизвестный код в роутере = рассинхрон эталона с привязками.
  */
-export type SalesWidgetCode = (typeof SALES_WIDGETS)[number]['code'];
+export type MarketplaceWidgetCode =
+    (typeof MARKETPLACE_WIDGETS)[number]['code'];
 
 /** Все допустимые коды виджетов (для Swagger и валидации) */
-export const SALES_WIDGET_CODES: readonly SalesWidgetCode[] = SALES_WIDGETS.map(
-    item => item.code,
-);
+export const MARKETPLACE_WIDGET_CODES: readonly MarketplaceWidgetCode[] =
+    MARKETPLACE_WIDGETS.map(item => item.code);
 
 /** Type guard: известен ли код виджета эталону */
-export function isKnownWidgetCode(code: string): code is SalesWidgetCode {
-    return SALES_WIDGETS.some(item => item.code === code);
+export function isKnownWidgetCode(code: string): code is MarketplaceWidgetCode {
+    return MARKETPLACE_WIDGETS.some(item => item.code === code);
 }
 
 /** Виджет эталона по коду */
 export function findWidgetByCode(code: string): WidgetManifestItem | undefined {
-    return SALES_WIDGETS.find(item => item.code === code);
+    return MARKETPLACE_WIDGETS.find(item => item.code === code);
 }
 
 /** Целевая привязка: пара «виджет × место встройки» */
@@ -149,7 +195,7 @@ export interface DesiredBinding {
 export function getDesiredBindings(
     products: readonly MarketplaceProduct[],
 ): DesiredBinding[] {
-    return SALES_WIDGETS.filter(widget =>
+    return MARKETPLACE_WIDGETS.filter(widget =>
         products.includes(widget.product),
     ).flatMap((widget: WidgetManifestItem) =>
         widget.places.map((place: BxPlace) => ({ widget, place })),

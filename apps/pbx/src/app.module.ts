@@ -48,4 +48,4 @@ import { PrismaModule } from '@lib/core/prisma/prisma.module';
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule],
 })
-export class AppModule { }
+export class AppModule {}
