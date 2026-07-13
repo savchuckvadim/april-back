@@ -3062,7 +3062,6 @@ declare type QueryPlanNode = {
     args: {
         from: QueryPlanNode;
         to: QueryPlanNode;
-        fields: string[];
     };
 } | {
     type: 'initializeRecord';
