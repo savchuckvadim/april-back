@@ -7,6 +7,7 @@ import { MarketplaceInstallService } from './services/marketplace-install.servic
 import { MarketplaceRouterService } from './services/marketplace-router.service';
 import { MarketplaceLifecycleService } from './services/marketplace-lifecycle.service';
 import { MarketplacePlacementSyncService } from './services/marketplace-placement-sync.service';
+import { MarketplaceEventSyncService } from './services/marketplace-event-sync.service';
 import { MarketplaceAdminService } from './services/marketplace-admin.service';
 import { MarketplaceInstallRepository } from './persistence/marketplace-install.repository';
 import { MarketplaceBxClient } from './clients/marketplace-bx.client';
@@ -40,6 +41,7 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
         MarketplaceRouterService,
         MarketplaceLifecycleService,
         MarketplacePlacementSyncService,
+        MarketplaceEventSyncService,
         MarketplaceAdminService,
         MarketplaceInstallRepository,
         MarketplaceBxClient,

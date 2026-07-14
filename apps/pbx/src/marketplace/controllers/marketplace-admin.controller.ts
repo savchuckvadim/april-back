@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
     ApiHeader,
     ApiOkResponse,
@@ -8,6 +8,8 @@ import {
 import { AdminKeyGuard } from '../lib/admin-key.guard';
 import { MarketplaceAdminService } from '../services/marketplace-admin.service';
 import {
+    AdminInstallDto,
+    AdminInstallsQueryDto,
     PlacementSyncResultDto,
     RefreshPlacementsDto,
 } from '../dto/marketplace-admin.dto';
@@ -21,6 +23,27 @@ import {
 @Controller('bitrix-marketplace/admin')
 export class MarketplaceAdminController {
     constructor(private readonly adminService: MarketplaceAdminService) {}
+
+    @ApiOperation({
+        summary:
+            'Диагностика установок портала: статусы, ошибки шагов, компоненты (токены не возвращаются)',
+    })
+    @ApiHeader({
+        name: 'X-Admin-Key',
+        description: 'Ключ администратора (env MARKETPLACE_ADMIN_KEY)',
+        required: true,
+    })
+    @ApiOkResponse({
+        description: 'Установки портала с компонентами',
+        type: AdminInstallDto,
+        isArray: true,
+    })
+    @Get('installs')
+    async getInstalls(
+        @Query() query: AdminInstallsQueryDto,
+    ): Promise<AdminInstallDto[]> {
+        return this.adminService.getInstalls(query);
+    }
 
     @ApiOperation({
         summary:

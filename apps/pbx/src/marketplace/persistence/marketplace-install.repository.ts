@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@/core';
 import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
-import { marketplace_installs, Portal } from 'generated/prisma';
+import {
+    marketplace_install_components,
+    marketplace_installs,
+    Portal,
+} from 'generated/prisma';
 import { MarketplaceComponentType } from '../config/marketplace-manifest';
 
 /**
@@ -58,6 +62,12 @@ export interface EventLogInput {
     payload?: string;
     errorDetail?: string;
 }
+
+/** Установка с порталом и компонентами (admin-обзор) */
+export type InstallWithDetails = marketplace_installs & {
+    portals: Portal;
+    marketplace_install_components: marketplace_install_components[];
+};
 
 /** Статусы установки (state machine, спецификация 4.5.2 плана) */
 export enum InstallStatus {
@@ -229,6 +239,28 @@ export class MarketplaceInstallRepository {
                 portals: { domain },
             },
             include: { portals: true },
+        });
+    }
+
+    /**
+     * Все установки портала с компонентами (admin-диагностика).
+     * member_id приоритетен; без фильтра по app_code — обзор всех
+     * приложений портала. Токены НЕ расшифровываются.
+     */
+    async findInstallsWithComponents(filter: {
+        domain?: string;
+        memberId?: string;
+    }): Promise<InstallWithDetails[]> {
+        const portalWhere = filter.memberId
+            ? { member_id: filter.memberId }
+            : { domain: filter.domain };
+        return this.prisma.marketplace_installs.findMany({
+            where: { portals: portalWhere },
+            include: {
+                portals: true,
+                marketplace_install_components: true,
+            },
+            orderBy: { updated_at: 'desc' },
         });
     }
 

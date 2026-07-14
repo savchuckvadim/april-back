@@ -5,9 +5,8 @@ import {
     InstallStatus,
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
-import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
 import { MarketplacePlacementSyncService } from '../services/marketplace-placement-sync.service';
-import { MARKETPLACE_LIFECYCLE_EVENTS } from '../config/marketplace-manifest';
+import { MarketplaceEventSyncService } from '../services/marketplace-event-sync.service';
 
 type RepoMock = jest.Mocked<
     Pick<
@@ -19,8 +18,8 @@ type RepoMock = jest.Mocked<
         | 'logEvent'
     >
 >;
-type BxMock = jest.Mocked<
-    Pick<MarketplaceBxClient, 'bindEvent' | 'bindPlacement'>
+type EventSyncMock = jest.Mocked<
+    Pick<MarketplaceEventSyncService, 'syncEvents'>
 >;
 type SyncMock = jest.Mocked<
     Pick<MarketplacePlacementSyncService, 'syncPlacements'>
@@ -29,7 +28,7 @@ type SyncMock = jest.Mocked<
 describe('MarketplaceInstallService (пайплайн установки)', () => {
     let service: MarketplaceInstallService;
     let repo: RepoMock;
-    let bx: BxMock;
+    let eventSync: EventSyncMock;
     let sync: SyncMock;
 
     const onAppInstallBody = {
@@ -54,9 +53,13 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             upsertComponents: jest.fn().mockResolvedValue(undefined),
             logEvent: jest.fn().mockResolvedValue(undefined),
         };
-        bx = {
-            bindEvent: jest.fn().mockResolvedValue({ ok: true }),
-            bindPlacement: jest.fn().mockResolvedValue({ ok: true }),
+        eventSync = {
+            syncEvents: jest.fn().mockResolvedValue({
+                bound: 3,
+                unbound: 0,
+                errors: 0,
+                total: 3,
+            }),
         };
         sync = {
             syncPlacements: jest.fn().mockResolvedValue({
@@ -72,13 +75,13 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
 
         service = new MarketplaceInstallService(
             repo as unknown as MarketplaceInstallRepository,
-            bx as unknown as MarketplaceBxClient,
+            eventSync as unknown as MarketplaceEventSyncService,
             sync as unknown as MarketplacePlacementSyncService,
             configService,
         );
     });
 
-    it('успешная установка: токены → event.bind → placement.bind → installed', async () => {
+    it('успешная установка: токены → sync событий → sync привязок → installed', async () => {
         const result = await service.installFromBitrixRequest(
             onAppInstallBody,
             undefined,
@@ -93,16 +96,14 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             memberId: 'member-1',
             domain: 'portal.bitrix24.ru',
         });
-        // все lifecycle-события привязаны на /api/bitrix-marketplace/event
-        expect(bx.bindEvent).toHaveBeenCalledTimes(
-            MARKETPLACE_LIFECYCLE_EVENTS.length,
-        );
-        expect(bx.bindEvent).toHaveBeenCalledWith(
+        // события синхронизированы ДО привязок виджетов
+        expect(eventSync.syncEvents).toHaveBeenCalledWith(
             'portal.bitrix24.ru',
             'at',
-            'ONAPPUNINSTALL',
-            'https://api.pbx.april-app.ru/api/bitrix-marketplace/event',
         );
+        const eventsOrder = eventSync.syncEvents.mock.invocationCallOrder[0];
+        const placementsOrder = sync.syncPlacements.mock.invocationCallOrder[0];
+        expect(eventsOrder).toBeLessThan(placementsOrder);
         // привязки виджетов синхронизированы с эталоном
         expect(sync.syncPlacements).toHaveBeenCalledWith(
             'portal.bitrix24.ru',
@@ -132,7 +133,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
 
         expect(result.status).toBe('success');
         expect(result.channel).toBe(InstallChannel.PLACEMENT);
-        expect(bx.bindEvent).toHaveBeenCalled();
+        expect(eventSync.syncEvents).toHaveBeenCalled();
     });
 
     it('нет токенов → fail, пайплайн не запускается', async () => {
@@ -143,7 +144,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
 
         expect(result.status).toBe('fail');
         expect(repo.upsertPortal).not.toHaveBeenCalled();
-        expect(bx.bindEvent).not.toHaveBeenCalled();
+        expect(eventSync.syncEvents).not.toHaveBeenCalled();
     });
 
     it('ошибка синхронизации привязок → status=error с шагом placements', async () => {
@@ -165,8 +166,10 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         );
     });
 
-    it('ошибка event.bind → status=error с шагом events', async () => {
-        bx.bindEvent.mockResolvedValue({ ok: false, error: 'ERR' });
+    it('ошибка синхронизации событий → status=error с шагом events', async () => {
+        eventSync.syncEvents.mockRejectedValue(
+            new Error('event.bind failed: ONAPPUNINSTALL: ERR'),
+        );
 
         const result = await service.installFromBitrixRequest(
             onAppInstallBody,
@@ -178,7 +181,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             'install-uuid',
             InstallStatus.ERROR,
             'events',
-            expect.any(String),
+            expect.stringContaining('event.bind'),
         );
     });
 
@@ -195,7 +198,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         expect(result.status).toBe('success');
         expect(repo.upsertInstall).toHaveBeenCalled();
         expect(repo.updateInstallStatus).not.toHaveBeenCalled();
-        expect(bx.bindEvent).not.toHaveBeenCalled();
+        expect(eventSync.syncEvents).not.toHaveBeenCalled();
         expect(sync.syncPlacements).not.toHaveBeenCalled();
     });
 });

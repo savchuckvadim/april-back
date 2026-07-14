@@ -15,6 +15,7 @@ import axios from 'axios';
 export enum MarketplaceBxMethod {
     EVENT_BIND = 'event.bind',
     EVENT_UNBIND = 'event.unbind',
+    EVENT_GET = 'event.get',
     PLACEMENT_BIND = 'placement.bind',
     PLACEMENT_UNBIND = 'placement.unbind',
     PLACEMENT_LIST = 'placement.list',
@@ -28,11 +29,19 @@ export interface MarketplaceBxCallResult {
     errorDescription?: string;
 }
 
-/** Ошибки Битрикса, означающие «уже сделано» — при переустановке это успех */
+/** Специфичные коды Битрикса «уже сделано» — при переустановке это успех */
 const ALREADY_DONE_ERRORS = new Set([
     'ERROR_HANDLER_ALREADY_EXIST',
     'ERROR_PLACEMENT_HANDLER_ALREADY_EXIST',
 ]);
+
+/**
+ * Generic-код ERROR_CORE Битрикс использует и для «уже привязано»:
+ * «Unable to set event handler: Handler already binded» (прод-лог
+ * april-dev 2026-07-13, повторный event.bind при переустановке).
+ * Распознаём по описанию, чтобы не глотать посторонние ERROR_CORE.
+ */
+const ALREADY_DONE_DESCRIPTION = /handler already bind/i;
 
 @Injectable()
 export class MarketplaceBxClient {
@@ -54,6 +63,9 @@ export class MarketplaceBxClient {
 
             const data = response.data;
             if (data.error) {
+                if (this.isAlreadyDone(data.error, data.error_description)) {
+                    return { ok: true, result: 'already_done' };
+                }
                 return {
                     ok: false,
                     error: data.error,
@@ -68,7 +80,7 @@ export class MarketplaceBxClient {
                     error?: string;
                     error_description?: string;
                 };
-                if (data.error && ALREADY_DONE_ERRORS.has(data.error)) {
+                if (this.isAlreadyDone(data.error, data.error_description)) {
                     return { ok: true, result: 'already_done' };
                 }
                 this.logger.warn(
@@ -93,27 +105,62 @@ export class MarketplaceBxClient {
         }
     }
 
-    /** event.bind с идемпотентностью (повторный bind = успех) */
+    /**
+     * «Уже сделано» = успех (идемпотентность переустановки): либо
+     * специфичный код, либо ERROR_CORE строго с «already bind» в описании.
+     */
+    private isAlreadyDone(error?: string, description?: string): boolean {
+        if (!error) {
+            return false;
+        }
+        if (ALREADY_DONE_ERRORS.has(error)) {
+            return true;
+        }
+        return (
+            error === 'ERROR_CORE' &&
+            ALREADY_DONE_DESCRIPTION.test(description ?? '')
+        );
+    }
+
+    /** event.bind (идемпотентность «уже привязано» обрабатывает call) */
     async bindEvent(
         domain: string,
         accessToken: string,
         event: string,
         handler: string,
     ): Promise<MarketplaceBxCallResult> {
-        const result = await this.call(
+        return this.call(domain, accessToken, MarketplaceBxMethod.EVENT_BIND, {
+            event,
+            handler,
+        });
+    }
+
+    /** event.get — обработчики событий, зарегистрированные НАШИМ приложением */
+    async listEvents(
+        domain: string,
+        accessToken: string,
+    ): Promise<MarketplaceBxCallResult> {
+        return this.call(
             domain,
             accessToken,
-            MarketplaceBxMethod.EVENT_BIND,
+            MarketplaceBxMethod.EVENT_GET,
+            {},
+        );
+    }
+
+    /** event.unbind по паре (event, handler) */
+    async unbindEvent(
+        domain: string,
+        accessToken: string,
+        event: string,
+        handler: string,
+    ): Promise<MarketplaceBxCallResult> {
+        return this.call(
+            domain,
+            accessToken,
+            MarketplaceBxMethod.EVENT_UNBIND,
             { event, handler },
         );
-        if (
-            !result.ok &&
-            result.error &&
-            ALREADY_DONE_ERRORS.has(result.error)
-        ) {
-            return { ok: true, result: 'already_done' };
-        }
-        return result;
     }
 
     /**
@@ -147,7 +194,7 @@ export class MarketplaceBxClient {
         );
     }
 
-    /** placement.bind (повторный bind того же HANDLER = успех) */
+    /** placement.bind (идемпотентность «уже привязано» обрабатывает call) */
     async bindPlacement(
         domain: string,
         accessToken: string,
@@ -156,7 +203,7 @@ export class MarketplaceBxClient {
         title: string,
         description?: string,
     ): Promise<MarketplaceBxCallResult> {
-        const result = await this.call(
+        return this.call(
             domain,
             accessToken,
             MarketplaceBxMethod.PLACEMENT_BIND,
@@ -167,13 +214,5 @@ export class MarketplaceBxClient {
                 DESCRIPTION: description ?? title,
             },
         );
-        if (
-            !result.ok &&
-            result.error &&
-            ALREADY_DONE_ERRORS.has(result.error)
-        ) {
-            return { ok: true, result: 'already_done' };
-        }
-        return result;
     }
 }

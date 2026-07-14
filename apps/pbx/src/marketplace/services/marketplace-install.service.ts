@@ -13,10 +13,9 @@ import {
     InstallStatus,
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
-import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
 import { MarketplacePlacementSyncService } from './marketplace-placement-sync.service';
+import { MarketplaceEventSyncService } from './marketplace-event-sync.service';
 import {
-    MARKETPLACE_LIFECYCLE_EVENTS,
     MarketplaceComponentType,
     SALES_SMART_SCENARIOS,
 } from '../config/marketplace-manifest';
@@ -52,7 +51,7 @@ export class MarketplaceInstallService {
 
     constructor(
         private readonly repository: MarketplaceInstallRepository,
-        private readonly bxClient: MarketplaceBxClient,
+        private readonly eventSync: MarketplaceEventSyncService,
         private readonly placementSync: MarketplacePlacementSyncService,
         private readonly configService: ConfigService,
     ) {
@@ -152,9 +151,9 @@ export class MarketplaceInstallService {
             );
             installId = install.id;
 
-            // [2] События жизненного цикла
+            // [2] События жизненного цикла — diff-синхронизация с эталоном
             step = 'events';
-            await this.bindLifecycleEvents(domain, accessToken);
+            await this.eventSync.syncEvents(domain, accessToken);
             await this.repository.updateInstallStatus(
                 install.id,
                 InstallStatus.EVENTS_BOUND,
@@ -229,27 +228,6 @@ export class MarketplaceInstallService {
                 errorDetail: `step=${step}: ${detail}`,
             });
             return { ...base, message: detail };
-        }
-    }
-
-    /** event.bind lifecycle-событий на /api/bitrix-marketplace/event */
-    private async bindLifecycleEvents(
-        domain: string,
-        accessToken: string,
-    ): Promise<void> {
-        const handler = `${this.apiPublicUrl}/api/bitrix-marketplace/event`;
-        for (const event of MARKETPLACE_LIFECYCLE_EVENTS) {
-            const result = await this.bxClient.bindEvent(
-                domain,
-                accessToken,
-                event,
-                handler,
-            );
-            if (!result.ok) {
-                throw new Error(
-                    `event.bind ${event} failed: ${result.error ?? ''} ${result.errorDescription ?? ''}`,
-                );
-            }
         }
     }
 
