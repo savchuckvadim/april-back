@@ -166,7 +166,21 @@ jobs:
                       cd "$PROD_DIR"
                       # Deploy-клон выравниваем жёстко под ветку (без merge/divergence).
                       # .env/keys/storage в .gitignore — reset их не трогает.
-                      git fetch origin monorepo
+                      # fetch с ретраями: сеть сервер→github периодически
+                      # отваливается по таймауту TLS (транзиент)
+                      fetch_ok=""
+                      for attempt in 1 2 3; do
+                        if git fetch origin monorepo; then
+                          fetch_ok=1
+                          break
+                        fi
+                        echo "⚠️ git fetch не удался (попытка $attempt/3), повтор через 15с"
+                        sleep 15
+                      done
+                      if [ -z "$fetch_ok" ]; then
+                        echo "❌ git fetch origin monorepo не удался после 3 попыток"
+                        exit 1
+                      fi
                       git reset --hard origin/monorepo
 
                       # Логин нужен только для приватных образов GHCR. Если GHCR_PAT
