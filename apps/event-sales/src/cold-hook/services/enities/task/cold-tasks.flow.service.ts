@@ -12,6 +12,8 @@ export interface IColdTaskFlow {
     baseDealId: string;
     xoDealId: string;
 }
+const EVENT_TYPE_NAME = 'Холодный обзвон';
+
 export class ColdTaskFlowService {
     private readonly logger = new Logger(ColdTaskFlowService.name);
     constructor(
@@ -40,7 +42,7 @@ export class ColdTaskFlowService {
             `[deadline][task] company=${companyId} DEADLINE="${taskDeadline}" ` +
                 `(server-time Москва) debug=${JSON.stringify(deadline.debug())}`,
         );
-        const fullXoName = `Холодный обзвон ${name}`;
+        const fullXoName = `${EVENT_TYPE_NAME} ${name}`;
         const addColdTaskData = {
             RESPONSIBLE_ID: responsibleId,
             TITLE: fullXoName,

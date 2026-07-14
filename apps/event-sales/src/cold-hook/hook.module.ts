@@ -11,5 +11,6 @@ import { EventSilenceModule } from '@/core';
     imports: [EventSilenceModule, PBXModule, TelegramModule, HttpModule],
     controllers: [EventSalesHookController],
     providers: [ColdHookSilinceEndpointService, ColdHooksHandlerService],
+    exports: [ColdHooksHandlerService],
 })
 export class ColdHookModule {}
