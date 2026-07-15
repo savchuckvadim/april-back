@@ -9,6 +9,7 @@ import {
     isInstallable,
     parseInstallParams,
 } from '../lib/parse-install-params.util';
+import { renderInstallFinishPage } from '../lib/install-finish-page.util';
 
 /**
  * Установка тиражного маркетплейс-приложения «Менеджер Гарант».
@@ -16,7 +17,9 @@ import {
  * `POST install` — «Ссылка на установочное приложение» и callback
  * ONAPPINSTALL в карточке решения (Битрикс открывает установку по POST).
  * Пайплайн: токены → event.bind → placement.bind → сценарии (заглушка)
- * → installed; затем redirect iframe на страницу установки фронта.
+ * → installed; затем iframe получает HTML-финал установки С ЭТОГО ЖЕ
+ * origin (BX24.installFinish внутри) — НЕ redirect на фронт: родитель
+ * Битрикса отвечает на postMessage только зарегистрированному origin.
  *
  * `GET install` — обязателен для ВАЛИДАТОРА кабинета вендора: при
  * сохранении карточки он шлёт HEAD-запрос и требует статус 200/301/302
@@ -79,17 +82,22 @@ export class MarketplaceInstallController {
             return res.status(HttpStatus.OK).json(result);
         }
 
-        // Iframe мастера установки — redirect пользователя на фронт,
-        // где вызывается BX24.installFinish().
-        const url = new URL(this.installService.installRedirectUrl);
-        url.searchParams.set('install', result.status);
-        if (result.domain) {
-            url.searchParams.set('domain', result.domain);
-        }
-        if (result.memberId) {
-            url.searchParams.set('member_id', result.memberId);
-        }
-        return res.redirect(HttpStatus.FOUND, url.toString());
+        // Iframe мастера установки: HTML отдаётся С ЭТОГО ЖЕ origin
+        // (домен карточки) — родитель Битрикса отвечает на postMessage
+        // только зарегистрированному origin, поэтому redirect на фронт
+        // ломает installFinish (живой тест 2026-07-14). Классический
+        // BX24.js читает window.name и завершает установку здесь.
+        return res
+            .status(HttpStatus.OK)
+            .type('html')
+            .send(
+                renderInstallFinishPage({
+                    status: result.status,
+                    domain: result.domain,
+                    memberId: result.memberId,
+                    message: result.message,
+                }),
+            );
     }
 
     private body(req: Request): BitrixInstallRequestSource {

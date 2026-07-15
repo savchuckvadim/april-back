@@ -263,6 +263,7 @@ export class MarketplaceInstallService {
             appCode: this.appCode,
             domain: payload.domain,
             lang: payload.lang,
+            scope: payload.scope,
             tokens: {
                 accessToken: payload.access_token as string,
                 refreshToken: payload.refresh_token as string,

@@ -5,6 +5,7 @@ import { MetricsModule } from '@lib/metrics';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { EventModule } from './event.module';
+import { BxDepartmentModule } from 'libs/bx-department';
 
 @Module({
     imports: [
@@ -17,7 +18,11 @@ import { EventModule } from './event.module';
         EventEmitterModule.forRoot(),
         HealthModule,
         EventModule,
+
+        //from shared
+        BxDepartmentModule,
     ],
     providers: [GlobalExceptionFilter],
+    exports: [BxDepartmentModule],
 })
 export class EventSalesModule {}

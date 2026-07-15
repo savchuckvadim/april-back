@@ -32,6 +32,8 @@ export interface BitrixInstallTokenPayload {
     domain?: string;
     application_token?: string;
     member_id?: string;
+    /** Выданные права (APPLICATION_SCOPE / auth.scope) */
+    scope?: string;
     lang?: string;
 }
 
@@ -42,6 +44,7 @@ interface BitrixInstallAuthPayload {
     application_token?: string;
     domain?: string;
     member_id?: string;
+    scope?: string;
 }
 
 function getStringValue(
@@ -103,6 +106,7 @@ function parseAuthJson(raw?: string): BitrixInstallAuthPayload {
             domain: typeof auth.domain === 'string' ? auth.domain : undefined,
             member_id:
                 typeof auth.member_id === 'string' ? auth.member_id : undefined,
+            scope: typeof auth.scope === 'string' ? auth.scope : undefined,
         };
     } catch {
         return {};
@@ -114,8 +118,11 @@ function parseAuthJson(raw?: string): BitrixInstallAuthPayload {
  *
  * Приоритеты источников:
  *  - в канале EVENT поля из `auth` (application_token, member_id, domain)
- *    приоритетнее верхнеуровневых APP_SID/member_id/DOMAIN;
- *  - в канале PLACEMENT application_token берётся из APP_SID (fallback).
+ *    приоритетнее верхнеуровневых полей;
+ *  - application_token: `APPLICATION_TOKEN` (body iframe-канала, живой лог
+ *    2026-07-14) → `auth.application_token` → `APP_SID` (последний fallback:
+ *    APP_SID — сессионный ID iframe, НЕ секрет приложения!);
+ *  - `APPLICATION_SCOPE` (iframe) / `auth.scope` (событие) → scope.
  */
 export function parseInstallParams(
     body: BitrixInstallRequestSource,
@@ -125,6 +132,8 @@ export function parseInstallParams(
     const placement = pick(body, query, 'PLACEMENT');
     const domain = pick(body, query, 'DOMAIN');
     const appSid = pick(body, query, 'APP_SID');
+    const applicationToken = pick(body, query, 'APPLICATION_TOKEN');
+    const scope = pick(body, query, 'APPLICATION_SCOPE');
     const memberId = pick(body, query, 'member_id');
     const lang = pick(body, query, 'LANG');
 
@@ -136,8 +145,10 @@ export function parseInstallParams(
             refresh_token: auth.refresh_token,
             expires_in: auth.expires_in,
             domain: auth.domain ?? domain,
-            application_token: auth.application_token ?? appSid,
+            application_token:
+                auth.application_token ?? applicationToken ?? appSid,
             member_id: auth.member_id ?? memberId,
+            scope: auth.scope ?? scope,
             lang,
         };
     }
@@ -149,8 +160,9 @@ export function parseInstallParams(
             refresh_token: pick(body, query, 'REFRESH_ID'),
             expires_in: parseExpiresIn(pick(body, query, 'AUTH_EXPIRES')),
             domain,
-            application_token: appSid,
+            application_token: applicationToken ?? appSid,
             member_id: memberId,
+            scope,
             lang,
         };
     }
@@ -183,8 +195,11 @@ export function parseOpenParams(
         refresh_token: pick(body, query, 'REFRESH_ID'),
         expires_in: parseExpiresIn(pick(body, query, 'AUTH_EXPIRES')),
         domain: pick(body, query, 'DOMAIN'),
-        application_token: pick(body, query, 'APP_SID'),
+        application_token:
+            pick(body, query, 'APPLICATION_TOKEN') ??
+            pick(body, query, 'APP_SID'),
         member_id: pick(body, query, 'member_id'),
+        scope: pick(body, query, 'APPLICATION_SCOPE'),
         lang: pick(body, query, 'LANG'),
         placement: pick(body, query, 'PLACEMENT'),
         placementOptions: pick(body, query, 'PLACEMENT_OPTIONS'),

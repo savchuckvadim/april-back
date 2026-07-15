@@ -95,6 +95,49 @@ describe('parseInstallParams', () => {
     });
 });
 
+describe('parseInstallParams: реальный payload живого теста 2026-07-14', () => {
+    it('iframe-канал: APPLICATION_TOKEN из body приоритетнее APP_SID из query; APPLICATION_SCOPE → scope', () => {
+        // фактические поля из BitrixInbound-лога установки april-dev.bitrix24.ru
+        const body = {
+            AUTH_ID: '9577at',
+            AUTH_EXPIRES: '3600',
+            REFRESH_ID: '85f6rt',
+            SERVER_ENDPOINT: 'https://oauth.bitrix24.tech/rest/',
+            APPLICATION_TOKEN: 'af8f-real-application-token',
+            APPLICATION_SCOPE: 'crm,task,placement,user_brief',
+            member_id: '30aedf93f9c0e53a21143710eba8d95f',
+            status: 'S',
+            PLACEMENT: 'DEFAULT',
+            PLACEMENT_OPTIONS: '{"any":"121/"}',
+        };
+        const query = {
+            DOMAIN: 'april-dev.bitrix24.ru',
+            PROTOCOL: '1',
+            LANG: 'ru',
+            APP_SID: '99a3-session-sid',
+        };
+
+        const payload = parseInstallParams(body, query);
+
+        expect(payload.channel).toBe(InstallChannel.PLACEMENT);
+        // ключевое: НЕ сессионный APP_SID, а настоящий APPLICATION_TOKEN
+        expect(payload.application_token).toBe('af8f-real-application-token');
+        expect(payload.scope).toBe('crm,task,placement,user_brief');
+        expect(payload.domain).toBe('april-dev.bitrix24.ru');
+        expect(payload.member_id).toBe('30aedf93f9c0e53a21143710eba8d95f');
+        expect(payload.lang).toBe('ru');
+        expect(isInstallable(payload)).toBe(true);
+    });
+
+    it('без APPLICATION_TOKEN — fallback на APP_SID (старое поведение)', () => {
+        const payload = parseInstallParams(
+            { PLACEMENT: 'DEFAULT', AUTH_ID: 'at', REFRESH_ID: 'rt' },
+            { DOMAIN: 'portal.bitrix24.ru', APP_SID: 'sid' },
+        );
+        expect(payload.application_token).toBe('sid');
+    });
+});
+
 describe('parseOpenParams', () => {
     it('разбирает открытие плейсмента с любым PLACEMENT (не только DEFAULT)', () => {
         const payload = parseOpenParams(
