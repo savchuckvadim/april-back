@@ -45,7 +45,7 @@ describe('MarketplaceRouterService', () => {
 
         const url = new URL(result.redirectUrl);
         expect(url.origin + url.pathname).toBe(
-            'https://bitrix.april-app.ru/bitrix/cabinet',
+            'https://bitrix.april-app.ru/cabinet',
         );
         expect(url.searchParams.get('domain')).toBe('portal.bitrix24.ru');
         expect(url.searchParams.get('member_id')).toBe('member-1');
@@ -123,7 +123,7 @@ describe('MarketplaceRouterService', () => {
 
         const url = new URL(result.redirectUrl);
         expect(url.origin + url.pathname).toBe(
-            'https://bitrix.april-app.ru/bitrix/cabinet',
+            'https://bitrix.april-app.ru/cabinet',
         );
         expect(url.searchParams.get('reason')).toBe('unknown_placement');
         expect(url.searchParams.get('status')).toBe('fail');

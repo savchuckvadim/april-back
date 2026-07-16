@@ -17,7 +17,7 @@ export class MarketplaceRouteResultDto {
     @ApiProperty({
         description: 'URL фронта, на который выполняется redirect',
         example:
-            'https://bitrix.april-app.ru/bitrix/cabinet?domain=example.bitrix24.ru',
+            'https://bitrix.april-app.ru/cabinet?domain=example.bitrix24.ru',
         type: String,
     })
     @IsString()

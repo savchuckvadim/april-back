@@ -26,9 +26,10 @@ import { MARKETPLACE_WIDGET_CODES } from '../config/marketplace-manifest';
  * Маршрутизация открытий из Битрикса на фронт.
  *
  * В карточке решения и в placement.bind регистрируются ЭТИ стабильные
- * URL бэка; целевые URL фронта задаются env-переменными
- * (MARKETPLACE_APP_REDIRECT_URL, MARKETPLACE_PLACEMENT_REDIRECT_BASE) —
- * фронт можно переносить без перерегистрации в Битриксе.
+ * URL бэка; целевые URL фронта: кабинет — env MARKETPLACE_APP_REDIRECT_URL,
+ * виджеты — frontUrl из эталона-манифеста (подмена без деплоя — env
+ * MARKETPLACE_WIDGET_URL_<КОД>). Фронты переносятся без перерегистрации
+ * в Битриксе.
  * Битрикс открывает iframe по POST; GET-варианты — на случай
  * обновления страницы пользователем внутри iframe.
  *

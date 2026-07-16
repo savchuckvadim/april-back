@@ -38,7 +38,7 @@ export class MarketplaceRouterService {
     ) {
         this.appRedirectUrl =
             this.configService.get<string>('MARKETPLACE_APP_REDIRECT_URL') ??
-            'https://bitrix.april-app.ru/bitrix/cabinet';
+            'https://bitrix.april-app.ru/cabinet';
     }
 
     /** Целевой URL фронта виджета: env-подмена приоритетнее манифеста */
