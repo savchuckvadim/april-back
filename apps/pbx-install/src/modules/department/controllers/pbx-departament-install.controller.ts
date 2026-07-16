@@ -7,12 +7,25 @@ import {
     Patch,
     Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBody,
+    ApiCreatedResponse,
+    ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiTags,
+} from '@nestjs/swagger';
 
 import { PbxDepartamentGroupEnum } from '@lib/portal-lib/pbx/app-type';
-import { UpdatePortalDepartamentDto } from '@lib/portal-lib/pbx-domain/portal-departament';
+import {
+    PortalDepartamentResponseDto,
+    UpdatePortalDepartamentDto,
+} from '@lib/portal-lib/pbx-domain/portal-departament';
 import { PbxDepartamentInstallUseCase } from '../use-cases/pbx-departament-install.use-case';
 import { InstallDepartamentDto } from '../dto/install-departament.dto';
+import { InstallDepartamentResponseDto } from '../dto/install-departament-response.dto';
+import { DeleteDepartamentResponseDto } from '../dto/delete-departament-response.dto';
 
 @ApiTags('PBX Departament Install')
 @Controller('pbx-departament-install')
@@ -29,9 +42,18 @@ export class PbxDepartamentInstallController {
             'делается upsert по ключу type + group + portalId — повторный вызов не плодит дубликаты.',
     })
     @ApiParam({ name: 'domain', description: 'Домен портала' })
-    @ApiParam({ name: 'group', enum: PbxDepartamentGroupEnum })
-    @ApiResponse({
-        status: 201,
+    @ApiParam({
+        name: 'group',
+        description: 'Группа отдела: ОП (sales) / ОС (service)',
+        enum: PbxDepartamentGroupEnum,
+    })
+    @ApiBody({
+        type: InstallDepartamentDto,
+        description:
+            'ID уже существующего отдела в структуре Bitrix (`bitrixId`).',
+    })
+    @ApiCreatedResponse({
+        type: InstallDepartamentResponseDto,
         description:
             'Возвращает результат синхронизации с БД (`portalResult`).',
     })
@@ -40,7 +62,7 @@ export class PbxDepartamentInstallController {
         @Param('domain') domain: string,
         @Param('group') group: PbxDepartamentGroupEnum,
         @Body() dto: InstallDepartamentDto,
-    ) {
+    ): Promise<InstallDepartamentResponseDto> {
         return await this.useCase.installDepartament(
             domain,
             group,
@@ -52,14 +74,25 @@ export class PbxDepartamentInstallController {
         summary: 'Update departament by id',
         description:
             'Точечно обновляет отдел в PortalDB (`departaments`) по id строки: ' +
-            'name / title / bitrixId. type / group / портал менять нельзя.',
+            'name / title / bitrixId / isMultiple / multipleTag (null сбрасывает тэг). ' +
+            'type / group / портал менять нельзя. ' +
+            'Полный CRUD по БД — см. `PBX Portal Departament (DB)` (`pbx/portal-departament`).',
     })
     @ApiParam({ name: 'id', description: 'ID строки отдела в БД' })
+    @ApiBody({
+        type: UpdatePortalDepartamentDto,
+        description: 'Частичное обновление полей отдела.',
+    })
+    @ApiOkResponse({
+        type: PortalDepartamentResponseDto,
+        description: 'Отдел после обновления.',
+    })
+    @ApiNotFoundResponse({ description: 'Отдел не найден' })
     @Patch('/:id')
     async update(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdatePortalDepartamentDto,
-    ) {
+    ): Promise<PortalDepartamentResponseDto> {
         return await this.useCase.update(id, dto);
     }
 
@@ -68,8 +101,15 @@ export class PbxDepartamentInstallController {
         description: 'Удаляет отдел из PortalDB (`departaments`) по id строки.',
     })
     @ApiParam({ name: 'id', description: 'ID строки отдела в БД' })
+    @ApiOkResponse({
+        type: DeleteDepartamentResponseDto,
+        description: 'Признак успешного удаления.',
+    })
+    @ApiNotFoundResponse({ description: 'Отдел не найден' })
     @Delete('/:id')
-    async delete(@Param('id', ParseIntPipe) id: number) {
+    async delete(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<DeleteDepartamentResponseDto> {
         await this.useCase.delete(id);
         return { success: true };
     }

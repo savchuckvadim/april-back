@@ -27204,6 +27204,8 @@ export namespace Prisma {
     group: string | null
     name: string | null
     title: string | null
+    is_multiple: boolean | null
+    multiple_tag: string | null
     bitrixId: bigint | null
     portal_id: bigint | null
   }
@@ -27214,6 +27216,8 @@ export namespace Prisma {
     group: string | null
     name: string | null
     title: string | null
+    is_multiple: boolean | null
+    multiple_tag: string | null
     bitrixId: bigint | null
     portal_id: bigint | null
   }
@@ -27224,6 +27228,8 @@ export namespace Prisma {
     group: number
     name: number
     title: number
+    is_multiple: number
+    multiple_tag: number
     bitrixId: number
     portal_id: number
     _all: number
@@ -27248,6 +27254,8 @@ export namespace Prisma {
     group?: true
     name?: true
     title?: true
+    is_multiple?: true
+    multiple_tag?: true
     bitrixId?: true
     portal_id?: true
   }
@@ -27258,6 +27266,8 @@ export namespace Prisma {
     group?: true
     name?: true
     title?: true
+    is_multiple?: true
+    multiple_tag?: true
     bitrixId?: true
     portal_id?: true
   }
@@ -27268,6 +27278,8 @@ export namespace Prisma {
     group?: true
     name?: true
     title?: true
+    is_multiple?: true
+    multiple_tag?: true
     bitrixId?: true
     portal_id?: true
     _all?: true
@@ -27365,6 +27377,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple: boolean
+    multiple_tag: string | null
     bitrixId: bigint
     portal_id: bigint
     _count: DepartamentsCountAggregateOutputType | null
@@ -27394,6 +27408,8 @@ export namespace Prisma {
     group?: boolean
     name?: boolean
     title?: boolean
+    is_multiple?: boolean
+    multiple_tag?: boolean
     bitrixId?: boolean
     portal_id?: boolean
     portals?: boolean | PortalDefaultArgs<ExtArgs>
@@ -27407,11 +27423,13 @@ export namespace Prisma {
     group?: boolean
     name?: boolean
     title?: boolean
+    is_multiple?: boolean
+    multiple_tag?: boolean
     bitrixId?: boolean
     portal_id?: boolean
   }
 
-  export type departamentsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "type" | "group" | "name" | "title" | "bitrixId" | "portal_id", ExtArgs["result"]["departaments"]>
+  export type departamentsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "type" | "group" | "name" | "title" | "is_multiple" | "multiple_tag" | "bitrixId" | "portal_id", ExtArgs["result"]["departaments"]>
   export type departamentsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     portals?: boolean | PortalDefaultArgs<ExtArgs>
   }
@@ -27427,6 +27445,8 @@ export namespace Prisma {
       group: string
       name: string
       title: string
+      is_multiple: boolean
+      multiple_tag: string | null
       bitrixId: bigint
       portal_id: bigint
     }, ExtArgs["result"]["departaments"]>
@@ -27804,6 +27824,8 @@ export namespace Prisma {
     readonly group: FieldRef<"departaments", 'String'>
     readonly name: FieldRef<"departaments", 'String'>
     readonly title: FieldRef<"departaments", 'String'>
+    readonly is_multiple: FieldRef<"departaments", 'Boolean'>
+    readonly multiple_tag: FieldRef<"departaments", 'String'>
     readonly bitrixId: FieldRef<"departaments", 'BigInt'>
     readonly portal_id: FieldRef<"departaments", 'BigInt'>
   }
@@ -100797,6 +100819,8 @@ export namespace Prisma {
     group: 'group',
     name: 'name',
     title: 'title',
+    is_multiple: 'is_multiple',
+    multiple_tag: 'multiple_tag',
     bitrixId: 'bitrixId',
     portal_id: 'portal_id'
   };
@@ -102331,7 +102355,8 @@ export namespace Prisma {
     type: 'type',
     group: 'group',
     name: 'name',
-    title: 'title'
+    title: 'title',
+    multiple_tag: 'multiple_tag'
   };
 
   export type departamentsOrderByRelevanceFieldEnum = (typeof departamentsOrderByRelevanceFieldEnum)[keyof typeof departamentsOrderByRelevanceFieldEnum]
@@ -104902,6 +104927,8 @@ export namespace Prisma {
     group?: StringFilter<"departaments"> | string
     name?: StringFilter<"departaments"> | string
     title?: StringFilter<"departaments"> | string
+    is_multiple?: BoolFilter<"departaments"> | boolean
+    multiple_tag?: StringNullableFilter<"departaments"> | string | null
     bitrixId?: BigIntFilter<"departaments"> | bigint | number
     portal_id?: BigIntFilter<"departaments"> | bigint | number
     portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
@@ -104913,6 +104940,8 @@ export namespace Prisma {
     group?: SortOrder
     name?: SortOrder
     title?: SortOrder
+    is_multiple?: SortOrder
+    multiple_tag?: SortOrderInput | SortOrder
     bitrixId?: SortOrder
     portal_id?: SortOrder
     portals?: PortalOrderByWithRelationInput
@@ -104928,6 +104957,8 @@ export namespace Prisma {
     group?: StringFilter<"departaments"> | string
     name?: StringFilter<"departaments"> | string
     title?: StringFilter<"departaments"> | string
+    is_multiple?: BoolFilter<"departaments"> | boolean
+    multiple_tag?: StringNullableFilter<"departaments"> | string | null
     bitrixId?: BigIntFilter<"departaments"> | bigint | number
     portal_id?: BigIntFilter<"departaments"> | bigint | number
     portals?: XOR<PortalScalarRelationFilter, PortalWhereInput>
@@ -104939,6 +104970,8 @@ export namespace Prisma {
     group?: SortOrder
     name?: SortOrder
     title?: SortOrder
+    is_multiple?: SortOrder
+    multiple_tag?: SortOrderInput | SortOrder
     bitrixId?: SortOrder
     portal_id?: SortOrder
     _count?: departamentsCountOrderByAggregateInput
@@ -104957,6 +104990,8 @@ export namespace Prisma {
     group?: StringWithAggregatesFilter<"departaments"> | string
     name?: StringWithAggregatesFilter<"departaments"> | string
     title?: StringWithAggregatesFilter<"departaments"> | string
+    is_multiple?: BoolWithAggregatesFilter<"departaments"> | boolean
+    multiple_tag?: StringNullableWithAggregatesFilter<"departaments"> | string | null
     bitrixId?: BigIntWithAggregatesFilter<"departaments"> | bigint | number
     portal_id?: BigIntWithAggregatesFilter<"departaments"> | bigint | number
   }
@@ -113571,6 +113606,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple?: boolean
+    multiple_tag?: string | null
     bitrixId: bigint | number
     portals: PortalCreateNestedOneWithoutDepartamentsInput
   }
@@ -113581,6 +113618,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple?: boolean
+    multiple_tag?: string | null
     bitrixId: bigint | number
     portal_id: bigint | number
   }
@@ -113591,6 +113630,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
     portals?: PortalUpdateOneRequiredWithoutDepartamentsNestedInput
   }
@@ -113601,6 +113642,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
     portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
   }
@@ -113611,6 +113654,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple?: boolean
+    multiple_tag?: string | null
     bitrixId: bigint | number
     portal_id: bigint | number
   }
@@ -113621,6 +113666,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
   }
 
@@ -113630,6 +113677,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
     portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
   }
@@ -122840,6 +122889,8 @@ export namespace Prisma {
     group?: SortOrder
     name?: SortOrder
     title?: SortOrder
+    is_multiple?: SortOrder
+    multiple_tag?: SortOrder
     bitrixId?: SortOrder
     portal_id?: SortOrder
   }
@@ -122856,6 +122907,8 @@ export namespace Prisma {
     group?: SortOrder
     name?: SortOrder
     title?: SortOrder
+    is_multiple?: SortOrder
+    multiple_tag?: SortOrder
     bitrixId?: SortOrder
     portal_id?: SortOrder
   }
@@ -122866,6 +122919,8 @@ export namespace Prisma {
     group?: SortOrder
     name?: SortOrder
     title?: SortOrder
+    is_multiple?: SortOrder
+    multiple_tag?: SortOrder
     bitrixId?: SortOrder
     portal_id?: SortOrder
   }
@@ -138800,6 +138855,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple?: boolean
+    multiple_tag?: string | null
     bitrixId: bigint | number
   }
 
@@ -138809,6 +138866,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple?: boolean
+    multiple_tag?: string | null
     bitrixId: bigint | number
   }
 
@@ -139833,6 +139892,8 @@ export namespace Prisma {
     group?: StringFilter<"departaments"> | string
     name?: StringFilter<"departaments"> | string
     title?: StringFilter<"departaments"> | string
+    is_multiple?: BoolFilter<"departaments"> | boolean
+    multiple_tag?: StringNullableFilter<"departaments"> | string | null
     bitrixId?: BigIntFilter<"departaments"> | bigint | number
     portal_id?: BigIntFilter<"departaments"> | bigint | number
   }
@@ -150784,6 +150845,8 @@ export namespace Prisma {
     group: string
     name: string
     title: string
+    is_multiple?: boolean
+    multiple_tag?: string | null
     bitrixId: bigint | number
   }
 
@@ -151324,6 +151387,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
   }
 
@@ -151333,6 +151398,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
   }
 
@@ -151342,6 +151409,8 @@ export namespace Prisma {
     group?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
+    is_multiple?: BoolFieldUpdateOperationsInput | boolean
+    multiple_tag?: NullableStringFieldUpdateOperationsInput | string | null
     bitrixId?: BigIntFieldUpdateOperationsInput | bigint | number
   }
 

@@ -1,8 +1,14 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { EventSupportStubService } from '../services/event-support-stub.service';
-import { CompanyDealsRequestDto, CompanyDealsResponseDto } from '../dto/deals.dto';
-import { NewTaskInitRequestDto, NewTaskInitResponseDto } from '../dto/new-task.dto';
+import {
+    CompanyDealsRequestDto,
+    CompanyDealsResponseDto,
+} from '../dto/deals.dto';
+import {
+    NewTaskInitRequestDto,
+    NewTaskInitResponseDto,
+} from '../dto/new-task.dto';
 import { TmcDealForReturnDto, TmcDealsRequestDto } from '../dto/tmc-deals.dto';
 import { CompanyHistoryRequestDto, HistoryItemDto } from '../dto/history.dto';
 import { CallResultsDto, ResultCountRequestDto } from '../dto/result-count.dto';

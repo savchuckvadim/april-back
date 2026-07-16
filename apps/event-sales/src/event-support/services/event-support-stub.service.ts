@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CompanyDealsRequestDto, CompanyDealsResponseDto } from '../dto/deals.dto';
-import { NewTaskInitRequestDto, NewTaskInitResponseDto } from '../dto/new-task.dto';
+import {
+    CompanyDealsRequestDto,
+    CompanyDealsResponseDto,
+} from '../dto/deals.dto';
+import {
+    NewTaskInitRequestDto,
+    NewTaskInitResponseDto,
+} from '../dto/new-task.dto';
 import { TmcDealForReturnDto, TmcDealsRequestDto } from '../dto/tmc-deals.dto';
 import { CompanyHistoryRequestDto, HistoryItemDto } from '../dto/history.dto';
 import { CallResultsDto, ResultCountRequestDto } from '../dto/result-count.dto';

@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { PbxDepartamentMonitoringService } from './pbx-departament-monitoring.service';
+import { PbxDepartamentMonitoringService } from '../services/pbx-departament-monitoring.service';
 
 jest.mock(
     '@/modules/bitrix/domain/department/services/department-bitrxi.service',

@@ -1,6 +1,18 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
-import { EDepartamentGroup } from '../entity/portal-departament.entity';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    IsBoolean,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    Min,
+    ValidateIf,
+} from 'class-validator';
+import {
+    DEPARTAMENT_MULTIPLE_TAGS,
+    EDepartamentGroup,
+} from '../entity/portal-departament.entity';
 
 /**
  * Данные для создания отдела (`departaments`).
@@ -50,4 +62,31 @@ export class CreatePortalDepartamentDto {
     @IsInt()
     @Min(1)
     bitrixId!: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Собирать ли ЦУП из разрозненных по всей структуре отделов. ' +
+            'Если true — отделы ищутся по тэгу `multipleTag`.',
+        example: false,
+        type: Boolean,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    isMultiple?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'По какому тэгу искать разрозненные отделы: ' +
+            `известные значения — ${DEPARTAMENT_MULTIPLE_TAGS.join(' / ')}, ` +
+            'допускается произвольный custom-тэг. null — тэг не задан.',
+        example: DEPARTAMENT_MULTIPLE_TAGS[0],
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateIf((_, value) => value !== null)
+    @IsString()
+    @IsNotEmpty()
+    multipleTag?: string | null;
 }

@@ -32,7 +32,8 @@ export class BxCallingRecordDto {
     duration: string | null;
 
     @ApiProperty({
-        description: 'Идентификатор активности Bitrix, к которой относится запись.',
+        description:
+            'Идентификатор активности Bitrix, к которой относится запись.',
         type: Number,
         example: 5501,
     })

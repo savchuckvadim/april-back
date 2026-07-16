@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { PbxDepartamentInstallUseCase } from './pbx-departament-install.use-case';
+import { PbxDepartamentInstallUseCase } from '../use-cases/pbx-departament-install.use-case';
 import { PbxDepartamentGroupEnum } from '@lib/portal-lib/pbx/app-type';
 
 describe('PbxDepartamentInstallUseCase', () => {

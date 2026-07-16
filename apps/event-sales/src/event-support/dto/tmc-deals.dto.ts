@@ -73,8 +73,7 @@ export class TmcDealForReturnDto {
     tmcDeal: IBXDeal;
 
     @ApiPropertyOptional({
-        description:
-            'Связанная презентационная сделка (`IBXDeal`), если есть.',
+        description: 'Связанная презентационная сделка (`IBXDeal`), если есть.',
         type: Object,
         nullable: true,
     })

@@ -384,6 +384,8 @@ exports.Prisma.DepartamentsScalarFieldEnum = {
   group: 'group',
   name: 'name',
   title: 'title',
+  is_multiple: 'is_multiple',
+  multiple_tag: 'multiple_tag',
   bitrixId: 'bitrixId',
   portal_id: 'portal_id'
 };
@@ -1654,7 +1656,8 @@ exports.Prisma.departamentsOrderByRelevanceFieldEnum = {
   type: 'type',
   group: 'group',
   name: 'name',
-  title: 'title'
+  title: 'title',
+  multiple_tag: 'multiple_tag'
 };
 
 exports.Prisma.f_itemsOrderByRelevanceFieldEnum = {
