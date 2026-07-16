@@ -6,6 +6,7 @@ import {
     parseOpenParams,
 } from '../lib/parse-install-params.util';
 import { MarketplaceInstallService } from './marketplace-install.service';
+import { MarketplaceSessionService } from './marketplace-session.service';
 import { MarketplaceRouteResultDto } from '../dto/marketplace-router.dto';
 import {
     findWidgetByCode,
@@ -34,6 +35,7 @@ export class MarketplaceRouterService {
 
     constructor(
         private readonly installService: MarketplaceInstallService,
+        private readonly sessionService: MarketplaceSessionService,
         private readonly configService: ConfigService,
     ) {
         this.appRedirectUrl =
@@ -54,21 +56,42 @@ export class MarketplaceRouterService {
         return manifestUrl;
     }
 
-    /** Открытие основного приложения (левое меню Битрикса). */
+    /**
+     * Открытие основного приложения (левое меню Битрикса).
+     *
+     * Гейт + сессия (этап 1 онбординга): запрос верифицируется
+     * (member_id + application_token + REST profile), состояние допуска
+     * (onboarding/pending/active/blocked) и ОДНОРАЗОВЫЙ код сессии уезжают
+     * на фронт в query; сырые member_id/т.п. фронту больше не передаются —
+     * контекст он получает обменом кода (POST /session/exchange).
+     * Непройденная верификация → redirect state=unauthorized (без кода).
+     */
     async handleAppOpen(
         body: BitrixInstallRequestSource,
         query: BitrixInstallRequestSource,
     ): Promise<MarketplaceRouteResultDto> {
         const payload = parseOpenParams(body, query);
         const stored = await this.installService.storeFromPayload(payload);
+        const session = await this.sessionService.openSession(payload);
+
+        const state = session.ok ? (session.state as string) : 'unauthorized';
         return {
-            status: stored.status,
-            redirectUrl: this.buildRedirectUrl(this.appRedirectUrl, payload, {
-                status: stored.status,
-            }),
+            status: session.ok ? stored.status : 'fail',
+            redirectUrl: this.buildRedirectUrl(
+                this.appRedirectUrl,
+                payload,
+                {
+                    status: session.ok ? stored.status : 'fail',
+                    state,
+                    code: session.code,
+                    reason: session.ok ? undefined : session.reason,
+                },
+                { omitMemberId: true },
+            ),
             domain: payload.domain,
             memberId: payload.member_id,
             placement: payload.placement,
+            state,
         };
     }
 
@@ -142,12 +165,15 @@ export class MarketplaceRouterService {
         target: string,
         payload: BitrixOpenPayload,
         extra: Record<string, string | undefined>,
+        options: { omitMemberId?: boolean } = {},
     ): string {
         const url = new URL(target);
         if (payload.domain) {
             url.searchParams.set('domain', payload.domain);
         }
-        if (payload.member_id) {
+        // Кабинет контекст получает обменом кода сессии — сырой member_id
+        // в его query не передаём; виджетам (легаси-фронты) оставляем.
+        if (payload.member_id && !options.omitMemberId) {
             url.searchParams.set('member_id', payload.member_id);
         }
         if (payload.lang) {

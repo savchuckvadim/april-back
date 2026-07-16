@@ -49,6 +49,16 @@ export class MarketplaceRouteResultDto {
     @IsOptional()
     @IsString()
     placement?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Состояние допуска портала (onboarding | pending | active | blocked | unauthorized) — уходит фронту в query',
+        example: 'active',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    state?: string;
 }
 
 export const MARKETPLACE_EVENT_STATUSES = [

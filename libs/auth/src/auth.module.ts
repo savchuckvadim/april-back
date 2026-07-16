@@ -50,4 +50,30 @@ export class AuthModule {
             exports: [AuthService, AuthTokenService, AUTH_OPTIONS],
         };
     }
+
+    /**
+     * ТОЛЬКО выпуск/проверка токенов (AuthTokenService) — БЕЗ контроллера
+     * `/auth/*` и БЕЗ глобальных гардов (эндпоинты приложения остаются
+     * открытыми). Для приложений, которым нужно подписывать токены на общем
+     * секрете (SSO), но которые НЕ являются точкой входа авторизации —
+     * например portal-context JWT маркетплейса в apps/pbx.
+     *
+     * Шаг 1 плана docs/tasks/centralized-auth.md (forIssuer). `forRoot()`
+     * сохраняет текущее поведение (контроллер + гарды) до появления
+     * `apps/auth` — admin/pbx-install не затронуты.
+     */
+    static forIssuer(override?: AuthForRootOptions): DynamicModule {
+        return {
+            module: AuthModule,
+            imports: [JwtModule.register({})],
+            providers: [
+                {
+                    provide: AUTH_OPTIONS,
+                    useFactory: () => buildAuthOptions(override),
+                },
+                AuthTokenService,
+            ],
+            exports: [AuthTokenService, AUTH_OPTIONS],
+        };
+    }
 }

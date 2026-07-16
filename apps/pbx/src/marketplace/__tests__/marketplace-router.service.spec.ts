@@ -1,6 +1,10 @@
 import { ConfigService } from '@nestjs/config';
 import { MarketplaceRouterService } from '../services/marketplace-router.service';
 import { MarketplaceInstallService } from '../services/marketplace-install.service';
+import {
+    MarketplaceSessionService,
+    PortalSessionState,
+} from '../services/marketplace-session.service';
 import { InstallChannel } from '../lib/parse-install-params.util';
 import { MarketplaceInstallResultDto } from '../dto/marketplace-install.dto';
 
@@ -8,6 +12,9 @@ describe('MarketplaceRouterService', () => {
     let service: MarketplaceRouterService;
     let installService: jest.Mocked<
         Pick<MarketplaceInstallService, 'storeFromPayload'>
+    >;
+    let sessionService: jest.Mocked<
+        Pick<MarketplaceSessionService, 'openSession'>
     >;
 
     const openBody = {
@@ -27,30 +34,58 @@ describe('MarketplaceRouterService', () => {
                 channel: InstallChannel.OPEN,
             } as MarketplaceInstallResultDto),
         };
+        sessionService = {
+            openSession: jest.fn().mockResolvedValue({
+                ok: true,
+                state: PortalSessionState.ACTIVE,
+                code: 'one-time-code',
+            }),
+        };
         const configService = {
             get: jest.fn().mockReturnValue(undefined),
         } as unknown as ConfigService;
 
         service = new MarketplaceRouterService(
             installService as unknown as MarketplaceInstallService,
+            sessionService as unknown as MarketplaceSessionService,
             configService,
         );
     });
 
-    it('открытие приложения: сохраняет токены и строит redirect на кабинет', async () => {
+    it('открытие приложения: токены + сессия; в query — state и code, БЕЗ member_id', async () => {
         const result = await service.handleAppOpen(openBody, openQuery);
 
         expect(installService.storeFromPayload).toHaveBeenCalledTimes(1);
+        expect(sessionService.openSession).toHaveBeenCalledTimes(1);
         expect(result.status).toBe('success');
+        expect(result.state).toBe(PortalSessionState.ACTIVE);
 
         const url = new URL(result.redirectUrl);
         expect(url.origin + url.pathname).toBe(
             'https://bitrix.april-app.ru/cabinet',
         );
         expect(url.searchParams.get('domain')).toBe('portal.bitrix24.ru');
-        expect(url.searchParams.get('member_id')).toBe('member-1');
         expect(url.searchParams.get('lang')).toBe('ru');
         expect(url.searchParams.get('status')).toBe('success');
+        expect(url.searchParams.get('state')).toBe('active');
+        expect(url.searchParams.get('code')).toBe('one-time-code');
+        // сырой member_id кабинету больше не передаётся — контекст через exchange
+        expect(url.searchParams.get('member_id')).toBeNull();
+    });
+
+    it('верификация не пройдена: state=unauthorized, без code, status=fail', async () => {
+        sessionService.openSession.mockResolvedValue({
+            ok: false,
+            reason: 'rest_verify_failed',
+        });
+
+        const result = await service.handleAppOpen(openBody, openQuery);
+
+        expect(result.status).toBe('fail');
+        const url = new URL(result.redirectUrl);
+        expect(url.searchParams.get('state')).toBe('unauthorized');
+        expect(url.searchParams.get('reason')).toBe('rest_verify_failed');
+        expect(url.searchParams.get('code')).toBeNull();
     });
 
     it('открытие виджета: redirect на frontUrl виджета из эталона (свой домен) + PLACEMENT_OPTIONS', async () => {
@@ -84,6 +119,7 @@ describe('MarketplaceRouterService', () => {
         } as unknown as ConfigService;
         const overridden = new MarketplaceRouterService(
             installService as unknown as MarketplaceInstallService,
+            sessionService as unknown as MarketplaceSessionService,
             configService,
         );
 

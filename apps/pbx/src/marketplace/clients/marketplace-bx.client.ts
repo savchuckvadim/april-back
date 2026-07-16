@@ -20,6 +20,17 @@ export enum MarketplaceBxMethod {
     PLACEMENT_UNBIND = 'placement.unbind',
     PLACEMENT_LIST = 'placement.list',
     APP_INFO = 'app.info',
+    PROFILE = 'profile',
+}
+
+/** Профиль текущего пользователя портала (REST-метод `profile`) */
+export interface BxProfileResult {
+    ok: boolean;
+    id?: string;
+    name?: string;
+    lastName?: string;
+    isAdmin: boolean;
+    error?: string;
 }
 
 export interface MarketplaceBxCallResult {
@@ -214,5 +225,40 @@ export class MarketplaceBxClient {
                 DESCRIPTION: description ?? title,
             },
         );
+    }
+
+    /**
+     * REST-верификация присланного AUTH_ID: живой токен вернёт профиль
+     * текущего пользователя портала (метод `profile`), мёртвый/подделанный —
+     * ошибку. Заодно узнаём, администратор ли пользователь.
+     */
+    async getProfile(
+        domain: string,
+        accessToken: string,
+    ): Promise<BxProfileResult> {
+        const response = await this.call(
+            domain,
+            accessToken,
+            MarketplaceBxMethod.PROFILE,
+            {},
+        );
+        if (
+            !response.ok ||
+            !response.result ||
+            typeof response.result !== 'object'
+        ) {
+            return { ok: false, isAdmin: false, error: response.error };
+        }
+        const profile = response.result as Record<string, unknown>;
+        return {
+            ok: true,
+            id: typeof profile.ID === 'string' ? profile.ID : undefined,
+            name: typeof profile.NAME === 'string' ? profile.NAME : undefined,
+            lastName:
+                typeof profile.LAST_NAME === 'string'
+                    ? profile.LAST_NAME
+                    : undefined,
+            isAdmin: profile.ADMIN === true || profile.ADMIN === 'true',
+        };
     }
 }

@@ -1,15 +1,22 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { AuthModule } from '@lib/auth';
+import { RedisModule } from '@/core/redis/redis.module';
 import { MarketplaceInstallController } from './controllers/marketplace-install.controller';
 import { MarketplaceRouterController } from './controllers/marketplace-router.controller';
 import { MarketplaceEventController } from './controllers/marketplace-event.controller';
 import { MarketplaceAdminController } from './controllers/marketplace-admin.controller';
+import { MarketplaceSessionController } from './controllers/marketplace-session.controller';
+import { MarketplaceOnboardingController } from './controllers/marketplace-onboarding.controller';
 import { MarketplaceInstallService } from './services/marketplace-install.service';
 import { MarketplaceRouterService } from './services/marketplace-router.service';
 import { MarketplaceLifecycleService } from './services/marketplace-lifecycle.service';
 import { MarketplacePlacementSyncService } from './services/marketplace-placement-sync.service';
 import { MarketplaceEventSyncService } from './services/marketplace-event-sync.service';
 import { MarketplaceAdminService } from './services/marketplace-admin.service';
+import { MarketplaceSessionService } from './services/marketplace-session.service';
+import { MarketplaceOnboardingService } from './services/marketplace-onboarding.service';
 import { MarketplaceInstallRepository } from './persistence/marketplace-install.repository';
+import { PortalSessionGuard } from './lib/portal-session.guard';
 import { MarketplaceBxClient } from './clients/marketplace-bx.client';
 import { BitrixRequestLoggerMiddleware } from './lib/bitrix-request-logger.middleware';
 import { AdminKeyGuard } from './lib/admin-key.guard';
@@ -30,10 +37,19 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
  * PrismaService — из глобального PrismaModule (подключён в AppModule).
  */
 @Module({
+    imports: [
+        // forIssuer: ТОЛЬКО AuthTokenService (portal-context JWT на общем
+        // AUTH_JWT_SECRET) — без контроллера /auth/* и без глобальных гардов
+        // (эндпоинты маркетплейса должны оставаться открытыми для Битрикса).
+        AuthModule.forIssuer(),
+        RedisModule,
+    ],
     controllers: [
         MarketplaceInstallController,
         MarketplaceRouterController,
         MarketplaceEventController,
+        MarketplaceSessionController,
+        MarketplaceOnboardingController,
         MarketplaceAdminController,
     ],
     providers: [
@@ -43,9 +59,12 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
         MarketplacePlacementSyncService,
         MarketplaceEventSyncService,
         MarketplaceAdminService,
+        MarketplaceSessionService,
+        MarketplaceOnboardingService,
         MarketplaceInstallRepository,
         MarketplaceBxClient,
         AdminKeyGuard,
+        PortalSessionGuard,
     ],
     exports: [MarketplaceInstallService, MarketplaceRouterService],
 })

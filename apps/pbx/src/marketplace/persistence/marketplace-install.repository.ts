@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@/core';
 import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
 import {
+    Client,
     marketplace_install_components,
     marketplace_installs,
     Portal,
@@ -226,6 +227,72 @@ export class MarketplaceInstallRepository {
             },
             include: { portals: true },
         });
+    }
+
+    /**
+     * Установка + портал + привязанный клиент (для сессии/онбординга:
+     * состояние допуска вычисляется из approval_status и наличия клиента).
+     */
+    async findInstallWithClient(
+        memberId: string,
+        appCode: string,
+    ): Promise<
+        | (marketplace_installs & {
+              portals: Portal & { clients: Client | null };
+          })
+        | null
+    > {
+        return this.prisma.marketplace_installs.findFirst({
+            where: {
+                app_code: appCode,
+                portals: { member_id: memberId },
+            },
+            include: { portals: { include: { clients: true } } },
+        });
+    }
+
+    /**
+     * Онбординг-заявка: создать клиента и привязать к порталу, либо
+     * (повторная подача до одобрения) обновить название/email —
+     * идемпотентный upsert (решение открытого вопроса №5 задачи онбординга).
+     */
+    async linkClient(
+        portalId: bigint,
+        data: { organizationName: string; contactEmail: string },
+    ): Promise<Client> {
+        const portal = await this.prisma.portal.findUnique({
+            where: { id: portalId },
+        });
+
+        if (portal?.client_id) {
+            return this.prisma.client.update({
+                where: { id: portal.client_id },
+                data: {
+                    name: data.organizationName,
+                    email: data.contactEmail,
+                    updated_at: new Date(),
+                },
+            });
+        }
+
+        const client = await this.prisma.client.create({
+            data: {
+                name: data.organizationName,
+                email: data.contactEmail,
+                status: 'pending',
+                is_active: true,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+        });
+        await this.prisma.portal.update({
+            where: { id: portalId },
+            data: { client_id: client.id },
+        });
+        this.logger.log(
+            `Onboarding: клиент #${client.id} привязан к порталу #${portalId}`,
+        );
+        return client;
     }
 
     /** Установка по текущему домену портала (для admin-операций) */
