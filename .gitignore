@@ -91,7 +91,9 @@ docker-compose-full-dev.yml
 
 ports.env
 claude
-ai/
+# только корневая папка ai/ (локальные rules/tasks/marketplace-доки);
+# вложенные модули вроде libs/call-lib/src/ai НЕ игнорируем
+/ai/
 CLAUDE.md
 
 docs
