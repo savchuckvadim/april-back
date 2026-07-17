@@ -6,6 +6,12 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { EventModule } from './event.module';
 import { BxDepartmentModule } from 'libs/bx-department';
+import { AiRagModule } from '@lib/ai-rag';
+import {
+    TranscriptionModule,
+    CallAnalysisModule,
+    AiModule,
+} from '@lib/call-lib';
 
 @Module({
     imports: [
@@ -21,8 +27,14 @@ import { BxDepartmentModule } from 'libs/bx-department';
 
         //from shared
         BxDepartmentModule,
+        AiRagModule,
+
+        // звонки: транскрибация + AI-анализ (перенесено из apps/back)
+        TranscriptionModule,
+        CallAnalysisModule,
+        AiModule,
     ],
     providers: [GlobalExceptionFilter],
-    exports: [BxDepartmentModule],
+    exports: [BxDepartmentModule, AiRagModule],
 })
 export class EventSalesModule {}

@@ -54,6 +54,10 @@
       "@lib/logger/*": ["libs/logger/src/*"],
       "@lib/metrics": ["libs/metrics/src"],
       "@lib/metrics/*": ["libs/metrics/src/*"],
+      "@lib/mail": ["libs/mail/src"],
+      "@lib/mail/*": ["libs/mail/src/*"],
+      "@lib/call-lib": ["libs/call-lib/src"],
+      "@lib/call-lib/*": ["libs/call-lib/src/*"],
 
       // ---- portal-lib: единая библиотека Portal (portal + store + pbx-domain + konstructor) ----
       // Канонический алиас. Старые @lib/portal, @lib/portal-konstructor,
@@ -129,13 +133,7 @@
 
       // ---- Сгенерированный Prisma client ----
       "@prisma": ["./generated/prisma/index.ts"],
-      "generated/*": ["./generated/*"],
-
-      // ---- Приложение back (apps/back/src) ----
-      // generic-алиасы; стоят последними, перекрываются специфичными выше
-      "@/*": ["./apps/back/src/*"],
-      "@apps/*": ["./apps/back/src/apps/*"],
-      "src/*": ["./apps/back/src/*"]
+      "generated/*": ["./generated/*"]
     },
     "target": "ES2023",
     "sourceMap": true,

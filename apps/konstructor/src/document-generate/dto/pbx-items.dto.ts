@@ -1,3 +1,5 @@
+import { BitrixFieldType } from '@lib/shared/enums';
+export { BitrixFieldType };
 import { Type } from 'class-transformer';
 import {
     IsBoolean,
@@ -45,13 +47,6 @@ export enum BitrixCompanyField {
     OP_CONCURENTS = 'op_concurents',
     SUPPLY_INFORMATION = 'supply_information',
     MANAGER_TMC = 'manager_tmc',
-}
-
-export enum BitrixFieldType {
-    DATE = 'date',
-    DATETIME = 'datetime',
-    STRING = 'string',
-    ENUMERATION = 'enumeration',
 }
 
 export class BitrixField {

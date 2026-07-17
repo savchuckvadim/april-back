@@ -1,9 +1,9 @@
-import { EnumEventPlanCode } from '@/apps/event-sales/types/plan-types';
-import { PlanDto } from '@/apps/event-sales/dto/event-sale-flow/plan.dto';
+import { EnumEventPlanCode } from '@lib/shared/event-sales/types/plan-types';
+import { PlanDto } from '@lib/shared/event-sales/dto/plan.dto';
 import {
     EnumTaskEventType,
     EventTaskDto,
-} from '@/apps/event-sales/dto/event-sale-flow/task.dto';
+} from '@lib/shared/event-sales/dto/task.dto';
 
 export class EventTitleService {
     constructor() {}

@@ -1,21 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber } from 'class-validator';
-import { PbxEntityType } from '@/shared/enums';
-
-export class GetChildrenByPbxEntityDto {
-    @ApiProperty({
-        description: 'Entity type',
-        example: PbxEntityType.SMART,
-        enum: PbxEntityType,
-    })
-    @IsEnum(PbxEntityType)
-    entityType: PbxEntityType;
-
-    @ApiProperty({
-        description: 'Entity ID',
-        example: 1,
-        type: Number,
-    })
-    @IsNumber()
-    entityId: number;
-}
+// DTO переехал в @lib/portal-lib (нужен контроллерам самой библиотеки).
+// Реэкспорт сохранён для существующих импортов admin.
+export { GetChildrenByPbxEntityDto } from '@lib/portal-lib/pbx-domain/category/dto/get-children-by-pbx-entity.dto';

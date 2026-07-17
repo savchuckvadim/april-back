@@ -57,13 +57,14 @@ jobs:
                       rq: ['apps/rq/**']
                       pbx: ['apps/pbx/**']
                       bot: ['apps/bot/**']
+                      bitrix-app-client: ['apps/bitrix-app-client/**']
 
             - name: Вычислить список приложений для сборки
               id: set
               env:
                   MANUAL_APPS: ${{ github.event.inputs.apps }}
               run: |
-                  ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor","rq","pbx","bot"]'
+                  ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor","rq","pbx","bot","bitrix-app-client"]'
                   if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
                     # Ручной запуск: "all"/пусто -> все; иначе список через пробел/запятую -> JSON.
                     if [ -z "$MANUAL_APPS" ] || [ "$MANUAL_APPS" = "all" ]; then

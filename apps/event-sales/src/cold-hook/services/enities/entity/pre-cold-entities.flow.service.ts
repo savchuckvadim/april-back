@@ -1,7 +1,7 @@
 import { BitrixService, IBXCompany, IBXDeal } from '@/modules/bitrix';
 import { IColdHookSilenceHandlerData } from '../../../type/cold-hook-silence.interface';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
-import { prepareBatchResults } from '@/apps/event-sales/shared';
+import { prepareBatchResults } from '../../../../shared';
 
 export interface PreColdEntitesResult {
     companies: IBXCompany[];

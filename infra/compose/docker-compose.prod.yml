@@ -187,6 +187,17 @@ services:
         required: false
     ports: ['${BOT_HOST_PORT}:3000']
 
+  bitrix-app-client:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-bitrix-app-client:${IMAGE_TAG:-latest}
+    container_name: app-bitrix-app-client
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/bitrix-app-client/.env
+        required: false
+    ports: ['${BITRIX_APP_CLIENT_HOST_PORT}:3000']
+
   # ---------------- Инфраструктура ----------------
   # Redis с персистентностью: AOF (appendfsync everysec) + RDB-снапшоты.
   # Данные лежат в именованном volume redis_data (/data) и переживают

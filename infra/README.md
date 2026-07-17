@@ -39,6 +39,8 @@ infra/
 | kpi-report-sales | 8335 | event-sales | 8339 |
 | pbx-install | 8336 | event-service | 8340 |
 | kpi-report-service | 8337 | konstructor | 8341 |
+| rq | 8342 | pbx | 8343 |
+| bot | 8344 | bitrix-app-client | 8345 |
 
 У каждого app есть `/api/health` (общий `HealthModule` из `@/core`) — его проверяет
 docker healthcheck (на внутреннем `:3000`).

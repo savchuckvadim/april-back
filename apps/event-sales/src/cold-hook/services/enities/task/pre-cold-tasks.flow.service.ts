@@ -1,4 +1,4 @@
-import { prepareBatchResults } from '@/apps/event-sales/shared';
+import { prepareBatchResults } from '../../../../shared';
 import { BitrixService } from '@/modules/bitrix';
 import { EBXTaskStatus, IBXTask } from '@/modules/bitrix/domain/tasks/task';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';

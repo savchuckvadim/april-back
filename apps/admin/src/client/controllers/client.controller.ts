@@ -10,13 +10,13 @@ import {
     ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ClientService } from '@/modules/client/services/client.service';
-import { CreateClientDto } from '@/modules/client/dto/create-client.dto';
-import { UpdateClientDto } from '@/modules/client/dto/update-client.dto';
+import { ClientService } from '../../modules/client/services/client.service';
+import { CreateClientDto } from '../../modules/client/dto/create-client.dto';
+import { UpdateClientDto } from '../../modules/client/dto/update-client.dto';
 import {
     ClientResponseDto,
     ClientWithRelationsResponseDto,
-} from '@/modules/client/dto/client-response.dto';
+} from '../../modules/client/dto/client-response.dto';
 import { ErrorResponseDto } from '@/core';
 
 @ApiTags('Admin Client Management')

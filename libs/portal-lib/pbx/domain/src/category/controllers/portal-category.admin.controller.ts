@@ -14,7 +14,7 @@ import { CreateBtxCategoryDto } from '../dto/create-btx-category.dto';
 import { CreateManyBtxCategoriesDto } from '../dto/create-many-btx-categories.dto';
 import { UpdateBtxCategoryDto } from '../dto/update-btx-category.dto';
 import { BtxCategoryResponseDto } from '../dto/btx-category-response.dto';
-import { GetChildrenByPbxEntityDto } from '@/apps/admin/portal/pbx-shared';
+import { GetChildrenByPbxEntityDto } from '../dto/get-children-by-pbx-entity.dto';
 
 @ApiTags('Admin Btx Categories Management')
 @Controller('admin/pbx/btx-categories')

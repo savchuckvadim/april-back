@@ -1,0 +1,84 @@
+import { Process, Processor } from '@nestjs/bull';
+import { Logger } from '@nestjs/common';
+import { Job } from 'bull';
+import { QueueNames } from '@lib/queue/constants/queue-names.enum';
+import { TranscribeJobHandlerId } from '@lib/queue/constants/transcribe-job-handler-id.enum';
+import { TranscriptionService } from '../services/transcription.service';
+import { getErrorString } from '@lib/shared';
+
+interface TranscribeAudioJobData {
+    fileUrl: string;
+    fileName: string;
+    taskId: string;
+    domain: string;
+    userId: string;
+    userName: string;
+    appName: string;
+    activityId: string;
+    fileId: string;
+    duration: string;
+    department: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+}
+
+@Processor(QueueNames.TRANSCRIBE_AUDIO)
+export class TranscribeAudioProcessor {
+    private readonly logger = new Logger(TranscribeAudioProcessor.name);
+
+    constructor(private readonly transcriptionService: TranscriptionService) {}
+
+    @Process(TranscribeJobHandlerId.TRANSCRIBE)
+    async handleTranscription(job: Job<TranscribeAudioJobData>) {
+        try {
+            this.logger.debug(
+                `Processing transcription job for taskId: ${job.data.taskId}`,
+            );
+
+            const {
+                fileUrl,
+                fileName,
+                taskId,
+                domain,
+                userId,
+                userName,
+                appName,
+                activityId,
+                fileId,
+                duration,
+                department,
+                entityType,
+                entityId,
+                entityName,
+            } = job.data;
+
+            await this.transcriptionService.transcribe(
+                fileUrl,
+                fileName,
+                taskId,
+                domain,
+                userId,
+                userName,
+                appName,
+                activityId,
+                fileId,
+                duration,
+                department,
+                entityType,
+                entityId,
+                entityName,
+            );
+
+            this.logger.debug(
+                `Completed transcription job for taskId: ${job.data.taskId}`,
+            );
+        } catch (error) {
+            const errorString = getErrorString(error);
+            this.logger.error(
+                `Error processing transcription job: ${errorString}`,
+            );
+            throw error;
+        }
+    }
+}

@@ -685,6 +685,83 @@ export class ListFieldMonitorRowDto {
     db!: PortalListFieldDto | null;
 }
 
+/** Описание сматченного инфоблока в Bitrix (`lists.get`). */
+export class BitrixListDetailsDto {
+    @ApiProperty({ description: 'IBLOCK_ID', example: 41, type: Number })
+    id!: number;
+
+    @ApiProperty({
+        description: 'Тип инфоблока (IBLOCK_TYPE_ID)',
+        example: 'lists',
+        nullable: true,
+        type: String,
+    })
+    iblockTypeId!: string | null;
+
+    @ApiProperty({
+        description: 'Фактический код инфоблока (CODE ?? IBLOCK_CODE)',
+        example: 'sales_kpi',
+        nullable: true,
+        type: String,
+    })
+    code!: string | null;
+
+    @ApiProperty({
+        description: 'Название инфоблока (NAME)',
+        example: 'ОП KPI',
+    })
+    name!: string;
+
+    @ApiProperty({
+        description: 'Описание инфоблока',
+        example: '',
+        nullable: true,
+        type: String,
+    })
+    description!: string | null;
+
+    @ApiProperty({
+        description: 'Сортировка',
+        example: '500',
+        nullable: true,
+        type: String,
+    })
+    sort!: string | null;
+
+    @ApiProperty({
+        description: 'Активен (ACTIVE=Y); null — Bitrix не вернул флаг',
+        example: true,
+        nullable: true,
+        type: Boolean,
+    })
+    active!: boolean | null;
+}
+
+/** Зеркало списка в PortalDB (`bitrixlists`), без полей. */
+export class DbListDetailsDto {
+    @ApiProperty({ description: 'ID строки в БД', example: 7, type: Number })
+    id!: number;
+
+    @ApiProperty({
+        description: 'Код списка в БД (`${group}_${type}`)',
+        example: 'sales_kpi',
+    })
+    code!: string;
+
+    @ApiProperty({ description: 'Название', example: 'ОП KPI' })
+    name!: string;
+
+    @ApiProperty({ description: 'Заголовок', example: 'ОП KPI' })
+    title!: string;
+
+    @ApiProperty({
+        description: 'IBLOCK_ID, сохранённый в БД',
+        example: 41,
+        type: Number,
+    })
+    bitrixId!: number;
+}
+
 /** Статус одного списка: эталон × Bitrix × БД. */
 export class ListMonitorRowDto {
     @ApiProperty({
@@ -726,6 +803,24 @@ export class ListMonitorRowDto {
     })
     bitrixId!: number | null;
 
+    @ApiProperty({
+        description:
+            'Фактический код сматченного инфоблока в Bitrix ' +
+            '(CODE ?? IBLOCK_CODE из `lists.get`)',
+        example: 'sales_kpi',
+        nullable: true,
+        type: String,
+    })
+    bitrixCode!: string | null;
+
+    @ApiProperty({
+        description: 'Фактическое название инфоблока в Bitrix (NAME)',
+        example: 'ОП KPI',
+        nullable: true,
+        type: String,
+    })
+    bitrixName!: string | null;
+
     @ApiProperty({ description: 'Есть в БД `bitrixlists`', example: true })
     inDb!: boolean;
 
@@ -737,8 +832,30 @@ export class ListMonitorRowDto {
     })
     dbBitrixId!: number | null;
 
+    @ApiProperty({
+        description: 'Код списка, сохранённый в БД (`bitrixlists.code`)',
+        example: 'sales_kpi',
+        nullable: true,
+        type: String,
+    })
+    dbCode!: string | null;
+
     @ApiProperty({ description: 'Bitrix и БД совпадают', example: true })
     inSync!: boolean;
+
+    @ApiProperty({
+        description: 'Полное описание сматченного инфоблока в Bitrix',
+        type: BitrixListDetailsDto,
+        nullable: true,
+    })
+    bitrix!: BitrixListDetailsDto | null;
+
+    @ApiProperty({
+        description: 'Зеркало списка в PortalDB (`bitrixlists`), без полей',
+        type: DbListDetailsDto,
+        nullable: true,
+    })
+    db!: DbListDetailsDto | null;
 
     @ApiProperty({
         description: 'Статусы полей списка',

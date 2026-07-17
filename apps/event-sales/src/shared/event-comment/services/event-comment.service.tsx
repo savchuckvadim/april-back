@@ -1,7 +1,7 @@
 import {
     EnumEventItemResultType,
     EnumWorkStatusCode,
-} from '@/apps/event-sales/types/report-types';
+} from '@lib/shared/event-sales/types/report-types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import customParseFormat from 'dayjs/plugin/customParseFormat';

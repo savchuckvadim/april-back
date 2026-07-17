@@ -1,7 +1,7 @@
 import { Body, Controller, Logger, Post, Query } from '@nestjs/common';
 import { ColdCallQueryDto } from '../dto/cold.dto';
 import { ColdCallHookResponseDto } from '../dto/cold-call-response.dto';
-import { BxWebHookDto } from '@/apps/ork-documents/act/ork-act.dto';
+import { BxWebHookDto } from '@lib/bitrix/dto/bx-webhook.dto';
 import { ColdHookSilinceEndpointService } from '../services/silence/cold-hook-silince-endpoint.service';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 

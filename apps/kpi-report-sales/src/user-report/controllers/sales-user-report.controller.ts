@@ -6,7 +6,6 @@ import {
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
-import { OrkListHistoryItemDto } from '@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto';
 import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
@@ -16,7 +15,7 @@ import {
     SalesUserReportStartResponseDto,
 } from '../dto/sales-user-report.dto';
 import { SalesUserReportService } from '../services/sales-user-report.service';
-import { PbxSalesKpiListItemDto } from '@/modules/pbx-sales-kpi-list/dto/pbx-sales-kpi-list.dto';
+import { PbxSalesKpiListItemDto } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/dto/pbx-sales-kpi-list.dto';
 import { PBXService } from '@/modules/pbx';
 
 const REPORT_OPERATION_HASH = `${JobNames.SALES_USER_REPORT_GENERATE}-operation:`;

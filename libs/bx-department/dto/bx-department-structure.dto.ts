@@ -1,4 +1,4 @@
-import { BXUserDto } from '@/apps/kpi-report-ork/event/dto/get-report-request.dto';
+import { BXUserDto } from './bx-user.dto';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';

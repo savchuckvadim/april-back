@@ -154,6 +154,33 @@
         "tsConfigPath": "libs/ai-rag/tsconfig.lib.json"
       }
     },
+    "bitrix-app-client": {
+      "type": "application",
+      "root": "apps/bitrix-app-client",
+      "entryFile": "main",
+      "sourceRoot": "apps/bitrix-app-client/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/bitrix-app-client/tsconfig.app.json"
+      }
+    },
+    "mail": {
+      "type": "library",
+      "root": "libs/mail",
+      "entryFile": "index",
+      "sourceRoot": "libs/mail/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/mail/tsconfig.lib.json"
+      }
+    },
+    "call-lib": {
+      "type": "library",
+      "root": "libs/call-lib",
+      "entryFile": "index",
+      "sourceRoot": "libs/call-lib/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/call-lib/tsconfig.lib.json"
+      }
+    },
     "bitrix-auth": {
       "type": "library",
       "root": "libs/bitrix-auth",

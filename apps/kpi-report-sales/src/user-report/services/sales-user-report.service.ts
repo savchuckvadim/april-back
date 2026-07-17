@@ -8,15 +8,15 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 // import { OrkHistoryFieldItemValueDto, OrkHistoryFieldValueDto, OrkListHistoryItemDto } from "@/modules/pbx-ork-history-bx-list/dto/ork-list-history.dto";
 import { delay } from '@/shared/lib';
 import { BxListItemGetRequestDto } from '@/modules/bitrix/domain/list-item';
-import { EnumSalesKpiFieldCode } from '@/modules/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
-import { BitrixFieldType } from '@/apps/konstructor/document-generate/dto/pbx-items.dto';
+import { EnumSalesKpiFieldCode } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
+import { BitrixFieldType } from '@lib/shared/enums';
 import {
     PbxSalesKpiCompanyDto,
     PbxSalesKpiContactDto,
     PbxSalesKpiFieldItemValueDto,
     PbxSalesKpiFieldValueDto,
     PbxSalesKpiListItemDto,
-} from '@/modules/pbx-sales-kpi-list/dto/pbx-sales-kpi-list.dto';
+} from '@lib/portal-lib/pbx/pbx-sales-kpi-list/dto/pbx-sales-kpi-list.dto';
 import { IBXCompany } from '@/modules/bitrix';
 
 @Injectable()

@@ -230,6 +230,20 @@ services:
         required: false
     ports: ['${BOT_HOST_PORT}:3000']
 
+  bitrix-app-client:
+    <<: *app-service
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args: { APP: bitrix-app-client }
+    container_name: app-bitrix-app-client
+    env_file:
+      - path: ../../.env
+        required: true
+      - path: ../../apps/bitrix-app-client/.env
+        required: false
+    ports: ['${BITRIX_APP_CLIENT_HOST_PORT}:3000']
+
   # ---------------- Инфраструктура ----------------
   # Redis с персистентностью: AOF (appendfsync everysec) + RDB-снапшоты.
   # Данные лежат в именованном volume redis_data (/data), поэтому переживают

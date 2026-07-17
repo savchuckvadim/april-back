@@ -109,6 +109,9 @@ export class ListMonitoringUseCase {
                 ? bxLists.find(l => Number(l.ID) === dbBitrixId)
                 : undefined);
         const bitrixId = bx ? Number(bx.ID) : null;
+        const bitrixCode = bx
+            ? String(bx.CODE ?? bx.IBLOCK_CODE ?? '') || null
+            : null;
 
         const fields = await this.buildFieldRows(
             domain,
@@ -126,9 +129,37 @@ export class ListMonitoringUseCase {
             name: template.name,
             inBitrix: bx !== undefined,
             bitrixId,
+            bitrixCode,
+            bitrixName: bx ? String(bx.NAME ?? '') : null,
             inDb: db !== null,
             dbBitrixId,
+            dbCode: db ? db.code : null,
             inSync: bx !== undefined && db !== null && bitrixId === dbBitrixId,
+            bitrix: bx
+                ? {
+                      id: Number(bx.ID),
+                      iblockTypeId: bx.IBLOCK_TYPE_ID
+                          ? String(bx.IBLOCK_TYPE_ID)
+                          : null,
+                      code: bitrixCode,
+                      name: String(bx.NAME ?? ''),
+                      description:
+                          bx.DESCRIPTION != null
+                              ? String(bx.DESCRIPTION)
+                              : null,
+                      sort: bx.SORT != null ? String(bx.SORT) : null,
+                      active: bx.ACTIVE != null ? bx.ACTIVE === 'Y' : null,
+                  }
+                : null,
+            db: db
+                ? {
+                      id: Number(db.id),
+                      code: db.code,
+                      name: db.name,
+                      title: db.title,
+                      bitrixId: Number(db.bitrixId),
+                  }
+                : null,
             fields,
         };
     }
