@@ -8,6 +8,7 @@ import { PbxCacheModule } from './pbx-cache/pbx-cache.module';
 import { BxDepartmentModule } from 'libs/bx-department';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { PrismaModule } from '@lib/core/prisma/prisma.module';
+import { PortalBuilderModule } from '@lib/portal-lib/builder';
 
 /**
  * Корневой модуль приложения pbx.
@@ -44,6 +45,7 @@ import { PrismaModule } from '@lib/core/prisma/prisma.module';
         PbxCacheModule,
         BxDepartmentModule,
         MarketplaceModule,
+        PortalBuilderModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule],

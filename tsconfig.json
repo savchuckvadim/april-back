@@ -67,6 +67,8 @@
       "@lib/portal-lib/pbx-domain/*": ["libs/portal-lib/pbx/domain/src/*"],
       "@lib/portal-lib/store": ["libs/portal-lib/store"],
       "@lib/portal-lib/store/*": ["libs/portal-lib/store/*"],
+      "@lib/portal-lib/builder": ["libs/portal-lib/builder/src"],
+      "@lib/portal-lib/builder/*": ["libs/portal-lib/builder/src/*"],
       "@lib/portal-lib/*": ["libs/portal-lib/*"],
 
       // ---- Совместимость: старые импорты модулей -> новые библиотеки ----

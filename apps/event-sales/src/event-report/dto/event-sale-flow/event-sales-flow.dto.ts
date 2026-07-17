@@ -1,12 +1,14 @@
 import { Type } from 'class-transformer';
 import {
     IsBoolean,
+    IsNumber,
     IsObject,
     IsOptional,
     IsString,
     ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IBXDeal } from 'src/modules/bitrix';
 import { PlanDto } from './plan.dto';
 import { ReportDto } from './report.dto';
 import { EventTaskDto } from './task.dto';
@@ -18,23 +20,63 @@ import { FailDto } from './fail.dto';
 import { LeadDto } from './lead.dto';
 import { PresentationDto } from './presentation.dto';
 
+/**
+ * TMC-сделка для возврата (legacy-тип фронта `TmcDealsForReturn`:
+ * `{ taskId, tmcDeal, presDeal? }`).
+ */
+export class TmcDealForReturnDto {
+    @ApiPropertyOptional({
+        description: 'Идентификатор задачи Bitrix, к которой привязана сделка.',
+        type: Number,
+        example: 1024,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    taskId?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'TMC-сделка Bitrix (`IBXDeal`). Структура соответствует сделке Bitrix.',
+        type: Object,
+        example: { ID: '123', TITLE: 'ТМЦ Иванов', STAGE_ID: 'C5:NEW' },
+    })
+    @IsOptional()
+    @IsObject()
+    tmcDeal?: IBXDeal;
+
+    @ApiPropertyOptional({
+        description: 'Связанная сделка-презентация (`IBXDeal`), если есть.',
+        type: Object,
+        nullable: true,
+        example: { ID: '124', TITLE: 'Презентация Иванов', STAGE_ID: 'C7:WON' },
+    })
+    @IsOptional()
+    @IsObject()
+    presDeal?: IBXDeal | null;
+}
+
 /** Возврат сущности в ТМЦ. */
 export class ReturnToTmcDto {
-    @ApiProperty({
-        description: 'Флаг запроса на возврат сущности в ТМЦ.',
-        type: Boolean,
-        example: true,
+    @ApiPropertyOptional({
+        description:
+            'Найденная TMC-сделка для возврата (legacy `TmcDealsForReturn`). ' +
+            'Legacy-фронт может прислать вместо объекта falsy-значение ' +
+            '(false/0/null), поэтому строгая валидация поля не выполняется.',
+        type: TmcDealForReturnDto,
+        nullable: true,
     })
-    @IsBoolean()
-    data: boolean;
+    @IsOptional()
+    data?: TmcDealForReturnDto | boolean | null;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Признак активности ветки возврата в ТМЦ.',
         type: Boolean,
         example: true,
     })
+    @IsOptional()
     @IsBoolean()
-    isActive: boolean;
+    isActive?: boolean;
 }
 
 export class EventSalesFlowDto {

@@ -6,55 +6,64 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Множественное поле контакта Bitrix (телефон / email).
  * Bitrix хранит такие поля массивом значений с типом.
+ * Фронт может прислать запись без TYPE или VALUE — все поля опциональны.
  */
 export class ContactMultifieldDto {
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Значение поля (номер телефона или адрес email).',
         type: String,
         example: '+79991234567',
     })
+    @IsOptional()
     @IsString()
-    VALUE: string;
+    VALUE?: string;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Тип значения Bitrix (`WORK`, `MOBILE`, `HOME` и т.д.).',
         type: String,
         example: 'WORK',
     })
+    @IsOptional()
     @IsString()
-    TYPE: string;
+    TYPE?: string;
 }
 
+/**
+ * Контакт события. У контакта с фронта может отсутствовать любое поле
+ * (даже ID и имя) — DTO намеренно полностью опциональный.
+ */
 export class ContactDto {
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Идентификатор контакта Bitrix.',
         type: Number,
         example: 2048,
     })
-    @IsNumber()
+    @IsOptional()
     @Type(() => Number)
-    ID: number;
+    @IsNumber()
+    ID?: number;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Имя контакта.',
         type: String,
         example: 'Иван',
     })
+    @IsOptional()
     @IsString()
-    NAME: string;
+    NAME?: string;
 
     @ApiPropertyOptional({
         description: 'Фамилия контакта.',
         type: String,
         example: 'Иванов',
     })
-    @IsString()
     @IsOptional()
+    @IsString()
     LAST_NAME?: string;
 
     @ApiPropertyOptional({
@@ -62,8 +71,8 @@ export class ContactDto {
         type: String,
         example: 'Иванович',
     })
-    @IsString()
     @IsOptional()
+    @IsString()
     SECOND_NAME?: string;
 
     @ApiPropertyOptional({
@@ -91,8 +100,8 @@ export class ContactDto {
         type: String,
         example: 'Директор',
     })
-    @IsString()
     @IsOptional()
+    @IsString()
     POST?: string;
 
     @ApiPropertyOptional({
@@ -100,8 +109,8 @@ export class ContactDto {
         type: String,
         example: 'Перезвонить после обеда',
     })
-    @IsString()
     @IsOptional()
+    @IsString()
     COMMENTS?: string;
 
     @ApiPropertyOptional({
@@ -109,8 +118,8 @@ export class ContactDto {
         type: String,
         example: '512',
     })
-    @IsString()
     @IsOptional()
+    @IsString()
     COMPANY_ID?: string;
 
     @ApiPropertyOptional({
@@ -118,7 +127,7 @@ export class ContactDto {
         type: String,
         example: '81',
     })
-    @IsString()
     @IsOptional()
+    @IsString()
     ASSIGNED_BY_ID?: string;
 }
