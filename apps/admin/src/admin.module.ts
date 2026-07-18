@@ -9,7 +9,7 @@ import { AdminAddModule } from './admin-app.module';
 import { OfferWordModule } from '@app/konstructor/offer-word/offer-word.module';
 import { OfferModule } from '@app/konstructor/offer/offer.module';
 import { GarantModule } from '@lib/garant';
-import { MailModule } from '@lib/mail';
+// import { MailModule } from '@lib/mail';
 
 @Module({
     imports: [
@@ -27,10 +27,10 @@ import { MailModule } from '@lib/mail';
         OfferWordModule,
         OfferModule,
         GarantModule,
-        MailModule,
+        // MailModule,
     ],
     controllers: [AdminController],
     providers: [GlobalExceptionFilter],
-    exports: [OfferWordModule, OfferModule, GarantModule, MailModule],
+    exports: [OfferWordModule, OfferModule, GarantModule],
 })
 export class AdminModule {}
