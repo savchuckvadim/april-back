@@ -51,18 +51,6 @@ export class BxDepartmentStructureRequestDto {
     department?: EDepartamentGroup;
 
     @ApiProperty({
-        description:
-            'Мультирежим: искать по всей структуре все отделы группы (названия «ОП …» или «Отдел продаж») и вернуть их слитыми в одну структуру плюс разбивку по отделам.',
-        type: Boolean,
-        example: true,
-        required: false,
-        default: false,
-    })
-    @IsOptional()
-    @IsBoolean()
-    isMultiple?: boolean;
-
-    @ApiProperty({
         description: 'Идентификатор текущего пользователя Битрикс24.',
         type: Number,
         example: 447,

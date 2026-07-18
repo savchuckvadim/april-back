@@ -27,6 +27,8 @@ export const mapDepartament = (
     title: row.title,
     bitrixId: toNumber(row.bitrixId),
     portal_id: toNumber(row.portal_id),
+    is_multiple: row.is_multiple,
+    multiple_tag: row.multiple_tag,
 });
 
 /** callings -> IPCallingTasksGroup (Laravel отдавал raw-модель Calling). */

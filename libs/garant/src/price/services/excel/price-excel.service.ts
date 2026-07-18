@@ -29,7 +29,7 @@ export class PriceExcelService {
         return path;
     }
 
-    async getExampleFilePath(): Promise<string> {
+    getExampleFilePath(): string {
         return this.storage.getFilePath(
             StorageType.APP,
             'garant',

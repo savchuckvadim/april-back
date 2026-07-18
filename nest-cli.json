@@ -190,6 +190,15 @@
         "tsConfigPath": "libs/bitrix-auth/tsconfig.lib.json"
       }
     },
+    "marketplace-core": {
+      "type": "library",
+      "root": "libs/marketplace-core",
+      "entryFile": "index",
+      "sourceRoot": "libs/marketplace-core/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/marketplace-core/tsconfig.lib.json"
+      }
+    },
     "bitrix-v3": {
       "type": "library",
       "root": "libs/bitrix-v3",

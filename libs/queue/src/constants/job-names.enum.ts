@@ -27,4 +27,7 @@ export enum JobNames {
     SERVICE_CALL_EVENT = 'service-call-event',
 
     OFFER_WORD_EPHEMERAL_PDF_GENERATE = 'offer-word-ephemeral-pdf-generate',
+
+    //marketplace
+    MARKETPLACE_PROVISION_PRODUCT = 'marketplace-provision-product',
 }

@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { MarketplaceTokenService } from '@lib/marketplace-core';
 import { MarketplaceAdminService } from '../services/marketplace-admin.service';
 import {
     InstallWithDetails,
@@ -72,6 +73,7 @@ describe('MarketplaceAdminService.getInstalls (диагностика устан
         service = new MarketplaceAdminService(
             repo as unknown as MarketplaceInstallRepository,
             {} as MarketplacePlacementSyncService,
+            {} as MarketplaceTokenService,
         );
     });
 

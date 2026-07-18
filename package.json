@@ -180,6 +180,8 @@
             "^@lib/bitrix-v3(|/.*)$": "<rootDir>/libs/bitrix-v3/src/$1",
             "^@lib/bitrix(|/.*)$": "<rootDir>/libs/bitrix/src/$1",
             "^@lib/bitrix-auth(|/.*)$": "<rootDir>/libs/bitrix-auth/src/$1",
+            "^@lib/marketplace-core(|/.*)$": "<rootDir>/libs/marketplace-core/src/$1",
+            "^@/apps/rq(|/.*)$": "<rootDir>/apps/rq/$1",
             "^@lib/bitrix-setup(|/.*)$": "<rootDir>/libs/bitrix-setup/src/$1",
             "^@lib/telegram(|/.*)$": "<rootDir>/libs/telegram/src/$1",
             "^@lib/online(|/.*)$": "<rootDir>/libs/online/src/$1",

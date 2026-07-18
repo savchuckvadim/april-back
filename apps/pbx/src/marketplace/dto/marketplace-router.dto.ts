@@ -59,6 +59,15 @@ export class MarketplaceRouteResultDto {
     @IsOptional()
     @IsString()
     state?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'HTML-заглушка «приложение пока не готово»: если задана — контроллер отдаёт её (200) ВМЕСТО redirect (readiness-гейт виджетов)',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    stubHtml?: string;
 }
 
 export const MARKETPLACE_EVENT_STATUSES = [

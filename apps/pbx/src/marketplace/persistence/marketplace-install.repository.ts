@@ -3,12 +3,20 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@/core';
 import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
 import {
+    ComponentStateInput,
+    MarketplaceComponentStateRepository,
+} from '@lib/marketplace-core';
+import {
     Client,
     marketplace_install_components,
     marketplace_installs,
     Portal,
+    portal_products,
 } from 'generated/prisma';
-import { MarketplaceComponentType } from '../config/marketplace-manifest';
+
+// Тип входа компонент-статусов переехал в @lib/marketplace-core (общий с
+// воркером pbx-install); ре-экспорт сохраняет существующие импорты модуля.
+export type { ComponentStateInput } from '@lib/marketplace-core';
 
 /**
  * Хранилище маркетплейс-мира: portals (идентичность) + marketplace_installs
@@ -38,21 +46,6 @@ export interface UpsertInstallInput {
     lang?: string;
     scope?: string;
     tokens: UpsertInstallTokens;
-}
-
-export interface ComponentStateInput {
-    productCode: string;
-    componentType: MarketplaceComponentType;
-    componentCode: string;
-    status:
-        | 'pending'
-        | 'installing'
-        | 'installed'
-        | 'error'
-        | 'unavailable'
-        | 'skipped';
-    reasonCode?: string;
-    errorDetail?: string;
 }
 
 export interface EventLogInput {
@@ -86,7 +79,10 @@ export enum InstallStatus {
 export class MarketplaceInstallRepository {
     private readonly logger = new Logger(MarketplaceInstallRepository.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly componentState: MarketplaceComponentStateRepository,
+    ) {}
 
     /**
      * Портал: member_id-first, fallback по domain; создание при первой
@@ -361,6 +357,75 @@ export class MarketplaceInstallRepository {
         }
     }
 
+    /**
+     * Активация/деактивация продукта на портале — идемпотентный upsert
+     * по (portal_id, product_code). activated_at ставится при первом
+     * переходе в active и не перетирается повторным approve.
+     */
+    async upsertPortalProduct(
+        portalId: bigint,
+        productCode: string,
+        status: 'active' | 'inactive' | 'suspended',
+    ): Promise<portal_products> {
+        const existing = await this.prisma.portal_products.findUnique({
+            where: {
+                portal_id_product_code: {
+                    portal_id: portalId,
+                    product_code: productCode,
+                },
+            },
+        });
+        if (existing) {
+            return this.prisma.portal_products.update({
+                where: { id: existing.id },
+                data: {
+                    status,
+                    activated_at:
+                        status === 'active' && !existing.activated_at
+                            ? new Date()
+                            : existing.activated_at,
+                    updated_at: new Date(),
+                },
+            });
+        }
+        return this.prisma.portal_products.create({
+            data: {
+                id: randomUUID(),
+                portal_id: portalId,
+                product_code: productCode,
+                status,
+                activated_at: status === 'active' ? new Date() : null,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /** Продукты портала (кабинет/админка) */
+    async findPortalProducts(portalId: bigint): Promise<portal_products[]> {
+        return this.prisma.portal_products.findMany({
+            where: { portal_id: portalId },
+            orderBy: { product_code: 'asc' },
+        });
+    }
+
+    /** Смена статуса допуска портала (approve/block онбординга) */
+    async setApprovalStatus(
+        portalId: bigint,
+        status: 'approved' | 'blocked' | 'pending',
+        approvedBy?: string,
+    ): Promise<void> {
+        await this.prisma.portal.update({
+            where: { id: portalId },
+            data: {
+                approval_status: status,
+                ...(status === 'approved'
+                    ? { approved_at: new Date(), approved_by: approvedBy }
+                    : {}),
+            },
+        });
+    }
+
     /** ONAPPUNINSTALL: soft-delete (строка не удаляется, история сохраняется) */
     async markUninstalled(installId: string): Promise<void> {
         await this.prisma.marketplace_installs.update({
@@ -387,48 +452,16 @@ export class MarketplaceInstallRepository {
         });
     }
 
-    /** По-компонентные статусы (upsert по уникальному ключу компонента) */
+    /**
+     * По-компонентные статусы — делегируется общему репозиторию
+     * @lib/marketplace-core (тот же код пишет и воркер provisioning).
+     */
     async upsertComponents(
         installId: string,
         portalId: bigint,
         items: ComponentStateInput[],
     ): Promise<void> {
-        for (const item of items) {
-            await this.prisma.marketplace_install_components.upsert({
-                where: {
-                    marketplace_install_id_product_code_component_type_component_code:
-                        {
-                            marketplace_install_id: installId,
-                            product_code: item.productCode,
-                            component_type: item.componentType,
-                            component_code: item.componentCode,
-                        },
-                },
-                update: {
-                    status: item.status,
-                    reason_code: item.reasonCode ?? null,
-                    error_detail: item.errorDetail ?? null,
-                    attempts: { increment: 1 },
-                    last_attempt_at: new Date(),
-                    updated_at: new Date(),
-                },
-                create: {
-                    id: randomUUID(),
-                    marketplace_install_id: installId,
-                    portal_id: portalId,
-                    product_code: item.productCode,
-                    component_type: item.componentType,
-                    component_code: item.componentCode,
-                    status: item.status,
-                    reason_code: item.reasonCode,
-                    error_detail: item.errorDetail,
-                    attempts: 1,
-                    last_attempt_at: new Date(),
-                    created_at: new Date(),
-                    updated_at: new Date(),
-                },
-            });
-        }
+        await this.componentState.upsertComponents(installId, portalId, items);
     }
 
     /** Журнал входящих событий (payload — уже с маскированными токенами!) */

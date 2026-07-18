@@ -176,20 +176,33 @@ export class MarketplaceInstallService {
             step = 'smart_scenarios';
             await this.registerSmartScenarioStubs(install.id, portal.id);
 
-            // [5] Provisioning pbx-сущностей — ЗАГЛУШКА (следующий этап);
-            // компонент фиксируется, статус установки завершаем.
+            // [5] Provisioning pbx-сущностей запускается НЕ здесь, а при
+            // активации продукта (approve заявки → MarketplaceProductService).
+            // Здесь — агрегатный компонент «ожидает одобрения»; при
+            // ПЕРЕустановке на портале с активным sales статус сущностей
+            // не сбрасывается (они уже установлены/устанавливаются).
             step = 'finish';
-            await this.repository.upsertComponents(install.id, portal.id, [
-                {
-                    productCode: 'sales',
-                    componentType: MarketplaceComponentType.PBX_ENTITIES,
-                    componentCode: '',
-                    status: 'pending',
-                    reasonCode: 'stub',
-                    errorDetail:
-                        'Установка pbx-сущностей будет запускаться фоном (заглушка)',
-                },
-            ]);
+            const products = await this.repository.findPortalProducts(
+                portal.id,
+            );
+            const salesActive = products.some(
+                product =>
+                    product.product_code === 'sales' &&
+                    product.status === 'active',
+            );
+            if (!salesActive) {
+                await this.repository.upsertComponents(install.id, portal.id, [
+                    {
+                        productCode: 'sales',
+                        componentType: MarketplaceComponentType.PBX_ENTITIES,
+                        componentCode: '',
+                        status: 'pending',
+                        reasonCode: 'awaiting_approval',
+                        errorDetail:
+                            'Установка pbx-сущностей запустится после одобрения подключения вендором',
+                    },
+                ]);
+            }
             await this.repository.updateInstallStatus(
                 install.id,
                 InstallStatus.INSTALLED,

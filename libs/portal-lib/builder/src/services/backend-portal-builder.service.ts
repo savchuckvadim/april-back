@@ -57,6 +57,7 @@ export class BackendPortalBuilderService {
             lists: parts.lists,
             bitrixLists: parts.lists,
             departament: firstSales(parts.departaments) ?? undefined,
+            departaments: parts.departaments,
             smarts: parts.smarts,
             deals: parts.deals,
             rpas: parts.rpas,

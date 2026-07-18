@@ -75,5 +75,7 @@ import { StorageModule } from '@/core/storage/storage.module';
         DeletePbxSmartUseCase,
         GetPbxSmartUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [InstallSmartUseCase],
 })
 export class PbxSmartInstallModule {}

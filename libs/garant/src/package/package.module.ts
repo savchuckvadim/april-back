@@ -2,10 +2,13 @@ import { Module } from '@nestjs/common';
 import { PackageService } from './services/package.service';
 import { PackageRepository } from './repository/package.repository';
 import { PackagePrismaRepository } from './repository/package.prisma.repository';
-import { AdminGarantPackageController } from './controllers/package.admin.controller';
 
+/**
+ * Сервисный модуль пакетов гаранта: провайдеры + экспорт сервиса/репозитория.
+ * Админ-контроллер вынесен в {@link AdminGarantPackageModule}, чтобы konstructor
+ * (импортит ради PackageService) не тащил админские роуты в свой Swagger.
+ */
 @Module({
-    controllers: [AdminGarantPackageController],
     providers: [
         PackageService,
         {

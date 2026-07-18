@@ -175,6 +175,14 @@ export class MarketplaceRouterController {
     }
 
     private redirect(res: Response, result: MarketplaceRouteResultDto) {
+        // Readiness-гейт: пока pbx-сущности продукта виджета не установлены
+        // (или портал blocked/удалён) — same-origin HTML-заглушка вместо 302.
+        if (result.stubHtml) {
+            return res
+                .status(HttpStatus.OK)
+                .type('text/html; charset=utf-8')
+                .send(result.stubHtml);
+        }
         return res.redirect(HttpStatus.FOUND, result.redirectUrl);
     }
 

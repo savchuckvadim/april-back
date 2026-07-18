@@ -40,6 +40,8 @@
       "@lib/ai-rag/*": ["libs/ai-rag/src/*"],
       "@lib/bitrix-auth": ["libs/bitrix-auth/src"],
       "@lib/bitrix-auth/*": ["libs/bitrix-auth/src/*"],
+      "@lib/marketplace-core": ["libs/marketplace-core/src"],
+      "@lib/marketplace-core/*": ["libs/marketplace-core/src/*"],
       "@lib/online": ["libs/online/src"],
       "@lib/online/*": ["libs/online/src/*"],
       "@lib/telegram": ["libs/telegram/src"],

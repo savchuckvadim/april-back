@@ -54,7 +54,13 @@ export interface ExchangedSession {
     state: PortalSessionState;
     domain?: string;
     memberId: string;
-    user: { name?: string; lastName?: string; isAdmin: boolean };
+    user: {
+        name?: string;
+        lastName?: string;
+        isAdmin: boolean;
+        /** Email из user.current — предзаполнение онбординг-формы */
+        email?: string;
+    };
 }
 
 const CODE_TTL_SECONDS = 60;
@@ -154,6 +160,16 @@ export class MarketplaceSessionService {
                 : {}),
         });
 
+        // Email нужен только онбординг-форме (предзаполнение) — лишний
+        // REST-вызов на каждое открытие active-портала не делаем.
+        const email =
+            state === PortalSessionState.ONBOARDING
+                ? await this.bxClient.getCurrentUserEmail(
+                      payload.domain,
+                      payload.access_token,
+                  )
+                : undefined;
+
         const session: ExchangedSession = {
             token,
             state,
@@ -163,6 +179,7 @@ export class MarketplaceSessionService {
                 name: profile.name,
                 lastName: profile.lastName,
                 isAdmin: profile.isAdmin,
+                ...(email ? { email } : {}),
             },
         };
 

@@ -66,5 +66,10 @@ import { InstallStageModule } from '../stage';
         PbxDealCategoryInstallByCategoryUseCase,
         PbxDealCategoryManageUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [
+        PbxDealFieldInstallByParseUseCase,
+        PbxDealCategoryInstallByParseUseCase,
+    ],
 })
 export class PbxDealInstallModule {}

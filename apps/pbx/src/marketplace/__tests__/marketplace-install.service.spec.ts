@@ -15,6 +15,7 @@ type RepoMock = jest.Mocked<
         | 'upsertInstall'
         | 'updateInstallStatus'
         | 'upsertComponents'
+        | 'findPortalProducts'
         | 'logEvent'
     >
 >;
@@ -51,6 +52,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             upsertInstall: jest.fn().mockResolvedValue({ id: 'install-uuid' }),
             updateInstallStatus: jest.fn().mockResolvedValue(undefined),
             upsertComponents: jest.fn().mockResolvedValue(undefined),
+            findPortalProducts: jest.fn().mockResolvedValue([]),
             logEvent: jest.fn().mockResolvedValue(undefined),
         };
         eventSync = {

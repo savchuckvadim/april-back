@@ -53,5 +53,7 @@ import { PbxLeadStageInstallMonitoringController } from './controllers/pbx-lead-
         PbxLeadStageMonitoringService,
         MapLeadStagesUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [PbxLeadFieldInstallByParseUseCase],
 })
 export class PbxLeadInstallModule {}

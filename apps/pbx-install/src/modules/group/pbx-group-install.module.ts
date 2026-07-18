@@ -21,5 +21,7 @@ import { PbxGroupMonitoringService } from './services/pbx-group-monitoring.servi
         PbxCallingSetBitrixIdUseCase,
         PbxGroupMonitoringService,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [PbxGroupInstallUseCase],
 })
 export class PbxGroupInstallModule {}

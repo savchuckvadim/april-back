@@ -34,5 +34,7 @@ import { InstallRqFieldSyncService } from './services/install-rq-field-sync.serv
         InstallRqPresetSyncService,
         InstallRqFieldSyncService,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [InstallRqUseCase],
 })
 export class PbxRqInstallModule {}

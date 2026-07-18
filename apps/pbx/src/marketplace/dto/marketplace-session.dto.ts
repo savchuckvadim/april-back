@@ -50,9 +50,19 @@ export class PortalSessionDto {
 
     @ApiProperty({
         description:
-            'Пользователь портала из REST profile (имя, фамилия, признак администратора)',
-        example: { name: 'Иван', lastName: 'Петров', isAdmin: true },
+            'Пользователь портала из REST profile (имя, фамилия, признак администратора; email — из user.current, только на состоянии onboarding для предзаполнения формы)',
+        example: {
+            name: 'Иван',
+            lastName: 'Петров',
+            isAdmin: true,
+            email: 'ivan@romashka.ru',
+        },
         type: Object,
     })
-    user: { name?: string; lastName?: string; isAdmin: boolean };
+    user: {
+        name?: string;
+        lastName?: string;
+        isAdmin: boolean;
+        email?: string;
+    };
 }

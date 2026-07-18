@@ -3,9 +3,14 @@ import { ProviderService } from './provider.service';
 import { ProviderRepository } from './provider.repository';
 import { ProviderPrismaRepository } from './provider.prisma.repository';
 import { ProviderController } from './provider.controller';
-import { ProviderAdminController } from './provider.admin.controller';
+
+/**
+ * Сервисный модуль поставщиков: провайдеры + целевой ProviderController.
+ * Админ-контроллер вынесен в {@link ProviderAdminModule}, чтобы приложения
+ * (konstructor), импортящие модуль ради ProviderService, не тащили админ-роуты.
+ */
 @Module({
-    controllers: [ProviderController, ProviderAdminController],
+    controllers: [ProviderController],
     providers: [
         ProviderService,
         {

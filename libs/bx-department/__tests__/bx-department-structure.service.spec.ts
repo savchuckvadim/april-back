@@ -47,7 +47,23 @@ describe('BxDepartmentStructureService', () => {
     let redisSet: jest.Mock;
     let apiCall: jest.Mock;
     let getFullDepartment: jest.Mock;
+    let pbxInit: jest.Mock;
     let service: BxDepartmentStructureService;
+
+    /** init отдаёт bitrix и локальный портал с флагами мультирежима по группам. */
+    const initResult = (
+        isMultiple: Record<EDepartamentGroup, boolean>,
+        tags: Partial<Record<EDepartamentGroup, string>> = {},
+    ) => ({
+        bitrix: { api: { call: apiCall } },
+        internalPortal: {
+            departaments: Object.entries(isMultiple).map(([group, flag]) => ({
+                group: group as EDepartamentGroup,
+                is_multiple: flag,
+                multiple_tag: tags[group as EDepartamentGroup] ?? null,
+            })),
+        },
+    });
 
     beforeEach(() => {
         redisGet = jest.fn().mockResolvedValue(null);
@@ -76,10 +92,16 @@ describe('BxDepartmentStructureService', () => {
         const redisService = {
             getClient: () => ({ get: redisGet, set: redisSet }),
         } as unknown as RedisService;
+        // По умолчанию мультирежим включён в БД для sales и service.
+        pbxInit = jest.fn().mockResolvedValue(
+            initResult({
+                [EDepartamentGroup.sales]: true,
+                [EDepartamentGroup.service]: true,
+                [EDepartamentGroup.tmc]: false,
+            }),
+        );
         const pbx = {
-            init: jest
-                .fn()
-                .mockResolvedValue({ bitrix: { api: { call: apiCall } } }),
+            init: pbxInit,
         } as unknown as PBXService;
         const departmentService = {
             getFullDepartment,
@@ -97,7 +119,6 @@ describe('BxDepartmentStructureService', () => {
             const result = await service.getStructure(
                 DOMAIN,
                 EDepartamentGroup.sales,
-                true,
                 204,
             );
 
@@ -124,7 +145,6 @@ describe('BxDepartmentStructureService', () => {
             const result = await service.getStructure(
                 DOMAIN,
                 EDepartamentGroup.sales,
-                true,
                 204,
             );
 
@@ -145,11 +165,38 @@ describe('BxDepartmentStructureService', () => {
             ]);
         });
 
+        it('ищет по кастомному тэгу multiple_tag из БД, а не по дефолтным шаблонам', async () => {
+            // Тэг «Глава» → отделы 53 и 55; дефолтные ОП-шаблоны игнорируются.
+            pbxInit.mockResolvedValue(
+                initResult(
+                    {
+                        [EDepartamentGroup.sales]: true,
+                        [EDepartamentGroup.service]: false,
+                        [EDepartamentGroup.tmc]: false,
+                    },
+                    { [EDepartamentGroup.sales]: 'Глава' },
+                ),
+            );
+
+            const result = await service.getStructure(
+                DOMAIN,
+                EDepartamentGroup.sales,
+                204,
+            );
+
+            expect(
+                result.department.generalDepartment.map(d => d.ID).sort(),
+            ).toEqual([53, 55]);
+            // отделы под дефолтный шаблон «ОП …» больше не попадают
+            expect(
+                result.department.generalDepartment.map(d => d.ID),
+            ).not.toContain(37);
+        });
+
         it('service: матчит отделы «ОС …»', async () => {
             const result = await service.getStructure(
                 DOMAIN,
                 EDepartamentGroup.service,
-                true,
                 204,
             );
 
@@ -162,7 +209,7 @@ describe('BxDepartmentStructureService', () => {
             apiCall.mockResolvedValue({ result: [] });
 
             await expect(
-                service.getStructure(DOMAIN, EDepartamentGroup.sales, true, 1),
+                service.getStructure(DOMAIN, EDepartamentGroup.sales, 1),
             ).rejects.toBeInstanceOf(NotFoundException);
         });
 
@@ -170,7 +217,6 @@ describe('BxDepartmentStructureService', () => {
             const first = await service.getStructure(
                 DOMAIN,
                 EDepartamentGroup.sales,
-                true,
                 204,
             );
             const [, cachedJson] = redisSet.mock.calls[0] as [string, string];
@@ -180,7 +226,6 @@ describe('BxDepartmentStructureService', () => {
             const second = await service.getStructure(
                 DOMAIN,
                 EDepartamentGroup.sales,
-                true,
                 203,
             );
 
@@ -193,7 +238,7 @@ describe('BxDepartmentStructureService', () => {
 
     describe('текущий пользователь', () => {
         const get = (userId: number) =>
-            service.getStructure(DOMAIN, EDepartamentGroup.sales, true, userId);
+            service.getStructure(DOMAIN, EDepartamentGroup.sales, userId);
 
         it('руководитель группы: headOf=group, коллеги группы и ОП без него', async () => {
             const { currentUser } = await get(203);
@@ -244,6 +289,14 @@ describe('BxDepartmentStructureService', () => {
 
     describe('одиночный режим (как раньше)', () => {
         it('делегирует BxDepartmentService и строит разбивку из ответа', async () => {
+            // is_multiple=false в БД → прежний одиночный режим.
+            pbxInit.mockResolvedValue(
+                initResult({
+                    [EDepartamentGroup.sales]: false,
+                    [EDepartamentGroup.service]: false,
+                    [EDepartamentGroup.tmc]: false,
+                }),
+            );
             const general = {
                 ID: 9,
                 NAME: 'Отдел продаж',
@@ -271,7 +324,6 @@ describe('BxDepartmentStructureService', () => {
             const result = await service.getStructure(
                 DOMAIN,
                 EDepartamentGroup.sales,
-                false,
                 202,
             );
 

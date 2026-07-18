@@ -21,6 +21,7 @@ export enum MarketplaceBxMethod {
     PLACEMENT_LIST = 'placement.list',
     APP_INFO = 'app.info',
     PROFILE = 'profile',
+    USER_CURRENT = 'user.current',
 }
 
 /** Профиль текущего пользователя портала (REST-метод `profile`) */
@@ -260,5 +261,33 @@ export class MarketplaceBxClient {
                     : undefined,
             isAdmin: profile.ADMIN === true || profile.ADMIN === 'true',
         };
+    }
+
+    /**
+     * Email текущего пользователя (REST `user.current` — в отличие от
+     * `profile` он возвращает EMAIL). Best-effort для предзаполнения
+     * онбординг-формы; ошибка → undefined.
+     */
+    async getCurrentUserEmail(
+        domain: string,
+        accessToken: string,
+    ): Promise<string | undefined> {
+        const response = await this.call(
+            domain,
+            accessToken,
+            MarketplaceBxMethod.USER_CURRENT,
+            {},
+        );
+        if (
+            !response.ok ||
+            !response.result ||
+            typeof response.result !== 'object'
+        ) {
+            return undefined;
+        }
+        const user = response.result as Record<string, unknown>;
+        return typeof user.EMAIL === 'string' && user.EMAIL.length > 0
+            ? user.EMAIL
+            : undefined;
     }
 }

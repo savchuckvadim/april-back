@@ -13,11 +13,8 @@ import { YandexModule } from '@lib/call-lib/yandex/yandex.module';
 import { TranscriptionService } from './services/transcription.service';
 import { FileStorageService } from './services/file-storage.service';
 import { OnlineClientModule } from '@lib/online';
-import { TranscriptionRepository } from './repository/transcription.repository';
-import { TranscriptionPrismaRepository } from './repository/transcription.prisma.repository';
-import { TranscriptionStoreService } from './services/transcription.store.service';
+import { TranscriptionStoreModule } from './transcription-store.module';
 import { TranscriptionStoreController } from './controllers/transcription-store.controller';
-import { AdminTranscriptionStoreController } from './controllers/transcription-store.admin.controller';
 
 @Module({
     imports: [
@@ -28,18 +25,11 @@ import { AdminTranscriptionStoreController } from './controllers/transcription-s
         StorageModule,
         YandexModule,
         OnlineClientModule,
+        // Репозиторий + TranscriptionStoreService (CRUD по транскрибациям).
+        TranscriptionStoreModule,
     ],
-    controllers: [
-        TranscriptionController,
-        TranscriptionStoreController,
-        AdminTranscriptionStoreController,
-    ],
+    controllers: [TranscriptionController, TranscriptionStoreController],
     providers: [
-        {
-            provide: TranscriptionRepository,
-            useClass: TranscriptionPrismaRepository,
-        },
-        TranscriptionStoreService,
         StartTranscriptionUseCase,
         GetTranscriptionResultUseCase,
         StreamingTranscriptionService,
@@ -47,6 +37,8 @@ import { AdminTranscriptionStoreController } from './controllers/transcription-s
         FileStorageService,
         TranscriptionService,
     ],
-    exports: [TranscriptionStoreService],
+    // Ре-экспорт store-модуля: потребители (call-analysis, event-sales)
+    // продолжают получать TranscriptionStoreService через TranscriptionModule.
+    exports: [TranscriptionStoreModule],
 })
 export class TranscriptionModule {}

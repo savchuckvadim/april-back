@@ -1,5 +1,5 @@
 // libs/queue/src/dispatch/queue-dispatcher.service.ts
-import { Job, Queue } from 'bull';
+import { Job, JobOptions, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueNames } from '../constants/queue-names.enum';
@@ -47,6 +47,9 @@ export class QueueDispatcherService {
 
         @InjectQueue(QueueNames.CALL_ANALYSIS)
         private readonly callAnalysisQueue: Queue,
+
+        @InjectQueue(QueueNames.MARKETPLACE_PROVISION)
+        private readonly marketplaceProvisionQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -56,12 +59,17 @@ export class QueueDispatcherService {
         jobName: TranscribeJobHandlerId | JobNames,
         data: any,
         jobId?: string,
+        opts?: Omit<JobOptions, 'jobId'>,
     ): Promise<Job<T>> {
         const queue = this.getQueue(queueName);
         this.logger.log(`Dispatching job ${jobName} to queue ${queueName}`);
         // this.logger.log(`Job data: ${JSON.stringify(data)}`);
-        const job = jobId
-            ? await queue.add(jobName, data, { jobId })
+        const options: JobOptions | undefined =
+            jobId || opts
+                ? { ...opts, ...(jobId ? { jobId } : {}) }
+                : undefined;
+        const job = options
+            ? await queue.add(jobName, data, options)
             : await queue.add(jobName, data);
 
         return job;
@@ -107,6 +115,9 @@ export class QueueDispatcherService {
 
             case QueueNames.CALL_ANALYSIS:
                 return this.callAnalysisQueue;
+
+            case QueueNames.MARKETPLACE_PROVISION:
+                return this.marketplaceProvisionQueue;
 
             default: {
                 const error = `Unknown queue name: ${name}`;

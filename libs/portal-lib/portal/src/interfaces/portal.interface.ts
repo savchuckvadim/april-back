@@ -14,6 +14,12 @@ export interface IPortal {
     bitrixLists?: IPBXList[];
     id?: number;
     departament?: IDepartment;
+    /**
+     * Все отделы портала (по группам). Заполняет только локальная
+     * backend-builder модель — задел для перехода с внешнего Portal на
+     * внутренний; внешний Laravel-портал отдаёт лишь единичный `departament`.
+     */
+    departaments?: IDepartment[];
     smarts?: IPSmart[];
     // deal?: IPDeal;
     deals: IPDeal[];
@@ -151,6 +157,14 @@ export interface IDepartment {
     title: string;
     bitrixId: number;
     portal_id: number;
+    /**
+     * Собирать ли ЦУП из разрозненных по всей структуре отделов (мультирежим).
+     * Есть только у локальной (backend-builder) модели портала; внешний
+     * Laravel-портал это поле не отдаёт — потому optional.
+     */
+    is_multiple?: boolean;
+    /** По какому тэгу искать отделы в мультирежиме («ОП ОС» или custom). */
+    multiple_tag?: string | null;
 }
 export enum EDepartamentGroup {
     sales = 'sales',

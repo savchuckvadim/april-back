@@ -21,9 +21,11 @@ import { PbxTemplateBaseModule } from './konstructor/template-base/pbx-template-
 import { PbxFieldModule } from './konstructor/field/pbx-field.module';
 import { PbxCounterModule } from './konstructor/counter/pbx-counter.module';
 import { DocumentCounterModule } from '@lib/portal-lib/konstructor';
+import { MarketplaceProvisionModule } from './marketplace-provision/marketplace-provision.module';
 
 @Module({
     imports: [
+        MarketplaceProvisionModule,
         PbxSmartInstallModule,
         PbxRpaInstallModule,
         PbxCompanyInstallModule,

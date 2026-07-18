@@ -8,17 +8,18 @@ import { PortalOuterService } from './outer/portal-outer.service';
 import { PortalOuterController } from './outer/portal-outer.controller';
 import { OnlineAdminModule } from '@lib/online/client/admin/online-admin.module';
 import { OnlineModule } from '@lib/online/client/online/api-online.module';
-import { PortalKeysController } from './keys/portal-keys.controller';
 import { PortalKeysService } from './keys/portal-keys.service';
 import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
 
+/**
+ * Сервисный модуль хранилища портала. Админ-контроллер ключей вынесен в
+ * {@link PortalKeysAdminModule} (`admin/portal/:portalId/keys`), чтобы приложения
+ * (konstructor, pbx-install, …), импортящие модуль ради сервисов, не тащили
+ * админ-роут в свой Swagger. PortalKeysService экспортируется для админ-модуля.
+ */
 @Module({
     imports: [OnlineAdminModule, OnlineModule],
-    controllers: [
-        PortalController,
-        PortalOuterController,
-        PortalKeysController,
-    ],
+    controllers: [PortalController, PortalOuterController],
     providers: [
         {
             provide: PortalRepository,

@@ -48,12 +48,12 @@ export enum MarketplaceProduct {
     SERVICE = 'service',
 }
 
-/** Компоненты установки (component_type в marketplace_install_components) */
-export enum MarketplaceComponentType {
-    PLACEMENT = 'placement',
-    SMART_SCENARIO = 'smart_scenario',
-    PBX_ENTITIES = 'pbx_entities',
-}
+/**
+ * Компоненты установки (component_type в marketplace_install_components).
+ * Канон живёт в @lib/marketplace-core (общий с воркером pbx-install);
+ * здесь — ре-экспорт для существующих импортов модуля.
+ */
+export { MarketplaceComponentType } from '@lib/marketplace-core';
 
 /** События жизненного цикла, регистрируемые при установке через event.bind */
 export const MARKETPLACE_LIFECYCLE_EVENTS = [

@@ -45,6 +45,14 @@ const DEPARTMENT_NAME_PATTERNS: Record<EDepartamentGroup, RegExp[]> = {
 
 const CACHE_TTL_SECONDS = 86400;
 
+/** Экранирование пользовательского тэга перед вставкой в RegExp. */
+const escapeRegExp = (value: string): string =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Результат PBXService.init и тип инстанса bitrix из него (без импорта класса). */
+type PbxInitResult = Awaited<ReturnType<PBXService['init']>>;
+type BitrixInstance = PbxInitResult['bitrix'];
+
 /**
  * Структура отделов продаж на старом API (department.get).
  * В мультирежиме находит все ОП по всей структуре портала,
@@ -66,13 +74,25 @@ export class BxDepartmentStructureService {
     async getStructure(
         domain: string,
         group: EDepartamentGroup = EDepartamentGroup.sales,
-        isMultiple = false,
         userId: number,
     ): Promise<BxDepartmentStructureResponseDto> {
+        // Один init на запрос: bitrix и локальный портал берём вместе и
+        // протягиваем параметрами (в this их класть нельзя — разные порталы
+        // должны получать разные инстансы bitrix/portal, иначе race condition).
+        const { bitrix, internalPortal } = await this.pbx.init(domain);
+        const department = internalPortal?.departaments?.find(
+            d => d.group === group,
+        );
+        // Мультирежим и тэг поиска — из БД, а не из внешнего запроса.
+        const isMultiple = department?.is_multiple ?? false;
+        const multipleTag = department?.multiple_tag ?? null;
+
         const structure = await this.getStructureData(
+            bitrix,
             domain,
             group,
             isMultiple,
+            multipleTag,
         );
         const currentUser = this.buildCurrentUser(structure, userId);
         return {
@@ -84,12 +104,16 @@ export class BxDepartmentStructureService {
 
     /** Структура без пользовательской части — кешируется на сутки. */
     private async getStructureData(
+        bitrix: BitrixInstance,
         domain: string,
         group: EDepartamentGroup,
         isMultiple: boolean,
+        multipleTag: string | null,
     ): Promise<IStructureData> {
         const day = dayjs().format('MMDD');
-        const mode = isMultiple ? 'multi' : 'single';
+        const mode = isMultiple
+            ? `multi_${this.tagCacheKey(multipleTag)}`
+            : 'single';
         const cacheKey = `department_structure_${domain}_${day}_${group}_${mode}`;
 
         const cached = await this.redis.get(cacheKey);
@@ -98,7 +122,7 @@ export class BxDepartmentStructureService {
         }
 
         const structure = isMultiple
-            ? await this.buildMultiple(domain, group)
+            ? await this.buildMultiple(bitrix, domain, group, multipleTag)
             : await this.buildSingle(domain, group);
 
         await this.redis.set(
@@ -108,6 +132,14 @@ export class BxDepartmentStructureService {
             CACHE_TTL_SECONDS,
         );
         return structure;
+    }
+
+    /** Часть ключа кеша по тэгу (разные тэги — разные наборы отделов). */
+    private tagCacheKey(multipleTag: string | null): string {
+        return (
+            (multipleTag ?? '').trim().replace(/\s+/g, '-').toLowerCase() ||
+            'default'
+        );
     }
 
     /** Прежнее поведение: один базовый отдел из конфига портала. */
@@ -135,17 +167,19 @@ export class BxDepartmentStructureService {
 
     /** Мультирежим: все ОП группы по всей структуре портала. */
     private async buildMultiple(
+        bitrix: BitrixInstance,
         domain: string,
         group: EDepartamentGroup,
+        multipleTag: string | null,
     ): Promise<IStructureData> {
-        const { bitrix } = await this.pbx.init(domain);
         const bxDepartments = new DepartmentBitrixService(bitrix);
+        const patterns = this.resolvePatterns(group, multipleTag);
 
         const all = await bxDepartments.getDepartmentsAll();
-        const opsRaw = all.filter(d => this.matchesGroup(d.NAME, group));
+        const opsRaw = all.filter(d => this.matchesName(d.NAME, patterns));
         if (opsRaw.length === 0) {
             throw new NotFoundException(
-                `На портале ${domain} не найдено отделов группы ${group} по названию`,
+                `На портале ${domain} не найдено отделов группы ${group} по названию/тэгу`,
             );
         }
 
@@ -183,8 +217,32 @@ export class BxDepartmentStructureService {
         };
     }
 
-    private matchesGroup(name: string, group: EDepartamentGroup): boolean {
-        const patterns = DEPARTMENT_NAME_PATTERNS[group] ?? [];
+    /**
+     * Шаблоны поиска отделов: если у отдела задан multiple_tag — ищем по нему
+     * (список префиксов через пробел/запятую, напр. «ОП ОС»); иначе — прежние
+     * захардкоженные шаблоны группы.
+     */
+    private resolvePatterns(
+        group: EDepartamentGroup,
+        multipleTag: string | null,
+    ): RegExp[] {
+        const tag = multipleTag?.trim();
+        if (tag) {
+            return this.tagToPatterns(tag);
+        }
+        return DEPARTMENT_NAME_PATTERNS[group] ?? [];
+    }
+
+    /** «ОП ОС» → [/^ОП(\s|$)/i, /^ОС(\s|$)/i]. */
+    private tagToPatterns(tag: string): RegExp[] {
+        return tag
+            .split(/[\s,;]+/)
+            .map(token => token.trim())
+            .filter(Boolean)
+            .map(token => new RegExp(`^${escapeRegExp(token)}(\\s|$)`, 'i'));
+    }
+
+    private matchesName(name: string, patterns: RegExp[]): boolean {
         const normalized = (name ?? '').trim();
         return patterns.some(pattern => pattern.test(normalized));
     }

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { PriceCreateType } from '../../types/price-from-excel.type';
 import { PriceExcelService } from './price-excel.service';
+import { cellValueToString } from './lib/cell-value.util';
 
 @Injectable()
 export class ComplectPriceExcelParseService {
@@ -25,13 +26,13 @@ export class ComplectPriceExcelParseService {
 
             // Парсим лист регионов (region_type = '0')
             if (regionsSheet) {
-                const regionPrices = await this.parseSheet(regionsSheet, '0');
+                const regionPrices = this.parseSheet(regionsSheet, '0');
                 prices.push(...regionPrices);
             }
 
             // Парсим лист Москвы (region_type = '1')
             if (mscSheet) {
-                const mscPrices = await this.parseSheet(mscSheet, '1');
+                const mscPrices = this.parseSheet(mscSheet, '1');
                 prices.push(...mscPrices);
             }
 
@@ -42,10 +43,10 @@ export class ComplectPriceExcelParseService {
         }
     }
 
-    private async parseSheet(
+    private parseSheet(
         sheet: ExcelJS.Worksheet,
         regionType: '0' | '1', // '0' для регионов, '1' для Москвы
-    ): Promise<PriceCreateType[]> {
+    ): PriceCreateType[] {
         const prices: PriceCreateType[] = [];
         const internetSupplyNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         const proximaSupplyNumbers = [10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -69,7 +70,7 @@ export class ComplectPriceExcelParseService {
 
             const [
                 complectName,
-                complectNumber,
+                ,
                 complectCode,
                 od1,
                 od2,
@@ -84,7 +85,7 @@ export class ComplectPriceExcelParseService {
             if (!complectName || !complectCode) return;
 
             const ods = [od1, od2, od3, od5, od10, od20, od30, od50];
-            const cCode = complectCode?.toString();
+            const cCode = cellValueToString(complectCode);
             // Internet supplies (1-9)
             ods.forEach((internetPrice, supI) => {
                 const sCode = internetSupplyNumbers[supI].toString();
@@ -93,8 +94,7 @@ export class ComplectPriceExcelParseService {
                 const code = `${cCode}_${sCode}_${regionType}`;
 
                 const cleanPrice =
-                    internetPrice
-                        ?.toString()
+                    cellValueToString(internetPrice)
                         .replace('р.', '')
                         .replace(',', '') || '0';
                 const priceValue = parseFloat(cleanPrice);
@@ -107,8 +107,7 @@ export class ComplectPriceExcelParseService {
                         supplyCode: sCode,
                         supplyType: sType,
                         supplyTypeCode: sTypeCode,
-                        // complect_id: BigInt(Number(complectNumber)),
-                        complectCode: complectCode?.toString(),
+                        complectCode: cCode,
                         // supply_id: BigInt(internetSupplyNumbers[supI]),
                         region_type: regionType,
 
@@ -121,8 +120,7 @@ export class ComplectPriceExcelParseService {
             // Proxima supplies (10-18)
             ods.forEach((proximaPrice, supI) => {
                 const cleanPrice =
-                    proximaPrice
-                        ?.toString()
+                    cellValueToString(proximaPrice)
                         .replace('р.', '')
                         .replace(',', '') || '0';
                 const priceValue = parseFloat(cleanPrice);

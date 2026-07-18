@@ -61,5 +61,7 @@ import { PbxListFieldManageUseCase } from './use-cases/field/pbx-list-field-mana
         PbxListFieldInstallController,
         PbxListFieldInstallMonitoringController,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [InstallListUseCase],
 })
 export class PbxListInstallModule {}

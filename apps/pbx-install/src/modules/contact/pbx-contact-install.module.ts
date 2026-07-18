@@ -42,5 +42,7 @@ import { PbxContactBitrixController } from './controllers/pbx-contact-bitrix.con
         PbxContactFieldManageUseCase,
         PbxContactBitrixUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [PbxContactInstallUseCase],
 })
 export class PbxContactInstallModule {}

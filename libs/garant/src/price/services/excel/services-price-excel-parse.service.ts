@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { PriceExcelService } from './price-excel.service';
 import { PriceCreateType } from '../../types/price-from-excel.type';
+import { cellValueToString } from './lib/cell-value.util';
 
 @Injectable()
 export class ServicesPriceExcelParseService {
@@ -27,13 +28,13 @@ export class ServicesPriceExcelParseService {
 
             // Парсим лист регионов (region_type = '0')
             if (ltSheet) {
-                const ltPrices = await this.parseSheet(ltSheet);
+                const ltPrices = this.parseSheet(ltSheet);
                 prices.push(...ltPrices);
             }
 
             // Парсим лист Москвы (region_type = '1')
             if (starShhet) {
-                const starPrices = await this.parseSheet(starShhet);
+                const starPrices = this.parseSheet(starShhet);
                 prices.push(...starPrices);
             }
 
@@ -44,9 +45,7 @@ export class ServicesPriceExcelParseService {
         }
     }
 
-    private async parseSheet(
-        sheet: ExcelJS.Worksheet,
-    ): Promise<PriceCreateType[]> {
+    private parseSheet(sheet: ExcelJS.Worksheet): PriceCreateType[] {
         const prices: PriceCreateType[] = [];
 
         sheet.eachRow((row, rowNumber) => {
@@ -62,21 +61,16 @@ export class ServicesPriceExcelParseService {
                 row.getCell(7).value, // packageCode
             ];
 
-            const [
-                number,
-                name,
-                weight,
-                mskValue,
-                regionValue,
-                type,
-                packageCode,
-            ] = values;
+            const [number, name, , mskValue, regionValue, type, packageCode] =
+                values;
 
             if (!name || !packageCode) return;
 
+            const codeValue = `${cellValueToString(type)}_${cellValueToString(number)}`;
+
             if (Number(mskValue) > 0 || Number(regionValue) > 0) {
                 prices.push({
-                    code: `${type}_${number}`,
+                    code: codeValue,
                     region_type: '0' as '0' | '1',
                     garantPackageCode: packageCode as 'lt' | 'star',
                     value: Number(mskValue),
@@ -89,7 +83,7 @@ export class ServicesPriceExcelParseService {
                     supplyType: null,
                 });
                 prices.push({
-                    code: `${type}_${number}`,
+                    code: codeValue,
                     region_type: '1' as '0' | '1',
                     garantPackageCode: packageCode as 'lt' | 'star',
                     value: Number(regionValue),

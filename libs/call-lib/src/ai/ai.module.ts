@@ -3,11 +3,14 @@ import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { AiService } from './services/ai.service';
 import { AiRepository } from './repository/ai.repository';
 import { AiPrismaRepository } from './repository/ai.prisma.repository';
-import { AdminAiController } from './controllers/ai.admin.controller';
 
+/**
+ * Сервисный модуль AI-записей: только провайдеры и экспорт сервисов.
+ * Админ-контроллер вынесен в {@link AiAdminModule}, чтобы приложения
+ * (event-sales), которым нужен лишь AiService, не тащили админские роуты.
+ */
 @Module({
     imports: [PrismaModule],
-    controllers: [AdminAiController],
     providers: [
         AiService,
         {

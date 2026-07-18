@@ -26,4 +26,7 @@ export enum QueueNames {
     ZAKUPKI_OFFER = 'zakupki-offer',
     KONSTRUCTOR = 'konstructor',
     CALL_ANALYSIS = 'call-analysis',
+
+    /** Provisioning pbx-сущностей маркетплейс-продуктов (воркер в pbx-install) */
+    MARKETPLACE_PROVISION = 'marketplace-provision',
 }

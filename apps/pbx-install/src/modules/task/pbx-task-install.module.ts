@@ -27,5 +27,7 @@ import { PbxTaskFieldManageUseCase } from './use-cases/pbx-task-field-manage.use
         PbxTaskInstallFieldUseCase,
         PbxTaskFieldManageUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [PbxTaskInstallUseCase],
 })
 export class PbxTaskInstallModule {}

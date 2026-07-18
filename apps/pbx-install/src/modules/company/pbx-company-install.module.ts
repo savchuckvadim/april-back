@@ -42,5 +42,7 @@ import { PbxCompanyBitrixController } from './controllers/pbx-company-bitrix.con
         PbxCompanyFieldManageUseCase,
         PbxCompanyBitrixUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [PbxCompanyInstallUseCase],
 })
 export class PbxCompanyInstallModule {}

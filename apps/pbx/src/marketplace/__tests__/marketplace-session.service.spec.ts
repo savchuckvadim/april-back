@@ -14,7 +14,9 @@ type RepoMock = jest.Mocked<
         'findInstallWithClient' | 'getApplicationToken'
     >
 >;
-type BxMock = jest.Mocked<Pick<MarketplaceBxClient, 'getProfile'>>;
+type BxMock = jest.Mocked<
+    Pick<MarketplaceBxClient, 'getProfile' | 'getCurrentUserEmail'>
+>;
 type AuthMock = jest.Mocked<Pick<AuthTokenService, 'sign'>>;
 
 /** In-memory замена Redis-клиенту (set/get/del c EX) */
@@ -86,6 +88,9 @@ describe('MarketplaceSessionService (гейт + сессия)', () => {
                 lastName: 'Петров',
                 isAdmin: true,
             }),
+            getCurrentUserEmail: jest
+                .fn()
+                .mockResolvedValue('ivan@romashka.ru'),
         };
         auth = { sign: jest.fn().mockReturnValue('signed-jwt') };
         redis = createRedisMock();

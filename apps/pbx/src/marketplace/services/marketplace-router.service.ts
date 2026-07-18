@@ -1,16 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
+import {
+    MarketplaceComponentStateRepository,
+    MarketplaceComponentType,
+} from '@lib/marketplace-core';
 import {
     BitrixInstallRequestSource,
     BitrixOpenPayload,
     parseOpenParams,
 } from '../lib/parse-install-params.util';
+import { renderWidgetStubPage } from '../lib/widget-stub-page.util';
 import { MarketplaceInstallService } from './marketplace-install.service';
 import { MarketplaceSessionService } from './marketplace-session.service';
+import { MarketplaceInstallRepository } from '../persistence/marketplace-install.repository';
 import { MarketplaceRouteResultDto } from '../dto/marketplace-router.dto';
 import {
     findWidgetByCode,
     isKnownWidgetCode,
+    WidgetManifestItem,
 } from '../config/marketplace-manifest';
 
 /**
@@ -37,6 +45,8 @@ export class MarketplaceRouterService {
         private readonly installService: MarketplaceInstallService,
         private readonly sessionService: MarketplaceSessionService,
         private readonly configService: ConfigService,
+        private readonly repository: MarketplaceInstallRepository,
+        private readonly componentState: MarketplaceComponentStateRepository,
     ) {
         this.appRedirectUrl =
             this.configService.get<string>('MARKETPLACE_APP_REDIRECT_URL') ??
@@ -128,6 +138,24 @@ export class MarketplaceRouterService {
         }
         const widget = findWidgetByCode(code);
         const stored = await this.installService.storeFromPayload(payload);
+
+        // Readiness-гейт: пока pbx-сущности продукта не установлены
+        // (или портал blocked/удалён) — same-origin заглушка вместо
+        // redirect: без сущностей виджет сломается.
+        const stubHtml = widget
+            ? await this.buildReadinessStub(widget, payload)
+            : undefined;
+        if (stubHtml) {
+            return {
+                status: stored.status,
+                redirectUrl: '',
+                stubHtml,
+                domain: payload.domain,
+                memberId: payload.member_id,
+                placement: payload.placement ?? code,
+            };
+        }
+
         const target = this.resolveWidgetFrontUrl(
             code,
             widget?.frontUrl ?? this.appRedirectUrl,
@@ -142,6 +170,82 @@ export class MarketplaceRouterService {
             memberId: payload.member_id,
             placement: payload.placement ?? code,
         };
+    }
+
+    /**
+     * HTML-заглушка, если виджет открывать рано/нельзя; undefined — виджет
+     * готов, выполняем обычный redirect.
+     *
+     * Готовность = агрегатный компонент pbx_entities продукта виджета
+     * (component_code='' — его ведёт install-пайплайн и воркер provisioning)
+     * в статусе installed. ЛЕГАСИ-порталы (approval_status IS NULL или
+     * source!='marketplace') гейт пропускает: их сущности ставились вручную
+     * в старом мире, marketplace-компонентов у них нет.
+     */
+    private async buildReadinessStub(
+        widget: WidgetManifestItem,
+        payload: BitrixOpenPayload,
+    ): Promise<string | undefined> {
+        const appCode = BITRIX_APP_CODES.GARANT as string;
+        const install = payload.member_id
+            ? await this.repository.findInstallByMemberId(
+                  payload.member_id,
+                  appCode,
+              )
+            : payload.domain
+              ? await this.repository.findInstallByDomain(
+                    payload.domain,
+                    appCode,
+                )
+              : null;
+
+        // Нет marketplace-установки — легаси-мир (виджет привязан старым
+        // способом): гейт не вмешивается.
+        if (!install) {
+            return undefined;
+        }
+        const portal = install.portals;
+        if (
+            portal.source !== 'marketplace' ||
+            portal.approval_status === null
+        ) {
+            return undefined; // легаси-доверие (как в session-state)
+        }
+
+        if (portal.approval_status === 'blocked') {
+            return renderWidgetStubPage({
+                title: 'Доступ приостановлен',
+                message:
+                    'Работа приложения «Менеджер Гарант» на этом портале приостановлена. Свяжитесь с вендором.',
+            });
+        }
+        if (install.uninstalled_at) {
+            return renderWidgetStubPage({
+                title: 'Приложение удалено',
+                message:
+                    'Приложение «Менеджер Гарант» удалено с портала. Установите его заново из Маркета.',
+            });
+        }
+
+        const components = await this.componentState.findComponents({
+            installId: install.id,
+            productCode: widget.product,
+            componentType: MarketplaceComponentType.PBX_ENTITIES,
+        });
+        const aggregate = components.find(item => item.component_code === '');
+        if (aggregate?.status === 'installed') {
+            return undefined; // сущности установлены — виджет готов
+        }
+
+        const awaitingApproval =
+            !aggregate || aggregate.reason_code === 'awaiting_approval';
+        return renderWidgetStubPage({
+            title: 'Приложение пока не готово',
+            message: awaitingApproval
+                ? 'Подключение ожидает одобрения вендора. После одобрения на портале будут автоматически настроены необходимые поля и процессы.'
+                : 'Идёт настройка портала: устанавливаются поля, смарт-процессы и справочники. Обычно это занимает несколько минут.',
+            showRetry: true,
+        });
     }
 
     /**

@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
 import {
+    MarketplaceTokenError,
+    MarketplaceTokenService,
+} from '@lib/marketplace-core';
+import {
     InstallWithDetails,
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
@@ -24,12 +28,10 @@ import {
  *
  * refreshPlacements — раскатка изменений эталона-манифеста (новые виджеты,
  * смена мест встройки) на уже установленный портал БЕЗ переустановки:
- * diff-синхронизация по сохранённому access_token установки.
- *
- * ⚠️ Ограничение до реализации рефреша токенов (план, этап 4): access_token
- * живёт ~1 час и обновляется при каждом открытии приложения на портале —
- * если портал давно не открывали, синхронизация вернёт ошибку авторизации;
- * тогда попросите клиента открыть приложение и повторите.
+ * diff-синхронизация. access_token берётся через MarketplaceTokenService —
+ * протухший обновляется автоматически (oauth.bitrix24.tech); ошибка
+ * возможна только если портал не открывал приложение >28 дней
+ * (refresh_token истёк) — тогда просим клиента открыть приложение.
  */
 @Injectable()
 export class MarketplaceAdminService {
@@ -39,6 +41,7 @@ export class MarketplaceAdminService {
     constructor(
         private readonly repository: MarketplaceInstallRepository,
         private readonly placementSync: MarketplacePlacementSyncService,
+        private readonly tokenService: MarketplaceTokenService,
     ) {}
 
     /**
@@ -120,11 +123,17 @@ export class MarketplaceAdminService {
         if (!domain) {
             throw new BadRequestException('У портала не указан домен');
         }
-        const accessToken = this.repository.getAccessToken(install);
-        if (!accessToken) {
-            throw new BadRequestException(
-                'Нет сохранённого access_token — попросите клиента открыть приложение и повторите',
-            );
+        let accessToken: string;
+        try {
+            accessToken = await this.tokenService.getFreshAccessToken({
+                memberId: install.portals.member_id ?? undefined,
+                domain,
+            });
+        } catch (error) {
+            if (error instanceof MarketplaceTokenError) {
+                throw new BadRequestException(error.message);
+            }
+            throw error;
         }
 
         this.logger.log(

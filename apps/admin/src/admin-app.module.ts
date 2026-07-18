@@ -21,6 +21,13 @@ import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.mod
 import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
 import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
 import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
+import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
+import { AdminGarantPackageModule } from '@lib/garant/package';
+import { AdminGarantProfPriceModule } from '@lib/garant/price';
+import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
+import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
+import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
+import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 
 @Module({
     imports: [
@@ -46,6 +53,22 @@ import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
         AdminGarantSupplyModule,
         AdminGarantInfogroupModule,
         AdminGarantInfoblockModule,
+        // Звонки/AI: админ-CRUD транскрибаций и AI-записей (без инфраструктуры
+        // транскрибации — только store-сервисы поверх Prisma).
+        TranscriptionAdminModule,
+        AiAdminModule,
+        // Гарант/портал: админ-контроллеры, вынесенные из сервисных модулей
+        // (чтобы не протекали в Swagger konstructor).
+        AdminGarantPackageModule,
+        AdminGarantProfPriceModule,
+        ProviderAdminModule,
+        PortalKeysAdminModule,
+        // Маркетплейс «Менеджер Гарант»: модерация заявок на подключение
+        // (approve/block, прогресс установки) — этап 3 онбординга.
+        MarketplaceModerationModule,
+        // OAuth-креды приложений (bitrix_app_secrets) — источник истины
+        // для рефреша маркетплейс-токенов; секреты в ответах маскируются.
+        BitrixAppSecretsModule,
     ],
 })
 export class AdminAddModule {}

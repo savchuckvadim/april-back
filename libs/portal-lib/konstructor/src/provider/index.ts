@@ -2,6 +2,7 @@ export * from './provider.entity';
 export * from './provider.const';
 export * from './provider.service';
 export * from './provider.module';
+export * from './provider.admin.module';
 export * from './provider.dto';
 export * from './provider.prisma.repository';
 export * from './provider.repository';

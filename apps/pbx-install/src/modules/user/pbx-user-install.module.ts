@@ -40,5 +40,7 @@ import { PbxUserBitrixUseCase } from './use-cases/pbx-user-bitrix.use-case';
         PbxUserFieldManageUseCase,
         PbxUserBitrixUseCase,
     ],
+    // экспорт для воркера marketplace-provision
+    exports: [PbxUserInstallUseCase],
 })
 export class PbxUserInstallModule {}
