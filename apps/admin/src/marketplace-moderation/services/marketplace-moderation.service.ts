@@ -19,6 +19,16 @@ import {
     InstallComponentDto,
 } from '../dto/marketplace-moderation.dto';
 import {
+    AdminMarketplaceInstallDetailsDto,
+    AdminMarketplaceInstallDto,
+    AppEventsPageDto,
+    EventsQueryDto,
+    InstallsQueryDto,
+    PbxActionResultDto,
+    PortalProductDto,
+} from '../dto/marketplace-admin-views.dto';
+import {
+    InstallWithPortal,
     MarketplaceModerationRepository,
     ModerationPortal,
 } from '../repositories/marketplace-moderation.repository';
@@ -199,48 +209,221 @@ export class MarketplaceModerationService {
         };
     }
 
+    // ─── Обзорные разделы (read-only, напрямую из общей Prisma-схемы) ───
+
+    /** Все установки маркетплейс-приложения с фильтрами */
+    async getInstalls(
+        query: InstallsQueryDto,
+    ): Promise<AdminMarketplaceInstallDto[]> {
+        const installs = await this.repository.findInstalls({
+            domain: query.domain,
+            memberId: query.memberId,
+            installStatus: query.installStatus,
+        });
+        return installs.map(install => this.toInstallDto(install));
+    }
+
+    /** Деталь установки с компонентами */
+    async getInstall(
+        installId: string,
+    ): Promise<AdminMarketplaceInstallDetailsDto> {
+        const install = await this.repository.findInstallById(installId);
+        if (!install) {
+            throw new NotFoundException(`Установка ${installId} не найдена`);
+        }
+        return {
+            ...this.toInstallDto({
+                ...install,
+                _count: {
+                    marketplace_install_components:
+                        install.marketplace_install_components.length,
+                },
+            }),
+            components: install.marketplace_install_components.map(item => ({
+                productCode: item.product_code,
+                componentType: item.component_type,
+                componentCode: item.component_code,
+                status: item.status,
+                reasonCode: item.reason_code ?? undefined,
+                errorDetail: item.error_detail ?? undefined,
+                attempts: item.attempts,
+            })),
+        };
+    }
+
+    /** Журнал bitrix_app_events (новые сверху, take ≤ 100) */
+    async getEvents(query: EventsQueryDto): Promise<AppEventsPageDto> {
+        const { items, total } = await this.repository.findEvents({
+            memberId: query.memberId,
+            domain: query.domain,
+            event: query.event,
+            status: query.status,
+            take: query.take ?? 50,
+            skip: query.skip ?? 0,
+        });
+        const iso = (value: Date | null): string | undefined =>
+            value ? value.toISOString() : undefined;
+        return {
+            total,
+            items: items.map(item => ({
+                id: item.id,
+                memberId: item.member_id ?? undefined,
+                domain: item.domain ?? undefined,
+                event: item.event,
+                status: item.status,
+                payload: item.payload ?? undefined,
+                errorDetail: item.error_detail ?? undefined,
+                createdAt: iso(item.created_at),
+            })),
+        };
+    }
+
+    /** Продукты портала (portal_products) */
+    async getPortalProducts(portalId: number): Promise<PortalProductDto[]> {
+        const portal = await this.repository.findPortalById(BigInt(portalId));
+        if (!portal) {
+            throw new NotFoundException(`Портал #${portalId} не найден`);
+        }
+        const products = await this.repository.findPortalProducts(
+            BigInt(portalId),
+        );
+        const iso = (value: Date | null): string | undefined =>
+            value ? value.toISOString() : undefined;
+        return products.map(product => ({
+            code: product.product_code,
+            status: product.status,
+            activatedAt: iso(product.activated_at),
+            paidUntil: iso(product.paid_until),
+        }));
+    }
+
+    // ─── Действия через pbx (X-Admin-Key фронту не отдаём) ───
+
+    /** Повторный запуск provisioning pbx-сущностей портала */
+    async provisionRefresh(portalId: number): Promise<PbxActionResultDto> {
+        const portal = await this.requireMarketplacePortal(portalId);
+        const body = await this.callPbx(
+            '/api/bitrix-marketplace/admin/provision/refresh',
+            {
+                memberId: portal.member_id ?? undefined,
+                domain: portal.domain ?? undefined,
+                productCode: 'sales',
+            },
+            portal,
+            'MODERATION_PROVISION_REFRESH',
+        );
+        return { ok: true, details: JSON.stringify(body) };
+    }
+
+    /** Синхронизация привязок виджетов портала с эталоном-манифестом */
+    async placementsRefresh(portalId: number): Promise<PbxActionResultDto> {
+        const portal = await this.requireMarketplacePortal(portalId);
+        const body = await this.callPbx(
+            '/api/bitrix-marketplace/admin/placements/refresh',
+            {
+                memberId: portal.member_id ?? undefined,
+                domain: portal.domain ?? undefined,
+            },
+            portal,
+            'MODERATION_PLACEMENTS_REFRESH',
+        );
+        return { ok: true, details: JSON.stringify(body) };
+    }
+
+    private async requireMarketplacePortal(
+        portalId: number,
+    ): Promise<ModerationPortal> {
+        const portal = await this.repository.findPortalById(BigInt(portalId));
+        if (!portal) {
+            throw new NotFoundException(`Портал #${portalId} не найден`);
+        }
+        if (portal.source !== 'marketplace') {
+            throw new BadRequestException(
+                `Портал #${portalId} не является маркетплейс-порталом`,
+            );
+        }
+        return portal;
+    }
+
+    private toInstallDto(
+        install: InstallWithPortal,
+    ): AdminMarketplaceInstallDto {
+        const iso = (value: Date | null): string | undefined =>
+            value ? value.toISOString() : undefined;
+        return {
+            installId: install.id,
+            portalId: install.portal_id.toString(),
+            domain: install.domain ?? install.portals.domain ?? undefined,
+            memberId: install.portals.member_id ?? undefined,
+            approvalStatus: install.portals.approval_status ?? undefined,
+            appCode: install.app_code,
+            installStatus: install.install_status,
+            errorStep: install.error_step ?? undefined,
+            errorDetail: install.error_detail ?? undefined,
+            version: install.version ?? undefined,
+            installedAt: iso(install.installed_at),
+            uninstalledAt: iso(install.uninstalled_at),
+            tokenExpiresAt: iso(install.expires_at),
+            hasRefreshToken: Boolean(install.refresh_token),
+            componentsCount: install._count.marketplace_install_components,
+        };
+    }
+
     private async callPbxActivate(
         portal: ModerationPortal,
         approvedBy?: string,
     ): Promise<PbxActivationResponse> {
+        return (await this.callPbx(
+            '/api/bitrix-marketplace/admin/products/activate',
+            {
+                memberId: portal.member_id ?? undefined,
+                domain: portal.domain ?? undefined,
+                productCode: 'sales',
+                approvedBy,
+            },
+            portal,
+            'MODERATION_APPROVE',
+        )) as PbxActivationResponse;
+    }
+
+    /**
+     * Общий вызов admin-ручек pbx (X-Admin-Key из env; ключ живёт только
+     * server-side). Ошибка → журнал события + BadGateway с деталями.
+     */
+    private async callPbx(
+        path: string,
+        payload: Record<string, unknown>,
+        portal: ModerationPortal,
+        journalEvent: string,
+    ): Promise<unknown> {
         if (!this.pbxAdminKey) {
             throw new BadGatewayException(
-                'MARKETPLACE_ADMIN_KEY не задан в env admin — вызов pbx-активации невозможен',
+                'MARKETPLACE_ADMIN_KEY не задан в env admin — вызов pbx невозможен',
             );
         }
-        const url = `${this.pbxApiUrl}/api/bitrix-marketplace/admin/products/activate`;
         try {
             const response = await firstValueFrom(
-                this.http.post<PbxActivationResponse>(
-                    url,
-                    {
-                        memberId: portal.member_id ?? undefined,
-                        domain: portal.domain ?? undefined,
-                        productCode: 'sales',
-                        approvedBy,
-                    },
-                    {
-                        headers: { 'X-Admin-Key': this.pbxAdminKey },
-                        timeout: 20_000,
-                    },
-                ),
+                this.http.post<unknown>(`${this.pbxApiUrl}${path}`, payload, {
+                    headers: { 'X-Admin-Key': this.pbxAdminKey },
+                    timeout: 20_000,
+                }),
             );
             // ResponseInterceptor pbx может оборачивать ответ в {data: ...}
-            const body = response.data as PbxActivationResponse & {
-                data?: PbxActivationResponse;
-            };
-            return body.data ?? body;
+            const body = response.data as { data?: unknown } | undefined;
+            return body && typeof body === 'object' && 'data' in body
+                ? (body.data ?? body)
+                : body;
         } catch (error) {
             const detail = this.extractHttpErrorDetail(error);
             await this.repository.logModerationEvent({
                 memberId: portal.member_id ?? undefined,
                 domain: portal.domain ?? undefined,
-                event: 'MODERATION_APPROVE',
+                event: journalEvent,
                 status: 'error',
                 errorDetail: detail,
             });
             throw new BadGatewayException(
-                `Активация в pbx не удалась: ${detail}`,
+                `Вызов pbx (${path}) не удался: ${detail}`,
             );
         }
     }

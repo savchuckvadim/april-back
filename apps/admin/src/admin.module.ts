@@ -6,6 +6,9 @@ import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { AuthModule } from '@lib/auth';
 import { AdminController } from './admin.controller';
 import { AdminAddModule } from './admin-app.module';
+import { OfferWordModule } from '@app/konstructor/offer-word/offer-word.module';
+import { OfferModule } from '@app/konstructor/offer/offer.module';
+import { GarantModule } from '@lib/garant';
 
 @Module({
     imports: [
@@ -20,8 +23,12 @@ import { AdminAddModule } from './admin-app.module';
         // По умолчанию выключена (AUTH_ENABLED=false). Подробнее — @lib/auth.
         AuthModule.forRoot(),
         AdminAddModule,
+        OfferWordModule,
+        OfferModule,
+        GarantModule,
     ],
     controllers: [AdminController],
     providers: [GlobalExceptionFilter],
+    exports: [OfferWordModule, OfferModule, GarantModule],
 })
 export class AdminModule {}

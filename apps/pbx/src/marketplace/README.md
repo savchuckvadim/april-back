@@ -126,10 +126,13 @@ Cookies не используются вовсе → нет проблем SameS
 - ✅ (2026-07-18) Этап 3 онбординга: `apps/admin/marketplace-moderation` (approve = активация sales + запуск provisioning; block)
 - ✅ (2026-07-18) Readiness-гейт виджетов: заглушка «Приложение пока не готово» до установки сущностей
 - ✅ (2026-07-18) Кабинет с данными: `GET /cabinet/summary` + фронт (продукты, статусы компонентов) + префилл email заявки из `user.current`
+- ✅ (2026-07-18) Admin-обзор в apps/admin: `GET admin/marketplace/installs[/:id]`, `GET admin/marketplace/events` (журнал, пагинация), `GET admin/marketplace/portals/:id/products`, прокси-действия `POST portals/:id/provision-refresh|placements-refresh` (X-Admin-Key живёт server-side)
+- ✅ (2026-07-18) Админ-фронт (front/apps/admin): раздел «Marketplace» — Заявки (approve/block/re-provision/refresh-виджетов, продукты, компоненты), Установки, Клиенты, Секреты приложений (CRUD, секрет маскирован), Журнал событий; легаси «app на клиента» (entities/bitrix-app, entities/bitrix, get-app.helper, @workspace/nest-api) удалено
 
 ## 7. Осталось (следующие этапы)
 
-- Живые тесты нового флоу на april-dev: онбординг-форма (сбросить портал в pending) → approve через admin → provisioning → готовые виджеты; повторный прогон (идемпотентность field/category-цепочек)
+- Живые тесты нового флоу на april-dev: онбординг-форма (сбросить портал в pending) → approve через админку → provisioning → готовые виджеты; повторный прогон (идемпотентность field/category-цепочек)
+- Страница логина админ-фронта (/auth/login) — интерцептор уже редиректит туда; без неё прод-админка с AUTH_ENABLED=true недоступна (решение владельца: отдельной задачей)
 - Состав `SALES_PROVISION_STEPS` — подтвердить с владельцем (departament/konstructor-исключения помечены TODO в манифесте)
 - Включить AUTH_ENABLED=true в env admin (иначе @Roles не защищает модерацию); env: MARKETPLACE_CLIENT_ID/SECRET (pbx + pbx-install), PBX_API_URL+MARKETPLACE_ADMIN_KEY (admin), TELEGRAM_* (pbx/admin)
 - Письмо клиенту об одобрении (сейчас Telegram вендору + журнал; MailModule в admin не подключён сознательно — тянет Bull-процессор почты)

@@ -24,6 +24,10 @@ type RepoMock = jest.Mocked<
         | 'setPortalBlocked'
         | 'findComponentsByPortal'
         | 'logModerationEvent'
+        | 'findInstalls'
+        | 'findInstallById'
+        | 'findEvents'
+        | 'findPortalProducts'
     >
 >;
 
@@ -80,6 +84,53 @@ describe('MarketplaceModerationService (approve/block заявок)', () => {
             setPortalBlocked: jest.fn().mockResolvedValue(undefined),
             findComponentsByPortal: jest.fn().mockResolvedValue([]),
             logModerationEvent: jest.fn().mockResolvedValue(undefined),
+            findInstalls: jest.fn().mockResolvedValue([
+                {
+                    id: 'install-uuid',
+                    portal_id: BigInt(7),
+                    app_code: 'garant_manager',
+                    domain: 'april-dev.bitrix24.ru',
+                    install_status: 'installed',
+                    error_step: null,
+                    error_detail: null,
+                    version: '1',
+                    installed_at: new Date('2026-07-18T06:00:19Z'),
+                    uninstalled_at: null,
+                    expires_at: new Date('2026-07-18T07:00:19Z'),
+                    refresh_token: 'enc',
+                    portals: {
+                        id: BigInt(7),
+                        domain: 'april-dev.bitrix24.ru',
+                        member_id: 'member-1',
+                        approval_status: 'approved',
+                    },
+                    _count: { marketplace_install_components: 21 },
+                },
+            ] as never),
+            findInstallById: jest.fn().mockResolvedValue(null),
+            findEvents: jest.fn().mockResolvedValue({
+                items: [
+                    {
+                        id: 'event-uuid',
+                        member_id: 'member-1',
+                        domain: 'april-dev.bitrix24.ru',
+                        event: 'ONBOARDING_APPLICATION',
+                        status: 'processed',
+                        payload: '{}',
+                        error_detail: null,
+                        created_at: new Date('2026-07-18T06:00:00Z'),
+                    },
+                ],
+                total: 1,
+            } as never),
+            findPortalProducts: jest.fn().mockResolvedValue([
+                {
+                    product_code: 'sales',
+                    status: 'active',
+                    activated_at: new Date('2026-07-18T10:00:00Z'),
+                    paid_until: null,
+                },
+            ] as never),
         };
         httpPost = jest.fn().mockReturnValue(
             of(
@@ -218,5 +269,90 @@ describe('MarketplaceModerationService (approve/block заявок)', () => {
         expect(dto.organizationName).toBe('ООО «Ромашка»');
         expect(dto.hasRefreshToken).toBe(true);
         expect(dto.installStatus).toBe('installed');
+    });
+
+    it('getInstalls: маппинг установки (портал, статусы, счётчик компонентов)', async () => {
+        const [dto] = await service.getInstalls({ domain: 'april' });
+
+        expect(repo.findInstalls).toHaveBeenCalledWith(
+            expect.objectContaining({ domain: 'april' }),
+        );
+        expect(dto.installId).toBe('install-uuid');
+        expect(dto.portalId).toBe('7');
+        expect(dto.memberId).toBe('member-1');
+        expect(dto.approvalStatus).toBe('approved');
+        expect(dto.hasRefreshToken).toBe(true);
+        expect(dto.componentsCount).toBe(21);
+    });
+
+    it('getInstall: не найдена → NotFoundException', async () => {
+        await expect(service.getInstall('ghost')).rejects.toBeInstanceOf(
+            NotFoundException,
+        );
+    });
+
+    it('getEvents: дефолтная пагинация take=50/skip=0, маппинг и total', async () => {
+        const page = await service.getEvents({});
+
+        expect(repo.findEvents).toHaveBeenCalledWith(
+            expect.objectContaining({ take: 50, skip: 0 }),
+        );
+        expect(page.total).toBe(1);
+        expect(page.items[0]).toEqual(
+            expect.objectContaining({
+                event: 'ONBOARDING_APPLICATION',
+                memberId: 'member-1',
+                createdAt: '2026-07-18T06:00:00.000Z',
+            }),
+        );
+    });
+
+    it('getPortalProducts: маппинг продуктов портала', async () => {
+        const [product] = await service.getPortalProducts(7);
+        expect(product).toEqual(
+            expect.objectContaining({ code: 'sales', status: 'active' }),
+        );
+    });
+
+    it('provisionRefresh: прокси в pbx provision/refresh с X-Admin-Key', async () => {
+        const result = await service.provisionRefresh(7);
+
+        expect(httpPost).toHaveBeenCalledWith(
+            'https://pbx.test/api/bitrix-marketplace/admin/provision/refresh',
+            expect.objectContaining({
+                memberId: 'member-1',
+                productCode: 'sales',
+            }),
+            expect.objectContaining({
+                headers: { 'X-Admin-Key': 'admin-key' },
+            }),
+        );
+        expect(result.ok).toBe(true);
+    });
+
+    it('placementsRefresh при недоступном pbx → BadGateway + журнал события', async () => {
+        httpPost.mockReturnValue(
+            throwError(() => new AxiosError('ECONNREFUSED')),
+        );
+
+        await expect(service.placementsRefresh(7)).rejects.toBeInstanceOf(
+            BadGatewayException,
+        );
+        expect(repo.logModerationEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                event: 'MODERATION_PLACEMENTS_REFRESH',
+                status: 'error',
+            }),
+        );
+    });
+
+    it('provisionRefresh на не-marketplace портале → BadRequestException', async () => {
+        repo.findPortalById.mockResolvedValue(
+            portalFixture({ source: 'legacy' } as never),
+        );
+        await expect(service.provisionRefresh(7)).rejects.toBeInstanceOf(
+            BadRequestException,
+        );
+        expect(httpPost).not.toHaveBeenCalled();
     });
 });

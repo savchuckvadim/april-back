@@ -1,8 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@/core';
-import { marketplace_install_components } from 'generated/prisma';
 import {
+    bitrix_app_events,
+    marketplace_install_components,
+    portal_products,
+} from 'generated/prisma';
+import {
+    EventsFilter,
+    InstallsFilter,
+    InstallWithComponents,
+    InstallWithPortal,
     MarketplaceModerationRepository,
     ModerationPortal,
 } from './marketplace-moderation.repository';
@@ -73,6 +81,72 @@ export class MarketplaceModerationPrismaRepository
         return this.prisma.marketplace_install_components.findMany({
             where: { portal_id: portalId },
             orderBy: [{ component_type: 'asc' }, { component_code: 'asc' }],
+        });
+    }
+
+    async findInstalls(filter: InstallsFilter): Promise<InstallWithPortal[]> {
+        return this.prisma.marketplace_installs.findMany({
+            where: {
+                ...(filter.installStatus
+                    ? { install_status: filter.installStatus }
+                    : {}),
+                portals: {
+                    ...(filter.memberId ? { member_id: filter.memberId } : {}),
+                    ...(filter.domain
+                        ? { domain: { contains: filter.domain } }
+                        : {}),
+                },
+            },
+            include: {
+                portals: true,
+                _count: { select: { marketplace_install_components: true } },
+            },
+            orderBy: { updated_at: 'desc' },
+        });
+    }
+
+    async findInstallById(
+        installId: string,
+    ): Promise<InstallWithComponents | null> {
+        return this.prisma.marketplace_installs.findUnique({
+            where: { id: installId },
+            include: {
+                portals: true,
+                marketplace_install_components: {
+                    orderBy: [
+                        { component_type: 'asc' },
+                        { component_code: 'asc' },
+                    ],
+                },
+            },
+        });
+    }
+
+    async findEvents(
+        filter: EventsFilter,
+    ): Promise<{ items: bitrix_app_events[]; total: number }> {
+        const where = {
+            ...(filter.memberId ? { member_id: filter.memberId } : {}),
+            ...(filter.domain ? { domain: { contains: filter.domain } } : {}),
+            ...(filter.event ? { event: filter.event } : {}),
+            ...(filter.status ? { status: filter.status } : {}),
+        };
+        const [items, total] = await Promise.all([
+            this.prisma.bitrix_app_events.findMany({
+                where,
+                orderBy: { created_at: 'desc' },
+                take: filter.take,
+                skip: filter.skip,
+            }),
+            this.prisma.bitrix_app_events.count({ where }),
+        ]);
+        return { items, total };
+    }
+
+    async findPortalProducts(portalId: bigint): Promise<portal_products[]> {
+        return this.prisma.portal_products.findMany({
+            where: { portal_id: portalId },
+            orderBy: { product_code: 'asc' },
         });
     }
 
