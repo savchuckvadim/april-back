@@ -132,7 +132,11 @@ Cookies не используются вовсе → нет проблем SameS
 ## 7. Осталось (следующие этапы)
 
 - Живые тесты нового флоу на april-dev: онбординг-форма (сбросить портал в pending) → approve через админку → provisioning → готовые виджеты; повторный прогон (идемпотентность field/category-цепочек)
-- Страница логина админ-фронта (/auth/login) — интерцептор уже редиректит туда; без неё прод-админка с AUTH_ENABLED=true недоступна (решение владельца: отдельной задачей)
+- ~~Страница логина админ-фронта~~ ✅ 2026-07-18: /auth/login (Bearer-везде,
+  токен в cookie фронт-домена → Authorization-заголовок во все 3 api-пакета,
+  SSO по общему AUTH_JWT_SECRET), logout в шапке. Общий auth проекта
+  (клиент в pbx-install/konstructor, web-кабинет, refresh) — отдельное
+  обсуждение: повестка в docs/AUTH.md §5
 - Состав `SALES_PROVISION_STEPS` — подтвердить с владельцем (departament/konstructor-исключения помечены TODO в манифесте)
 - Включить AUTH_ENABLED=true в env admin (иначе @Roles не защищает модерацию); env: MARKETPLACE_CLIENT_ID/SECRET (pbx + pbx-install), PBX_API_URL+MARKETPLACE_ADMIN_KEY (admin), TELEGRAM_* (pbx/admin)
 - Письмо клиенту об одобрении (сейчас Telegram вендору + журнал; MailModule в admin не подключён сознательно — тянет Bull-процессор почты)
