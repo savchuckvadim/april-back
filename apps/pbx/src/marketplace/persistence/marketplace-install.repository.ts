@@ -11,6 +11,7 @@ import {
     marketplace_install_components,
     marketplace_installs,
     Portal,
+    portal_invites,
     portal_products,
 } from 'generated/prisma';
 
@@ -422,6 +423,57 @@ export class MarketplaceInstallRepository {
                 ...(status === 'approved'
                     ? { approved_at: new Date(), approved_by: approvedBy }
                     : {}),
+            },
+        });
+    }
+
+    /**
+     * Код подключения по хэшу — только «живой» (не погашен, не отозван,
+     * не истёк). Сам код нигде не хранится, ищем строго по sha256.
+     */
+    async findRedeemableInvite(
+        codeHash: string,
+    ): Promise<portal_invites | null> {
+        return this.prisma.portal_invites.findFirst({
+            where: {
+                code_hash: codeHash,
+                status: { in: ['issued', 'sent'] },
+                OR: [{ expires_at: null }, { expires_at: { gt: new Date() } }],
+            },
+        });
+    }
+
+    /** Пометить код погашенным (одноразовость) */
+    async markInviteRedeemed(
+        inviteId: string,
+        portalId: bigint,
+    ): Promise<void> {
+        await this.prisma.portal_invites.update({
+            where: { id: inviteId },
+            data: {
+                status: 'redeemed',
+                redeemed_at: new Date(),
+                redeemed_portal_id: portalId,
+                updated_at: new Date(),
+            },
+        });
+    }
+
+    /** Привязать портал к клиенту, выпустившему код, и активировать клиента */
+    async attachClientToPortal(
+        portalId: bigint,
+        clientId: bigint,
+    ): Promise<Client> {
+        await this.prisma.portal.update({
+            where: { id: portalId },
+            data: { client_id: clientId },
+        });
+        return this.prisma.client.update({
+            where: { id: clientId },
+            data: {
+                status: 'active',
+                is_active: true,
+                updated_at: new Date(),
             },
         });
     }

@@ -4,3 +4,4 @@ export * from './domain/marketplace-provision-job.interface';
 export * from './persistence/marketplace-auth.repository';
 export * from './persistence/marketplace-component-state.repository';
 export * from './refresh/marketplace-token.service';
+export * from './invite/invite-code.util';

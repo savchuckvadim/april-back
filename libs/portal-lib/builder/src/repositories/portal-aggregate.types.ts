@@ -56,10 +56,13 @@ export type BuilderEntityKey =
  * Какие значения entity_type реально лежат в БД для каждой сущности.
  *
  * Laravel писал FQCN своих моделей (morphMany без morphMap), поэтому для
- * lead и list в данных встречаются legacy-написания `App\Models\BtxLead`
- * и `App\Models\Bitrixlist`, отличающиеся от канонического enum
- * (проверено запросом SELECT DISTINCT entity_type). Enum не меняем —
- * читаем оба варианта.
+ * lead в данных встречается legacy-написание `App\Models\BtxLead`,
+ * отличающееся от канонического enum (проверено запросом
+ * SELECT DISTINCT entity_type) — читаем оба варианта.
+ *
+ * Для list каноническим стало легаси-написание `App\Models\Bitrixlist`
+ * (его понимает старая Laravel-админка); `App\Models\BitrixList` писала
+ * ранняя версия установщика pbx-install — такие строки продолжаем читать.
  */
 export const ENTITY_TYPE_DB_VALUES: Record<
     BuilderEntityKey,
@@ -70,7 +73,7 @@ export const ENTITY_TYPE_DB_VALUES: Record<
     company: [PbxEntityTypePrisma.BTX_COMPANY],
     contact: [PbxEntityTypePrisma.BTX_CONTACT],
     lead: [PbxEntityTypePrisma.LEAD, 'App\\Models\\BtxLead'],
-    list: [PbxEntityTypePrisma.BITRIX_LIST, 'App\\Models\\Bitrixlist'],
+    list: [PbxEntityTypePrisma.BITRIX_LIST, 'App\\Models\\BitrixList'],
     rpa: [PbxEntityTypePrisma.BTX_RPA],
     user: [PbxEntityTypePrisma.USER],
 };

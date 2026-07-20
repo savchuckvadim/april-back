@@ -11,7 +11,9 @@ export enum PbxEntityTypePrisma {
     DEAL = 'App\\Models\\BtxDeal',
     BTX_RPA = 'App\\Models\\BtxRpa',
     BX_RQ = 'App\\Models\\BxRq',
-    BITRIX_LIST = 'App\\Models\\BitrixList',
+    // именно `Bitrixlist` (маленькая l) — так называется модель Laravel,
+    // и старая админка ищет поля списков строго по этому FQCN
+    BITRIX_LIST = 'App\\Models\\Bitrixlist',
     USER = 'App\\Models\\BtxUser',
 }
 

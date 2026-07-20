@@ -143,7 +143,7 @@ describe('MarketplaceRouterService', () => {
         const url = new URL(result.redirectUrl);
         // цель — frontUrl виджета из манифеста, НЕ домен кабинета
         expect(url.origin + url.pathname).toBe(
-            'https://front.april-app.ru/event/prod/placement.php',
+            'https://event-sales.april-app.ru/',
         );
         expect(url.searchParams.get('placement_options')).toBe('{"ID":"1"}');
         expect(url.searchParams.get('domain')).toBe('portal.bitrix24.ru');
@@ -172,7 +172,7 @@ describe('MarketplaceRouterService', () => {
         );
     });
 
-    it('report-sales редиректит на свой домен (next.april-app.ru)', async () => {
+    it('report-sales редиректит на свой домен (kpi-sales.april-app.ru)', async () => {
         const result = await service.handlePlacementOpen(
             'report-sales',
             openBody,
@@ -180,7 +180,7 @@ describe('MarketplaceRouterService', () => {
         );
         const url = new URL(result.redirectUrl);
         expect(url.origin + url.pathname).toBe(
-            'https://next.april-app.ru/kpi-sales/report',
+            'https://kpi-sales.april-app.ru/',
         );
     });
 
@@ -239,7 +239,7 @@ describe('MarketplaceRouterService', () => {
 
             expect(result.stubHtml).toBeUndefined();
             expect(new URL(result.redirectUrl).origin).toBe(
-                'https://front.april-app.ru',
+                'https://event-sales.april-app.ru',
             );
         });
 
@@ -257,8 +257,12 @@ describe('MarketplaceRouterService', () => {
                 openQuery,
             );
 
-            expect(result.stubHtml).toContain('Приложение пока не готово');
-            expect(result.stubHtml).toContain('Идёт настройка портала');
+            expect(result.stubHtml).toContain(
+                'Портал не подключён к сервису April',
+            );
+            expect(result.stubHtml).toContain(
+                'Идёт подключение портала к внешнему сервису April',
+            );
             expect(result.redirectUrl).toBe('');
         });
 
@@ -280,7 +284,11 @@ describe('MarketplaceRouterService', () => {
                 openQuery,
             );
 
-            expect(result.stubHtml).toContain('ожидает одобрения вендора');
+            // рефрейм под «Немонетизируемое»: описываем отсутствие
+            // подключения к внешнему сервису, а не «выключенный функционал»
+            expect(result.stubHtml).toContain(
+                'клиентский интерфейс внешнего сервиса April',
+            );
         });
 
         it('blocked-портал → заглушка «доступ приостановлен»', async () => {
@@ -302,7 +310,7 @@ describe('MarketplaceRouterService', () => {
                 openQuery,
             );
 
-            expect(result.stubHtml).toContain('Доступ приостановлен');
+            expect(result.stubHtml).toContain('Портал отключён от сервиса');
             expect(componentState.findComponents).not.toHaveBeenCalled();
         });
 
@@ -336,7 +344,7 @@ describe('MarketplaceRouterService', () => {
                 openQuery,
             );
             expect(result.stubHtml).toBeUndefined();
-            expect(result.redirectUrl).toContain('front.april-app.ru');
+            expect(result.redirectUrl).toContain('event-sales.april-app.ru');
         });
     });
 });

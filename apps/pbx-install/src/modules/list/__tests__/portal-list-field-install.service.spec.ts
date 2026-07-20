@@ -6,8 +6,8 @@ import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-fiel
 
 /**
  * Тесты зеркалирования полей списка в PortalDB: entity_type=BITRIX_LIST,
- * bitrixId=CODE свойства, bitrixCamelId=FIELD_ID (PROPERTY_N, без camel),
- * items только для значений, найденных в шаблоне.
+ * bitrixId=числовой ID свойства (из PROPERTY_N), bitrixCamelId=FIELD_ID
+ * (PROPERTY_N, без camel), items только для значений, найденных в шаблоне.
  */
 describe('PortalListFieldInstallService', () => {
     let service: PortalListFieldInstallService;
@@ -79,7 +79,7 @@ describe('PortalListFieldInstallService', () => {
             entity_id: 5,
             parent_type: 'calling',
             code: 'sales_kpi_event_type',
-            bitrixId: 'sales_kpi_event_type',
+            bitrixId: '101',
             bitrixCamelId: 'PROPERTY_101',
             isPlural: false,
         });

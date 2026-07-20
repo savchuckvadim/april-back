@@ -24,8 +24,10 @@ export interface IPbxListFieldInstallData extends IBxListInstalledFieldResult {
  *
  * Отличия от PortalEntityFieldInstallService (UF-поля):
  * - entity_type всегда BITRIX_LIST, entity_id — id строки `bitrixlists`;
- * - code и bitrixId — полный легаси-код `${group}_${type}_${code}`
+ * - code — полный легаси-код `${group}_${type}_${code}`
  *   (по нему `portal.model.getIdByCodeFieldList` ищет поле);
+ * - bitrixId — числовой ID свойства (`PROPERTY_213` → `213`), как писал
+ *   Laravel-инсталлер; потребители читают его как число;
  * - bitrixCamelId — FIELD_ID (PROPERTY_N) без camel-преобразования: именно
  *   его легаси-потребители передают в lists.element.add / lists.field.get;
  * - items enum-полей берутся из DISPLAY_VALUES_FORM ({id: value}).
@@ -118,7 +120,7 @@ export class PortalListFieldInstallService {
         entity.code = fullCode;
         entity.type = field.parsedField.type;
         entity.isPlural = field.parsedField.isMultiple;
-        entity.bitrixId = fullCode;
+        entity.bitrixId = field.bxField.fieldId.replace(/^PROPERTY_/i, '');
         entity.bitrixCamelId = field.bxField.fieldId;
         entity.items =
             field.parsedField.type === 'enumeration'

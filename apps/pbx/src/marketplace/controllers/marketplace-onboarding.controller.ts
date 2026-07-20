@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
     ApiBearerAuth,
+    ApiBody,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
@@ -9,10 +10,15 @@ import {
 import { AuthUser, CurrentUser } from '@lib/auth';
 import { PortalSessionGuard } from '../lib/portal-session.guard';
 import { MarketplaceOnboardingService } from '../services/marketplace-onboarding.service';
+import { MarketplaceInviteService } from '../services/marketplace-invite.service';
 import {
     OnboardingApplicationDto,
     OnboardingStateDto,
 } from '../dto/marketplace-onboarding.dto';
+import {
+    RedeemInviteDto,
+    RedeemInviteResultDto,
+} from '../dto/marketplace-invite.dto';
 
 /**
  * Онбординг клиента из кабинета (iframe Битрикса).
@@ -29,6 +35,7 @@ import {
 export class MarketplaceOnboardingController {
     constructor(
         private readonly onboardingService: MarketplaceOnboardingService,
+        private readonly inviteService: MarketplaceInviteService,
     ) {}
 
     @ApiOperation({
@@ -64,5 +71,29 @@ export class MarketplaceOnboardingController {
         @Body() dto: OnboardingApplicationDto,
     ): Promise<OnboardingStateDto> {
         return this.onboardingService.submitApplication(user.sub, dto);
+    }
+
+    @ApiOperation({
+        summary: 'Ввести код подключения портала к сервису April',
+        description:
+            'Код партнёр получает от вендора по договору (письмом). Погашение привязывает портал к организации и открывает подключение; код одноразовый. Портал определяется по portal-context токену.',
+    })
+    @ApiBody({
+        type: RedeemInviteDto,
+        description: 'Код подключения из письма.',
+    })
+    @ApiOkResponse({
+        description: 'Портал подключён к внешнему сервису',
+        type: RedeemInviteResultDto,
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Нет/просрочен portal-context токен',
+    })
+    @Post('redeem')
+    async redeemInvite(
+        @CurrentUser() user: AuthUser,
+        @Body() dto: RedeemInviteDto,
+    ): Promise<RedeemInviteResultDto> {
+        return this.inviteService.redeemCode(user.sub, dto.code);
     }
 }

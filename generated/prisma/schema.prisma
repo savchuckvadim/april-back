@@ -188,6 +188,8 @@ model Client {
   portals    Portal[]  @relation("ClientPortals")
   users      User[]    @relation("ClientUsers")
 
+  portal_invites portal_invites[]
+
   @@map("clients")
 }
 
@@ -683,6 +685,7 @@ model Portal {
   marketplace_installs           marketplace_installs[]
   portal_products                portal_products[]
   marketplace_install_components marketplace_install_components[]
+  portal_invites                 portal_invites[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
@@ -1819,4 +1822,34 @@ model bitrix_app_events {
 
   @@index([event], map: "bitrix_app_events_event_index")
   @@index([member_id], map: "bitrix_app_events_member_id_index")
+}
+
+/// Коды подключения портала к внешнему сервису April (сам код НЕ хранится — только sha256)
+model portal_invites {
+  id                 String    @id @db.Char(36)
+  created_at         DateTime? @db.Timestamp(0)
+  updated_at         DateTime? @db.Timestamp(0)
+  code_hash          String    @unique(map: "portal_invites_code_hash_unique") @db.VarChar(64)
+  code_prefix        String    @db.VarChar(16)
+  client_id          BigInt?   @db.UnsignedBigInt
+  email              String    @db.VarChar(255)
+  organization       String?   @db.VarChar(255)
+  product_code       String    @default("sales") @db.VarChar(255)
+  auto_provision     Boolean   @default(true)
+  status             String    @default("issued") @db.VarChar(255)
+  expires_at         DateTime? @db.Timestamp(0)
+  sent_at            DateTime? @db.Timestamp(0)
+  redeemed_at        DateTime? @db.Timestamp(0)
+  revoked_at         DateTime? @db.Timestamp(0)
+  redeemed_portal_id BigInt?   @db.UnsignedBigInt
+  issued_by          String?   @db.VarChar(255)
+  revoked_by         String?   @db.VarChar(255)
+  note               String?   @db.Text
+  clients            Client?   @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_invites_client_id_foreign")
+  portals            Portal?   @relation(fields: [redeemed_portal_id], references: [id], onUpdate: NoAction, map: "portal_invites_redeemed_portal_id_foreign")
+
+  @@index([client_id], map: "portal_invites_client_id_foreign")
+  @@index([redeemed_portal_id], map: "portal_invites_redeemed_portal_id_foreign")
+  @@index([status], map: "portal_invites_status_index")
+  @@index([email], map: "portal_invites_email_index")
 }

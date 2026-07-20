@@ -106,7 +106,11 @@ export interface WidgetManifestItem {
  * уточняются при запуске service).
  * Места sales — из легаси-привязок (event жил и в сделке, и в компании);
  * отчёты — пункт в левом меню (LEFT_MENU), подтверждено владельцем.
- * frontUrl — актуальные адреса на 2026-07-13 (могут меняться).
+ *
+ * frontUrl — отдельные Next-приложения на своих поддоменах
+ * (актуализировано 2026-07-20, владелец): konstructor / event-sales /
+ * event-service / kpi-sales / kpi-service .april-app.ru. Подмена без
+ * деплоя — env MARKETPLACE_WIDGET_URL_<КОД>.
  */
 export const MARKETPLACE_WIDGETS = [
     {
@@ -115,7 +119,7 @@ export const MARKETPLACE_WIDGETS = [
         title: 'Гарант: Звонки',
         description: 'Виджет звонков и событий',
         places: ['CRM_DEAL_DETAIL_TAB', 'CRM_COMPANY_DETAIL_TAB'],
-        frontUrl: 'https://front.april-app.ru/event/prod/placement.php',
+        frontUrl: 'https://event-sales.april-app.ru/',
     },
     {
         product: MarketplaceProduct.SALES,
@@ -123,7 +127,7 @@ export const MARKETPLACE_WIDGETS = [
         title: 'Гарант: Конструктор КП',
         description: 'Конструктор коммерческих предложений',
         places: ['CRM_DEAL_DETAIL_TAB'],
-        frontUrl: 'https://front.april-app.ru/konstructor/prod/placement.php',
+        frontUrl: 'https://konstructor.april-app.ru/',
     },
     {
         product: MarketplaceProduct.SALES,
@@ -131,7 +135,7 @@ export const MARKETPLACE_WIDGETS = [
         title: 'Гарант: Отчёт ОП KPI',
         description: 'Отчёты отдела продаж',
         places: ['LEFT_MENU'],
-        frontUrl: 'https://next.april-app.ru/kpi-sales/report',
+        frontUrl: 'https://kpi-sales.april-app.ru/',
     },
     {
         product: MarketplaceProduct.SERVICE,
@@ -139,16 +143,18 @@ export const MARKETPLACE_WIDGETS = [
         title: 'Гарант: Звонки (сервис)',
         description: 'Виджет звонков сервисного направления',
         places: ['CRM_DEAL_DETAIL_TAB', 'CRM_COMPANY_DETAIL_TAB'],
-        frontUrl: 'https://front.april-app.ru/event_service/ss/placement.php',
+        frontUrl: 'https://event-service.april-app.ru/',
     },
     {
+        // TODO(владелец): отдельного поддомена под service-конструктор нет —
+        // временно тот же konstructor.april-app.ru. Уточнить при запуске
+        // продукта service (или задать MARKETPLACE_WIDGET_URL_KONSTRUCTOR_SERVICE).
         product: MarketplaceProduct.SERVICE,
         code: 'konstructor-service',
         title: 'Гарант: Конструктор КП (сервис)',
         description: 'Конструктор КП сервисного направления',
         places: ['CRM_DEAL_DETAIL_TAB'],
-        frontUrl:
-            'https://front.april-app.ru/konstructor/service/placement.php',
+        frontUrl: 'https://konstructor.april-app.ru/',
     },
     {
         product: MarketplaceProduct.SERVICE,
@@ -156,7 +162,7 @@ export const MARKETPLACE_WIDGETS = [
         title: 'Гарант: Отчёт КЦ KPI',
         description: 'Отчёты сервисного направления',
         places: ['LEFT_MENU'],
-        frontUrl: 'https://april-bitrix-kpi-service.vercel.app/api/bitrix/app',
+        frontUrl: 'https://kpi-service.april-app.ru/',
     },
 ] as const satisfies readonly WidgetManifestItem[];
 

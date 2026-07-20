@@ -29,8 +29,9 @@ export interface PbxListFieldMonitoringResult {
  * Сводка полей одного списка на портале: портал-БД (`bitrixfields`,
  * entity_type=BITRIX_LIST) против Bitrix (`lists.field.get` по IBLOCK_ID).
  *
- * Сопоставление по CODE свойства (= `bitrixId` в PortalDB). Системные поля
- * инфоблока без CODE (NAME, DATE_CREATE…) в сводку не попадают.
+ * Сопоставление по CODE свойства (= `code` в PortalDB, полный легаси-код
+ * `${group}_${type}_${code}`). Системные поля инфоблока без CODE
+ * (NAME, DATE_CREATE…) в сводку не попадают.
  *
  * Аналог PbxSmartFieldMonitoringService, адресация списка `(domain, type, group)`.
  */
@@ -72,7 +73,7 @@ export class PbxListFieldMonitoringService {
         for (const bxField of bitrixFields) {
             const bxCode = String(bxField.CODE).toUpperCase();
             const portalField = portalFields.find(
-                f => f.bitrixId.toUpperCase() === bxCode,
+                f => f.code.toUpperCase() === bxCode,
             );
             if (portalField) {
                 merged.push({ name: bxCode, p: portalField, bx: bxField });

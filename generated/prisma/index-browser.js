@@ -1469,6 +1469,28 @@ exports.Prisma.Bitrix_app_eventsScalarFieldEnum = {
   payload: 'payload'
 };
 
+exports.Prisma.Portal_invitesScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  code_hash: 'code_hash',
+  code_prefix: 'code_prefix',
+  client_id: 'client_id',
+  email: 'email',
+  organization: 'organization',
+  product_code: 'product_code',
+  auto_provision: 'auto_provision',
+  status: 'status',
+  expires_at: 'expires_at',
+  sent_at: 'sent_at',
+  redeemed_at: 'redeemed_at',
+  revoked_at: 'revoked_at',
+  redeemed_portal_id: 'redeemed_portal_id',
+  issued_by: 'issued_by',
+  revoked_by: 'revoked_by',
+  note: 'note'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2310,6 +2332,19 @@ exports.Prisma.bitrix_app_eventsOrderByRelevanceFieldEnum = {
   error_detail: 'error_detail',
   payload: 'payload'
 };
+
+exports.Prisma.portal_invitesOrderByRelevanceFieldEnum = {
+  id: 'id',
+  code_hash: 'code_hash',
+  code_prefix: 'code_prefix',
+  email: 'email',
+  organization: 'organization',
+  product_code: 'product_code',
+  status: 'status',
+  issued_by: 'issued_by',
+  revoked_by: 'revoked_by',
+  note: 'note'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -2463,7 +2498,8 @@ exports.Prisma.ModelName = {
   marketplace_installs: 'marketplace_installs',
   portal_products: 'portal_products',
   marketplace_install_components: 'marketplace_install_components',
-  bitrix_app_events: 'bitrix_app_events'
+  bitrix_app_events: 'bitrix_app_events',
+  portal_invites: 'portal_invites'
 };
 
 /**

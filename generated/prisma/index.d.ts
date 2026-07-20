@@ -438,6 +438,11 @@ export type marketplace_install_components = $Result.DefaultSelection<Prisma.$ma
  * Журнал входящих событий Битрикса (payload — с маскированными токенами)
  */
 export type bitrix_app_events = $Result.DefaultSelection<Prisma.$bitrix_app_eventsPayload>
+/**
+ * Model portal_invites
+ * Коды подключения портала к внешнему сервису April (сам код НЕ хранится — только sha256)
+ */
+export type portal_invites = $Result.DefaultSelection<Prisma.$portal_invitesPayload>
 
 /**
  * Enums
@@ -1548,6 +1553,16 @@ export class PrismaClient<
     * ```
     */
   get bitrix_app_events(): Prisma.bitrix_app_eventsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portal_invites`: Exposes CRUD operations for the **portal_invites** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Portal_invites
+    * const portal_invites = await prisma.portal_invites.findMany()
+    * ```
+    */
+  get portal_invites(): Prisma.portal_invitesDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -2072,7 +2087,8 @@ export namespace Prisma {
     marketplace_installs: 'marketplace_installs',
     portal_products: 'portal_products',
     marketplace_install_components: 'marketplace_install_components',
-    bitrix_app_events: 'bitrix_app_events'
+    bitrix_app_events: 'bitrix_app_events',
+    portal_invites: 'portal_invites'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2091,7 +2107,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -7705,6 +7721,72 @@ export namespace Prisma {
           }
         }
       }
+      portal_invites: {
+        payload: Prisma.$portal_invitesPayload<ExtArgs>
+        fields: Prisma.portal_invitesFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.portal_invitesFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.portal_invitesFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>
+          }
+          findFirst: {
+            args: Prisma.portal_invitesFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.portal_invitesFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>
+          }
+          findMany: {
+            args: Prisma.portal_invitesFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>[]
+          }
+          create: {
+            args: Prisma.portal_invitesCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>
+          }
+          createMany: {
+            args: Prisma.portal_invitesCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.portal_invitesDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>
+          }
+          update: {
+            args: Prisma.portal_invitesUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>
+          }
+          deleteMany: {
+            args: Prisma.portal_invitesDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.portal_invitesUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.portal_invitesUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$portal_invitesPayload>
+          }
+          aggregate: {
+            args: Prisma.Portal_invitesAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortal_invites>
+          }
+          groupBy: {
+            args: Prisma.portal_invitesGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Portal_invitesGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.portal_invitesCountArgs<ExtArgs>
+            result: $Utils.Optional<Portal_invitesCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -7886,6 +7968,7 @@ export namespace Prisma {
     portal_products?: portal_productsOmit
     marketplace_install_components?: marketplace_install_componentsOmit
     bitrix_app_events?: bitrix_app_eventsOmit
+    portal_invites?: portal_invitesOmit
   }
 
   /* Types for Logging */
@@ -8092,11 +8175,13 @@ export namespace Prisma {
   export type ClientCountOutputType = {
     portals: number
     users: number
+    portal_invites: number
   }
 
   export type ClientCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     portals?: boolean | ClientCountOutputTypeCountPortalsArgs
     users?: boolean | ClientCountOutputTypeCountUsersArgs
+    portal_invites?: boolean | ClientCountOutputTypeCountPortal_invitesArgs
   }
 
   // Custom InputTypes
@@ -8122,6 +8207,13 @@ export namespace Prisma {
    */
   export type ClientCountOutputTypeCountUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: UserWhereInput
+  }
+
+  /**
+   * ClientCountOutputType without action
+   */
+  export type ClientCountOutputTypeCountPortal_invitesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: portal_invitesWhereInput
   }
 
 
@@ -8490,6 +8582,7 @@ export namespace Prisma {
     marketplace_installs: number
     portal_products: number
     marketplace_install_components: number
+    portal_invites: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8519,6 +8612,7 @@ export namespace Prisma {
     marketplace_installs?: boolean | PortalCountOutputTypeCountMarketplace_installsArgs
     portal_products?: boolean | PortalCountOutputTypeCountPortal_productsArgs
     marketplace_install_components?: boolean | PortalCountOutputTypeCountMarketplace_install_componentsArgs
+    portal_invites?: boolean | PortalCountOutputTypeCountPortal_invitesArgs
   }
 
   // Custom InputTypes
@@ -8712,6 +8806,13 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountMarketplace_install_componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: marketplace_install_componentsWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountPortal_invitesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: portal_invitesWhereInput
   }
 
 
@@ -20755,6 +20856,7 @@ export namespace Prisma {
     is_active?: boolean
     portals?: boolean | Client$portalsArgs<ExtArgs>
     users?: boolean | Client$usersArgs<ExtArgs>
+    portal_invites?: boolean | Client$portal_invitesArgs<ExtArgs>
     _count?: boolean | ClientCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["client"]>
 
@@ -20774,6 +20876,7 @@ export namespace Prisma {
   export type ClientInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     portals?: boolean | Client$portalsArgs<ExtArgs>
     users?: boolean | Client$usersArgs<ExtArgs>
+    portal_invites?: boolean | Client$portal_invitesArgs<ExtArgs>
     _count?: boolean | ClientCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -20782,6 +20885,7 @@ export namespace Prisma {
     objects: {
       portals: Prisma.$PortalPayload<ExtArgs>[]
       users: Prisma.$UserPayload<ExtArgs>[]
+      portal_invites: Prisma.$portal_invitesPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -21133,6 +21237,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     portals<T extends Client$portalsArgs<ExtArgs> = {}>(args?: Subset<T, Client$portalsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     users<T extends Client$usersArgs<ExtArgs> = {}>(args?: Subset<T, Client$usersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    portal_invites<T extends Client$portal_invitesArgs<ExtArgs> = {}>(args?: Subset<T, Client$portal_invitesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -21557,6 +21662,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: UserScalarFieldEnum | UserScalarFieldEnum[]
+  }
+
+  /**
+   * Client.portal_invites
+   */
+  export type Client$portal_invitesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    where?: portal_invitesWhereInput
+    orderBy?: portal_invitesOrderByWithRelationInput | portal_invitesOrderByWithRelationInput[]
+    cursor?: portal_invitesWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Portal_invitesScalarFieldEnum | Portal_invitesScalarFieldEnum[]
   }
 
   /**
@@ -44139,6 +44268,7 @@ export namespace Prisma {
     marketplace_installs?: boolean | Portal$marketplace_installsArgs<ExtArgs>
     portal_products?: boolean | Portal$portal_productsArgs<ExtArgs>
     marketplace_install_components?: boolean | Portal$marketplace_install_componentsArgs<ExtArgs>
+    portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -44199,6 +44329,7 @@ export namespace Prisma {
     marketplace_installs?: boolean | Portal$marketplace_installsArgs<ExtArgs>
     portal_products?: boolean | Portal$portal_productsArgs<ExtArgs>
     marketplace_install_components?: boolean | Portal$marketplace_install_componentsArgs<ExtArgs>
+    portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -44232,6 +44363,7 @@ export namespace Prisma {
       marketplace_installs: Prisma.$marketplace_installsPayload<ExtArgs>[]
       portal_products: Prisma.$portal_productsPayload<ExtArgs>[]
       marketplace_install_components: Prisma.$marketplace_install_componentsPayload<ExtArgs>[]
+      portal_invites: Prisma.$portal_invitesPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -44624,6 +44756,7 @@ export namespace Prisma {
     marketplace_installs<T extends Portal$marketplace_installsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$marketplace_installsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_installsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     portal_products<T extends Portal$portal_productsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     marketplace_install_components<T extends Portal$marketplace_install_componentsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$marketplace_install_componentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    portal_invites<T extends Portal$portal_invitesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_invitesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -45659,6 +45792,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: Marketplace_install_componentsScalarFieldEnum | Marketplace_install_componentsScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.portal_invites
+   */
+  export type Portal$portal_invitesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    where?: portal_invitesWhereInput
+    orderBy?: portal_invitesOrderByWithRelationInput | portal_invitesOrderByWithRelationInput[]
+    cursor?: portal_invitesWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Portal_invitesScalarFieldEnum | Portal_invitesScalarFieldEnum[]
   }
 
   /**
@@ -100491,6 +100648,1169 @@ export namespace Prisma {
 
 
   /**
+   * Model portal_invites
+   */
+
+  export type AggregatePortal_invites = {
+    _count: Portal_invitesCountAggregateOutputType | null
+    _avg: Portal_invitesAvgAggregateOutputType | null
+    _sum: Portal_invitesSumAggregateOutputType | null
+    _min: Portal_invitesMinAggregateOutputType | null
+    _max: Portal_invitesMaxAggregateOutputType | null
+  }
+
+  export type Portal_invitesAvgAggregateOutputType = {
+    client_id: number | null
+    redeemed_portal_id: number | null
+  }
+
+  export type Portal_invitesSumAggregateOutputType = {
+    client_id: bigint | null
+    redeemed_portal_id: bigint | null
+  }
+
+  export type Portal_invitesMinAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    code_hash: string | null
+    code_prefix: string | null
+    client_id: bigint | null
+    email: string | null
+    organization: string | null
+    product_code: string | null
+    auto_provision: boolean | null
+    status: string | null
+    expires_at: Date | null
+    sent_at: Date | null
+    redeemed_at: Date | null
+    revoked_at: Date | null
+    redeemed_portal_id: bigint | null
+    issued_by: string | null
+    revoked_by: string | null
+    note: string | null
+  }
+
+  export type Portal_invitesMaxAggregateOutputType = {
+    id: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    code_hash: string | null
+    code_prefix: string | null
+    client_id: bigint | null
+    email: string | null
+    organization: string | null
+    product_code: string | null
+    auto_provision: boolean | null
+    status: string | null
+    expires_at: Date | null
+    sent_at: Date | null
+    redeemed_at: Date | null
+    revoked_at: Date | null
+    redeemed_portal_id: bigint | null
+    issued_by: string | null
+    revoked_by: string | null
+    note: string | null
+  }
+
+  export type Portal_invitesCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    code_hash: number
+    code_prefix: number
+    client_id: number
+    email: number
+    organization: number
+    product_code: number
+    auto_provision: number
+    status: number
+    expires_at: number
+    sent_at: number
+    redeemed_at: number
+    revoked_at: number
+    redeemed_portal_id: number
+    issued_by: number
+    revoked_by: number
+    note: number
+    _all: number
+  }
+
+
+  export type Portal_invitesAvgAggregateInputType = {
+    client_id?: true
+    redeemed_portal_id?: true
+  }
+
+  export type Portal_invitesSumAggregateInputType = {
+    client_id?: true
+    redeemed_portal_id?: true
+  }
+
+  export type Portal_invitesMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    code_hash?: true
+    code_prefix?: true
+    client_id?: true
+    email?: true
+    organization?: true
+    product_code?: true
+    auto_provision?: true
+    status?: true
+    expires_at?: true
+    sent_at?: true
+    redeemed_at?: true
+    revoked_at?: true
+    redeemed_portal_id?: true
+    issued_by?: true
+    revoked_by?: true
+    note?: true
+  }
+
+  export type Portal_invitesMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    code_hash?: true
+    code_prefix?: true
+    client_id?: true
+    email?: true
+    organization?: true
+    product_code?: true
+    auto_provision?: true
+    status?: true
+    expires_at?: true
+    sent_at?: true
+    redeemed_at?: true
+    revoked_at?: true
+    redeemed_portal_id?: true
+    issued_by?: true
+    revoked_by?: true
+    note?: true
+  }
+
+  export type Portal_invitesCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    code_hash?: true
+    code_prefix?: true
+    client_id?: true
+    email?: true
+    organization?: true
+    product_code?: true
+    auto_provision?: true
+    status?: true
+    expires_at?: true
+    sent_at?: true
+    redeemed_at?: true
+    revoked_at?: true
+    redeemed_portal_id?: true
+    issued_by?: true
+    revoked_by?: true
+    note?: true
+    _all?: true
+  }
+
+  export type Portal_invitesAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which portal_invites to aggregate.
+     */
+    where?: portal_invitesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_invites to fetch.
+     */
+    orderBy?: portal_invitesOrderByWithRelationInput | portal_invitesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: portal_invitesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_invites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_invites.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned portal_invites
+    **/
+    _count?: true | Portal_invitesCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Portal_invitesAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Portal_invitesSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Portal_invitesMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Portal_invitesMaxAggregateInputType
+  }
+
+  export type GetPortal_invitesAggregateType<T extends Portal_invitesAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortal_invites]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortal_invites[P]>
+      : GetScalarType<T[P], AggregatePortal_invites[P]>
+  }
+
+
+
+
+  export type portal_invitesGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: portal_invitesWhereInput
+    orderBy?: portal_invitesOrderByWithAggregationInput | portal_invitesOrderByWithAggregationInput[]
+    by: Portal_invitesScalarFieldEnum[] | Portal_invitesScalarFieldEnum
+    having?: portal_invitesScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Portal_invitesCountAggregateInputType | true
+    _avg?: Portal_invitesAvgAggregateInputType
+    _sum?: Portal_invitesSumAggregateInputType
+    _min?: Portal_invitesMinAggregateInputType
+    _max?: Portal_invitesMaxAggregateInputType
+  }
+
+  export type Portal_invitesGroupByOutputType = {
+    id: string
+    created_at: Date | null
+    updated_at: Date | null
+    code_hash: string
+    code_prefix: string
+    client_id: bigint | null
+    email: string
+    organization: string | null
+    product_code: string
+    auto_provision: boolean
+    status: string
+    expires_at: Date | null
+    sent_at: Date | null
+    redeemed_at: Date | null
+    revoked_at: Date | null
+    redeemed_portal_id: bigint | null
+    issued_by: string | null
+    revoked_by: string | null
+    note: string | null
+    _count: Portal_invitesCountAggregateOutputType | null
+    _avg: Portal_invitesAvgAggregateOutputType | null
+    _sum: Portal_invitesSumAggregateOutputType | null
+    _min: Portal_invitesMinAggregateOutputType | null
+    _max: Portal_invitesMaxAggregateOutputType | null
+  }
+
+  type GetPortal_invitesGroupByPayload<T extends portal_invitesGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Portal_invitesGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Portal_invitesGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Portal_invitesGroupByOutputType[P]>
+            : GetScalarType<T[P], Portal_invitesGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type portal_invitesSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    code_hash?: boolean
+    code_prefix?: boolean
+    client_id?: boolean
+    email?: boolean
+    organization?: boolean
+    product_code?: boolean
+    auto_provision?: boolean
+    status?: boolean
+    expires_at?: boolean
+    sent_at?: boolean
+    redeemed_at?: boolean
+    revoked_at?: boolean
+    redeemed_portal_id?: boolean
+    issued_by?: boolean
+    revoked_by?: boolean
+    note?: boolean
+    clients?: boolean | portal_invites$clientsArgs<ExtArgs>
+    portals?: boolean | portal_invites$portalsArgs<ExtArgs>
+  }, ExtArgs["result"]["portal_invites"]>
+
+
+
+  export type portal_invitesSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    code_hash?: boolean
+    code_prefix?: boolean
+    client_id?: boolean
+    email?: boolean
+    organization?: boolean
+    product_code?: boolean
+    auto_provision?: boolean
+    status?: boolean
+    expires_at?: boolean
+    sent_at?: boolean
+    redeemed_at?: boolean
+    revoked_at?: boolean
+    redeemed_portal_id?: boolean
+    issued_by?: boolean
+    revoked_by?: boolean
+    note?: boolean
+  }
+
+  export type portal_invitesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "code_hash" | "code_prefix" | "client_id" | "email" | "organization" | "product_code" | "auto_provision" | "status" | "expires_at" | "sent_at" | "redeemed_at" | "revoked_at" | "redeemed_portal_id" | "issued_by" | "revoked_by" | "note", ExtArgs["result"]["portal_invites"]>
+  export type portal_invitesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    clients?: boolean | portal_invites$clientsArgs<ExtArgs>
+    portals?: boolean | portal_invites$portalsArgs<ExtArgs>
+  }
+
+  export type $portal_invitesPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "portal_invites"
+    objects: {
+      clients: Prisma.$ClientPayload<ExtArgs> | null
+      portals: Prisma.$PortalPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      created_at: Date | null
+      updated_at: Date | null
+      code_hash: string
+      code_prefix: string
+      client_id: bigint | null
+      email: string
+      organization: string | null
+      product_code: string
+      auto_provision: boolean
+      status: string
+      expires_at: Date | null
+      sent_at: Date | null
+      redeemed_at: Date | null
+      revoked_at: Date | null
+      redeemed_portal_id: bigint | null
+      issued_by: string | null
+      revoked_by: string | null
+      note: string | null
+    }, ExtArgs["result"]["portal_invites"]>
+    composites: {}
+  }
+
+  type portal_invitesGetPayload<S extends boolean | null | undefined | portal_invitesDefaultArgs> = $Result.GetResult<Prisma.$portal_invitesPayload, S>
+
+  type portal_invitesCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<portal_invitesFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Portal_invitesCountAggregateInputType | true
+    }
+
+  export interface portal_invitesDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['portal_invites'], meta: { name: 'portal_invites' } }
+    /**
+     * Find zero or one Portal_invites that matches the filter.
+     * @param {portal_invitesFindUniqueArgs} args - Arguments to find a Portal_invites
+     * @example
+     * // Get one Portal_invites
+     * const portal_invites = await prisma.portal_invites.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends portal_invitesFindUniqueArgs>(args: SelectSubset<T, portal_invitesFindUniqueArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Portal_invites that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {portal_invitesFindUniqueOrThrowArgs} args - Arguments to find a Portal_invites
+     * @example
+     * // Get one Portal_invites
+     * const portal_invites = await prisma.portal_invites.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends portal_invitesFindUniqueOrThrowArgs>(args: SelectSubset<T, portal_invitesFindUniqueOrThrowArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Portal_invites that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_invitesFindFirstArgs} args - Arguments to find a Portal_invites
+     * @example
+     * // Get one Portal_invites
+     * const portal_invites = await prisma.portal_invites.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends portal_invitesFindFirstArgs>(args?: SelectSubset<T, portal_invitesFindFirstArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Portal_invites that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_invitesFindFirstOrThrowArgs} args - Arguments to find a Portal_invites
+     * @example
+     * // Get one Portal_invites
+     * const portal_invites = await prisma.portal_invites.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends portal_invitesFindFirstOrThrowArgs>(args?: SelectSubset<T, portal_invitesFindFirstOrThrowArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Portal_invites that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_invitesFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Portal_invites
+     * const portal_invites = await prisma.portal_invites.findMany()
+     * 
+     * // Get first 10 Portal_invites
+     * const portal_invites = await prisma.portal_invites.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portal_invitesWithIdOnly = await prisma.portal_invites.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends portal_invitesFindManyArgs>(args?: SelectSubset<T, portal_invitesFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Portal_invites.
+     * @param {portal_invitesCreateArgs} args - Arguments to create a Portal_invites.
+     * @example
+     * // Create one Portal_invites
+     * const Portal_invites = await prisma.portal_invites.create({
+     *   data: {
+     *     // ... data to create a Portal_invites
+     *   }
+     * })
+     * 
+     */
+    create<T extends portal_invitesCreateArgs>(args: SelectSubset<T, portal_invitesCreateArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Portal_invites.
+     * @param {portal_invitesCreateManyArgs} args - Arguments to create many Portal_invites.
+     * @example
+     * // Create many Portal_invites
+     * const portal_invites = await prisma.portal_invites.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends portal_invitesCreateManyArgs>(args?: SelectSubset<T, portal_invitesCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Portal_invites.
+     * @param {portal_invitesDeleteArgs} args - Arguments to delete one Portal_invites.
+     * @example
+     * // Delete one Portal_invites
+     * const Portal_invites = await prisma.portal_invites.delete({
+     *   where: {
+     *     // ... filter to delete one Portal_invites
+     *   }
+     * })
+     * 
+     */
+    delete<T extends portal_invitesDeleteArgs>(args: SelectSubset<T, portal_invitesDeleteArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Portal_invites.
+     * @param {portal_invitesUpdateArgs} args - Arguments to update one Portal_invites.
+     * @example
+     * // Update one Portal_invites
+     * const portal_invites = await prisma.portal_invites.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends portal_invitesUpdateArgs>(args: SelectSubset<T, portal_invitesUpdateArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Portal_invites.
+     * @param {portal_invitesDeleteManyArgs} args - Arguments to filter Portal_invites to delete.
+     * @example
+     * // Delete a few Portal_invites
+     * const { count } = await prisma.portal_invites.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends portal_invitesDeleteManyArgs>(args?: SelectSubset<T, portal_invitesDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Portal_invites.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_invitesUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Portal_invites
+     * const portal_invites = await prisma.portal_invites.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends portal_invitesUpdateManyArgs>(args: SelectSubset<T, portal_invitesUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Portal_invites.
+     * @param {portal_invitesUpsertArgs} args - Arguments to update or create a Portal_invites.
+     * @example
+     * // Update or create a Portal_invites
+     * const portal_invites = await prisma.portal_invites.upsert({
+     *   create: {
+     *     // ... data to create a Portal_invites
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Portal_invites we want to update
+     *   }
+     * })
+     */
+    upsert<T extends portal_invitesUpsertArgs>(args: SelectSubset<T, portal_invitesUpsertArgs<ExtArgs>>): Prisma__portal_invitesClient<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Portal_invites.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_invitesCountArgs} args - Arguments to filter Portal_invites to count.
+     * @example
+     * // Count the number of Portal_invites
+     * const count = await prisma.portal_invites.count({
+     *   where: {
+     *     // ... the filter for the Portal_invites we want to count
+     *   }
+     * })
+    **/
+    count<T extends portal_invitesCountArgs>(
+      args?: Subset<T, portal_invitesCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Portal_invitesCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Portal_invites.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Portal_invitesAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Portal_invitesAggregateArgs>(args: Subset<T, Portal_invitesAggregateArgs>): Prisma.PrismaPromise<GetPortal_invitesAggregateType<T>>
+
+    /**
+     * Group by Portal_invites.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {portal_invitesGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends portal_invitesGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: portal_invitesGroupByArgs['orderBy'] }
+        : { orderBy?: portal_invitesGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, portal_invitesGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortal_invitesGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the portal_invites model
+   */
+  readonly fields: portal_invitesFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for portal_invites.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__portal_invitesClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    clients<T extends portal_invites$clientsArgs<ExtArgs> = {}>(args?: Subset<T, portal_invites$clientsArgs<ExtArgs>>): Prisma__ClientClient<$Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    portals<T extends portal_invites$portalsArgs<ExtArgs> = {}>(args?: Subset<T, portal_invites$portalsArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the portal_invites model
+   */
+  interface portal_invitesFieldRefs {
+    readonly id: FieldRef<"portal_invites", 'String'>
+    readonly created_at: FieldRef<"portal_invites", 'DateTime'>
+    readonly updated_at: FieldRef<"portal_invites", 'DateTime'>
+    readonly code_hash: FieldRef<"portal_invites", 'String'>
+    readonly code_prefix: FieldRef<"portal_invites", 'String'>
+    readonly client_id: FieldRef<"portal_invites", 'BigInt'>
+    readonly email: FieldRef<"portal_invites", 'String'>
+    readonly organization: FieldRef<"portal_invites", 'String'>
+    readonly product_code: FieldRef<"portal_invites", 'String'>
+    readonly auto_provision: FieldRef<"portal_invites", 'Boolean'>
+    readonly status: FieldRef<"portal_invites", 'String'>
+    readonly expires_at: FieldRef<"portal_invites", 'DateTime'>
+    readonly sent_at: FieldRef<"portal_invites", 'DateTime'>
+    readonly redeemed_at: FieldRef<"portal_invites", 'DateTime'>
+    readonly revoked_at: FieldRef<"portal_invites", 'DateTime'>
+    readonly redeemed_portal_id: FieldRef<"portal_invites", 'BigInt'>
+    readonly issued_by: FieldRef<"portal_invites", 'String'>
+    readonly revoked_by: FieldRef<"portal_invites", 'String'>
+    readonly note: FieldRef<"portal_invites", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * portal_invites findUnique
+   */
+  export type portal_invitesFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_invites to fetch.
+     */
+    where: portal_invitesWhereUniqueInput
+  }
+
+  /**
+   * portal_invites findUniqueOrThrow
+   */
+  export type portal_invitesFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_invites to fetch.
+     */
+    where: portal_invitesWhereUniqueInput
+  }
+
+  /**
+   * portal_invites findFirst
+   */
+  export type portal_invitesFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_invites to fetch.
+     */
+    where?: portal_invitesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_invites to fetch.
+     */
+    orderBy?: portal_invitesOrderByWithRelationInput | portal_invitesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for portal_invites.
+     */
+    cursor?: portal_invitesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_invites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_invites.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of portal_invites.
+     */
+    distinct?: Portal_invitesScalarFieldEnum | Portal_invitesScalarFieldEnum[]
+  }
+
+  /**
+   * portal_invites findFirstOrThrow
+   */
+  export type portal_invitesFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_invites to fetch.
+     */
+    where?: portal_invitesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_invites to fetch.
+     */
+    orderBy?: portal_invitesOrderByWithRelationInput | portal_invitesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for portal_invites.
+     */
+    cursor?: portal_invitesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_invites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_invites.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of portal_invites.
+     */
+    distinct?: Portal_invitesScalarFieldEnum | Portal_invitesScalarFieldEnum[]
+  }
+
+  /**
+   * portal_invites findMany
+   */
+  export type portal_invitesFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * Filter, which portal_invites to fetch.
+     */
+    where?: portal_invitesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of portal_invites to fetch.
+     */
+    orderBy?: portal_invitesOrderByWithRelationInput | portal_invitesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing portal_invites.
+     */
+    cursor?: portal_invitesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` portal_invites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` portal_invites.
+     */
+    skip?: number
+    distinct?: Portal_invitesScalarFieldEnum | Portal_invitesScalarFieldEnum[]
+  }
+
+  /**
+   * portal_invites create
+   */
+  export type portal_invitesCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * The data needed to create a portal_invites.
+     */
+    data: XOR<portal_invitesCreateInput, portal_invitesUncheckedCreateInput>
+  }
+
+  /**
+   * portal_invites createMany
+   */
+  export type portal_invitesCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many portal_invites.
+     */
+    data: portal_invitesCreateManyInput | portal_invitesCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * portal_invites update
+   */
+  export type portal_invitesUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * The data needed to update a portal_invites.
+     */
+    data: XOR<portal_invitesUpdateInput, portal_invitesUncheckedUpdateInput>
+    /**
+     * Choose, which portal_invites to update.
+     */
+    where: portal_invitesWhereUniqueInput
+  }
+
+  /**
+   * portal_invites updateMany
+   */
+  export type portal_invitesUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update portal_invites.
+     */
+    data: XOR<portal_invitesUpdateManyMutationInput, portal_invitesUncheckedUpdateManyInput>
+    /**
+     * Filter which portal_invites to update
+     */
+    where?: portal_invitesWhereInput
+    /**
+     * Limit how many portal_invites to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * portal_invites upsert
+   */
+  export type portal_invitesUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * The filter to search for the portal_invites to update in case it exists.
+     */
+    where: portal_invitesWhereUniqueInput
+    /**
+     * In case the portal_invites found by the `where` argument doesn't exist, create a new portal_invites with this data.
+     */
+    create: XOR<portal_invitesCreateInput, portal_invitesUncheckedCreateInput>
+    /**
+     * In case the portal_invites was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<portal_invitesUpdateInput, portal_invitesUncheckedUpdateInput>
+  }
+
+  /**
+   * portal_invites delete
+   */
+  export type portal_invitesDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+    /**
+     * Filter which portal_invites to delete.
+     */
+    where: portal_invitesWhereUniqueInput
+  }
+
+  /**
+   * portal_invites deleteMany
+   */
+  export type portal_invitesDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which portal_invites to delete
+     */
+    where?: portal_invitesWhereInput
+    /**
+     * Limit how many portal_invites to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * portal_invites.clients
+   */
+  export type portal_invites$clientsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Client
+     */
+    select?: ClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Client
+     */
+    omit?: ClientOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClientInclude<ExtArgs> | null
+    where?: ClientWhereInput
+  }
+
+  /**
+   * portal_invites.portals
+   */
+  export type portal_invites$portalsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Portal
+     */
+    select?: PortalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Portal
+     */
+    omit?: PortalOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalInclude<ExtArgs> | null
+    where?: PortalWhereInput
+  }
+
+  /**
+   * portal_invites without action
+   */
+  export type portal_invitesDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_invites
+     */
+    select?: portal_invitesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_invites
+     */
+    omit?: portal_invitesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_invitesInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -102108,6 +103428,31 @@ export namespace Prisma {
   export type Bitrix_app_eventsScalarFieldEnum = (typeof Bitrix_app_eventsScalarFieldEnum)[keyof typeof Bitrix_app_eventsScalarFieldEnum]
 
 
+  export const Portal_invitesScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    code_hash: 'code_hash',
+    code_prefix: 'code_prefix',
+    client_id: 'client_id',
+    email: 'email',
+    organization: 'organization',
+    product_code: 'product_code',
+    auto_provision: 'auto_provision',
+    status: 'status',
+    expires_at: 'expires_at',
+    sent_at: 'sent_at',
+    redeemed_at: 'redeemed_at',
+    revoked_at: 'revoked_at',
+    redeemed_portal_id: 'redeemed_portal_id',
+    issued_by: 'issued_by',
+    revoked_by: 'revoked_by',
+    note: 'note'
+  };
+
+  export type Portal_invitesScalarFieldEnum = (typeof Portal_invitesScalarFieldEnum)[keyof typeof Portal_invitesScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -103196,6 +104541,22 @@ export namespace Prisma {
   export type bitrix_app_eventsOrderByRelevanceFieldEnum = (typeof bitrix_app_eventsOrderByRelevanceFieldEnum)[keyof typeof bitrix_app_eventsOrderByRelevanceFieldEnum]
 
 
+  export const portal_invitesOrderByRelevanceFieldEnum: {
+    id: 'id',
+    code_hash: 'code_hash',
+    code_prefix: 'code_prefix',
+    email: 'email',
+    organization: 'organization',
+    product_code: 'product_code',
+    status: 'status',
+    issued_by: 'issued_by',
+    revoked_by: 'revoked_by',
+    note: 'note'
+  };
+
+  export type portal_invitesOrderByRelevanceFieldEnum = (typeof portal_invitesOrderByRelevanceFieldEnum)[keyof typeof portal_invitesOrderByRelevanceFieldEnum]
+
+
   /**
    * Field references
    */
@@ -104226,6 +105587,7 @@ export namespace Prisma {
     is_active?: BoolNullableFilter<"Client"> | boolean | null
     portals?: PortalListRelationFilter
     users?: UserListRelationFilter
+    portal_invites?: Portal_invitesListRelationFilter
   }
 
   export type ClientOrderByWithRelationInput = {
@@ -104238,6 +105600,7 @@ export namespace Prisma {
     is_active?: SortOrderInput | SortOrder
     portals?: PortalOrderByRelationAggregateInput
     users?: UserOrderByRelationAggregateInput
+    portal_invites?: portal_invitesOrderByRelationAggregateInput
     _relevance?: ClientOrderByRelevanceInput
   }
 
@@ -104254,6 +105617,7 @@ export namespace Prisma {
     is_active?: BoolNullableFilter<"Client"> | boolean | null
     portals?: PortalListRelationFilter
     users?: UserListRelationFilter
+    portal_invites?: Portal_invitesListRelationFilter
   }, "id" | "email">
 
   export type ClientOrderByWithAggregationInput = {
@@ -106327,6 +107691,7 @@ export namespace Prisma {
     marketplace_installs?: Marketplace_installsListRelationFilter
     portal_products?: Portal_productsListRelationFilter
     marketplace_install_components?: Marketplace_install_componentsListRelationFilter
+    portal_invites?: Portal_invitesListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -106380,6 +107745,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsOrderByRelationAggregateInput
     portal_products?: portal_productsOrderByRelationAggregateInput
     marketplace_install_components?: marketplace_install_componentsOrderByRelationAggregateInput
+    portal_invites?: portal_invitesOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -106437,6 +107803,7 @@ export namespace Prisma {
     marketplace_installs?: Marketplace_installsListRelationFilter
     portal_products?: Portal_productsListRelationFilter
     marketplace_install_components?: Marketplace_install_componentsListRelationFilter
+    portal_invites?: Portal_invitesListRelationFilter
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -111768,6 +113135,137 @@ export namespace Prisma {
     payload?: StringNullableWithAggregatesFilter<"bitrix_app_events"> | string | null
   }
 
+  export type portal_invitesWhereInput = {
+    AND?: portal_invitesWhereInput | portal_invitesWhereInput[]
+    OR?: portal_invitesWhereInput[]
+    NOT?: portal_invitesWhereInput | portal_invitesWhereInput[]
+    id?: StringFilter<"portal_invites"> | string
+    created_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    code_hash?: StringFilter<"portal_invites"> | string
+    code_prefix?: StringFilter<"portal_invites"> | string
+    client_id?: BigIntNullableFilter<"portal_invites"> | bigint | number | null
+    email?: StringFilter<"portal_invites"> | string
+    organization?: StringNullableFilter<"portal_invites"> | string | null
+    product_code?: StringFilter<"portal_invites"> | string
+    auto_provision?: BoolFilter<"portal_invites"> | boolean
+    status?: StringFilter<"portal_invites"> | string
+    expires_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    sent_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    redeemed_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    revoked_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    redeemed_portal_id?: BigIntNullableFilter<"portal_invites"> | bigint | number | null
+    issued_by?: StringNullableFilter<"portal_invites"> | string | null
+    revoked_by?: StringNullableFilter<"portal_invites"> | string | null
+    note?: StringNullableFilter<"portal_invites"> | string | null
+    clients?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
+    portals?: XOR<PortalNullableScalarRelationFilter, PortalWhereInput> | null
+  }
+
+  export type portal_invitesOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    code_hash?: SortOrder
+    code_prefix?: SortOrder
+    client_id?: SortOrderInput | SortOrder
+    email?: SortOrder
+    organization?: SortOrderInput | SortOrder
+    product_code?: SortOrder
+    auto_provision?: SortOrder
+    status?: SortOrder
+    expires_at?: SortOrderInput | SortOrder
+    sent_at?: SortOrderInput | SortOrder
+    redeemed_at?: SortOrderInput | SortOrder
+    revoked_at?: SortOrderInput | SortOrder
+    redeemed_portal_id?: SortOrderInput | SortOrder
+    issued_by?: SortOrderInput | SortOrder
+    revoked_by?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    clients?: ClientOrderByWithRelationInput
+    portals?: PortalOrderByWithRelationInput
+    _relevance?: portal_invitesOrderByRelevanceInput
+  }
+
+  export type portal_invitesWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    code_hash?: string
+    AND?: portal_invitesWhereInput | portal_invitesWhereInput[]
+    OR?: portal_invitesWhereInput[]
+    NOT?: portal_invitesWhereInput | portal_invitesWhereInput[]
+    created_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    code_prefix?: StringFilter<"portal_invites"> | string
+    client_id?: BigIntNullableFilter<"portal_invites"> | bigint | number | null
+    email?: StringFilter<"portal_invites"> | string
+    organization?: StringNullableFilter<"portal_invites"> | string | null
+    product_code?: StringFilter<"portal_invites"> | string
+    auto_provision?: BoolFilter<"portal_invites"> | boolean
+    status?: StringFilter<"portal_invites"> | string
+    expires_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    sent_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    redeemed_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    revoked_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    redeemed_portal_id?: BigIntNullableFilter<"portal_invites"> | bigint | number | null
+    issued_by?: StringNullableFilter<"portal_invites"> | string | null
+    revoked_by?: StringNullableFilter<"portal_invites"> | string | null
+    note?: StringNullableFilter<"portal_invites"> | string | null
+    clients?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
+    portals?: XOR<PortalNullableScalarRelationFilter, PortalWhereInput> | null
+  }, "id" | "code_hash">
+
+  export type portal_invitesOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    code_hash?: SortOrder
+    code_prefix?: SortOrder
+    client_id?: SortOrderInput | SortOrder
+    email?: SortOrder
+    organization?: SortOrderInput | SortOrder
+    product_code?: SortOrder
+    auto_provision?: SortOrder
+    status?: SortOrder
+    expires_at?: SortOrderInput | SortOrder
+    sent_at?: SortOrderInput | SortOrder
+    redeemed_at?: SortOrderInput | SortOrder
+    revoked_at?: SortOrderInput | SortOrder
+    redeemed_portal_id?: SortOrderInput | SortOrder
+    issued_by?: SortOrderInput | SortOrder
+    revoked_by?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    _count?: portal_invitesCountOrderByAggregateInput
+    _avg?: portal_invitesAvgOrderByAggregateInput
+    _max?: portal_invitesMaxOrderByAggregateInput
+    _min?: portal_invitesMinOrderByAggregateInput
+    _sum?: portal_invitesSumOrderByAggregateInput
+  }
+
+  export type portal_invitesScalarWhereWithAggregatesInput = {
+    AND?: portal_invitesScalarWhereWithAggregatesInput | portal_invitesScalarWhereWithAggregatesInput[]
+    OR?: portal_invitesScalarWhereWithAggregatesInput[]
+    NOT?: portal_invitesScalarWhereWithAggregatesInput | portal_invitesScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"portal_invites"> | string
+    created_at?: DateTimeNullableWithAggregatesFilter<"portal_invites"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"portal_invites"> | Date | string | null
+    code_hash?: StringWithAggregatesFilter<"portal_invites"> | string
+    code_prefix?: StringWithAggregatesFilter<"portal_invites"> | string
+    client_id?: BigIntNullableWithAggregatesFilter<"portal_invites"> | bigint | number | null
+    email?: StringWithAggregatesFilter<"portal_invites"> | string
+    organization?: StringNullableWithAggregatesFilter<"portal_invites"> | string | null
+    product_code?: StringWithAggregatesFilter<"portal_invites"> | string
+    auto_provision?: BoolWithAggregatesFilter<"portal_invites"> | boolean
+    status?: StringWithAggregatesFilter<"portal_invites"> | string
+    expires_at?: DateTimeNullableWithAggregatesFilter<"portal_invites"> | Date | string | null
+    sent_at?: DateTimeNullableWithAggregatesFilter<"portal_invites"> | Date | string | null
+    redeemed_at?: DateTimeNullableWithAggregatesFilter<"portal_invites"> | Date | string | null
+    revoked_at?: DateTimeNullableWithAggregatesFilter<"portal_invites"> | Date | string | null
+    redeemed_portal_id?: BigIntNullableWithAggregatesFilter<"portal_invites"> | bigint | number | null
+    issued_by?: StringNullableWithAggregatesFilter<"portal_invites"> | string | null
+    revoked_by?: StringNullableWithAggregatesFilter<"portal_invites"> | string | null
+    note?: StringNullableWithAggregatesFilter<"portal_invites"> | string | null
+  }
+
   export type agentsCreateInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -112750,6 +114248,7 @@ export namespace Prisma {
     is_active?: boolean | null
     portals?: PortalCreateNestedManyWithoutClientsInput
     users?: UserCreateNestedManyWithoutClientsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutClientsInput
   }
 
   export type ClientUncheckedCreateInput = {
@@ -112762,6 +114261,7 @@ export namespace Prisma {
     is_active?: boolean | null
     portals?: PortalUncheckedCreateNestedManyWithoutClientsInput
     users?: UserUncheckedCreateNestedManyWithoutClientsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutClientsInput
   }
 
   export type ClientUpdateInput = {
@@ -112774,6 +114274,7 @@ export namespace Prisma {
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     portals?: PortalUpdateManyWithoutClientsNestedInput
     users?: UserUpdateManyWithoutClientsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutClientsNestedInput
   }
 
   export type ClientUncheckedUpdateInput = {
@@ -112786,6 +114287,7 @@ export namespace Prisma {
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     portals?: PortalUncheckedUpdateManyWithoutClientsNestedInput
     users?: UserUncheckedUpdateManyWithoutClientsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutClientsNestedInput
   }
 
   export type ClientCreateManyInput = {
@@ -115145,6 +116647,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -115197,6 +116700,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUpdateInput = {
@@ -115249,6 +116753,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -115301,6 +116806,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -121432,6 +122938,158 @@ export namespace Prisma {
     payload?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type portal_invitesCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+    clients?: ClientCreateNestedOneWithoutPortal_invitesInput
+    portals?: PortalCreateNestedOneWithoutPortal_invitesInput
+  }
+
+  export type portal_invitesUncheckedCreateInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    client_id?: bigint | number | null
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    redeemed_portal_id?: bigint | number | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+  }
+
+  export type portal_invitesUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    clients?: ClientUpdateOneWithoutPortal_invitesNestedInput
+    portals?: PortalUpdateOneWithoutPortal_invitesNestedInput
+  }
+
+  export type portal_invitesUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type portal_invitesCreateManyInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    client_id?: bigint | number | null
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    redeemed_portal_id?: bigint | number | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+  }
+
+  export type portal_invitesUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type portal_invitesUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type BigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -122307,11 +123965,21 @@ export namespace Prisma {
     none?: UserWhereInput
   }
 
+  export type Portal_invitesListRelationFilter = {
+    every?: portal_invitesWhereInput
+    some?: portal_invitesWhereInput
+    none?: portal_invitesWhereInput
+  }
+
   export type PortalOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type UserOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type portal_invitesOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -128182,6 +129850,88 @@ export namespace Prisma {
     payload?: SortOrder
   }
 
+  export type portal_invitesOrderByRelevanceInput = {
+    fields: portal_invitesOrderByRelevanceFieldEnum | portal_invitesOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type portal_invitesCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    code_hash?: SortOrder
+    code_prefix?: SortOrder
+    client_id?: SortOrder
+    email?: SortOrder
+    organization?: SortOrder
+    product_code?: SortOrder
+    auto_provision?: SortOrder
+    status?: SortOrder
+    expires_at?: SortOrder
+    sent_at?: SortOrder
+    redeemed_at?: SortOrder
+    revoked_at?: SortOrder
+    redeemed_portal_id?: SortOrder
+    issued_by?: SortOrder
+    revoked_by?: SortOrder
+    note?: SortOrder
+  }
+
+  export type portal_invitesAvgOrderByAggregateInput = {
+    client_id?: SortOrder
+    redeemed_portal_id?: SortOrder
+  }
+
+  export type portal_invitesMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    code_hash?: SortOrder
+    code_prefix?: SortOrder
+    client_id?: SortOrder
+    email?: SortOrder
+    organization?: SortOrder
+    product_code?: SortOrder
+    auto_provision?: SortOrder
+    status?: SortOrder
+    expires_at?: SortOrder
+    sent_at?: SortOrder
+    redeemed_at?: SortOrder
+    revoked_at?: SortOrder
+    redeemed_portal_id?: SortOrder
+    issued_by?: SortOrder
+    revoked_by?: SortOrder
+    note?: SortOrder
+  }
+
+  export type portal_invitesMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    code_hash?: SortOrder
+    code_prefix?: SortOrder
+    client_id?: SortOrder
+    email?: SortOrder
+    organization?: SortOrder
+    product_code?: SortOrder
+    auto_provision?: SortOrder
+    status?: SortOrder
+    expires_at?: SortOrder
+    sent_at?: SortOrder
+    redeemed_at?: SortOrder
+    revoked_at?: SortOrder
+    redeemed_portal_id?: SortOrder
+    issued_by?: SortOrder
+    revoked_by?: SortOrder
+    note?: SortOrder
+  }
+
+  export type portal_invitesSumOrderByAggregateInput = {
+    client_id?: SortOrder
+    redeemed_portal_id?: SortOrder
+  }
+
   export type PortalCreateNestedOneWithoutAgentsInput = {
     create?: XOR<PortalCreateWithoutAgentsInput, PortalUncheckedCreateWithoutAgentsInput>
     connectOrCreate?: PortalCreateOrConnectWithoutAgentsInput
@@ -128546,6 +130296,13 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
   }
 
+  export type portal_invitesCreateNestedManyWithoutClientsInput = {
+    create?: XOR<portal_invitesCreateWithoutClientsInput, portal_invitesUncheckedCreateWithoutClientsInput> | portal_invitesCreateWithoutClientsInput[] | portal_invitesUncheckedCreateWithoutClientsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutClientsInput | portal_invitesCreateOrConnectWithoutClientsInput[]
+    createMany?: portal_invitesCreateManyClientsInputEnvelope
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+  }
+
   export type PortalUncheckedCreateNestedManyWithoutClientsInput = {
     create?: XOR<PortalCreateWithoutClientsInput, PortalUncheckedCreateWithoutClientsInput> | PortalCreateWithoutClientsInput[] | PortalUncheckedCreateWithoutClientsInput[]
     connectOrCreate?: PortalCreateOrConnectWithoutClientsInput | PortalCreateOrConnectWithoutClientsInput[]
@@ -128558,6 +130315,13 @@ export namespace Prisma {
     connectOrCreate?: UserCreateOrConnectWithoutClientsInput | UserCreateOrConnectWithoutClientsInput[]
     createMany?: UserCreateManyClientsInputEnvelope
     connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+  }
+
+  export type portal_invitesUncheckedCreateNestedManyWithoutClientsInput = {
+    create?: XOR<portal_invitesCreateWithoutClientsInput, portal_invitesUncheckedCreateWithoutClientsInput> | portal_invitesCreateWithoutClientsInput[] | portal_invitesUncheckedCreateWithoutClientsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutClientsInput | portal_invitesCreateOrConnectWithoutClientsInput[]
+    createMany?: portal_invitesCreateManyClientsInputEnvelope
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
   }
 
   export type NullableBoolFieldUpdateOperationsInput = {
@@ -128592,6 +130356,20 @@ export namespace Prisma {
     deleteMany?: UserScalarWhereInput | UserScalarWhereInput[]
   }
 
+  export type portal_invitesUpdateManyWithoutClientsNestedInput = {
+    create?: XOR<portal_invitesCreateWithoutClientsInput, portal_invitesUncheckedCreateWithoutClientsInput> | portal_invitesCreateWithoutClientsInput[] | portal_invitesUncheckedCreateWithoutClientsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutClientsInput | portal_invitesCreateOrConnectWithoutClientsInput[]
+    upsert?: portal_invitesUpsertWithWhereUniqueWithoutClientsInput | portal_invitesUpsertWithWhereUniqueWithoutClientsInput[]
+    createMany?: portal_invitesCreateManyClientsInputEnvelope
+    set?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    disconnect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    delete?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    update?: portal_invitesUpdateWithWhereUniqueWithoutClientsInput | portal_invitesUpdateWithWhereUniqueWithoutClientsInput[]
+    updateMany?: portal_invitesUpdateManyWithWhereWithoutClientsInput | portal_invitesUpdateManyWithWhereWithoutClientsInput[]
+    deleteMany?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
+  }
+
   export type PortalUncheckedUpdateManyWithoutClientsNestedInput = {
     create?: XOR<PortalCreateWithoutClientsInput, PortalUncheckedCreateWithoutClientsInput> | PortalCreateWithoutClientsInput[] | PortalUncheckedCreateWithoutClientsInput[]
     connectOrCreate?: PortalCreateOrConnectWithoutClientsInput | PortalCreateOrConnectWithoutClientsInput[]
@@ -128618,6 +130396,20 @@ export namespace Prisma {
     update?: UserUpdateWithWhereUniqueWithoutClientsInput | UserUpdateWithWhereUniqueWithoutClientsInput[]
     updateMany?: UserUpdateManyWithWhereWithoutClientsInput | UserUpdateManyWithWhereWithoutClientsInput[]
     deleteMany?: UserScalarWhereInput | UserScalarWhereInput[]
+  }
+
+  export type portal_invitesUncheckedUpdateManyWithoutClientsNestedInput = {
+    create?: XOR<portal_invitesCreateWithoutClientsInput, portal_invitesUncheckedCreateWithoutClientsInput> | portal_invitesCreateWithoutClientsInput[] | portal_invitesUncheckedCreateWithoutClientsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutClientsInput | portal_invitesCreateOrConnectWithoutClientsInput[]
+    upsert?: portal_invitesUpsertWithWhereUniqueWithoutClientsInput | portal_invitesUpsertWithWhereUniqueWithoutClientsInput[]
+    createMany?: portal_invitesCreateManyClientsInputEnvelope
+    set?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    disconnect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    delete?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    update?: portal_invitesUpdateWithWhereUniqueWithoutClientsInput | portal_invitesUpdateWithWhereUniqueWithoutClientsInput[]
+    updateMany?: portal_invitesUpdateManyWithWhereWithoutClientsInput | portal_invitesUpdateManyWithWhereWithoutClientsInput[]
+    deleteMany?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
   }
 
   export type portal_contractsCreateNestedManyWithoutContractsInput = {
@@ -129838,6 +131630,13 @@ export namespace Prisma {
     connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
   }
 
+  export type portal_invitesCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<portal_invitesCreateWithoutPortalsInput, portal_invitesUncheckedCreateWithoutPortalsInput> | portal_invitesCreateWithoutPortalsInput[] | portal_invitesUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutPortalsInput | portal_invitesCreateOrConnectWithoutPortalsInput[]
+    createMany?: portal_invitesCreateManyPortalsInputEnvelope
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -130018,6 +131817,13 @@ export namespace Prisma {
     connectOrCreate?: marketplace_install_componentsCreateOrConnectWithoutPortalsInput | marketplace_install_componentsCreateOrConnectWithoutPortalsInput[]
     createMany?: marketplace_install_componentsCreateManyPortalsInputEnvelope
     connect?: marketplace_install_componentsWhereUniqueInput | marketplace_install_componentsWhereUniqueInput[]
+  }
+
+  export type portal_invitesUncheckedCreateNestedManyWithoutPortalsInput = {
+    create?: XOR<portal_invitesCreateWithoutPortalsInput, portal_invitesUncheckedCreateWithoutPortalsInput> | portal_invitesCreateWithoutPortalsInput[] | portal_invitesUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutPortalsInput | portal_invitesCreateOrConnectWithoutPortalsInput[]
+    createMany?: portal_invitesCreateManyPortalsInputEnvelope
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -130394,6 +132200,20 @@ export namespace Prisma {
     deleteMany?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
   }
 
+  export type portal_invitesUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<portal_invitesCreateWithoutPortalsInput, portal_invitesUncheckedCreateWithoutPortalsInput> | portal_invitesCreateWithoutPortalsInput[] | portal_invitesUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutPortalsInput | portal_invitesCreateOrConnectWithoutPortalsInput[]
+    upsert?: portal_invitesUpsertWithWhereUniqueWithoutPortalsInput | portal_invitesUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: portal_invitesCreateManyPortalsInputEnvelope
+    set?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    disconnect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    delete?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    update?: portal_invitesUpdateWithWhereUniqueWithoutPortalsInput | portal_invitesUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: portal_invitesUpdateManyWithWhereWithoutPortalsInput | portal_invitesUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -130756,6 +132576,20 @@ export namespace Prisma {
     update?: marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput | marketplace_install_componentsUpdateWithWhereUniqueWithoutPortalsInput[]
     updateMany?: marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput | marketplace_install_componentsUpdateManyWithWhereWithoutPortalsInput[]
     deleteMany?: marketplace_install_componentsScalarWhereInput | marketplace_install_componentsScalarWhereInput[]
+  }
+
+  export type portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput = {
+    create?: XOR<portal_invitesCreateWithoutPortalsInput, portal_invitesUncheckedCreateWithoutPortalsInput> | portal_invitesCreateWithoutPortalsInput[] | portal_invitesUncheckedCreateWithoutPortalsInput[]
+    connectOrCreate?: portal_invitesCreateOrConnectWithoutPortalsInput | portal_invitesCreateOrConnectWithoutPortalsInput[]
+    upsert?: portal_invitesUpsertWithWhereUniqueWithoutPortalsInput | portal_invitesUpsertWithWhereUniqueWithoutPortalsInput[]
+    createMany?: portal_invitesCreateManyPortalsInputEnvelope
+    set?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    disconnect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    delete?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+    update?: portal_invitesUpdateWithWhereUniqueWithoutPortalsInput | portal_invitesUpdateWithWhereUniqueWithoutPortalsInput[]
+    updateMany?: portal_invitesUpdateManyWithWhereWithoutPortalsInput | portal_invitesUpdateManyWithWhereWithoutPortalsInput[]
+    deleteMany?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
   }
 
   export type countersCreateNestedOneWithoutRq_counterInput = {
@@ -132450,6 +134284,38 @@ export namespace Prisma {
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutMarketplace_install_componentsInput, PortalUpdateWithoutMarketplace_install_componentsInput>, PortalUncheckedUpdateWithoutMarketplace_install_componentsInput>
   }
 
+  export type ClientCreateNestedOneWithoutPortal_invitesInput = {
+    create?: XOR<ClientCreateWithoutPortal_invitesInput, ClientUncheckedCreateWithoutPortal_invitesInput>
+    connectOrCreate?: ClientCreateOrConnectWithoutPortal_invitesInput
+    connect?: ClientWhereUniqueInput
+  }
+
+  export type PortalCreateNestedOneWithoutPortal_invitesInput = {
+    create?: XOR<PortalCreateWithoutPortal_invitesInput, PortalUncheckedCreateWithoutPortal_invitesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutPortal_invitesInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type ClientUpdateOneWithoutPortal_invitesNestedInput = {
+    create?: XOR<ClientCreateWithoutPortal_invitesInput, ClientUncheckedCreateWithoutPortal_invitesInput>
+    connectOrCreate?: ClientCreateOrConnectWithoutPortal_invitesInput
+    upsert?: ClientUpsertWithoutPortal_invitesInput
+    disconnect?: ClientWhereInput | boolean
+    delete?: ClientWhereInput | boolean
+    connect?: ClientWhereUniqueInput
+    update?: XOR<XOR<ClientUpdateToOneWithWhereWithoutPortal_invitesInput, ClientUpdateWithoutPortal_invitesInput>, ClientUncheckedUpdateWithoutPortal_invitesInput>
+  }
+
+  export type PortalUpdateOneWithoutPortal_invitesNestedInput = {
+    create?: XOR<PortalCreateWithoutPortal_invitesInput, PortalUncheckedCreateWithoutPortal_invitesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutPortal_invitesInput
+    upsert?: PortalUpsertWithoutPortal_invitesInput
+    disconnect?: PortalWhereInput | boolean
+    delete?: PortalWhereInput | boolean
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutPortal_invitesInput, PortalUpdateWithoutPortal_invitesInput>, PortalUncheckedUpdateWithoutPortal_invitesInput>
+  }
+
   export type NestedBigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -132999,6 +134865,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -133050,6 +134917,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -133262,6 +135130,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -133313,6 +135182,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -133715,6 +135585,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -133766,6 +135637,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -133833,6 +135705,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -133884,6 +135757,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -134001,6 +135875,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -134052,6 +135927,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -134119,6 +135995,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -134170,6 +136047,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -134221,6 +136099,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -134272,6 +136151,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -134339,6 +136219,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -134390,6 +136271,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -134441,6 +136323,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -134492,6 +136375,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -134559,6 +136443,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -134610,6 +136495,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -134661,6 +136547,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -134712,6 +136599,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -134779,6 +136667,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -134830,6 +136719,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -134965,6 +136855,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -135016,6 +136907,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -135083,6 +136975,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -135134,6 +137027,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -135185,6 +137079,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -135236,6 +137131,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -135289,6 +137185,58 @@ export namespace Prisma {
 
   export type UserCreateManyClientsInputEnvelope = {
     data: UserCreateManyClientsInput | UserCreateManyClientsInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type portal_invitesCreateWithoutClientsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+    portals?: PortalCreateNestedOneWithoutPortal_invitesInput
+  }
+
+  export type portal_invitesUncheckedCreateWithoutClientsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    redeemed_portal_id?: bigint | number | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+  }
+
+  export type portal_invitesCreateOrConnectWithoutClientsInput = {
+    where: portal_invitesWhereUniqueInput
+    create: XOR<portal_invitesCreateWithoutClientsInput, portal_invitesUncheckedCreateWithoutClientsInput>
+  }
+
+  export type portal_invitesCreateManyClientsInputEnvelope = {
+    data: portal_invitesCreateManyClientsInput | portal_invitesCreateManyClientsInput[]
     skipDuplicates?: boolean
   }
 
@@ -135372,6 +137320,47 @@ export namespace Prisma {
     updated_at?: DateTimeNullableFilter<"User"> | Date | string | null
     client_id?: BigIntNullableFilter<"User"> | bigint | number | null
     bitrix_id?: StringNullableFilter<"User"> | string | null
+  }
+
+  export type portal_invitesUpsertWithWhereUniqueWithoutClientsInput = {
+    where: portal_invitesWhereUniqueInput
+    update: XOR<portal_invitesUpdateWithoutClientsInput, portal_invitesUncheckedUpdateWithoutClientsInput>
+    create: XOR<portal_invitesCreateWithoutClientsInput, portal_invitesUncheckedCreateWithoutClientsInput>
+  }
+
+  export type portal_invitesUpdateWithWhereUniqueWithoutClientsInput = {
+    where: portal_invitesWhereUniqueInput
+    data: XOR<portal_invitesUpdateWithoutClientsInput, portal_invitesUncheckedUpdateWithoutClientsInput>
+  }
+
+  export type portal_invitesUpdateManyWithWhereWithoutClientsInput = {
+    where: portal_invitesScalarWhereInput
+    data: XOR<portal_invitesUpdateManyMutationInput, portal_invitesUncheckedUpdateManyWithoutClientsInput>
+  }
+
+  export type portal_invitesScalarWhereInput = {
+    AND?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
+    OR?: portal_invitesScalarWhereInput[]
+    NOT?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
+    id?: StringFilter<"portal_invites"> | string
+    created_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    code_hash?: StringFilter<"portal_invites"> | string
+    code_prefix?: StringFilter<"portal_invites"> | string
+    client_id?: BigIntNullableFilter<"portal_invites"> | bigint | number | null
+    email?: StringFilter<"portal_invites"> | string
+    organization?: StringNullableFilter<"portal_invites"> | string | null
+    product_code?: StringFilter<"portal_invites"> | string
+    auto_provision?: BoolFilter<"portal_invites"> | boolean
+    status?: StringFilter<"portal_invites"> | string
+    expires_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    sent_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    redeemed_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    revoked_at?: DateTimeNullableFilter<"portal_invites"> | Date | string | null
+    redeemed_portal_id?: BigIntNullableFilter<"portal_invites"> | bigint | number | null
+    issued_by?: StringNullableFilter<"portal_invites"> | string | null
+    revoked_by?: StringNullableFilter<"portal_invites"> | string | null
+    note?: StringNullableFilter<"portal_invites"> | string | null
   }
 
   export type portal_contractsCreateWithoutContractsInput = {
@@ -135609,6 +137598,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -135660,6 +137650,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -135727,6 +137718,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -135778,6 +137770,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -137914,6 +139907,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -137965,6 +139959,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -138153,6 +140148,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -138204,6 +140200,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -138355,6 +140352,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -138406,6 +140404,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -138522,6 +140521,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -138573,6 +140573,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -139164,6 +141165,7 @@ export namespace Prisma {
     status?: string | null
     is_active?: boolean | null
     users?: UserCreateNestedManyWithoutClientsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutClientsInput
   }
 
   export type ClientUncheckedCreateWithoutPortalsInput = {
@@ -139175,6 +141177,7 @@ export namespace Prisma {
     status?: string | null
     is_active?: boolean | null
     users?: UserUncheckedCreateNestedManyWithoutClientsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutClientsInput
   }
 
   export type ClientCreateOrConnectWithoutPortalsInput = {
@@ -139595,6 +141598,58 @@ export namespace Prisma {
 
   export type marketplace_install_componentsCreateManyPortalsInputEnvelope = {
     data: marketplace_install_componentsCreateManyPortalsInput | marketplace_install_componentsCreateManyPortalsInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type portal_invitesCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+    clients?: ClientCreateNestedOneWithoutPortal_invitesInput
+  }
+
+  export type portal_invitesUncheckedCreateWithoutPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    client_id?: bigint | number | null
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+  }
+
+  export type portal_invitesCreateOrConnectWithoutPortalsInput = {
+    where: portal_invitesWhereUniqueInput
+    create: XOR<portal_invitesCreateWithoutPortalsInput, portal_invitesUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type portal_invitesCreateManyPortalsInputEnvelope = {
+    data: portal_invitesCreateManyPortalsInput | portal_invitesCreateManyPortalsInput[]
     skipDuplicates?: boolean
   }
 
@@ -140109,6 +142164,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     users?: UserUpdateManyWithoutClientsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutClientsNestedInput
   }
 
   export type ClientUncheckedUpdateWithoutPortalsInput = {
@@ -140120,6 +142176,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     users?: UserUncheckedUpdateManyWithoutClientsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutClientsNestedInput
   }
 
   export type smartsUpsertWithWhereUniqueWithoutPortalsInput = {
@@ -140450,6 +142507,22 @@ export namespace Prisma {
     error_detail?: StringNullableFilter<"marketplace_install_components"> | string | null
     attempts?: IntFilter<"marketplace_install_components"> | number
     last_attempt_at?: DateTimeNullableFilter<"marketplace_install_components"> | Date | string | null
+  }
+
+  export type portal_invitesUpsertWithWhereUniqueWithoutPortalsInput = {
+    where: portal_invitesWhereUniqueInput
+    update: XOR<portal_invitesUpdateWithoutPortalsInput, portal_invitesUncheckedUpdateWithoutPortalsInput>
+    create: XOR<portal_invitesCreateWithoutPortalsInput, portal_invitesUncheckedCreateWithoutPortalsInput>
+  }
+
+  export type portal_invitesUpdateWithWhereUniqueWithoutPortalsInput = {
+    where: portal_invitesWhereUniqueInput
+    data: XOR<portal_invitesUpdateWithoutPortalsInput, portal_invitesUncheckedUpdateWithoutPortalsInput>
+  }
+
+  export type portal_invitesUpdateManyWithWhereWithoutPortalsInput = {
+    where: portal_invitesScalarWhereInput
+    data: XOR<portal_invitesUpdateManyMutationInput, portal_invitesUncheckedUpdateManyWithoutPortalsInput>
   }
 
   export type countersCreateWithoutRq_counterInput = {
@@ -140853,6 +142926,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -140904,6 +142978,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -140971,6 +143046,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -141022,6 +143098,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -141507,6 +143584,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -141558,6 +143636,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -141657,6 +143736,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -141708,6 +143788,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -141759,6 +143840,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -141810,6 +143892,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -141877,6 +143960,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -141928,6 +144012,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -141939,6 +144024,7 @@ export namespace Prisma {
     status?: string | null
     is_active?: boolean | null
     portals?: PortalCreateNestedManyWithoutClientsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutClientsInput
   }
 
   export type ClientUncheckedCreateWithoutUsersInput = {
@@ -141950,6 +144036,7 @@ export namespace Prisma {
     status?: string | null
     is_active?: boolean | null
     portals?: PortalUncheckedCreateNestedManyWithoutClientsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutClientsInput
   }
 
   export type ClientCreateOrConnectWithoutUsersInput = {
@@ -141977,6 +144064,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     portals?: PortalUpdateManyWithoutClientsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutClientsNestedInput
   }
 
   export type ClientUncheckedUpdateWithoutUsersInput = {
@@ -141988,6 +144076,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     portals?: PortalUncheckedUpdateManyWithoutClientsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutClientsNestedInput
   }
 
   export type bitrix_appsCreateWithoutBitrix_app_placementsInput = {
@@ -142143,6 +144232,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -142194,6 +144284,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -142392,6 +144483,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -142443,6 +144535,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -142611,6 +144704,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -142662,6 +144756,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -142729,6 +144824,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -142780,6 +144876,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -142831,6 +144928,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -142882,6 +144980,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -142949,6 +145048,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -143000,6 +145100,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -144762,6 +146863,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -144813,6 +146915,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -144959,6 +147062,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -145010,6 +147114,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -145317,6 +147422,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -145368,6 +147474,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -145435,6 +147542,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -145486,6 +147594,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -145672,6 +147781,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -145723,6 +147833,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -145869,6 +147980,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -145920,6 +148032,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -145971,6 +148084,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -146022,6 +148136,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -146120,6 +148235,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -146171,6 +148287,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -146451,6 +148568,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -146502,6 +148620,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -146657,6 +148776,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -146708,6 +148828,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -147489,6 +149610,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -147540,6 +149662,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -147607,6 +149730,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -147658,6 +149782,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -147740,6 +149865,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -147791,6 +149917,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -147895,6 +150022,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -147946,6 +150074,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -148068,6 +150197,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -148119,6 +150249,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -148239,6 +150370,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -148290,6 +150422,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -148341,6 +150474,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -148392,6 +150526,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -148459,6 +150594,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -148510,6 +150646,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -148618,6 +150755,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -148669,6 +150807,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -148799,6 +150938,7 @@ export namespace Prisma {
     bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -148850,6 +150990,295 @@ export namespace Prisma {
     bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type ClientCreateWithoutPortal_invitesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    name: string
+    email?: string | null
+    status?: string | null
+    is_active?: boolean | null
+    portals?: PortalCreateNestedManyWithoutClientsInput
+    users?: UserCreateNestedManyWithoutClientsInput
+  }
+
+  export type ClientUncheckedCreateWithoutPortal_invitesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    name: string
+    email?: string | null
+    status?: string | null
+    is_active?: boolean | null
+    portals?: PortalUncheckedCreateNestedManyWithoutClientsInput
+    users?: UserUncheckedCreateNestedManyWithoutClientsInput
+  }
+
+  export type ClientCreateOrConnectWithoutPortal_invitesInput = {
+    where: ClientWhereUniqueInput
+    create: XOR<ClientCreateWithoutPortal_invitesInput, ClientUncheckedCreateWithoutPortal_invitesInput>
+  }
+
+  export type PortalCreateWithoutPortal_invitesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalUncheckedCreateWithoutPortal_invitesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+  }
+
+  export type PortalCreateOrConnectWithoutPortal_invitesInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutPortal_invitesInput, PortalUncheckedCreateWithoutPortal_invitesInput>
+  }
+
+  export type ClientUpsertWithoutPortal_invitesInput = {
+    update: XOR<ClientUpdateWithoutPortal_invitesInput, ClientUncheckedUpdateWithoutPortal_invitesInput>
+    create: XOR<ClientCreateWithoutPortal_invitesInput, ClientUncheckedCreateWithoutPortal_invitesInput>
+    where?: ClientWhereInput
+  }
+
+  export type ClientUpdateToOneWithWhereWithoutPortal_invitesInput = {
+    where?: ClientWhereInput
+    data: XOR<ClientUpdateWithoutPortal_invitesInput, ClientUncheckedUpdateWithoutPortal_invitesInput>
+  }
+
+  export type ClientUpdateWithoutPortal_invitesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
+    is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    portals?: PortalUpdateManyWithoutClientsNestedInput
+    users?: UserUpdateManyWithoutClientsNestedInput
+  }
+
+  export type ClientUncheckedUpdateWithoutPortal_invitesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
+    is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    portals?: PortalUncheckedUpdateManyWithoutClientsNestedInput
+    users?: UserUncheckedUpdateManyWithoutClientsNestedInput
+  }
+
+  export type PortalUpsertWithoutPortal_invitesInput = {
+    update: XOR<PortalUpdateWithoutPortal_invitesInput, PortalUncheckedUpdateWithoutPortal_invitesInput>
+    create: XOR<PortalCreateWithoutPortal_invitesInput, PortalUncheckedCreateWithoutPortal_invitesInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutPortal_invitesInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutPortal_invitesInput, PortalUncheckedUpdateWithoutPortal_invitesInput>
+  }
+
+  export type PortalUpdateWithoutPortal_invitesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -149120,6 +151549,27 @@ export namespace Prisma {
     bitrix_id?: string | null
   }
 
+  export type portal_invitesCreateManyClientsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    redeemed_portal_id?: bigint | number | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+  }
+
   export type PortalUpdateWithoutClientsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -149169,6 +151619,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -149220,6 +151671,7 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -149296,6 +151748,69 @@ export namespace Prisma {
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type portal_invitesUpdateWithoutClientsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    portals?: PortalUpdateOneWithoutPortal_invitesNestedInput
+  }
+
+  export type portal_invitesUncheckedUpdateWithoutClientsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type portal_invitesUncheckedUpdateManyWithoutClientsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type portal_contractsCreateManyContractsInput = {
@@ -151108,6 +153623,27 @@ export namespace Prisma {
     last_attempt_at?: Date | string | null
   }
 
+  export type portal_invitesCreateManyPortalsInput = {
+    id: string
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    code_hash: string
+    code_prefix: string
+    client_id?: bigint | number | null
+    email: string
+    organization?: string | null
+    product_code?: string
+    auto_provision?: boolean
+    status?: string
+    expires_at?: Date | string | null
+    sent_at?: Date | string | null
+    redeemed_at?: Date | string | null
+    revoked_at?: Date | string | null
+    issued_by?: string | null
+    revoked_by?: string | null
+    note?: string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -152200,6 +154736,69 @@ export namespace Prisma {
     error_detail?: NullableStringFieldUpdateOperationsInput | string | null
     attempts?: IntFieldUpdateOperationsInput | number
     last_attempt_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type portal_invitesUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    clients?: ClientUpdateOneWithoutPortal_invitesNestedInput
+  }
+
+  export type portal_invitesUncheckedUpdateWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type portal_invitesUncheckedUpdateManyWithoutPortalsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    code_hash?: StringFieldUpdateOperationsInput | string
+    code_prefix?: StringFieldUpdateOperationsInput | string
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    email?: StringFieldUpdateOperationsInput | string
+    organization?: NullableStringFieldUpdateOperationsInput | string | null
+    product_code?: StringFieldUpdateOperationsInput | string
+    auto_provision?: BoolFieldUpdateOperationsInput | boolean
+    status?: StringFieldUpdateOperationsInput | string
+    expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sent_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revoked_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    issued_by?: NullableStringFieldUpdateOperationsInput | string | null
+    revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type rq_counterCreateManyRqsInput = {

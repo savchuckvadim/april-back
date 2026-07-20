@@ -98,3 +98,7 @@ CLAUDE.md
 
 docs
 schemacopy
+
+
+/scripts/**
+/infra/nginx/**

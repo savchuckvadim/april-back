@@ -34,6 +34,14 @@ import {
     ApprovalResultDto,
     InstallComponentDto,
 } from '../dto/marketplace-moderation.dto';
+import { MarketplaceInviteService } from '../services/marketplace-invite.service';
+import {
+    InviteDto,
+    InvitesQueryDto,
+    IssuedInviteDto,
+    IssueInviteDto,
+    ReissueInviteDto,
+} from '../dto/marketplace-invite.dto';
 
 /**
  * Модерация подключений маркетплейс-приложения «Менеджер Гарант»
@@ -47,6 +55,7 @@ import {
 export class MarketplaceModerationController {
     constructor(
         private readonly moderationService: MarketplaceModerationService,
+        private readonly inviteService: MarketplaceInviteService,
     ) {}
 
     @ApiOperation({
@@ -204,5 +213,102 @@ export class MarketplaceModerationController {
         @Param('id', ParseIntPipe) id: number,
     ): Promise<PbxActionResultDto> {
         return this.moderationService.placementsRefresh(id);
+    }
+
+    // ─── Коды подключения портала (invite) ───
+
+    @ApiOperation({
+        summary: 'Список кодов подключения',
+        description:
+            'Выпущенные коды подключения портала к сервису April (новые сверху). ' +
+            'Сам код и его хэш наружу НЕ отдаются — только видимая часть (codePrefix), ' +
+            'получатель, статус, сроки и портал, погасивший код.',
+    })
+    @ApiOkResponse({
+        description: 'Список кодов подключения',
+        type: InviteDto,
+        isArray: true,
+    })
+    @Get('invites')
+    async getInvites(@Query() query: InvitesQueryDto): Promise<InviteDto[]> {
+        return this.inviteService.getInvites(query);
+    }
+
+    @ApiOperation({
+        summary: 'Выпустить код подключения и отправить его на email',
+        description:
+            'Создаёт (или находит по email) клиента, выпускает код подключения и отправляет письмо. ' +
+            'ВНИМАНИЕ: открытый код возвращается ЕДИНСТВЕННЫЙ РАЗ — в БД хранится только его хэш. ' +
+            'Если письмо не ушло (emailSent=false), код остаётся в статусе issued и передаётся клиенту вручную.',
+    })
+    @ApiBody({
+        type: IssueInviteDto,
+        description:
+            'Получатель кода, продукт, срок действия и режим установки.',
+    })
+    @ApiOkResponse({
+        description: 'Выпущенный код (включая открытый текст кода)',
+        type: IssuedInviteDto,
+    })
+    @Post('invites')
+    async issueInvite(
+        @Body() dto: IssueInviteDto,
+        @CurrentUser('login') login?: string,
+    ): Promise<IssuedInviteDto> {
+        return this.inviteService.issue(dto, login);
+    }
+
+    @ApiOperation({
+        summary: 'Отозвать код подключения',
+        description:
+            'Переводит код в статус revoked — погасить его больше нельзя. ' +
+            'Уже погашенный (redeemed) код отозвать нельзя: чтобы отключить портал, ' +
+            'используйте блокировку портала (block) в разделе заявок.',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'ID кода подключения (uuid)',
+        example: 'a3f1c2d0-9b8e-4a1c-8f2d-1e5b7c9d0a11',
+    })
+    @ApiOkResponse({
+        description: 'Отозванный код',
+        type: InviteDto,
+    })
+    @Post('invites/:id/revoke')
+    async revokeInvite(
+        @Param('id') id: string,
+        @CurrentUser('login') login?: string,
+    ): Promise<InviteDto> {
+        return this.inviteService.revoke(id, login);
+    }
+
+    @ApiOperation({
+        summary: 'Перевыпустить код подключения',
+        description:
+            'Отзывает старый код и выпускает новый на тот же (или переданный) email, ' +
+            'после чего отправляет письмо. Нужен потому, что повторно отправить прежний код ' +
+            'невозможно — в БД хранится только его хэш. Новый код возвращается открытым текстом.',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'ID перевыпускаемого кода подключения (uuid)',
+        example: 'a3f1c2d0-9b8e-4a1c-8f2d-1e5b7c9d0a11',
+    })
+    @ApiBody({
+        type: ReissueInviteDto,
+        description:
+            'Необязательные новый email, срок действия и причина перевыпуска.',
+    })
+    @ApiOkResponse({
+        description: 'Новый выпущенный код (включая открытый текст кода)',
+        type: IssuedInviteDto,
+    })
+    @Post('invites/:id/reissue')
+    async reissueInvite(
+        @Param('id') id: string,
+        @Body() dto: ReissueInviteDto,
+        @CurrentUser('login') login?: string,
+    ): Promise<IssuedInviteDto> {
+        return this.inviteService.reissue(id, dto, login);
     }
 }
