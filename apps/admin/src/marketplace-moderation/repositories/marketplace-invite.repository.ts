@@ -40,6 +40,13 @@ export abstract class MarketplaceInviteRepository {
     /** Клиент по email (используется для повторной выдачи тому же клиенту) */
     abstract findClientByEmail(email: string): Promise<Client | null>;
 
+    /**
+     * Организация, уже привязанная к порталу. Приоритетнее поиска по email:
+     * код по заявке должен достаться организации портала, иначе погашение
+     * упрётся в 409 «портал подключён к другой организации».
+     */
+    abstract findClientByPortalId(portalId: bigint): Promise<Client | null>;
+
     /** Создание клиента под нового получателя кода */
     abstract createClient(input: {
         name: string;

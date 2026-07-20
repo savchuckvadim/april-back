@@ -24,6 +24,7 @@ import { MarketplaceOnboardingService } from './services/marketplace-onboarding.
 import { MarketplaceCabinetService } from './services/marketplace-cabinet.service';
 import { MarketplaceInviteService } from './services/marketplace-invite.service';
 import { MarketplaceInstallRepository } from './persistence/marketplace-install.repository';
+import { MarketplaceClientRepository } from './persistence/marketplace-client.repository';
 import { PortalSessionGuard } from './lib/portal-session.guard';
 import { MarketplaceBxClient } from './clients/marketplace-bx.client';
 import { BitrixRequestLoggerMiddleware } from './lib/bitrix-request-logger.middleware';
@@ -80,6 +81,7 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
         MarketplaceCabinetService,
         MarketplaceInviteService,
         MarketplaceInstallRepository,
+        MarketplaceClientRepository,
         MarketplaceBxClient,
         AdminKeyGuard,
         PortalSessionGuard,

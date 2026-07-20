@@ -41,6 +41,14 @@ export class MarketplaceInvitePrismaRepository
         return this.prisma.client.findFirst({ where: { email } });
     }
 
+    async findClientByPortalId(portalId: bigint): Promise<Client | null> {
+        const portal = await this.prisma.portal.findUnique({
+            where: { id: portalId },
+            include: { clients: true },
+        });
+        return portal?.clients ?? null;
+    }
+
     async createClient(input: {
         name: string;
         email: string;

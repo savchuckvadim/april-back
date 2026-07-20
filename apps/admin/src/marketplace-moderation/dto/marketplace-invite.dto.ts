@@ -113,6 +113,20 @@ export class IssueInviteDto {
     autoProvision?: boolean;
 
     @ApiPropertyOptional({
+        description:
+            'ID портала, по заявке которого выпускается код. Если передан — код привязывается к организации ЭТОГО портала, ' +
+            'а email считается только адресом доставки. Без него организация ищется по email (и создаётся, если не найдена), ' +
+            'что при другом адресе доставки завело бы вторую организацию и сломало погашение.',
+        type: Number,
+        example: 7,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    portalId?: number;
+
+    @ApiPropertyOptional({
         description: 'Служебная заметка модератора (клиенту не показывается)',
         type: String,
         example: 'Выдан по заявке с сайта от 20.07.2026',

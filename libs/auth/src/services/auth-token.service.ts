@@ -25,6 +25,10 @@ export class AuthTokenService {
             role: user.role,
             ...(user.clientId !== undefined && { clientId: user.clientId }),
             ...(user.portalId !== undefined && { portalId: user.portalId }),
+            ...(user.isAdmin !== undefined && { isAdmin: user.isAdmin }),
+            ...(user.bitrixUserId !== undefined && {
+                bitrixUserId: user.bitrixUserId,
+            }),
         };
         return this.jwtService.sign(payload, {
             secret: this.options.jwt.secret,

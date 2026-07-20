@@ -158,6 +158,11 @@ export class MarketplaceSessionService {
             ...(portal.client_id !== null
                 ? { clientId: Number(portal.client_id) }
                 : {}),
+            // isAdmin проверен живым REST-вызовом profile выше — в токене он
+            // становится доступен ручкам (смена адреса доставки кода вправе
+            // делать только администратор портала).
+            isAdmin: profile.isAdmin,
+            ...(profile.id ? { bitrixUserId: String(profile.id) } : {}),
         });
 
         // Email нужен только онбординг-форме (предзаполнение) — лишний

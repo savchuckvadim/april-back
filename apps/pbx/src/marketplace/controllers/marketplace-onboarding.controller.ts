@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
     ApiBearerAuth,
     ApiBody,
+    ApiForbiddenResponse,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
@@ -14,6 +15,8 @@ import { MarketplaceInviteService } from '../services/marketplace-invite.service
 import {
     OnboardingApplicationDto,
     OnboardingStateDto,
+    RequestInviteCodeDto,
+    RequestInviteCodeResultDto,
 } from '../dto/marketplace-onboarding.dto';
 import {
     RedeemInviteDto,
@@ -56,7 +59,9 @@ export class MarketplaceOnboardingController {
 
     @ApiOperation({
         summary:
-            'Подать заявку на подключение (организация + контактный email); повторная подача до одобрения редактирует заявку',
+            'Подать заявку на подключение (организация, ФИО контактного лица, email); повторная подача до одобрения редактирует заявку',
+        description:
+            'При первой подаче создаёт организацию-клиента и её корневого пользователя, привязанного к пользователю портала Битрикс24. Повторная подача обновляет данные, второй организации/пользователя не создаётся.',
     })
     @ApiOkResponse({
         description: 'Новое состояние (pending) и сохранённая заявка',
@@ -70,7 +75,42 @@ export class MarketplaceOnboardingController {
         @CurrentUser() user: AuthUser,
         @Body() dto: OnboardingApplicationDto,
     ): Promise<OnboardingStateDto> {
-        return this.onboardingService.submitApplication(user.sub, dto);
+        return this.onboardingService.submitApplication(
+            user.sub,
+            dto,
+            user.bitrixUserId,
+        );
+    }
+
+    @ApiOperation({
+        summary: 'Запросить код подключения (повторно или на другой адрес)',
+        description:
+            'Фиксирует запрос и уведомляет вендора; сам код выпускает вендор. Без deliveryEmail код уйдёт на контактный email организации. Отправку на другой адрес вправе запросить только администратор портала Битрикс24, при этом контактный email организации НЕ меняется.',
+    })
+    @ApiBody({
+        type: RequestInviteCodeDto,
+        description: 'Необязательный адрес доставки кода.',
+    })
+    @ApiOkResponse({
+        description: 'Запрос принят',
+        type: RequestInviteCodeResultDto,
+    })
+    @ApiForbiddenResponse({
+        description:
+            'Портал отключён вендором либо запрошен другой адрес не администратором портала',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Нет/просрочен portal-context токен',
+    })
+    @Post('request-code')
+    async requestCode(
+        @CurrentUser() user: AuthUser,
+        @Body() dto: RequestInviteCodeDto,
+    ): Promise<RequestInviteCodeResultDto> {
+        return this.onboardingService.requestCode(user.sub, dto, {
+            isAdmin: user.isAdmin,
+            bitrixUserId: user.bitrixUserId,
+        });
     }
 
     @ApiOperation({

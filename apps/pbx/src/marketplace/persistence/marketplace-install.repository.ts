@@ -248,49 +248,9 @@ export class MarketplaceInstallRepository {
         });
     }
 
-    /**
-     * Онбординг-заявка: создать клиента и привязать к порталу, либо
-     * (повторная подача до одобрения) обновить название/email —
-     * идемпотентный upsert (решение открытого вопроса №5 задачи онбординга).
-     */
-    async linkClient(
-        portalId: bigint,
-        data: { organizationName: string; contactEmail: string },
-    ): Promise<Client> {
-        const portal = await this.prisma.portal.findUnique({
-            where: { id: portalId },
-        });
-
-        if (portal?.client_id) {
-            return this.prisma.client.update({
-                where: { id: portal.client_id },
-                data: {
-                    name: data.organizationName,
-                    email: data.contactEmail,
-                    updated_at: new Date(),
-                },
-            });
-        }
-
-        const client = await this.prisma.client.create({
-            data: {
-                name: data.organizationName,
-                email: data.contactEmail,
-                status: 'pending',
-                is_active: true,
-                created_at: new Date(),
-                updated_at: new Date(),
-            },
-        });
-        await this.prisma.portal.update({
-            where: { id: portalId },
-            data: { client_id: client.id },
-        });
-        this.logger.log(
-            `Onboarding: клиент #${client.id} привязан к порталу #${portalId}`,
-        );
-        return client;
-    }
+    // Привязка клиента к порталу (заявка на подключение) живёт в
+    // MarketplaceClientRepository: здесь — установки и порталы, там —
+    // идентичность клиента (организация + корневой пользователь).
 
     /** Установка по текущему домену портала (для admin-операций) */
     async findInstallByDomain(

@@ -77,7 +77,8 @@ describe('PortalListFieldInstallService', () => {
         expect(entities[0]).toMatchObject({
             entity_type: PbxEntityTypePrisma.BITRIX_LIST,
             entity_id: 5,
-            parent_type: 'calling',
+            // всегда 'list' (легаси-контракт Laravel), НЕ appType из шаблона
+            parent_type: 'list',
             code: 'sales_kpi_event_type',
             bitrixId: '101',
             bitrixCamelId: 'PROPERTY_101',

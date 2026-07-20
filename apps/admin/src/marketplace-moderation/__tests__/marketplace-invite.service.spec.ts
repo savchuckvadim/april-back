@@ -15,6 +15,7 @@ type InviteRepoMock = jest.Mocked<
         | 'findInvites'
         | 'findInviteById'
         | 'findClientByEmail'
+        | 'findClientByPortalId'
         | 'createClient'
         | 'createInvite'
         | 'markInviteSent'
@@ -87,6 +88,7 @@ describe('MarketplaceInviteService (коды подключения портал
             findInvites: jest.fn().mockResolvedValue([inviteFixture()]),
             findInviteById: jest.fn().mockResolvedValue(inviteFixture()),
             findClientByEmail: jest.fn().mockResolvedValue(null),
+            findClientByPortalId: jest.fn().mockResolvedValue(null),
             createClient: jest.fn().mockResolvedValue({ id: BigInt(5) }),
             createInvite: jest
                 .fn()
@@ -158,6 +160,42 @@ describe('MarketplaceInviteService (коды подключения портал
         await service.issue({ email: 'director@romashka.ru' });
 
         expect(repo.createClient).not.toHaveBeenCalled();
+        expect(repo.createInvite).toHaveBeenCalledWith(
+            expect.objectContaining({ clientId: BigInt(42) }),
+        );
+    });
+
+    it('issue по заявке: код достаётся организации ПОРТАЛА, а email — только адрес доставки', async () => {
+        // на другом адресе доставки живёт другая организация: если взять её,
+        // погашение упрётся в 409 «портал подключён к другой организации»
+        repo.findClientByPortalId.mockResolvedValue({
+            id: BigInt(5),
+        } as never);
+        repo.findClientByEmail.mockResolvedValue({
+            id: BigInt(99),
+        } as never);
+
+        await service.issue({
+            email: 'new-address@romashka.ru',
+            portalId: 7,
+        });
+
+        expect(repo.findClientByPortalId).toHaveBeenCalledWith(BigInt(7));
+        expect(repo.createInvite).toHaveBeenCalledWith(
+            expect.objectContaining({
+                clientId: BigInt(5),
+                email: 'new-address@romashka.ru',
+            }),
+        );
+        expect(repo.createClient).not.toHaveBeenCalled();
+    });
+
+    it('issue: портал без организации → откат к поиску по email', async () => {
+        repo.findClientByPortalId.mockResolvedValue(null);
+        repo.findClientByEmail.mockResolvedValue({ id: BigInt(42) } as never);
+
+        await service.issue({ email: 'director@romashka.ru', portalId: 7 });
+
         expect(repo.createInvite).toHaveBeenCalledWith(
             expect.objectContaining({ clientId: BigInt(42) }),
         );

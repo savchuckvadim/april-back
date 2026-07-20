@@ -14,6 +14,12 @@ import {
     fullListFieldCode,
 } from '../../lib/list-field-code.util';
 
+/**
+ * Значение `parent_type` для зеркал полей списков — легаси-контракт:
+ * Laravel `Bitrixlist::fields()` фильтрует morphMany по `parent_type = 'list'`.
+ */
+export const LIST_FIELD_PARENT_TYPE = 'list';
+
 /** Результат установки поля списка с гарантированно найденным bxField */
 export interface IPbxListFieldInstallData extends IBxListInstalledFieldResult {
     bxField: IBxListFieldRef;
@@ -113,7 +119,10 @@ export class PortalListFieldInstallService {
         const fullCode = fullListFieldCode(listKey, field.parsedField.code);
         const entity = new PbxFieldEntity();
         entity.entity_type = PbxEntityTypePrisma.BITRIX_LIST;
-        entity.parent_type = field.parsedField.appType;
+        // строго 'list': Laravel Bitrixlist::fields() и portal-builder
+        // (mapBitrixList) отбирают поля через where('parent_type', 'list');
+        // appType из шаблона ('calling'/'kpi') сюда писать нельзя
+        entity.parent_type = LIST_FIELD_PARENT_TYPE;
         entity.entity_id = listDbId;
         entity.name = field.parsedField.name;
         entity.title = field.parsedField.name;

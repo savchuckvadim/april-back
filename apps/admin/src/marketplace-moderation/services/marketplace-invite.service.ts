@@ -80,6 +80,7 @@ export class MarketplaceInviteService {
         const clientId = await this.resolveClientId(
             dto.email,
             dto.organization,
+            dto.portalId,
         );
         const issued = await this.createAndSend({
             email: dto.email,
@@ -222,10 +223,35 @@ export class MarketplaceInviteService {
     }
 
     /** Клиент под получателя кода: существующий по email либо новый */
+    /**
+     * Организация, к которой привяжется код.
+     *
+     * Если код выпускается по заявке портала (передан portalId) — берём
+     * организацию ЭТОГО портала. Иначе выпуск на адрес, отличный от указанного
+     * в заявке, завёл бы вторую организацию, а погашение упёрлось бы в 409
+     * «портал подключён к другой организации»: заявка уже проставила
+     * portals.client_id (см. ai/tasks/bitrix-marketplace-client-identity.md).
+     *
+     * Email в этом случае — только адрес доставки письма, идентичность
+     * организации им не подменяется.
+     */
     private async resolveClientId(
         email: string,
         organization?: string,
+        portalId?: number,
     ): Promise<bigint> {
+        if (portalId !== undefined) {
+            const portalClient = await this.repository.findClientByPortalId(
+                BigInt(portalId),
+            );
+            if (portalClient) {
+                return portalClient.id;
+            }
+            this.logger.warn(
+                `Портал #${portalId} без организации — код выпускается по email ${email}`,
+            );
+        }
+
         const existing = await this.repository.findClientByEmail(email);
         if (existing) {
             return existing.id;
