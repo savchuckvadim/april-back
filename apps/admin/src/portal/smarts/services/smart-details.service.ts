@@ -53,9 +53,24 @@ export class SmartDetailsService {
                 smart,
                 domain: portal.domain,
                 bitrix: null,
-                error: (error as Error).message,
+                error: this.humanizeError((error as Error).message),
             };
         }
+    }
+
+    /**
+     * userfieldconfig.* доступен только администраторам CRM: без прав Bitrix
+     * отвечает «Вы не можете просматривать настройки пользовательских полей».
+     * Превращаем в понятную подсказку, что чинить (права REST-ключа портала).
+     */
+    private humanizeError(message: string): string {
+        if (message.includes('не можете просматривать настройки')) {
+            return (
+                'У REST-ключа портала нет прав администратора CRM ' +
+                '(userfieldconfig): пересоздайте вебхук от имени администратора.'
+            );
+        }
+        return message;
     }
 
     private async loadBitrixState(

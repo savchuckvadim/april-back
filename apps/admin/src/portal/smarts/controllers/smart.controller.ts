@@ -17,10 +17,14 @@ import { UpdateSmartDto } from '../dto/update-smart.dto';
 import { SmartResponseDto } from '../dto/smart-response.dto';
 import { SmartDetailsResponseDto } from '../dto/smart-details-response.dto';
 import { InstallCallReportSmartUseCase } from '@lib/call-lib';
+import { CONST_SMART_REGISTRY } from '@lib/portal-lib/pbx/const-smart-registry';
 import {
     InstallAicallDto,
     InstallAicallResponseDto,
 } from '../dto/install-aicall.dto';
+import { InstallConstSmartDto } from '../dto/install-const-smart.dto';
+import { SmartRegistryResponseDto } from '../dto/smart-registry.dto';
+import { ConstSmartInstallerResolver } from '../services/const-smart-installer.service';
 
 @ApiTags('Admin Smarts Management')
 @Controller('admin/pbx/smarts')
@@ -29,7 +33,57 @@ export class SmartController {
         private readonly smartService: SmartService,
         private readonly smartDetailsService: SmartDetailsService,
         private readonly installAicallUseCase: InstallCallReportSmartUseCase,
+        private readonly constSmartInstallerResolver: ConstSmartInstallerResolver,
     ) {}
+
+    @ApiOperation({
+        summary: 'Реестр const-смартов',
+        description:
+            'Каталог смартов, устанавливаемых из констант (без Excel) — источник ' +
+            'карточек «доступен к установке» в галерее смартов.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Реестр const-смартов',
+        type: SmartRegistryResponseDto,
+    })
+    // ВАЖНО: объявлен ДО @Get(':id') — иначе 'registry' уйдёт в ParseIntPipe.
+    @Get('registry')
+    getRegistry(): SmartRegistryResponseDto {
+        return {
+            items: CONST_SMART_REGISTRY.map(descriptor => ({
+                kind: descriptor.kind,
+                type: descriptor.type,
+                group: descriptor.group,
+                code: descriptor.code,
+                title: descriptor.title,
+                source: 'const' as const,
+                fieldsCount: descriptor.fieldsCount,
+                hasCategories: descriptor.hasCategories,
+                description: descriptor.description,
+            })),
+        };
+    }
+
+    @ApiOperation({
+        summary: 'Установить const-смарт (generic)',
+        description:
+            'Идемпотентная установка const-смарта по kind из реестра ' +
+            '(резолв kind → use-case; общий контракт результата).',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Результат установки',
+        type: InstallAicallResponseDto,
+    })
+    @Post('install-const')
+    async installConst(
+        @Body() dto: InstallConstSmartDto,
+    ): Promise<InstallAicallResponseDto> {
+        return this.constSmartInstallerResolver
+            .resolve(dto.kind)
+            .execute(dto.domain);
+    }
 
     @ApiOperation({
         summary: 'Установить смарт «AI-анализ звонков»',

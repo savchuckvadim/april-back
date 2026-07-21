@@ -4,6 +4,7 @@ import { PBXModule } from '@lib/pbx/pbx.module';
 import { CallReportSmartModule } from '@lib/call-lib';
 import { SmartService } from './services/smart.service';
 import { SmartDetailsService } from './services/smart-details.service';
+import { ConstSmartInstallerResolver } from './services/const-smart-installer.service';
 import { SmartRepository } from './repositories/smart.repository';
 import { SmartPrismaRepository } from './repositories/smart.prisma.repository';
 import { SmartController } from './controllers/smart.controller';
@@ -16,6 +17,7 @@ import { SmartController } from './controllers/smart.controller';
     providers: [
         SmartService,
         SmartDetailsService,
+        ConstSmartInstallerResolver,
         {
             provide: SmartRepository,
             useClass: SmartPrismaRepository,
