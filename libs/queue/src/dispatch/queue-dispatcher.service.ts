@@ -48,6 +48,9 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.CALL_ANALYSIS)
         private readonly callAnalysisQueue: Queue,
 
+        @InjectQueue(QueueNames.CALL_REPORT)
+        private readonly callReportQueue: Queue,
+
         @InjectQueue(QueueNames.MARKETPLACE_PROVISION)
         private readonly marketplaceProvisionQueue: Queue,
     ) {
@@ -115,6 +118,9 @@ export class QueueDispatcherService {
 
             case QueueNames.CALL_ANALYSIS:
                 return this.callAnalysisQueue;
+
+            case QueueNames.CALL_REPORT:
+                return this.callReportQueue;
 
             case QueueNames.MARKETPLACE_PROVISION:
                 return this.marketplaceProvisionQueue;

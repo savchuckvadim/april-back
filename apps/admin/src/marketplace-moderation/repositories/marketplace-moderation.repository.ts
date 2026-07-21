@@ -64,6 +64,13 @@ export abstract class MarketplaceModerationRepository {
     /** Блокировка портала (approval_status='blocked') */
     abstract setPortalBlocked(portalId: bigint): Promise<void>;
 
+    /**
+     * Отвязка портала: допуск → pending, организация отвязана
+     * (client_id=null), продукты портала → inactive. Клиент НЕ трогается —
+     * у организации могут быть другие порталы.
+     */
+    abstract detachPortal(portalId: bigint): Promise<void>;
+
     /** Компоненты установок портала (статусы установки по осям) */
     abstract findComponentsByPortal(
         portalId: bigint,

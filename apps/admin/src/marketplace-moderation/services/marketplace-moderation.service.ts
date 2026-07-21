@@ -102,9 +102,14 @@ export class MarketplaceModerationService {
             );
         }
 
-        return dto.action === ApprovalAction.APPROVE
-            ? this.approve(portal, dto, approvedBy)
-            : this.block(portal, dto, approvedBy);
+        switch (dto.action) {
+            case ApprovalAction.APPROVE:
+                return this.approve(portal, dto, approvedBy);
+            case ApprovalAction.DETACH:
+                return this.detach(portal, dto, approvedBy);
+            default:
+                return this.block(portal, dto, approvedBy);
+        }
     }
 
     /** Статусы компонентов установки портала (прогресс provisioning) */
@@ -205,6 +210,41 @@ export class MarketplaceModerationService {
             action: ApprovalAction.BLOCK,
             approvalStatus: 'blocked',
             clientStatus: portal.clients ? 'disabled' : undefined,
+            provisionDispatched: false,
+        };
+    }
+
+    /**
+     * Отвязка портала: допуск → pending, организация отвязана, продукты
+     * inactive. Портал возвращается на экран ввода кода подключения —
+     * единственный способ, т.к. переустановка приложения допуск СОХРАНЯЕТ
+     * (решение владельца 2026-07-20). Клиент не блокируется: у организации
+     * могут быть другие порталы; для отключения организации есть block.
+     */
+    private async detach(
+        portal: ModerationPortal,
+        dto: ApprovalActionDto,
+        approvedBy?: string,
+    ): Promise<ApprovalResultDto> {
+        await this.repository.detachPortal(portal.id);
+        await this.repository.logModerationEvent({
+            memberId: portal.member_id ?? undefined,
+            domain: portal.domain ?? undefined,
+            event: 'PORTAL_DETACHED',
+            status: 'processed',
+            payload: JSON.stringify({
+                by: approvedBy,
+                comment: dto.comment,
+                previousClientId: portal.client_id?.toString(),
+            }),
+        });
+        this.logger.log(`Detach: portal=${portal.id} by=${approvedBy ?? '-'}`);
+
+        return {
+            portalId: portal.id.toString(),
+            action: ApprovalAction.DETACH,
+            approvalStatus: 'pending',
+            clientStatus: portal.clients?.status ?? undefined,
             provisionDispatched: false,
         };
     }

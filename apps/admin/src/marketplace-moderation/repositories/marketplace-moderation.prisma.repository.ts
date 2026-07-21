@@ -75,6 +75,26 @@ export class MarketplaceModerationPrismaRepository
         });
     }
 
+    async detachPortal(portalId: bigint): Promise<void> {
+        // Транзакция: портал без организации, но с активным продуктом —
+        // противоречивое состояние, не должно быть видно даже мгновение.
+        await this.prisma.$transaction([
+            this.prisma.portal.update({
+                where: { id: portalId },
+                data: {
+                    approval_status: 'pending',
+                    client_id: null,
+                    approved_at: null,
+                    approved_by: null,
+                },
+            }),
+            this.prisma.portal_products.updateMany({
+                where: { portal_id: portalId },
+                data: { status: 'inactive' },
+            }),
+        ]);
+    }
+
     async findComponentsByPortal(
         portalId: bigint,
     ): Promise<marketplace_install_components[]> {

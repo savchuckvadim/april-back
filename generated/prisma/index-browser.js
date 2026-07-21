@@ -1212,6 +1212,9 @@ exports.Prisma.TranscriptionScalarFieldEnum = {
   updated_at: 'updated_at',
   provider: 'provider',
   activity_id: 'activity_id',
+  dedup_key: 'dedup_key',
+  call_id: 'call_id',
+  call_started_at: 'call_started_at',
   file_id: 'file_id',
   in_comment: 'in_comment',
   status: 'status',
@@ -2175,6 +2178,8 @@ exports.Prisma.suppliesOrderByRelevanceFieldEnum = {
 exports.Prisma.TranscriptionOrderByRelevanceFieldEnum = {
   provider: 'provider',
   activity_id: 'activity_id',
+  dedup_key: 'dedup_key',
+  call_id: 'call_id',
   file_id: 'file_id',
   status: 'status',
   text: 'text',

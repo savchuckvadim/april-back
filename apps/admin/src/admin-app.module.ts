@@ -22,6 +22,7 @@ import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-inf
 import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
 import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
 import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
+import { AiRagAdminModule } from '@lib/ai-rag';
 import { AdminGarantPackageModule } from '@lib/garant/package';
 import { AdminGarantProfPriceModule } from '@lib/garant/price';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
@@ -57,6 +58,9 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         // транскрибации — только store-сервисы поверх Prisma).
         TranscriptionAdminModule,
         AiAdminModule,
+        // База знаний RAG: документы общие и по порталам (скрипты типов
+        // звонков) — управление из админки, чтение агентами через event-sales.
+        AiRagAdminModule,
         // Гарант/портал: админ-контроллеры, вынесенные из сервисных модулей
         // (чтобы не протекали в Swagger konstructor).
         AdminGarantPackageModule,

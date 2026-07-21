@@ -269,6 +269,7 @@ export class ParseRpaService {
                 ,
                 ,
                 isNeedUpdate,
+                multiple,
             ] = values;
 
             const fieldType = toStr(type) as Field['type'];
@@ -291,7 +292,9 @@ export class ParseRpaService {
                 bxFieldName,
                 order: toNum(order),
                 isNeedUpdate: coerceExcelBool(isNeedUpdate),
-                isMultiple: false,
+                // isMultiple — последняя колонка листа fields; в старых шаблонах
+                // её нет — тогда ячейка undefined и признак остаётся false.
+                isMultiple: coerceExcelBool(multiple),
             });
         });
         return fields;

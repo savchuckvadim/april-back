@@ -6,10 +6,18 @@ import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
  * список заявок, approve/block портала, статусы компонентов установки.
  */
 
-/** Действие модератора над заявкой портала */
+/**
+ * Действие модератора над заявкой портала.
+ *
+ * detach («отвязать портал») нужен потому, что подключение живёт на уровне
+ * портала и ПЕРЕЖИВАЕТ переустановку приложения (решение владельца
+ * 2026-07-20): единственный способ вернуть портал на экран ввода кода —
+ * ручная отвязка (смена владельца портала, отзыв доступа без блокировки).
+ */
 export enum ApprovalAction {
     APPROVE = 'approve',
     BLOCK = 'block',
+    DETACH = 'detach',
 }
 
 export class ApplicationsQueryDto {
@@ -122,7 +130,7 @@ export class ApplicationDto {
 export class ApprovalActionDto {
     @ApiProperty({
         description:
-            'Действие: approve — одобрить (активирует продукт sales и запускает установку сущностей), block — заблокировать',
+            'Действие: approve — одобрить (активирует продукт sales и запускает установку сущностей), block — заблокировать, detach — отвязать портал (допуск → pending, организация отвязывается, портал возвращается на экран ввода кода подключения)',
         enum: ApprovalAction,
         example: ApprovalAction.APPROVE,
     })

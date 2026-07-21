@@ -27,6 +27,9 @@ export enum QueueNames {
     KONSTRUCTOR = 'konstructor',
     CALL_ANALYSIS = 'call-analysis',
 
+    /** AI-отчётность по звонкам: cron-сканер → транскрибация → анализ → смарт/БД (воркер в event-sales) */
+    CALL_REPORT = 'call-report',
+
     /** Provisioning pbx-сущностей маркетплейс-продуктов (воркер в pbx-install) */
     MARKETPLACE_PROVISION = 'marketplace-provision',
 }

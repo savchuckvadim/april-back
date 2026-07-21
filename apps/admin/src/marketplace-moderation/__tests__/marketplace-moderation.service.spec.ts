@@ -22,6 +22,7 @@ type RepoMock = jest.Mocked<
         | 'findPortalById'
         | 'updateClientStatus'
         | 'setPortalBlocked'
+        | 'detachPortal'
         | 'findComponentsByPortal'
         | 'logModerationEvent'
         | 'findInstalls'
@@ -82,6 +83,7 @@ describe('MarketplaceModerationService (approve/block заявок)', () => {
             findPortalById: jest.fn().mockResolvedValue(portalFixture()),
             updateClientStatus: jest.fn().mockResolvedValue(undefined),
             setPortalBlocked: jest.fn().mockResolvedValue(undefined),
+            detachPortal: jest.fn().mockResolvedValue(undefined),
             findComponentsByPortal: jest.fn().mockResolvedValue([]),
             logModerationEvent: jest.fn().mockResolvedValue(undefined),
             findInstalls: jest.fn().mockResolvedValue([
@@ -237,6 +239,27 @@ describe('MarketplaceModerationService (approve/block заявок)', () => {
         expect(httpPost).not.toHaveBeenCalled();
         expect(result.approvalStatus).toBe('blocked');
         expect(result.provisionDispatched).toBe(false);
+    });
+
+    it('detach: допуск pending + организация отвязана, клиент НЕ disabled', async () => {
+        const result = await service.decide(
+            7,
+            { action: ApprovalAction.DETACH, comment: 'смена владельца' },
+            'admin',
+        );
+
+        expect(repo.detachPortal).toHaveBeenCalledWith(BigInt(7));
+        // отвязка ≠ блокировка: клиент остаётся как есть
+        expect(repo.updateClientStatus).not.toHaveBeenCalled();
+        expect(httpPost).not.toHaveBeenCalled();
+        expect(repo.logModerationEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                event: 'PORTAL_DETACHED',
+                status: 'processed',
+            }),
+        );
+        expect(result.approvalStatus).toBe('pending');
+        expect(result.action).toBe(ApprovalAction.DETACH);
     });
 
     it('портал не найден → NotFoundException', async () => {

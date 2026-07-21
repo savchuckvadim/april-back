@@ -9,7 +9,7 @@ import {
     NewTaskInitRequestDto,
     NewTaskInitResponseDto,
 } from '../dto/new-task.dto';
-import { TmcDealForReturnDto, TmcDealsRequestDto } from '../dto/tmc-deals.dto';
+import { TmcDealFoundDto, TmcDealsRequestDto } from '../dto/tmc-deals.dto';
 import { CompanyHistoryRequestDto, HistoryItemDto } from '../dto/history.dto';
 import { CallResultsDto, ResultCountRequestDto } from '../dto/result-count.dto';
 
@@ -30,8 +30,14 @@ export class EventSupportController {
             'Презентационные сделки, связанные с текущей задачей события. ' +
             'Замена legacy PHP `POST full/deals`. Пока заглушка.',
     })
-    @ApiBody({ type: CompanyDealsRequestDto })
-    @ApiOkResponse({ type: CompanyDealsResponseDto })
+    @ApiBody({
+        type: CompanyDealsRequestDto,
+        description: 'Домен портала и текущая задача события.',
+    })
+    @ApiOkResponse({
+        type: CompanyDealsResponseDto,
+        description: 'Презентационные сделки, связанные с задачей.',
+    })
     @Post('deals')
     @HttpCode(200)
     async getCompanyDeals(
@@ -46,8 +52,14 @@ export class EventSupportController {
             'Сделки для связи, когда у компании нет открытых задач событий. ' +
             'Замена legacy PHP `POST full/newTask/init`. Пока заглушка.',
     })
-    @ApiBody({ type: NewTaskInitRequestDto })
-    @ApiOkResponse({ type: NewTaskInitResponseDto })
+    @ApiBody({
+        type: NewTaskInitRequestDto,
+        description: 'Домен портала, компания и пользователь.',
+    })
+    @ApiOkResponse({
+        type: NewTaskInitResponseDto,
+        description: 'Сделки для связи с новой задачей.',
+    })
     @Post('new-task/init')
     @HttpCode(200)
     async initNewTask(
@@ -62,13 +74,20 @@ export class EventSupportController {
             'ТМЦ-сделки по списку презентационных задач (кнопка WithTM). ' +
             'Замена legacy PHP `POST full/pres/tmcdeals`. Пока заглушка.',
     })
-    @ApiBody({ type: TmcDealsRequestDto })
-    @ApiOkResponse({ type: TmcDealForReturnDto, isArray: true })
+    @ApiBody({
+        type: TmcDealsRequestDto,
+        description: 'Домен портала и список презентационных задач.',
+    })
+    @ApiOkResponse({
+        type: TmcDealFoundDto,
+        isArray: true,
+        description: 'Найденные ТМЦ-сделки по задачам.',
+    })
     @Post('pres/tmc-deals')
     @HttpCode(200)
     async getTmcDeals(
         @Body() dto: TmcDealsRequestDto,
-    ): Promise<TmcDealForReturnDto[]> {
+    ): Promise<TmcDealFoundDto[]> {
         return this.service.getTmcDeals(dto);
     }
 
@@ -78,8 +97,15 @@ export class EventSupportController {
             'История звонков/комментариев по компании. ' +
             'Замена legacy PHP `POST flow-front/history`. Пока заглушка.',
     })
-    @ApiBody({ type: CompanyHistoryRequestDto })
-    @ApiOkResponse({ type: HistoryItemDto, isArray: true })
+    @ApiBody({
+        type: CompanyHistoryRequestDto,
+        description: 'Домен портала и идентификатор компании.',
+    })
+    @ApiOkResponse({
+        type: HistoryItemDto,
+        isArray: true,
+        description: 'История звонков и комментариев по компании.',
+    })
     @Post('history')
     @HttpCode(200)
     async getCompanyHistory(
@@ -95,8 +121,14 @@ export class EventSupportController {
             '(меню «недозвон», статистика). ' +
             'Замена legacy PHP `POST flow-front/result/count`. Пока заглушка.',
     })
-    @ApiBody({ type: ResultCountRequestDto })
-    @ApiOkResponse({ type: CallResultsDto })
+    @ApiBody({
+        type: ResultCountRequestDto,
+        description: 'Домен портала, компания и пользователь.',
+    })
+    @ApiOkResponse({
+        type: CallResultsDto,
+        description: 'Счётчики результатов звонков пользователя.',
+    })
     @Post('result/count')
     @HttpCode(200)
     async getResultCount(

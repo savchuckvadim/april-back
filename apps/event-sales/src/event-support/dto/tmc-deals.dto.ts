@@ -56,12 +56,13 @@ export class TmcDealsRequestDto {
     tasks: TmcTaskRefDto[];
 }
 
-export class TmcDealForReturnDto {
+export class TmcDealFoundDto {
     @ApiProperty({
         description: 'Идентификатор задачи, к которой относится ТМЦ-сделка.',
         type: Number,
         example: 1024,
     })
+    @IsNumeric()
     taskId: number;
 
     @ApiProperty({
@@ -79,5 +80,5 @@ export class TmcDealForReturnDto {
     })
     @IsOptional()
     @IsObject()
-    presDeal?: IBXDeal;
+    presDeal?: IBXDeal | null;
 }

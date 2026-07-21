@@ -1,0 +1,143 @@
+import { CallReportSmartWriterService } from '../services/call-report-smart-writer.service';
+import { CallReportSmartInfo } from '../services/call-report-smart-resolver.service';
+
+const SMART_INFO: CallReportSmartInfo = {
+    entityTypeId: 128,
+    enumItems: {
+        CALL_TYPE: { presentation: 51, cold: 50 },
+        KPI_ITEM_STATUS: { confirmed: 60, suspected: 61 },
+        HISTORY_ITEM_STATUS: { confirmed: 70, suspected: 71 },
+    },
+};
+
+const makeBitrix = () => ({
+    item: {
+        add: jest.fn().mockResolvedValue({ result: { item: { id: 7 } } }),
+    },
+});
+
+describe('CallReportSmartWriterService', () => {
+    it('создаёт элемент со связями, camelCase UF-полями и enum по id', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const itemId = await writer.addItem({
+            activityId: '101',
+            dealId: 555,
+            companyId: 33,
+            contactId: 44,
+            managerId: 7,
+            callType: 'presentation',
+            durationSec: 700,
+            needsFound: true,
+            presentationDone: false,
+            summary: 'Резюме & детали =100%',
+            transcriptionId: '42',
+        });
+
+        expect(itemId).toBe(7);
+        expect(bitrix.item.add).toHaveBeenCalledWith(
+            '128',
+            expect.objectContaining({
+                parentId2: 555,
+                companyId: 33,
+                contactId: 44,
+                assignedById: 7,
+                ufCrm128ActivityId: '101',
+                ufCrm128CallType: 51,
+                ufCrm128DurationSec: 700,
+                ufCrm128NeedsFound: 1,
+                ufCrm128PresentationDone: 0,
+                ufCrm128Summary: 'Резюме & детали =100%',
+                ufCrm128TranscriptionId: '42',
+            }),
+        );
+    });
+
+    it('пишет связи воронок crm-массивами, привязки списков и разделы анализа', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            mainDealId: 555,
+            presentationDealId: 601,
+            xoDealId: 602,
+            kpiItem: { itemId: '9001', status: 'confirmed' },
+            historyItem: { itemId: '9002', status: 'suspected' },
+            sections: [
+                {
+                    section: 'OBJECTIONS',
+                    relevance: 100,
+                    score: 6,
+                    analysis: 'возражение из-за слабых потребностей',
+                    advice: 'потренировать уточняющие вопросы',
+                },
+                { section: 'PRICE', relevance: 0 },
+            ],
+        });
+
+        const addCall = bitrix.item.add.mock.calls[0] as unknown[];
+        const fields = addCall[1] as Record<string, unknown>;
+        expect(fields.ufCrm128DealMain).toEqual(['D_555']);
+        expect(fields.ufCrm128DealPresentation).toEqual(['D_601']);
+        expect(fields.ufCrm128DealXo).toEqual(['D_602']);
+        expect(fields.ufCrm128KpiItemId).toBe('9001');
+        expect(fields.ufCrm128KpiItemStatus).toBe(60);
+        expect(fields.ufCrm128HistoryItemStatus).toBe(71);
+        expect(fields.ufCrm128ObjectionsRelevance).toBe(100);
+        expect(fields.ufCrm128ObjectionsScore).toBe(6);
+        expect(fields.ufCrm128ObjectionsAdvice).toBe(
+            'потренировать уточняющие вопросы',
+        );
+        expect(fields.ufCrm128PriceRelevance).toBe(0);
+        expect(fields.ufCrm128PriceScore).toBeUndefined();
+    });
+
+    it('длинный транскрипт раскладывается кусками по полям TRANSCRIPT_N', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            transcript: 'а'.repeat(90_000),
+        });
+
+        const addCall = bitrix.item.add.mock.calls[0] as unknown[];
+        const fields = addCall[1] as Record<string, unknown>;
+        expect((fields.ufCrm128Transcript1 as string).length).toBe(40_000);
+        expect((fields.ufCrm128Transcript2 as string).length).toBe(40_000);
+        expect((fields.ufCrm128Transcript3 as string).length).toBe(10_000);
+        expect(fields.ufCrm128Transcript4).toBeUndefined();
+    });
+
+    it('неизвестный код enum пропускается, поле не пишется', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({ activityId: '101', callType: 'unknown-type' });
+        const addCall = bitrix.item.add.mock.calls[0] as unknown[];
+        const fields = addCall[1] as Record<string, unknown>;
+        expect(fields.ufCrm128CallType).toBeUndefined();
+    });
+
+    it('бросает ошибку, если Bitrix не вернул id элемента', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.add.mockResolvedValue({ result: {} });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await expect(writer.addItem({ activityId: '101' })).rejects.toThrow(
+            'не вернул id',
+        );
+    });
+});

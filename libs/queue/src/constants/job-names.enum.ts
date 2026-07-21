@@ -30,4 +30,7 @@ export enum JobNames {
 
     //marketplace
     MARKETPLACE_PROVISION_PRODUCT = 'marketplace-provision-product',
+
+    //call report (AI-отчётность по звонкам)
+    CALL_REPORT_ANALYZE = 'call-report-analyze',
 }

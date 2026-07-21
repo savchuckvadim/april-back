@@ -1402,36 +1402,44 @@ model supplies {
 }
 
 model Transcription {
-  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at     DateTime? @db.Timestamp(0)
-  updated_at     DateTime? @db.Timestamp(0)
-  provider       String?   @db.VarChar(255)
-  activity_id    String?   @db.VarChar(255)
-  file_id        String?   @db.VarChar(255)
-  in_comment     Boolean   @default(false)
-  status         String?   @db.VarChar(255)
-  text           String?   @db.LongText
-  symbols_count  String?   @db.VarChar(255)
-  price          String?   @db.VarChar(255)
-  duration       String?   @db.VarChar(255)
-  domain         String?   @db.VarChar(255)
-  user_id        String?   @db.VarChar(255)
-  user_name      String?   @db.VarChar(255)
-  entity_type    String?   @db.VarChar(255)
-  entity_id      String?   @db.VarChar(255)
-  entity_name    String?   @db.VarChar(255)
-  app            String?   @db.VarChar(255)
-  department     String?   @db.VarChar(255)
-  user_comment   String?   @db.LongText
-  owner_comment  String?   @db.LongText
-  user_mark      String?   @db.Text
-  owner_mark     String?   @db.Text
-  user_result    Json?
-  report_result  String?   @db.LongText
-  in_report      Boolean   @default(false)
-  report_item_id String?   @db.VarChar(255)
-  portal_id      String?   @db.VarChar(255)
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at      DateTime? @db.Timestamp(0)
+  updated_at      DateTime? @db.Timestamp(0)
+  provider        String?   @db.VarChar(255)
+  activity_id     String?   @db.VarChar(255)
+  // Ключ идемпотентности автоконвейера ("{domain}:{activity_id}"); ручные транскрибации — NULL
+  dedup_key       String?   @unique(map: "transcriptions_dedup_key_unique")
+  // Идентификатор звонка телефонии (voximplant CALL_ID)
+  call_id         String?   @db.VarChar(255)
+  // Фактическое время начала звонка (CALL_START_DATE)
+  call_started_at DateTime? @db.Timestamp(0)
+  file_id         String?   @db.VarChar(255)
+  in_comment      Boolean   @default(false)
+  status          String?   @db.VarChar(255)
+  text            String?   @db.LongText
+  symbols_count   String?   @db.VarChar(255)
+  price           String?   @db.VarChar(255)
+  duration        String?   @db.VarChar(255)
+  domain          String?   @db.VarChar(255)
+  user_id         String?   @db.VarChar(255)
+  user_name       String?   @db.VarChar(255)
+  entity_type     String?   @db.VarChar(255)
+  entity_id       String?   @db.VarChar(255)
+  entity_name     String?   @db.VarChar(255)
+  app             String?   @db.VarChar(255)
+  department      String?   @db.VarChar(255)
+  user_comment    String?   @db.LongText
+  owner_comment   String?   @db.LongText
+  user_mark       String?   @db.Text
+  owner_mark      String?   @db.Text
+  user_result     Json?
+  report_result   String?   @db.LongText
+  in_report       Boolean   @default(false)
+  report_item_id  String?   @db.VarChar(255)
+  portal_id       String?   @db.VarChar(255)
 
+  @@index([domain, status], map: "transcriptions_domain_status_index")
+  @@index([domain, activity_id], map: "transcriptions_domain_activity_id_index")
   @@map("transcriptions")
 }
 

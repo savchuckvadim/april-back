@@ -1,0 +1,120 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { YandexStorageService } from '@lib/call-lib/yandex/yandex-storage.service';
+import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
+import { VibeCodeClient } from '../../call-analysis/clients/vibecode.client';
+
+export const TRANSCRIPTION_PROVIDERS = ['yandex', 'bitrix-vibecode'] as const;
+export type TranscriptionProvider = (typeof TRANSCRIPTION_PROVIDERS)[number];
+
+/** Режим выбора провайдера: auto — по длительности, иначе принудительно. */
+export const TRANSCRIPTION_ROUTER_MODES = [
+    'auto',
+    'yandex',
+    'vibecode',
+] as const;
+export type TranscriptionRouterMode =
+    (typeof TRANSCRIPTION_ROUTER_MODES)[number];
+
+export interface TranscribeCallInput {
+    buffer: Buffer;
+    fileName: string;
+    domain: string;
+    /** Длительность звонка в секундах (из voximplant) — основа маршрутизации. */
+    durationSec?: number;
+}
+
+export interface TranscribeCallResult {
+    text: string;
+    provider: TranscriptionProvider;
+}
+
+/**
+ * Маршрутизатор транскрибации: длинные звонки → Yandex SpeechKit
+ * (надёжен на больших записях, но дорогой), короткие → Vibecode Whisper
+ * (дёшево). Порог — env TRANSCRIPTION_YANDEX_MIN_SEC; режим можно
+ * зафиксировать через TRANSCRIPTION_PROVIDER (auto|yandex|vibecode).
+ *
+ * При ошибке Vibecode выполняется одноразовый fallback на Yandex —
+ * дорогой, но надёжный путь; обратного fallback нет (экономим бюджет).
+ */
+@Injectable()
+export class TranscriptionRouterService {
+    private readonly logger = new Logger(TranscriptionRouterService.name);
+    private readonly mode: TranscriptionRouterMode;
+    private readonly yandexMinSec: number;
+
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly vibecode: VibeCodeClient,
+        private readonly yandexTranscription: StreamingTranscriptionService,
+        private readonly yandexStorage: YandexStorageService,
+    ) {
+        const mode = this.configService.get<string>('TRANSCRIPTION_PROVIDER');
+        this.mode = TRANSCRIPTION_ROUTER_MODES.includes(
+            mode as TranscriptionRouterMode,
+        )
+            ? (mode as TranscriptionRouterMode)
+            : 'auto';
+        this.yandexMinSec = Number(
+            this.configService.get<string>('TRANSCRIPTION_YANDEX_MIN_SEC') ??
+                600,
+        );
+    }
+
+    async transcribe(
+        input: TranscribeCallInput,
+    ): Promise<TranscribeCallResult> {
+        const provider = this.resolveProvider(input.durationSec);
+        this.logger.log(
+            `Транскрибация ${input.fileName} (${input.durationSec ?? '?'}с) через ${provider}`,
+        );
+
+        if (provider === 'yandex') {
+            return {
+                text: await this.transcribeYandex(input),
+                provider: 'yandex',
+            };
+        }
+
+        try {
+            const text = await this.vibecode.transcribeAudio(
+                input.buffer,
+                input.fileName,
+            );
+            return { text, provider: 'bitrix-vibecode' };
+        } catch (error) {
+            this.logger.warn(
+                `Vibecode не справился (${(error as Error).message}), fallback на Yandex`,
+            );
+            return {
+                text: await this.transcribeYandex(input),
+                provider: 'yandex',
+            };
+        }
+    }
+
+    private resolveProvider(durationSec?: number): TranscriptionProvider {
+        if (this.mode === 'yandex') return 'yandex';
+        if (this.mode === 'vibecode') return 'bitrix-vibecode';
+        if (durationSec !== undefined && durationSec >= this.yandexMinSec) {
+            return 'yandex';
+        }
+        return 'bitrix-vibecode';
+    }
+
+    /** Yandex-путь: буфер → S3 → longRunningRecognize → поллинг результата. */
+    private async transcribeYandex(
+        input: TranscribeCallInput,
+    ): Promise<string> {
+        const s3Key = `transcription/audio/${input.domain}/call-report/${input.fileName}`;
+        const fileUri = await this.yandexStorage.uploadFile(
+            input.buffer,
+            s3Key,
+            'audio/mpeg',
+        );
+        const operationId =
+            await this.yandexTranscription.transcribeAudio(fileUri);
+        return this.yandexTranscription.getTranscriptionResult(operationId);
+    }
+}

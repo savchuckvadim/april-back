@@ -1,5 +1,9 @@
 import { Transcription } from 'generated/prisma';
 import { TranscriptionBaseDto } from '../dto/transcription.store.dto';
+import {
+    TranscriptionPipelineUpdateInput,
+    TranscriptionPipelineUpsertInput,
+} from '../types/transcription-pipeline.types';
 
 export abstract class TranscriptionRepository {
     abstract create(
@@ -17,4 +21,36 @@ export abstract class TranscriptionRepository {
         userId: string,
     ): Promise<Transcription[] | null>;
     abstract delete(id: string): Promise<boolean>;
+
+    // --- Автоконвейер call-report (dedup_key) ---
+
+    /** Upsert по dedup_key: новая строка или возврат упавшей в processing. */
+    abstract upsertPipeline(
+        input: TranscriptionPipelineUpsertInput,
+    ): Promise<Transcription>;
+
+    /** Обновление результата обработки конвейером по id строки. */
+    abstract updatePipeline(
+        id: string,
+        input: TranscriptionPipelineUpdateInput,
+    ): Promise<Transcription>;
+
+    /** Какие из dedup-ключей уже заняты (status в списке). */
+    abstract findBusyDedupKeys(
+        dedupKeys: string[],
+        statuses: string[],
+    ): Promise<string[]>;
+
+    /** Реанимация зависших processing: status→error, возвращает число строк. */
+    abstract reanimateStaleProcessing(olderThan: Date): Promise<number>;
+
+    /**
+     * Готовые (done) строки автоконвейера для Agent API, новые первыми.
+     * beforeId — keyset-курсор (id < beforeId) для постраничного обхода.
+     */
+    abstract findDonePipeline(
+        domain: string | undefined,
+        take: number,
+        beforeId?: string,
+    ): Promise<Transcription[]>;
 }

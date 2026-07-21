@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Transcription } from 'generated/prisma';
 import { TranscriptionRepository } from '../repository/transcription.repository';
 import {
     createTranscriptionEntityFromDto,
@@ -8,6 +9,12 @@ import {
     TranscriptionBaseDto,
     TranscriptionStoreDto,
 } from '../dto/transcription.store.dto';
+import {
+    TRANSCRIPTION_BUSY_STATUSES,
+    TranscriptionPipelineUpdateInput,
+    TranscriptionPipelineUpsertInput,
+    TranscriptionPipelineView,
+} from '../types/transcription-pipeline.types';
 
 @Injectable()
 export class TranscriptionStoreService {
@@ -79,5 +86,87 @@ export class TranscriptionStoreService {
     }
     async delete(id: string): Promise<boolean> {
         return await this.transcriptionRepository.delete(id);
+    }
+
+    // --- Автоконвейер call-report (dedup_key) ---
+
+    /** Старт обработки звонка конвейером: upsert строки в processing. */
+    async startPipeline(
+        input: TranscriptionPipelineUpsertInput,
+    ): Promise<TranscriptionPipelineView> {
+        const row = await this.transcriptionRepository.upsertPipeline(input);
+        return this.toPipelineView(row);
+    }
+
+    /** Завершение обработки конвейером (done / error / промежуточный provider). */
+    async finishPipeline(
+        id: string,
+        input: TranscriptionPipelineUpdateInput,
+    ): Promise<TranscriptionPipelineView> {
+        const row = await this.transcriptionRepository.updatePipeline(
+            id,
+            input,
+        );
+        return this.toPipelineView(row);
+    }
+
+    /** Отсев уже занятых (processing/done) ключей — дедупликация сканера. */
+    async filterBusyDedupKeys(dedupKeys: string[]): Promise<Set<string>> {
+        const busy = await this.transcriptionRepository.findBusyDedupKeys(
+            dedupKeys,
+            TRANSCRIPTION_BUSY_STATUSES,
+        );
+        return new Set(busy);
+    }
+
+    /** Зависшие processing старше порога переводит в error (реанимация). */
+    async reanimateStaleProcessing(olderThan: Date): Promise<number> {
+        return this.transcriptionRepository.reanimateStaleProcessing(olderThan);
+    }
+
+    /**
+     * Готовые строки автоконвейера (для Agent API), новые первыми.
+     * beforeId — keyset-курсор для постраничного обхода назад.
+     */
+    async findDonePipeline(
+        domain: string | undefined,
+        take: number,
+        beforeId?: string,
+    ): Promise<TranscriptionPipelineView[]> {
+        const rows = await this.transcriptionRepository.findDonePipeline(
+            domain,
+            take,
+            beforeId,
+        );
+        return rows.map(row => this.toPipelineView(row));
+    }
+
+    /** Строка по id в pipeline-представлении (с dedup/call-полями). */
+    async findPipelineById(id: string): Promise<TranscriptionPipelineView> {
+        const row = await this.transcriptionRepository.findById(id);
+        if (!row) {
+            throw new NotFoundException('Transcription not found');
+        }
+        return this.toPipelineView(row);
+    }
+
+    private toPipelineView(row: Transcription): TranscriptionPipelineView {
+        return {
+            id: row.id.toString(),
+            dedupKey: row.dedup_key,
+            domain: row.domain,
+            activityId: row.activity_id,
+            callId: row.call_id,
+            callStartedAt: row.call_started_at,
+            provider: row.provider,
+            status: row.status,
+            text: row.text,
+            durationSec: row.duration,
+            entityType: row.entity_type,
+            entityId: row.entity_id,
+            userId: row.user_id,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+        };
     }
 }

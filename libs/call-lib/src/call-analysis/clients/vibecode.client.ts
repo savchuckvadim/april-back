@@ -155,11 +155,23 @@ flow.plan — планируемое следующее событие:
 export class VibeCodeClient {
     private readonly logger = new Logger(VibeCodeClient.name);
     private readonly apiKey: string;
+    /** Таймаут запроса транскрибации: длинные файлы Whisper обрабатывает минутами. */
+    private readonly transcriptionTimeoutMs: number;
+    /** Таймаут запроса анализа (chat/completions). */
+    private readonly analysisTimeoutMs: number;
 
     constructor(private readonly configService: ConfigService) {
         const key = this.configService.get<string>('BITRIX_VIBE_TEST');
         if (!key) throw new Error('BITRIX_VIBE_TEST is not set');
         this.apiKey = key;
+        this.transcriptionTimeoutMs = Number(
+            this.configService.get<string>('VIBECODE_TRANSCRIBE_TIMEOUT_MS') ??
+                600_000,
+        );
+        this.analysisTimeoutMs = Number(
+            this.configService.get<string>('VIBECODE_ANALYSIS_TIMEOUT_MS') ??
+                180_000,
+        );
     }
 
     async transcribeAudio(buffer: Buffer, fileName: string): Promise<string> {
@@ -181,6 +193,7 @@ export class VibeCodeClient {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${this.apiKey}` },
                 body: formData,
+                signal: AbortSignal.timeout(this.transcriptionTimeoutMs),
             },
         );
 
@@ -233,6 +246,7 @@ export class VibeCodeClient {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),
+            signal: AbortSignal.timeout(this.analysisTimeoutMs),
         });
 
         if (!response.ok) {

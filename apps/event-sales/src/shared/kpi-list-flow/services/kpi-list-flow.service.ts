@@ -68,6 +68,7 @@ export class KpiListFlowService {
         const lists: IPBXList[] = [];
         const kpi = this.portal.getListByCode('sales_kpi');
         const history = this.portal.getListByCode('sales_history');
+
         if (kpi) lists.push(kpi);
         if (history) lists.push(history);
         return lists;

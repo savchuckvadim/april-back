@@ -77,6 +77,71 @@ export class KnowledgeStorageService {
             .sort((a, b) => a.localeCompare(b));
     }
 
+    /**
+     * Домены, у которых есть собственная база знаний
+     * (папки с точкой в имени внутри knowledge-корня).
+     */
+    async listDomains(): Promise<string[]> {
+        const rootAbs = this.storageService.getFilePath(
+            StorageType.APP,
+            KNOWLEDGE_ROOT_SUBPATH,
+            '',
+        );
+        let entries: import('node:fs').Dirent[];
+        try {
+            entries = await fs.readdir(rootAbs, { withFileTypes: true });
+        } catch {
+            return [];
+        }
+        return entries
+            .filter(entry => entry.isDirectory())
+            .filter(entry => entry.name.includes('.'))
+            .map(entry => entry.name)
+            .sort((a, b) => a.localeCompare(b));
+    }
+
+    /**
+     * Находит конкретный документ по (domain?, kind, fileName) среди
+     * документов, которые реально попадут в RAG для этой пары.
+     */
+    async findDocument(
+        domain: string | undefined,
+        kind: string,
+        fileName: string,
+    ): Promise<KnowledgeDocument | undefined> {
+        const safeFileName = this.requireSafeFileName(fileName);
+        const documents = await this.listDocuments(domain, kind);
+        return documents.find(doc => doc.fileName === safeFileName);
+    }
+
+    /**
+     * Удаляет документ строго из указанной базы (без фолбэка на общую):
+     * domain задан → клиентская папка, нет → общая.
+     */
+    async deleteDocument(
+        domain: string | undefined,
+        kind: string,
+        fileName: string,
+    ): Promise<void> {
+        const sanitizedKind = this.requireValidKind(kind);
+        const sanitizedDomain = this.sanitizeOptionalDomain(domain);
+        const safeFileName = this.requireSafeFileName(fileName);
+        const subPath = this.buildKindSubPath(sanitizedDomain, sanitizedKind);
+        const absolutePath = this.storageService.getFilePath(
+            StorageType.APP,
+            subPath,
+            safeFileName,
+        );
+        const exists = await this.storageService.fileExists(absolutePath);
+        if (!exists) {
+            throw new BadRequestException(
+                `Документ "${fileName}" не найден в ${sanitizedDomain ?? 'shared'}/${sanitizedKind}.`,
+            );
+        }
+        await this.storageService.deleteFile(absolutePath);
+        this.logger.log(`Удалён документ ${safeFileName} из ${subPath}`);
+    }
+
     /** Сохраняет загруженный документ в общую (если domain не задан) или клиентскую базу. */
     async saveDocument(
         file: UploadFile,

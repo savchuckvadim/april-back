@@ -36,6 +36,7 @@
         "dev:bitrix-app-client": "npx cross-env NODE_OPTIONS=--max-old-space-size=4096 nest start bitrix-app-client --watch",
         "dev:all": "npm run dev:back & npm run dev:kpi-report-sales & npm run dev:pbx-install & npm run dev:event-sales & npm run dev:event-service & npm run dev:admin",
         "start:debug": "nest start back --debug --watch",
+        "start:debug:event-sales": "nest start event-sales --debug --watch",
         "start:prod": "node dist/apps/back/main",
         "start:prod:back": "node dist/apps/back/main",
         "start:prod:kpi-report-sales": "node dist/apps/kpi-report-sales/main",

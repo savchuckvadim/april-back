@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { VibeCodeClient } from '../clients/vibecode.client';
 import {
@@ -7,11 +8,18 @@ import {
 } from '../services/call-analysis-bitrix.service';
 import { EventFlowMapperService } from '../services/event-flow-mapper.service';
 import { FlowDtoStorageService } from '../services/flow-dto-storage.service';
-import { CallSalesAnalysisDto } from '../dto/call-sales-analysis.dto';
+import {
+    CallSalesAnalysisDto,
+    CallSalesAnalysisResultDto,
+} from '../dto/call-sales-analysis.dto';
 import {
     AnalyzeActivityDto,
     AnalyzeDealCallsDto,
 } from '../dto/call-analysis-request.dto';
+import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
+import { TranscriptionBaseDto } from '../../transcription/dto/transcription.store.dto';
+import { AiService } from '../../ai/services/ai.service';
+import { CALL_REPORT_ENTITY_TYPE_DEAL } from '../../transcription/types/transcription-pipeline.types';
 
 @Injectable()
 export class CallAnalysisUseCase {
@@ -22,6 +30,8 @@ export class CallAnalysisUseCase {
         private readonly vibecode: VibeCodeClient,
         private readonly flowMapper: EventFlowMapperService,
         private readonly flowStorage: FlowDtoStorageService,
+        private readonly transcriptionStore: TranscriptionStoreService,
+        private readonly aiService: AiService,
     ) {}
 
     async forDeal(dto: AnalyzeDealCallsDto): Promise<CallSalesAnalysisDto[]> {
@@ -134,6 +144,15 @@ export class CallAnalysisUseCase {
             await this.flowStorage.save(domain, confirmationTaskId, flowDto);
         }
 
+        await this.persistResult(
+            domain,
+            audioFile,
+            dealId,
+            responsibleId,
+            transcript,
+            analysis,
+        );
+
         return {
             activityId: audioFile.activityId,
             dealId,
@@ -142,5 +161,59 @@ export class CallAnalysisUseCase {
             confirmationTaskId,
             flowDto,
         };
+    }
+
+    /**
+     * Накопление результатов ручного анализа в БД (transcriptions + ais).
+     * dedup_key здесь НЕ пишется: повторный ручной запуск — легитимный
+     * сценарий, дедупликация действует только в автоконвейере call-report.
+     * Ошибка персиста не роняет основной пайплайн — только warn в лог.
+     */
+    private async persistResult(
+        domain: string,
+        audioFile: AudioFile,
+        dealId: number,
+        responsibleId: number,
+        transcript: string,
+        analysis: CallSalesAnalysisResultDto,
+    ): Promise<void> {
+        try {
+            const transcription = await this.transcriptionStore.create({
+                provider: 'bitrix-vibecode',
+                activityId: String(audioFile.activityId),
+                fileId: String(audioFile.fileId),
+                inComment: true,
+                status: 'done',
+                text: transcript,
+                symbolsCount: String(transcript.length),
+                domain,
+                userId: String(responsibleId),
+                app: 'call-analysis',
+                entityType: CALL_REPORT_ENTITY_TYPE_DEAL,
+                entityId: String(dealId),
+            } as TranscriptionBaseDto);
+
+            await this.aiService.create({
+                provider: 'bitrix-vibecode',
+                model: 'bitrix/bitrixgpt-5.5',
+                type: 'call-analysis',
+                status: 'done',
+                result: JSON.stringify(analysis),
+                user_result: JSON.parse(
+                    JSON.stringify(analysis),
+                ) as Prisma.JsonValue,
+                activity_id: String(audioFile.activityId),
+                entity_type: CALL_REPORT_ENTITY_TYPE_DEAL,
+                entity_id: dealId,
+                user_id: responsibleId,
+                domain,
+                app: 'call-analysis',
+                transcription_id: transcription.id,
+            });
+        } catch (error) {
+            this.logger.warn(
+                `Не удалось сохранить результат анализа в БД: ${(error as Error).message}`,
+            );
+        }
     }
 }

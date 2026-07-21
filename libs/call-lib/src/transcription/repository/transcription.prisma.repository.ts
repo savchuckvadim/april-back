@@ -3,6 +3,10 @@ import { TranscriptionRepository } from './transcription.repository';
 import { PrismaService } from '@lib/core';
 import { Prisma, Transcription } from 'generated/prisma';
 import { TranscriptionBaseDto } from '../dto/transcription.store.dto';
+import {
+    TranscriptionPipelineUpdateInput,
+    TranscriptionPipelineUpsertInput,
+} from '../types/transcription-pipeline.types';
 
 @Injectable()
 export class TranscriptionPrismaRepository implements TranscriptionRepository {
@@ -83,5 +87,118 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             where: { id: BigInt(id) },
         });
         return result !== null;
+    }
+
+    // --- Автоконвейер call-report (dedup_key) ---
+
+    async upsertPipeline(
+        input: TranscriptionPipelineUpsertInput,
+    ): Promise<Transcription> {
+        const now = new Date();
+        const base = {
+            status: 'processing',
+            domain: input.domain,
+            activity_id: input.activityId,
+            entity_type: input.entityType,
+            entity_id: input.entityId,
+            app: input.app,
+            updated_at: now,
+        };
+        // Опциональные телефонные метаданные: в update-ветке отсутствующие
+        // поля НЕ перезаписываются (ручной перезапуск /call-report/analyze
+        // без callId/даты не должен стирать данные voximplant из скана).
+        const optional: Record<string, unknown> = {};
+        if (input.callId !== undefined) optional.call_id = input.callId;
+        if (input.callStartedAt !== undefined) {
+            optional.call_started_at = input.callStartedAt;
+        }
+        if (input.userId !== undefined) optional.user_id = input.userId;
+        if (input.durationSec !== undefined) {
+            optional.duration = String(input.durationSec);
+        }
+        return this.prisma.transcription.upsert({
+            where: { dedup_key: input.dedupKey },
+            create: {
+                dedup_key: input.dedupKey,
+                created_at: now,
+                call_id: input.callId ?? null,
+                call_started_at: input.callStartedAt ?? null,
+                user_id: input.userId ?? null,
+                duration:
+                    input.durationSec !== undefined
+                        ? String(input.durationSec)
+                        : null,
+                ...base,
+            },
+            update: { ...base, ...optional },
+        });
+    }
+
+    async updatePipeline(
+        id: string,
+        input: TranscriptionPipelineUpdateInput,
+    ): Promise<Transcription> {
+        const data: Prisma.TranscriptionUpdateInput = {
+            status: input.status,
+            updated_at: new Date(),
+        };
+        if (input.provider !== undefined) data.provider = input.provider;
+        if (input.text !== undefined) data.text = input.text;
+        if (input.symbolsCount !== undefined) {
+            data.symbols_count = input.symbolsCount;
+        }
+        if (input.durationSec !== undefined) {
+            data.duration = String(input.durationSec);
+        }
+        return this.prisma.transcription.update({
+            where: { id: BigInt(id) },
+            data,
+        });
+    }
+
+    async findBusyDedupKeys(
+        dedupKeys: string[],
+        statuses: string[],
+    ): Promise<string[]> {
+        if (!dedupKeys.length) return [];
+        const rows = await this.prisma.transcription.findMany({
+            where: {
+                dedup_key: { in: dedupKeys },
+                status: { in: statuses },
+            },
+            select: { dedup_key: true },
+        });
+        return rows
+            .map(row => row.dedup_key)
+            .filter((key): key is string => key !== null);
+    }
+
+    async reanimateStaleProcessing(olderThan: Date): Promise<number> {
+        const result = await this.prisma.transcription.updateMany({
+            where: {
+                status: 'processing',
+                dedup_key: { not: null },
+                updated_at: { lt: olderThan },
+            },
+            data: { status: 'error', updated_at: new Date() },
+        });
+        return result.count;
+    }
+
+    async findDonePipeline(
+        domain: string | undefined,
+        take: number,
+        beforeId?: string,
+    ): Promise<Transcription[]> {
+        return this.prisma.transcription.findMany({
+            where: {
+                status: 'done',
+                dedup_key: { not: null },
+                ...(domain ? { domain } : {}),
+                ...(beforeId ? { id: { lt: BigInt(beforeId) } } : {}),
+            },
+            orderBy: { id: 'desc' },
+            take,
+        });
     }
 }

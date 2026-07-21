@@ -1,3 +1,5 @@
+// class-validator-декораторы в цепочке импортов '@/shared' требуют Reflect.getMetadata.
+import 'reflect-metadata';
 import { PbxFieldEntity, PbxFieldService } from '@lib/portal-lib/pbx-domain';
 import { IBXField } from '@/modules/bitrix';
 import { PbxEntityType } from '@/shared';
@@ -103,6 +105,25 @@ describe('PortalEntityFieldInstallService', () => {
         ]);
 
         expect(result.items[0].code).toBe('kodex');
+    });
+
+    it('зеркалит isPlural из фактического bxField.MULTIPLE', async () => {
+        const multipleField = buildEnumField([], []);
+        multipleField.bxField.MULTIPLE = 'Y';
+        const singleField = buildEnumField([], []);
+        singleField.bxField.MULTIPLE = 'N';
+        // Шаблон просит multiple, но в Bitrix поле осталось одиночным
+        // (MULTIPLE существующего поля через update не меняется) — в БД идёт факт.
+        singleField.parsedField.isMultiple = true;
+
+        const [multiResult, singleResult] = await service.syncWithDb(
+            PbxEntityType.DEAL,
+            1,
+            [multipleField, singleField],
+        );
+
+        expect(multiResult.isPlural).toBe(true);
+        expect(singleResult.isPlural).toBe(false);
     });
 
     it('падает обратно на bx XML_ID, если соответствия в шаблоне нет', async () => {

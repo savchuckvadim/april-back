@@ -4,6 +4,7 @@ import { AiRagKnowledgeController } from './controllers/ai-rag-knowledge.control
 import { ChainBuilderService } from './application/chain-builder.service';
 import { LlmOrchestratorService } from './application/llm-orchestrator.service';
 import { LongDialogueService } from './application/long-dialogue.service';
+import { KnowledgeContentService } from './application/knowledge-content.service';
 import { FileLoaderService } from './infrastructure/file-loader/file-loader.service';
 import { KnowledgeStorageService } from './infrastructure/knowledge/knowledge-storage.service';
 import { MemoryVectorStoreService } from './infrastructure/vector-store/memory-vector-store.service';
@@ -18,6 +19,7 @@ import { OpenAiProvider } from './infrastructure/providers/openai.provider';
         ChainBuilderService,
         LlmOrchestratorService,
         LongDialogueService,
+        KnowledgeContentService,
         FileLoaderService,
         KnowledgeStorageService,
         MemoryVectorStoreService,
@@ -26,6 +28,11 @@ import { OpenAiProvider } from './infrastructure/providers/openai.provider';
         OllamaProvider,
         OpenAiProvider,
     ],
-    exports: [LlmOrchestratorService, KnowledgeStorageService],
+    exports: [
+        LlmOrchestratorService,
+        KnowledgeStorageService,
+        KnowledgeContentService,
+        FileLoaderService,
+    ],
 })
 export class AiRagModule {}

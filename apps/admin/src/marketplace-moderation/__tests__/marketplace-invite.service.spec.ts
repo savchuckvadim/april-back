@@ -72,6 +72,7 @@ describe('MarketplaceInviteService (коды подключения портал
     let repo: InviteRepoMock;
     let moderationRepo: ModerationRepoMock;
     let mailer: MailerMock;
+    let telegram: { sendMessage: jest.Mock };
 
     /** Пересобирает сервис с другим env-дефолтом autoProvision */
     const buildService = (autoProvisionEnv?: string): void => {
@@ -80,6 +81,7 @@ describe('MarketplaceInviteService (коды подключения портал
             moderationRepo as unknown as MarketplaceModerationRepository,
             mailer as unknown as MarketplaceInviteMailer,
             configWith(autoProvisionEnv),
+            telegram as never,
         );
     };
 
@@ -108,6 +110,7 @@ describe('MarketplaceInviteService (коды подключения портал
             logModerationEvent: jest.fn().mockResolvedValue(undefined),
         };
         mailer = { sendInvite: jest.fn().mockResolvedValue(true) };
+        telegram = { sendMessage: jest.fn().mockResolvedValue(undefined) };
         buildService();
     });
 
@@ -211,6 +214,38 @@ describe('MarketplaceInviteService (коды подключения портал
         expect(result.status).toBe('issued');
         // код всё равно виден админу — передаст вручную
         expect(result.code).toMatch(/^GRNT-/);
+    });
+
+    it('сбой письма → телеграм-фолбэк: полный текст с кодом и получателем', async () => {
+        mailer.sendInvite.mockResolvedValue(false);
+
+        const result = await service.issue({
+            email: 'director@romashka.ru',
+            organization: 'ООО «Ромашка»',
+        });
+
+        expect(telegram.sendMessage).toHaveBeenCalledTimes(1);
+        const [[message]] = telegram.sendMessage.mock.calls as [[string]];
+        // открытый код и адрес — админ копипэйстит клиенту из телеги
+        expect(message).toContain(result.code);
+        expect(message).toContain('director@romashka.ru');
+        expect(message).toContain('ООО «Ромашка»');
+        expect(message).toContain('НЕ отправлено');
+    });
+
+    it('письмо ушло → телеграм НЕ трогается (код в телегу не течёт)', async () => {
+        await service.issue({ email: 'director@romashka.ru' });
+        expect(telegram.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('сбой и письма, и телеграма → выпуск всё равно успешен', async () => {
+        mailer.sendInvite.mockResolvedValue(false);
+        telegram.sendMessage.mockRejectedValue(new Error('tg down'));
+
+        const result = await service.issue({ email: 'director@romashka.ru' });
+
+        expect(result.code).toMatch(/^GRNT-/);
+        expect(result.emailSent).toBe(false);
     });
 
     it('issue: autoProvision берётся из env-дефолта (false)', async () => {

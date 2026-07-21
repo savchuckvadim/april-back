@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from '@lib/logger';
 import { MetricsModule } from '@lib/metrics';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -12,6 +13,8 @@ import {
     CallAnalysisModule,
     AiModule,
 } from '@lib/call-lib';
+import { CallReportModule } from './call-report/call-report.module';
+import { AgentGateModule } from './agent-gate/agent-gate.module';
 
 @Module({
     imports: [
@@ -22,6 +25,8 @@ import {
         LoggerModule.forRoot({ appName: 'event-sales' }),
         MetricsModule.forRoot({ appName: 'event-sales' }),
         EventEmitterModule.forRoot(),
+        // Крон автоконвейера AI-отчётности (CallReportScheduler)
+        ScheduleModule.forRoot(),
         HealthModule,
         EventModule,
 
@@ -33,6 +38,10 @@ import {
         TranscriptionModule,
         CallAnalysisModule,
         AiModule,
+
+        // AI-отчётность по звонкам: конвейер + Agent API для внешнего агента
+        CallReportModule,
+        AgentGateModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

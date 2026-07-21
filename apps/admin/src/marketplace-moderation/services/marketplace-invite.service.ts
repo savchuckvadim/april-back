@@ -1,5 +1,11 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    Logger,
+    Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { TelegramService } from '@lib/telegram';
 import {
     generateInviteCode,
     hashInviteCode,
@@ -56,6 +62,7 @@ export class MarketplaceInviteService {
         private readonly moderationRepository: MarketplaceModerationRepository,
         private readonly mailer: MarketplaceInviteMailer,
         private readonly configService: ConfigService,
+        @Optional() private readonly telegramService?: TelegramService,
     ) {
         this.autoProvisionDefault =
             this.configService.get<string>(
@@ -206,6 +213,15 @@ export class MarketplaceInviteService {
             this.logger.warn(
                 `Код ${invite.code_prefix} выпущен, но письмо на ${input.email} не ушло — передайте код вручную`,
             );
+            // Страховка при отвале почты (решение владельца 2026-07-21):
+            // полный текст для клиента — ВМЕСТЕ С КОДОМ — уходит в админский
+            // Telegram, откуда его копипэйстят клиенту вручную. Заодно это
+            // сигнал «почта не работает». Единственное место, где открытый
+            // код покидает ответ ручки.
+            await this.notifyEmailFailure(code, input.email, {
+                organization: input.organization,
+                expiresAt,
+            });
         }
 
         return {
@@ -277,6 +293,47 @@ export class MarketplaceInviteService {
             throw new BadRequestException(
                 'Код уже погашен: отозвать его нельзя. ' +
                     'Чтобы отключить портал, заблокируйте его (block) в разделе заявок.',
+            );
+        }
+    }
+
+    /**
+     * Телеграм-фолбэк при сбое почты: служебная шапка + готовый текст
+     * письма клиенту (с открытым кодом) для ручной пересылки.
+     * Best-effort: сбой Telegram выпуск не роняет (код виден в ответе ручки).
+     */
+    private async notifyEmailFailure(
+        code: string,
+        email: string,
+        details: { organization?: string; expiresAt: Date },
+    ): Promise<void> {
+        if (!this.telegramService) {
+            return;
+        }
+        const validUntil = details.expiresAt.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        });
+        const greeting = details.organization
+            ? `Здравствуйте! Для организации «${details.organization}» выпущен код подключения портала Битрикс24 к сервису April.`
+            : 'Здравствуйте! Для вас выпущен код подключения портала Битрикс24 к сервису April.';
+        const message =
+            `⚠️ Письмо с кодом подключения НЕ отправлено (сбой почты).\n` +
+            `Получатель: ${email}\n` +
+            `Отправьте клиенту вручную — готовый текст ниже:\n` +
+            `─────────────\n` +
+            `${greeting}\n\n` +
+            `Ваш код подключения: ${code}\n\n` +
+            `Установите приложение «Менеджер Гарант» из Битрикс24.Маркет, ` +
+            `откройте его из левого меню портала и введите код на экране ` +
+            `подключения. Код действует до ${validUntil}.\n\n` +
+            `С уважением, команда April (april-app@mail.ru)`;
+        try {
+            await this.telegramService.sendMessage(message);
+        } catch (error) {
+            this.logger.warn(
+                `Telegram-фолбэк кода не отправлен: ${error instanceof Error ? error.message : String(error)}`,
             );
         }
     }

@@ -54,4 +54,16 @@ export class AiService {
         if (!aiRecords) return [];
         return aiRecords.map(ai => new AiEntityDto(ai));
     }
+
+    /** AI-записи по транскрипциям (опционально — только один провайдер). */
+    async findByTranscriptionIds(
+        transcriptionIds: string[],
+        provider?: string,
+    ): Promise<AiEntityDto[]> {
+        const aiRecords = await this.aiRepository.findByTranscriptionIds(
+            transcriptionIds,
+            provider,
+        );
+        return aiRecords.map(ai => new AiEntityDto(ai));
+    }
 }

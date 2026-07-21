@@ -10,4 +10,9 @@ export abstract class AiRepository {
         domain: string,
         userId: string,
     ): Promise<AiEntity[] | null>;
+    /** AI-записи по списку транскрипций (опционально — только один провайдер). */
+    abstract findByTranscriptionIds(
+        transcriptionIds: string[],
+        provider?: string,
+    ): Promise<AiEntity[]>;
 }

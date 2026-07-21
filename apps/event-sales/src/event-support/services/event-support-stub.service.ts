@@ -7,7 +7,7 @@ import {
     NewTaskInitRequestDto,
     NewTaskInitResponseDto,
 } from '../dto/new-task.dto';
-import { TmcDealForReturnDto, TmcDealsRequestDto } from '../dto/tmc-deals.dto';
+import { TmcDealFoundDto, TmcDealsRequestDto } from '../dto/tmc-deals.dto';
 import { CompanyHistoryRequestDto, HistoryItemDto } from '../dto/history.dto';
 import { CallResultsDto, ResultCountRequestDto } from '../dto/result-count.dto';
 
@@ -25,52 +25,50 @@ export class EventSupportStubService {
     private readonly logger = new Logger(EventSupportStubService.name);
 
     // TODO(migration): порт логики legacy PHP full/deals (поиск презентационных сделок по задаче)
-    async getCompanyDeals(
+    getCompanyDeals(
         dto: CompanyDealsRequestDto,
     ): Promise<CompanyDealsResponseDto> {
         this.logger.warn(`STUB event-sales/deals: domain=${dto.domain}`);
-        return { allPresentationDeals: null };
+        return Promise.resolve({ allPresentationDeals: null });
     }
 
     // TODO(migration): порт логики legacy PHP full/newTask/init
-    async initNewTask(
-        dto: NewTaskInitRequestDto,
-    ): Promise<NewTaskInitResponseDto> {
+    initNewTask(dto: NewTaskInitRequestDto): Promise<NewTaskInitResponseDto> {
         this.logger.warn(
             `STUB event-sales/new-task/init: domain=${dto.domain}, userId=${dto.userId}`,
         );
-        return { deals: { allPresentationDeals: null } };
+        return Promise.resolve({ deals: { allPresentationDeals: null } });
     }
 
     // TODO(migration): порт логики legacy PHP full/pres/tmcdeals
-    async getTmcDeals(dto: TmcDealsRequestDto): Promise<TmcDealForReturnDto[]> {
+    getTmcDeals(dto: TmcDealsRequestDto): Promise<TmcDealFoundDto[]> {
         this.logger.warn(
             `STUB event-sales/pres/tmc-deals: domain=${dto.domain}, tasks=${dto.tasks?.length ?? 0}`,
         );
-        return [];
+        return Promise.resolve([]);
     }
 
     // TODO(migration): порт логики legacy PHP flow-front/history
-    async getCompanyHistory(
+    getCompanyHistory(
         dto: CompanyHistoryRequestDto,
     ): Promise<HistoryItemDto[]> {
         this.logger.warn(
             `STUB event-sales/history: domain=${dto.domain}, companyId=${dto.companyId}`,
         );
-        return [];
+        return Promise.resolve([]);
     }
 
     // TODO(migration): порт логики legacy PHP flow-front/result/count
-    async getResultCount(dto: ResultCountRequestDto): Promise<CallResultsDto> {
+    getResultCount(dto: ResultCountRequestDto): Promise<CallResultsDto> {
         this.logger.warn(
             `STUB event-sales/result/count: domain=${dto.domain}, companyId=${dto.companyId}, userId=${dto.userId}`,
         );
-        return {
+        return Promise.resolve({
             noresultCount: 0,
             resultCount: 0,
             presentationCount: 0,
             inProgressCount: 0,
             inMoneyCount: 0,
-        };
+        });
     }
 }

@@ -54,7 +54,9 @@ export class PortalEntityFieldInstallService {
         pbxFieldEntity.title = field.parsedField.name;
         pbxFieldEntity.code = field.parsedField.code;
         pbxFieldEntity.type = field.parsedField.type;
-        pbxFieldEntity.isPlural = false;
+        // Зеркалим фактическое состояние Bitrix (как в PortalFieldTypedEntityInstallService):
+        // MULTIPLE у существующего поля через update не меняется, поэтому источник — bxField.
+        pbxFieldEntity.isPlural = field.bxField.MULTIPLE === 'Y';
         pbxFieldEntity.bitrixId = field.parsedField.bxFieldName.toString();
         pbxFieldEntity.bitrixCamelId = getCamelBxFieldIdCase(
             field.bxField.FIELD_NAME,

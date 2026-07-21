@@ -43,6 +43,9 @@ export class AiPrismaRepository implements AiRepository {
         return data as Prisma.AiUncheckedCreateInput;
     }
 
+    // created_at/updated_at здесь не проставляются вручную: их централизованно
+    // заполняет laravelTimestampsExtension в PrismaService (как Eloquent).
+
     async create(aiEntity: Partial<AiEntity>): Promise<AiEntity | null> {
         try {
             const result = await this.prisma.ai.create({
@@ -128,6 +131,27 @@ export class AiPrismaRepository implements AiRepository {
         } catch (error) {
             console.error('Error finding AI by domain and user:', error);
             return null;
+        }
+    }
+
+    async findByTranscriptionIds(
+        transcriptionIds: string[],
+        provider?: string,
+    ): Promise<AiEntity[]> {
+        if (!transcriptionIds.length) return [];
+        try {
+            const result = await this.prisma.ai.findMany({
+                where: {
+                    transcription_id: {
+                        in: transcriptionIds.map(id => BigInt(id)),
+                    },
+                    ...(provider ? { provider } : {}),
+                },
+            });
+            return result.map(ai => createAiEntityFromPrisma(ai));
+        } catch (error) {
+            console.error('Error finding AI by transcription ids:', error);
+            return [];
         }
     }
 }

@@ -83533,6 +83533,9 @@ export namespace Prisma {
     updated_at: Date | null
     provider: string | null
     activity_id: string | null
+    dedup_key: string | null
+    call_id: string | null
+    call_started_at: Date | null
     file_id: string | null
     in_comment: boolean | null
     status: string | null
@@ -83564,6 +83567,9 @@ export namespace Prisma {
     updated_at: Date | null
     provider: string | null
     activity_id: string | null
+    dedup_key: string | null
+    call_id: string | null
+    call_started_at: Date | null
     file_id: string | null
     in_comment: boolean | null
     status: string | null
@@ -83595,6 +83601,9 @@ export namespace Prisma {
     updated_at: number
     provider: number
     activity_id: number
+    dedup_key: number
+    call_id: number
+    call_started_at: number
     file_id: number
     in_comment: number
     status: number
@@ -83637,6 +83646,9 @@ export namespace Prisma {
     updated_at?: true
     provider?: true
     activity_id?: true
+    dedup_key?: true
+    call_id?: true
+    call_started_at?: true
     file_id?: true
     in_comment?: true
     status?: true
@@ -83668,6 +83680,9 @@ export namespace Prisma {
     updated_at?: true
     provider?: true
     activity_id?: true
+    dedup_key?: true
+    call_id?: true
+    call_started_at?: true
     file_id?: true
     in_comment?: true
     status?: true
@@ -83699,6 +83714,9 @@ export namespace Prisma {
     updated_at?: true
     provider?: true
     activity_id?: true
+    dedup_key?: true
+    call_id?: true
+    call_started_at?: true
     file_id?: true
     in_comment?: true
     status?: true
@@ -83818,6 +83836,9 @@ export namespace Prisma {
     updated_at: Date | null
     provider: string | null
     activity_id: string | null
+    dedup_key: string | null
+    call_id: string | null
+    call_started_at: Date | null
     file_id: string | null
     in_comment: boolean
     status: string | null
@@ -83869,6 +83890,9 @@ export namespace Prisma {
     updated_at?: boolean
     provider?: boolean
     activity_id?: boolean
+    dedup_key?: boolean
+    call_id?: boolean
+    call_started_at?: boolean
     file_id?: boolean
     in_comment?: boolean
     status?: boolean
@@ -83903,6 +83927,9 @@ export namespace Prisma {
     updated_at?: boolean
     provider?: boolean
     activity_id?: boolean
+    dedup_key?: boolean
+    call_id?: boolean
+    call_started_at?: boolean
     file_id?: boolean
     in_comment?: boolean
     status?: boolean
@@ -83929,7 +83956,7 @@ export namespace Prisma {
     portal_id?: boolean
   }
 
-  export type TranscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "provider" | "activity_id" | "file_id" | "in_comment" | "status" | "text" | "symbols_count" | "price" | "duration" | "domain" | "user_id" | "user_name" | "entity_type" | "entity_id" | "entity_name" | "app" | "department" | "user_comment" | "owner_comment" | "user_mark" | "owner_mark" | "user_result" | "report_result" | "in_report" | "report_item_id" | "portal_id", ExtArgs["result"]["transcription"]>
+  export type TranscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "provider" | "activity_id" | "dedup_key" | "call_id" | "call_started_at" | "file_id" | "in_comment" | "status" | "text" | "symbols_count" | "price" | "duration" | "domain" | "user_id" | "user_name" | "entity_type" | "entity_id" | "entity_name" | "app" | "department" | "user_comment" | "owner_comment" | "user_mark" | "owner_mark" | "user_result" | "report_result" | "in_report" | "report_item_id" | "portal_id", ExtArgs["result"]["transcription"]>
 
   export type $TranscriptionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Transcription"
@@ -83940,6 +83967,9 @@ export namespace Prisma {
       updated_at: Date | null
       provider: string | null
       activity_id: string | null
+      dedup_key: string | null
+      call_id: string | null
+      call_started_at: Date | null
       file_id: string | null
       in_comment: boolean
       status: string | null
@@ -84338,6 +84368,9 @@ export namespace Prisma {
     readonly updated_at: FieldRef<"Transcription", 'DateTime'>
     readonly provider: FieldRef<"Transcription", 'String'>
     readonly activity_id: FieldRef<"Transcription", 'String'>
+    readonly dedup_key: FieldRef<"Transcription", 'String'>
+    readonly call_id: FieldRef<"Transcription", 'String'>
+    readonly call_started_at: FieldRef<"Transcription", 'DateTime'>
     readonly file_id: FieldRef<"Transcription", 'String'>
     readonly in_comment: FieldRef<"Transcription", 'Boolean'>
     readonly status: FieldRef<"Transcription", 'String'>
@@ -103123,6 +103156,9 @@ export namespace Prisma {
     updated_at: 'updated_at',
     provider: 'provider',
     activity_id: 'activity_id',
+    dedup_key: 'dedup_key',
+    call_id: 'call_id',
+    call_started_at: 'call_started_at',
     file_id: 'file_id',
     in_comment: 'in_comment',
     status: 'status',
@@ -104338,6 +104374,8 @@ export namespace Prisma {
   export const TranscriptionOrderByRelevanceFieldEnum: {
     provider: 'provider',
     activity_id: 'activity_id',
+    dedup_key: 'dedup_key',
+    call_id: 'call_id',
     file_id: 'file_id',
     status: 'status',
     text: 'text',
@@ -111513,6 +111551,9 @@ export namespace Prisma {
     updated_at?: DateTimeNullableFilter<"Transcription"> | Date | string | null
     provider?: StringNullableFilter<"Transcription"> | string | null
     activity_id?: StringNullableFilter<"Transcription"> | string | null
+    dedup_key?: StringNullableFilter<"Transcription"> | string | null
+    call_id?: StringNullableFilter<"Transcription"> | string | null
+    call_started_at?: DateTimeNullableFilter<"Transcription"> | Date | string | null
     file_id?: StringNullableFilter<"Transcription"> | string | null
     in_comment?: BoolFilter<"Transcription"> | boolean
     status?: StringNullableFilter<"Transcription"> | string | null
@@ -111545,6 +111586,9 @@ export namespace Prisma {
     updated_at?: SortOrderInput | SortOrder
     provider?: SortOrderInput | SortOrder
     activity_id?: SortOrderInput | SortOrder
+    dedup_key?: SortOrderInput | SortOrder
+    call_id?: SortOrderInput | SortOrder
+    call_started_at?: SortOrderInput | SortOrder
     file_id?: SortOrderInput | SortOrder
     in_comment?: SortOrder
     status?: SortOrderInput | SortOrder
@@ -111574,6 +111618,7 @@ export namespace Prisma {
 
   export type TranscriptionWhereUniqueInput = Prisma.AtLeast<{
     id?: bigint | number
+    dedup_key?: string
     AND?: TranscriptionWhereInput | TranscriptionWhereInput[]
     OR?: TranscriptionWhereInput[]
     NOT?: TranscriptionWhereInput | TranscriptionWhereInput[]
@@ -111581,6 +111626,8 @@ export namespace Prisma {
     updated_at?: DateTimeNullableFilter<"Transcription"> | Date | string | null
     provider?: StringNullableFilter<"Transcription"> | string | null
     activity_id?: StringNullableFilter<"Transcription"> | string | null
+    call_id?: StringNullableFilter<"Transcription"> | string | null
+    call_started_at?: DateTimeNullableFilter<"Transcription"> | Date | string | null
     file_id?: StringNullableFilter<"Transcription"> | string | null
     in_comment?: BoolFilter<"Transcription"> | boolean
     status?: StringNullableFilter<"Transcription"> | string | null
@@ -111605,7 +111652,7 @@ export namespace Prisma {
     in_report?: BoolFilter<"Transcription"> | boolean
     report_item_id?: StringNullableFilter<"Transcription"> | string | null
     portal_id?: StringNullableFilter<"Transcription"> | string | null
-  }, "id">
+  }, "id" | "dedup_key">
 
   export type TranscriptionOrderByWithAggregationInput = {
     id?: SortOrder
@@ -111613,6 +111660,9 @@ export namespace Prisma {
     updated_at?: SortOrderInput | SortOrder
     provider?: SortOrderInput | SortOrder
     activity_id?: SortOrderInput | SortOrder
+    dedup_key?: SortOrderInput | SortOrder
+    call_id?: SortOrderInput | SortOrder
+    call_started_at?: SortOrderInput | SortOrder
     file_id?: SortOrderInput | SortOrder
     in_comment?: SortOrder
     status?: SortOrderInput | SortOrder
@@ -111653,6 +111703,9 @@ export namespace Prisma {
     updated_at?: DateTimeNullableWithAggregatesFilter<"Transcription"> | Date | string | null
     provider?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
     activity_id?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
+    dedup_key?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
+    call_id?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
+    call_started_at?: DateTimeNullableWithAggregatesFilter<"Transcription"> | Date | string | null
     file_id?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
     in_comment?: BoolWithAggregatesFilter<"Transcription"> | boolean
     status?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
@@ -121098,6 +121151,9 @@ export namespace Prisma {
     updated_at?: Date | string | null
     provider?: string | null
     activity_id?: string | null
+    dedup_key?: string | null
+    call_id?: string | null
+    call_started_at?: Date | string | null
     file_id?: string | null
     in_comment?: boolean
     status?: string | null
@@ -121130,6 +121186,9 @@ export namespace Prisma {
     updated_at?: Date | string | null
     provider?: string | null
     activity_id?: string | null
+    dedup_key?: string | null
+    call_id?: string | null
+    call_started_at?: Date | string | null
     file_id?: string | null
     in_comment?: boolean
     status?: string | null
@@ -121162,6 +121221,9 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     provider?: NullableStringFieldUpdateOperationsInput | string | null
     activity_id?: NullableStringFieldUpdateOperationsInput | string | null
+    dedup_key?: NullableStringFieldUpdateOperationsInput | string | null
+    call_id?: NullableStringFieldUpdateOperationsInput | string | null
+    call_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     file_id?: NullableStringFieldUpdateOperationsInput | string | null
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -121194,6 +121256,9 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     provider?: NullableStringFieldUpdateOperationsInput | string | null
     activity_id?: NullableStringFieldUpdateOperationsInput | string | null
+    dedup_key?: NullableStringFieldUpdateOperationsInput | string | null
+    call_id?: NullableStringFieldUpdateOperationsInput | string | null
+    call_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     file_id?: NullableStringFieldUpdateOperationsInput | string | null
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -121226,6 +121291,9 @@ export namespace Prisma {
     updated_at?: Date | string | null
     provider?: string | null
     activity_id?: string | null
+    dedup_key?: string | null
+    call_id?: string | null
+    call_started_at?: Date | string | null
     file_id?: string | null
     in_comment?: boolean
     status?: string | null
@@ -121258,6 +121326,9 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     provider?: NullableStringFieldUpdateOperationsInput | string | null
     activity_id?: NullableStringFieldUpdateOperationsInput | string | null
+    dedup_key?: NullableStringFieldUpdateOperationsInput | string | null
+    call_id?: NullableStringFieldUpdateOperationsInput | string | null
+    call_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     file_id?: NullableStringFieldUpdateOperationsInput | string | null
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -121290,6 +121361,9 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     provider?: NullableStringFieldUpdateOperationsInput | string | null
     activity_id?: NullableStringFieldUpdateOperationsInput | string | null
+    dedup_key?: NullableStringFieldUpdateOperationsInput | string | null
+    call_id?: NullableStringFieldUpdateOperationsInput | string | null
+    call_started_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     file_id?: NullableStringFieldUpdateOperationsInput | string | null
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -128581,6 +128655,9 @@ export namespace Prisma {
     updated_at?: SortOrder
     provider?: SortOrder
     activity_id?: SortOrder
+    dedup_key?: SortOrder
+    call_id?: SortOrder
+    call_started_at?: SortOrder
     file_id?: SortOrder
     in_comment?: SortOrder
     status?: SortOrder
@@ -128617,6 +128694,9 @@ export namespace Prisma {
     updated_at?: SortOrder
     provider?: SortOrder
     activity_id?: SortOrder
+    dedup_key?: SortOrder
+    call_id?: SortOrder
+    call_started_at?: SortOrder
     file_id?: SortOrder
     in_comment?: SortOrder
     status?: SortOrder
@@ -128648,6 +128728,9 @@ export namespace Prisma {
     updated_at?: SortOrder
     provider?: SortOrder
     activity_id?: SortOrder
+    dedup_key?: SortOrder
+    call_id?: SortOrder
+    call_started_at?: SortOrder
     file_id?: SortOrder
     in_comment?: SortOrder
     status?: SortOrder
