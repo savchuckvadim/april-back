@@ -2,4 +2,5 @@ export type SmartType =
     | 'service_offer'
     | 'service_month'
     | 'presentation'
-    | 'service_act';
+    | 'service_act'
+    | 'aicall';

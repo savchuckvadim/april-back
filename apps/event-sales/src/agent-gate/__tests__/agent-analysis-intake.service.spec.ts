@@ -1,8 +1,10 @@
 import { AgentAnalysisIntakeService } from '../services/agent-analysis-intake.service';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
-import { CallReportSmartWriterService } from '../../call-report/services/call-report-smart-writer.service';
+import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 
-jest.mock('../../call-report/services/call-report-smart-writer.service');
+jest.mock(
+    '@lib/call-lib/call-report/services/call-report-smart-writer.service',
+);
 
 const MockedWriter = CallReportSmartWriterService as jest.MockedClass<
     typeof CallReportSmartWriterService

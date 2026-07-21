@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { InstallCallReportSmartUseCase } from '../use-cases/install-call-report-smart.use-case';
+import { InstallCallReportSmartUseCase } from '@lib/call-lib';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineUseCase } from '../use-cases/call-report-pipeline.use-case';
 import {

@@ -33,6 +33,8 @@ import { PbxSmartCategoryInstallByCategoryUseCase } from './use-cases/category/p
 import { PbxSmartCategoryManageUseCase } from './use-cases/category/pbx-smart-category-manage.use-case';
 import { ParseFieldExcelModule } from '@app/pbx-install/shared/parse-field-excel/parse-field-excel.module';
 import { StorageModule } from '@/core/storage/storage.module';
+import { CallReportSmartModule } from '@lib/call-lib';
+import { PbxSmartAicallInstallController } from '@app/pbx-install/smart/controller/pbx-smart-aicall-install.controller';
 
 @Module({
     imports: [
@@ -44,9 +46,12 @@ import { StorageModule } from '@/core/storage/storage.module';
         InstallStageModule,
         InstallTypedEntityModule,
         ParseFieldExcelModule,
+        // Смарт «AI-анализ звонков»: const-конфиг вместо Excel (@lib/call-lib)
+        CallReportSmartModule,
     ],
     controllers: [
         PbxSmartInstallController,
+        PbxSmartAicallInstallController,
         PbxSmartParseTemplateController,
         PbxSmartFieldInstallController,
         PbxSmartFieldInstallMonitoringController,

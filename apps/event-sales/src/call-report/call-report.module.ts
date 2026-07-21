@@ -7,12 +7,11 @@ import {
     TranscriptionModule,
     TranscriptionProviderModule,
     AiModule,
+    CallReportSmartModule,
 } from '@lib/call-lib';
 import { AiRagModule } from '@lib/ai-rag';
 import { BxDepartmentModule } from 'libs/bx-department';
 import { CallReportController } from './controllers/call-report.controller';
-import { CallReportSmartResolverService } from './services/call-report-smart-resolver.service';
-import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-smart.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
 import { CallReportProcessor } from './queue/call-report.processor';
@@ -24,8 +23,9 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
  * (Yandex/Vibecode по длительности) → GigaChat RAG → персист в
  * transcriptions/ais → резюме в таймлайн сделки.
  *
- * Смарт-процесс-витрина устанавливается отсюда (install-smart), но
- * элементы в него пишет agent-gate при push-back внешнего агента.
+ * Смарт-подсистема (конфиг/installer/resolver/writer) — переиспользуемый
+ * CallReportSmartModule из @lib/call-lib: этот app даёт контроллер
+ * /call-report/install-smart, admin — свой /admin/pbx/smarts/install-aicall.
  */
 @Module({
     imports: [
@@ -37,18 +37,16 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
         TranscriptionProviderModule,
         AiModule,
         AiRagModule,
+        CallReportSmartModule,
         // Фильтр сканера «только менеджеры отдела продаж»
         BxDepartmentModule,
     ],
     controllers: [CallReportController],
     providers: [
-        CallReportSmartResolverService,
-        InstallCallReportSmartUseCase,
         CallReportPipelineUseCase,
         CallReportScanUseCase,
         CallReportProcessor,
         CallReportScheduler,
     ],
-    exports: [CallReportSmartResolverService],
 })
 export class CallReportModule {}

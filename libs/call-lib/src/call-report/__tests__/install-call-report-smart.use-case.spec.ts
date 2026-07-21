@@ -37,11 +37,19 @@ const makeDeps = (options: {
     };
     const pbxService = { init: jest.fn().mockResolvedValue({ bitrix }) };
     const resolver = { invalidate: jest.fn().mockResolvedValue(undefined) };
+    const portalSmart = {
+        upsertFromBitrix: jest.fn().mockResolvedValue(undefined),
+    };
+    const aicallSmart = {
+        mirrorFields: jest.fn().mockResolvedValue(5),
+    };
     const useCase = new InstallCallReportSmartUseCase(
         pbxService as never,
         resolver as never,
+        portalSmart as never,
+        aicallSmart as never,
     );
-    return { useCase, bitrix, resolver };
+    return { useCase, bitrix, resolver, portalSmart, aicallSmart };
 };
 
 describe('InstallCallReportSmartUseCase', () => {
@@ -59,6 +67,32 @@ describe('InstallCallReportSmartUseCase', () => {
             CALL_REPORT_SMART_FIELDS.length,
         );
         expect(resolver.invalidate).toHaveBeenCalledWith(DOMAIN);
+    });
+
+    it('зеркалит смарт в smarts и поля в PortalDB; сбои зеркал не роняют установку', async () => {
+        const { useCase, portalSmart, aicallSmart, resolver } = makeDeps({
+            existingType: true,
+        });
+        await useCase.execute(DOMAIN);
+        expect(portalSmart.upsertFromBitrix).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({ entityTypeId: 128 }),
+            'aicall',
+            'report',
+        );
+        expect(aicallSmart.mirrorFields).toHaveBeenCalledWith(
+            DOMAIN,
+            128,
+            expect.any(Array),
+        );
+        expect(resolver.invalidate).toHaveBeenCalledWith(DOMAIN);
+
+        portalSmart.upsertFromBitrix.mockRejectedValue(
+            new Error('Portal not found'),
+        );
+        aicallSmart.mirrorFields.mockRejectedValue(new Error('no smarts row'));
+        const result = await useCase.execute(DOMAIN);
+        expect(result.entityTypeId).toBe(128);
     });
 
     it('идемпотентность: существующий тип не пересоздаётся, добавляются только новые поля', async () => {

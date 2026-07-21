@@ -3,6 +3,7 @@ import { CallReportSmartInfo } from '../services/call-report-smart-resolver.serv
 
 const SMART_INFO: CallReportSmartInfo = {
     entityTypeId: 128,
+    ufKeyByCode: {},
     enumItems: {
         CALL_TYPE: { presentation: 51, cold: 50 },
         KPI_ITEM_STATUS: { confirmed: 60, suspected: 61 },

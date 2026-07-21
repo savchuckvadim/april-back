@@ -6,8 +6,8 @@ import {
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
-import { CallReportSmartResolverService } from '../../call-report/services/call-report-smart-resolver.service';
-import { CallReportSmartWriterService } from '../../call-report/services/call-report-smart-writer.service';
+import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
+import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 import { AgentAnalysisResponseDto } from '../dto/agent-response.dto';
 import { AGENT_ANALYSIS_TYPE } from './agent-call-package.service';

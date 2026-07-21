@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { InstallCallReportSmartResult } from '../use-cases/install-call-report-smart.use-case';
+import { InstallCallReportSmartResult } from '@lib/call-lib';
 import { CallReportScanResult } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineResult } from '../use-cases/call-report-pipeline.use-case';
 

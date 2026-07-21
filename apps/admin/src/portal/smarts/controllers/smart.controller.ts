@@ -11,14 +11,62 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SmartService } from '../services/smart.service';
+import { SmartDetailsService } from '../services/smart-details.service';
 import { CreateSmartDto } from '../dto/create-smart.dto';
 import { UpdateSmartDto } from '../dto/update-smart.dto';
 import { SmartResponseDto } from '../dto/smart-response.dto';
+import { SmartDetailsResponseDto } from '../dto/smart-details-response.dto';
+import { InstallCallReportSmartUseCase } from '@lib/call-lib';
+import {
+    InstallAicallDto,
+    InstallAicallResponseDto,
+} from '../dto/install-aicall.dto';
 
 @ApiTags('Admin Smarts Management')
 @Controller('admin/pbx/smarts')
 export class SmartController {
-    constructor(private readonly smartService: SmartService) {}
+    constructor(
+        private readonly smartService: SmartService,
+        private readonly smartDetailsService: SmartDetailsService,
+        private readonly installAicallUseCase: InstallCallReportSmartUseCase,
+    ) {}
+
+    @ApiOperation({
+        summary: 'Установить смарт «AI-анализ звонков»',
+        description:
+            'Идемпотентная установка AI-смарта на портал (общий use-case из ' +
+            '@lib/call-lib, тот же что у event-sales): создаёт тип при отсутствии ' +
+            'и доливает недостающие поля из const-конфига.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Результат установки',
+        type: InstallAicallResponseDto,
+    })
+    @Post('install-aicall')
+    async installAicall(
+        @Body() dto: InstallAicallDto,
+    ): Promise<InstallAicallResponseDto> {
+        return this.installAicallUseCase.execute(dto.domain);
+    }
+
+    @ApiOperation({
+        summary: 'Детали смарта',
+        description:
+            'Строка smarts + живое состояние в Bitrix: тип, воронки со стадиями, ' +
+            'UF-поля с enum-значениями. Bitrix-часть fail-open (bitrix=null + error).',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Детали смарта',
+        type: SmartDetailsResponseDto,
+    })
+    @Get(':id/details')
+    async getSmartDetails(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<SmartDetailsResponseDto> {
+        return this.smartDetailsService.getDetails(id);
+    }
 
     @ApiOperation({ summary: 'Create a new smart' })
     @ApiResponse({

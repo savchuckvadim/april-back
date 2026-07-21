@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { BitrixOwnerTypeId } from '@lib/bitrix';
 import { mapFieldTypeToBitrixType } from '@lib/portal-lib/pbx-domain';
+import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
+import { PbxAicallSmartService } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     EUserFieldType,
     IUserFieldConfig,
@@ -11,7 +13,9 @@ import {
     buildCallReportUfName,
     CALL_REPORT_SMART_CODE,
     CALL_REPORT_SMART_FIELDS,
+    CALL_REPORT_SMART_GROUP,
     CALL_REPORT_SMART_TITLE,
+    CALL_REPORT_SMART_TYPE,
     CallReportSmartFieldDef,
 } from '../config/call-report-smart.config';
 import { CallReportSmartResolverService } from '../services/call-report-smart-resolver.service';
@@ -43,6 +47,8 @@ export class InstallCallReportSmartUseCase {
     constructor(
         private readonly pbxService: PBXService,
         private readonly smartResolver: CallReportSmartResolverService,
+        private readonly portalSmartService: PortalSmartService,
+        private readonly aicallSmartService: PbxAicallSmartService,
     ) {}
 
     async execute(domain: string): Promise<InstallCallReportSmartResult> {
@@ -99,11 +105,51 @@ export class InstallCallReportSmartUseCase {
 
         const entityTypeId = Number(smartType.entityTypeId);
 
+        // 1a. Зеркало в таблицу smarts — видимость в мониторинге админки
+        // (/portal/{id}/pbx/smart). Резолв конвейера от таблицы НЕ зависит
+        // (идёт в Bitrix + Redis), поэтому сбой зеркала не фатален:
+        // маркетплейс-портал может не иметь локальной строки portal.
+        try {
+            await this.portalSmartService.upsertFromBitrix(
+                domain,
+                smartType,
+                CALL_REPORT_SMART_TYPE,
+                CALL_REPORT_SMART_GROUP,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Зеркало smarts не обновлено (${domain}): ${(error as Error).message}`,
+            );
+        }
+
         // 2. Поля: добавить отсутствующие (идемпотентно).
         const { fieldsAdded, fieldsExisting, fieldsFailed } =
             await this.installFields(bitrix, entityTypeId);
 
-        // 3. Кэш резолвера мог хранить «не установлен» — сбрасываем.
+        // 3. Канонический шаг pbx-flow — зеркало полей в PortalDB
+        // (bitrixfields + bitrixfield_items): PortalModel и fallback-резолв
+        // видят поля/enum-id без похода в Bitrix. Fail-open.
+        try {
+            const bxFields = await bitrix.userFieldConfig.getAllWithItems(
+                'crm',
+                { entityId: `CRM_${entityTypeId}` },
+            );
+            const mirrored = await this.aicallSmartService.mirrorFields(
+                domain,
+                entityTypeId,
+                bxFields,
+            );
+            this.logger.log(
+                `Зеркало полей aicall в PortalDB: ${mirrored} шт (${domain})`,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Зеркало полей aicall не обновлено (${domain}): ${(error as Error).message}`,
+            );
+        }
+
+        // 4. Инвалидация online-кэша портала (portal_${domain}) — иначе
+        // PortalModel не увидит новые поля до истечения TTL 10ч.
         await this.smartResolver.invalidate(domain);
 
         return {

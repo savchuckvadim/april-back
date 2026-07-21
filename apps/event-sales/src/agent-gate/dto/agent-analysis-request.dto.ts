@@ -34,7 +34,7 @@ import {
     CallReportRiskFlagCode,
     CallReportSectionCode,
     CallReportSentimentCode,
-} from '../../call-report/config/call-report-smart.config';
+} from '@lib/call-lib';
 
 /** Типы звонков — единый источник: конфиг смарта call-report. */
 export const AGENT_CALL_TYPES = CALL_REPORT_CALL_TYPE_CODES;

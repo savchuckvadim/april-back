@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PBXModule } from '@lib/pbx/pbx.module';
-import { TranscriptionModule, AiModule } from '@lib/call-lib';
+import {
+    TranscriptionModule,
+    AiModule,
+    CallReportSmartModule,
+} from '@lib/call-lib';
 import { AiRagModule } from '@lib/ai-rag';
-import { CallReportModule } from '../call-report/call-report.module';
 import { AgentKeyGuard } from './guards/agent-key.guard';
 import { AgentCallsController } from './controllers/agent-calls.controller';
 import { AgentKnowledgeController } from './controllers/agent-knowledge.controller';
@@ -23,7 +26,7 @@ import { AgentAnalysisIntakeService } from './services/agent-analysis-intake.ser
         TranscriptionModule,
         AiModule,
         AiRagModule,
-        CallReportModule,
+        CallReportSmartModule,
     ],
     controllers: [AgentCallsController, AgentKnowledgeController],
     providers: [
