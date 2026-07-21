@@ -1,15 +1,21 @@
 import {
+    Body,
     Controller,
     ForbiddenException,
     Get,
+    HttpCode,
+    Param,
+    Post,
     Query,
     Req,
     UseGuards,
 } from '@nestjs/common';
 import {
+    ApiBody,
     ApiHeader,
     ApiOkResponse,
     ApiOperation,
+    ApiParam,
     ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -17,9 +23,12 @@ import {
     KnowledgeStorageService,
     KnowledgeDocumentDto,
     KnowledgeDocumentContentDto,
+    KnowledgeUploadResponseDto,
 } from '@lib/ai-rag';
 import { KnowledgeListQueryDto } from '@lib/ai-rag/dto/knowledge-list-query.dto';
 import { KnowledgeDocumentQueryDto } from '@lib/ai-rag/dto/knowledge-document-query.dto';
+import { KnowledgeUploadParamsDto } from '@lib/ai-rag/dto/knowledge-upload-params.dto';
+import { AgentKnowledgeUploadDto } from '../dto/agent-knowledge-upload.dto';
 import {
     AGENT_API_KEY_HEADER,
     AgentKeyGuard,
@@ -115,6 +124,56 @@ export class AgentKnowledgeController {
             query.fileName,
         );
         return KnowledgeDocumentContentDto.fromContent(content);
+    }
+
+    @Post(':kind')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Записать текстовый документ',
+        description:
+            'Накопительные материалы агента (профили менеджеров kind=managers, ' +
+            'выжимки, библиотеки ответов): текст в .md/.txt/.json, перезапись ' +
+            'допустима. Ключ с доменной изоляцией пишет ТОЛЬКО в свою клиентскую ' +
+            'базу (domain обязателен); общая база — только ключу без ограничений.',
+    })
+    @ApiParam({
+        name: 'kind',
+        description: 'Kind-папка назначения (например managers).',
+        example: 'managers',
+        type: String,
+    })
+    @ApiBody({
+        type: AgentKnowledgeUploadDto,
+        description: 'Имя файла, текстовое содержимое и домен.',
+    })
+    @ApiOkResponse({
+        description: 'Метаданные сохранённого документа.',
+        type: KnowledgeUploadResponseDto,
+    })
+    async uploadText(
+        @Param() params: KnowledgeUploadParamsDto,
+        @Body() body: AgentKnowledgeUploadDto,
+        @Req() request: AgentRequest,
+    ): Promise<KnowledgeUploadResponseDto> {
+        if (request.agentDomains && !body.domain) {
+            throw new ForbiddenException(
+                'Ключ с доменной изоляцией обязан указывать domain (запись в общую базу запрещена)',
+            );
+        }
+        this.assertDomainAllowed(body.domain, request);
+        const result = await this.knowledgeStorage.saveDocument(
+            {
+                buffer: Buffer.from(body.content, 'utf8'),
+                originalname: body.fileName,
+            },
+            params.kind,
+            body.domain,
+        );
+        return {
+            fileName: result.fileName,
+            kind: result.kind,
+            source: result.source,
+        };
     }
 
     @Get('all')

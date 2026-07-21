@@ -83,6 +83,15 @@ dealId, provider, textLength, hasAgentAnalysis }`.
 В конвейер попадают только звонки менеджеров отдела продаж (фильтр
 bx-department; выключается env `CALL_REPORT_SALES_ONLY=0`).
 
+### POST /api/agent/knowledge/{kind} — запись накопительных материалов
+Тело JSON: `{ "fileName": "ivanov-ii.md", "content": "...", "domain": "gsr.bitrix24.ru" }`
+(.md/.txt/.json, перезапись допустима, до 500k символов). Ключ с доменной
+изоляцией пишет ТОЛЬКО в свою клиентскую базу (domain обязателен).
+**Конвенция профилей менеджеров** (общая для обоих контуров): kind
+`managers`, файл `<slug>.md|.json` — агент читает через GET content и
+дополняет через POST; employeeRecommendations строится на накопленном.
+Эти же файлы видит GigaChat RAG первичного контура.
+
 ### GET /api/agent/knowledge/kinds → список типов материалов
 ### GET /api/agent/knowledge?kind=presentation&domain=... → список документов
 ### GET /api/agent/knowledge/all?kind=presentation&domain=... → **тексты всех
@@ -203,7 +212,7 @@ OpenClaw крутится на вашем сервере, скиллы — markd
    Алгоритм:
    1. GET $APRIL_AGENT_URL/api/agent/calls?limit=10 (заголовок x-agent-api-key: $APRIL_AGENT_KEY)
    2. Для каждого звонка: GET /api/agent/calls/{transcriptionId}
-   3. Определи тип звонка (cold/warm/presentation/decision/payment/other).
+   3. Определи тип звонка (cold/call/presentation/decision/payment/other).
    4. GET /api/agent/knowledge/all?kind={тип}&domain={domain} — скрипт этого
       типа звонка для этого портала. Сверь разговор со скриптом.
    5. Проанализируй: потребности, презентация, продукты, возражения и их
@@ -218,7 +227,9 @@ OpenClaw крутится на вашем сервере, скиллы — markd
    о следующем шаге; зафиксированы ли контакты.
    ```
 
-3. Запуск по расписанию — cron OpenClaw (например каждые 30–60 минут):
+3. Запуск по расписанию — cron OpenClaw **ежедневно ночью** (например
+   02:30, разбор звонков за прошедший день; первый запуск — бэкфилл
+   месяца, см. промпт 01-bootstrap):
    «выполни скилл call-analyst». Дедуп на нашей стороне: уже
    проанализированные звонки в GET /agent/calls не возвращаются, а
    повторный push-back по звонку идемпотентен — вернётся уже сохранённый
@@ -242,7 +253,7 @@ crontab на сервере:
 1. **Материалы у нас** — kind-папки базы знаний (`/api/agent/knowledge`).
    Загрузка: админка → «База знаний AI» (front/apps/admin, страница
    /ai-knowledge) или POST admin/ai-rag/knowledge/{kind}. Соглашение по
-   kind: general (общее), cold, warm, presentation, decision, payment +
+   kind: general (общее), cold, call, presentation, decision, payment +
    свои. С `domain` — материалы конкретного портала-клиента (перекрывают
    общие). Агент всегда читает свежие версии — «дообучение» скилла =
    загрузка нового документа, без деплоя.

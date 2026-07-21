@@ -5,8 +5,15 @@ import mammoth from 'mammoth';
 import pdfParse from 'pdf-parse';
 import { Workbook } from 'exceljs';
 
-const TEXT_EXTENSIONS = new Set(['.txt', '.md']);
-const SUPPORTED_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.txt', '.md']);
+const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.json']);
+const SUPPORTED_EXTENSIONS = new Set([
+    '.pdf',
+    '.docx',
+    '.xlsx',
+    '.txt',
+    '.md',
+    '.json',
+]);
 
 @Injectable()
 export class FileLoaderService {
