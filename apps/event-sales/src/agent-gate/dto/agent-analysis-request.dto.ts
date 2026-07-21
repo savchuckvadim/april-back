@@ -16,10 +16,24 @@ import {
 
 import {
     CALL_REPORT_CALL_TYPE_CODES,
+    CALL_REPORT_COACHING_CODES,
+    CALL_REPORT_COMPETITOR_CODES,
+    CALL_REPORT_INTERLOCUTOR_CODES,
     CALL_REPORT_LINK_STATUS_CODES,
+    CALL_REPORT_OBJECTION_CODES,
+    CALL_REPORT_REFUSAL_CODES,
+    CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_SECTION_CODES,
+    CALL_REPORT_SENTIMENT_CODES,
+    CallReportCoachingCode,
+    CallReportCompetitorCode,
+    CallReportInterlocutorCode,
     CallReportLinkStatusCode,
+    CallReportObjectionCode,
+    CallReportRefusalCode,
+    CallReportRiskFlagCode,
     CallReportSectionCode,
+    CallReportSentimentCode,
 } from '../../call-report/config/call-report-smart.config';
 
 /** Типы звонков — единый источник: конфиг смарта call-report. */
@@ -130,6 +144,38 @@ export class AgentRelatedDealsDto {
     @IsInt()
     @Min(1)
     xoDealId?: number;
+}
+
+/** Следующий шаг по итогам звонка (валиден при наличии что/кто/когда). */
+export class AgentNextStepDto {
+    @ApiProperty({
+        description:
+            'Назначен ли конкретный следующий шаг. Валидный шаг содержит ' +
+            '«что/кто/когда»; «клиент подумает» — НЕ следующий шаг.',
+        example: true,
+        type: Boolean,
+    })
+    @IsBoolean()
+    set: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Формулировка шага: что именно, кто делает, как свяжемся.',
+        example:
+            'Презентация по Zoom, проводит менеджер, клиент подключает главбуха',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @ApiPropertyOptional({
+        description: 'Дата следующего шага (YYYY-MM-DD), если названа.',
+        example: '2026-07-24',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    date?: string;
 }
 
 /** Привязка к элементу списка отчётности (KPI / История). */
@@ -310,6 +356,40 @@ export class AgentObjectionDto {
     @IsOptional()
     @IsBoolean()
     handled?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Категория возражения по закрытому справочнику (для трендов).',
+        enum: CALL_REPORT_OBJECTION_CODES,
+        example: 'price',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_OBJECTION_CODES as unknown as string[])
+    category?: CallReportObjectionCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Цитата-доказательство из транскрипта (дословная фраза клиента).',
+        example: 'Да у нас Консультант стоит, зачем нам второй',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    quote?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Исход после ответа менеджера: разговор продолжился конструктивно / ' +
+            'клиент согласился / разговор свернулся. Замыкает петлю ' +
+            '«ответ → исход» для библиотеки лучших ответов.',
+        enum: ['continued', 'converted', 'disengaged'],
+        example: 'continued',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(['continued', 'converted', 'disengaged'])
+    outcome?: 'continued' | 'converted' | 'disengaged';
 }
 
 /**
@@ -338,6 +418,125 @@ export class AgentCallAnalysisDto {
     @IsOptional()
     @IsBoolean()
     productive?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'С кем в итоге говорили: ЛПР / пользователь / секретарь / другое. ' +
+            'Для холодных звонков «вышел на ЛПР» — мера успеха.',
+        enum: CALL_REPORT_INTERLOCUTOR_CODES,
+        example: 'lpr',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_INTERLOCUTOR_CODES as unknown as string[])
+    interlocutorRole?: CallReportInterlocutorCode;
+
+    @ApiPropertyOptional({
+        description: 'Общий тон клиента в разговоре.',
+        enum: CALL_REPORT_SENTIMENT_CODES,
+        example: 'neutral',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_SENTIMENT_CODES as unknown as string[])
+    sentiment?: CallReportSentimentCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Следующий шаг по итогам звонка — ключевой предиктор сделки.',
+        type: AgentNextStepDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentNextStepDto)
+    nextStep?: AgentNextStepDto;
+
+    @ApiPropertyOptional({
+        description: 'Обсуждалась ли цена в разговоре.',
+        example: false,
+        type: Boolean,
+    })
+    @IsOptional()
+    @IsBoolean()
+    priceDiscussed?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Упомянутые конкуренты по закрытому справочнику (для win-loss трендов).',
+        enum: CALL_REPORT_COMPETITOR_CODES,
+        isArray: true,
+        example: ['consultant'],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @IsIn(CALL_REPORT_COMPETITOR_CODES as unknown as string[], { each: true })
+    competitors?: CallReportCompetitorCode[];
+
+    @ApiPropertyOptional({
+        description:
+            'Категории всех возражений звонка по закрытому справочнику ' +
+            '(дублирует objections[].category для фильтров смарта).',
+        enum: CALL_REPORT_OBJECTION_CODES,
+        isArray: true,
+        example: ['price', 'need'],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @IsIn(CALL_REPORT_OBJECTION_CODES as unknown as string[], { each: true })
+    objectionCategories?: CallReportObjectionCode[];
+
+    @ApiPropertyOptional({
+        description:
+            'Риск-флаги для немедленного внимания руководителя: обещание, ' +
+            'конфликт, нарушение регламента, сильный негатив клиента.',
+        enum: CALL_REPORT_RISK_FLAG_CODES,
+        isArray: true,
+        example: [],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @IsIn(CALL_REPORT_RISK_FLAG_CODES as unknown as string[], { each: true })
+    riskFlags?: CallReportRiskFlagCode[];
+
+    @ApiPropertyOptional({
+        description:
+            'Категория отказа при провале: рыночная (цена/конкурент/нет решения) ' +
+            'или исполнительская (квалификация/исполнение).',
+        enum: CALL_REPORT_REFUSAL_CODES,
+        example: 'execution_issue',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_REFUSAL_CODES as unknown as string[])
+    refusalCategory?: CallReportRefusalCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Доля речи менеджера в %, по словам транскрипта (норма 40-60, >65 — флаг).',
+        example: 52,
+        type: Number,
+        minimum: 0,
+        maximum: 100,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    talkRatioPct?: number;
+
+    @ApiPropertyOptional({
+        description: 'Число содержательных вопросов менеджера за звонок.',
+        example: 9,
+        type: Number,
+        minimum: 0,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    questionsCount?: number;
 
     @ApiProperty({
         description: 'Итоговое резюме звонка от агента (своими скиллами).',
@@ -447,6 +646,48 @@ export class AgentCallAnalysisDto {
     @Min(1)
     @Max(10)
     score?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Взвешенная оценка 0-100: Σ(score×relevance)/Σrelevance × 10 по разделам ' +
+            'с relevance>0 — агрегируемая метрика для трендов (не штрафует за ' +
+            'неактуальные разделы).',
+        example: 62,
+        type: Number,
+        minimum: 0,
+        maximum: 100,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    weightedScore?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Соответствие скрипту типа звонка, % (по материалам базы знаний).',
+        example: 70,
+        type: Number,
+        minimum: 0,
+        maximum: 100,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    scriptCompliance?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Приоритет разбора звонка руководителем: urgent (риск-флаги/провал) / ' +
+            'planned / none — формирует coaching-очередь РОПа.',
+        enum: CALL_REPORT_COACHING_CODES,
+        example: 'planned',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_COACHING_CODES as unknown as string[])
+    coachingPriority?: CallReportCoachingCode;
 
     @ApiPropertyOptional({
         description:

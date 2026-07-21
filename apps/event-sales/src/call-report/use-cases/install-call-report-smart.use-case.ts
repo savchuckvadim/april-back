@@ -165,7 +165,7 @@ export class InstallCallReportSmartUseCase {
             entityId: `CRM_${entityTypeId}`,
             fieldName,
             userTypeId: mapFieldTypeToBitrixType(def.type),
-            multiple: 'N',
+            multiple: def.isMultiple ? 'Y' : 'N',
             mandatory: 'N',
             showFilter: 'Y',
             showInList: 'Y',

@@ -142,6 +142,23 @@ describe('AgentAnalysisIntakeService', () => {
         });
     });
 
+    it('weightedScore считается по формуле Σ(score×relevance)/Σrelevance×10, если агент не прислал', async () => {
+        const { service, addItem } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            sections: [
+                { section: 'NEEDS', relevance: 100, score: 8 },
+                { section: 'PRESENTATION', relevance: 50, score: 4 },
+                { section: 'PRICE', relevance: 0 },
+            ],
+        } as never);
+
+        // (8×100 + 4×50) / 150 × 10 = 66.7 → 67; PRICE (relevance 0) исключён
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ weightedScore: 67 }),
+        );
+    });
+
     it('черновик flow (plan+report) сохраняется в ais.report_result', async () => {
         const { service, aiService } = makeDeps();
         await service.intake('42', 'claw-main', {

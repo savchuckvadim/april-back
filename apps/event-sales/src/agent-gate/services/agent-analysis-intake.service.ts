@@ -181,6 +181,26 @@ export class AgentAnalysisIntakeService {
             durationSec: row.durationSec ? Number(row.durationSec) : undefined,
             callType: dto.callType,
             productive: this.resolveProductive(dto),
+            interlocutorRole: dto.interlocutorRole,
+            sentiment: dto.sentiment,
+            nextStepSet: dto.nextStep?.set,
+            nextStep: dto.nextStep?.description,
+            nextStepDate: dto.nextStep?.date,
+            priceDiscussed: dto.priceDiscussed,
+            competitorMentioned: dto.competitors?.length
+                ? true
+                : dto.competitors !== undefined
+                  ? false
+                  : undefined,
+            competitors: dto.competitors,
+            objectionCategories: this.resolveObjectionCategories(dto),
+            riskFlags: dto.riskFlags,
+            refusalCategory: dto.refusalCategory,
+            talkRatioPct: dto.talkRatioPct,
+            questionsCount: dto.questionsCount,
+            weightedScore: dto.weightedScore ?? this.computeWeightedScore(dto),
+            scriptCompliance: dto.scriptCompliance,
+            coachingPriority: dto.coachingPriority,
             transcriptionId: row.id,
             transcript: row.text ?? undefined,
             summary: dto.summary,
@@ -215,6 +235,46 @@ export class AgentAnalysisIntakeService {
             agentName,
             agentVersion: dto.agentVersion,
         });
+    }
+
+    /** Категории возражений: явное поле, иначе собираем из objections[].category. */
+    private resolveObjectionCategories(
+        dto: AgentCallAnalysisDto,
+    ): string[] | undefined {
+        if (dto.objectionCategories?.length) return dto.objectionCategories;
+        const fromObjections = (dto.objections ?? [])
+            .map(objection => objection.category)
+            .filter((category): category is NonNullable<typeof category> =>
+                Boolean(category),
+            );
+        return fromObjections.length
+            ? Array.from(new Set(fromObjections))
+            : undefined;
+    }
+
+    /**
+     * Взвешенная оценка 0-100 по разделам с relevance>0
+     * (Σ score×relevance / Σ relevance × 10) — если агент не прислал свою.
+     * Неактуальные разделы исключаются, а не тянут оценку вниз.
+     */
+    private computeWeightedScore(
+        dto: AgentCallAnalysisDto,
+    ): number | undefined {
+        const scored = (dto.sections ?? []).filter(
+            section => section.relevance > 0 && section.score !== undefined,
+        );
+        if (!scored.length) return undefined;
+        const weightSum = scored.reduce(
+            (sum, section) => sum + section.relevance,
+            0,
+        );
+        if (!weightSum) return undefined;
+        const weighted = scored.reduce(
+            (sum, section) =>
+                sum + (section.score as number) * section.relevance,
+            0,
+        );
+        return Math.round((weighted / weightSum) * 10);
     }
 
     /** productive: явное поле агента, иначе выводим из flow-черновика. */

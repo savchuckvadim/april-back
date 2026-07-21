@@ -38,6 +38,8 @@ export interface CallReportSmartFieldDef {
     type: CallReportFieldType;
     /** Значения для enumeration-полей. */
     items?: readonly CallReportSmartEnumItem[];
+    /** Множественное поле (multi-enum справочники). */
+    isMultiple?: boolean;
 }
 
 export const CALL_REPORT_SMART_TYPE = 'aicall';
@@ -149,6 +151,153 @@ function buildTranscriptFields(): CallReportSmartFieldDef[] {
 }
 
 // ---------------------------------------------------------------------------
+// Справочники v3 (оперативная/стратегическая аналитика — только закрытые
+// списки: тренды и дашборды не строятся по свободному тексту)
+// ---------------------------------------------------------------------------
+
+/** Роль собеседника в звонке. */
+export const CALL_REPORT_INTERLOCUTOR_CODES = [
+    'lpr',
+    'user',
+    'secretary',
+    'other',
+] as const;
+export type CallReportInterlocutorCode =
+    (typeof CALL_REPORT_INTERLOCUTOR_CODES)[number];
+export const CALL_REPORT_INTERLOCUTOR_ITEMS = [
+    { CODE: 'lpr', VALUE: 'ЛПР', SORT: 100 },
+    { CODE: 'user', VALUE: 'Пользователь (не ЛПР)', SORT: 200 },
+    { CODE: 'secretary', VALUE: 'Секретарь', SORT: 300 },
+    { CODE: 'other', VALUE: 'Другое', SORT: 400 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportInterlocutorCode;
+})[];
+
+/** Категории возражений (классическая пятёрка + скрытое). */
+export const CALL_REPORT_OBJECTION_CODES = [
+    'price',
+    'timing',
+    'need',
+    'trust',
+    'authority',
+    'hidden',
+] as const;
+export type CallReportObjectionCode =
+    (typeof CALL_REPORT_OBJECTION_CODES)[number];
+export const CALL_REPORT_OBJECTION_ITEMS = [
+    { CODE: 'price', VALUE: 'Цена', SORT: 100 },
+    { CODE: 'timing', VALUE: 'Сроки / не сейчас', SORT: 200 },
+    { CODE: 'need', VALUE: 'Нет потребности / всё есть', SORT: 300 },
+    { CODE: 'trust', VALUE: 'Доверие / риск', SORT: 400 },
+    { CODE: 'authority', VALUE: 'Полномочия / не моё решение', SORT: 500 },
+    { CODE: 'hidden', VALUE: 'Скрытое возражение', SORT: 600 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportObjectionCode;
+})[];
+
+/** Конкуренты (закрытый справочник для win-loss трендов). */
+export const CALL_REPORT_COMPETITOR_CODES = [
+    'consultant',
+    'kodeks',
+    'tehexpert',
+    'glavbukh',
+    'free_internet',
+    'other',
+] as const;
+export type CallReportCompetitorCode =
+    (typeof CALL_REPORT_COMPETITOR_CODES)[number];
+export const CALL_REPORT_COMPETITOR_ITEMS = [
+    { CODE: 'consultant', VALUE: 'КонсультантПлюс', SORT: 100 },
+    { CODE: 'kodeks', VALUE: 'Кодекс', SORT: 200 },
+    { CODE: 'tehexpert', VALUE: 'Техэксперт', SORT: 300 },
+    { CODE: 'glavbukh', VALUE: 'Главбух / БСС', SORT: 400 },
+    { CODE: 'free_internet', VALUE: 'Бесплатный интернет', SORT: 500 },
+    { CODE: 'other', VALUE: 'Другой', SORT: 600 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportCompetitorCode;
+})[];
+
+/** Риск-флаги (алерты РОПу). */
+export const CALL_REPORT_RISK_FLAG_CODES = [
+    'promise',
+    'conflict',
+    'compliance',
+    'client_negative',
+] as const;
+export type CallReportRiskFlagCode =
+    (typeof CALL_REPORT_RISK_FLAG_CODES)[number];
+export const CALL_REPORT_RISK_FLAG_ITEMS = [
+    { CODE: 'promise', VALUE: 'Необоснованное обещание клиенту', SORT: 100 },
+    { CODE: 'conflict', VALUE: 'Конфликт / грубость', SORT: 200 },
+    { CODE: 'compliance', VALUE: 'Нарушение регламента', SORT: 300 },
+    { CODE: 'client_negative', VALUE: 'Сильный негатив клиента', SORT: 400 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportRiskFlagCode;
+})[];
+
+/** Тон клиента. */
+export const CALL_REPORT_SENTIMENT_CODES = [
+    'positive',
+    'neutral',
+    'negative',
+] as const;
+export type CallReportSentimentCode =
+    (typeof CALL_REPORT_SENTIMENT_CODES)[number];
+export const CALL_REPORT_SENTIMENT_ITEMS = [
+    { CODE: 'positive', VALUE: 'Позитивный', SORT: 100 },
+    { CODE: 'neutral', VALUE: 'Нейтральный', SORT: 200 },
+    { CODE: 'negative', VALUE: 'Негативный', SORT: 300 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportSentimentCode;
+})[];
+
+/** Приоритет разбора звонка руководителем (coaching queue). */
+export const CALL_REPORT_COACHING_CODES = [
+    'urgent',
+    'planned',
+    'none',
+] as const;
+export type CallReportCoachingCode =
+    (typeof CALL_REPORT_COACHING_CODES)[number];
+export const CALL_REPORT_COACHING_ITEMS = [
+    { CODE: 'urgent', VALUE: 'Срочно на разбор', SORT: 100 },
+    { CODE: 'planned', VALUE: 'Плановый разбор', SORT: 200 },
+    { CODE: 'none', VALUE: 'Разбор не требуется', SORT: 300 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportCoachingCode;
+})[];
+
+/**
+ * Категория отказа: рыночные причины vs исполнительские (deal-review
+ * win/loss). Без этого win-loss аналитика вырождается в «всё из-за цены».
+ */
+export const CALL_REPORT_REFUSAL_CODES = [
+    'price',
+    'competitor',
+    'no_decision',
+    'qualification_issue',
+    'execution_issue',
+] as const;
+export type CallReportRefusalCode = (typeof CALL_REPORT_REFUSAL_CODES)[number];
+export const CALL_REPORT_REFUSAL_ITEMS = [
+    { CODE: 'price', VALUE: 'Цена (рыночная)', SORT: 100 },
+    { CODE: 'competitor', VALUE: 'Конкурент (рыночная)', SORT: 200 },
+    { CODE: 'no_decision', VALUE: 'Решение не принято (рыночная)', SORT: 300 },
+    {
+        CODE: 'qualification_issue',
+        VALUE: 'Слабая квалификация (исполнительская)',
+        SORT: 400,
+    },
+    {
+        CODE: 'execution_issue',
+        VALUE: 'Слабое исполнение (исполнительская)',
+        SORT: 500,
+    },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportRefusalCode;
+})[];
+
+// ---------------------------------------------------------------------------
 // Статус привязки элементов списков
 // ---------------------------------------------------------------------------
 
@@ -189,6 +338,74 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         items: CALL_REPORT_CALL_TYPE_ITEMS,
     },
     { code: 'PRODUCTIVE', name: 'Звонок результативный', type: 'boolean' },
+    {
+        code: 'INTERLOCUTOR_ROLE',
+        name: 'С кем говорили',
+        type: 'enumeration',
+        items: CALL_REPORT_INTERLOCUTOR_ITEMS,
+    },
+    {
+        code: 'SENTIMENT',
+        name: 'Тон клиента',
+        type: 'enumeration',
+        items: CALL_REPORT_SENTIMENT_ITEMS,
+    },
+
+    // — Следующий шаг (ключевой предиктор) —
+    { code: 'NEXT_STEP_SET', name: 'Следующий шаг назначен', type: 'boolean' },
+    {
+        code: 'NEXT_STEP',
+        name: 'Следующий шаг (что/кто/когда)',
+        type: 'string',
+    },
+    { code: 'NEXT_STEP_DATE', name: 'Дата следующего шага', type: 'datetime' },
+
+    // — Событийные флаги и справочники —
+    { code: 'PRICE_DISCUSSED', name: 'Цена обсуждалась', type: 'boolean' },
+    {
+        code: 'COMPETITOR_MENTIONED',
+        name: 'Конкурент упомянут',
+        type: 'boolean',
+    },
+    {
+        code: 'COMPETITORS',
+        name: 'Конкуренты (справочник)',
+        type: 'enumeration',
+        items: CALL_REPORT_COMPETITOR_ITEMS,
+        isMultiple: true,
+    },
+    {
+        code: 'OBJECTION_CATEGORIES',
+        name: 'Категории возражений',
+        type: 'enumeration',
+        items: CALL_REPORT_OBJECTION_ITEMS,
+        isMultiple: true,
+    },
+    {
+        code: 'RISK_FLAGS',
+        name: 'Риск-флаги',
+        type: 'enumeration',
+        items: CALL_REPORT_RISK_FLAG_ITEMS,
+        isMultiple: true,
+    },
+    {
+        code: 'REFUSAL_CATEGORY',
+        name: 'Категория отказа (рыночная/исполнительская)',
+        type: 'enumeration',
+        items: CALL_REPORT_REFUSAL_ITEMS,
+    },
+
+    // — Метрики речи (из транскрипта) —
+    {
+        code: 'TALK_RATIO_PCT',
+        name: 'Доля речи менеджера, % (норма 40-60)',
+        type: 'integer',
+    },
+    {
+        code: 'QUESTIONS_COUNT',
+        name: 'Вопросов менеджера (норма 11-14 на discovery)',
+        type: 'integer',
+    },
 
     // — Связи с воронками и отчётностью (если удалось установить) —
     { code: 'DEAL_MAIN', name: 'ОП: основная сделка', type: 'crm' },
@@ -245,6 +462,22 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
 
     // — Итоговая оценка агента —
     { code: 'SCORE', name: 'Оценка звонка (1-10)', type: 'integer' },
+    {
+        code: 'WEIGHTED_SCORE',
+        name: 'Взвешенная оценка 0-100 (Σ score×relevance / Σ relevance × 10)',
+        type: 'integer',
+    },
+    {
+        code: 'SCRIPT_COMPLIANCE',
+        name: 'Соответствие скрипту, %',
+        type: 'integer',
+    },
+    {
+        code: 'COACHING_PRIORITY',
+        name: 'Приоритет разбора (coaching)',
+        type: 'enumeration',
+        items: CALL_REPORT_COACHING_ITEMS,
+    },
     { code: 'SCORE_EXPLANATION', name: 'Объяснение оценки', type: 'string' },
     {
         code: 'SPEECH_ANALYSIS',

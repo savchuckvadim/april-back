@@ -38,6 +38,22 @@ export interface CallReportSmartItemInput {
     /** Код типа звонка (xmlId enum-значения из конфига). */
     callType?: string;
     productive?: boolean;
+    interlocutorRole?: string;
+    sentiment?: string;
+    nextStepSet?: boolean;
+    nextStep?: string;
+    nextStepDate?: string;
+    priceDiscussed?: boolean;
+    competitorMentioned?: boolean;
+    competitors?: string[];
+    objectionCategories?: string[];
+    riskFlags?: string[];
+    refusalCategory?: string;
+    talkRatioPct?: number;
+    questionsCount?: number;
+    weightedScore?: number;
+    scriptCompliance?: number;
+    coachingPriority?: string;
     transcriptionId?: string;
     /** Полный транскрипт — будет разложен кусками по TRANSCRIPT_N. */
     transcript?: string;
@@ -142,6 +158,33 @@ export class CallReportSmartWriterService {
         // — Классификация —
         this.setEnumUf(fields, 'CALL_TYPE', input.callType);
         this.setBoolUf(fields, 'PRODUCTIVE', input.productive);
+        this.setEnumUf(fields, 'INTERLOCUTOR_ROLE', input.interlocutorRole);
+        this.setEnumUf(fields, 'SENTIMENT', input.sentiment);
+
+        // — Следующий шаг —
+        this.setBoolUf(fields, 'NEXT_STEP_SET', input.nextStepSet);
+        this.setUf(fields, 'NEXT_STEP', input.nextStep);
+        this.setUf(fields, 'NEXT_STEP_DATE', input.nextStepDate);
+
+        // — Событийные флаги и справочники —
+        this.setBoolUf(fields, 'PRICE_DISCUSSED', input.priceDiscussed);
+        this.setBoolUf(
+            fields,
+            'COMPETITOR_MENTIONED',
+            input.competitorMentioned,
+        );
+        this.setMultiEnumUf(fields, 'COMPETITORS', input.competitors);
+        this.setMultiEnumUf(
+            fields,
+            'OBJECTION_CATEGORIES',
+            input.objectionCategories,
+        );
+        this.setMultiEnumUf(fields, 'RISK_FLAGS', input.riskFlags);
+        this.setEnumUf(fields, 'REFUSAL_CATEGORY', input.refusalCategory);
+
+        // — Метрики речи —
+        this.setUf(fields, 'TALK_RATIO_PCT', input.talkRatioPct);
+        this.setUf(fields, 'QUESTIONS_COUNT', input.questionsCount);
 
         // — Связи с воронками (crm-поля: массив ссылок D_id) —
         this.setCrmDealUf(fields, 'DEAL_MAIN', input.mainDealId);
@@ -182,6 +225,9 @@ export class CallReportSmartWriterService {
 
         // — Итоговая оценка —
         this.setUf(fields, 'SCORE', input.score);
+        this.setUf(fields, 'WEIGHTED_SCORE', input.weightedScore);
+        this.setUf(fields, 'SCRIPT_COMPLIANCE', input.scriptCompliance);
+        this.setEnumUf(fields, 'COACHING_PRIORITY', input.coachingPriority);
         this.setUf(fields, 'SCORE_EXPLANATION', input.scoreExplanation);
         this.setUf(fields, 'SPEECH_ANALYSIS', input.speechAnalysis);
         this.setUf(
@@ -244,6 +290,28 @@ export class CallReportSmartWriterService {
     ): void {
         if (!dealId) return;
         fields[this.ufName(code)] = [`D_${dealId}`];
+    }
+
+    /** Multi-enum: массив числовых id значений; неизвестные коды — warn и skip. */
+    private setMultiEnumUf(
+        fields: Record<string, unknown>,
+        code: string,
+        xmlIds: string[] | undefined,
+    ): void {
+        if (!xmlIds?.length) return;
+        const mapping = this.smartInfo.enumItems[code] ?? {};
+        const ids: number[] = [];
+        for (const xmlId of xmlIds) {
+            const enumId = mapping[xmlId];
+            if (enumId === undefined) {
+                this.logger.warn(
+                    `Неизвестное enum-значение "${xmlId}" для поля ${code} — пропущено`,
+                );
+                continue;
+            }
+            ids.push(enumId);
+        }
+        if (ids.length) fields[this.ufName(code)] = ids;
     }
 
     /** Enum пишется числовым id значения; неизвестный код — warn и skip. */

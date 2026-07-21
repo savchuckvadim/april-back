@@ -92,12 +92,27 @@ bx-department; выключается env `CALL_REPORT_SALES_ONLY=0`).
 {
   "callType": "presentation",   // cold|call|presentation|decision|payment|other
   "productive": true,
+  "interlocutorRole": "lpr",            // lpr|user|secretary|other
+  "sentiment": "neutral",               // positive|neutral|negative
+  "nextStep": { "set": true, "description": "Презентация, подключает главбуха", "date": "2026-07-24" },
+  "priceDiscussed": false,
+  "competitors": ["consultant"],        // закрытый справочник конкурентов
+  "objectionCategories": ["price"],     // price|timing|need|trust|authority|hidden
+  "riskFlags": [],                      // promise|conflict|compliance|client_negative
+  "refusalCategory": null,              // price|competitor|no_decision|qualification_issue|execution_issue
+  "talkRatioPct": 52,
+  "questionsCount": 9,
+  "weightedScore": 62,                  // Σ(score×relevance)/Σrelevance×10; можно не слать — посчитаем
+  "scriptCompliance": 70,
+  "coachingPriority": "planned",        // urgent|planned|none
   "summary": "…резюме агента…",
   "needsFound": true,
   "needs": ["судебная практика по 44-ФЗ"],
   "presentationDone": true,
   "productsOffered": ["Гарант Универсал"],
-  "objections": [{ "objection": "дорого", "handling": "сравнение тарифов", "handled": true }],
+  "objections": [{ "objection": "дорого", "handling": "сравнение тарифов", "handled": true,
+                    "category": "price", "quote": "у нас Консультант стоит, зачем второй",
+                    "outcome": "continued" }],
   "sections": [
     { "section": "GREETING",     "relevance": 100, "score": 8, "analysis": "…", "advice": "…" },
     { "section": "NEEDS",        "relevance": 100, "score": 6, "analysis": "…", "advice": "…" },

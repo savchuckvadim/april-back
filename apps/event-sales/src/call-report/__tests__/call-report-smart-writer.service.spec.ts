@@ -7,6 +7,10 @@ const SMART_INFO: CallReportSmartInfo = {
         CALL_TYPE: { presentation: 51, cold: 50 },
         KPI_ITEM_STATUS: { confirmed: 60, suspected: 61 },
         HISTORY_ITEM_STATUS: { confirmed: 70, suspected: 71 },
+        INTERLOCUTOR_ROLE: { lpr: 80 },
+        OBJECTION_CATEGORIES: { price: 90, need: 91 },
+        COMPETITORS: { consultant: 95 },
+        COACHING_PRIORITY: { urgent: 97 },
     },
 };
 
@@ -96,6 +100,43 @@ describe('CallReportSmartWriterService', () => {
         );
         expect(fields.ufCrm128PriceRelevance).toBe(0);
         expect(fields.ufCrm128PriceScore).toBeUndefined();
+    });
+
+    it('v3: next step, событийные флаги, multi-enum справочники и метрики речи', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            interlocutorRole: 'lpr',
+            nextStepSet: true,
+            nextStep: 'Презентация в четверг, подключает главбуха',
+            nextStepDate: '2026-07-24',
+            priceDiscussed: true,
+            competitorMentioned: true,
+            competitors: ['consultant', 'unknown-comp'],
+            objectionCategories: ['price', 'need'],
+            talkRatioPct: 52,
+            questionsCount: 9,
+            weightedScore: 62,
+            coachingPriority: 'urgent',
+        });
+
+        const addCall = bitrix.item.add.mock.calls[0] as unknown[];
+        const fields = addCall[1] as Record<string, unknown>;
+        expect(fields.ufCrm128InterlocutorRole).toBe(80);
+        expect(fields.ufCrm128NextStepSet).toBe(1);
+        expect(fields.ufCrm128NextStepDate).toBe('2026-07-24');
+        expect(fields.ufCrm128PriceDiscussed).toBe(1);
+        expect(fields.ufCrm128CompetitorMentioned).toBe(1);
+        expect(fields.ufCrm128Competitors).toEqual([95]);
+        expect(fields.ufCrm128ObjectionCategories).toEqual([90, 91]);
+        expect(fields.ufCrm128TalkRatioPct).toBe(52);
+        expect(fields.ufCrm128QuestionsCount).toBe(9);
+        expect(fields.ufCrm128WeightedScore).toBe(62);
+        expect(fields.ufCrm128CoachingPriority).toBe(97);
     });
 
     it('длинный транскрипт раскладывается кусками по полям TRANSCRIPT_N', async () => {
