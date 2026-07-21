@@ -70,6 +70,31 @@ describe('AgentCallPackageService', () => {
         expect(pending).toHaveLength(2);
     });
 
+    it('изоляция порталов: чужой домен в listPendingScoped — 403, чужой пакет — 404', async () => {
+        const { service } = makeDeps({ rows: [row('1')] });
+        await expect(
+            service.listPendingScoped('other.bitrix24.ru', 20, [
+                'gsr.bitrix24.ru',
+            ]),
+        ).rejects.toThrow('Домен вне разрешённых');
+
+        await expect(
+            service.getPackage('1', ['gsr.bitrix24.ru']),
+        ).rejects.toThrow('не найдена');
+    });
+
+    it('изоляция порталов: свой домен проходит', async () => {
+        const { service } = makeDeps({ rows: [row('1')] });
+        const pending = await service.listPendingScoped(
+            'test.bitrix24.ru',
+            20,
+            ['test.bitrix24.ru'],
+        );
+        expect(pending).toHaveLength(1);
+        const pkg = await service.getPackage('1', ['test.bitrix24.ru']);
+        expect(pkg.call.transcriptionId).toBe('1');
+    });
+
     it('getPackage отклоняет транскрипции не из автоконвейера', async () => {
         const manualRow = { ...row('9'), dedupKey: null };
         const { service, store } = makeDeps({ rows: [manualRow] });

@@ -64,8 +64,13 @@ export class AgentCallsController {
     })
     async listPending(
         @Query() query: AgentCallsQueryDto,
+        @Req() request: AgentRequest,
     ): Promise<AgentPendingCallDto[]> {
-        return this.packageService.listPending(query.domain, query.limit ?? 20);
+        return this.packageService.listPendingScoped(
+            query.domain,
+            query.limit ?? 20,
+            request.agentDomains,
+        );
     }
 
     @Get(':transcriptionId')
@@ -87,8 +92,12 @@ export class AgentCallsController {
     })
     async getPackage(
         @Param('transcriptionId') transcriptionId: string,
+        @Req() request: AgentRequest,
     ): Promise<AgentCallPackageDto> {
-        return this.packageService.getPackage(transcriptionId);
+        return this.packageService.getPackage(
+            transcriptionId,
+            request.agentDomains,
+        );
     }
 
     @Post(':transcriptionId/analysis')
@@ -123,6 +132,7 @@ export class AgentCallsController {
             transcriptionId,
             request.agentName,
             dto,
+            request.agentDomains,
         );
     }
 }

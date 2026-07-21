@@ -41,6 +41,23 @@ describe('AgentKeyGuard', () => {
         expect(request.agentName).toBe('agent-1');
     });
 
+    it('ключ с доменами получает изоляцию порталов (agentDomains)', () => {
+        const guard = makeGuard(
+            'claw-gsr:key1:gsr.bitrix24.ru|Test.Bitrix24.ru,claw-all:key2',
+        );
+        const scoped = makeContext({ 'x-agent-api-key': 'key1' });
+        expect(guard.canActivate(scoped.context as never)).toBe(true);
+        expect(scoped.request.agentName).toBe('claw-gsr');
+        expect(scoped.request.agentDomains).toEqual([
+            'gsr.bitrix24.ru',
+            'test.bitrix24.ru',
+        ]);
+
+        const unscoped = makeContext({ 'x-agent-api-key': 'key2' });
+        guard.canActivate(unscoped.context as never);
+        expect(unscoped.request.agentDomains).toBeNull();
+    });
+
     it('невалидный ключ отклоняется', () => {
         const guard = makeGuard('claw-main:secret123');
         const { context } = makeContext({ 'x-agent-api-key': 'wrong' });

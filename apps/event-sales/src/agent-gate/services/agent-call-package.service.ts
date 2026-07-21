@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+    ForbiddenException,
+    Injectable,
+    Logger,
+    NotFoundException,
+} from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
     AiEntityDto,
@@ -54,6 +59,46 @@ export class AgentCallPackageService {
     ) {}
 
     /**
+     * Звонки автоконвейера со статусом done без анализа агента,
+     * с учётом доменной изоляции ключа (allowedDomains).
+     */
+    async listPendingScoped(
+        domainQuery: string | undefined,
+        limit: number,
+        allowedDomains: string[] | null,
+    ): Promise<AgentPendingCallDto[]> {
+        if (!allowedDomains) {
+            return this.listPending(domainQuery, limit);
+        }
+        if (domainQuery) {
+            this.assertDomainAllowed(domainQuery, allowedDomains);
+            return this.listPending(domainQuery, limit);
+        }
+        // Ключ ограничен списком порталов, домен не указан — обходим все свои.
+        const pending: AgentPendingCallDto[] = [];
+        for (const domain of allowedDomains) {
+            if (pending.length >= limit) break;
+            pending.push(
+                ...(await this.listPending(domain, limit - pending.length)),
+            );
+        }
+        return pending.slice(0, limit);
+    }
+
+    /** Проверка доменной изоляции; чужой домен — 403. */
+    assertDomainAllowed(
+        domain: string | null | undefined,
+        allowedDomains: string[] | null,
+    ): void {
+        if (!allowedDomains) return;
+        if (!domain || !allowedDomains.includes(domain.toLowerCase())) {
+            throw new ForbiddenException(
+                'Домен вне разрешённых для этого ключа агента',
+            );
+        }
+    }
+
+    /**
      * Звонки автоконвейера со статусом done без анализа агента.
      *
      * Обход keyset-курсором от новых к старым: проанализированные строки
@@ -100,12 +145,24 @@ export class AgentCallPackageService {
     }
 
     /** Полный пакет по звонку для глубокого анализа. */
-    async getPackage(transcriptionId: string): Promise<AgentCallPackageDto> {
+    async getPackage(
+        transcriptionId: string,
+        allowedDomains: string[] | null = null,
+    ): Promise<AgentCallPackageDto> {
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.dedupKey) {
             throw new NotFoundException(
                 `Транскрипция ${transcriptionId} не из автоконвейера call-report`,
+            );
+        }
+        // Изоляция порталов: чужой звонок для этого ключа не существует.
+        if (
+            allowedDomains &&
+            (!row.domain || !allowedDomains.includes(row.domain.toLowerCase()))
+        ) {
+            throw new NotFoundException(
+                `Транскрипция ${transcriptionId} не найдена`,
             );
         }
 

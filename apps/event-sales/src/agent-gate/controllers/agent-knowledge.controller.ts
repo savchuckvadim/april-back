@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    ForbiddenException,
+    Get,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
 import {
     ApiHeader,
     ApiOkResponse,
@@ -13,7 +20,11 @@ import {
 } from '@lib/ai-rag';
 import { KnowledgeListQueryDto } from '@lib/ai-rag/dto/knowledge-list-query.dto';
 import { KnowledgeDocumentQueryDto } from '@lib/ai-rag/dto/knowledge-document-query.dto';
-import { AGENT_API_KEY_HEADER, AgentKeyGuard } from '../guards/agent-key.guard';
+import {
+    AGENT_API_KEY_HEADER,
+    AgentKeyGuard,
+    AgentRequest,
+} from '../guards/agent-key.guard';
 
 /**
  * Agent API: RAG-материалы для скиллов внешнего агента — скрипты типов
@@ -33,6 +44,19 @@ export class AgentKnowledgeController {
         private readonly knowledgeStorage: KnowledgeStorageService,
         private readonly knowledgeContent: KnowledgeContentService,
     ) {}
+
+    /** Изоляция порталов: клиентская база чужого домена недоступна ключу. */
+    private assertDomainAllowed(
+        domain: string | undefined,
+        request: AgentRequest,
+    ): void {
+        if (!domain || !request.agentDomains) return;
+        if (!request.agentDomains.includes(domain.toLowerCase())) {
+            throw new ForbiddenException(
+                'Домен вне разрешённых для этого ключа агента',
+            );
+        }
+    }
 
     @Get('kinds')
     @ApiOperation({
@@ -61,7 +85,9 @@ export class AgentKnowledgeController {
     })
     async listDocuments(
         @Query() query: KnowledgeListQueryDto,
+        @Req() request: AgentRequest,
     ): Promise<KnowledgeDocumentDto[]> {
+        this.assertDomainAllowed(query.domain, request);
         const documents = await this.knowledgeStorage.listDocuments(
             query.domain,
             query.kind ?? 'general',
@@ -80,7 +106,9 @@ export class AgentKnowledgeController {
     })
     async readDocument(
         @Query() query: KnowledgeDocumentQueryDto,
+        @Req() request: AgentRequest,
     ): Promise<KnowledgeDocumentContentDto> {
+        this.assertDomainAllowed(query.domain, request);
         const content = await this.knowledgeContent.readDocument(
             query.domain,
             query.kind,
@@ -102,7 +130,9 @@ export class AgentKnowledgeController {
     })
     async readAll(
         @Query() query: KnowledgeListQueryDto,
+        @Req() request: AgentRequest,
     ): Promise<KnowledgeDocumentContentDto[]> {
+        this.assertDomainAllowed(query.domain, request);
         const contents = await this.knowledgeContent.readAll(
             query.domain,
             query.kind ?? 'general',

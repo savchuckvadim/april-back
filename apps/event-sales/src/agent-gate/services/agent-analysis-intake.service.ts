@@ -37,12 +37,22 @@ export class AgentAnalysisIntakeService {
         transcriptionId: string,
         agentName: string,
         dto: AgentCallAnalysisDto,
+        allowedDomains: string[] | null = null,
     ): Promise<AgentAnalysisResponseDto> {
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.domain) {
             throw new NotFoundException(
                 `У транскрипции ${transcriptionId} нет домена — пакет некорректен`,
+            );
+        }
+        // Изоляция порталов: чужой звонок для этого ключа не существует.
+        if (
+            allowedDomains &&
+            !allowedDomains.includes(row.domain.toLowerCase())
+        ) {
+            throw new NotFoundException(
+                `Транскрипция ${transcriptionId} не найдена`,
             );
         }
 
@@ -170,6 +180,39 @@ export class AgentAnalysisIntakeService {
         );
         const rowDealId = row.entityId ? Number(row.entityId) : undefined;
 
+        try {
+            return await this.writeItem(
+                writer,
+                row,
+                rowDealId,
+                dealContext,
+                gigachat,
+                agentName,
+                dto,
+            );
+        } catch (error) {
+            // { telegram: true } — форс-алерт админам (транспорт логгера)
+            this.logger.error(
+                `Смарт-элемент НЕ создан (${domain}, transcription ${row.id}): ${(error as Error).message}`,
+                { telegram: true, domain, transcriptionId: row.id },
+            );
+            throw error;
+        }
+    }
+
+    private async writeItem(
+        writer: CallReportSmartWriterService,
+        row: TranscriptionPipelineView,
+        rowDealId: number | undefined,
+        dealContext: {
+            companyId?: number;
+            contactId?: number;
+            managerId?: number;
+        },
+        gigachat: { resume?: string; recomendation?: string },
+        agentName: string,
+        dto: AgentCallAnalysisDto,
+    ): Promise<number> {
         return writer.addItem({
             activityId: row.activityId ?? '',
             dealId: rowDealId,

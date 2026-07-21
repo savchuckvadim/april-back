@@ -65,8 +65,10 @@ export class CallReportScheduler {
                 try {
                     await this.scanUseCase.execute(domain);
                 } catch (error) {
+                    // { telegram: true } — форс-алерт админам (транспорт логгера)
                     this.logger.error(
                         `Скан домена ${domain} упал: ${(error as Error).message}`,
+                        { telegram: true, domain },
                     );
                 }
             }
@@ -88,12 +90,14 @@ export class CallReportScheduler {
                 );
             if (count > 0) {
                 this.logger.warn(
-                    `Реанимировано зависших транскрибаций: ${count}`,
+                    `Реанимировано зависших транскрибаций: ${count} (упавшие воркеры/таймауты)`,
+                    { telegram: true, count },
                 );
             }
         } catch (error) {
             this.logger.error(
                 `Реанимация зависших не выполнена: ${(error as Error).message}`,
+                { telegram: true },
             );
         }
     }

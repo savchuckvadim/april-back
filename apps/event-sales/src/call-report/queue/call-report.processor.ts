@@ -34,8 +34,18 @@ export class CallReportProcessor {
                     `recomendation=${result.recomendationSaved}`,
             );
         } catch (error) {
+            // Telegram-алерт на последней попытке: ретраи Bull — штатный путь,
+            // спамить не надо ({ telegram: true } — транспорт логгера).
+            const maxAttempts = job.opts.attempts ?? 1;
+            const isLastAttempt = job.attemptsMade + 1 >= maxAttempts;
             this.logger.error(
-                `Ошибка обработки звонка ${domain}/${activityId}: ${(error as Error).message}`,
+                `Ошибка обработки звонка ${domain}/${activityId}` +
+                    `${isLastAttempt ? ` (все ${maxAttempts} попытки исчерпаны)` : ''}: ${(error as Error).message}`,
+                {
+                    ...(isLastAttempt ? { telegram: true } : {}),
+                    domain,
+                    activityId,
+                },
             );
             throw error;
         }
