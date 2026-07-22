@@ -105,16 +105,6 @@ export class PortalPrismaRepository implements PortalRepository {
                 clients: true,
             },
         });
-        console.log('findByDomain domain ', domain);
-        console.log('findByDomain result ', result);
-        const many = await this.prisma.portal.findMany({
-            include: {
-                agents: true,
-                templates: true,
-                clients: true,
-            },
-        });
-        console.log('findByDomain many ', many);
         if (!result) return null;
         return createPortalEntityFromPrisma(result as PortalWithRelations);
     }
@@ -122,7 +112,6 @@ export class PortalPrismaRepository implements PortalRepository {
         const result = await this.prisma.portal.findMany({
             where: { client_id: BigInt(clientId.toString()) },
         });
-        console.log('portals findByClientId result', result);
         if (!result) return null;
         return result.map(portal => createPortalEntityFromPrisma(portal));
     }

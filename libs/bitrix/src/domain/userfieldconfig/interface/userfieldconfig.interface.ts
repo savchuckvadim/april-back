@@ -1,7 +1,21 @@
 export interface IUserFieldConfig {
     id?: string | number;
+    /**
+     * Владелец поля, напр. `CRM_LEAD`, `CRM_DEAL`, для смартов — `CRM_{id}`.
+     *
+     * ⚠️ Для смарт-процессов `{id}` — это **id из `crm.type.list`**
+     * (маленький, напр. 7; в PortalDB — `smarts.bitrixId`), а НЕ
+     * `entityTypeId` (напр. 177)! На `CRM_{entityTypeId}` Bitrix отвечает
+     * «Вы не можете просматривать настройки пользовательских полей» — той же
+     * фразой, что при нехватке прав администратора CRM (боевой инцидент
+     * 2026-07-21). Пример из доки: id=7, entityTypeId=177 → `CRM_7`.
+     */
     entityId: string;
-    fieldName: string; //UF_CRM_
+    /**
+     * Имя поля `UF_CRM_...`; для смартов — `UF_CRM_{id из crm.type.list}_{CODE}`
+     * (id — НЕ entityTypeId, см. {@link entityId}).
+     */
+    fieldName: string;
     userTypeId: EUserFieldType;
     xmlId: string | null;
     sort?: string | number;
@@ -29,6 +43,7 @@ export interface IUserFieldConfig {
 }
 export interface IUserFieldConfigSmart<T extends string>
     extends IUserFieldConfig {
+    /** `CRM_{id из crm.type.list}` — НЕ entityTypeId (см. IUserFieldConfig.entityId). */
     entityId: `CRM_${T}`;
 }
 
@@ -72,5 +87,6 @@ export interface IUserFieldConfigEnumerationItem {
 }
 export interface IUserFieldConfigSmart<T extends string>
     extends IUserFieldConfig {
+    /** `CRM_{id из crm.type.list}` — НЕ entityTypeId (см. IUserFieldConfig.entityId). */
     entityId: `CRM_${T}`;
 }

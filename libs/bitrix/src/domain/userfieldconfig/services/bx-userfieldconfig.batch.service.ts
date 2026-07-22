@@ -8,6 +8,14 @@ import {
     UserFieldConfigUpdateDto,
 } from '../dto/userfieldconfig.dto';
 
+/**
+ * Batch-обёртки `userfieldconfig.*` (накопление команд в инстансе bitrix).
+ *
+ * ⚠️ Для смарт-процессов `entityId = CRM_{id из crm.type.list}` — НЕ
+ * `entityTypeId`! На неверный id Bitrix отвечает «Вы не можете просматривать
+ * настройки пользовательских полей» — той же фразой, что при нехватке прав
+ * (боевой инцидент 2026-07-21). Подробности — jsdoc BxUserFieldConfigService.
+ */
 export class BxUserFieldConfigBatchService {
     private repo: UserFieldConfigRepository;
 
@@ -25,6 +33,7 @@ export class BxUserFieldConfigBatchService {
         return this.repo.getBtch(btchCommand, dto);
     }
 
+    /** ⚠️ `field.entityId = CRM_{id из crm.type.list}`, НЕ entityTypeId — см. jsdoc класса. */
     addBtch(btchCommand: string, dto: UserFieldConfigAddDto) {
         return this.repo.addBtch(btchCommand, dto);
     }
@@ -37,6 +46,7 @@ export class BxUserFieldConfigBatchService {
         return this.repo.deleteBtch(btchCommand, dto);
     }
 
+    /** ⚠️ `filter.entityId = CRM_{id из crm.type.list}`, НЕ entityTypeId — см. jsdoc класса. */
     listBtch(btchCommand: string, dto: UserFieldConfigListDto) {
         return this.repo.listBtch(btchCommand, dto);
     }

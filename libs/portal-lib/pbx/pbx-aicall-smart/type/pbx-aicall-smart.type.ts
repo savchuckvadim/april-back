@@ -502,20 +502,25 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
     { code: 'AGENT_VERSION', name: 'Версия скилла агента', type: 'string' },
 ];
 
-/** UF-имя поля для userfieldconfig: UF_CRM_{entityTypeId}_{code}. */
+/**
+ * UF-имя поля для userfieldconfig: UF_CRM_{typeId}_{code}.
+ * ВАЖНО: typeId — id смарт-типа из crm.type.list (в доках Bitrix: id=7,
+ * entityTypeId=177 → UF_CRM_7_...). entityTypeId сюда передавать НЕЛЬЗЯ.
+ */
 export function buildCallReportUfName(
-    entityTypeId: number | string,
+    typeId: number | string,
     code: string,
 ): string {
-    return `UF_CRM_${entityTypeId}_${code}`;
+    return `UF_CRM_${typeId}_${code}`;
 }
 
 /**
  * Имя поля в crm.item.* API: camelCase от UF-имени
  * (UF_CRM_13_PERIOD_FROM → ufCrm13PeriodFrom — см. smart-act.service).
+ * typeId — id смарт-типа из crm.type.list (НЕ entityTypeId).
  */
 export function buildCallReportItemFieldName(
-    entityTypeId: number | string,
+    typeId: number | string,
     code: string,
 ): string {
     const pascal = code
@@ -523,7 +528,7 @@ export function buildCallReportItemFieldName(
         .split('_')
         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
         .join('');
-    return `ufCrm${entityTypeId}${pascal}`;
+    return `ufCrm${typeId}${pascal}`;
 }
 
 /** Режет транскрипт на куски под поля TRANSCRIPT_1..N (хвост отбрасывается с пометкой). */

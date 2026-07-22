@@ -18,8 +18,14 @@ import {
 
 /** Резолв смарта «AI-анализ звонков» для записи элементов crm.item. */
 export interface AicallSmartInfo {
+    /** entityTypeId — адресация элементов crm.item.*. */
     entityTypeId: number;
-    /** Код поля конфига → ключ поля crm.item (ufCrm{etid}{Camel}). */
+    /**
+     * id смарт-типа из crm.type.list — основа UF-имён полей
+     * (UF_CRM_{typeId}_..., по докам userfieldconfig; НЕ entityTypeId!).
+     */
+    typeId: number;
+    /** Код поля конфига → ключ поля crm.item (ufCrm{typeId}{Camel}). */
     ufKeyByCode: Record<string, string>;
     /** Код enum-поля → (код значения → числовой Bitrix enum id). */
     enumItems: Record<string, Record<string, number>>;
@@ -74,6 +80,8 @@ export class PbxAicallSmartService {
 
         const raw = smart as unknown as Record<string, unknown>;
         const entityTypeId = Number(raw.entityTypeId ?? raw.bitrixId);
+        // bitrixId строки smarts = id смарт-типа (crm.type.list id).
+        const typeId = Number(raw.bitrixId ?? raw.entityTypeId);
         if (!Number.isFinite(entityTypeId) || entityTypeId <= 0) return null;
 
         const ufKeyByCode: Record<string, string> = {};
@@ -97,7 +105,7 @@ export class PbxAicallSmartService {
                 enumItems[field.code] = mapping;
             }
         }
-        return { entityTypeId, ufKeyByCode, enumItems };
+        return { entityTypeId, typeId, ufKeyByCode, enumItems };
     }
 
     /** Fallback: локальное зеркало PortalDB (свежее сразу после установки). */
@@ -113,6 +121,8 @@ export class PbxAicallSmartService {
         );
         if (!row) return null;
         const entityTypeId = Number(row.entityTypeId);
+        // smarts.bitrixId = id смарт-типа (crm.type.list id) — основа UF-имён.
+        const typeId = Number(row.bitrixId ?? row.entityTypeId);
 
         const fields = await this.pbxFieldService.findByEntityId(
             PbxEntityTypePrisma.SMART,
@@ -125,7 +135,7 @@ export class PbxAicallSmartService {
             if (!field.code) continue;
             ufKeyByCode[field.code] =
                 field.bitrixCamelId ||
-                buildCallReportItemFieldName(entityTypeId, field.code);
+                buildCallReportItemFieldName(typeId, field.code);
             if (field.items?.length) {
                 const mapping: Record<string, number> = {};
                 for (const item of field.items) {
@@ -134,7 +144,7 @@ export class PbxAicallSmartService {
                 enumItems[field.code] = mapping;
             }
         }
-        return { entityTypeId, ufKeyByCode, enumItems };
+        return { entityTypeId, typeId, ufKeyByCode, enumItems };
     }
 
     /**
@@ -145,7 +155,8 @@ export class PbxAicallSmartService {
      */
     async mirrorFields(
         domain: string,
-        entityTypeId: number,
+        /** id смарт-типа из crm.type.list (НЕ entityTypeId). */
+        typeId: number,
         bxFields: IUserFieldConfig[],
     ): Promise<number> {
         const portal = await this.portalStoreService.getPortalByDomain(domain);
@@ -160,7 +171,7 @@ export class PbxAicallSmartService {
         const parentType = `${CALL_REPORT_SMART_GROUP}_${CALL_REPORT_SMART_TYPE}`;
         const entities: PbxFieldEntity[] = [];
         for (const def of CALL_REPORT_SMART_FIELDS) {
-            const fieldName = `UF_CRM_${entityTypeId}_${def.code}`;
+            const fieldName = `UF_CRM_${typeId}_${def.code}`;
             const bxField = bxFields.find(
                 field => field.fieldName === fieldName,
             );
@@ -173,7 +184,7 @@ export class PbxAicallSmartService {
             entity.isPlural = bxField.multiple === 'Y';
             entity.bitrixId = fieldName;
             entity.bitrixCamelId = buildCallReportItemFieldName(
-                entityTypeId,
+                typeId,
                 def.code,
             );
             entity.entity_type = PbxEntityTypePrisma.SMART;

@@ -104,6 +104,11 @@ export class InstallCallReportSmartUseCase {
         }
 
         const entityTypeId = Number(smartType.entityTypeId);
+        // КРИТИЧНО (по докам userfieldconfig): entityId полей = CRM_{id типа
+        // из crm.type.list}, НЕ entityTypeId! (пример доки: id=7,
+        // entityTypeId=177 → entityId='CRM_7'). entityTypeId — только для
+        // crm.item.* адресации элементов.
+        const typeId = Number(smartType.id);
 
         // 1a. Зеркало в таблицу smarts — видимость в мониторинге админки
         // (/portal/{id}/pbx/smart). Резолв конвейера от таблицы НЕ зависит
@@ -124,7 +129,7 @@ export class InstallCallReportSmartUseCase {
 
         // 2. Поля: добавить отсутствующие (идемпотентно).
         const { fieldsAdded, fieldsExisting, fieldsFailed } =
-            await this.installFields(bitrix, entityTypeId);
+            await this.installFields(bitrix, typeId);
 
         // 3. Канонический шаг pbx-flow — зеркало полей в PortalDB
         // (bitrixfields + bitrixfield_items): PortalModel и fallback-резолв
@@ -132,11 +137,11 @@ export class InstallCallReportSmartUseCase {
         try {
             const bxFields = await bitrix.userFieldConfig.getAllWithItems(
                 'crm',
-                { entityId: `CRM_${entityTypeId}` },
+                { entityId: `CRM_${typeId}` },
             );
             const mirrored = await this.aicallSmartService.mirrorFields(
                 domain,
-                entityTypeId,
+                typeId,
                 bxFields,
             );
             this.logger.log(
@@ -161,18 +166,48 @@ export class InstallCallReportSmartUseCase {
         };
     }
 
+    /** typeId — id смарт-типа из crm.type.list (НЕ entityTypeId!). */
     private async installFields(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        entityTypeId: number,
+        typeId: number,
     ): Promise<
         Pick<
             InstallCallReportSmartResult,
             'fieldsAdded' | 'fieldsExisting' | 'fieldsFailed'
         >
     > {
-        const existing = await bitrix.userFieldConfig.getAllWithItems('crm', {
-            entityId: `CRM_${entityTypeId}`,
-        });
+        let existing: IUserFieldConfig[];
+        try {
+            existing = await bitrix.userFieldConfig.getAllWithItems('crm', {
+                entityId: `CRM_${typeId}`,
+            });
+        } catch (error) {
+            // userfieldconfig.* требует прав на чтение объекта в moduleId
+            // (по докам) — практически прав администратора CRM. Тип уже
+            // создан, поля долить нельзя — диагностируем причину user.admin.
+            if (
+                (error as Error).message.includes(
+                    'не можете просматривать настройки',
+                )
+            ) {
+                const isAdmin = await this.checkKeyIsAdmin(bitrix);
+                const diag =
+                    isAdmin === false
+                        ? 'user.admin=false: вебхук создан НЕ администратором — ' +
+                          'пересоздайте вебхук от имени администратора портала.'
+                        : isAdmin === true
+                          ? 'user.admin=true: пользователь ключа админ, но доступ ' +
+                            'к userfieldconfig запрещён — проверьте scope ' +
+                            '`userfieldconfig` у вебхука и права CRM.'
+                          : 'user.admin проверить не удалось.';
+                throw new Error(
+                    'Bitrix запретил чтение настроек полей (userfieldconfig). ' +
+                        diag +
+                        ' Повторная установка безопасна — дольёт поля.',
+                );
+            }
+            throw error;
+        }
         const existingNames = new Set(existing.map(field => field.fieldName));
 
         const fieldsAdded: string[] = [];
@@ -180,7 +215,7 @@ export class InstallCallReportSmartUseCase {
         const fieldsFailed: string[] = [];
 
         for (const def of CALL_REPORT_SMART_FIELDS) {
-            const fieldName = buildCallReportUfName(entityTypeId, def.code);
+            const fieldName = buildCallReportUfName(typeId, def.code);
             if (existingNames.has(fieldName)) {
                 fieldsExisting.push(fieldName);
                 continue;
@@ -188,7 +223,7 @@ export class InstallCallReportSmartUseCase {
             try {
                 await bitrix.userFieldConfig.add({
                     moduleId: 'crm',
-                    field: this.buildFieldPayload(entityTypeId, fieldName, def),
+                    field: this.buildFieldPayload(typeId, fieldName, def),
                 });
                 fieldsAdded.push(fieldName);
             } catch (error) {
@@ -202,13 +237,33 @@ export class InstallCallReportSmartUseCase {
         return { fieldsAdded, fieldsExisting, fieldsFailed };
     }
 
+    /** user.admin тем же ключом: true/false, null — метод недоступен. */
+    private async checkKeyIsAdmin(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+    ): Promise<boolean | null> {
+        try {
+            const response = (await bitrix.api.call('user.admin', {})) as {
+                result?: boolean;
+            };
+            return typeof response?.result === 'boolean'
+                ? response.result
+                : null;
+        } catch (error) {
+            this.logger.warn(
+                `user.admin не выполнен: ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
+    /** typeId — id смарт-типа из crm.type.list (НЕ entityTypeId!). */
     private buildFieldPayload(
-        entityTypeId: number,
+        typeId: number,
         fieldName: string,
         def: CallReportSmartFieldDef,
     ): Partial<IUserFieldConfig> {
         const payload: Partial<IUserFieldConfig> = {
-            entityId: `CRM_${entityTypeId}`,
+            entityId: `CRM_${typeId}`,
             fieldName,
             userTypeId: mapFieldTypeToBitrixType(def.type),
             multiple: def.isMultiple ? 'Y' : 'N',

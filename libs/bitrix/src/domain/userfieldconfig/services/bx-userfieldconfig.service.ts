@@ -12,6 +12,26 @@ import {
 } from '../interface/userfieldconfig.interface';
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
 
+/**
+ * `userfieldconfig.*` — UF-поля CRM (в т.ч. смарт-процессов).
+ *
+ * ## ⚠️ КОВАРСТВО: два разных id смарт-типа (боевой инцидент 2026-07-21)
+ *
+ * У смарт-процесса ДВА идентификатора, и здесь нужен «маленький»:
+ * - **`id` из `crm.type.list`** (напр. 7; в PortalDB — `smarts.bitrixId`) —
+ *   ИМЕННО он адресует поля: `entityId = CRM_{id}`,
+ *   имена полей `UF_CRM_{id}_{CODE}`, camel-ключи `ufCrm{id}{Camel}`;
+ * - **`entityTypeId`** (напр. 177/1056; `smarts.entityTypeId`) — ТОЛЬКО для
+ *   `crm.item.*` и `crm.type.getSmartFull`, сюда НЕ передавать.
+ *
+ * На `CRM_{entityTypeId}` Bitrix отвечает «Вы не можете просматривать
+ * настройки пользовательских полей» — ТОЙ ЖЕ фразой, что и при реальной
+ * нехватке прав администратора CRM, так что диагностика уводит в «проблему
+ * ключа», хотя entityId просто не существует.
+ *
+ * Пример из доки Bitrix: тип с id=7 и entityTypeId=177 →
+ * `entityId: 'CRM_7'`, `fieldName: 'UF_CRM_7_...'`.
+ */
 export class BxUserFieldConfigService {
     private repo: UserFieldConfigRepository;
 
@@ -25,26 +45,51 @@ export class BxUserFieldConfigService {
         this.repo = new UserFieldConfigRepository(api);
     }
 
+    /** `userfieldconfig.get` по id поля. Отдаёт `enum` с Bitrix-id (в отличие от `list`). */
     async get(dto: UserFieldConfigGetDto) {
         return await this.repo.get(dto);
     }
 
+    /**
+     * `userfieldconfig.add`.
+     *
+     * ⚠️ Для смартов `field.entityId = CRM_{id из crm.type.list}` (НЕ
+     * entityTypeId!) — иначе ошибка «Вы не можете просматривать настройки»,
+     * неотличимая от нехватки прав. Подробности — в jsdoc класса.
+     */
     async add(dto: UserFieldConfigAddDto) {
         return await this.repo.add(dto);
     }
 
+    /** `userfieldconfig.update` по id поля. */
     async update(dto: UserFieldConfigUpdateDto) {
         return await this.repo.update(dto);
     }
 
+    /** `userfieldconfig.delete` по id поля. */
     async delete(dto: UserFieldConfigDeleteDto) {
         return await this.repo.delete(dto);
     }
 
+    /**
+     * `userfieldconfig.list`.
+     *
+     * ⚠️ Для смартов `filter.entityId = CRM_{id из crm.type.list}` (НЕ
+     * entityTypeId!) — на несуществующий entityId Bitrix отвечает «Вы не
+     * можете просматривать настройки», как при нехватке прав. Подробности —
+     * в jsdoc класса. `enum`-элементы этот метод НЕ возвращает — см.
+     * {@link getAllWithItems}.
+     */
     async list(dto: UserFieldConfigListDto) {
         return await this.repo.list(dto);
     }
 
+    /**
+     * Все поля по фильтру (постраничный обход `userfieldconfig.list`).
+     *
+     * ⚠️ Для смартов `filter.entityId = CRM_{id из crm.type.list}` (НЕ
+     * entityTypeId!) — см. jsdoc класса.
+     */
     async getAll(
         moduleId: 'crm' | 'rpa',
         filter: Partial<IUserFieldConfig>,
@@ -74,6 +119,9 @@ export class BxUserFieldConfigService {
      * поэтому для каждого enumeration-поля без `enum` делается отдельный `get`
      * (он, в отличие от `list`, отдаёт `enum` с Bitrix-id). Нужно, например, чтобы при
      * установке/мониторинге enum-значения попадали в PortalDB (`bitrixfield_items`).
+     *
+     * ⚠️ Для смартов `filter.entityId = CRM_{id из crm.type.list}` (НЕ
+     * entityTypeId!) — см. jsdoc класса.
      */
     async getAllWithItems(
         moduleId: 'crm' | 'rpa',

@@ -2,7 +2,9 @@ import { CallReportSmartWriterService } from '../services/call-report-smart-writ
 import { CallReportSmartInfo } from '../services/call-report-smart-resolver.service';
 
 const SMART_INFO: CallReportSmartInfo = {
-    entityTypeId: 128,
+    // UF-ключи собираются по typeId (128); entityTypeId — адресация item.add.
+    entityTypeId: 1056,
+    typeId: 128,
     ufKeyByCode: {},
     enumItems: {
         CALL_TYPE: { presentation: 51, cold: 50 },
@@ -43,8 +45,9 @@ describe('CallReportSmartWriterService', () => {
         });
 
         expect(itemId).toBe(7);
+        // Элемент создаётся по entityTypeId, UF-ключи — по typeId (128).
         expect(bitrix.item.add).toHaveBeenCalledWith(
-            '128',
+            '1056',
             expect.objectContaining({
                 parentId2: 555,
                 companyId: 33,

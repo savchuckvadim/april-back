@@ -65,13 +65,16 @@ const makeDeps = (options?: { smartInstalled?: boolean }) => {
         }),
     };
     const resolver = {
-        resolve: jest
-            .fn()
-            .mockResolvedValue(
-                options?.smartInstalled === false
-                    ? null
-                    : { entityTypeId: 128, enumItems: {} },
-            ),
+        resolve: jest.fn().mockResolvedValue(
+            options?.smartInstalled === false
+                ? null
+                : {
+                      entityTypeId: 1056,
+                      typeId: 128,
+                      ufKeyByCode: {},
+                      enumItems: {},
+                  },
+        ),
     };
     const addItem = jest.fn().mockResolvedValue(7);
     MockedWriter.mockImplementation(() => ({ addItem }) as never);

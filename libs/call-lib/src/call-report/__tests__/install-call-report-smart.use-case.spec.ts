@@ -12,18 +12,20 @@ const makeDeps = (options: {
 }) => {
     const bitrix = {
         smartType: {
+            // id (128) ≠ entityTypeId (1056): UF-имена строятся по id!
             getListFull: jest.fn().mockResolvedValue(
                 options.existingType
                     ? [
                           {
                               code: CALL_REPORT_SMART_CODE,
-                              entityTypeId: 128,
+                              id: 128,
+                              entityTypeId: 1056,
                           },
                       ]
                     : [],
             ),
             add: jest.fn().mockResolvedValue({
-                result: { type: { id: 5, entityTypeId: 128 } },
+                result: { type: { id: 128, entityTypeId: 1056 } },
             }),
         },
         userFieldConfig: {
@@ -59,7 +61,7 @@ describe('InstallCallReportSmartUseCase', () => {
 
         expect(bitrix.smartType.add).toHaveBeenCalled();
         expect(result.created).toBe(true);
-        expect(result.entityTypeId).toBe(128);
+        expect(result.entityTypeId).toBe(1056);
         expect(result.fieldsAdded).toHaveLength(
             CALL_REPORT_SMART_FIELDS.length,
         );
@@ -76,10 +78,11 @@ describe('InstallCallReportSmartUseCase', () => {
         await useCase.execute(DOMAIN);
         expect(portalSmart.upsertFromBitrix).toHaveBeenCalledWith(
             DOMAIN,
-            expect.objectContaining({ entityTypeId: 128 }),
+            expect.objectContaining({ entityTypeId: 1056 }),
             'aicall',
             'report',
         );
+        // Зеркало полей и UF-имена — по id типа (128), НЕ по entityTypeId.
         expect(aicallSmart.mirrorFields).toHaveBeenCalledWith(
             DOMAIN,
             128,
@@ -92,7 +95,7 @@ describe('InstallCallReportSmartUseCase', () => {
         );
         aicallSmart.mirrorFields.mockRejectedValue(new Error('no smarts row'));
         const result = await useCase.execute(DOMAIN);
-        expect(result.entityTypeId).toBe(128);
+        expect(result.entityTypeId).toBe(1056);
     });
 
     it('идемпотентность: существующий тип не пересоздаётся, добавляются только новые поля', async () => {

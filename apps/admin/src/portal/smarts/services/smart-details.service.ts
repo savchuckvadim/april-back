@@ -43,6 +43,9 @@ export class SmartDetailsService {
             const bitrix = await this.loadBitrixState(
                 portal.domain,
                 smart.entityTypeId,
+                // smarts.bitrixId = id смарт-типа (crm.type.list id) — именно
+                // он адресует поля в userfieldconfig (НЕ entityTypeId).
+                smart.bitrixId ?? smart.entityTypeId,
             );
             return { smart, domain: portal.domain, bitrix };
         } catch (error) {
@@ -76,13 +79,12 @@ export class SmartDetailsService {
     private async loadBitrixState(
         domain: string,
         entityTypeId: number,
+        typeId: number,
     ): Promise<SmartBitrixStateDto> {
         const { bitrix } = await this.pbxService.init(domain);
 
         const full = await bitrix.smartType.getSmartFull({ entityTypeId });
-        const fields = await bitrix.userFieldConfig.getAllWithItems('crm', {
-            entityId: `CRM_${entityTypeId}`,
-        });
+        const fields = await this.loadFields(bitrix, entityTypeId, typeId);
 
         return {
             entityTypeId,
@@ -93,7 +95,26 @@ export class SmartDetailsService {
                     category as unknown as Record<string, unknown>,
                 ),
             ),
-            fields: fields.map(field => {
+            fields,
+        };
+    }
+
+    /**
+     * Поля смарта: основной путь — userfieldconfig (полные данные, включая
+     * xmlId), но он требует прав администратора CRM; fallback — crm.item.fields
+     * (доступен при праве чтения смарта): типы/названия/enum-значения без xmlId.
+     */
+    private async loadFields(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        entityTypeId: number,
+        typeId: number,
+    ): Promise<SmartFieldDto[]> {
+        try {
+            const fields = await bitrix.userFieldConfig.getAllWithItems('crm', {
+                // По докам userfieldconfig: entityId = CRM_{id типа}, не entityTypeId.
+                entityId: `CRM_${typeId}`,
+            });
+            return fields.map(field => {
                 const dto: SmartFieldDto = {
                     fieldName: String(field.fieldName ?? ''),
                     title:
@@ -114,8 +135,47 @@ export class SmartDetailsService {
                     }));
                 }
                 return dto;
-            }),
+            });
+        } catch (error) {
+            this.logger.warn(
+                `userfieldconfig недоступен (${(error as Error).message}) — fallback crm.item.fields`,
+            );
+            return this.loadFieldsViaItemFields(bitrix, entityTypeId);
+        }
+    }
+
+    /** Fallback: crm.item.fields — не требует админа, xmlId недоступен. */
+    private async loadFieldsViaItemFields(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        entityTypeId: number,
+    ): Promise<SmartFieldDto[]> {
+        const response = (await bitrix.api.call('crm.item.fields', {
+            entityTypeId,
+        })) as {
+            result?: { fields?: Record<string, Record<string, unknown>> };
         };
+        const raw = response?.result?.fields ?? {};
+        const dtos: SmartFieldDto[] = [];
+        for (const [fieldName, meta] of Object.entries(raw)) {
+            if (!fieldName.toLowerCase().startsWith('ufcrm')) continue;
+            const dto: SmartFieldDto = {
+                fieldName,
+                title: this.toStr(meta.title) || fieldName,
+                type: this.toStr(meta.type),
+                multiple: meta.isMultiple === true,
+            };
+            const items = Array.isArray(meta.items)
+                ? (meta.items as Record<string, unknown>[])
+                : [];
+            if (items.length) {
+                dto.items = items.map(item => ({
+                    id: Number(item.ID),
+                    value: this.toStr(item.VALUE),
+                }));
+            }
+            dtos.push(dto);
+        }
+        return dtos;
     }
 
     /** Категории/стадии приходят слабо типизированными — маппим защитно. */

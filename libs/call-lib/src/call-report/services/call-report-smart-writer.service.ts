@@ -333,10 +333,14 @@ export class CallReportSmartWriterService {
 
     private ufName(code: string): string {
         // Канонический ключ — из зеркала PortalDB/PortalModel (bitrixCamelId);
-        // fallback — детерминированная сборка по entityTypeId (UF-имя наше же).
+        // fallback — сборка по typeId (id crm.type.list — основа UF-имён,
+        // НЕ entityTypeId; см. доки userfieldconfig).
         return (
             this.smartInfo.ufKeyByCode?.[code] ??
-            buildCallReportItemFieldName(this.smartInfo.entityTypeId, code)
+            buildCallReportItemFieldName(
+                this.smartInfo.typeId ?? this.smartInfo.entityTypeId,
+                code,
+            )
         );
     }
 }
