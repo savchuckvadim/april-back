@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
+import { findConstSmartByTypeGroup } from '@lib/portal-lib/pbx/const-smart-registry';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import { ParseSmartService } from '../services/parse/parse-smart.service';
 import { InstallSmartDto } from '../dto/install-smart.dto';
 import { PBXService } from '@/modules/pbx';
@@ -33,6 +35,7 @@ export class InstallSmartUseCase {
         private readonly pbxService: PBXService,
         private readonly installSmartCategoriesService: InstallSmartCategoriesService,
         private readonly fieldInstallByParse: PbxSmartFieldInstallByParseUseCase,
+        private readonly portalCache: PortalOnlineCacheService,
     ) {}
 
     async execute(dto: InstallSmartDto) {
@@ -45,7 +48,11 @@ export class InstallSmartUseCase {
 
         const bxResults: unknown[] = [];
         const smart = parsedSmartData[0];
-        const smartCode = `${smart.type}_${smart.group}`;
+        // Код в Bitrix — ключ идемпотентности. Для const-смартов источник
+        // истины — descriptor.code из реестра; для Excel — формула-конвенция.
+        const smartCode =
+            findConstSmartByTypeGroup(smart.type, smart.group)?.code ??
+            `${smart.type}_${smart.group}`;
         const categoriesForInstall = smart.categories;
         const isStagesEnabled = categoriesForInstall.length > 0 ? 'Y' : 'N';
 
@@ -128,7 +135,11 @@ export class InstallSmartUseCase {
             templateCategories: categoriesForInstall,
         });
 
-        // Шаг 7: актуальное состояние смартов портала.
+        // Шаг 7: сброс online-кэша portal_${domain} (TTL 10 ч, штатной
+        // инвалидации нет) — иначе PortalModel не увидит смарт/поля до TTL.
+        await this.portalCache.invalidate(dto.domain);
+
+        // Шаг 8: актуальное состояние смартов портала.
         const portalSmart =
             await this.portalSmartService.getSmartsByPortalDomain(dto.domain);
         return {

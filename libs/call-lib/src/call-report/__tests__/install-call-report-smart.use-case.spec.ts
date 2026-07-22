@@ -80,7 +80,7 @@ describe('InstallCallReportSmartUseCase', () => {
             DOMAIN,
             expect.objectContaining({ entityTypeId: 1056 }),
             'aicall',
-            'report',
+            'sales',
         );
         // Зеркало полей и UF-имена — по id типа (128), НЕ по entityTypeId.
         expect(aicallSmart.mirrorFields).toHaveBeenCalledWith(

@@ -12,7 +12,7 @@ import {
 import { InstallAicallSmartResponseDto } from '../dto/install-aicall-smart.dto';
 
 /**
- * Установка смарта «AI-анализ звонков» (aicall_report) — канонная точка
+ * Установка смарта «AI-анализ звонков» (aicall_sales) — канонная точка
  * pbx-install рядом с остальными установками. Без Excel: const-конфиг
  * полей живёт в @lib/portal-lib/pbx/pbx-aicall-smart, сам use-case —
  * в @lib/call-lib (его же используют контроллеры event-sales и admin).

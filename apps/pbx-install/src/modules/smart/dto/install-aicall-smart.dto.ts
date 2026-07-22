@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { InstallCallReportSmartResult } from '@lib/call-lib';
 
-/** Результат установки смарта «AI-анализ звонков» (aicall_report). */
+/** Результат установки смарта «AI-анализ звонков» (aicall_sales). */
 export class InstallAicallSmartResponseDto
     implements InstallCallReportSmartResult
 {

@@ -17,20 +17,24 @@ describe('CONST_SMART_REGISTRY', () => {
         expect(new Set(pairs).size).toBe(pairs.length);
     });
 
-    it('у каждого смарта есть поля и код по конвенции type_group', () => {
+    it('у каждого смарта поля, код по конвенции и install-адаптер', () => {
         for (const descriptor of CONST_SMART_REGISTRY) {
             expect(descriptor.fieldsCount).toBeGreaterThan(0);
             expect(descriptor.code).toBe(
                 `${descriptor.type}_${descriptor.group}`,
+            );
+            expect(descriptor.buildInstallFields().length).toBe(
+                descriptor.fieldsCount,
             );
         }
     });
 
     it('aicall находится по kind и по (type, group)', () => {
         expect(findConstSmartDescriptor('aicall')?.type).toBe('aicall');
-        expect(findConstSmartByTypeGroup('aicall', 'report')?.kind).toBe(
+        expect(findConstSmartByTypeGroup('aicall', 'sales')?.kind).toBe(
             'aicall',
         );
+        expect(findConstSmartByTypeGroup('aicall', 'report')).toBeUndefined();
         expect(findConstSmartDescriptor('unknown')).toBeUndefined();
     });
 });

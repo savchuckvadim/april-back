@@ -3,7 +3,7 @@ import { ConstSmartDescriptor } from '@lib/portal-lib/pbx/const-smart-registry';
 
 /** Const-смарт из реестра галереи (доступен к установке из констант). */
 export class ConstSmartRegistryItemDto
-    implements Omit<ConstSmartDescriptor, 'description'>
+    implements Omit<ConstSmartDescriptor, 'description' | 'buildInstallFields'>
 {
     @ApiProperty({
         description:
@@ -23,14 +23,14 @@ export class ConstSmartRegistryItemDto
 
     @ApiProperty({
         description: 'smarts.group.',
-        example: 'report',
+        example: 'sales',
         type: String,
     })
     group: string;
 
     @ApiProperty({
         description: 'Код смарта в Bitrix (`${type}_${group}`).',
-        example: 'aicall_report',
+        example: 'aicall_sales',
         type: String,
     })
     code: string;

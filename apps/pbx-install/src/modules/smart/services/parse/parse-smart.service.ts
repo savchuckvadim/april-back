@@ -1,10 +1,15 @@
 import { StorageService, StorageType } from '@/core/storage';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
+import {
+    ConstSmartDescriptor,
+    findConstSmartByTypeGroup,
+} from '@lib/portal-lib/pbx/const-smart-registry';
 import { Smart } from '../../type/parse.type';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 import { EUserFieldType } from '@/modules/bitrix';
 import { Category, Stage, unwrapExcelCellValue } from '@app/pbx-install/shared';
+import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { ParseSmartFieldsService } from '@app/pbx-install/shared/parse-field-excel/services/parse-smart-fields.service';
 
 /** Excel sheet row for smarts tab after stripping column 0 and unwrapping formula cells */
@@ -81,6 +86,16 @@ export class ParseSmartService {
         smartName: SmartNameEnum,
         group: SmartGroupEnum,
     ): Promise<Smart[]> {
+        // Const-смарты (реестр CONST_SMART_REGISTRY, smartName = smarts.type):
+        // эталон берётся из констант pbx-модуля, Excel-файла у них нет.
+        // Благодаря этой ветке весь канонический flow (parse-template,
+        // мониторинг, install/установка полей, синк выбранных) работает для
+        // const-смартов без дублирующего кода.
+        const constSmart = findConstSmartByTypeGroup(smartName, group);
+        if (constSmart) {
+            return [this.buildConstSmart(constSmart)];
+        }
+
         const fullPath = `${this.installPath}/${group}/smart/${smartName}`;
         const fileName = 'data.xlsx';
         const path = this.storageService.getFilePath(
@@ -98,6 +113,34 @@ export class ParseSmartService {
         }
         const data = await this.parseData(path);
         return data;
+    }
+
+    /** Descriptor const-смарта → Smart установочного контракта (вместо Excel). */
+    private buildConstSmart(descriptor: ConstSmartDescriptor): Smart {
+        return {
+            id: descriptor.kind,
+            title: descriptor.title,
+            name: descriptor.title,
+            // entityTypeId/bitrixId появляются только после установки типа —
+            // в эталоне их нет (Excel-шаблоны хранят там справочные значения).
+            entityTypeId: '',
+            code: descriptor.code,
+            type: descriptor.type,
+            group: descriptor.group,
+            bitrixId: '',
+            forStageId: '',
+            forFilterId: '',
+            crmId: '',
+            forStage: '',
+            forFilter: '',
+            crm: '',
+            isActive: true,
+            isNeedUpdate: true,
+            order: 0,
+            categories: [],
+            // ConstSmartInstallField структурно совместим с Field.
+            fields: descriptor.buildInstallFields() as Field[],
+        };
     }
 
     private async parseData(path: string): Promise<Smart[]> {

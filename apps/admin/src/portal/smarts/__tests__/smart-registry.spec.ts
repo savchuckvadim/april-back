@@ -14,7 +14,7 @@ describe('SmartController.getRegistry', () => {
         const aicall = registry.items.find(item => item.kind === 'aicall');
         expect(aicall).toBeDefined();
         expect(aicall?.type).toBe('aicall');
-        expect(aicall?.group).toBe('report');
+        expect(aicall?.group).toBe('sales');
         expect(aicall?.source).toBe('const');
         expect(aicall?.fieldsCount).toBe(CALL_REPORT_SMART_FIELDS.length);
         expect(aicall?.hasCategories).toBe(false);

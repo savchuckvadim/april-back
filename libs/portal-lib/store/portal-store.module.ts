@@ -4,10 +4,12 @@ import { PortalPrismaRepository } from './portal.prisma.repository';
 import { PortalRepository } from './portal.repository';
 import { PortalController } from './portal.controller';
 import { PortalStoreService } from './portal-store.service';
+import { PortalOnlineCacheService } from './portal-online-cache.service';
 import { PortalOuterService } from './outer/portal-outer.service';
 import { PortalOuterController } from './outer/portal-outer.controller';
 import { OnlineAdminModule } from '@lib/online/client/admin/online-admin.module';
 import { OnlineModule } from '@lib/online/client/online/api-online.module';
+import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalKeysService } from './keys/portal-keys.service';
 import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
 
@@ -18,7 +20,7 @@ import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
  * админ-роут в свой Swagger. PortalKeysService экспортируется для админ-модуля.
  */
 @Module({
-    imports: [OnlineAdminModule, OnlineModule],
+    imports: [OnlineAdminModule, OnlineModule, RedisModule],
     controllers: [PortalController, PortalOuterController],
     providers: [
         {
@@ -26,6 +28,7 @@ import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
             useClass: PortalPrismaRepository,
         },
         PortalStoreService,
+        PortalOnlineCacheService,
         PortalOuterService,
         PortalKeysService,
         PortalKeyCryptoService,
@@ -34,6 +37,11 @@ import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
         // HttpService,
         // ConfigService
     ],
-    exports: [PortalRepository, PortalStoreService, PortalKeysService],
+    exports: [
+        PortalRepository,
+        PortalStoreService,
+        PortalOnlineCacheService,
+        PortalKeysService,
+    ],
 })
 export class PortalStoreModule {}

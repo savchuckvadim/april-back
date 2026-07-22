@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { PbxFieldEntity, PbxFieldService } from '@lib/portal-lib/pbx-domain';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import {
     BxTypedEntityFieldManageService,
@@ -60,6 +61,7 @@ export class PbxSmartFieldManageUseCase {
         private readonly portalService: PortalStoreService,
         private readonly resolver: SmartContextResolver,
         private readonly pbxFieldService: PbxFieldService,
+        private readonly portalCache: PortalOnlineCacheService,
     ) {}
 
     async deleteFields(
@@ -89,6 +91,8 @@ export class PbxSmartFieldManageUseCase {
             );
             const bx = await manage.deleteFields(bxFieldNames);
             const deletedDbFieldIds = await this.deleteDbFields(dbFields, bx);
+            // Состав полей изменился — сброс online-кэша portal_${domain}.
+            await this.portalCache.invalidate(domain);
             out.push({
                 domain,
                 portalId: ctx.portalId,
@@ -158,6 +162,7 @@ export class PbxSmartFieldManageUseCase {
                 { fieldCode: dto.fieldCode, itemCode: dto.itemCode },
             );
             const db = await this.safeDeleteDbItem(dbItem.id);
+            await this.portalCache.invalidate(domain);
             out.push({ domain, portalId: ctx.portalId, bx, db });
         }
         return out;
@@ -222,6 +227,7 @@ export class PbxSmartFieldManageUseCase {
                 { fieldCode: dto.fieldCode, itemCode: dto.itemCode },
             );
             const db = await this.safeUpdateDbItem(dbItem.id, dto.newValue);
+            await this.portalCache.invalidate(domain);
             out.push({ domain, portalId: ctx.portalId, bx, db });
         }
         return out;

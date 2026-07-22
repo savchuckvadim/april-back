@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { IUserFieldConfig } from '@/modules/bitrix';
+import { BitrixService } from '@/modules/bitrix';
 import { PBXService } from '@/modules/pbx';
 import { PbxFieldEntity, PbxFieldService } from '@lib/portal-lib/pbx-domain';
 import { PortalSmartService } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import { findConstSmartByTypeGroup } from '@lib/portal-lib/pbx/const-smart-registry';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { SmartGroupEnum, SmartNameEnum } from '../../dto/install-smart.dto';
 
@@ -55,22 +57,25 @@ export class PbxSmartFieldMonitoringService {
             smartName,
             group,
         );
-        if (!smart || !smart.bitrixId) {
-            throw new NotFoundException(
-                `Smart not installed for ${smartName}/${group}`,
-            );
-        }
-        const smartBitrixTypeId = Number(smart.bitrixId);
-        const bitrixEntityId = `CRM_${smartBitrixTypeId}`;
+        // Строки в PortalDB может не быть (смарт ставили в обход зеркал) —
+        // это НЕ значит, что смарта нет в Bitrix: резолвим id типа напрямую
+        // по code. Обе стороны пустые → честный пустой результат (фронт
+        // покажет шаблон со статусом «не установлено»), а не 404.
+        const smartBitrixTypeId = smart?.bitrixId
+            ? Number(smart.bitrixId)
+            : await this.resolveTypeIdFromBitrix(bitrix, smartName, group);
 
-        const portalFields = await this.pbxFieldService.findByEntityId(
-            PbxEntityTypePrisma.SMART,
-            smart.id,
-        );
-        const bitrixFields = await bitrix.userFieldConfig.getAllWithItems(
-            'crm',
-            { entityId: bitrixEntityId },
-        );
+        const portalFields = smart
+            ? await this.pbxFieldService.findByEntityId(
+                  PbxEntityTypePrisma.SMART,
+                  smart.id,
+              )
+            : [];
+        const bitrixFields = smartBitrixTypeId
+            ? await bitrix.userFieldConfig.getAllWithItems('crm', {
+                  entityId: `CRM_${smartBitrixTypeId}`,
+              })
+            : [];
 
         const merged: PbxSmartMergedField[] = [];
         const matchedPortalIds = new Set<string>();
@@ -104,6 +109,46 @@ export class PbxSmartFieldMonitoringService {
             portalFieldsWithoutMerged,
             bitrixFieldsWithoutMerged,
         };
+    }
+
+    /**
+     * Fallback-резолв «маленького» id смарт-типа (основа `CRM_{id}` для
+     * userfieldconfig) напрямую из Bitrix по code, когда зеркала в PortalDB
+     * нет. Код — descriptor.code из реестра const-смартов либо конвенция
+     * `${type}_${group}`.
+     */
+    private async resolveTypeIdFromBitrix(
+        bitrix: BitrixService,
+        smartName: SmartNameEnum,
+        group: SmartGroupEnum,
+    ): Promise<number | null> {
+        const code =
+            findConstSmartByTypeGroup(smartName, group)?.code ??
+            `${smartName}_${group}`;
+        const response = await this.safeListTypes(bitrix, code);
+        const type = response.find(item => item.code === code);
+        return type?.id ? Number(type.id) : null;
+    }
+
+    private async safeListTypes(
+        bitrix: BitrixService,
+        code: string,
+    ): Promise<{ id?: number; code: string }[]> {
+        try {
+            const response = await bitrix.smartType.list({
+                filter: { code },
+                start: -1,
+            });
+            return (
+                (
+                    response as {
+                        result?: { types?: { id?: number; code: string }[] };
+                    }
+                ).result?.types ?? []
+            );
+        } catch {
+            return [];
+        }
     }
 
     /**

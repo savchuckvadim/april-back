@@ -54,12 +54,18 @@ export class PortalSmartService {
             throw new Error('Portal not found');
         }
         const portalId = BigInt(portal.id);
-        const existing = await this.findFirstByPortalTypeGroup(
-            portalId,
-            type,
-            group,
-        );
         const entityTypeId = Number(bxSmart.entityTypeId);
+        // Основной матч — (type, group); fallback — entityTypeId (уникален на
+        // портале): при смене group/type сущности в конфиге строка «переезжает»
+        // (update с новыми type/group), а не дублируется второй записью.
+        const existing =
+            (await this.findFirstByPortalTypeGroup(portalId, type, group)) ??
+            (await this.prisma.smarts.findFirst({
+                where: {
+                    portal_id: portalId,
+                    entityTypeId: BigInt(entityTypeId),
+                },
+            }));
         const updatedData = {
             entityTypeId: BigInt(entityTypeId),
             name: bxSmart.title,
@@ -85,7 +91,7 @@ export class PortalSmartService {
         } else {
             await this.prisma.smarts.update({
                 where: { id: existing.id },
-                data: updatedData,
+                data: { ...updatedData, type, group },
             });
         }
     }

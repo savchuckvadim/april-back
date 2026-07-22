@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import {
     BxTypedEntityFieldsInstallService,
     IPbxTypedFieldInstallData,
@@ -18,6 +19,7 @@ export class PbxSmartFieldInstallByFieldUseCase {
         private readonly pbxService: PBXService,
         private readonly resolver: SmartContextResolver,
         private readonly portalSync: PortalFieldTypedEntityInstallService,
+        private readonly portalCache: PortalOnlineCacheService,
     ) {}
 
     async installSmartFields(dto: InstallSmartFieldDto): Promise<unknown> {
@@ -49,6 +51,9 @@ export class PbxSmartFieldInstallByFieldUseCase {
             ctx.owner,
             clearFields,
         );
+
+        // Поля изменились — сброс online-кэша portal_${domain} (TTL 10 ч).
+        await this.portalCache.invalidate(domain);
 
         return { bxResult, portalFieldEntityInstallResult };
     }

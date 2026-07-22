@@ -1,4 +1,5 @@
 import { ConstSmartDescriptor } from '../../const-smart-registry/type/const-smart-descriptor.type';
+import { buildAicallInstallFields } from './pbx-aicall-smart-field.type';
 import {
     CALL_REPORT_SMART_CODE,
     CALL_REPORT_SMART_FIELDS,
@@ -19,4 +20,5 @@ export const AICALL_SMART_DESCRIPTOR = {
     hasCategories: false,
     description:
         'Разборы звонков AI-агентом: разделы анализа, связи с воронками и отчётностью, транскрипт.',
+    buildInstallFields: buildAicallInstallFields,
 } as const satisfies ConstSmartDescriptor;

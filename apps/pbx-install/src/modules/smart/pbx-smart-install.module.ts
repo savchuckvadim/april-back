@@ -20,6 +20,7 @@ import { InstallCategoryModule } from '@app/pbx-install/category/install-categor
 import { InstallStageModule } from '@app/pbx-install/stage/install-stage.module';
 import { InstallTypedEntityModule } from '@app/pbx-install/shared/typed-entity/install-typed-entity.module';
 import { PBXModule } from '@/modules/pbx';
+import { PortalStoreModule } from '@lib/portal-lib/store';
 import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-konstructor.module';
 import { PbxDomainModule } from '@lib/portal-lib/pbx-domain/pbx-domain.module';
 import { DeletePbxSmartUseCase } from '@app/pbx-install/smart/use-cases/delete-pbx-smart.use-case';
@@ -39,6 +40,8 @@ import { PbxSmartAicallInstallController } from '@app/pbx-install/smart/controll
 @Module({
     imports: [
         PBXModule,
+        // PortalOnlineCacheService — сброс portal_${domain} после установок.
+        PortalStoreModule,
         StorageModule,
         PortalKonstructorModule,
         PbxDomainModule,

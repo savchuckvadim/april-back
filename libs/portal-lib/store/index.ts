@@ -1,4 +1,5 @@
 export * from './portal-store.module';
+export * from './portal-online-cache.service';
 export * from './keys/portal-key.const';
 export * from './keys/portal-keys.service';
 export * from './keys/portal-key-crypto.service';

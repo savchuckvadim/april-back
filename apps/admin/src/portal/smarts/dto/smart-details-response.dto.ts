@@ -120,7 +120,7 @@ export class SmartBitrixStateDto {
 
     @ApiProperty({
         description: 'Символьный код типа.',
-        example: 'aicall_report',
+        example: 'aicall_sales',
         type: String,
     })
     code: string;

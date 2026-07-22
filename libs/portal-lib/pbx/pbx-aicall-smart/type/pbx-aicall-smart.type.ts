@@ -43,8 +43,14 @@ export interface CallReportSmartFieldDef {
 }
 
 export const CALL_REPORT_SMART_TYPE = 'aicall';
-export const CALL_REPORT_SMART_GROUP = 'report';
-/** Код смарта в Bitrix — по конвенции pbx-install: `${type}_${group}`. */
+/** Смарт относится к продажам — group=sales (решение 2026-07-22). */
+export const CALL_REPORT_SMART_GROUP = 'sales';
+/**
+ * Код смарта в Bitrix — по конвенции pbx-install `${type}_${group}`.
+ * ВАЖНО: code — ключ идемпотентности установки; менять его можно только
+ * с полной переустановкой смарта на всех порталах (удаление типа в Bitrix
+ * и строк в PortalDB), иначе установка создаст дубликат типа.
+ */
 export const CALL_REPORT_SMART_CODE = `${CALL_REPORT_SMART_TYPE}_${CALL_REPORT_SMART_GROUP}`;
 export const CALL_REPORT_SMART_TITLE = 'AI-анализ звонков';
 
