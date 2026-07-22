@@ -301,6 +301,17 @@ export class CallReportSmartWriterService {
             parts.forEach((part, index) => {
                 this.setUf(fields, `TRANSCRIPT_${index + 1}`, part);
             });
+            // Диагностика «транскрипт не заполнен»: видно, ушли ли куски
+            // и под какими ключами (подозрение на молчаливый дроп длинных
+            // значений string-полей на стороне Bitrix REST).
+            this.logger.log(
+                `Транскрипт ${input.transcript.length} симв → ${parts.length} частей, ` +
+                    `ключ первой: ${this.ufName('TRANSCRIPT_1')}`,
+            );
+        } else {
+            this.logger.warn(
+                `Транскрипт пуст в input (activity ${input.activityId}) — TRANSCRIPT_N не заполняются`,
+            );
         }
 
         // — Служебные —
