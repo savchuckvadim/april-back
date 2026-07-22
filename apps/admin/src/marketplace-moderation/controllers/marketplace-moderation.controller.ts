@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Param,
     ParseIntPipe,
@@ -280,6 +281,30 @@ export class MarketplaceModerationController {
         @CurrentUser('login') login?: string,
     ): Promise<InviteDto> {
         return this.inviteService.revoke(id, login);
+    }
+
+    @ApiOperation({
+        summary: 'Удалить запись кода подключения',
+        description:
+            'Физически удаляет запись кода — чистка мусорных/ошибочных выпусков. ' +
+            'Погашенный (redeemed) код удалить нельзя: запись хранит связь портала с организацией. ' +
+            'Непогашенный код после удаления погасить невозможно (хэш удалён).',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'ID удаляемого кода подключения (uuid)',
+        example: 'a3f1c2d0-9b8e-4a1c-8f2d-1e5b7c9d0a11',
+    })
+    @ApiOkResponse({
+        description: 'Удалённая запись кода',
+        type: InviteDto,
+    })
+    @Delete('invites/:id')
+    async deleteInvite(
+        @Param('id') id: string,
+        @CurrentUser('login') login?: string,
+    ): Promise<InviteDto> {
+        return this.inviteService.delete(id, login);
     }
 
     @ApiOperation({

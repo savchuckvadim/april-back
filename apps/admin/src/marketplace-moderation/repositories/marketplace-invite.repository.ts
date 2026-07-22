@@ -67,4 +67,10 @@ export abstract class MarketplaceInviteRepository {
         revokedAt: Date,
         revokedBy?: string,
     ): Promise<void>;
+
+    /**
+     * Физическое удаление записи кода — чистка мусорных/тестовых выпусков.
+     * Погашенные коды сервис к удалению не допускает (аудит подключения).
+     */
+    abstract deleteInvite(id: string): Promise<void>;
 }

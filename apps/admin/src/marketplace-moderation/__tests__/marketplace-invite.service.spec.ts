@@ -20,6 +20,7 @@ type InviteRepoMock = jest.Mocked<
         | 'createInvite'
         | 'markInviteSent'
         | 'revokeInvite'
+        | 'deleteInvite'
     >
 >;
 
@@ -105,6 +106,7 @@ describe('MarketplaceInviteService (коды подключения портал
                 ),
             markInviteSent: jest.fn().mockResolvedValue(undefined),
             revokeInvite: jest.fn().mockResolvedValue(undefined),
+            deleteInvite: jest.fn().mockResolvedValue(undefined),
         };
         moderationRepo = {
             logModerationEvent: jest.fn().mockResolvedValue(undefined),
@@ -191,6 +193,57 @@ describe('MarketplaceInviteService (коды подключения портал
             }),
         );
         expect(repo.createClient).not.toHaveBeenCalled();
+    });
+
+    it('issue без organization: подставляется название организации клиента', async () => {
+        repo.findClientByPortalId.mockResolvedValue({
+            id: BigInt(5),
+            name: 'ООО «Ромашка»',
+        } as never);
+
+        await service.issue({ email: 'any@romashka.ru', portalId: 7 });
+
+        expect(repo.createInvite).toHaveBeenCalledWith(
+            expect.objectContaining({ organization: 'ООО «Ромашка»' }),
+        );
+    });
+
+    it('issue без organization: name-заглушка (=email) НЕ подставляется', async () => {
+        repo.findClientByEmail.mockResolvedValue({
+            id: BigInt(42),
+            name: 'director@romashka.ru',
+        } as never);
+
+        await service.issue({ email: 'director@romashka.ru' });
+
+        expect(repo.createInvite).toHaveBeenCalledWith(
+            expect.objectContaining({ organization: undefined }),
+        );
+    });
+
+    it('delete: непогашенный код удаляется + журнал INVITE_DELETED', async () => {
+        repo.findInviteById.mockResolvedValue(
+            inviteFixture({ status: 'revoked' }),
+        );
+
+        const result = await service.delete('invite-uuid', 'admin');
+
+        expect(repo.deleteInvite).toHaveBeenCalledWith('invite-uuid');
+        expect(moderationRepo.logModerationEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ event: 'INVITE_DELETED' }),
+        );
+        expect(result.codePrefix).toBe('GRNT-AB12');
+    });
+
+    it('delete: погашенный код НЕ удаляется (аудит подключения)', async () => {
+        repo.findInviteById.mockResolvedValue(
+            inviteFixture({ status: 'redeemed' }),
+        );
+
+        await expect(service.delete('invite-uuid')).rejects.toBeInstanceOf(
+            BadRequestException,
+        );
+        expect(repo.deleteInvite).not.toHaveBeenCalled();
     });
 
     it('issue: портал без организации → откат к поиску по email', async () => {

@@ -84,18 +84,26 @@ export class MarketplaceInviteService {
         dto: IssueInviteDto,
         issuedBy?: string,
     ): Promise<IssuedInviteDto> {
-        const clientId = await this.resolveClientId(
+        const client = await this.resolveClient(
             dto.email,
             dto.organization,
             dto.portalId,
         );
         const issued = await this.createAndSend({
             email: dto.email,
-            organization: dto.organization,
+            // организация не передана (выпуск по порталу/повторный email) —
+            // берём название привязанной организации, чтобы колонка в списке
+            // и письмо не оставались пустыми. name===email не подставляем:
+            // это заглушка клиента, созданного без организации.
+            organization:
+                dto.organization ??
+                (client.name && client.name !== dto.email
+                    ? client.name
+                    : undefined),
             productCode: dto.productCode ?? DEFAULT_PRODUCT_CODE,
             autoProvision: dto.autoProvision ?? this.autoProvisionDefault,
             ttlDays: dto.ttlDays ?? DEFAULT_TTL_DAYS,
-            clientId,
+            clientId: client.id,
             issuedBy,
             note: dto.note,
         });
@@ -125,6 +133,30 @@ export class MarketplaceInviteService {
     }
 
     /**
+     * Удаление записи кода — чистка мусорных/ошибочных выпусков (например,
+     * задублированных из-за сбоя). Погашенный код удалять НЕЛЬЗЯ: запись —
+     * аудит того, каким кодом подключён портал. Для остальных статусов
+     * удаление безопасно: без хэша в БД код погасить уже невозможно.
+     */
+    async delete(id: string, deletedBy?: string): Promise<InviteDto> {
+        const invite = await this.requireInvite(id);
+        if (invite.status === 'redeemed') {
+            throw new BadRequestException(
+                'Код уже погашен: запись хранит связь портала с организацией и не удаляется. ' +
+                    'Чтобы отключить портал, используйте отвязку или блокировку в разделе заявок.',
+            );
+        }
+
+        // Журнал ДО удаления: пишем префикс, пока запись ещё существует
+        await this.logInviteEvent('INVITE_DELETED', invite, deletedBy);
+        await this.repository.deleteInvite(id);
+        this.logger.log(
+            `Invite deleted: ${invite.code_prefix} by=${deletedBy ?? '-'}`,
+        );
+        return this.toInviteDto(invite);
+    }
+
+    /**
      * Перевыпуск: старый код отзывается, выпускается новый и уходит письмом.
      * Нужен потому, что повторно отправить тот же код невозможно — хранится
      * только его хэш.
@@ -143,9 +175,9 @@ export class MarketplaceInviteService {
         const organization = previous.organization ?? undefined;
         const clientId =
             dto.email && dto.email !== previous.email
-                ? await this.resolveClientId(email, organization)
+                ? (await this.resolveClient(email, organization)).id
                 : (previous.client_id ??
-                  (await this.resolveClientId(email, organization)));
+                  (await this.resolveClient(email, organization)).id);
 
         const issued = await this.createAndSend({
             email,
@@ -251,17 +283,17 @@ export class MarketplaceInviteService {
      * Email в этом случае — только адрес доставки письма, идентичность
      * организации им не подменяется.
      */
-    private async resolveClientId(
+    private async resolveClient(
         email: string,
         organization?: string,
         portalId?: number,
-    ): Promise<bigint> {
+    ): Promise<{ id: bigint; name: string | null }> {
         if (portalId !== undefined) {
             const portalClient = await this.repository.findClientByPortalId(
                 BigInt(portalId),
             );
             if (portalClient) {
-                return portalClient.id;
+                return portalClient;
             }
             this.logger.warn(
                 `Портал #${portalId} без организации — код выпускается по email ${email}`,
@@ -270,13 +302,12 @@ export class MarketplaceInviteService {
 
         const existing = await this.repository.findClientByEmail(email);
         if (existing) {
-            return existing.id;
+            return existing;
         }
-        const created = await this.repository.createClient({
+        return this.repository.createClient({
             name: organization ?? email,
             email,
         });
-        return created.id;
     }
 
     private async requireInvite(id: string): Promise<InviteWithRelations> {

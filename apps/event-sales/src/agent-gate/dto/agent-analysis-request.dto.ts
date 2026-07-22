@@ -152,6 +152,36 @@ export class AgentSectionAnalysisDto {
     alternatives?: string[];
 }
 
+export const AGENT_DIALOG_ROLES = ['manager', 'client', 'other'] as const;
+export type AgentDialogRole = (typeof AGENT_DIALOG_ROLES)[number];
+
+/**
+ * Одна реплика диалога, размеченного агентом по ролям.
+ * Контекст разметки: активные продажи — обычно менеджер звонит первым
+ * и представляется компанией.
+ */
+export class AgentDialogTurnDto {
+    @ApiProperty({
+        description:
+            'Роль говорящего: manager (менеджер), client (клиент), ' +
+            'other (третий участник/автоответчик/неопределимо).',
+        enum: AGENT_DIALOG_ROLES,
+        example: 'manager',
+    })
+    @IsString()
+    @IsIn(AGENT_DIALOG_ROLES as unknown as string[])
+    role: AgentDialogRole;
+
+    @ApiProperty({
+        description: 'Текст реплики (без имени говорящего).',
+        example: 'Добрый день, компания Гарант, меня зовут Олеся…',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    text: string;
+}
+
 /** Привязка к сделкам воронок (если агент установил связь по смыслу). */
 export class AgentRelatedDealsDto {
     @ApiPropertyOptional({
@@ -492,6 +522,19 @@ export class AgentCallAnalysisDto {
     @ValidateNested()
     @Type(() => AgentNextStepDto)
     nextStep?: AgentNextStepDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Транскрипт, размеченный по ролям (реплики по порядку). ' +
+            'Бэк рендерит его диалогом в таймлайн смарт-элемента и кладёт ' +
+            'размеченную версию в поля транскрипта вместо сырого текста.',
+        type: [AgentDialogTurnDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AgentDialogTurnDto)
+    dialog?: AgentDialogTurnDto[];
 
     @ApiPropertyOptional({
         description: 'Обсуждалась ли цена в разговоре.',

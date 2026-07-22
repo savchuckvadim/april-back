@@ -13,6 +13,7 @@ import { CallReportSmartResolverService } from '@lib/call-lib/call-report/servic
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import {
     AgentCallAnalysisDto,
+    AgentDialogTurnDto,
     AgentSectionAnalysisDto,
 } from '../dto/agent-analysis-request.dto';
 import { AgentAnalysisResponseDto } from '../dto/agent-response.dto';
@@ -278,7 +279,10 @@ export class AgentAnalysisIntakeService {
             scriptCompliance: dto.scriptCompliance,
             coachingPriority: dto.coachingPriority,
             transcriptionId: row.id,
-            transcript: row.text ?? undefined,
+            // Размеченный по ролям диалог (если агент прислал) информативнее
+            // сырого текста — он же уходит в поля TRANSCRIPT_N.
+            transcript:
+                this.renderDialogText(dto.dialog) ?? row.text ?? undefined,
             summary: dto.summary,
             resumeGigachat: gigachat.resume,
             recomendationGigachat: gigachat.recomendation,
@@ -394,6 +398,18 @@ export class AgentAnalysisIntakeService {
             });
         }
 
+        // Диалог по ролям — между разделами и аудио (частями, в обратном
+        // порядке, чтобы часть 1 оказалась выше остальных).
+        const dialogParts = this.renderDialogComments(dto.dialog);
+        for (const part of [...dialogParts].reverse()) {
+            await bitrix.timeline.addTimelineComment({
+                ENTITY_ID: written.itemId,
+                ENTITY_TYPE: entityType,
+                COMMENT: part,
+                AUTHOR_ID: authorId,
+            });
+        }
+
         const audioComment = await this.buildAudioComment(bitrix, row);
         if (audioComment) {
             await bitrix.timeline.addTimelineComment({
@@ -403,6 +419,49 @@ export class AgentAnalysisIntakeService {
                 AUTHOR_ID: authorId,
             });
         }
+    }
+
+    /** Диалог с ролями одной строкой (для полей TRANSCRIPT_N); null — нет разметки. */
+    private renderDialogText(
+        dialog: AgentDialogTurnDto[] | undefined,
+    ): string | null {
+        if (!dialog?.length) return null;
+        return dialog
+            .map(turn => `${this.dialogRoleLabel(turn.role)}: ${turn.text}`)
+            .join('\n');
+    }
+
+    /**
+     * Диалог для таймлайна: реплики «Менеджер/Клиент» с выделением ролей,
+     * разбитые на комменты по ~8к символов (лимиты таймлайна).
+     */
+    private renderDialogComments(
+        dialog: AgentDialogTurnDto[] | undefined,
+    ): string[] {
+        if (!dialog?.length) return [];
+        const lines = dialog.map(
+            turn => `[b]${this.dialogRoleLabel(turn.role)}:[/b] ${turn.text}`,
+        );
+        const chunks: string[] = [];
+        let current = '';
+        for (const line of lines) {
+            if (current && current.length + line.length + 2 > 8000) {
+                chunks.push(current);
+                current = '';
+            }
+            current += (current ? '\n\n' : '') + line;
+        }
+        if (current) chunks.push(current);
+        return chunks.map(
+            (chunk, index) =>
+                `💬 [b]Диалог${chunks.length > 1 ? ` (часть ${index + 1}/${chunks.length})` : ''}[/b]\n\n${chunk}`,
+        );
+    }
+
+    private dialogRoleLabel(role: AgentDialogTurnDto['role']): string {
+        if (role === 'manager') return 'Менеджер';
+        if (role === 'client') return 'Клиент';
+        return 'Другой участник';
     }
 
     /** Одна таймлайн-запись раздела: как было / слабые места / варианты. */

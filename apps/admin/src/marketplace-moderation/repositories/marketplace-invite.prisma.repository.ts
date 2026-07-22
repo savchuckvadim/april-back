@@ -111,4 +111,8 @@ export class MarketplaceInvitePrismaRepository
             },
         });
     }
+
+    async deleteInvite(id: string): Promise<void> {
+        await this.prisma.portal_invites.delete({ where: { id } });
+    }
 }
