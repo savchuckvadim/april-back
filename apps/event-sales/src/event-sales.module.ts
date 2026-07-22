@@ -15,6 +15,7 @@ import {
 } from '@lib/call-lib';
 import { CallReportModule } from './call-report/call-report.module';
 import { AgentGateModule } from './agent-gate/agent-gate.module';
+import { BitrixProxyModule } from './bitrix-proxy/bitrix-proxy.module';
 
 @Module({
     imports: [
@@ -42,6 +43,8 @@ import { AgentGateModule } from './agent-gate/agent-gate.module';
         // AI-отчётность по звонкам: конвейер + Agent API для внешнего агента
         CallReportModule,
         AgentGateModule,
+        // Agent API: прокси произвольных методов Bitrix (те же ключи агентов)
+        BitrixProxyModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

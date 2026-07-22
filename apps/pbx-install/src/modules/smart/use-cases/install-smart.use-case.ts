@@ -48,13 +48,24 @@ export class InstallSmartUseCase {
 
         const bxResults: unknown[] = [];
         const smart = parsedSmartData[0];
+        const constDescriptor = findConstSmartByTypeGroup(
+            smart.type,
+            smart.group,
+        );
         // Код в Bitrix — ключ идемпотентности. Для const-смартов источник
         // истины — descriptor.code из реестра; для Excel — формула-конвенция.
         const smartCode =
-            findConstSmartByTypeGroup(smart.type, smart.group)?.code ??
-            `${smart.type}_${smart.group}`;
+            constDescriptor?.code ?? `${smart.type}_${smart.group}`;
         const categoriesForInstall = smart.categories;
         const isStagesEnabled = categoriesForInstall.length > 0 ? 'Y' : 'N';
+        // relations.parent: элементы смарта появляются вкладкой в карточках
+        // этих сущностей. Источник — descriptor реестра, по умолчанию DEAL.
+        const parentRelations = (
+            constDescriptor?.parentEntityTypeIds ?? [BitrixOwnerTypeId.DEAL]
+        ).map(entityTypeId => ({
+            entityTypeId: entityTypeId as BitrixOwnerTypeId,
+            isChildrenListEnabled: 'Y' as const,
+        }));
 
         // Что уже есть в портале по коду — нужно решить add vs delete-then-add.
         const existingTypes = await bitrix.smartType.getListFull({
@@ -67,11 +78,24 @@ export class InstallSmartUseCase {
         );
         let smartType: IBXSmartType | null = null;
         if (existingSmartType) {
-            // Берем существующий.
-
+            // Берем существующий; relations доводим до эталона (best-effort:
+            // без этого смарт не появится в карточках лида/компании/контакта,
+            // если тип создавался со старым набором родителей).
             bxResults.push(existingSmartType);
             smartType = existingSmartType;
-            // return { error: 'Smart type already exists', bxResults };
+            try {
+                await bitrix.smartType.update({
+                    id: Number(existingSmartType.id),
+                    fields: {
+                        title: smart.title,
+                        relations: { parent: parentRelations },
+                    },
+                });
+            } catch (error) {
+                bxResults.push({
+                    relationsUpdateError: (error as Error).message,
+                });
+            }
         }
 
         if (!smartType) {
@@ -91,14 +115,7 @@ export class InstallSmartUseCase {
                     isMycompanyEnabled: 'Y',
                     isRecyclebinEnabled: 'Y',
                     isStagesEnabled,
-                    relations: {
-                        parent: [
-                            {
-                                entityTypeId: BitrixOwnerTypeId.DEAL,
-                                isChildrenListEnabled: 'Y',
-                            },
-                        ],
-                    },
+                    relations: { parent: parentRelations },
                 },
             });
             bxResults.push(bxResponse);

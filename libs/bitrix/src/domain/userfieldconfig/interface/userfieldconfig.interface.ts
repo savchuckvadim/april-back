@@ -26,12 +26,18 @@ export interface IUserFieldConfig {
     editInList?: 'Y' | 'N';
     isSearchable: 'Y' | 'N';
     settings?: {
-        SIZE: number;
-        LIST_WIDTH: number;
-        LIST_HEIGHT: number;
-        MAX_SHOW_SIZE: number;
-        MAX_ALLOWED_SIZE: number;
-        EXTENSIONS: string[];
+        SIZE?: number;
+        LIST_WIDTH?: number;
+        LIST_HEIGHT?: number;
+        MAX_SHOW_SIZE?: number;
+        MAX_ALLOWED_SIZE?: number;
+        EXTENSIONS?: string[];
+        /**
+         * Для userTypeId='crm' — привязка поля к сущностям: ключи
+         * LEAD/DEAL/CONTACT/COMPANY со значением 'Y'/'N'. Без них crm-поле
+         * создаётся без привязок и значения ['D_123'] не сохраняются.
+         */
+        [entity: string]: unknown;
     };
     languageId?: UFConfigLangMap;
     editFormLabel?: UFConfigLangMap;

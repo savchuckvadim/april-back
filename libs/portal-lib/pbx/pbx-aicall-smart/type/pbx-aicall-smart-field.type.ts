@@ -29,6 +29,8 @@ export interface AicallInstallField {
     order: number;
     isNeedUpdate: boolean;
     isMultiple: boolean;
+    /** Для crm-полей: привязка к сущностям (settings userfieldconfig). */
+    crmEntities?: readonly ('LEAD' | 'DEAL' | 'CONTACT' | 'COMPANY')[];
 }
 
 export const AICALL_APP_TYPE = 'aicall';
@@ -44,6 +46,7 @@ export function buildAicallInstallFields(): AicallInstallField[] {
         order: (index + 1) * 10,
         isNeedUpdate: true,
         isMultiple: def.isMultiple ?? false,
+        crmEntities: def.crmEntities,
         list: (def.items ?? []).map(item => ({
             VALUE: item.VALUE,
             CODE: item.CODE,

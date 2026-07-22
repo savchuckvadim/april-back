@@ -65,6 +65,35 @@ export class InstallCallReportSmartUseCase {
         );
         let created = false;
 
+        // relations.parent: разбор звонка появляется вкладкой в карточках
+        // сделки, лида, контакта и компании.
+        const parentRelations = [
+            BitrixOwnerTypeId.DEAL,
+            BitrixOwnerTypeId.LEAD,
+            BitrixOwnerTypeId.CONTACT,
+            BitrixOwnerTypeId.COMPANY,
+        ].map(parentEntityTypeId => ({
+            entityTypeId: parentEntityTypeId,
+            isChildrenListEnabled: 'Y' as const,
+        }));
+
+        if (smartType) {
+            // Best-effort доводим relations существующего типа до эталона.
+            await bitrix.smartType
+                .update({
+                    id: Number(smartType.id),
+                    fields: {
+                        title: CALL_REPORT_SMART_TITLE,
+                        relations: { parent: parentRelations },
+                    },
+                })
+                .catch((error: Error) =>
+                    this.logger.warn(
+                        `relations смарта не обновлены (${domain}): ${error.message}`,
+                    ),
+                );
+        }
+
         if (!smartType) {
             const response = await bitrix.smartType.add({
                 fields: {
@@ -81,14 +110,7 @@ export class InstallCallReportSmartUseCase {
                     isMycompanyEnabled: 'N',
                     isRecyclebinEnabled: 'Y',
                     isStagesEnabled: 'N',
-                    relations: {
-                        parent: [
-                            {
-                                entityTypeId: BitrixOwnerTypeId.DEAL,
-                                isChildrenListEnabled: 'Y',
-                            },
-                        ],
-                    },
+                    relations: { parent: parentRelations },
                 },
             });
             if (!response.result?.type?.id) {
@@ -286,6 +308,15 @@ export class InstallCallReportSmartUseCase {
                         sort: item.SORT,
                         xmlId: item.CODE,
                     }) as IUserFieldConfigEnumerationItem,
+            );
+        }
+        if (
+            payload.userTypeId === EUserFieldType.CRM &&
+            def.crmEntities?.length
+        ) {
+            // Без привязки crm-поле создаётся «пустым»: ['D_123'] не сохраняются.
+            payload.settings = Object.fromEntries(
+                def.crmEntities.map(entity => [entity, 'Y']),
             );
         }
         return payload;

@@ -20,6 +20,7 @@ const SMART_INFO: CallReportSmartInfo = {
 const makeBitrix = () => ({
     item: {
         add: jest.fn().mockResolvedValue({ result: { item: { id: 7 } } }),
+        list: jest.fn().mockResolvedValue({ result: { items: [] } }),
     },
 });
 
@@ -172,6 +173,43 @@ describe('CallReportSmartWriterService', () => {
         const addCall = bitrix.item.add.mock.calls[0] as unknown[];
         const fields = addCall[1] as Record<string, unknown>;
         expect(fields.ufCrm128CallType).toBeUndefined();
+    });
+
+    it('дедуп по xmlId: пишет aicall_{activityId} и не создаёт дубль', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({ activityId: '101' });
+        expect(bitrix.item.list).toHaveBeenCalledWith(
+            '1056',
+            { xmlId: 'aicall_101' },
+            ['id', 'xmlId'],
+        );
+        const addCall = bitrix.item.add.mock.calls[0] as unknown[];
+        const fields = addCall[1] as Record<string, unknown>;
+        expect(fields.xmlId).toBe('aicall_101');
+
+        // Повтор: элемент уже есть в Bitrix → возвращаем его id без add.
+        bitrix.item.list.mockResolvedValue({
+            result: { items: [{ id: 42 }] },
+        });
+        bitrix.item.add.mockClear();
+        const itemId = await writer.addItem({ activityId: '101' });
+        expect(itemId).toBe(42);
+        expect(bitrix.item.add).not.toHaveBeenCalled();
+    });
+
+    it('сломанный поиск по xmlId не блокирует запись (fail-open)', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.list.mockRejectedValue(new Error('list down'));
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const itemId = await writer.addItem({ activityId: '101' });
+        expect(itemId).toBe(7);
     });
 
     it('бросает ошибку, если Bitrix не вернул id элемента', async () => {

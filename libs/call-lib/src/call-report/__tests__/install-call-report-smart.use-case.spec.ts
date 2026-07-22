@@ -27,6 +27,8 @@ const makeDeps = (options: {
             add: jest.fn().mockResolvedValue({
                 result: { type: { id: 128, entityTypeId: 1056 } },
             }),
+            // Существующему типу best-effort доводятся relations.parent.
+            update: jest.fn().mockResolvedValue({ result: {} }),
         },
         userFieldConfig: {
             getAllWithItems: jest.fn().mockResolvedValue(

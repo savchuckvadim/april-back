@@ -1,16 +1,28 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
+import { BitrixService } from '@lib/bitrix';
 import {
     AiService,
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
+import { CALL_REPORT_SECTIONS } from '@lib/call-lib';
+import { CallAnalysisBitrixService } from '@lib/call-lib/call-analysis/services/call-analysis-bitrix.service';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
-import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
+import {
+    AgentCallAnalysisDto,
+    AgentSectionAnalysisDto,
+} from '../dto/agent-analysis-request.dto';
 import { AgentAnalysisResponseDto } from '../dto/agent-response.dto';
 import { AGENT_ANALYSIS_TYPE } from './agent-call-package.service';
+
+/** Итог записи смарт-элемента + контекст для таймлайнов. */
+interface SmartItemWriteResult {
+    itemId: number;
+    managerId?: number;
+}
 
 /**
  * Приём результата глубокого анализа от внешнего агента:
@@ -85,12 +97,12 @@ export class AgentAnalysisIntakeService {
             transcription_id: row.id,
         });
 
-        const smartItemId = await this.writeSmartItem(row, agentName, dto);
+        const written = await this.writeSmartItem(row, agentName, dto);
 
-        if (smartItemId) {
+        if (written) {
             await this.aiService
                 .update(String(aiRecord.id), {
-                    report_item_id: String(smartItemId),
+                    report_item_id: String(written.itemId),
                     in_report: true,
                 })
                 .catch(error =>
@@ -98,6 +110,12 @@ export class AgentAnalysisIntakeService {
                         `ais.report_item_id не обновлён: ${(error as Error).message}`,
                     ),
                 );
+            await this.writeSmartElementTimeline(row, written, dto).catch(
+                error =>
+                    this.logger.warn(
+                        `Таймлайн смарт-элемента не записан: ${(error as Error).message}`,
+                    ),
+            );
         }
 
         await this.duplicateToTimeline(row, agentName, dto).catch(error =>
@@ -108,8 +126,8 @@ export class AgentAnalysisIntakeService {
 
         return {
             aiId: String(aiRecord.id),
-            smartItemId: smartItemId ?? null,
-            smartInstalled: smartItemId !== null,
+            smartItemId: written?.itemId ?? null,
+            smartInstalled: written !== null,
         };
     }
 
@@ -135,11 +153,11 @@ export class AgentAnalysisIntakeService {
             };
         }
 
-        const smartItemId = await this.writeSmartItem(row, agentName, dto);
-        if (smartItemId) {
+        const written = await this.writeSmartItem(row, agentName, dto);
+        if (written) {
             await this.aiService
                 .update(String(existing.id), {
-                    report_item_id: String(smartItemId),
+                    report_item_id: String(written.itemId),
                     in_report: true,
                 })
                 .catch(error =>
@@ -147,11 +165,17 @@ export class AgentAnalysisIntakeService {
                         `ais.report_item_id не обновлён: ${(error as Error).message}`,
                     ),
                 );
+            await this.writeSmartElementTimeline(row, written, dto).catch(
+                error =>
+                    this.logger.warn(
+                        `Таймлайн смарт-элемента не записан: ${(error as Error).message}`,
+                    ),
+            );
         }
         return {
             aiId: String(existing.id),
-            smartItemId: smartItemId ?? null,
-            smartInstalled: smartItemId !== null,
+            smartItemId: written?.itemId ?? null,
+            smartInstalled: written !== null,
         };
     }
 
@@ -160,7 +184,7 @@ export class AgentAnalysisIntakeService {
         row: TranscriptionPipelineView,
         agentName: string,
         dto: AgentCallAnalysisDto,
-    ): Promise<number | null> {
+    ): Promise<SmartItemWriteResult | null> {
         const domain = row.domain as string;
         const smartInfo = await this.smartResolver.resolve(domain);
         if (!smartInfo) {
@@ -174,22 +198,29 @@ export class AgentAnalysisIntakeService {
         const writer = new CallReportSmartWriterService(bitrix, smartInfo);
 
         const gigachat = await this.loadGigachatResults(row.id);
-        const dealContext = await this.loadDealContext(
-            bitrix.api,
-            row.entityId,
-        );
-        const rowDealId = row.entityId ? Number(row.entityId) : undefined;
+        // Звонок может быть по сделке ИЛИ по лиду — хотя бы одна из связей
+        // (сделка/лид/компания) должна встать на элемент.
+        const isLead = row.entityType === 'lead';
+        const rowDealId =
+            !isLead && row.entityId ? Number(row.entityId) : undefined;
+        const rowLeadId =
+            isLead && row.entityId ? Number(row.entityId) : undefined;
+        const context = isLead
+            ? await this.loadLeadContext(bitrix.api, row.entityId)
+            : await this.loadDealContext(bitrix.api, row.entityId);
 
         try {
-            return await this.writeItem(
+            const itemId = await this.writeItem(
                 writer,
                 row,
                 rowDealId,
-                dealContext,
+                rowLeadId,
+                context,
                 gigachat,
                 agentName,
                 dto,
             );
+            return { itemId, managerId: context.managerId };
         } catch (error) {
             // { telegram: true } — форс-алерт админам (транспорт логгера)
             this.logger.error(
@@ -204,6 +235,7 @@ export class AgentAnalysisIntakeService {
         writer: CallReportSmartWriterService,
         row: TranscriptionPipelineView,
         rowDealId: number | undefined,
+        rowLeadId: number | undefined,
         dealContext: {
             companyId?: number;
             contactId?: number;
@@ -216,6 +248,7 @@ export class AgentAnalysisIntakeService {
         return writer.addItem({
             activityId: row.activityId ?? '',
             dealId: rowDealId,
+            leadId: rowLeadId,
             companyId: dealContext.companyId,
             contactId: dealContext.contactId,
             managerId: dealContext.managerId,
@@ -330,6 +363,99 @@ export class AgentAnalysisIntakeService {
     }
 
     /**
+     * Таймлайн созданного смарт-элемента: по одной записи на каждый
+     * актуальный раздел разговора («как было / что не самое лучшее / как
+     * можно по-другому: 1..3»), а САМОЙ ВЕРХНЕЙ записью — запись разговора
+     * (аудио активности). Комменты в таймлайне сортируются новые-сверху,
+     * поэтому разделы постятся в обратном порядке, аудио — последним.
+     */
+    private async writeSmartElementTimeline(
+        row: TranscriptionPipelineView,
+        written: SmartItemWriteResult,
+        dto: AgentCallAnalysisDto,
+    ): Promise<void> {
+        const domain = row.domain as string;
+        const smartInfo = await this.smartResolver.resolve(domain);
+        if (!smartInfo) return;
+        const { bitrix } = await this.pbxService.init(domain);
+
+        const entityType = `DYNAMIC_${smartInfo.entityTypeId}`;
+        const authorId = String(written.managerId ?? 1);
+        const sections = (dto.sections ?? []).filter(
+            section => section.relevance > 0,
+        );
+
+        for (const section of [...sections].reverse()) {
+            await bitrix.timeline.addTimelineComment({
+                ENTITY_ID: written.itemId,
+                ENTITY_TYPE: entityType,
+                COMMENT: this.renderSectionComment(section),
+                AUTHOR_ID: authorId,
+            });
+        }
+
+        const audioComment = await this.buildAudioComment(bitrix, row);
+        if (audioComment) {
+            await bitrix.timeline.addTimelineComment({
+                ENTITY_ID: written.itemId,
+                ENTITY_TYPE: entityType,
+                COMMENT: audioComment,
+                AUTHOR_ID: authorId,
+            });
+        }
+    }
+
+    /** Одна таймлайн-запись раздела: как было / слабые места / варианты. */
+    private renderSectionComment(section: AgentSectionAnalysisDto): string {
+        const title =
+            CALL_REPORT_SECTIONS.find(item => item.code === section.section)
+                ?.title ?? section.section;
+        const score =
+            section.score !== undefined ? ` — ${section.score}/10` : '';
+        let text = `[b]${title}[/b]${score}\n`;
+
+        const asWas = section.asWas ?? section.analysis;
+        if (asWas) text += `\n[b]Как было:[/b]\n${asWas}\n`;
+        if (section.weaknesses) {
+            text += `\n[b]Что в таком подходе не самое лучшее:[/b]\n${section.weaknesses}\n`;
+        }
+        if (section.alternatives?.length) {
+            text +=
+                `\n[b]Как можно было по-другому:[/b]\n` +
+                section.alternatives
+                    .map((variant, index) => `${index + 1}) ${variant}`)
+                    .join('\n');
+        } else if (section.advice) {
+            text += `\n[b]Как можно было по-другому:[/b]\n${section.advice}`;
+        }
+        return text;
+    }
+
+    /** Ссылка на аудио-запись разговора из файлов активности (fail-open). */
+    private async buildAudioComment(
+        bitrix: BitrixService,
+        row: TranscriptionPipelineView,
+    ): Promise<string | null> {
+        if (!row.activityId) return null;
+        try {
+            const bx = new CallAnalysisBitrixService(bitrix);
+            const activity = await bx.getActivityById(Number(row.activityId));
+            if (!activity) return null;
+            const audio = (await bx.getAudioFiles([activity]))[0];
+            if (!audio) return null;
+            return (
+                `🎧 [b]Запись разговора[/b] (активность #${row.activityId})\n` +
+                `[url=${audio.downloadUrl}]${audio.fileName}[/url]`
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Аудио для таймлайна не получено (activity ${row.activityId}): ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
+    /**
      * Дубль анализа в таймлайн сделки (по требованию задачи): руководитель
      * и менеджер видят разбор в привычной ленте, не открывая смарт.
      */
@@ -340,10 +466,10 @@ export class AgentAnalysisIntakeService {
     ): Promise<void> {
         if (!row.domain || !row.entityId) return;
         const { bitrix } = await this.pbxService.init(row.domain);
-        const dealContext = await this.loadDealContext(
-            bitrix.api,
-            row.entityId,
-        );
+        const isLead = row.entityType === 'lead';
+        const dealContext = isLead
+            ? await this.loadLeadContext(bitrix.api, row.entityId)
+            : await this.loadDealContext(bitrix.api, row.entityId);
 
         const sectionLines = (dto.sections ?? [])
             .filter(section => section.relevance > 0)
@@ -374,10 +500,46 @@ export class AgentAnalysisIntakeService {
 
         await bitrix.timeline.addTimelineComment({
             ENTITY_ID: Number(row.entityId),
-            ENTITY_TYPE: 'deal',
+            ENTITY_TYPE: isLead ? 'lead' : 'deal',
             COMMENT: comment,
             AUTHOR_ID: String(dealContext.managerId ?? 1),
         });
+    }
+
+    /** Компания/контакт/ответственный лида (звонок по лиду). */
+    private async loadLeadContext(
+        api: {
+            call(
+                method: string,
+                data: Record<string, unknown>,
+            ): Promise<unknown>;
+        },
+        leadId: string | null,
+    ): Promise<{ companyId?: number; contactId?: number; managerId?: number }> {
+        if (!leadId) return {};
+        try {
+            const response = (await api.call('crm.lead.get', {
+                id: leadId,
+            })) as {
+                result?: {
+                    COMPANY_ID?: string | number;
+                    CONTACT_ID?: string | number;
+                    ASSIGNED_BY_ID?: string | number;
+                };
+            };
+            const lead = response?.result;
+            if (!lead) return {};
+            return {
+                companyId: Number(lead.COMPANY_ID) || undefined,
+                contactId: Number(lead.CONTACT_ID) || undefined,
+                managerId: Number(lead.ASSIGNED_BY_ID) || undefined,
+            };
+        } catch (error) {
+            this.logger.warn(
+                `crm.lead.get для контекста не выполнен: ${(error as Error).message}`,
+            );
+            return {};
+        }
     }
 
     private async loadGigachatResults(transcriptionId: string): Promise<{

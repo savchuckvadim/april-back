@@ -26,6 +26,11 @@ export interface ConstSmartInstallField {
     order: number;
     isNeedUpdate: boolean;
     isMultiple: boolean;
+    /**
+     * Для crm-полей: привязка к сущностям (settings userfieldconfig) —
+     * без неё значения ['D_123'] молча не сохраняются.
+     */
+    crmEntities?: readonly ('LEAD' | 'DEAL' | 'CONTACT' | 'COMPANY')[];
 }
 
 /**
@@ -60,4 +65,11 @@ export interface ConstSmartDescriptor {
      * ParseSmartService подставляет их вместо чтения data.xlsx.
      */
     buildInstallFields: () => ConstSmartInstallField[];
+    /**
+     * Родительские сущности типа (crm.type relations.parent, entityTypeId:
+     * LEAD=1/DEAL=2/CONTACT=3/COMPANY=4): элементы смарта появляются
+     * вкладкой в карточках этих сущностей. По умолчанию установщик ставит
+     * только DEAL.
+     */
+    parentEntityTypeIds?: readonly number[];
 }

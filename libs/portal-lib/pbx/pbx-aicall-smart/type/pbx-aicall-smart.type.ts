@@ -40,6 +40,13 @@ export interface CallReportSmartFieldDef {
     items?: readonly CallReportSmartEnumItem[];
     /** Множественное поле (multi-enum справочники). */
     isMultiple?: boolean;
+    /**
+     * Для type='crm' — к каким сущностям привязано поле (settings в
+     * userfieldconfig). БЕЗ этого Bitrix создаёт crm-поле без привязок и
+     * значения вида ['D_123'] молча не сохраняются (боевой инцидент
+     * 2026-07-22: связи DEAL_* оставались пустыми).
+     */
+    crmEntities?: readonly ('LEAD' | 'DEAL' | 'CONTACT' | 'COMPANY')[];
 }
 
 export const CALL_REPORT_SMART_TYPE = 'aicall';
@@ -414,9 +421,24 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
     },
 
     // — Связи с воронками и отчётностью (если удалось установить) —
-    { code: 'DEAL_MAIN', name: 'ОП: основная сделка', type: 'crm' },
-    { code: 'DEAL_PRESENTATION', name: 'Сделка ОП Презентации', type: 'crm' },
-    { code: 'DEAL_XO', name: 'Сделка ХО', type: 'crm' },
+    {
+        code: 'DEAL_MAIN',
+        name: 'ОП: основная сделка',
+        type: 'crm',
+        crmEntities: ['DEAL'],
+    },
+    {
+        code: 'DEAL_PRESENTATION',
+        name: 'Сделка ОП Презентации',
+        type: 'crm',
+        crmEntities: ['DEAL'],
+    },
+    {
+        code: 'DEAL_XO',
+        name: 'Сделка ХО',
+        type: 'crm',
+        crmEntities: ['DEAL'],
+    },
     { code: 'KPI_ITEM_ID', name: 'Элемент списка ОП KPI', type: 'string' },
     {
         code: 'KPI_ITEM_STATUS',

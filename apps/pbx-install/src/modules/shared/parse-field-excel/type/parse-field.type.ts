@@ -23,4 +23,11 @@ export interface Field {
     order: number;
     isNeedUpdate: boolean;
     isMultiple: boolean;
+    /**
+     * Для crm-полей: привязка к сущностям (settings в userfieldconfig).
+     * Без неё Bitrix создаёт crm-поле без привязок и значения ['D_123']
+     * молча не сохраняются. Excel-парсер поле не заполняет (undefined);
+     * источник — const-конфиги (ConstSmartInstallField).
+     */
+    crmEntities?: readonly ('LEAD' | 'DEAL' | 'CONTACT' | 'COMPANY')[];
 }

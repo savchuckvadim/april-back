@@ -157,6 +157,13 @@ export class BxTypedEntityFieldsInstallService {
                 existingField?.enum ?? [],
             );
         }
+        if (bxType === EUserFieldType.CRM && parseField.crmEntities?.length) {
+            // Без привязки к сущностям crm-поле создаётся «пустым» и
+            // значения ['D_123'] молча не сохраняются.
+            payload.settings = Object.fromEntries(
+                parseField.crmEntities.map(entity => [entity, 'Y']),
+            );
+        }
         return payload;
     }
 

@@ -29,6 +29,8 @@ export interface CallReportListItemLink {
 export interface CallReportSmartItemInput {
     activityId: string;
     dealId?: number;
+    /** Звонок по лиду (entityType='lead'): нативная связь parentId1. */
+    leadId?: number;
     companyId?: number;
     contactId?: number;
     callId?: string;
@@ -107,9 +109,30 @@ export class CallReportSmartWriterService {
         private readonly smartInfo: CallReportSmartInfo,
     ) {}
 
-    /** Создаёт элемент смарта, возвращает его id. */
+    /**
+     * Создаёт элемент смарта, возвращает его id.
+     *
+     * Дедуп на уровне Bitrix: один разговор (activityId) = один элемент.
+     * В `xmlId` (внешний код элемента crm.item) пишется `aicall_{activityId}`,
+     * перед созданием ищется существующий элемент по этому коду — ретраи и
+     * повторные push-back при потерянной связке в ais не плодят дубли.
+     */
     async addItem(input: CallReportSmartItemInput): Promise<number> {
+        const xmlId = input.activityId
+            ? `aicall_${input.activityId}`
+            : undefined;
+        if (xmlId) {
+            const existingId = await this.findIdByXmlId(xmlId);
+            if (existingId) {
+                this.logger.log(
+                    `Элемент смарта уже существует: #${existingId} (${xmlId}) — дубль не создаю`,
+                );
+                return existingId;
+            }
+        }
+
         const fields = this.buildFields(input);
+        if (xmlId) fields.xmlId = xmlId;
         const response = await this.bitrix.item.add(
             String(this.smartInfo.entityTypeId),
             fields,
@@ -128,14 +151,37 @@ export class CallReportSmartWriterService {
         return itemId;
     }
 
+    /** id существующего элемента по внешнему коду xmlId; null — не найден. */
+    private async findIdByXmlId(xmlId: string): Promise<number | null> {
+        try {
+            const response = (await this.bitrix.item.list(
+                String(this.smartInfo.entityTypeId),
+                { xmlId } as Partial<IBXItem>,
+                ['id', 'xmlId'],
+            )) as { result?: { items?: { id?: number }[] } };
+            const id = Number(response?.result?.items?.[0]?.id);
+            return id > 0 ? id : null;
+        } catch (error) {
+            // Fail-open: сломанный поиск не должен блокировать запись анализа —
+            // выше по цепочке дедуп прикрывают ais.report_item_id и dedup_key.
+            this.logger.warn(
+                `Поиск элемента по xmlId=${xmlId} не выполнен: ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
     private buildFields(input: CallReportSmartItemInput): Partial<IBXItem> {
         const fields: Record<string, unknown> = {
             title: `${CALL_REPORT_SMART_TITLE}: звонок #${input.activityId}`,
         };
 
-        // — Нативные связи смарта —
+        // — Нативные связи смарта (работают при relations.parent у типа) —
         if (input.dealId) {
             fields[`parentId${BitrixOwnerTypeId.DEAL}`] = input.dealId;
+        }
+        if (input.leadId) {
+            fields[`parentId${BitrixOwnerTypeId.LEAD}`] = input.leadId;
         }
         if (input.companyId) fields.companyId = input.companyId;
         if (input.contactId) fields.contactId = input.contactId;

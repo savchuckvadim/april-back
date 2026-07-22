@@ -1,3 +1,4 @@
+import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { ConstSmartDescriptor } from '../../const-smart-registry/type/const-smart-descriptor.type';
 import { buildAicallInstallFields } from './pbx-aicall-smart-field.type';
 import {
@@ -21,4 +22,11 @@ export const AICALL_SMART_DESCRIPTOR = {
     description:
         'Разборы звонков AI-агентом: разделы анализа, связи с воронками и отчётностью, транскрипт.',
     buildInstallFields: buildAicallInstallFields,
+    // Разбор звонка виден вкладкой в карточках сделки, лида, контакта, компании.
+    parentEntityTypeIds: [
+        BitrixOwnerTypeId.DEAL,
+        BitrixOwnerTypeId.LEAD,
+        BitrixOwnerTypeId.CONTACT,
+        BitrixOwnerTypeId.COMPANY,
+    ],
 } as const satisfies ConstSmartDescriptor;
