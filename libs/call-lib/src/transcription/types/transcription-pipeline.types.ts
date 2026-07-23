@@ -54,6 +54,8 @@ export interface TranscriptionPipelineUpdateInput {
     text?: string;
     symbolsCount?: string;
     durationSec?: number;
+    /** Bitrix-id менеджера (ответственный сделки) — для фильтров отчётов. */
+    userId?: string;
 }
 
 /** Представление строки транскрибации для конвейера и Agent API. */

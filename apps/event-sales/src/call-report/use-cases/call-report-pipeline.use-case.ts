@@ -141,12 +141,25 @@ export class CallReportPipelineUseCase {
             durationSec: payload.durationSec,
         });
 
+        // Менеджер (ответственный сделки) — для фильтров отчётов
+        // call-report-analytics; недоступность Bitrix шаг не роняет.
+        const responsibleId = await bx
+            .getDealResponsibleId(payload.dealId)
+            .catch((error: Error) => {
+                this.logger.warn(
+                    `Ответственный сделки ${payload.dealId} не получен: ${error.message}`,
+                );
+                return undefined;
+            });
+
         await this.transcriptionStore.finishPipeline(transcriptionId, {
             status: 'done',
             provider,
             text,
             symbolsCount: String(text.length),
             durationSec: payload.durationSec,
+            userId:
+                responsibleId !== undefined ? String(responsibleId) : undefined,
         });
 
         const classification = await this.classifyCall(

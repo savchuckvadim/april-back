@@ -53,4 +53,16 @@ export abstract class TranscriptionRepository {
         take: number,
         beforeId?: string,
     ): Promise<Transcription[]>;
+
+    /**
+     * Готовые (done) строки автоконвейера домена за период по времени
+     * звонка (call_started_at ∈ [from, to]) — сырьё модуля отчётов
+     * call-report-analytics. Прочие фильтры (менеджер, длительность,
+     * тип звонка) применяются выше по строкам и ais-записям.
+     */
+    abstract findDonePipelineInPeriod(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Promise<Transcription[]>;
 }

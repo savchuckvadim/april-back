@@ -141,6 +141,24 @@ export class TranscriptionStoreService {
         return rows.map(row => this.toPipelineView(row));
     }
 
+    /**
+     * Готовые строки автоконвейера домена за период (по call_started_at) —
+     * сырьё модуля отчётов call-report-analytics.
+     */
+    async findDoneInPeriod(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Promise<TranscriptionPipelineView[]> {
+        const rows =
+            await this.transcriptionRepository.findDonePipelineInPeriod(
+                domain,
+                from,
+                to,
+            );
+        return rows.map(row => this.toPipelineView(row));
+    }
+
     /** Строка по id в pipeline-представлении (с dedup/call-полями). */
     async findPipelineById(id: string): Promise<TranscriptionPipelineView> {
         const row = await this.transcriptionRepository.findById(id);

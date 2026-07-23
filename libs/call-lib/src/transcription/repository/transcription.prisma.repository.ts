@@ -150,6 +150,9 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         if (input.durationSec !== undefined) {
             data.duration = String(input.durationSec);
         }
+        if (input.userId !== undefined) {
+            data.user_id = input.userId;
+        }
         return this.prisma.transcription.update({
             where: { id: BigInt(id) },
             data,
@@ -199,6 +202,22 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             },
             orderBy: { id: 'desc' },
             take,
+        });
+    }
+
+    async findDonePipelineInPeriod(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Promise<Transcription[]> {
+        return this.prisma.transcription.findMany({
+            where: {
+                status: 'done',
+                dedup_key: { not: null },
+                domain,
+                call_started_at: { gte: from, lte: to },
+            },
+            orderBy: { call_started_at: 'asc' },
         });
     }
 }
