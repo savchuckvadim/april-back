@@ -8,12 +8,15 @@ import { PBXService } from '@lib/pbx/pbx.service';
 import {
     AiEntityDto,
     AiService,
+    CALL_REPORT_TYPE_PROFILES,
+    CallReportCallTypeCode,
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
 import {
     AgentAiResultDto,
     AgentCallPackageDto,
+    AgentCallTypeProfileDto,
     AgentPendingCallDto,
 } from '../dto/agent-response.dto';
 
@@ -201,9 +204,10 @@ export class AgentCallPackageService {
         const hasAgentAnalysis = aiRecords.some(
             record => record.type === AGENT_ANALYSIS_TYPE,
         );
-        const callType = aiRecords.find(
+        const classifyRecord = aiRecords.find(
             record => record.type === CALL_CLASSIFY_TYPE && record.result,
-        )?.result;
+        );
+        const callType = classifyRecord?.result;
 
         const bitrixData = await this.loadBitrixContext(row).catch(error => {
             this.logger.warn(
@@ -220,8 +224,46 @@ export class AgentCallPackageService {
             ),
             transcript: row.text ?? '',
             aiResults: aiRecords.map(record => this.toAiResultDto(record)),
+            classification: this.toClassification(classifyRecord),
+            typeProfile: callType
+                ? (this.buildTypeProfiles()[callType] ?? null)
+                : null,
+            typeProfiles: this.buildTypeProfiles(),
             ...bitrixData,
         };
+    }
+
+    /** Полный результат классификатора из ais.user_result (если валиден). */
+    private toClassification(
+        record: AiEntityDto | undefined,
+    ): Record<string, unknown> | null {
+        if (!record) return null;
+        const raw: unknown = record.user_result;
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+            return raw as Record<string, unknown>;
+        }
+        return record.result ? { callType: record.result } : null;
+    }
+
+    /**
+     * Профили типов звонков для агента — прямой маппинг единого источника
+     * правды CALL_REPORT_TYPE_PROFILES (конфиг смарта).
+     */
+    private buildTypeProfiles(): Record<string, AgentCallTypeProfileDto> {
+        const profiles: Record<string, AgentCallTypeProfileDto> = {};
+        for (const code of Object.keys(
+            CALL_REPORT_TYPE_PROFILES,
+        ) as CallReportCallTypeCode[]) {
+            const profile = CALL_REPORT_TYPE_PROFILES[code];
+            profiles[code] = {
+                focus: profile.focus,
+                sectionRelevance: { ...profile.sectionRelevance },
+                talkRatioNorm: profile.talkRatioNorm,
+                questionsNorm: profile.questionsNorm,
+                knowledgeKind: profile.knowledgeKind,
+            };
+        }
+        return profiles;
     }
 
     private emptyBitrixContext(): AgentBitrixContext {

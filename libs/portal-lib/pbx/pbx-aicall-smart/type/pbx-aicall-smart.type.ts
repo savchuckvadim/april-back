@@ -93,6 +93,132 @@ export const CALL_REPORT_CALL_TYPE_ITEMS = [
 })[];
 
 // ---------------------------------------------------------------------------
+// Профили типов звонков: тип ↔ анализ
+// ---------------------------------------------------------------------------
+
+/**
+ * Профиль типа звонка — управляющий параметр речевого анализа:
+ * приоры релевантности разделов, речевые нормы, kind базы знаний с
+ * инструкцией анализа ИМЕННО этого типа.
+ *
+ * Приоры — ориентир, не приговор: агент может отклоняться от них,
+ * но обязан объяснить отклонение в analysis раздела.
+ *
+ * Подмена без деплоя: сами ИНСТРУКЦИИ анализа лежат в базе знаний
+ * (kind из knowledgeKind, редактируются через /agent/knowledge и
+ * /ai-rag/knowledge); числовые приоры меняются здесь (единый источник
+ * правды, как и остальной конфиг смарта).
+ */
+export interface CallReportTypeProfile {
+    /** Что главное в звонке этого типа (короткая шпаргалка аналитику). */
+    focus: string;
+    /** Приоры релевантности разделов 0-100 (REFUSAL — по факту отказа). */
+    sectionRelevance: Record<CallReportSectionCode, number>;
+    /** Норма доли речи менеджера, % (null — норма не задаётся). */
+    talkRatioNorm: { min: number; max: number } | null;
+    /** Норма числа вопросов менеджера (null — не нормируется). */
+    questionsNorm: { min: number; max: number } | null;
+    /** Kind базы знаний с инструкцией/скриптом анализа этого типа. */
+    knowledgeKind: string;
+}
+
+export const CALL_REPORT_TYPE_PROFILES: Record<
+    CallReportCallTypeCode,
+    CallReportTypeProfile
+> = {
+    cold: {
+        focus: 'Выход на ЛПР: проход секретаря, зацепка, договорённость о контакте с ЛПР.',
+        sectionRelevance: {
+            GREETING: 100,
+            NEEDS: 60,
+            PRESENTATION: 20,
+            OBJECTIONS: 70,
+            PRICE: 10,
+            CLOSING: 80,
+            REFUSAL: 60,
+        },
+        talkRatioNorm: { min: 30, max: 55 },
+        questionsNorm: { min: 3, max: 8 },
+        knowledgeKind: 'call-analysis-cold',
+    },
+    call: {
+        focus: 'Договориться о презентации: выявление потребностей, назначение конкретного слота.',
+        sectionRelevance: {
+            GREETING: 70,
+            NEEDS: 100,
+            PRESENTATION: 40,
+            OBJECTIONS: 80,
+            PRICE: 30,
+            CLOSING: 90,
+            REFUSAL: 50,
+        },
+        talkRatioNorm: { min: 40, max: 60 },
+        questionsNorm: { min: 11, max: 14 },
+        knowledgeKind: 'call-analysis-call',
+    },
+    presentation: {
+        focus: 'Презентация под потребности: свойство-связка-выгода, вовлечение, следующий шаг.',
+        sectionRelevance: {
+            GREETING: 40,
+            NEEDS: 70,
+            PRESENTATION: 100,
+            OBJECTIONS: 80,
+            PRICE: 60,
+            CLOSING: 90,
+            REFUSAL: 40,
+        },
+        talkRatioNorm: { min: 50, max: 70 },
+        questionsNorm: { min: 6, max: 12 },
+        knowledgeKind: 'call-analysis-presentation',
+    },
+    decision: {
+        focus: 'Дожим решения: работа с возражениями и ценой, фиксация решения/сроков.',
+        sectionRelevance: {
+            GREETING: 30,
+            NEEDS: 40,
+            PRESENTATION: 50,
+            OBJECTIONS: 100,
+            PRICE: 100,
+            CLOSING: 100,
+            REFUSAL: 70,
+        },
+        talkRatioNorm: { min: 40, max: 60 },
+        questionsNorm: { min: 4, max: 10 },
+        knowledgeKind: 'call-analysis-decision',
+    },
+    payment: {
+        focus: 'Оплата: счёт/договор, сроки, снятие последних блокеров.',
+        sectionRelevance: {
+            GREETING: 20,
+            NEEDS: 10,
+            PRESENTATION: 10,
+            OBJECTIONS: 60,
+            PRICE: 90,
+            CLOSING: 100,
+            REFUSAL: 50,
+        },
+        talkRatioNorm: null,
+        questionsNorm: null,
+        knowledgeKind: 'call-analysis-payment',
+    },
+    other: {
+        focus: 'Нетиповой звонок: оценивать только фактически применимые разделы.',
+        sectionRelevance: {
+            GREETING: 50,
+            NEEDS: 50,
+            PRESENTATION: 50,
+            OBJECTIONS: 50,
+            PRICE: 50,
+            CLOSING: 50,
+            REFUSAL: 50,
+        },
+        talkRatioNorm: null,
+        questionsNorm: null,
+        knowledgeKind: 'call-analysis-other',
+    },
+};
+
+// ---------------------------------------------------------------------------
 // Разделы анализа разговора
 // ---------------------------------------------------------------------------
 

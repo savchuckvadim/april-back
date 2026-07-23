@@ -135,7 +135,13 @@ const CALL_CLASSIFICATION_SCHEMA = {
     additionalProperties: false,
 };
 
-const CLASSIFICATION_SYSTEM_PROMPT = `Ты классифицируешь расшифровки телефонных звонков менеджеров по продажам ИПО ГАРАНТ.
+/**
+ * Дефолтная инструкция классификации. Подменяется без деплоя: положите
+ * документ в базу знаний kind='call-classify' (общую или домена) — конвейер
+ * передаст его текст сюда через параметр systemPrompt (см.
+ * CallClassifyInstructionService в call-report).
+ */
+export const DEFAULT_CLASSIFICATION_SYSTEM_PROMPT = `Ты классифицируешь расшифровки телефонных звонков менеджеров по продажам ИПО ГАРАНТ.
 Определи тип звонка и с кем в итоге говорил менеджер.
 
 callType — тип звонка (ровно один код):
@@ -278,9 +284,14 @@ export class VibeCodeClient {
      * Дешёвая классификация звонка (tier-1): тип звонка + роль собеседника
      * + уверенность. Выполняется в начале конвейера call-report; длинный
      * транскрипт обрезается — для классификации хватает начала разговора.
+     *
+     * systemPrompt — подменная инструкция классификации (из базы знаний
+     * kind='call-classify'); коды ответа при этом фиксированы strict
+     * JSON-схемой, инструкция меняет только критерии их выбора.
      */
     async classifyCall(
         transcript: string,
+        systemPrompt?: string,
     ): Promise<CallClassificationResultDto> {
         this.logger.log('Classifying call with Vibecode LLM');
         const trimmed =
@@ -288,7 +299,7 @@ export class VibeCodeClient {
                 ? transcript.slice(0, CLASSIFICATION_TRANSCRIPT_LIMIT)
                 : transcript;
         const parsed = await this.chatCompletionJson(
-            CLASSIFICATION_SYSTEM_PROMPT,
+            systemPrompt ?? DEFAULT_CLASSIFICATION_SYSTEM_PROMPT,
             `Классифицируй звонок по расшифровке:\n\n${trimmed}`,
             'call_classification',
             CALL_CLASSIFICATION_SCHEMA,

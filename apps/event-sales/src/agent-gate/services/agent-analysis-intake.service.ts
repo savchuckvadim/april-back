@@ -17,7 +17,10 @@ import {
     AgentSectionAnalysisDto,
 } from '../dto/agent-analysis-request.dto';
 import { AgentAnalysisResponseDto } from '../dto/agent-response.dto';
-import { AGENT_ANALYSIS_TYPE } from './agent-call-package.service';
+import {
+    AGENT_ANALYSIS_TYPE,
+    CALL_CLASSIFY_TYPE,
+} from './agent-call-package.service';
 import { computeSpeechMetrics } from './speech-metrics.util';
 
 /** Итог записи смарт-элемента + контекст для таймлайнов. */
@@ -77,11 +80,28 @@ export class AgentAnalysisIntakeService {
 
         // Идемпотентность: ретрай push-back (потерянный ответ, повтор скилла)
         // не должен плодить дубликаты ais-записей и смарт-элементов.
-        const existing = (
-            await this.aiService.findByTranscriptionIds([row.id])
-        ).find(record => record.type === AGENT_ANALYSIS_TYPE);
+        const records = await this.aiService.findByTranscriptionIds([row.id]);
+        const existing = records.find(
+            record => record.type === AGENT_ANALYSIS_TYPE,
+        );
         if (existing) {
             return this.completeExisting(existing, row, agentName, dto);
+        }
+
+        // Кросс-валидация: расхождение типа звонка агента с дешёвым
+        // классификатором конвейера — маркер качества обоих (копится в
+        // user_result для мониторинга, поведение не меняет: тип агента —
+        // финальный, он видел полный контекст).
+        const classifierCallType =
+            records.find(
+                record => record.type === CALL_CLASSIFY_TYPE && record.result,
+            )?.result ?? null;
+        const classifierMismatch =
+            classifierCallType !== null && classifierCallType !== dto.callType;
+        if (classifierMismatch) {
+            this.logger.log(
+                `Тип звонка: классификатор=${classifierCallType}, агент=${dto.callType} (transcription ${row.id})`,
+            );
         }
 
         const aiRecord = await this.aiService.create({
@@ -94,7 +114,12 @@ export class AgentAnalysisIntakeService {
             // копится в БД, в endpoint сейчас не отправляется.
             report_result: dto.flow ? JSON.stringify(dto.flow) : undefined,
             user_result: JSON.parse(
-                JSON.stringify({ ...dto, agentName }),
+                JSON.stringify({
+                    ...dto,
+                    agentName,
+                    classifierCallType,
+                    classifierMismatch,
+                }),
             ) as Prisma.JsonValue,
             activity_id: row.activityId ?? undefined,
             entity_type: row.entityType ?? undefined,

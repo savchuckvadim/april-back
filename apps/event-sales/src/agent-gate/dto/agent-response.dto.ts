@@ -120,6 +120,58 @@ export class AgentAiResultDto {
 }
 
 /** Полный пакет данных по звонку для глубокого анализа агентом. */
+/**
+ * Профиль типа звонка — управляющий параметр анализа (приоры релевантности
+ * разделов, речевые нормы, kind знаний с инструкцией анализа этого типа).
+ * Источник правды — CALL_REPORT_TYPE_PROFILES в конфиге смарта.
+ */
+export class AgentCallTypeProfileDto {
+    @ApiProperty({
+        description: 'Что главное в звонке этого типа (шпаргалка аналитику).',
+        example: 'Выход на ЛПР: проход секретаря, зацепка.',
+        type: String,
+    })
+    focus: string;
+
+    @ApiProperty({
+        description:
+            'Приоры релевантности разделов 0-100 (GREETING/NEEDS/PRESENTATION/' +
+            'OBJECTIONS/PRICE/CLOSING/REFUSAL). Ориентир: отклоняясь, агент ' +
+            'обязан объяснить это в analysis раздела.',
+        type: Object,
+        example: { GREETING: 100, PRICE: 10 },
+    })
+    sectionRelevance: Record<string, number>;
+
+    @ApiPropertyOptional({
+        description:
+            'Норма доли речи менеджера, % — для этого типа звонка. null — не нормируется.',
+        type: Object,
+        nullable: true,
+        example: { min: 40, max: 60 },
+    })
+    talkRatioNorm: { min: number; max: number } | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Норма числа вопросов менеджера для этого типа. null — не нормируется.',
+        type: Object,
+        nullable: true,
+        example: { min: 11, max: 14 },
+    })
+    questionsNorm: { min: number; max: number } | null;
+
+    @ApiProperty({
+        description:
+            'Kind базы знаний с инструкцией/скриптом анализа ИМЕННО этого типа — ' +
+            'агент забирает её через GET /agent/knowledge/all?kind=<knowledgeKind>. ' +
+            'Инструкция подменяется загрузкой документа, без деплоя.',
+        example: 'call-analysis-cold',
+        type: String,
+    })
+    knowledgeKind: string;
+}
+
 export class AgentCallPackageDto {
     @ApiProperty({
         description: 'Метаданные звонка.',
@@ -199,6 +251,40 @@ export class AgentCallPackageDto {
         type: [Object],
     })
     companyFields: Record<string, unknown>[];
+
+    @ApiPropertyOptional({
+        description:
+            'Результат дешёвого классификатора конвейера (callType, ' +
+            'interlocutorRole, confidence, reason). Подсказка агенту: при ' +
+            'высокой confidence принять тип; при низкой / несогласии — ' +
+            'классифицировать самостоятельно и объяснить расхождение.',
+        type: Object,
+        nullable: true,
+        example: {
+            callType: 'cold',
+            interlocutorRole: 'secretary',
+            confidence: 0.85,
+            reason: 'Менеджер проходит секретаря',
+        },
+    })
+    classification?: Record<string, unknown> | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Профиль классифицированного типа звонка (приоры релевантности ' +
+            'разделов, речевые нормы, kind знаний). null — звонок не классифицирован.',
+        type: AgentCallTypeProfileDto,
+        nullable: true,
+    })
+    typeProfile?: AgentCallTypeProfileDto | null;
+
+    @ApiProperty({
+        description:
+            'Профили всех типов звонков (по кодам CALL_TYPE смарта) — если ' +
+            'агент выбирает иной тип, анализ ведётся по профилю выбранного типа.',
+        type: Object,
+    })
+    typeProfiles: Record<string, AgentCallTypeProfileDto>;
 }
 
 /** Ответ на push-back анализа агента. */

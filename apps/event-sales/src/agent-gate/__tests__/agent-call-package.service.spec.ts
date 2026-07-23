@@ -21,18 +21,20 @@ const row = (id: string): Record<string, unknown> => ({
 const makeDeps = (options: {
     rows: ReturnType<typeof row>[];
     agentAnalyzedIds?: string[];
+    classifyRecords?: Record<string, unknown>[];
 }) => {
     const store = {
         findDonePipeline: jest.fn().mockResolvedValue(options.rows),
         findPipelineById: jest.fn().mockResolvedValue(options.rows[0]),
     };
     const aiService = {
-        findByTranscriptionIds: jest.fn().mockResolvedValue(
-            (options.agentAnalyzedIds ?? []).map(id => ({
+        findByTranscriptionIds: jest.fn().mockResolvedValue([
+            ...(options.agentAnalyzedIds ?? []).map(id => ({
                 type: 'agent-analysis',
                 transcription_id: id,
             })),
-        ),
+            ...(options.classifyRecords ?? []),
+        ]),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({
@@ -110,5 +112,65 @@ describe('AgentCallPackageService', () => {
         expect(pkg.transcript).toBe('текст звонка');
         expect(pkg.call.transcriptionId).toBe('1');
         expect(pkg.historyCandidates).toEqual([]);
+        // Без классификации: профиль типа пуст, но карта профилей есть всегда.
+        expect(pkg.classification).toBeNull();
+        expect(pkg.typeProfile).toBeNull();
+        expect(Object.keys(pkg.typeProfiles)).toEqual(
+            expect.arrayContaining(['cold', 'presentation', 'other']),
+        );
+    });
+
+    it('getPackage включает классификацию и профиль типа звонка', async () => {
+        const { service } = makeDeps({
+            rows: [row('1')],
+            classifyRecords: [
+                {
+                    type: 'call-classify',
+                    transcription_id: '1',
+                    result: 'cold',
+                    user_result: {
+                        callType: 'cold',
+                        interlocutorRole: 'secretary',
+                        confidence: 0.9,
+                        reason: 'Проход секретаря',
+                    },
+                },
+            ],
+        });
+        const pkg = await service.getPackage('1');
+        expect(pkg.call.callType).toBe('cold');
+        expect(pkg.classification).toEqual(
+            expect.objectContaining({ callType: 'cold', confidence: 0.9 }),
+        );
+        expect(pkg.typeProfile?.knowledgeKind).toBe('call-analysis-cold');
+        expect(pkg.typeProfile?.sectionRelevance.PRICE).toBeLessThan(
+            pkg.typeProfile?.sectionRelevance.GREETING ?? 0,
+        );
+    });
+
+    it('listPending сортирует по (domain, callType), неклассифицированные в конце', async () => {
+        const { service } = makeDeps({
+            rows: [row('1'), row('2'), row('3')],
+            classifyRecords: [
+                {
+                    type: 'call-classify',
+                    transcription_id: '1',
+                    result: 'presentation',
+                },
+                {
+                    type: 'call-classify',
+                    transcription_id: '3',
+                    result: 'cold',
+                },
+            ],
+        });
+        const pending = await service.listPending(undefined, 20);
+        expect(
+            pending.map(call => [call.transcriptionId, call.callType ?? null]),
+        ).toEqual([
+            ['3', 'cold'],
+            ['1', 'presentation'],
+            ['2', null],
+        ]);
     });
 });

@@ -83,6 +83,9 @@ const makeDeps = (overrides?: {
             ? jest.fn().mockRejectedValue(new Error('vibecode down'))
             : jest.fn().mockResolvedValue(CLASSIFICATION),
     };
+    const classifyInstruction = {
+        resolve: jest.fn().mockResolvedValue('инструкция классификации'),
+    };
     const config = {
         get: jest.fn((key: string) =>
             overrides?.combinedDisabled &&
@@ -103,9 +106,19 @@ const makeDeps = (overrides?: {
         aiService as never,
         llm as never,
         vibecode as never,
+        classifyInstruction as never,
         config as never,
     );
-    return { useCase, store, aiService, bitrix, router, llm, vibecode };
+    return {
+        useCase,
+        store,
+        aiService,
+        bitrix,
+        router,
+        llm,
+        vibecode,
+        classifyInstruction,
+    };
 };
 
 describe('CallReportPipelineUseCase', () => {
@@ -150,6 +163,18 @@ describe('CallReportPipelineUseCase', () => {
             recomendationSaved: true,
             callType: 'cold',
         });
+    });
+
+    it('классификатор получает подменную инструкцию из резолвера', async () => {
+        const { useCase, vibecode, classifyInstruction } = makeDeps();
+        await useCase.execute(PAYLOAD);
+        expect(classifyInstruction.resolve).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+        );
+        expect(vibecode.classifyCall).toHaveBeenCalledWith(
+            'текст',
+            'инструкция классификации',
+        );
     });
 
     it('CALL_REPORT_COMBINED_ANALYSIS=0 возвращает два раздельных вызова', async () => {

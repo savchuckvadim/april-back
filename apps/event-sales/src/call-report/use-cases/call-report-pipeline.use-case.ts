@@ -13,6 +13,7 @@ import {
     VibeCodeClient,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
+import { CallClassifyInstructionService } from '../services/call-classify-instruction.service';
 
 /** Задача конвейера: один звонок (сделка) на обработку. */
 export interface CallReportJobPayload {
@@ -67,6 +68,7 @@ export class CallReportPipelineUseCase {
         private readonly aiService: AiService,
         private readonly llmOrchestrator: LlmOrchestratorService,
         private readonly vibeCodeClient: VibeCodeClient,
+        private readonly classifyInstruction: CallClassifyInstructionService,
         private readonly configService: ConfigService,
     ) {
         const model = this.configService.get<string>('CALL_REPORT_LLM_MODEL');
@@ -259,7 +261,14 @@ export class CallReportPipelineUseCase {
     ): Promise<CallClassificationResultDto | null> {
         if (!this.classifyEnabled) return null;
         try {
-            const classification = await this.vibeCodeClient.classifyCall(text);
+            // Инструкция подменяема через базу знаний kind='call-classify'.
+            const instruction = await this.classifyInstruction.resolve(
+                payload.domain,
+            );
+            const classification = await this.vibeCodeClient.classifyCall(
+                text,
+                instruction,
+            );
             await this.aiService.create({
                 provider: 'bitrix-vibecode',
                 model: 'bitrix-vibecode',
