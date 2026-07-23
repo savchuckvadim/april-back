@@ -30,14 +30,11 @@ const makeDeps = (options?: {
         activity: {
             // Сигнатура CallAnalysisBitrixService.getActivityById:
             // getAllFresh({ ID }, undefined, 1)
-            getAllFresh: jest
-                .fn()
-                .mockImplementation((filter: { ID: number | string }) => {
-                    const found = activities[Number(filter.ID)];
-                    return Promise.resolve({
-                        activities: found ? [found] : [],
-                    });
-                }),
+            getAllFresh: jest.fn((filter: { ID: number | string }) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- индексация мок-словаря активностей; tsc типизирует корректно, расходится только eslint-программа
+                const found = activities[Number(filter.ID)];
+                return Promise.resolve({ activities: found ? [found] : [] });
+            }),
         },
         api: {
             call: jest
