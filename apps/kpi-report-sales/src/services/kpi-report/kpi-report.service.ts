@@ -48,6 +48,8 @@ export class ExcelReportService {
                 }
             }
 
+            this.renderRatingSheets(workbook, dto);
+
             return Buffer.from(await workbook.xlsx.writeBuffer());
         } catch (error) {
             this.logger.error('Error generating KPI report', error);
@@ -221,6 +223,142 @@ export class ExcelReportService {
         sheet.columns = new Array(kpiCount + 1).fill(null).map(() => ({
             width: 22,
         }));
+    }
+
+    /**
+     * Листы рейтингов-победителей по каждому показателю отчёта (в отчёт
+     * попадают только действия из фильтра пользователя): «Рейтинг —
+     * Сотрудники» всегда; «— Группы» / «— Отделы» — при наличии структуры.
+     */
+    private renderRatingSheets(workbook: Workbook, dto: KpiReportDto): void {
+        if (!dto.report.length) return;
+        const actions = dto.report[0].kpi.map(kpi => kpi.action);
+
+        this.renderRatingSheet(
+            workbook,
+            dto,
+            'Рейтинг — Сотрудники',
+            actions.map((action, index) => ({
+                action,
+                rows: dto.report
+                    .map(item => ({
+                        name: item.userName,
+                        value: item.kpi[index]?.count ?? 0,
+                    }))
+                    .sort((a, b) => b.value - a.value),
+            })),
+        );
+
+        const structure = dto.structure;
+        if (!structure?.departments?.length) return;
+
+        const groupRatings = actions.map((action, index) => ({
+            action,
+            rows: structure.departments
+                .flatMap(dep =>
+                    dep.groups.map(group => ({
+                        name: structure.isMultiple
+                            ? `${dep.name} — ${group.name}`
+                            : group.name,
+                        value: this.sumActionByUsers(
+                            dto.report,
+                            index,
+                            group.userIds,
+                        ),
+                    })),
+                )
+                .sort((a, b) => b.value - a.value),
+        }));
+        if (groupRatings.some(rating => rating.rows.length > 1)) {
+            this.renderRatingSheet(
+                workbook,
+                dto,
+                'Рейтинг — Группы',
+                groupRatings,
+            );
+        }
+
+        if (structure.departments.length > 1) {
+            const departmentRatings = actions.map((action, index) => ({
+                action,
+                rows: structure.departments
+                    .map(dep => ({
+                        name: dep.name,
+                        value: this.sumActionByUsers(dto.report, index, [
+                            ...dep.userIds,
+                            ...dep.groups.flatMap(group => group.userIds),
+                        ]),
+                    }))
+                    .sort((a, b) => b.value - a.value),
+            }));
+            this.renderRatingSheet(
+                workbook,
+                dto,
+                'Рейтинг — Отделы',
+                departmentRatings,
+            );
+        }
+    }
+
+    private renderRatingSheet(
+        workbook: Workbook,
+        dto: KpiReportDto,
+        name: string,
+        ratings: {
+            action: string;
+            rows: { name: string; value: number }[];
+        }[],
+    ): void {
+        const sheet = workbook.addWorksheet(this.sanitizeSheetName(name));
+        this.renderDateHeader(dto, sheet);
+        sheet.addRow([]);
+        sheet.columns = [{ width: 8 }, { width: 36 }, { width: 14 }];
+
+        for (const rating of ratings) {
+            if (!rating.rows.length) continue;
+
+            const titleRow = sheet.addRow([rating.action]);
+            titleRow.font = { bold: true, size: 12 };
+            titleRow.getCell(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFDDDDDD' },
+            };
+
+            const headRow = sheet.addRow(['Место', 'Название', 'Значение']);
+            this.styleHeadRow(headRow);
+
+            rating.rows.forEach((row, index) => {
+                const dataRow = sheet.addRow([
+                    index + 1,
+                    row.name,
+                    row.value,
+                ]);
+                if (index === 0) {
+                    // победитель
+                    dataRow.font = { bold: true };
+                    dataRow.eachCell(cell => {
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FFF5E6B8' },
+                        };
+                    });
+                }
+            });
+            sheet.addRow([]);
+        }
+    }
+
+    private sumActionByUsers(
+        report: DownloadKpiReportItemDto[],
+        actionIndex: number,
+        userIds: number[],
+    ): number {
+        const ids = new Set(userIds.map(Number));
+        return report
+            .filter(item => ids.has(Number(item.id)))
+            .reduce((sum, item) => sum + (item.kpi[actionIndex]?.count ?? 0), 0);
     }
 
     private rowsByIds(
