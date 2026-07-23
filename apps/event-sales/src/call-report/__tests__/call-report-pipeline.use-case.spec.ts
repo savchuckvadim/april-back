@@ -193,6 +193,36 @@ describe('CallReportPipelineUseCase', () => {
         );
     });
 
+    it('низкая confidence классификации помечается needsEscalation', async () => {
+        const { useCase, vibecode, aiService } = makeDeps();
+        vibecode.classifyCall.mockResolvedValue({
+            ...CLASSIFICATION,
+            confidence: 0.4,
+        });
+        await useCase.execute(PAYLOAD);
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'call-classify',
+                user_result: expect.objectContaining({
+                    needsEscalation: true,
+                }),
+            }),
+        );
+    });
+
+    it('уверенная классификация — needsEscalation=false', async () => {
+        const { useCase, aiService } = makeDeps();
+        await useCase.execute(PAYLOAD);
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'call-classify',
+                user_result: expect.objectContaining({
+                    needsEscalation: false,
+                }),
+            }),
+        );
+    });
+
     it('CALL_REPORT_COMBINED_ANALYSIS=0 возвращает два раздельных вызова', async () => {
         const { useCase, llm } = makeDeps({ combinedDisabled: true });
         await useCase.execute(PAYLOAD);

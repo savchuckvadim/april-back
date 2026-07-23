@@ -5,6 +5,7 @@ import { AiModule } from '../ai/ai.module';
 import { TranscriptionStoreModule } from '../transcription/transcription-store.module';
 import { CallReportAnalyticsController } from './controllers/call-report-analytics.controller';
 import { CallReportAnalyticsService } from './call-report-analytics.service';
+import { CallReportAnalyticsSnapshotScheduler } from './call-report-analytics-snapshot.scheduler';
 import { CallReportAnalyticsDataService } from './services/call-report-analytics-data.service';
 import { CallReportAnalyticsAggregatorService } from './services/call-report-analytics-aggregator.service';
 import { CallReportAnalyticsCacheService } from './services/call-report-analytics-cache.service';
@@ -31,6 +32,9 @@ import { CallReportAnalyticsHistoryService } from './services/call-report-analyt
         CallReportAnalyticsAggregatorService,
         CallReportAnalyticsCacheService,
         CallReportAnalyticsHistoryService,
+        // Weekly-снапшоты профилей порталов (крон включается env'ом,
+        // требует ScheduleModule.forRoot в app-потребителе)
+        CallReportAnalyticsSnapshotScheduler,
     ],
     exports: [CallReportAnalyticsService],
 })

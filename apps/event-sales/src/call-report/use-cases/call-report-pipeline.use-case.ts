@@ -84,6 +84,13 @@ export class CallReportPipelineUseCase {
     private readonly combinedAnalysisEnabled: boolean;
     /** Kill-switch классификатора: CALL_REPORT_CLASSIFY_ENABLED=0 → шаг пропускается. */
     private readonly classifyEnabled: boolean;
+    /**
+     * Порог эскалации классификации (CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE,
+     * default 0.6): ниже — классификация помечается needsEscalation, и
+     * tier-3 (ночной агент) обязан классифицировать сам, а не принимать
+     * тип дешёвой модели.
+     */
+    private readonly classifyEscalationConfidence: number;
 
     constructor(
         private readonly pbxService: PBXService,
@@ -106,6 +113,17 @@ export class CallReportPipelineUseCase {
         this.classifyEnabled =
             this.configService.get<string>('CALL_REPORT_CLASSIFY_ENABLED') !==
             '0';
+        const rawEscalation = Number.parseFloat(
+            this.configService.get<string>(
+                'CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE',
+            ) ?? '',
+        );
+        this.classifyEscalationConfidence =
+            Number.isFinite(rawEscalation) &&
+            rawEscalation >= 0 &&
+            rawEscalation <= 1
+                ? rawEscalation
+                : 0.6;
     }
 
     /** Обе стадии подряд (синхронный путь POST /call-report/analyze). */
@@ -354,6 +372,17 @@ export class CallReportPipelineUseCase {
                 instruction,
                 apiKey,
             );
+            // Эскалация: низкая уверенность дешёвой модели — тип должен
+            // перепроверить tier-3 (агент видит флаг в пакете звонка).
+            const needsEscalation =
+                classification.confidence < this.classifyEscalationConfidence;
+            if (needsEscalation) {
+                this.logger.warn(
+                    `Классификация неуверенная (activity ${payload.activityId}): ` +
+                        `${classification.callType} с confidence ${classification.confidence} < ` +
+                        `${this.classifyEscalationConfidence} — эскалация на агента`,
+                );
+            }
             await this.aiService.create({
                 provider: 'bitrix-vibecode',
                 model: 'bitrix-vibecode',
@@ -361,7 +390,7 @@ export class CallReportPipelineUseCase {
                 status: 'done',
                 result: classification.callType,
                 user_result: JSON.parse(
-                    JSON.stringify(classification),
+                    JSON.stringify({ ...classification, needsEscalation }),
                 ) as Prisma.JsonValue,
                 activity_id: String(payload.activityId),
                 entity_type: CALL_REPORT_ENTITY_TYPE_DEAL,
