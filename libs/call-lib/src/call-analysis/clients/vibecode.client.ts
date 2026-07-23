@@ -203,24 +203,23 @@ flow.plan — планируемое следующее событие:
 - name: краткое название планируемого события (например 'Перезвонить уточнить решение')
 - deadlineDate: дата следующего контакта YYYY-MM-DD или null если не названа в разговоре`;
 
+/**
+ * Клиент VibeCode API (vibecode.bitrix24.tech).
+ *
+ * Ключ — ТОЛЬКО пер-портальный vibeKey из БД (Portal.keys.vibeKey):
+ * вызывающие резолвят его через VibeKeyResolverService по domain и
+ * передают параметром apiKey в каждый метод. Env-переменной ключа
+ * больше нет (BITRIX_VIBE_TEST выпилен 2026-07-23).
+ */
 @Injectable()
 export class VibeCodeClient {
     private readonly logger = new Logger(VibeCodeClient.name);
-    /**
-     * Env-ключ BITRIX_VIBE_TEST — fallback. Целевой источник ключа —
-     * пер-портальный vibeKey из БД (VibeKeyResolverService): вызывающие
-     * передают его параметром apiKey. Отсутствие env-ключа больше не
-     * роняет приложение на старте — ошибка возникает только при вызове
-     * без ключа вообще.
-     */
-    private readonly envApiKey: string | undefined;
     /** Таймаут запроса транскрибации: длинные файлы Whisper обрабатывает минутами. */
     private readonly transcriptionTimeoutMs: number;
     /** Таймаут запроса анализа (chat/completions). */
     private readonly analysisTimeoutMs: number;
 
     constructor(private readonly configService: ConfigService) {
-        this.envApiKey = this.configService.get<string>('BITRIX_VIBE_TEST');
         this.transcriptionTimeoutMs = Number(
             this.configService.get<string>('VIBECODE_TRANSCRIBE_TIMEOUT_MS') ??
                 600_000,
@@ -231,21 +230,10 @@ export class VibeCodeClient {
         );
     }
 
-    /** apiKey вызова (ключ портала) либо env-fallback; нет ни того ни другого — ошибка. */
-    private requireKey(apiKey?: string): string {
-        const key = apiKey ?? this.envApiKey;
-        if (!key) {
-            throw new Error(
-                'VibeCode-ключ не задан: передайте apiKey (vibeKey портала) или задайте BITRIX_VIBE_TEST',
-            );
-        }
-        return key;
-    }
-
     async transcribeAudio(
         buffer: Buffer,
         fileName: string,
-        apiKey?: string,
+        apiKey: string,
     ): Promise<string> {
         this.logger.log(
             `Transcribing audio: ${fileName} (${buffer.length} bytes)`,
@@ -263,9 +251,7 @@ export class VibeCodeClient {
             `${VIBECODE_BASE_URL}/audio/transcriptions`,
             {
                 method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${this.requireKey(apiKey)}`,
-                },
+                headers: { Authorization: `Bearer ${apiKey}` },
                 body: formData,
                 signal: AbortSignal.timeout(this.transcriptionTimeoutMs),
             },
@@ -291,7 +277,7 @@ export class VibeCodeClient {
 
     async analyzeTranscript(
         transcript: string,
-        apiKey?: string,
+        apiKey: string,
     ): Promise<CallSalesAnalysisResultDto> {
         this.logger.log('Analyzing transcript with Vibecode LLM');
         const parsed = await this.chatCompletionJson(
@@ -315,8 +301,8 @@ export class VibeCodeClient {
      */
     async classifyCall(
         transcript: string,
-        systemPrompt?: string,
-        apiKey?: string,
+        systemPrompt: string | undefined,
+        apiKey: string,
     ): Promise<CallClassificationResultDto> {
         this.logger.log('Classifying call with Vibecode LLM');
         const trimmed =
@@ -339,7 +325,7 @@ export class VibeCodeClient {
         userContent: string,
         schemaName: string,
         schema: Record<string, unknown>,
-        apiKey?: string,
+        apiKey: string,
     ): Promise<unknown> {
         const body = {
             model: ANALYSIS_MODEL,
@@ -360,7 +346,7 @@ export class VibeCodeClient {
         const response = await fetch(`${VIBECODE_BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${this.requireKey(apiKey)}`,
+                Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),

@@ -6,6 +6,7 @@ import { TranscribeJobHandlerId } from '@lib/queue/constants/transcribe-job-hand
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib/transcription/services/transcription.store.service';
 import { VibeCodeClient } from '../clients/vibecode.client';
+import { VibeKeyResolverService } from '../services/vibe-key-resolver.service';
 import { BitrixTranscriptionRequestDto } from '../dto/bitrix-transcription.dto';
 
 interface BitrixTranscribeJobData extends BitrixTranscriptionRequestDto {
@@ -21,6 +22,7 @@ export class BitrixTranscribeProcessor {
 
     constructor(
         private readonly vibecode: VibeCodeClient,
+        private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly redisService: RedisService,
         private readonly transcriptionStore: TranscriptionStoreService,
     ) {}
@@ -69,7 +71,13 @@ export class BitrixTranscribeProcessor {
             );
 
             const buffer = await this.downloadBuffer(fileUrl);
-            const text = await this.vibecode.transcribeAudio(buffer, fileName);
+            // Ключ VibeCode — пер-портальный (vibeKey из БД).
+            const apiKey = await this.vibeKeyResolver.resolve(job.data.domain);
+            const text = await this.vibecode.transcribeAudio(
+                buffer,
+                fileName,
+                apiKey,
+            );
 
             await redis.set(textKey, text, 'EX', STATUS_TTL_SECONDS);
             await redis.set(statusKey, 'done', 'EX', STATUS_TTL_SECONDS);

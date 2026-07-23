@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { PBXModule } from '@lib/pbx/pbx.module';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { QueueModule } from '@lib/queue/queue.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { TranscriptionModule } from '@lib/call-lib/transcription/transcription.module';
 import { AiModule } from '@lib/call-lib/ai/ai.module';
 import { VibeCodeClient } from './clients/vibecode.client';
+import { VibeKeyResolverService } from './services/vibe-key-resolver.service';
 import { CallAnalysisUseCase } from './use-cases/call-analysis.use-case';
 import { TaskCompleteUseCase } from './use-cases/task-complete.use-case';
 import { StartBitrixTranscriptionUseCase } from './use-cases/start-bitrix-transcription.use-case';
@@ -22,10 +24,13 @@ import { BitrixTranscribeProcessor } from './queue/bitrix-transcribe.processor';
         QueueModule,
         TranscriptionModule,
         AiModule,
+        // Резолвер VibeCode-ключа: ключ берётся из БД портала (vibeKey)
+        PortalStoreModule,
     ],
     controllers: [CallAnalysisController, BitrixTranscriptionController],
     providers: [
         VibeCodeClient,
+        VibeKeyResolverService,
         CallAnalysisUseCase,
         TaskCompleteUseCase,
         EventFlowMapperService,

@@ -12,8 +12,8 @@ import { TranscriptionRouterService } from './transcription-router.service';
  * выбирает Yandex SpeechKit или Vibecode Whisper по длительности звонка.
  * Держит собственные инстансы клиентов — не зависит от CallAnalysisModule.
  *
- * PortalStoreModule нужен резолверу VibeCode-ключа: целевой источник
- * ключа — пер-портальный vibeKey из БД (env BITRIX_VIBE_TEST — fallback).
+ * PortalStoreModule нужен резолверу VibeCode-ключа: ключ — только
+ * пер-портальный vibeKey из БД (env-переменной ключа нет).
  */
 @Module({
     imports: [ConfigModule, YandexModule, PortalStoreModule],

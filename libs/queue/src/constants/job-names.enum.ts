@@ -31,6 +31,9 @@ export enum JobNames {
     //marketplace
     MARKETPLACE_PROVISION_PRODUCT = 'marketplace-provision-product',
 
-    //call report (AI-отчётность по звонкам)
+    //call report (AI-отчётность по звонкам): две стадии конвейера —
+    //транскрибация и анализ идут отдельными джобами, чтобы транскрибация
+    //звонка N+1 шла параллельно с анализом звонка N
+    CALL_REPORT_TRANSCRIBE = 'call-report-transcribe',
     CALL_REPORT_ANALYZE = 'call-report-analyze',
 }

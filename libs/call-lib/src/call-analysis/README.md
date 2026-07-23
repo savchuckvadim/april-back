@@ -38,11 +38,10 @@ call-analysis/
 
 ## Конфигурация
 
-Переменная окружения в `.env`:
-
-```env
-BITRIX_VIBE_TEST=vibe_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
+VibeCode-ключ — пер-портальный, хранится в БД (Portal.keys.vibeKey,
+шифрованно) и заводится через админку `admin/portal/:portalId/keys`.
+Резолюция по домену — `VibeKeyResolverService` (кэш в памяти 60с).
+Env-переменной ключа нет (BITRIX_VIBE_TEST выпилен 2026-07-23).
 
 Ключ выпускается в личном кабинете [vibecode.bitrix24.tech](https://vibecode.bitrix24.tech).
 

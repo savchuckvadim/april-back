@@ -5,61 +5,48 @@ const DOMAIN = 'test.bitrix24.ru';
 const makeService = (options?: {
     portal?: { id: number } | null;
     portalKey?: string | null;
-    portalError?: boolean;
-    envKey?: string;
 }) => {
     const portalStore = {
-        getPortalByDomain: options?.portalError
-            ? jest.fn().mockRejectedValue(new Error('db down'))
-            : jest.fn().mockResolvedValue(options?.portal ?? { id: 5 }),
+        getPortalByDomain: jest
+            .fn()
+            .mockResolvedValue(
+                options?.portal === undefined ? { id: 5 } : options.portal,
+            ),
     };
     const portalKeys = {
         get: jest.fn().mockResolvedValue(options?.portalKey ?? null),
     };
-    const config = {
-        get: jest.fn((key: string) =>
-            key === 'BITRIX_VIBE_TEST' ? options?.envKey : undefined,
-        ),
-    };
     const service = new VibeKeyResolverService(
         portalStore as never,
         portalKeys as never,
-        config as never,
     );
     return { service, portalStore, portalKeys };
 };
 
 describe('VibeKeyResolverService', () => {
-    it('ключ портала имеет приоритет над env', async () => {
+    it('отдаёт расшифрованный vibeKey портала', async () => {
         const { service, portalKeys } = makeService({
             portalKey: 'portal-key',
-            envKey: 'env-key',
         });
         await expect(service.resolve(DOMAIN)).resolves.toBe('portal-key');
         expect(portalKeys.get).toHaveBeenCalledWith(5, 'vibeKey');
     });
 
-    it('нет ключа портала — fallback на env', async () => {
-        const { service } = makeService({ portalKey: null, envKey: 'env-key' });
-        await expect(service.resolve(DOMAIN)).resolves.toBe('env-key');
-    });
-
-    it('ошибка чтения портала не роняет вызов — env-fallback', async () => {
-        const { service } = makeService({
-            portalError: true,
-            envKey: 'env-key',
-        });
-        await expect(service.resolve(DOMAIN)).resolves.toBe('env-key');
-    });
-
-    it('нет ни ключа портала, ни env — понятная ошибка', async () => {
-        const { service } = makeService({ portalKey: null });
+    it('портал не найден — понятная ошибка', async () => {
+        const { service } = makeService({ portal: null });
         await expect(service.resolve(DOMAIN)).rejects.toThrow(
-            'VibeCode-ключ не найден',
+            'портал test.bitrix24.ru не найден',
         );
     });
 
-    it('ключ портала кэшируется в памяти (одно чтение БД на серию вызовов)', async () => {
+    it('vibeKey не заведён — ошибка с адресом админки', async () => {
+        const { service } = makeService({ portalKey: null });
+        await expect(service.resolve(DOMAIN)).rejects.toThrow(
+            'admin/portal/5/keys',
+        );
+    });
+
+    it('ключ кэшируется в памяти (одно чтение БД на серию вызовов)', async () => {
         const { service, portalStore } = makeService({
             portalKey: 'portal-key',
         });

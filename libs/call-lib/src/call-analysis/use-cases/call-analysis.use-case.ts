@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { VibeCodeClient } from '../clients/vibecode.client';
+import { VibeKeyResolverService } from '../services/vibe-key-resolver.service';
 import {
     AudioFile,
     CallAnalysisBitrixService,
@@ -28,6 +29,7 @@ export class CallAnalysisUseCase {
     constructor(
         private readonly pbxService: PBXService,
         private readonly vibecode: VibeCodeClient,
+        private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly flowMapper: EventFlowMapperService,
         private readonly flowStorage: FlowDtoStorageService,
         private readonly transcriptionStore: TranscriptionStoreService,
@@ -108,11 +110,17 @@ export class CallAnalysisUseCase {
         );
 
         const buffer = await bx.downloadAudioBuffer(audioFile.downloadUrl);
+        // Ключ VibeCode — пер-портальный (vibeKey из БД).
+        const apiKey = await this.vibeKeyResolver.resolve(domain);
         const transcript = await this.vibecode.transcribeAudio(
             buffer,
             audioFile.fileName,
+            apiKey,
         );
-        const analysis = await this.vibecode.analyzeTranscript(transcript);
+        const analysis = await this.vibecode.analyzeTranscript(
+            transcript,
+            apiKey,
+        );
 
         await bx.saveAnalysisToTimeline(
             dealId,
