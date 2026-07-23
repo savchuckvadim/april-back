@@ -9,6 +9,7 @@ import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { TelegramModule } from '@lib/telegram/telegram.module';
 import { BxDepartmentModule } from '@lib/bx-department';
+import { BitrixSetupInstallModule } from '@lib/bitrix-setup/install/bitrix-setup-install.module';
 
 import { KpiReportModule } from './kpi-report.module';
 import { ReportSettingsModule } from './report-settings/report-settings.module';
@@ -55,6 +56,10 @@ import { ReportSettingsModule } from './report-settings/report-settings.module';
 
         // from shared: эндпоинты отделов/команд Bitrix наружу
         BxDepartmentModule,
+
+        // Приём ONAPPINSTALL (установка Bitrix-приложения) — замена
+        // legacy online API; требует env APP_KEY (шифрование токенов).
+        BitrixSetupInstallModule,
     ],
     providers: [GlobalExceptionFilter],
 })
