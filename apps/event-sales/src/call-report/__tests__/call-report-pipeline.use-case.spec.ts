@@ -86,6 +86,9 @@ const makeDeps = (overrides?: {
     const classifyInstruction = {
         resolve: jest.fn().mockResolvedValue('инструкция классификации'),
     };
+    const vibeKeyResolver = {
+        resolve: jest.fn().mockResolvedValue('portal-vibe-key'),
+    };
     const config = {
         get: jest.fn((key: string) =>
             overrides?.combinedDisabled &&
@@ -106,6 +109,7 @@ const makeDeps = (overrides?: {
         aiService as never,
         llm as never,
         vibecode as never,
+        vibeKeyResolver as never,
         classifyInstruction as never,
         config as never,
     );
@@ -118,6 +122,7 @@ const makeDeps = (overrides?: {
         llm,
         vibecode,
         classifyInstruction,
+        vibeKeyResolver,
     };
 };
 
@@ -165,15 +170,20 @@ describe('CallReportPipelineUseCase', () => {
         });
     });
 
-    it('классификатор получает подменную инструкцию из резолвера', async () => {
-        const { useCase, vibecode, classifyInstruction } = makeDeps();
+    it('классификатор получает подменную инструкцию и пер-портальный ключ', async () => {
+        const { useCase, vibecode, classifyInstruction, vibeKeyResolver } =
+            makeDeps();
         await useCase.execute(PAYLOAD);
         expect(classifyInstruction.resolve).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+        );
+        expect(vibeKeyResolver.resolve).toHaveBeenCalledWith(
             'test.bitrix24.ru',
         );
         expect(vibecode.classifyCall).toHaveBeenCalledWith(
             'текст',
             'инструкция классификации',
+            'portal-vibe-key',
         );
     });
 

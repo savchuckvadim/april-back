@@ -10,6 +10,10 @@ const makeVibecode = () => ({
     transcribeAudio: jest.fn().mockResolvedValue('vibecode text'),
 });
 
+const makeKeyResolver = () => ({
+    resolve: jest.fn().mockResolvedValue('portal-vibe-key'),
+});
+
 const makeYandex = () => ({
     transcribeAudio: jest.fn().mockResolvedValue('op-1'),
     getTranscriptionResult: jest.fn().mockResolvedValue('yandex text'),
@@ -30,13 +34,15 @@ const makeRouter = (
     const vibecode = deps?.vibecode ?? makeVibecode();
     const yandex = deps?.yandex ?? makeYandex();
     const storage = deps?.storage ?? makeStorage();
+    const keyResolver = makeKeyResolver();
     const router = new TranscriptionRouterService(
         makeConfig(values) as never,
         vibecode as never,
+        keyResolver as never,
         yandex as never,
         storage as never,
     );
-    return { router, vibecode, yandex, storage };
+    return { router, vibecode, yandex, storage, keyResolver };
 };
 
 const input = {
@@ -68,7 +74,12 @@ describe('TranscriptionRouterService', () => {
             provider: 'bitrix-vibecode',
         });
         expect(yandex.transcribeAudio).not.toHaveBeenCalled();
-        expect(vibecode.transcribeAudio).toHaveBeenCalled();
+        // Ключ VibeCode — пер-портальный, из резолвера (vibeKey БД → env).
+        expect(vibecode.transcribeAudio).toHaveBeenCalledWith(
+            input.buffer,
+            input.fileName,
+            'portal-vibe-key',
+        );
     });
 
     it('без известной длительности выбирается Vibecode (дешёвый путь)', async () => {

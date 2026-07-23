@@ -10,6 +10,7 @@ export * from './ai/services/ai.service';
 export * from './ai/dto/ai-entity.dto';
 export * from './call-analysis/services/call-analysis-bitrix.service';
 export * from './call-analysis/clients/vibecode.client';
+export * from './call-analysis/services/vibe-key-resolver.service';
 export * from './call-analysis/dto/call-classification.dto';
 export * from './call-report-analytics/call-report-analytics.module';
 export * from './call-report-analytics/call-report-analytics.service';

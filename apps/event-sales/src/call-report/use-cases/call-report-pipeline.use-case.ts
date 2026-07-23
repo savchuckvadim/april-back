@@ -11,6 +11,7 @@ import {
     TranscriptionStoreService,
     AiService,
     VibeCodeClient,
+    VibeKeyResolverService,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
 import { CallClassifyInstructionService } from '../services/call-classify-instruction.service';
@@ -68,6 +69,7 @@ export class CallReportPipelineUseCase {
         private readonly aiService: AiService,
         private readonly llmOrchestrator: LlmOrchestratorService,
         private readonly vibeCodeClient: VibeCodeClient,
+        private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly classifyInstruction: CallClassifyInstructionService,
         private readonly configService: ConfigService,
     ) {
@@ -274,13 +276,16 @@ export class CallReportPipelineUseCase {
     ): Promise<CallClassificationResultDto | null> {
         if (!this.classifyEnabled) return null;
         try {
-            // Инструкция подменяема через базу знаний kind='call-classify'.
+            // Инструкция подменяема через базу знаний kind='call-classify';
+            // ключ VibeCode — пер-портальный (vibeKey из БД, env — fallback).
             const instruction = await this.classifyInstruction.resolve(
                 payload.domain,
             );
+            const apiKey = await this.vibeKeyResolver.resolve(payload.domain);
             const classification = await this.vibeCodeClient.classifyCall(
                 text,
                 instruction,
+                apiKey,
             );
             await this.aiService.create({
                 provider: 'bitrix-vibecode',

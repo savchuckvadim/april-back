@@ -4,6 +4,7 @@ import { Semaphore, parseConcurrency } from '@lib/shared';
 import { YandexStorageService } from '@lib/call-lib/yandex/yandex-storage.service';
 import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
 import { VibeCodeClient } from '../../call-analysis/clients/vibecode.client';
+import { VibeKeyResolverService } from '../../call-analysis/services/vibe-key-resolver.service';
 
 export const TRANSCRIPTION_PROVIDERS = ['yandex', 'bitrix-vibecode'] as const;
 export type TranscriptionProvider = (typeof TRANSCRIPTION_PROVIDERS)[number];
@@ -56,6 +57,7 @@ export class TranscriptionRouterService {
     constructor(
         private readonly configService: ConfigService,
         private readonly vibecode: VibeCodeClient,
+        private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly yandexTranscription: StreamingTranscriptionService,
         private readonly yandexStorage: YandexStorageService,
     ) {
@@ -103,8 +105,14 @@ export class TranscriptionRouterService {
         }
 
         try {
+            // Ключ VibeCode — пер-портальный (vibeKey из БД, env — fallback).
+            const apiKey = await this.vibeKeyResolver.resolve(input.domain);
             const text = await this.vibecodeLimiter.run(() =>
-                this.vibecode.transcribeAudio(input.buffer, input.fileName),
+                this.vibecode.transcribeAudio(
+                    input.buffer,
+                    input.fileName,
+                    apiKey,
+                ),
             );
             return { text, provider: 'bitrix-vibecode' };
         } catch (error) {
