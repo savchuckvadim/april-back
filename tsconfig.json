@@ -60,6 +60,8 @@
       "@lib/mail/*": ["libs/mail/src/*"],
       "@lib/call-lib": ["libs/call-lib/src"],
       "@lib/call-lib/*": ["libs/call-lib/src/*"],
+      "@lib/vibecode": ["libs/vibecode/src"],
+      "@lib/vibecode/*": ["libs/vibecode/src/*"],
 
       // ---- portal-lib: единая библиотека Portal (portal + store + pbx-domain + konstructor) ----
       // Канонический алиас. Старые @lib/portal, @lib/portal-konstructor,

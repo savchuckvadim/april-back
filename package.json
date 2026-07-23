@@ -192,6 +192,7 @@
             "^@lib/metrics(|/.*)$": "<rootDir>/libs/metrics/src/$1",
             "^@lib/mail(|/.*)$": "<rootDir>/libs/mail/src/$1",
             "^@lib/call-lib(|/.*)$": "<rootDir>/libs/call-lib/src/$1",
+            "^@lib/vibecode(|/.*)$": "<rootDir>/libs/vibecode/src/$1",
             "^@lib/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$1",
             "^@lib/ai-rag(|/.*)$": "<rootDir>/libs/ai-rag/src/$1",
             "^@lib/portal-lib/portal(|/.*)$": "<rootDir>/libs/portal-lib/portal/src/$1",

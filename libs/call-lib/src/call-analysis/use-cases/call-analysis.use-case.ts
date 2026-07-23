@@ -1,8 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
-import { VibeCodeClient } from '../clients/vibecode.client';
-import { VibeKeyResolverService } from '../services/vibe-key-resolver.service';
+import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import {
     AudioFile,
     CallAnalysisBitrixService,

@@ -1,32 +1,22 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
+import { VibecodeModule } from '@lib/vibecode';
 import { YandexModule } from '@lib/call-lib/yandex/yandex.module';
 import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
-import { VibeCodeClient } from '../../call-analysis/clients/vibecode.client';
-import { VibeKeyResolverService } from '../../call-analysis/services/vibe-key-resolver.service';
 import { TranscriptionRouterService } from './transcription-router.service';
 
 /**
  * Модуль маршрутизатора транскрибации для автоконвейера call-report:
  * выбирает Yandex SpeechKit или Vibecode Whisper по длительности звонка.
- * Держит собственные инстансы клиентов — не зависит от CallAnalysisModule.
  *
- * PortalStoreModule нужен резолверу VibeCode-ключа: ключ — только
- * пер-портальный vibeKey из БД (env-переменной ключа нет).
+ * VibeCode-часть (клиент + резолвер пер-портального ключа) — из
+ * библиотеки @lib/vibecode; модуль её ре-экспортирует, чтобы потребители
+ * (pipeline call-report) получали VibeCodeClient/VibeKeyResolverService
+ * одним импортом.
  */
 @Module({
-    imports: [ConfigModule, YandexModule, PortalStoreModule],
-    providers: [
-        StreamingTranscriptionService,
-        VibeCodeClient,
-        VibeKeyResolverService,
-        TranscriptionRouterService,
-    ],
-    exports: [
-        TranscriptionRouterService,
-        VibeCodeClient,
-        VibeKeyResolverService,
-    ],
+    imports: [ConfigModule, YandexModule, VibecodeModule],
+    providers: [StreamingTranscriptionService, TranscriptionRouterService],
+    exports: [TranscriptionRouterService, VibecodeModule],
 })
 export class TranscriptionProviderModule {}

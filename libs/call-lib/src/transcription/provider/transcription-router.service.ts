@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Semaphore, parseConcurrency } from '@lib/shared';
 import { YandexStorageService } from '@lib/call-lib/yandex/yandex-storage.service';
 import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
-import { VibeCodeClient } from '../../call-analysis/clients/vibecode.client';
-import { VibeKeyResolverService } from '../../call-analysis/services/vibe-key-resolver.service';
+import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 
 export const TRANSCRIPTION_PROVIDERS = ['yandex', 'bitrix-vibecode'] as const;
 export type TranscriptionProvider = (typeof TRANSCRIPTION_PROVIDERS)[number];

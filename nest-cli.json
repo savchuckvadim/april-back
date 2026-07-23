@@ -172,6 +172,15 @@
         "tsConfigPath": "libs/mail/tsconfig.lib.json"
       }
     },
+    "vibecode": {
+      "type": "library",
+      "root": "libs/vibecode",
+      "entryFile": "index",
+      "sourceRoot": "libs/vibecode/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/vibecode/tsconfig.lib.json"
+      }
+    },
     "call-lib": {
       "type": "library",
       "root": "libs/call-lib",

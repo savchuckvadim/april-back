@@ -1,4 +1,4 @@
-import { VibeKeyResolverService } from '../services/vibe-key-resolver.service';
+import { VibeKeyResolverService } from '../vibe-key-resolver.service';
 
 const DOMAIN = 'test.bitrix24.ru';
 

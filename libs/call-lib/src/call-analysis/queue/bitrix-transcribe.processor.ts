@@ -5,8 +5,7 @@ import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { TranscribeJobHandlerId } from '@lib/queue/constants/transcribe-job-handler-id.enum';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib/transcription/services/transcription.store.service';
-import { VibeCodeClient } from '../clients/vibecode.client';
-import { VibeKeyResolverService } from '../services/vibe-key-resolver.service';
+import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { BitrixTranscriptionRequestDto } from '../dto/bitrix-transcription.dto';
 
 interface BitrixTranscribeJobData extends BitrixTranscriptionRequestDto {
