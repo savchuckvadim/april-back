@@ -33,12 +33,11 @@ export class SalesUserReportQueueProcessor {
 
     @Process(JobNames.SALES_USER_REPORT_GENERATE)
     async handle(job: Job<SalesUserReportJobDataDto>) {
-        const { userId, socketId, _hash, filters } = job.data;
+        const { userId, socketId, _hash } = job.data;
         this.logger.log('SALES_KPI_REPORT_GENERATE');
         try {
             const redis = this.redis.getClient();
 
-            let batchCount = 0;
             for await (const batch of this.service.getReport(job.data)) {
                 const active = await redis.get(_hash);
 
@@ -62,7 +61,6 @@ export class SalesUserReportQueueProcessor {
                     userId,
                     data: batch,
                 });
-                batchCount++;
             }
 
             this.ws.sendToClient(socketId, {

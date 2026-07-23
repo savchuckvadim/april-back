@@ -1,5 +1,4 @@
 // report-kpi.service.ts
-import { Injectable } from '@nestjs/common';
 import { GetCallingStatisticDto } from '../dto/calling-statistic.dto';
 import {
     CALLING_TYPES,
@@ -39,11 +38,6 @@ export class CallingStatisticUseCase {
         // const dateFrom = parseToISO(dto.filters.dateFrom, 0)
         const dateFrom = dto.filters.dateFrom;
         const dateTo = dto.filters.dateTo;
-        console.log('dateFrom original', dto.filters.dateFrom); // должно быть "2025-05-13"
-        console.log('dateFrom', dateFrom); // должно быть "2025-05-13"
-        console.log('typeof', typeof dto.filters.dateFrom); // должно быть string
-        console.log('dateTo', dto.filters.dateTo); // должно быть "2025-05-13"
-        console.log('typeof', typeof dto.filters.dateTo); // должно быть string
 
         const callingsTypes = CALLING_TYPES.map(type => ({
             ...type,
@@ -63,7 +57,7 @@ export class CallingStatisticUseCase {
                 continue;
             }
             callingsTypes.forEach(type => {
-                const filter: any = this.buildVoximplantFilter(
+                const filter: VoximplantFilter = this.buildVoximplantFilter(
                     userId,
                     dateFrom,
                     dateTo,
@@ -120,7 +114,7 @@ export class CallingStatisticUseCase {
                 const cmdkey = `${method}_${type.id}_${userId}`;
 
                 results.forEach(res => {
-                    for (const key in res.result_total) {
+                    for (const key of Object.keys(res.result_total)) {
                         if (key === cmdkey) {
                             const calling = {
                                 id: type.id,

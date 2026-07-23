@@ -36,6 +36,8 @@ export interface CallReportSmartItemInput {
     callId?: string;
     callStartedAt?: Date | string;
     durationSec?: number;
+    /** Направление звонка (из активности) — участвует в названии элемента. */
+    callDirection?: 'incoming' | 'outgoing';
     managerId?: number;
     /** Код типа звонка (xmlId enum-значения из конфига). */
     callType?: string;
@@ -151,6 +153,47 @@ export class CallReportSmartWriterService {
         return itemId;
     }
 
+    /**
+     * Название элемента в духе записей телефонии:
+     * «Исходящий звонок от 24.06.2026 15:02 · 12 мин». Без даты/длительности —
+     * fallback на технический формат с activityId.
+     */
+    private buildTitle(input: CallReportSmartItemInput): string {
+        const direction =
+            input.callDirection === 'incoming'
+                ? 'Входящий звонок'
+                : input.callDirection === 'outgoing'
+                  ? 'Исходящий звонок'
+                  : 'Звонок';
+        const startedAt = input.callStartedAt
+            ? new Date(input.callStartedAt)
+            : null;
+        const date =
+            startedAt && !Number.isNaN(startedAt.getTime())
+                ? startedAt.toLocaleString('ru-RU', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Europe/Moscow',
+                  })
+                : null;
+        const minutes = input.durationSec
+            ? `${Math.max(1, Math.round(input.durationSec / 60))} мин`
+            : null;
+        if (!date && !minutes) {
+            return `${CALL_REPORT_SMART_TITLE}: звонок #${input.activityId}`;
+        }
+        return [
+            direction,
+            date ? `от ${date}` : null,
+            minutes ? `· ${minutes}` : null,
+        ]
+            .filter(Boolean)
+            .join(' ');
+    }
+
     /** id существующего элемента по внешнему коду xmlId; null — не найден. */
     private async findIdByXmlId(xmlId: string): Promise<number | null> {
         try {
@@ -173,7 +216,7 @@ export class CallReportSmartWriterService {
 
     private buildFields(input: CallReportSmartItemInput): Partial<IBXItem> {
         const fields: Record<string, unknown> = {
-            title: `${CALL_REPORT_SMART_TITLE}: звонок #${input.activityId}`,
+            title: this.buildTitle(input),
         };
 
         // — Нативные связи смарта (работают при relations.parent у типа) —

@@ -5,12 +5,13 @@ import { MetricsModule } from '@lib/metrics';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { TelegramModule } from '@lib/telegram/telegram.module';
-import { GlobalExceptionFilter } from '@/core/filters/global-exception.filter';
+import { BxDepartmentModule } from '@lib/bx-department';
 
 import { KpiReportModule } from './kpi-report.module';
-import { HealthController } from './health.controller';
+import { ReportSettingsModule } from './report-settings/report-settings.module';
 
 /**
  * Корневой модуль приложения kpi-report-sales.
@@ -19,6 +20,9 @@ import { HealthController } from './health.controller';
  * инфраструктуру, которая нужна доменному модулю KpiReportModule
  * (Config, Schedule, EventEmitter, Prisma — @Global, Telegram для уведомлений
  * глобального фильтра ошибок).
+ *
+ * BxDepartmentModule подключён, чтобы эндпоинты отделов/команд Bitrix
+ * были доступны и из этого приложения (как в event-sales).
  *
  * Свой .env (apps/kpi-report-sales/.env) расширяет/переопределяет корневой .env:
  * значения из app-окружения имеют приоритет (загружается первым в envFilePath).
@@ -43,11 +47,15 @@ import { HealthController } from './health.controller';
         MetricsModule.forRoot({ appName: 'kpi-report-sales' }),
         ScheduleModule.forRoot(),
         EventEmitterModule.forRoot(),
+        HealthModule,
         PrismaModule,
         TelegramModule,
         KpiReportModule,
+        ReportSettingsModule,
+
+        // from shared: эндпоинты отделов/команд Bitrix наружу
+        BxDepartmentModule,
     ],
-    controllers: [HealthController],
     providers: [GlobalExceptionFilter],
 })
 export class KpiReportSalesModule {}

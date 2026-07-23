@@ -1,13 +1,6 @@
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { parseToISO } from '../lib/date-util';
-import {
-    ValidateNested,
-    IsArray,
-    ArrayNotEmpty,
-    IsNotEmpty,
-    IsString,
-} from 'class-validator';
+import { ValidateNested, IsArray, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { BXUserDto } from './kpi-report-request.dto';
 

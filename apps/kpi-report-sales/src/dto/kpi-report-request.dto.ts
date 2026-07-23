@@ -2,15 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
     IsString,
     IsArray,
-    IsOptional,
     ValidateNested,
     IsObject,
-    IsDateString,
     IsNumberString,
-    IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 
 // export class BXUserDto implements IBXUser {
 //     @ApiProperty()

@@ -24,12 +24,12 @@ export class SalesUserReportService {
     constructor(private readonly pbx: PBXService) {}
 
     public async *getReport(dto: SalesUserReportGetRequestDto) {
-        const { domain, socketId, userId } = dto;
+        const { domain, userId } = dto;
         if (!dto.filters) {
             throw new Error('Filters are required');
         }
-        const { dateFrom, dateTo, actions } = dto.filters;
-        const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
+        const { dateFrom, dateTo } = dto.filters;
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
         const portalKPIList = PortalModel.getListByCode('sales_kpi');
         if (!portalKPIList) throw new Error('Portal KPI list not found');
 
@@ -72,11 +72,7 @@ export class SalesUserReportService {
             },
             bitrix,
         )) {
-            const preparedResult = await this.prepareResponse(
-                portalList,
-                batch,
-                bitrix,
-            );
+            const preparedResult = this.prepareResponse(portalList, batch);
             const preparedWithCompanies = await this.getCompanies(
                 preparedResult,
                 bitrix,
@@ -103,7 +99,7 @@ export class SalesUserReportService {
             if (result.length === 0) {
                 break;
             }
-            nextId = Number(result[result.length - 1]?.ID) ?? 0;
+            nextId = Number(result[result.length - 1]?.ID) || 0;
             if (nextId === 0) {
                 needMore = false;
             }
@@ -122,14 +118,14 @@ export class SalesUserReportService {
         filter: Record<EnumSalesKpiFieldCode, any>,
     ): Record<string, any> {
         let result: Record<string, any> = {};
-        for (const key in filter) {
+        for (const key of Object.keys(filter) as EnumSalesKpiFieldCode[]) {
             const code =
                 key === EnumSalesKpiFieldCode.plan_date
                     ? EnumSalesKpiFieldCode.event_date
                     : key;
 
             const pField = portalList.bitrixfields?.find(
-                field => field.code === code,
+                field => (field.code as EnumSalesKpiFieldCode) === code,
             );
 
             if (!pField) {
@@ -139,13 +135,14 @@ export class SalesUserReportService {
             if (!bitrixId) {
                 continue;
             }
-            const itemCodeOrValue = filter[key as keyof BitrixFieldType];
+            const itemCodeOrValue: unknown = filter[key];
 
             if (!itemCodeOrValue) {
                 continue;
             }
             if (
-                pField.type === BitrixFieldType.ENUMERATION ||
+                (pField.type as BitrixFieldType) ===
+                    BitrixFieldType.ENUMERATION ||
                 pField.type === 'select' ||
                 key === EnumSalesKpiFieldCode.event_action ||
                 key === EnumSalesKpiFieldCode.event_type ||
@@ -194,18 +191,17 @@ export class SalesUserReportService {
         return result;
     }
 
-    protected async prepareResponse(
+    protected prepareResponse(
         portalList: IPBXList,
         listItems: Record<string, any>[],
-        bitrix: BitrixService,
-    ): Promise<PbxSalesKpiListItemDto[]> {
+    ): PbxSalesKpiListItemDto[] {
         const companiesIds: number[] = [];
         const contactsIds: number[] = [];
 
         const result = listItems.map(item => {
             const resultItem = {
-                id: item.ID,
-                title: item.NAME,
+                id: Number(item.ID),
+                title: String(item.NAME ?? ''),
                 // comapny: null,
                 // companyId: null,
                 // dealId: null,
@@ -233,17 +229,17 @@ export class SalesUserReportService {
                 }
                 const fieldCode = pField.code as EnumSalesKpiFieldCode;
                 if (
-                    pField.code === EnumSalesKpiFieldCode.manager_comment ||
-                    pField.code === EnumSalesKpiFieldCode.plan_date ||
-                    pField.code === EnumSalesKpiFieldCode.event_date ||
-                    pField.code === EnumSalesKpiFieldCode.crm_company ||
-                    pField.code === EnumSalesKpiFieldCode.crm_contact
+                    fieldCode === EnumSalesKpiFieldCode.manager_comment ||
+                    fieldCode === EnumSalesKpiFieldCode.plan_date ||
+                    fieldCode === EnumSalesKpiFieldCode.event_date ||
+                    fieldCode === EnumSalesKpiFieldCode.crm_company ||
+                    fieldCode === EnumSalesKpiFieldCode.crm_contact
                 ) {
                     let currentCommentStringValue = '';
 
                     for (const key in currentValue as Record<string, string>) {
                         currentCommentStringValue += currentValue[key];
-                        if (pField.code === EnumSalesKpiFieldCode.crm_company) {
+                        if (fieldCode === EnumSalesKpiFieldCode.crm_company) {
                             currentCommentStringValue =
                                 currentCommentStringValue
                                     .toString()
@@ -252,14 +248,8 @@ export class SalesUserReportService {
                                 Number(currentCommentStringValue),
                             );
                         }
-                        if (pField.code === EnumSalesKpiFieldCode.crm_contact) {
+                        if (fieldCode === EnumSalesKpiFieldCode.crm_contact) {
                             contactsIds.push(Number(currentCommentStringValue));
-                        }
-
-                        if (
-                            pField.code === EnumSalesKpiFieldCode.crm_company ||
-                            pField.code === EnumSalesKpiFieldCode.crm_contact
-                        ) {
                         }
                     }
 
@@ -276,8 +266,8 @@ export class SalesUserReportService {
                         } as PbxSalesKpiFieldItemValueDto,
                     } as PbxSalesKpiFieldValueDto;
                 } else if (
-                    pField.code === EnumSalesKpiFieldCode.event_action ||
-                    pField.code === EnumSalesKpiFieldCode.event_type
+                    fieldCode === EnumSalesKpiFieldCode.event_action ||
+                    fieldCode === EnumSalesKpiFieldCode.event_type
                 ) {
                     if (typeof currentValue === 'string') {
                         continue;
@@ -384,8 +374,6 @@ export class SalesUserReportService {
         if (!portalColorField) {
             return '';
         }
-        const pFieldBitrixId = portalColorField.bitrixId;
-
         const currentItemId = Number(company.UF_CRM_OP_PROSPECTS);
 
         if (currentItemId) {

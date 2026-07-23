@@ -5,7 +5,7 @@ import { Filter, FilterCode, FilterInnerCode } from '../../dto/kpi.dto';
 @Injectable()
 export class ActionService {
     getActionWithTypeData(actionType: IFieldItem, action: IFieldItem): Filter {
-        const result: any = {};
+        const result: Partial<Filter> = {};
 
         const atCode = actionType.code;
         const acCode = action.code;
@@ -22,7 +22,7 @@ export class ActionService {
                         'call_in_money',
                     ].includes(atCode)
                 ) {
-                    result.innerCode = `call_${acCode}`;
+                    result.innerCode = `call_${acCode}` as FilterInnerCode;
                     result.name = `Звонок`;
                 } else if (
                     [
@@ -122,7 +122,7 @@ export class ActionService {
         return { actionTypeName };
     }
 
-    private getActionOrder(actionCode: FilterInnerCode): number {
+    private getActionOrder(actionCode: FilterInnerCode | undefined): number {
         switch (actionCode) {
             case 'call_plan':
                 return 1;

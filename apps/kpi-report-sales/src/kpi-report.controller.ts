@@ -39,8 +39,6 @@ export class KpiReportController {
     @HttpCode(200)
     @UseInterceptors()
     async getCallingStatistic(@Body() dto: GetCallingStatisticDto) {
-        // const domain = dto.domain;
-        const filters = dto.filters;
         const { bitrix } = await this.pbx.init(dto.domain);
         const callingStatisticUseCase = new CallingStatisticUseCase(bitrix.api);
         // await this.callingStatisticUseCase.init(domain);

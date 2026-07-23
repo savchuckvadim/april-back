@@ -7,8 +7,6 @@ import {
     ValidateNested,
     IsNumber,
     IsOptional,
-    IsBoolean,
-    IsDate,
     IsNotEmpty,
 } from 'class-validator';
 import { IExcelReport } from '../types/excel-report.type';

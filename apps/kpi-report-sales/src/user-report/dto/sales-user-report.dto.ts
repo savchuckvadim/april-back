@@ -7,7 +7,6 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
-import { ReportGetFiltersDto } from '../../dto/kpi-report-request.dto';
 import { Type } from 'class-transformer';
 import { FieldItem } from '../../dto/kpi.dto';
 

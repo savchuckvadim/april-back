@@ -96,6 +96,8 @@ export class BxDepartmentStructureService {
         );
         const currentUser = this.buildCurrentUser(structure, userId);
         return {
+            isMultiple,
+            multipleTag,
             department: structure.department,
             salesDepartments: structure.salesDepartments,
             currentUser,

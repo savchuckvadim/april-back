@@ -8,6 +8,7 @@ import {
     IsEnum,
     IsInt,
     IsOptional,
+    IsString,
     Min,
     ValidateIf,
     ValidateNested,
@@ -161,6 +162,26 @@ export class BxCurrentUserDto {
 }
 
 export class BxDepartmentStructureResponseDto {
+    @ApiProperty({
+        description:
+            'Мультирежим портала: отделы продаж собраны по тэгу со всей структуры (departaments.is_multiple в БД). false — один базовый отдел.',
+        type: Boolean,
+        example: false,
+    })
+    @IsBoolean()
+    isMultiple: boolean;
+
+    @ApiProperty({
+        description:
+            'Тэг поиска отделов в мультирежиме (departaments.multiple_tag), null — тэг не задан.',
+        type: String,
+        example: 'ОП ОС',
+        nullable: true,
+    })
+    @ValidateIf((dto: BxDepartmentStructureResponseDto) => dto.multipleTag !== null)
+    @IsString()
+    multipleTag: string | null;
+
     @ApiProperty({
         description:
             'Структура в прежнем формате. В мультирежиме отделы продаж смерджены: generalDepartment — все найденные ОП, childrenDepartments — все их группы, allUsers — все сотрудники; поле department = 0 (единого корневого id нет).',

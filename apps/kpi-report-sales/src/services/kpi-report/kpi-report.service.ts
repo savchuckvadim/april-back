@@ -112,7 +112,7 @@ export class ExcelReportService {
         const kpiCount = heads.length;
 
         // Инициализируем массив из нулей для суммы
-        const totals = Array(kpiCount).fill(0);
+        const totals: number[] = new Array<number>(kpiCount).fill(0);
 
         // Суммируем значения по каждому KPI
         dto.report.forEach(reportItem => {

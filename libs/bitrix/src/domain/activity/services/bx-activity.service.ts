@@ -48,4 +48,27 @@ export class ActivityService {
     async deleteActivity(id: number | string) {
         return this.repo.delete(id);
     }
+
+    /**
+     * Привязка существующей активности к дополнительной сущности CRM
+     * (`crm.activity.binding.add`): запись активности (звонок с плеером)
+     * появляется в таймлайне целевой сущности в родном виде.
+     * Для смарт-процессов entityTypeId — их «большой» id (напр. 1056).
+     */
+    async addBinding(
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ) {
+        return this.repo.addBinding(activityId, entityTypeId, entityId);
+    }
+
+    /** Снятие привязки активности (`crm.activity.binding.delete`). */
+    async deleteBinding(
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ) {
+        return this.repo.deleteBinding(activityId, entityTypeId, entityId);
+    }
 }

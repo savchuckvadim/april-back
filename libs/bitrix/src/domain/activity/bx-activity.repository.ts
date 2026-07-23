@@ -15,6 +15,42 @@ import { delay } from '@/shared/lib';
 export class BxActivityRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) {}
 
+    /**
+     * `crm.activity.binding.add` — привязывает СУЩЕСТВУЮЩУЮ активность к ещё
+     * одной сущности CRM (elementId — id элемента, entityTypeId — тип, для
+     * смартов их entityTypeId). Оригинальная запись активности (звонок с
+     * плеером, письмо и т.п.) появляется в таймлайне целевой сущности в
+     * родном виде — «копирование» таймлайн-записи без дублирования файла.
+     */
+    async addBinding(
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ): Promise<unknown> {
+        return this.bitrixService.call('crm.activity.binding.add', {
+            fields: {
+                activityId: Number(activityId),
+                entityTypeId,
+                entityId: Number(entityId),
+            },
+        });
+    }
+
+    /** `crm.activity.binding.delete` — снимает привязку активности с сущности. */
+    async deleteBinding(
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ): Promise<unknown> {
+        return this.bitrixService.call('crm.activity.binding.delete', {
+            fields: {
+                activityId: Number(activityId),
+                entityTypeId,
+                entityId: Number(entityId),
+            },
+        });
+    }
+
     async get(id: number) {
         return this.bitrixService.callType(
             EBxNamespace.CRM,

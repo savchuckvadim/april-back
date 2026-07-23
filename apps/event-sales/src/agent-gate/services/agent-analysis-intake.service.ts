@@ -23,6 +23,10 @@ import { AGENT_ANALYSIS_TYPE } from './agent-call-package.service';
 interface SmartItemWriteResult {
     itemId: number;
     managerId?: number;
+    /** Активность звонка (для binding записи и fallback-аудио). */
+    activity?: Awaited<
+        ReturnType<CallAnalysisBitrixService['getActivityById']>
+    >;
 }
 
 /**
@@ -209,6 +213,7 @@ export class AgentAnalysisIntakeService {
         const context = isLead
             ? await this.loadLeadContext(bitrix.api, row.entityId)
             : await this.loadDealContext(bitrix.api, row.entityId);
+        const activity = await this.loadActivity(bitrix, row);
 
         try {
             const itemId = await this.writeItem(
@@ -217,11 +222,12 @@ export class AgentAnalysisIntakeService {
                 rowDealId,
                 rowLeadId,
                 context,
+                this.resolveCallDirection(activity),
                 gigachat,
                 agentName,
                 dto,
             );
-            return { itemId, managerId: context.managerId };
+            return { itemId, managerId: context.managerId, activity };
         } catch (error) {
             // { telegram: true } — форс-алерт админам (транспорт логгера)
             this.logger.error(
@@ -242,6 +248,7 @@ export class AgentAnalysisIntakeService {
             contactId?: number;
             managerId?: number;
         },
+        callDirection: 'incoming' | 'outgoing' | undefined,
         gigachat: { resume?: string; recomendation?: string },
         agentName: string,
         dto: AgentCallAnalysisDto,
@@ -255,6 +262,7 @@ export class AgentAnalysisIntakeService {
             managerId: dealContext.managerId,
             callId: row.callId ?? undefined,
             callStartedAt: row.callStartedAt ?? undefined,
+            callDirection,
             durationSec: row.durationSec ? Number(row.durationSec) : undefined,
             callType: dto.callType,
             productive: this.resolveProductive(dto),
@@ -410,14 +418,80 @@ export class AgentAnalysisIntakeService {
             });
         }
 
-        const audioComment = await this.buildAudioComment(bitrix, row);
-        if (audioComment) {
-            await bitrix.timeline.addTimelineComment({
-                ENTITY_ID: written.itemId,
-                ENTITY_TYPE: entityType,
-                COMMENT: audioComment,
-                AUTHOR_ID: authorId,
-            });
+        // Оригинальная запись звонка с плеером: привязываем СУЩЕСТВУЮЩУЮ
+        // активность к смарт-элементу (crm.activity.binding.add) — в
+        // таймлайне элемента появляется родная запись телефонии.
+        // Fallback (binding не прошёл) — коммент со ссылкой на файл.
+        const bound = await this.bindCallActivity(bitrix, row, written);
+        if (!bound) {
+            const audioComment = await this.buildAudioComment(
+                bitrix,
+                row,
+                written,
+            );
+            if (audioComment) {
+                await bitrix.timeline.addTimelineComment({
+                    ENTITY_ID: written.itemId,
+                    ENTITY_TYPE: entityType,
+                    COMMENT: audioComment,
+                    AUTHOR_ID: authorId,
+                });
+            }
+        }
+    }
+
+    /** Привязка активности звонка к смарт-элементу; false — не удалось. */
+    private async bindCallActivity(
+        bitrix: BitrixService,
+        row: TranscriptionPipelineView,
+        written: SmartItemWriteResult,
+    ): Promise<boolean> {
+        if (!row.activityId) return false;
+        const smartInfo = await this.smartResolver.resolve(
+            row.domain as string,
+        );
+        if (!smartInfo) return false;
+        try {
+            await bitrix.activity.addBinding(
+                Number(row.activityId),
+                smartInfo.entityTypeId,
+                written.itemId,
+            );
+            return true;
+        } catch (error) {
+            this.logger.warn(
+                `binding активности ${row.activityId} к смарту не выполнен: ${(error as Error).message}`,
+            );
+            return false;
+        }
+    }
+
+    /** Направление звонка из активности (DIRECTION: 1 — входящий, 2 — исходящий). */
+    private resolveCallDirection(
+        activity: SmartItemWriteResult['activity'],
+    ): 'incoming' | 'outgoing' | undefined {
+        const direction = Number(
+            (activity as { DIRECTION?: string | number } | null)?.DIRECTION,
+        );
+        if (direction === 2) return 'outgoing';
+        if (direction === 1) return 'incoming';
+        return undefined;
+    }
+
+    /** Активность звонка (для направления, binding и fallback-аудио). */
+    private async loadActivity(
+        bitrix: BitrixService,
+        row: TranscriptionPipelineView,
+    ): Promise<SmartItemWriteResult['activity']> {
+        if (!row.activityId) return null;
+        try {
+            const bx = new CallAnalysisBitrixService(bitrix);
+            return await bx.getActivityById(Number(row.activityId));
+        } catch (error) {
+            this.logger.warn(
+                `Активность ${row.activityId} не получена: ${(error as Error).message}`,
+            );
+            return null;
         }
     }
 
@@ -490,22 +564,45 @@ export class AgentAnalysisIntakeService {
         return text;
     }
 
-    /** Ссылка на аудио-запись разговора из файлов активности (fail-open). */
+    /**
+     * Fallback: ссылка на аудио-файл разговора (когда binding активности
+     * не прошёл). Название ссылки — человеческое, как у записей телефонии.
+     */
     private async buildAudioComment(
         bitrix: BitrixService,
         row: TranscriptionPipelineView,
+        written: SmartItemWriteResult,
     ): Promise<string | null> {
-        if (!row.activityId) return null;
+        const activity = written.activity;
+        if (!activity) return null;
         try {
             const bx = new CallAnalysisBitrixService(bitrix);
-            const activity = await bx.getActivityById(Number(row.activityId));
-            if (!activity) return null;
             const audio = (await bx.getAudioFiles([activity]))[0];
             if (!audio) return null;
-            return (
-                `🎧 [b]Запись разговора[/b] (активность #${row.activityId})\n` +
-                `[url=${audio.downloadUrl}]${audio.fileName}[/url]`
-            );
+            const direction = this.resolveCallDirection(activity);
+            const label =
+                direction === 'outgoing'
+                    ? 'Исходящий звонок'
+                    : direction === 'incoming'
+                      ? 'Входящий звонок'
+                      : 'Запись разговора';
+            const startedAt = row.callStartedAt
+                ? new Date(row.callStartedAt).toLocaleString('ru-RU', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Europe/Moscow',
+                  })
+                : null;
+            const minutes = row.durationSec
+                ? `${Math.max(1, Math.round(Number(row.durationSec) / 60))} мин`
+                : null;
+            const title = [label, startedAt ? `от ${startedAt}` : null, minutes]
+                .filter(Boolean)
+                .join(' · ');
+            return `🎧 [b]${title}[/b]\n[url=${audio.downloadUrl}]${title}.mp3[/url]`;
         } catch (error) {
             this.logger.warn(
                 `Аудио для таймлайна не получено (activity ${row.activityId}): ${(error as Error).message}`,
