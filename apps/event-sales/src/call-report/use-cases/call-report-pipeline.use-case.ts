@@ -26,6 +26,21 @@ export interface CallReportJobPayload {
     durationSec?: number;
 }
 
+/**
+ * Задача стадии анализа: та же адресация звонка + id строки транскрипции,
+ * созданной стадией транскрибации (текст НЕ кладём в Redis-payload —
+ * стадия анализа перечитывает его из БД).
+ */
+export interface CallReportAnalyzeStagePayload extends CallReportJobPayload {
+    transcriptionId: string;
+}
+
+/** Результат стадии транскрибации. */
+export interface CallReportTranscribeResult {
+    transcriptionId: string;
+    provider: string;
+}
+
 export interface CallReportPipelineResult {
     transcriptionId: string;
     provider: string;
@@ -41,17 +56,25 @@ const APP_NAME = 'call-report';
 export const CALL_CLASSIFY_TYPE = 'call-classify';
 
 /**
- * Конвейер обработки одного звонка: аудио из Bitrix → транскрибация
- * (Yandex/Vibecode по длительности) → дешёвая классификация типа звонка
- * (VibeCode) → первичный RAG-анализ (resume + recomendation ОДНИМ
- * объединённым вызовом LLM) → персист в transcriptions/ais → короткое
- * резюме в таймлайн сделки.
+ * Конвейер обработки одного звонка, ДВЕ стадии:
+ *
+ * 1. executeTranscribe — аудио из Bitrix → транскрибация (Yandex/Vibecode
+ *    по длительности) → персист текста + менеджера;
+ * 2. executeAnalyze — дешёвая классификация типа (VibeCode, ключ портала)
+ *    → первичный RAG-анализ (resume + recomendation ОДНИМ объединённым
+ *    вызовом LLM) → ais-записи → резюме в таймлайн сделки.
+ *
+ * В очереди стадии идут отдельными джобами (CALL_REPORT_TRANSCRIBE →
+ * CALL_REPORT_ANALYZE): транскрибация звонка N+1 не ждёт анализа звонка N.
+ * execute() гоняет обе стадии подряд — синхронный путь /analyze.
  *
  * Смарт-элемент здесь НЕ создаётся — его создаёт push-back внешнего
  * агента (agent-gate) поверх этих данных.
  *
- * Идемпотентность: upsert по dedup_key; при ошибке строка получает
- * status='error' и звонок снова виден дедупу следующего скана.
+ * Идемпотентность: upsert по dedup_key; при ошибке транскрибации строка
+ * получает status='error' и звонок снова виден дедупу следующего скана.
+ * Ошибки анализа НЕ ломают строку (транскрипт уже сохранён) — LLM-шаги
+ * мягкие, ретрай стадии анализа делает Bull.
  */
 @Injectable()
 export class CallReportPipelineUseCase {
@@ -85,9 +108,25 @@ export class CallReportPipelineUseCase {
             '0';
     }
 
+    /** Обе стадии подряд (синхронный путь POST /call-report/analyze). */
     async execute(
         payload: CallReportJobPayload,
     ): Promise<CallReportPipelineResult> {
+        const transcribed = await this.executeTranscribe(payload);
+        return this.executeAnalyze({
+            ...payload,
+            transcriptionId: transcribed.transcriptionId,
+        });
+    }
+
+    /**
+     * Стадия 1 — транскрибация: upsert строки → аудио из Bitrix →
+     * Yandex/Vibecode → персист текста и менеджера. Ошибка → строка в
+     * status='error' (звонок снова виден дедупу) и проброс в Bull.
+     */
+    async executeTranscribe(
+        payload: CallReportJobPayload,
+    ): Promise<CallReportTranscribeResult> {
         const dedupKey = buildDedupKey(payload.domain, payload.activityId);
         const row = await this.transcriptionStore.startPipeline({
             dedupKey,
@@ -104,8 +143,61 @@ export class CallReportPipelineUseCase {
         });
 
         try {
-            const result = await this.process(payload, row.id);
-            return result;
+            this.logger.log(
+                `Стадия TRANSCRIBE: ${payload.domain}, activity ${payload.activityId} (строка ${row.id})`,
+            );
+            const { bitrix } = await this.pbxService.init(payload.domain);
+            const bx = new CallAnalysisBitrixService(bitrix);
+
+            const activity = await bx.getActivityById(payload.activityId);
+            if (!activity) {
+                throw new NotFoundException(
+                    `Activity ${payload.activityId} not found (${payload.domain})`,
+                );
+            }
+            const audioFiles = await bx.getAudioFiles([activity]);
+            if (!audioFiles.length) {
+                throw new NotFoundException(
+                    `No audio files in activity ${payload.activityId}`,
+                );
+            }
+            const audioFile = audioFiles[0];
+            const buffer = await bx.downloadAudioBuffer(audioFile.downloadUrl);
+
+            const { text, provider } =
+                await this.transcriptionRouter.transcribe({
+                    buffer,
+                    fileName: audioFile.fileName,
+                    domain: payload.domain,
+                    durationSec: payload.durationSec,
+                });
+
+            // Менеджер (ответственный сделки) — для фильтров отчётов
+            // call-report-analytics; недоступность Bitrix шаг не роняет.
+            const responsibleId = await bx
+                .getDealResponsibleId(payload.dealId)
+                .catch((error: Error) => {
+                    this.logger.warn(
+                        `Ответственный сделки ${payload.dealId} не получен: ${error.message}`,
+                    );
+                    return undefined;
+                });
+
+            await this.transcriptionStore.finishPipeline(row.id, {
+                status: 'done',
+                provider,
+                text,
+                symbolsCount: String(text.length),
+                durationSec: payload.durationSec,
+                userId:
+                    responsibleId !== undefined
+                        ? String(responsibleId)
+                        : undefined,
+            });
+            this.logger.log(
+                `Стадия TRANSCRIBE готова: строка ${row.id}, ${provider}, ${text.length} симв.`,
+            );
+            return { transcriptionId: row.id, provider };
         } catch (error) {
             await this.transcriptionStore
                 .finishPipeline(row.id, { status: 'error' })
@@ -114,60 +206,33 @@ export class CallReportPipelineUseCase {
         }
     }
 
-    private async process(
-        payload: CallReportJobPayload,
-        transcriptionId: string,
+    /**
+     * Стадия 2 — анализ: классификация типа → объединённый LLM-анализ →
+     * ais-записи → таймлайн. Текст перечитывается из БД по transcriptionId.
+     * LLM-шаги мягкие (не роняют стадию); infra-ошибки пробрасываются в
+     * Bull для ретрая — транскрипт при этом уже сохранён и не теряется.
+     */
+    async executeAnalyze(
+        payload: CallReportAnalyzeStagePayload,
     ): Promise<CallReportPipelineResult> {
-        const { bitrix } = await this.pbxService.init(payload.domain);
-        const bx = new CallAnalysisBitrixService(bitrix);
-
-        const activity = await bx.getActivityById(payload.activityId);
-        if (!activity) {
+        this.logger.log(
+            `Стадия ANALYZE: ${payload.domain}, activity ${payload.activityId} (строка ${payload.transcriptionId})`,
+        );
+        const row = await this.transcriptionStore.findPipelineById(
+            payload.transcriptionId,
+        );
+        const text = row.text ?? '';
+        if (!text) {
             throw new NotFoundException(
-                `Activity ${payload.activityId} not found (${payload.domain})`,
+                `Транскрипция ${payload.transcriptionId} без текста — стадия анализа невозможна`,
             );
         }
-        const audioFiles = await bx.getAudioFiles([activity]);
-        if (!audioFiles.length) {
-            throw new NotFoundException(
-                `No audio files in activity ${payload.activityId}`,
-            );
-        }
-        const audioFile = audioFiles[0];
-        const buffer = await bx.downloadAudioBuffer(audioFile.downloadUrl);
-
-        const { text, provider } = await this.transcriptionRouter.transcribe({
-            buffer,
-            fileName: audioFile.fileName,
-            domain: payload.domain,
-            durationSec: payload.durationSec,
-        });
-
-        // Менеджер (ответственный сделки) — для фильтров отчётов
-        // call-report-analytics; недоступность Bitrix шаг не роняет.
-        const responsibleId = await bx
-            .getDealResponsibleId(payload.dealId)
-            .catch((error: Error) => {
-                this.logger.warn(
-                    `Ответственный сделки ${payload.dealId} не получен: ${error.message}`,
-                );
-                return undefined;
-            });
-
-        await this.transcriptionStore.finishPipeline(transcriptionId, {
-            status: 'done',
-            provider,
-            text,
-            symbolsCount: String(text.length),
-            durationSec: payload.durationSec,
-            userId:
-                responsibleId !== undefined ? String(responsibleId) : undefined,
-        });
+        const provider = row.provider ?? 'unknown';
 
         const classification = await this.classifyCall(
             text,
             payload,
-            transcriptionId,
+            payload.transcriptionId,
         );
 
         const { resume, recomendation } = await this.runLlmAnalysis(
@@ -179,16 +244,18 @@ export class CallReportPipelineUseCase {
             'call-resume',
             resume,
             payload,
-            transcriptionId,
+            payload.transcriptionId,
         );
         const recomendationSaved = await this.saveAiRecord(
             'call-recomendation',
             recomendation,
             payload,
-            transcriptionId,
+            payload.transcriptionId,
         );
 
         if (resume) {
+            const { bitrix } = await this.pbxService.init(payload.domain);
+            const bx = new CallAnalysisBitrixService(bitrix);
             await this.addResumeToTimeline(bx, payload, resume).catch(error =>
                 this.logger.warn(
                     `Таймлайн не записан (${payload.domain}, deal ${payload.dealId}): ${(error as Error).message}`,
@@ -197,7 +264,7 @@ export class CallReportPipelineUseCase {
         }
 
         return {
-            transcriptionId,
+            transcriptionId: payload.transcriptionId,
             provider,
             resumeSaved,
             recomendationSaved,

@@ -90,7 +90,7 @@ describe('CallReportScanUseCase', () => {
         expect(result.enqueued).toBe(1);
         expect(dispatcher.dispatch).toHaveBeenCalledWith(
             'call-report',
-            'call-report-analyze',
+            'call-report-transcribe',
             expect.objectContaining({
                 domain: DOMAIN,
                 activityId: 101,

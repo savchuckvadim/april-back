@@ -1,0 +1,91 @@
+import { CallReportProcessor } from '../queue/call-report.processor';
+
+const PAYLOAD = {
+    domain: 'test.bitrix24.ru',
+    activityId: 101,
+    dealId: 555,
+    durationSec: 700,
+};
+
+const makeJob = (data: Record<string, unknown>) =>
+    ({
+        id: 'job-1',
+        data,
+        opts: { attempts: 2 },
+        attemptsMade: 0,
+    }) as never;
+
+const makeDeps = () => {
+    const pipeline = {
+        executeTranscribe: jest
+            .fn()
+            .mockResolvedValue({ transcriptionId: '42', provider: 'yandex' }),
+        executeAnalyze: jest.fn().mockResolvedValue({
+            transcriptionId: '42',
+            provider: 'yandex',
+            resumeSaved: true,
+            recomendationSaved: true,
+            callType: 'cold',
+        }),
+        execute: jest.fn().mockResolvedValue({
+            transcriptionId: '42',
+            provider: 'yandex',
+            resumeSaved: true,
+            recomendationSaved: true,
+            callType: 'cold',
+        }),
+    };
+    const dispatcher = { dispatch: jest.fn().mockResolvedValue({}) };
+    const processor = new CallReportProcessor(
+        pipeline as never,
+        dispatcher as never,
+    );
+    return { processor, pipeline, dispatcher };
+};
+
+describe('CallReportProcessor (стадии)', () => {
+    afterEach(() => jest.clearAllMocks());
+
+    it('TRANSCRIBE выполняет стадию и ставит джоб ANALYZE с transcriptionId', async () => {
+        const { processor, pipeline, dispatcher } = makeDeps();
+        await processor.handleTranscribe(makeJob(PAYLOAD));
+
+        expect(pipeline.executeTranscribe).toHaveBeenCalledWith(PAYLOAD);
+        expect(dispatcher.dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-analyze',
+            expect.objectContaining({ ...PAYLOAD, transcriptionId: '42' }),
+            'test.bitrix24.ru:101:analyze',
+            expect.objectContaining({ attempts: 2 }),
+        );
+    });
+
+    it('ошибка TRANSCRIBE пробрасывается в Bull, ANALYZE не ставится', async () => {
+        const { processor, pipeline, dispatcher } = makeDeps();
+        pipeline.executeTranscribe.mockRejectedValue(
+            new Error('transcribe down'),
+        );
+        await expect(
+            processor.handleTranscribe(makeJob(PAYLOAD)),
+        ).rejects.toThrow('transcribe down');
+        expect(dispatcher.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('ANALYZE со transcriptionId запускает только стадию анализа', async () => {
+        const { processor, pipeline } = makeDeps();
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(pipeline.executeAnalyze).toHaveBeenCalledWith(
+            expect.objectContaining({ transcriptionId: '42' }),
+        );
+        expect(pipeline.execute).not.toHaveBeenCalled();
+    });
+
+    it('легаси-джоб ANALYZE без transcriptionId прогоняет конвейер целиком', async () => {
+        const { processor, pipeline } = makeDeps();
+        await processor.handleAnalyze(makeJob(PAYLOAD));
+        expect(pipeline.execute).toHaveBeenCalledWith(PAYLOAD);
+        expect(pipeline.executeAnalyze).not.toHaveBeenCalled();
+    });
+});

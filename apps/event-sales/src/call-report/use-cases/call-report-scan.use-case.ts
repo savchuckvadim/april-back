@@ -185,9 +185,11 @@ export class CallReportScanUseCase {
                     : undefined,
             };
 
+            // Стадия 1 конвейера; стадию ANALYZE поставит процессор
+            // TRANSCRIBE после сохранения транскрипта.
             await this.queueDispatcher.dispatch(
                 QueueNames.CALL_REPORT,
-                JobNames.CALL_REPORT_ANALYZE,
+                JobNames.CALL_REPORT_TRANSCRIBE,
                 payload,
                 dedupKey,
                 {

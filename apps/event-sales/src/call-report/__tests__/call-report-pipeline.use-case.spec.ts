@@ -62,6 +62,12 @@ const makeDeps = (overrides?: {
     const store = {
         startPipeline: jest.fn().mockResolvedValue({ id: '42' }),
         finishPipeline: jest.fn().mockResolvedValue({ id: '42' }),
+        // Стадия ANALYZE перечитывает текст из БД по transcriptionId.
+        findPipelineById: jest.fn().mockResolvedValue({
+            id: '42',
+            text: 'текст',
+            provider: 'yandex',
+        }),
     };
     const aiService = { create: jest.fn().mockResolvedValue({ id: '1' }) };
     const llm = {
