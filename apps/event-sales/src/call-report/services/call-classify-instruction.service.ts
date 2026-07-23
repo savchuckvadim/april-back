@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { KnowledgeContentService } from '@lib/ai-rag';
-import { DEFAULT_CLASSIFICATION_SYSTEM_PROMPT } from '@lib/call-lib';
+import { DEFAULT_CLASSIFICATION_SYSTEM_PROMPT } from '@lib/vibecode';
 
 /** Kind базы знаний с подменной инструкцией классификации типа звонка. */
 export const CALL_CLASSIFY_KNOWLEDGE_KIND = 'call-classify';

@@ -10,6 +10,7 @@ import { AiRagModule } from '@lib/ai-rag';
 import { AgentKeyGuard } from './guards/agent-key.guard';
 import { AgentCallsController } from './controllers/agent-calls.controller';
 import { AgentKnowledgeController } from './controllers/agent-knowledge.controller';
+import { AgentBitrixContextService } from './services/agent-bitrix-context.service';
 import { AgentCallPackageService } from './services/agent-call-package.service';
 import { AgentAnalysisIntakeService } from './services/agent-analysis-intake.service';
 
@@ -31,6 +32,7 @@ import { AgentAnalysisIntakeService } from './services/agent-analysis-intake.ser
     controllers: [AgentCallsController, AgentKnowledgeController],
     providers: [
         AgentKeyGuard,
+        AgentBitrixContextService,
         AgentCallPackageService,
         AgentAnalysisIntakeService,
     ],

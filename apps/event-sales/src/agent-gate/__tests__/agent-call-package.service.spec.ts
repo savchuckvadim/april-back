@@ -36,19 +36,25 @@ const makeDeps = (options: {
             ...(options.classifyRecords ?? []),
         ]),
     };
-    const pbxService = {
-        init: jest.fn().mockResolvedValue({
-            bitrix: {
-                api: { call: jest.fn().mockResolvedValue({ result: null }) },
-                listItem: { get: jest.fn().mockResolvedValue({ result: [] }) },
-            },
-            portal: { lists: [], bitrixLists: [] },
-        }),
+    // Bitrix-контекст собирает отдельный сервис (свой спек не требуется —
+    // логика перенесена как есть); здесь всегда пустой контекст.
+    const emptyContext = {
+        deal: null,
+        company: null,
+        contact: null,
+        historyCandidates: [],
+        kpiCandidates: [],
+        dealCandidates: { salesBase: [], salesPresentation: [], salesXo: [] },
+        companyFields: [],
+    };
+    const bitrixContext = {
+        load: jest.fn().mockResolvedValue(emptyContext),
+        empty: jest.fn().mockReturnValue(emptyContext),
     };
     const service = new AgentCallPackageService(
         store as never,
         aiService as never,
-        pbxService as never,
+        bitrixContext as never,
     );
     return { service, store };
 };

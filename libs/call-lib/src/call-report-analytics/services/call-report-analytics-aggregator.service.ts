@@ -6,6 +6,12 @@ import {
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { AnalyticsCallRow } from './call-report-analytics-data.service';
 import {
+    asBoolean,
+    asNumber,
+    asString,
+    asStringArray,
+} from '../lib/json-value.util';
+import {
     CallReportManagerStatDto,
     CallReportSectionStatDto,
 } from '../dto/call-report-analytics-response.dto';
@@ -77,20 +83,20 @@ export class CallReportAnalyticsAggregatorService {
             this.increment(byManager, row.managerId ?? ANALYTICS_UNKNOWN_KEY);
             if (row.durationSec !== null) durations.push(row.durationSec);
 
-            const productive = this.asBoolean(row.analysis?.productive);
+            const productive = asBoolean(row.analysis?.productive);
             if (productive === true) productivity.productive++;
             else if (productive === false) productivity.nonProductive++;
             else productivity.unknown++;
 
-            const score = this.asNumber(row.analysis?.score);
+            const score = asNumber(row.analysis?.score);
             if (score !== null) scores.push(score);
-            const weighted = this.asNumber(row.analysis?.weightedScore);
+            const weighted = asNumber(row.analysis?.weightedScore);
             if (weighted !== null) weightedScores.push(weighted);
 
             const nextStep = row.analysis?.nextStep as
                 | { set?: unknown }
                 | undefined;
-            const set = this.asBoolean(nextStep?.set);
+            const set = asBoolean(nextStep?.set);
             if (set !== null) {
                 nextStepKnown++;
                 if (set) nextStepSet++;
@@ -126,7 +132,7 @@ export class CallReportAnalyticsAggregatorService {
         >();
 
         for (const row of rows) {
-            const talkRatio = this.asNumber(row.analysis?.talkRatioPct);
+            const talkRatio = asNumber(row.analysis?.talkRatioPct);
             if (talkRatio !== null) {
                 talkRatios.push(talkRatio);
                 // Норма зависит от ТИПА звонка (профили типов) — в этом и
@@ -140,19 +146,17 @@ export class CallReportAnalyticsAggregatorService {
                     talkRatioOutOfNorm++;
                 }
             }
-            const questionsCount = this.asNumber(row.analysis?.questionsCount);
+            const questionsCount = asNumber(row.analysis?.questionsCount);
             if (questionsCount !== null) questions.push(questionsCount);
-            const scriptCompliance = this.asNumber(
-                row.analysis?.scriptCompliance,
-            );
+            const scriptCompliance = asNumber(row.analysis?.scriptCompliance);
             if (scriptCompliance !== null) compliance.push(scriptCompliance);
 
             const sections = Array.isArray(row.analysis?.sections)
                 ? (row.analysis?.sections as Record<string, unknown>[])
                 : [];
             for (const section of sections) {
-                const code = this.asStringValue(section.section);
-                const relevance = this.asNumber(section.relevance);
+                const code = asString(section.section);
+                const relevance = asNumber(section.relevance);
                 if (!code || relevance === null || relevance <= 0) continue;
                 const acc = sectionAcc.get(code) ?? {
                     scoreSum: 0,
@@ -160,7 +164,7 @@ export class CallReportAnalyticsAggregatorService {
                     relSum: 0,
                 };
                 acc.relSum += relevance;
-                const score = this.asNumber(section.score);
+                const score = asNumber(section.score);
                 if (score !== null) {
                     acc.scoreSum += score;
                     acc.scoreCount++;
@@ -207,36 +211,33 @@ export class CallReportAnalyticsAggregatorService {
         let objectionsHandled = 0;
 
         for (const row of rows) {
-            for (const category of this.asStringArray(
+            for (const category of asStringArray(
                 row.analysis?.objectionCategories,
             )) {
                 this.increment(objectionCategories, category);
             }
-            for (const competitor of this.asStringArray(
-                row.analysis?.competitors,
-            )) {
+            for (const competitor of asStringArray(row.analysis?.competitors)) {
                 this.increment(competitors, competitor);
             }
-            for (const flag of this.asStringArray(row.analysis?.riskFlags)) {
+            for (const flag of asStringArray(row.analysis?.riskFlags)) {
                 this.increment(riskFlags, flag);
             }
-            const refusal = this.asStringValue(row.analysis?.refusalCategory);
+            const refusal = asString(row.analysis?.refusalCategory);
             if (refusal) this.increment(refusalCategories, refusal);
 
             const objections = Array.isArray(row.analysis?.objections)
                 ? (row.analysis?.objections as Record<string, unknown>[])
                 : [];
             for (const objection of objections) {
-                const handled = this.asBoolean(objection.handled);
+                const handled = asBoolean(objection.handled);
                 if (handled === null) continue;
                 objectionsTotal++;
                 if (handled) objectionsHandled++;
                 // Категории из objections[] — если явного массива не было.
-                const category = this.asStringValue(objection.category);
+                const category = asString(objection.category);
                 if (
                     category &&
-                    !this.asStringArray(row.analysis?.objectionCategories)
-                        .length
+                    !asStringArray(row.analysis?.objectionCategories).length
                 ) {
                     this.increment(objectionCategories, category);
                 }
@@ -285,14 +286,14 @@ export class CallReportAnalyticsAggregatorService {
             stat.calls++;
             if (row.analysis) {
                 stat.analyzed++;
-                const weighted = this.asNumber(row.analysis.weightedScore);
+                const weighted = asNumber(row.analysis.weightedScore);
                 if (weighted !== null) stat.weighted.push(weighted);
-                const productive = this.asBoolean(row.analysis.productive);
+                const productive = asBoolean(row.analysis.productive);
                 if (productive !== null) {
                     stat.productiveKnown++;
                     if (productive) stat.productive++;
                 }
-                const talkRatio = this.asNumber(row.analysis.talkRatioPct);
+                const talkRatio = asNumber(row.analysis.talkRatioPct);
                 if (talkRatio !== null) stat.talkRatios.push(talkRatio);
             }
             acc.set(key, stat);
@@ -331,28 +332,5 @@ export class CallReportAnalyticsAggregatorService {
     private round(value: number, digits: number): number {
         const factor = 10 ** digits;
         return Math.round(value * factor) / factor;
-    }
-
-    private asNumber(value: unknown): number | null {
-        return typeof value === 'number' && Number.isFinite(value)
-            ? value
-            : null;
-    }
-
-    private asBoolean(value: unknown): boolean | null {
-        return typeof value === 'boolean' ? value : null;
-    }
-
-    private asStringValue(value: unknown): string | null {
-        return typeof value === 'string' && value ? value : null;
-    }
-
-    private asStringArray(value: unknown): string[] {
-        return Array.isArray(value)
-            ? value.filter(
-                  (item): item is string =>
-                      typeof item === 'string' && item !== '',
-              )
-            : [];
     }
 }

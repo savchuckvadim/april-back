@@ -1,4 +1,4 @@
-import { DEFAULT_CLASSIFICATION_SYSTEM_PROMPT } from '@lib/call-lib';
+import { DEFAULT_CLASSIFICATION_SYSTEM_PROMPT } from '@lib/vibecode';
 import {
     CALL_CLASSIFY_KNOWLEDGE_KIND,
     CallClassifyInstructionService,

@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiService } from '../../ai/services/ai.service';
 import { AiEntityDto } from '../../ai/dto/ai-entity.dto';
+import {
+    AGENT_ANALYSIS_TYPE,
+    CALL_CLASSIFY_TYPE,
+} from '../../ai/ai-record-types.const';
 import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
+import { asRecord, asString } from '../lib/json-value.util';
 import { CallReportAnalyticsQueryDto } from '../dto/call-report-analytics-query.dto';
-
-/** Типы ais-записей конвейера, используемые отчётами. */
-const AGENT_ANALYSIS_TYPE = 'agent-analysis';
-const CALL_CLASSIFY_TYPE = 'call-classify';
 
 /** Размер порции id для выборки ais (ограничение SQL IN). */
 const AI_BATCH_SIZE = 500;
@@ -80,8 +81,8 @@ export class CallReportAnalyticsDataService {
                 CALL_CLASSIFY_TYPE,
             );
             const callType =
-                this.asString(analysis?.callType) ??
-                this.asString(classification?.callType) ??
+                asString(analysis?.callType) ??
+                asString(classification?.callType) ??
                 records.find(
                     record =>
                         record.type === CALL_CLASSIFY_TYPE && record.result,
@@ -156,11 +157,7 @@ export class CallReportAnalyticsDataService {
         type: string,
     ): Record<string, unknown> | null {
         const record = records.find(item => item.type === type);
-        const raw: unknown = record?.user_result;
-        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-            return raw as Record<string, unknown>;
-        }
-        return null;
+        return asRecord(record?.user_result);
     }
 
     private passesFilters(
@@ -189,9 +186,5 @@ export class CallReportAnalyticsDataService {
             return false;
         }
         return true;
-    }
-
-    private asString(value: unknown): string | null {
-        return typeof value === 'string' && value ? value : null;
     }
 }

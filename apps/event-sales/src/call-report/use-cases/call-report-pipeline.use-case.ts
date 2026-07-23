@@ -1,20 +1,20 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from 'generated/prisma';
+import { envEnabledByDefault } from '@lib/shared';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
     buildDedupKey,
+    CALL_RECOMENDATION_TYPE,
     CALL_REPORT_ENTITY_TYPE_DEAL,
+    CALL_RESUME_TYPE,
     CallAnalysisBitrixService,
-    CallClassificationResultDto,
     TranscriptionRouterService,
     TranscriptionStoreService,
     AiService,
-    VibeCodeClient,
-    VibeKeyResolverService,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
-import { CallClassifyInstructionService } from '../services/call-classify-instruction.service';
+import { CallClassifyStepService } from '../services/call-classify-step.service';
 
 /** Задача конвейера: один звонок (сделка) на обработку. */
 export interface CallReportJobPayload {
@@ -52,9 +52,6 @@ export interface CallReportPipelineResult {
 
 const APP_NAME = 'call-report';
 
-/** Тип ais-записи дешёвой классификации звонка (tier-1). */
-export const CALL_CLASSIFY_TYPE = 'call-classify';
-
 /**
  * Конвейер обработки одного звонка, ДВЕ стадии:
  *
@@ -82,15 +79,6 @@ export class CallReportPipelineUseCase {
     private readonly llmModel: LlmModel;
     /** Kill-switch объединённого вызова: CALL_REPORT_COMBINED_ANALYSIS=0 → два раздельных. */
     private readonly combinedAnalysisEnabled: boolean;
-    /** Kill-switch классификатора: CALL_REPORT_CLASSIFY_ENABLED=0 → шаг пропускается. */
-    private readonly classifyEnabled: boolean;
-    /**
-     * Порог эскалации классификации (CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE,
-     * default 0.6): ниже — классификация помечается needsEscalation, и
-     * tier-3 (ночной агент) обязан классифицировать сам, а не принимать
-     * тип дешёвой модели.
-     */
-    private readonly classifyEscalationConfidence: number;
 
     constructor(
         private readonly pbxService: PBXService,
@@ -98,32 +86,16 @@ export class CallReportPipelineUseCase {
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
         private readonly llmOrchestrator: LlmOrchestratorService,
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
-        private readonly classifyInstruction: CallClassifyInstructionService,
+        private readonly classifyStep: CallClassifyStepService,
         private readonly configService: ConfigService,
     ) {
         const model = this.configService.get<string>('CALL_REPORT_LLM_MODEL');
         this.llmModel = LLM_MODELS.includes(model as LlmModel)
             ? (model as LlmModel)
             : 'gigachat';
-        this.combinedAnalysisEnabled =
-            this.configService.get<string>('CALL_REPORT_COMBINED_ANALYSIS') !==
-            '0';
-        this.classifyEnabled =
-            this.configService.get<string>('CALL_REPORT_CLASSIFY_ENABLED') !==
-            '0';
-        const rawEscalation = Number.parseFloat(
-            this.configService.get<string>(
-                'CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE',
-            ) ?? '',
+        this.combinedAnalysisEnabled = envEnabledByDefault(
+            this.configService.get<string>('CALL_REPORT_COMBINED_ANALYSIS'),
         );
-        this.classifyEscalationConfidence =
-            Number.isFinite(rawEscalation) &&
-            rawEscalation >= 0 &&
-            rawEscalation <= 1
-                ? rawEscalation
-                : 0.6;
     }
 
     /** Обе стадии подряд (синхронный путь POST /call-report/analyze). */
@@ -247,7 +219,7 @@ export class CallReportPipelineUseCase {
         }
         const provider = row.provider ?? 'unknown';
 
-        const classification = await this.classifyCall(
+        const classification = await this.classifyStep.run(
             text,
             payload,
             payload.transcriptionId,
@@ -259,13 +231,13 @@ export class CallReportPipelineUseCase {
         );
 
         const resumeSaved = await this.saveAiRecord(
-            'call-resume',
+            CALL_RESUME_TYPE,
             resume,
             payload,
             payload.transcriptionId,
         );
         const recomendationSaved = await this.saveAiRecord(
-            'call-recomendation',
+            CALL_RECOMENDATION_TYPE,
             recomendation,
             payload,
             payload.transcriptionId,
@@ -349,71 +321,8 @@ export class CallReportPipelineUseCase {
         }
     }
 
-    /**
-     * Дешёвая классификация типа звонка (tier-1, VibeCode) в начале
-     * конвейера: тип попадает в pending-список agent-gate и группирует
-     * ночной батч агента. Ошибка шаг не роняет — классификация опциональна.
-     */
-    private async classifyCall(
-        text: string,
-        payload: CallReportJobPayload,
-        transcriptionId: string,
-    ): Promise<CallClassificationResultDto | null> {
-        if (!this.classifyEnabled) return null;
-        try {
-            // Инструкция подменяема через базу знаний kind='call-classify';
-            // ключ VibeCode — пер-портальный (vibeKey из БД, env — fallback).
-            const instruction = await this.classifyInstruction.resolve(
-                payload.domain,
-            );
-            const apiKey = await this.vibeKeyResolver.resolve(payload.domain);
-            const classification = await this.vibeCodeClient.classifyCall(
-                text,
-                instruction,
-                apiKey,
-            );
-            // Эскалация: низкая уверенность дешёвой модели — тип должен
-            // перепроверить tier-3 (агент видит флаг в пакете звонка).
-            const needsEscalation =
-                classification.confidence < this.classifyEscalationConfidence;
-            if (needsEscalation) {
-                this.logger.warn(
-                    `Классификация неуверенная (activity ${payload.activityId}): ` +
-                        `${classification.callType} с confidence ${classification.confidence} < ` +
-                        `${this.classifyEscalationConfidence} — эскалация на агента`,
-                );
-            }
-            await this.aiService.create({
-                provider: 'bitrix-vibecode',
-                model: 'bitrix-vibecode',
-                type: CALL_CLASSIFY_TYPE,
-                status: 'done',
-                result: classification.callType,
-                user_result: JSON.parse(
-                    JSON.stringify({ ...classification, needsEscalation }),
-                ) as Prisma.JsonValue,
-                activity_id: String(payload.activityId),
-                entity_type: CALL_REPORT_ENTITY_TYPE_DEAL,
-                entity_id: payload.dealId,
-                domain: payload.domain,
-                app: APP_NAME,
-                transcription_id: transcriptionId,
-            });
-            this.logger.log(
-                `Классификация: activity ${payload.activityId} → ${classification.callType} ` +
-                    `(${classification.interlocutorRole}, confidence ${classification.confidence})`,
-            );
-            return classification;
-        } catch (error) {
-            this.logger.warn(
-                `Классификация звонка не выполнена (activity ${payload.activityId}): ${(error as Error).message}`,
-            );
-            return null;
-        }
-    }
-
     private async saveAiRecord(
-        type: 'call-resume' | 'call-recomendation',
+        type: typeof CALL_RESUME_TYPE | typeof CALL_RECOMENDATION_TYPE,
         result: string | null,
         payload: CallReportJobPayload,
         transcriptionId: string,

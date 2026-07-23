@@ -18,7 +18,7 @@ const makeDeps = (overrides?: {
     routerError?: boolean;
     llmError?: boolean;
     noAudio?: boolean;
-    classifyError?: boolean;
+    classifyFailed?: boolean;
     combinedDisabled?: boolean;
 }) => {
     const bitrix = {
@@ -84,16 +84,14 @@ const makeDeps = (overrides?: {
             ? jest.fn().mockRejectedValue(new Error('llm down'))
             : jest.fn().mockResolvedValue('рекомендации'),
     };
-    const vibecode = {
-        classifyCall: overrides?.classifyError
-            ? jest.fn().mockRejectedValue(new Error('vibecode down'))
-            : jest.fn().mockResolvedValue(CLASSIFICATION),
-    };
-    const classifyInstruction = {
-        resolve: jest.fn().mockResolvedValue('инструкция классификации'),
-    };
-    const vibeKeyResolver = {
-        resolve: jest.fn().mockResolvedValue('portal-vibe-key'),
+    // Шаг классификации мокается целиком (свой спек —
+    // call-classify-step.service.spec); при ошибке шаг возвращает null.
+    const classifyStep = {
+        run: jest
+            .fn()
+            .mockResolvedValue(
+                overrides?.classifyFailed ? null : CLASSIFICATION,
+            ),
     };
     const config = {
         get: jest.fn((key: string) =>
@@ -114,29 +112,18 @@ const makeDeps = (overrides?: {
         store as never,
         aiService as never,
         llm as never,
-        vibecode as never,
-        vibeKeyResolver as never,
-        classifyInstruction as never,
+        classifyStep as never,
         config as never,
     );
-    return {
-        useCase,
-        store,
-        aiService,
-        bitrix,
-        router,
-        llm,
-        vibecode,
-        classifyInstruction,
-        vibeKeyResolver,
-    };
+    return { useCase, store, aiService, bitrix, router, llm, classifyStep };
 };
 
 describe('CallReportPipelineUseCase', () => {
     afterEach(() => jest.clearAllMocks());
 
     it('happy path: транскрипт done, классификация + две ais-записи, коммент в таймлайн', async () => {
-        const { useCase, store, aiService, bitrix, llm } = makeDeps();
+        const { useCase, store, aiService, bitrix, llm, classifyStep } =
+            makeDeps();
         const result = await useCase.execute(PAYLOAD);
 
         expect(store.startPipeline).toHaveBeenCalledWith(
@@ -150,16 +137,15 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ status: 'done', provider: 'yandex' }),
         );
+        expect(classifyStep.run).toHaveBeenCalledWith(
+            'текст',
+            expect.objectContaining(PAYLOAD),
+            '42',
+        );
         // Резюме+рекомендации — ОДНИМ объединённым вызовом.
         expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
         expect(llm.resume).not.toHaveBeenCalled();
-        expect(aiService.create).toHaveBeenCalledTimes(3);
-        expect(aiService.create).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'call-classify',
-                result: 'cold',
-            }),
-        );
+        expect(aiService.create).toHaveBeenCalledTimes(2);
         expect(aiService.create).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'call-resume' }),
         );
@@ -176,50 +162,12 @@ describe('CallReportPipelineUseCase', () => {
         });
     });
 
-    it('классификатор получает подменную инструкцию и пер-портальный ключ', async () => {
-        const { useCase, vibecode, classifyInstruction, vibeKeyResolver } =
-            makeDeps();
+    it('стадия транскрибации сохраняет менеджера (ответственного сделки)', async () => {
+        const { useCase, store } = makeDeps();
         await useCase.execute(PAYLOAD);
-        expect(classifyInstruction.resolve).toHaveBeenCalledWith(
-            'test.bitrix24.ru',
-        );
-        expect(vibeKeyResolver.resolve).toHaveBeenCalledWith(
-            'test.bitrix24.ru',
-        );
-        expect(vibecode.classifyCall).toHaveBeenCalledWith(
-            'текст',
-            'инструкция классификации',
-            'portal-vibe-key',
-        );
-    });
-
-    it('низкая confidence классификации помечается needsEscalation', async () => {
-        const { useCase, vibecode, aiService } = makeDeps();
-        vibecode.classifyCall.mockResolvedValue({
-            ...CLASSIFICATION,
-            confidence: 0.4,
-        });
-        await useCase.execute(PAYLOAD);
-        expect(aiService.create).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'call-classify',
-                user_result: expect.objectContaining({
-                    needsEscalation: true,
-                }) as object,
-            }),
-        );
-    });
-
-    it('уверенная классификация — needsEscalation=false', async () => {
-        const { useCase, aiService } = makeDeps();
-        await useCase.execute(PAYLOAD);
-        expect(aiService.create).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'call-classify',
-                user_result: expect.objectContaining({
-                    needsEscalation: false,
-                }) as object,
-            }),
+        expect(store.finishPipeline).toHaveBeenCalledWith(
+            '42',
+            expect.objectContaining({ userId: '7' }),
         );
     });
 
@@ -231,14 +179,10 @@ describe('CallReportPipelineUseCase', () => {
         expect(llm.recomendation).toHaveBeenCalledTimes(1);
     });
 
-    it('ошибка классификатора не роняет конвейер — анализ идёт дальше', async () => {
-        const { useCase, aiService } = makeDeps({ classifyError: true });
+    it('провал классификации (null от шага) не роняет конвейер', async () => {
+        const { useCase } = makeDeps({ classifyFailed: true });
         const result = await useCase.execute(PAYLOAD);
         expect(result.callType).toBeNull();
-        expect(aiService.create).toHaveBeenCalledTimes(2);
-        expect(aiService.create).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'call-classify' }),
-        );
         expect(result.resumeSaved).toBe(true);
     });
 
@@ -262,11 +206,7 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ status: 'done' }),
         );
-        // Единственная ais-запись — классификация (она независима от LLM).
-        expect(aiService.create).toHaveBeenCalledTimes(1);
-        expect(aiService.create).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'call-classify' }),
-        );
+        expect(aiService.create).not.toHaveBeenCalled();
         expect(bitrix.timeline.addTimelineComment).not.toHaveBeenCalled();
         expect(result.resumeSaved).toBe(false);
         expect(result.recomendationSaved).toBe(false);

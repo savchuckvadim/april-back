@@ -1,12 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
-import {
-    CALL_REPORT_CALL_TYPE_CODES,
-    CALL_REPORT_INTERLOCUTOR_CODES,
-} from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { CallSalesAnalysisResultDto } from './dto/call-sales-analysis.dto';
 import { CallClassificationResultDto } from './dto/call-classification.dto';
+import {
+    ANALYSIS_SYSTEM_PROMPT,
+    CALL_ANALYSIS_SCHEMA,
+} from './contracts/call-analysis.contract';
+import {
+    CALL_CLASSIFICATION_SCHEMA,
+    CLASSIFICATION_TRANSCRIPT_LIMIT,
+    DEFAULT_CLASSIFICATION_SYSTEM_PROMPT,
+} from './contracts/call-classification.contract';
 
 interface VibecodeTranscriptionResponse {
     text?: string;
@@ -19,189 +24,6 @@ interface VibecodeChatCompletionsResponse {
 const VIBECODE_BASE_URL = 'https://vibecode.bitrix24.tech/v1';
 const TRANSCRIPTION_MODEL = 'bitrix/deepdml/faster-whisper-large-v3-turbo-ct2';
 const ANALYSIS_MODEL = 'bitrix/bitrixgpt-5.5';
-
-const CALL_ANALYSIS_SCHEMA = {
-    type: 'object',
-    properties: {
-        summary: { type: 'string' },
-        wasProductive: { type: 'boolean' },
-        callOutcome: {
-            type: 'string',
-            enum: ['заинтересован', 'отказ', 'перенос', 'нет_ответа', 'другое'],
-        },
-        nextCallPlanned: { type: 'boolean' },
-        nextCallDate: { type: ['string', 'null'] },
-        nextCallGoal: { type: ['string', 'null'] },
-        clientSentiment: {
-            type: 'string',
-            enum: ['positive', 'neutral', 'negative'],
-        },
-        clientNeeds: { type: 'array', items: { type: 'string' } },
-        objections: { type: 'array', items: { type: 'string' } },
-        keyPoints: { type: 'array', items: { type: 'string' } },
-        agreedActions: { type: 'array', items: { type: 'string' } },
-        flow: {
-            type: 'object',
-            properties: {
-                report: {
-                    type: 'object',
-                    properties: {
-                        resultStatus: {
-                            type: 'string',
-                            enum: ['result', 'noresult', 'expired'],
-                        },
-                        noresultReasonCode: {
-                            type: ['string', 'null'],
-                            enum: [
-                                null,
-                                'secretar',
-                                'nopickup',
-                                'nonumber',
-                                'busy',
-                                'noresult_notime',
-                                'nocontact',
-                                'giveup',
-                                'bay',
-                                'wrong',
-                                'auto',
-                            ],
-                        },
-                    },
-                    required: ['resultStatus', 'noresultReasonCode'],
-                    additionalProperties: false,
-                },
-                plan: {
-                    type: 'object',
-                    properties: {
-                        isPlanned: { type: 'boolean' },
-                        typeCode: {
-                            type: ['string', 'null'],
-                            enum: [
-                                null,
-                                'cold',
-                                'warm',
-                                'presentation',
-                                'hot',
-                                'moneyAwait',
-                                'supply',
-                            ],
-                        },
-                        name: { type: 'string' },
-                        deadlineDate: { type: ['string', 'null'] },
-                    },
-                    required: ['isPlanned', 'typeCode', 'name', 'deadlineDate'],
-                    additionalProperties: false,
-                },
-            },
-            required: ['report', 'plan'],
-            additionalProperties: false,
-        },
-    },
-    required: [
-        'summary',
-        'wasProductive',
-        'callOutcome',
-        'nextCallPlanned',
-        'nextCallDate',
-        'nextCallGoal',
-        'clientSentiment',
-        'clientNeeds',
-        'objections',
-        'keyPoints',
-        'agreedActions',
-        'flow',
-    ],
-    additionalProperties: false,
-};
-
-/** Лимит транскрипта для классификации: типа звонка хватает и по началу разговора. */
-const CLASSIFICATION_TRANSCRIPT_LIMIT = 30_000;
-
-const CALL_CLASSIFICATION_SCHEMA = {
-    type: 'object',
-    properties: {
-        callType: {
-            type: 'string',
-            enum: [...CALL_REPORT_CALL_TYPE_CODES],
-        },
-        interlocutorRole: {
-            type: 'string',
-            enum: [...CALL_REPORT_INTERLOCUTOR_CODES],
-        },
-        confidence: { type: 'number' },
-        reason: { type: 'string' },
-    },
-    required: ['callType', 'interlocutorRole', 'confidence', 'reason'],
-    additionalProperties: false,
-};
-
-/**
- * Дефолтная инструкция классификации. Подменяется без деплоя: положите
- * документ в базу знаний kind='call-classify' (общую или домена) — конвейер
- * передаст его текст сюда через параметр systemPrompt (см.
- * CallClassifyInstructionService в call-report).
- */
-export const DEFAULT_CLASSIFICATION_SYSTEM_PROMPT = `Ты классифицируешь расшифровки телефонных звонков менеджеров по продажам ИПО ГАРАНТ.
-Определи тип звонка и с кем в итоге говорил менеджер.
-
-callType — тип звонка (ровно один код):
-- 'cold' — холодный звонок: менеджер впервые выходит на компанию, пытается пройти секретаря / выйти на ЛПР
-- 'call' — повторный звонок, цель которого договориться о презентации продукта
-- 'presentation' — сама презентация: менеджер подробно показывает/рассказывает продукт под потребности
-- 'decision' — звонок по принятию решения: клиент уже видел продукт, обсуждается решение о покупке
-- 'payment' — звонок по оплате: счёт, договор, сроки оплаты
-- 'other' — не подходит ни под один тип (сервисный, ошибочный, личный и т.п.)
-
-interlocutorRole — с кем говорили:
-- 'lpr' — лицо, принимающее решение (директор, главбух, руководитель)
-- 'user' — потенциальный пользователь продукта, но не ЛПР
-- 'secretary' — секретарь / ресепшн, до содержательного собеседника не дошли
-- 'other' — автоответчик, не та организация, не удалось определить
-
-confidence — уверенность 0..1 (0.9+ — очевидно; ниже 0.6 — сомнительно, тип определён по косвенным признакам).
-reason — 1-2 предложения на русском: почему выбраны такие коды.`;
-
-const ANALYSIS_SYSTEM_PROMPT = `Ты — AI-ассистент, анализирующий расшифровки телефонных звонков менеджеров по продажам.
-Твоя задача — извлечь структурированную информацию из разговора и заполнить все поля.
-
-Правила базового анализа:
-- wasProductive: true если разговор состоялся и принёс результат (интерес, договорённость, перенос), false если клиент не взял трубку или сразу отказался
-- callOutcome: определи итог из ['заинтересован', 'отказ', 'перенос', 'нет_ответа', 'другое']
-- clientSentiment: оцени общий тон клиента из ['positive', 'neutral', 'negative']
-- nextCallDate: если договорились о дате — верни в формате YYYY-MM-DD, иначе null
-- Все текстовые поля заполняй на русском языке
-- Если информации недостаточно — оставь массивы пустыми, строки — пустой строкой
-
-Правила секции flow (для CRM-флоу event-sales):
-
-flow.report — отчёт о текущем звонке:
-- resultStatus:
-  - 'result' если разговор состоялся и принёс результат (был контакт, договорились о чём-то)
-  - 'noresult' если не получилось пообщаться (не взяли трубку, секретарь, занято) — без переноса
-  - 'expired' если был контакт, но договорились перенести / встретиться позже
-- noresultReasonCode (только когда resultStatus='noresult', иначе null):
-  - 'secretar' — не пустил секретарь
-  - 'nopickup' — недозвон, трубку не берут
-  - 'nonumber' — нет такого номера
-  - 'busy' — занято
-  - 'noresult_notime' — перенесли по причине нет времени
-  - 'nocontact' — контактного лица нет на месте
-  - 'giveup' — просят оставить номер
-  - 'bay' — не интересует, до свидания
-  - 'wrong' — отвечает не та организация
-  - 'auto' — автоответчик
-
-flow.plan — планируемое следующее событие:
-- isPlanned: true если из разговора понятно что будет следующий контакт; false если не запланирован
-- typeCode (если isPlanned=true; иначе null):
-  - 'cold' — первичный холодный звонок
-  - 'warm' — обычный повторный звонок (по умолчанию для большинства случаев)
-  - 'presentation' — назначена презентация / встреча
-  - 'hot' — горячий контакт, клиент в стадии принятия решения
-  - 'moneyAwait' — ждём оплаты
-  - 'supply' — по поставке
-- name: краткое название планируемого события (например 'Перезвонить уточнить решение')
-- deadlineDate: дата следующего контакта YYYY-MM-DD или null если не названа в разговоре`;
 
 /**
  * Клиент VibeCode API (vibecode.bitrix24.tech).
