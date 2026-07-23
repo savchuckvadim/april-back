@@ -53,6 +53,63 @@ export class DownloadKpiReportItemDto implements IExcelReport {
     kpi: DownloadReportKpiItemDto[];
 }
 
+export class ReportStructureGroupDto {
+    @ApiProperty({ description: 'ID группы (отдела Bitrix)' })
+    @IsNumber()
+    id: number;
+
+    @ApiProperty({ description: 'Название группы' })
+    @IsString()
+    name: string;
+
+    @ApiProperty({ description: 'ID сотрудников группы из report', type: [Number] })
+    @IsArray()
+    @IsNumber({}, { each: true })
+    userIds: number[];
+}
+
+export class ReportStructureDepartmentDto {
+    @ApiProperty({ description: 'ID отдела продаж (отдела Bitrix)' })
+    @IsNumber()
+    id: number;
+
+    @ApiProperty({ description: 'Название отдела' })
+    @IsString()
+    name: string;
+
+    @ApiProperty({
+        description: 'Группы отдела',
+        type: [ReportStructureGroupDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ReportStructureGroupDto)
+    groups: ReportStructureGroupDto[];
+
+    @ApiProperty({
+        description: 'ID сотрудников отдела вне групп из report',
+        type: [Number],
+    })
+    @IsArray()
+    @IsNumber({}, { each: true })
+    userIds: number[];
+}
+
+export class ReportStructureDto {
+    @ApiProperty({ description: 'Мультипортал (несколько ОП)' })
+    @IsNotEmpty()
+    isMultiple: boolean;
+
+    @ApiProperty({
+        description: 'Отделы продаж с группировкой сотрудников',
+        type: [ReportStructureDepartmentDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ReportStructureDepartmentDto)
+    departments: ReportStructureDepartmentDto[];
+}
+
 export class DownLoadKpiReportDto {
     @ApiProperty({ description: 'Download type', enum: EDownloadType })
     @IsEnum(EDownloadType)
@@ -72,4 +129,15 @@ export class DownLoadKpiReportDto {
     @Type(() => DateRangeDto)
     @IsNotEmpty()
     date: DateRangeDto;
+
+    @ApiProperty({
+        description:
+            'Структура отделов/групп для разбивки: мульти — лист на отдел с секциями групп, моно с группами — лист «По группам». Не передана — прежний одиночный лист.',
+        type: ReportStructureDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ReportStructureDto)
+    structure?: ReportStructureDto;
 }
