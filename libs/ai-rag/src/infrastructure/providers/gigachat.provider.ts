@@ -20,6 +20,16 @@ import { CombinedCallAnalysisService } from '../../application/combined-call-ana
 /** Дефолтный лимит одновременных обращений к GigaChat (env GIGACHAT_CONCURRENCY). */
 const DEFAULT_GIGACHAT_CONCURRENCY = 2;
 
+/**
+ * Порог объединённого анализа, символов (env GIGACHAT_COMBINED_MAX_CHARS).
+ * НЕ равен порогу map-reduce (TRANSCRIPT_CHAR_THRESHOLD=900, тюнинг
+ * раздельных вызовов): 900 символов — это ~минута разговора, с таким
+ * порогом объединённый вызов не срабатывал бы почти никогда и экономия
+ * терялась. Транскрипт 10-минутного звонка (~8-10К симв.) современный
+ * GigaChat берёт одним вызовом; длиннее порога — откат на map-reduce.
+ */
+const DEFAULT_COMBINED_MAX_CHARS = 12_000;
+
 @Injectable()
 export class GigaChatProvider implements LlmProvider {
     private readonly logger = new Logger(GigaChatProvider.name);
@@ -33,6 +43,8 @@ export class GigaChatProvider implements LlmProvider {
      * лимита (защита от rate limit и всплеска бюджета).
      */
     private readonly limiter: Semaphore;
+    /** Максимум символов транскрипта для объединённого вызова. */
+    private readonly combinedMaxChars: number;
 
     constructor(
         configService: ConfigService,
@@ -48,6 +60,16 @@ export class GigaChatProvider implements LlmProvider {
                 DEFAULT_GIGACHAT_CONCURRENCY,
             ),
         );
+        const rawCombined = configService.get<string>(
+            'GIGACHAT_COMBINED_MAX_CHARS',
+        );
+        const parsedCombined = rawCombined
+            ? Number.parseInt(rawCombined, 10)
+            : NaN;
+        this.combinedMaxChars =
+            Number.isFinite(parsedCombined) && parsedCombined > 0
+                ? parsedCombined
+                : DEFAULT_COMBINED_MAX_CHARS;
     }
 
     async resume(query: string, domain?: string): Promise<string> {
@@ -68,9 +90,12 @@ export class GigaChatProvider implements LlmProvider {
         query: string,
         domain?: string,
     ): Promise<CallAnalysisPair> {
-        if (this.longDialogueService.needsChunkedProcessing(query)) {
+        // Порог объединённого вызова СВОЙ (combinedMaxChars), не порог
+        // map-reduce: см. комментарий у DEFAULT_COMBINED_MAX_CHARS.
+        if (query.length > this.combinedMaxChars) {
             this.logger.log(
-                `GigaChat analyzeCall: длинный транскрипт (${query.length} симв.) → раздельный map-reduce`,
+                `GigaChat analyzeCall: транскрипт ${query.length} симв. > ` +
+                    `${this.combinedMaxChars} → раздельный map-reduce`,
             );
             return this.analyzeSeparately(query, domain);
         }
