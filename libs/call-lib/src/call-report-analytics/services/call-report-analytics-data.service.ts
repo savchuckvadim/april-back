@@ -113,6 +113,22 @@ export class CallReportAnalyticsDataService {
                 `без менеджера отброшено ${skippedNoManager}, ` +
                 `${Date.now() - started}мс`,
         );
+        if (totalCalls === 0) {
+            // Диагностика пустого отчёта: чаще всего это не баг, а отсутствие
+            // обработанных звонков домена в БД этого окружения.
+            this.logger.warn(
+                `Период пуст: нет done-строк автоконвейера для ${query.domain}. ` +
+                    `Проверьте, что конвейер работал в этом окружении ` +
+                    `(POST /call-report/analyze или cron-скан) и период верный.`,
+            );
+        } else if (rows.length === 0) {
+            this.logger.warn(
+                `Все ${totalCalls} звонков отсеяны фильтрами ` +
+                    `(managerId=${query.managerId ?? '—'}, callType=${query.callType ?? '—'}, ` +
+                    `duration=${query.minDurationSec ?? 0}..${query.maxDurationSec ?? '∞'}). ` +
+                    `Попробуйте без фильтров, чтобы увидеть распределение.`,
+            );
+        }
         return { rows, totalCalls, skippedNoManager };
     }
 

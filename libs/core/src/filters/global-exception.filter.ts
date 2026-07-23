@@ -5,6 +5,7 @@ import {
     HttpException,
     HttpStatus,
     BadRequestException,
+    NotFoundException,
     Logger,
     Optional,
 } from '@nestjs/common';
@@ -12,6 +13,15 @@ import { Request, Response } from 'express';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import * as path from 'path';
 import { ApiResponse, EResultCode } from '../interfaces/response.interface';
+
+/**
+ * Инфраструктурный «шум»: запросы к путям, которых у приложения нет по
+ * определению (socket.io-клиенты фронта при не подключённом WsModule,
+ * favicon браузера). На такие 404 отвечаем тихо — одна debug-строка,
+ * без развёрнутого разбора stack trace и БЕЗ уведомления в Telegram,
+ * иначе каждый reconnect клиента спамит лог и чат алертов.
+ */
+const QUIET_NOT_FOUND_PREFIXES = ['/socket.io', '/favicon.ico'];
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -25,6 +35,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const ctx = host.switchToHttp();
         const request = ctx.getRequest<Request>();
         const response = ctx.getResponse<Response>();
+
+        // Тихий 404 для инфраструктурного шума (см. QUIET_NOT_FOUND_PREFIXES).
+        if (
+            exception instanceof NotFoundException &&
+            QUIET_NOT_FOUND_PREFIXES.some(prefix =>
+                request.url.startsWith(prefix),
+            )
+        ) {
+            this.logger.debug(
+                `Тихий 404 (инфраструктурный шум): ${request.method} ${request.url}`,
+            );
+            if (!response.headersSent) {
+                response.status(HttpStatus.NOT_FOUND).json({
+                    resultCode: EResultCode.ERROR,
+                    message: `Cannot ${request.method} ${request.url}`,
+                });
+            }
+            return;
+        }
 
         // if (exception instanceof BadRequestException) {
         //     const errorResponse = exception.getResponse();

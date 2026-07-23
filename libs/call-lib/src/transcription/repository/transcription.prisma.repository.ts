@@ -215,7 +215,17 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
                 status: 'done',
                 dedup_key: { not: null },
                 domain,
-                call_started_at: { gte: from, lte: to },
+                // Период — по фактическому времени звонка; у части строк
+                // call_started_at пуст (ручные POST /call-report/analyze без
+                // callStartedAtIso) — для них fallback на created_at, иначе
+                // такие звонки навсегда выпадали бы из отчётов.
+                OR: [
+                    { call_started_at: { gte: from, lte: to } },
+                    {
+                        call_started_at: null,
+                        created_at: { gte: from, lte: to },
+                    },
+                ],
             },
             orderBy: { call_started_at: 'asc' },
         });
