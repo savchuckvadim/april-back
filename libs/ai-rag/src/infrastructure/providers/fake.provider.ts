@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { LlmProvider } from '../../domain/interfaces/llm-provider.interface';
+import {
+    CallAnalysisPair,
+    LlmProvider,
+} from '../../domain/interfaces/llm-provider.interface';
 
 const FAKE_RESUME = `Я провел презентацию нашего продукта и предложил варианты автоматизации для их бизнеса. Клиент сначала выразил интерес, но при уточнении деталей стал скептичен. Я объяснил ценность решения для бухгалтерии, однако клиент ответил, что у них уже есть свои инструменты. В итоге договорились вернуться к обсуждению позже при появлении потребности.`;
 
@@ -17,5 +20,14 @@ export class FakeProvider implements LlmProvider {
         void query;
         void domain;
         return Promise.resolve(FAKE_RECOMENDATION);
+    }
+
+    analyzeCall(query: string, domain?: string): Promise<CallAnalysisPair> {
+        void query;
+        void domain;
+        return Promise.resolve({
+            resume: FAKE_RESUME,
+            recomendation: FAKE_RECOMENDATION,
+        });
     }
 }

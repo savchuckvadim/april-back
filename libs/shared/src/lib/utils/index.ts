@@ -6,3 +6,4 @@ export * from './primitive-bigint.util';
 export * from './crypt.util';
 export * from './name';
 export * from './word';
+export * from './semaphore.util';

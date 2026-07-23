@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { LlmProvider } from '../domain/interfaces/llm-provider.interface';
+import {
+    CallAnalysisPair,
+    LlmProvider,
+} from '../domain/interfaces/llm-provider.interface';
 import { LlmModel } from '../domain/types/llm-model.type';
 import { FakeProvider } from '../infrastructure/providers/fake.provider';
 import { GigaChatProvider } from '../infrastructure/providers/gigachat.provider';
@@ -25,6 +28,18 @@ export class LlmOrchestratorService {
         domain?: string,
     ): Promise<string> {
         return this.resolveProvider(model).recomendation(query, domain);
+    }
+
+    /**
+     * Резюме + рекомендации одним вызовом LLM (дешевле двух раздельных);
+     * фолбэк на два вызова — внутри провайдера.
+     */
+    analyzeCall(
+        model: LlmModel,
+        query: string,
+        domain?: string,
+    ): Promise<CallAnalysisPair> {
+        return this.resolveProvider(model).analyzeCall(query, domain);
     }
 
     private resolveProvider(model: LlmModel): LlmProvider {

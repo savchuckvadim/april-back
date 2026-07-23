@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
+import {
+    CALL_REPORT_CALL_TYPE_CODES,
+    CALL_REPORT_INTERLOCUTOR_CODES,
+} from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { CallSalesAnalysisResultDto } from '../dto/call-sales-analysis.dto';
+import { CallClassificationResultDto } from '../dto/call-classification.dto';
 
 interface VibecodeTranscriptionResponse {
     text?: string;
@@ -108,6 +113,47 @@ const CALL_ANALYSIS_SCHEMA = {
     ],
     additionalProperties: false,
 };
+
+/** Лимит транскрипта для классификации: типа звонка хватает и по началу разговора. */
+const CLASSIFICATION_TRANSCRIPT_LIMIT = 30_000;
+
+const CALL_CLASSIFICATION_SCHEMA = {
+    type: 'object',
+    properties: {
+        callType: {
+            type: 'string',
+            enum: [...CALL_REPORT_CALL_TYPE_CODES],
+        },
+        interlocutorRole: {
+            type: 'string',
+            enum: [...CALL_REPORT_INTERLOCUTOR_CODES],
+        },
+        confidence: { type: 'number' },
+        reason: { type: 'string' },
+    },
+    required: ['callType', 'interlocutorRole', 'confidence', 'reason'],
+    additionalProperties: false,
+};
+
+const CLASSIFICATION_SYSTEM_PROMPT = `Ты классифицируешь расшифровки телефонных звонков менеджеров по продажам ИПО ГАРАНТ.
+Определи тип звонка и с кем в итоге говорил менеджер.
+
+callType — тип звонка (ровно один код):
+- 'cold' — холодный звонок: менеджер впервые выходит на компанию, пытается пройти секретаря / выйти на ЛПР
+- 'call' — повторный звонок, цель которого договориться о презентации продукта
+- 'presentation' — сама презентация: менеджер подробно показывает/рассказывает продукт под потребности
+- 'decision' — звонок по принятию решения: клиент уже видел продукт, обсуждается решение о покупке
+- 'payment' — звонок по оплате: счёт, договор, сроки оплаты
+- 'other' — не подходит ни под один тип (сервисный, ошибочный, личный и т.п.)
+
+interlocutorRole — с кем говорили:
+- 'lpr' — лицо, принимающее решение (директор, главбух, руководитель)
+- 'user' — потенциальный пользователь продукта, но не ЛПР
+- 'secretary' — секретарь / ресепшн, до содержательного собеседника не дошли
+- 'other' — автоответчик, не та организация, не удалось определить
+
+confidence — уверенность 0..1 (0.9+ — очевидно; ниже 0.6 — сомнительно, тип определён по косвенным признакам).
+reason — 1-2 предложения на русском: почему выбраны такие коды.`;
 
 const ANALYSIS_SYSTEM_PROMPT = `Ты — AI-ассистент, анализирующий расшифровки телефонных звонков менеджеров по продажам.
 Твоя задача — извлечь структурированную информацию из разговора и заполнить все поля.
@@ -219,22 +265,56 @@ export class VibeCodeClient {
         transcript: string,
     ): Promise<CallSalesAnalysisResultDto> {
         this.logger.log('Analyzing transcript with Vibecode LLM');
+        const parsed = await this.chatCompletionJson(
+            ANALYSIS_SYSTEM_PROMPT,
+            `Проанализируй следующую расшифровку звонка:\n\n${transcript}`,
+            'call_sales_analysis',
+            CALL_ANALYSIS_SCHEMA,
+        );
+        return plainToInstance(CallSalesAnalysisResultDto, parsed);
+    }
 
+    /**
+     * Дешёвая классификация звонка (tier-1): тип звонка + роль собеседника
+     * + уверенность. Выполняется в начале конвейера call-report; длинный
+     * транскрипт обрезается — для классификации хватает начала разговора.
+     */
+    async classifyCall(
+        transcript: string,
+    ): Promise<CallClassificationResultDto> {
+        this.logger.log('Classifying call with Vibecode LLM');
+        const trimmed =
+            transcript.length > CLASSIFICATION_TRANSCRIPT_LIMIT
+                ? transcript.slice(0, CLASSIFICATION_TRANSCRIPT_LIMIT)
+                : transcript;
+        const parsed = await this.chatCompletionJson(
+            CLASSIFICATION_SYSTEM_PROMPT,
+            `Классифицируй звонок по расшифровке:\n\n${trimmed}`,
+            'call_classification',
+            CALL_CLASSIFICATION_SCHEMA,
+        );
+        return plainToInstance(CallClassificationResultDto, parsed);
+    }
+
+    /** Общий вызов chat/completions со strict JSON-схемой ответа. */
+    private async chatCompletionJson(
+        systemPrompt: string,
+        userContent: string,
+        schemaName: string,
+        schema: Record<string, unknown>,
+    ): Promise<unknown> {
         const body = {
             model: ANALYSIS_MODEL,
             messages: [
-                { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
-                {
-                    role: 'user',
-                    content: `Проанализируй следующую расшифровку звонка:\n\n${transcript}`,
-                },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userContent },
             ],
             response_format: {
                 type: 'json_schema',
                 json_schema: {
-                    name: 'call_sales_analysis',
+                    name: schemaName,
                     strict: true,
-                    schema: CALL_ANALYSIS_SCHEMA,
+                    schema,
                 },
             },
         };
@@ -252,16 +332,15 @@ export class VibeCodeClient {
         if (!response.ok) {
             const error = await response.text();
             throw new Error(
-                `Vibecode analysis failed [${response.status}]: ${error}`,
+                `Vibecode ${schemaName} failed [${response.status}]: ${error}`,
             );
         }
 
         const data = (await response.json()) as VibecodeChatCompletionsResponse;
-
         const content = data.choices?.[0]?.message?.content;
-        if (!content) throw new Error('Empty analysis result from Vibecode');
-
-        const parsed: unknown = JSON.parse(content);
-        return plainToInstance(CallSalesAnalysisResultDto, parsed);
+        if (!content) {
+            throw new Error(`Empty ${schemaName} result from Vibecode`);
+        }
+        return JSON.parse(content) as unknown;
     }
 }

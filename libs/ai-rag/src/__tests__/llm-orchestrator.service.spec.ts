@@ -5,6 +5,10 @@ function makeProvider(label: string): jest.Mocked<LlmProvider> {
     return {
         resume: jest.fn().mockResolvedValue(`${label}:resume`),
         recomendation: jest.fn().mockResolvedValue(`${label}:recomendation`),
+        analyzeCall: jest.fn().mockResolvedValue({
+            resume: `${label}:resume`,
+            recomendation: `${label}:recomendation`,
+        }),
     };
 }
 
@@ -52,6 +56,32 @@ describe('LlmOrchestratorService', () => {
             expect(result).toBe(
                 `${model === 'gigachat' ? 'giga' : model}:recomendation`,
             );
+        },
+    );
+
+    it.each([
+        ['gigachat', giga],
+        ['openai', openai],
+        ['ollama', ollama],
+        ['fake', fake],
+    ] as const)(
+        'делегирует analyzeCall провайдеру %s',
+        async (model, provider) => {
+            const result = await orchestrator.analyzeCall(
+                model,
+                'query',
+                'domain.ru',
+            );
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            expect(provider.analyzeCall).toHaveBeenCalledWith(
+                'query',
+                'domain.ru',
+            );
+            const label = model === 'gigachat' ? 'giga' : model;
+            expect(result).toEqual({
+                resume: `${label}:resume`,
+                recomendation: `${label}:recomendation`,
+            });
         },
     );
 });

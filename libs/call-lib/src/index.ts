@@ -9,6 +9,8 @@ export * from './transcription/types/transcription-pipeline.types';
 export * from './ai/services/ai.service';
 export * from './ai/dto/ai-entity.dto';
 export * from './call-analysis/services/call-analysis-bitrix.service';
+export * from './call-analysis/clients/vibecode.client';
+export * from './call-analysis/dto/call-classification.dto';
 export * from './call-report/call-report-smart.module';
 export * from './call-report/config/call-report-smart.config';
 export * from './call-report/services/call-report-smart-resolver.service';

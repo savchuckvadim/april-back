@@ -6,9 +6,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import { ChainBuilderService } from '../../application/chain-builder.service';
-import { LlmProvider } from '../../domain/interfaces/llm-provider.interface';
+import {
+    CallAnalysisPair,
+    LlmProvider,
+} from '../../domain/interfaces/llm-provider.interface';
 import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.service';
 import { extractResult } from '../../application/extract-result.util';
+import { CombinedCallAnalysisService } from '../../application/combined-call-analysis.service';
 
 @Injectable()
 export class OpenAiProvider implements LlmProvider {
@@ -22,6 +26,7 @@ export class OpenAiProvider implements LlmProvider {
         configService: ConfigService,
         private readonly chainBuilder: ChainBuilderService,
         private readonly vectorStoreService: MemoryVectorStoreService,
+        private readonly combinedAnalysis: CombinedCallAnalysisService,
     ) {
         this.apiKey = configService.get<string>('OPENAI_API_KEY');
     }
@@ -32,6 +37,34 @@ export class OpenAiProvider implements LlmProvider {
 
     async recomendation(query: string, domain?: string): Promise<string> {
         return this.run(query, 'recomendation', domain);
+    }
+
+    /** Резюме + рекомендации одним вызовом; при сбое — два раздельных. */
+    async analyzeCall(
+        query: string,
+        domain?: string,
+    ): Promise<CallAnalysisPair> {
+        try {
+            return await this.combinedAnalysis.run({
+                llm: this.getLlm(),
+                getRetriever: kind =>
+                    this.vectorStoreService.getRetriever(
+                        this.getEmbeddings(),
+                        this.modelName,
+                        domain,
+                        kind,
+                    ),
+                transcript: query,
+            });
+        } catch (error) {
+            this.logger.warn(
+                `OpenAI объединённый анализ не удался (${(error as Error).message}) — fallback на два вызова`,
+            );
+            return {
+                resume: await this.resume(query, domain),
+                recomendation: await this.recomendation(query, domain),
+            };
+        }
     }
 
     private async run(

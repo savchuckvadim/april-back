@@ -9,8 +9,23 @@ import {
 } from '../use-cases/call-report-pipeline.use-case';
 
 /**
- * Воркер очереди CALL_REPORT: обрабатывает по одному звонку за раз
- * (concurrency 1 — не параллелим транскрибаторы и GigaChat).
+ * Concurrency воркера читается на этапе декорации класса, поэтому только
+ * из process.env (env CALL_REPORT_CONCURRENCY, по умолчанию 3).
+ * Параллелить звонки безопасно: у каждого внешнего провайдера свой
+ * пер-провайдерный лимитер (TranscriptionRouterService, GigaChatProvider).
+ */
+function resolveConcurrency(): number {
+    const parsed = Number.parseInt(
+        process.env.CALL_REPORT_CONCURRENCY ?? '',
+        10,
+    );
+    return Number.isFinite(parsed) && parsed >= 1 ? parsed : 3;
+}
+
+/**
+ * Воркер очереди CALL_REPORT: обрабатывает до CALL_REPORT_CONCURRENCY
+ * звонков параллельно; лимиты на транскрибаторы и LLM держат
+ * пер-провайдерные семафоры внутри сервисов.
  * Ошибка пробрасывается в Bull для ретрая (attempts задаёт сканер);
  * статус error в transcriptions ставит сам pipeline use-case.
  */
@@ -20,7 +35,10 @@ export class CallReportProcessor {
 
     constructor(private readonly pipeline: CallReportPipelineUseCase) {}
 
-    @Process({ name: JobNames.CALL_REPORT_ANALYZE, concurrency: 1 })
+    @Process({
+        name: JobNames.CALL_REPORT_ANALYZE,
+        concurrency: resolveConcurrency(),
+    })
     async handle(job: Job<CallReportJobPayload>): Promise<void> {
         const { domain, activityId } = job.data;
         this.logger.log(

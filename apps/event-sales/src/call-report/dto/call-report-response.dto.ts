@@ -130,4 +130,14 @@ export class AnalyzeCallResponseDto implements CallReportPipelineResult {
         type: Boolean,
     })
     recomendationSaved: boolean;
+
+    @ApiProperty({
+        description:
+            'Тип звонка от дешёвого классификатора (cold / call / presentation / ' +
+            'decision / payment / other); null — классификация выключена или не удалась.',
+        example: 'cold',
+        type: String,
+        nullable: true,
+    })
+    callType: string | null;
 }

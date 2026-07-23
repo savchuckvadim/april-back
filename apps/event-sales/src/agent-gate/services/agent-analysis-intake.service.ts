@@ -18,6 +18,7 @@ import {
 } from '../dto/agent-analysis-request.dto';
 import { AgentAnalysisResponseDto } from '../dto/agent-response.dto';
 import { AGENT_ANALYSIS_TYPE } from './agent-call-package.service';
+import { computeSpeechMetrics } from './speech-metrics.util';
 
 /** Итог записи смарт-элемента + контекст для таймлайнов. */
 interface SmartItemWriteResult {
@@ -56,6 +57,7 @@ export class AgentAnalysisIntakeService {
         dto: AgentCallAnalysisDto,
         allowedDomains: string[] | null = null,
     ): Promise<AgentAnalysisResponseDto> {
+        dto = this.applySpeechMetrics(transcriptionId, dto);
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.domain) {
@@ -133,6 +135,41 @@ export class AgentAnalysisIntakeService {
             aiId: String(aiRecord.id),
             smartItemId: written?.itemId ?? null,
             smartInstalled: written !== null,
+        };
+    }
+
+    /**
+     * «Code computes numbers»: talkRatioPct и questionsCount считаются
+     * кодом по размеченному агентом диалогу и перекрывают значения LLM
+     * (LLM систематически ошибается в арифметике на длинных диалогах).
+     * Без диалога метрики остаются агентскими. Исходный dto не мутируем.
+     */
+    private applySpeechMetrics(
+        transcriptionId: string,
+        dto: AgentCallAnalysisDto,
+    ): AgentCallAnalysisDto {
+        const metrics = computeSpeechMetrics(dto.dialog);
+        if (!metrics) return dto;
+        if (
+            dto.talkRatioPct !== undefined &&
+            dto.talkRatioPct !== metrics.talkRatioPct
+        ) {
+            this.logger.log(
+                `talkRatioPct агента ${dto.talkRatioPct} → ${metrics.talkRatioPct} (пересчёт кодом, transcription ${transcriptionId})`,
+            );
+        }
+        if (
+            dto.questionsCount !== undefined &&
+            dto.questionsCount !== metrics.questionsCount
+        ) {
+            this.logger.log(
+                `questionsCount агента ${dto.questionsCount} → ${metrics.questionsCount} (пересчёт кодом, transcription ${transcriptionId})`,
+            );
+        }
+        return {
+            ...dto,
+            talkRatioPct: metrics.talkRatioPct,
+            questionsCount: metrics.questionsCount,
         };
     }
 

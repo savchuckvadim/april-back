@@ -17,6 +17,6 @@ import { TranscriptionRouterService } from './transcription-router.service';
         VibeCodeClient,
         TranscriptionRouterService,
     ],
-    exports: [TranscriptionRouterService],
+    exports: [TranscriptionRouterService, VibeCodeClient],
 })
 export class TranscriptionProviderModule {}

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Semaphore, parseConcurrency } from '@lib/shared';
 import { YandexStorageService } from '@lib/call-lib/yandex/yandex-storage.service';
 import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
 import { VibeCodeClient } from '../../call-analysis/clients/vibecode.client';
@@ -43,6 +44,14 @@ export class TranscriptionRouterService {
     private readonly logger = new Logger(TranscriptionRouterService.name);
     private readonly mode: TranscriptionRouterMode;
     private readonly yandexMinSec: number;
+    /**
+     * Пер-провайдерные лимитеры одновременности: очередь call-report
+     * обрабатывает несколько звонков параллельно, но каждый транскрибатор
+     * держит не больше своего лимита одновременных запросов
+     * (env TRANSCRIPTION_YANDEX_CONCURRENCY / TRANSCRIPTION_VIBECODE_CONCURRENCY).
+     */
+    private readonly yandexLimiter: Semaphore;
+    private readonly vibecodeLimiter: Semaphore;
 
     constructor(
         private readonly configService: ConfigService,
@@ -59,6 +68,22 @@ export class TranscriptionRouterService {
         this.yandexMinSec = Number(
             this.configService.get<string>('TRANSCRIPTION_YANDEX_MIN_SEC') ??
                 600,
+        );
+        this.yandexLimiter = new Semaphore(
+            parseConcurrency(
+                this.configService.get<string>(
+                    'TRANSCRIPTION_YANDEX_CONCURRENCY',
+                ),
+                2,
+            ),
+        );
+        this.vibecodeLimiter = new Semaphore(
+            parseConcurrency(
+                this.configService.get<string>(
+                    'TRANSCRIPTION_VIBECODE_CONCURRENCY',
+                ),
+                3,
+            ),
         );
     }
 
@@ -78,9 +103,8 @@ export class TranscriptionRouterService {
         }
 
         try {
-            const text = await this.vibecode.transcribeAudio(
-                input.buffer,
-                input.fileName,
+            const text = await this.vibecodeLimiter.run(() =>
+                this.vibecode.transcribeAudio(input.buffer, input.fileName),
             );
             return { text, provider: 'bitrix-vibecode' };
         } catch (error) {
@@ -107,14 +131,16 @@ export class TranscriptionRouterService {
     private async transcribeYandex(
         input: TranscribeCallInput,
     ): Promise<string> {
-        const s3Key = `transcription/audio/${input.domain}/call-report/${input.fileName}`;
-        const fileUri = await this.yandexStorage.uploadFile(
-            input.buffer,
-            s3Key,
-            'audio/mpeg',
-        );
-        const operationId =
-            await this.yandexTranscription.transcribeAudio(fileUri);
-        return this.yandexTranscription.getTranscriptionResult(operationId);
+        return this.yandexLimiter.run(async () => {
+            const s3Key = `transcription/audio/${input.domain}/call-report/${input.fileName}`;
+            const fileUri = await this.yandexStorage.uploadFile(
+                input.buffer,
+                s3Key,
+                'audio/mpeg',
+            );
+            const operationId =
+                await this.yandexTranscription.transcribeAudio(fileUri);
+            return this.yandexTranscription.getTranscriptionResult(operationId);
+        });
     }
 }

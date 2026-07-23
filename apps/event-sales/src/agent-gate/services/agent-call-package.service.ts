@@ -20,6 +20,9 @@ import {
 /** Тип ais-записи, которой агент помечает свой анализ (intake). */
 export const AGENT_ANALYSIS_TYPE = 'agent-analysis';
 
+/** Тип ais-записи дешёвой классификации конвейера (call-report pipeline). */
+export const CALL_CLASSIFY_TYPE = 'call-classify';
+
 /** Активные сделки компании по воронкам ОП — кандидаты для связей. */
 export interface AgentDealCandidates {
     salesBase: Record<string, unknown>[];
@@ -82,7 +85,7 @@ export class AgentCallPackageService {
                 ...(await this.listPending(domain, limit - pending.length)),
             );
         }
-        return pending.slice(0, limit);
+        return this.sortPending(pending).slice(0, limit);
     }
 
     /** Проверка доменной изоляции; чужой домен — 403. */
@@ -131,17 +134,45 @@ export class AgentCallPackageService {
                     .filter(record => record.type === AGENT_ANALYSIS_TYPE)
                     .map(record => String(record.transcription_id)),
             );
+            // Тип звонка от дешёвого классификатора конвейера — для
+            // группировки ночного батча агента по (domain, callType).
+            const callTypes = new Map<string, string>(
+                agentRecords
+                    .filter(
+                        record =>
+                            record.type === CALL_CLASSIFY_TYPE && record.result,
+                    )
+                    .map(record => [
+                        String(record.transcription_id),
+                        String(record.result),
+                    ]),
+            );
 
             for (const row of rows) {
                 if (analyzedIds.has(row.id)) continue;
-                pending.push(this.toPendingDto(row, false));
+                pending.push(
+                    this.toPendingDto(row, false, callTypes.get(row.id)),
+                );
                 if (pending.length >= limit) break;
             }
 
             if (rows.length < BATCH) break;
         }
 
-        return pending;
+        return this.sortPending(pending);
+    }
+
+    /**
+     * Сортировка pending по (domain, callType): звонки одного типа идут
+     * подряд — методология типа в промпте агента переиспользуется из кэша
+     * (prompt caching), неклассифицированные — в конце группы домена.
+     */
+    private sortPending(pending: AgentPendingCallDto[]): AgentPendingCallDto[] {
+        return [...pending].sort(
+            (a, b) =>
+                a.domain.localeCompare(b.domain) ||
+                (a.callType ?? '￿').localeCompare(b.callType ?? '￿'),
+        );
     }
 
     /** Полный пакет по звонку для глубокого анализа. */
@@ -170,6 +201,9 @@ export class AgentCallPackageService {
         const hasAgentAnalysis = aiRecords.some(
             record => record.type === AGENT_ANALYSIS_TYPE,
         );
+        const callType = aiRecords.find(
+            record => record.type === CALL_CLASSIFY_TYPE && record.result,
+        )?.result;
 
         const bitrixData = await this.loadBitrixContext(row).catch(error => {
             this.logger.warn(
@@ -179,7 +213,11 @@ export class AgentCallPackageService {
         });
 
         return {
-            call: this.toPendingDto(row, hasAgentAnalysis),
+            call: this.toPendingDto(
+                row,
+                hasAgentAnalysis,
+                callType ?? undefined,
+            ),
             transcript: row.text ?? '',
             aiResults: aiRecords.map(record => this.toAiResultDto(record)),
             ...bitrixData,
@@ -420,6 +458,7 @@ export class AgentCallPackageService {
     private toPendingDto(
         row: TranscriptionPipelineView,
         hasAgentAnalysis: boolean,
+        callType?: string,
     ): AgentPendingCallDto {
         return {
             transcriptionId: row.id,
@@ -432,6 +471,7 @@ export class AgentCallPackageService {
             provider: row.provider ?? undefined,
             textLength: row.text?.length ?? 0,
             hasAgentAnalysis,
+            callType,
         };
     }
 

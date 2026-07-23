@@ -73,6 +73,17 @@ export class AgentPendingCallDto {
         type: Boolean,
     })
     hasAgentAnalysis: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Тип звонка от дешёвого классификатора конвейера (cold / call / ' +
+            'presentation / decision / payment / other). Список отсортирован по ' +
+            '(domain, callType) — обрабатывая подряд, агент переиспользует кэш ' +
+            'промпта методологии одного типа.',
+        example: 'cold',
+        type: String,
+    })
+    callType?: string;
 }
 
 /** AI-результат первичного анализа (GigaChat RAG и др.) из таблицы ais. */

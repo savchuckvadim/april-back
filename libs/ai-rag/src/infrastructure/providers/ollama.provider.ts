@@ -6,9 +6,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
 import { ChainBuilderService } from '../../application/chain-builder.service';
-import { LlmProvider } from '../../domain/interfaces/llm-provider.interface';
+import {
+    CallAnalysisPair,
+    LlmProvider,
+} from '../../domain/interfaces/llm-provider.interface';
 import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.service';
 import { extractResult } from '../../application/extract-result.util';
+import { CombinedCallAnalysisService } from '../../application/combined-call-analysis.service';
 
 const DEFAULT_OLLAMA_BASE_URL = 'http://45.12.74.239:11434';
 
@@ -24,6 +28,7 @@ export class OllamaProvider implements LlmProvider {
         configService: ConfigService,
         private readonly chainBuilder: ChainBuilderService,
         private readonly vectorStoreService: MemoryVectorStoreService,
+        private readonly combinedAnalysis: CombinedCallAnalysisService,
     ) {
         this.baseUrl =
             configService.get<string>('OLLAMA_BASE_URL') ??
@@ -36,6 +41,34 @@ export class OllamaProvider implements LlmProvider {
 
     async recomendation(query: string, domain?: string): Promise<string> {
         return this.run(query, 'recomendation', domain);
+    }
+
+    /** Резюме + рекомендации одним вызовом; при сбое — два раздельных. */
+    async analyzeCall(
+        query: string,
+        domain?: string,
+    ): Promise<CallAnalysisPair> {
+        try {
+            return await this.combinedAnalysis.run({
+                llm: this.getLlm(),
+                getRetriever: kind =>
+                    this.vectorStoreService.getRetriever(
+                        this.getEmbeddings(),
+                        this.modelName,
+                        domain,
+                        kind,
+                    ),
+                transcript: query,
+            });
+        } catch (error) {
+            this.logger.warn(
+                `Ollama объединённый анализ не удался (${(error as Error).message}) — fallback на два вызова`,
+            );
+            return {
+                resume: await this.resume(query, domain),
+                recomendation: await this.recomendation(query, domain),
+            };
+        }
     }
 
     private async run(

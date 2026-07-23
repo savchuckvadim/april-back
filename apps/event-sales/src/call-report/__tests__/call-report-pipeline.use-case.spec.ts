@@ -7,10 +7,19 @@ const PAYLOAD = {
     durationSec: 700,
 };
 
+const CLASSIFICATION = {
+    callType: 'cold',
+    interlocutorRole: 'secretary',
+    confidence: 0.9,
+    reason: 'Проход секретаря',
+};
+
 const makeDeps = (overrides?: {
     routerError?: boolean;
     llmError?: boolean;
     noAudio?: boolean;
+    classifyError?: boolean;
+    combinedDisabled?: boolean;
 }) => {
     const bitrix = {
         activity: {
@@ -56,6 +65,12 @@ const makeDeps = (overrides?: {
     };
     const aiService = { create: jest.fn().mockResolvedValue({ id: '1' }) };
     const llm = {
+        analyzeCall: overrides?.llmError
+            ? jest.fn().mockRejectedValue(new Error('llm down'))
+            : jest.fn().mockResolvedValue({
+                  resume: 'резюме',
+                  recomendation: 'рекомендации',
+              }),
         resume: overrides?.llmError
             ? jest.fn().mockRejectedValue(new Error('llm down'))
             : jest.fn().mockResolvedValue('резюме'),
@@ -63,7 +78,19 @@ const makeDeps = (overrides?: {
             ? jest.fn().mockRejectedValue(new Error('llm down'))
             : jest.fn().mockResolvedValue('рекомендации'),
     };
-    const config = { get: jest.fn(() => undefined) };
+    const vibecode = {
+        classifyCall: overrides?.classifyError
+            ? jest.fn().mockRejectedValue(new Error('vibecode down'))
+            : jest.fn().mockResolvedValue(CLASSIFICATION),
+    };
+    const config = {
+        get: jest.fn((key: string) =>
+            overrides?.combinedDisabled &&
+            key === 'CALL_REPORT_COMBINED_ANALYSIS'
+                ? '0'
+                : undefined,
+        ),
+    };
     global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)),
@@ -75,16 +102,17 @@ const makeDeps = (overrides?: {
         store as never,
         aiService as never,
         llm as never,
+        vibecode as never,
         config as never,
     );
-    return { useCase, store, aiService, bitrix, router };
+    return { useCase, store, aiService, bitrix, router, llm, vibecode };
 };
 
 describe('CallReportPipelineUseCase', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('happy path: транскрипт done, две ais-записи, коммент в таймлайн', async () => {
-        const { useCase, store, aiService, bitrix } = makeDeps();
+    it('happy path: транскрипт done, классификация + две ais-записи, коммент в таймлайн', async () => {
+        const { useCase, store, aiService, bitrix, llm } = makeDeps();
         const result = await useCase.execute(PAYLOAD);
 
         expect(store.startPipeline).toHaveBeenCalledWith(
@@ -98,7 +126,16 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ status: 'done', provider: 'yandex' }),
         );
-        expect(aiService.create).toHaveBeenCalledTimes(2);
+        // Резюме+рекомендации — ОДНИМ объединённым вызовом.
+        expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
+        expect(llm.resume).not.toHaveBeenCalled();
+        expect(aiService.create).toHaveBeenCalledTimes(3);
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'call-classify',
+                result: 'cold',
+            }),
+        );
         expect(aiService.create).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'call-resume' }),
         );
@@ -111,7 +148,27 @@ describe('CallReportPipelineUseCase', () => {
             provider: 'yandex',
             resumeSaved: true,
             recomendationSaved: true,
+            callType: 'cold',
         });
+    });
+
+    it('CALL_REPORT_COMBINED_ANALYSIS=0 возвращает два раздельных вызова', async () => {
+        const { useCase, llm } = makeDeps({ combinedDisabled: true });
+        await useCase.execute(PAYLOAD);
+        expect(llm.analyzeCall).not.toHaveBeenCalled();
+        expect(llm.resume).toHaveBeenCalledTimes(1);
+        expect(llm.recomendation).toHaveBeenCalledTimes(1);
+    });
+
+    it('ошибка классификатора не роняет конвейер — анализ идёт дальше', async () => {
+        const { useCase, aiService } = makeDeps({ classifyError: true });
+        const result = await useCase.execute(PAYLOAD);
+        expect(result.callType).toBeNull();
+        expect(aiService.create).toHaveBeenCalledTimes(2);
+        expect(aiService.create).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'call-classify' }),
+        );
+        expect(result.resumeSaved).toBe(true);
     });
 
     it('ошибка транскрибации ставит status=error и пробрасывается', async () => {
@@ -125,7 +182,7 @@ describe('CallReportPipelineUseCase', () => {
         expect(aiService.create).not.toHaveBeenCalled();
     });
 
-    it('падение GigaChat не роняет конвейер — транскрипт сохранён', async () => {
+    it('падение LLM не роняет конвейер — транскрипт сохранён', async () => {
         const { useCase, store, aiService, bitrix } = makeDeps({
             llmError: true,
         });
@@ -134,7 +191,11 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ status: 'done' }),
         );
-        expect(aiService.create).not.toHaveBeenCalled();
+        // Единственная ais-запись — классификация (она независима от LLM).
+        expect(aiService.create).toHaveBeenCalledTimes(1);
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'call-classify' }),
+        );
         expect(bitrix.timeline.addTimelineComment).not.toHaveBeenCalled();
         expect(result.resumeSaved).toBe(false);
         expect(result.recomendationSaved).toBe(false);

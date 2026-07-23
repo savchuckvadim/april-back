@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AiRagController } from './controllers/ai-rag.controller';
 import { AiRagKnowledgeController } from './controllers/ai-rag-knowledge.controller';
 import { ChainBuilderService } from './application/chain-builder.service';
+import { CombinedCallAnalysisService } from './application/combined-call-analysis.service';
 import { LlmOrchestratorService } from './application/llm-orchestrator.service';
 import { LongDialogueService } from './application/long-dialogue.service';
 import { KnowledgeContentService } from './application/knowledge-content.service';
@@ -17,6 +18,7 @@ import { OpenAiProvider } from './infrastructure/providers/openai.provider';
     controllers: [AiRagController, AiRagKnowledgeController],
     providers: [
         ChainBuilderService,
+        CombinedCallAnalysisService,
         LlmOrchestratorService,
         LongDialogueService,
         KnowledgeContentService,

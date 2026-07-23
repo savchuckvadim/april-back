@@ -6,9 +6,11 @@ import {
     buildDedupKey,
     CALL_REPORT_ENTITY_TYPE_DEAL,
     CallAnalysisBitrixService,
+    CallClassificationResultDto,
     TranscriptionRouterService,
     TranscriptionStoreService,
     AiService,
+    VibeCodeClient,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
 
@@ -27,14 +29,20 @@ export interface CallReportPipelineResult {
     provider: string;
     resumeSaved: boolean;
     recomendationSaved: boolean;
+    /** Тип звонка от дешёвого классификатора (null — классификация не удалась/выключена). */
+    callType: string | null;
 }
 
 const APP_NAME = 'call-report';
 
+/** Тип ais-записи дешёвой классификации звонка (tier-1). */
+export const CALL_CLASSIFY_TYPE = 'call-classify';
+
 /**
  * Конвейер обработки одного звонка: аудио из Bitrix → транскрибация
- * (Yandex/Vibecode по длительности) → первичный RAG-анализ GigaChat
- * (resume + recomendation) → персист в transcriptions/ais → короткое
+ * (Yandex/Vibecode по длительности) → дешёвая классификация типа звонка
+ * (VibeCode) → первичный RAG-анализ (resume + recomendation ОДНИМ
+ * объединённым вызовом LLM) → персист в transcriptions/ais → короткое
  * резюме в таймлайн сделки.
  *
  * Смарт-элемент здесь НЕ создаётся — его создаёт push-back внешнего
@@ -47,6 +55,10 @@ const APP_NAME = 'call-report';
 export class CallReportPipelineUseCase {
     private readonly logger = new Logger(CallReportPipelineUseCase.name);
     private readonly llmModel: LlmModel;
+    /** Kill-switch объединённого вызова: CALL_REPORT_COMBINED_ANALYSIS=0 → два раздельных. */
+    private readonly combinedAnalysisEnabled: boolean;
+    /** Kill-switch классификатора: CALL_REPORT_CLASSIFY_ENABLED=0 → шаг пропускается. */
+    private readonly classifyEnabled: boolean;
 
     constructor(
         private readonly pbxService: PBXService,
@@ -54,12 +66,19 @@ export class CallReportPipelineUseCase {
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
         private readonly llmOrchestrator: LlmOrchestratorService,
+        private readonly vibeCodeClient: VibeCodeClient,
         private readonly configService: ConfigService,
     ) {
         const model = this.configService.get<string>('CALL_REPORT_LLM_MODEL');
         this.llmModel = LLM_MODELS.includes(model as LlmModel)
             ? (model as LlmModel)
             : 'gigachat';
+        this.combinedAnalysisEnabled =
+            this.configService.get<string>('CALL_REPORT_COMBINED_ANALYSIS') !==
+            '0';
+        this.classifyEnabled =
+            this.configService.get<string>('CALL_REPORT_CLASSIFY_ENABLED') !==
+            '0';
     }
 
     async execute(
@@ -128,9 +147,13 @@ export class CallReportPipelineUseCase {
             durationSec: payload.durationSec,
         });
 
-        const resume = await this.runAnalysis('resume', text, payload);
-        const recomendation = await this.runAnalysis(
-            'recomendation',
+        const classification = await this.classifyCall(
+            text,
+            payload,
+            transcriptionId,
+        );
+
+        const { resume, recomendation } = await this.runLlmAnalysis(
             text,
             payload,
         );
@@ -161,7 +184,41 @@ export class CallReportPipelineUseCase {
             provider,
             resumeSaved,
             recomendationSaved,
+            callType: classification?.callType ?? null,
         };
+    }
+
+    /**
+     * Резюме + рекомендации: по умолчанию ОДНИМ объединённым вызовом LLM
+     * (провайдер сам откатывается на два вызова при непарсибельном ответе);
+     * kill-switch CALL_REPORT_COMBINED_ANALYSIS=0 возвращает раздельный путь.
+     * Ошибка анализа не роняет конвейер — транскрипт уже сохранён.
+     */
+    private async runLlmAnalysis(
+        text: string,
+        payload: CallReportJobPayload,
+    ): Promise<{ resume: string | null; recomendation: string | null }> {
+        if (this.combinedAnalysisEnabled) {
+            try {
+                return await this.llmOrchestrator.analyzeCall(
+                    this.llmModel,
+                    text,
+                    payload.domain,
+                );
+            } catch (error) {
+                this.logger.warn(
+                    `LLM-анализ не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
+                );
+                return { resume: null, recomendation: null };
+            }
+        }
+        const resume = await this.runAnalysis('resume', text, payload);
+        const recomendation = await this.runAnalysis(
+            'recomendation',
+            text,
+            payload,
+        );
+        return { resume, recomendation };
     }
 
     /** Один вид анализа; ошибка не роняет конвейер (транскрипт уже сохранён). */
@@ -185,6 +242,48 @@ export class CallReportPipelineUseCase {
         } catch (error) {
             this.logger.warn(
                 `GigaChat ${kind} не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Дешёвая классификация типа звонка (tier-1, VibeCode) в начале
+     * конвейера: тип попадает в pending-список agent-gate и группирует
+     * ночной батч агента. Ошибка шаг не роняет — классификация опциональна.
+     */
+    private async classifyCall(
+        text: string,
+        payload: CallReportJobPayload,
+        transcriptionId: string,
+    ): Promise<CallClassificationResultDto | null> {
+        if (!this.classifyEnabled) return null;
+        try {
+            const classification = await this.vibeCodeClient.classifyCall(text);
+            await this.aiService.create({
+                provider: 'bitrix-vibecode',
+                model: 'bitrix-vibecode',
+                type: CALL_CLASSIFY_TYPE,
+                status: 'done',
+                result: classification.callType,
+                user_result: JSON.parse(
+                    JSON.stringify(classification),
+                ) as Prisma.JsonValue,
+                activity_id: String(payload.activityId),
+                entity_type: CALL_REPORT_ENTITY_TYPE_DEAL,
+                entity_id: payload.dealId,
+                domain: payload.domain,
+                app: APP_NAME,
+                transcription_id: transcriptionId,
+            });
+            this.logger.log(
+                `Классификация: activity ${payload.activityId} → ${classification.callType} ` +
+                    `(${classification.interlocutorRole}, confidence ${classification.confidence})`,
+            );
+            return classification;
+        } catch (error) {
+            this.logger.warn(
+                `Классификация звонка не выполнена (activity ${payload.activityId}): ${(error as Error).message}`,
             );
             return null;
         }
