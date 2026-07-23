@@ -45,6 +45,14 @@ const DEPARTMENT_NAME_PATTERNS: Record<EDepartamentGroup, RegExp[]> = {
 
 const CACHE_TTL_SECONDS = 86400;
 
+/**
+ * Признак группы внутри ОП — подотдел с названием «Группа …».
+ * Прочие подотделы группами не считаются, но их сотрудники
+ * остаются в allUsers отдела (в некоторых ОП сотрудники лежат
+ * напрямую или в негрупповых подотделах).
+ */
+const GROUP_NAME_PATTERN = /группа/i;
+
 /** Экранирование пользовательского тэга перед вставкой в RegExp. */
 const escapeRegExp = (value: string): string =>
     value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -116,7 +124,8 @@ export class BxDepartmentStructureService {
         const mode = isMultiple
             ? `multi_${this.tagCacheKey(multipleTag)}`
             : 'single';
-        const cacheKey = `department_structure_${domain}_${day}_${group}_${mode}`;
+        // v2: группы фильтруются по названию «Группа…»
+        const cacheKey = `department_structure_v2_${domain}_${day}_${group}_${mode}`;
 
         const cached = await this.redis.get(cacheKey);
         if (cached) {
@@ -160,7 +169,9 @@ export class BxDepartmentStructureService {
             department: base.department,
             salesDepartments: generalDepartment.map(department => ({
                 department,
-                groups: childrenDepartments,
+                groups: childrenDepartments.filter(d =>
+                    this.isGroupName(d.NAME),
+                ),
                 allUsers,
             })),
             cupDepartments: [],
@@ -185,7 +196,7 @@ export class BxDepartmentStructureService {
             );
         }
 
-        const groupsRaw = all.filter(d =>
+        const childrenRaw = all.filter(d =>
             opsRaw.some(op => Number(d.PARENT) === Number(op.ID)),
         );
         const cupDepartments = all.filter(d =>
@@ -193,16 +204,18 @@ export class BxDepartmentStructureService {
         );
 
         const ops = await bxDepartments.enrichWithUsers(opsRaw);
-        const groups = await bxDepartments.enrichWithUsers(groupsRaw);
+        const children = await bxDepartments.enrichWithUsers(childrenRaw);
 
         const salesDepartments: ISalesDepartment[] = ops.map(op => {
-            const opGroups = groups.filter(
+            const opChildren = children.filter(
                 g => Number(g.PARENT) === Number(op.ID),
             );
             return {
                 department: op,
-                groups: opGroups,
-                allUsers: this.collectUsers([op, ...opGroups]),
+                // группами считаются только «Группа…», но сотрудники
+                // прочих подотделов остаются в allUsers отдела
+                groups: opChildren.filter(d => this.isGroupName(d.NAME)),
+                allUsers: this.collectUsers([op, ...opChildren]),
             };
         });
 
@@ -211,8 +224,8 @@ export class BxDepartmentStructureService {
                 // единого корневого id в мультирежиме нет
                 department: 0,
                 generalDepartment: ops,
-                childrenDepartments: groups,
-                allUsers: this.collectUsers([...ops, ...groups]),
+                childrenDepartments: children,
+                allUsers: this.collectUsers([...ops, ...children]),
             },
             salesDepartments,
             cupDepartments,
@@ -242,6 +255,10 @@ export class BxDepartmentStructureService {
             .map(token => token.trim())
             .filter(Boolean)
             .map(token => new RegExp(`^${escapeRegExp(token)}(\\s|$)`, 'i'));
+    }
+
+    private isGroupName(name: string): boolean {
+        return GROUP_NAME_PATTERN.test((name ?? '').trim());
     }
 
     private matchesName(name: string, patterns: RegExp[]): boolean {

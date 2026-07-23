@@ -16,7 +16,8 @@ const DOMAIN = 'example.bitrix24.ru';
 // ├─ 47 ОПТ склад (не должен матчиться)
 // └─ 53 Глава Воронеж (UF_HEAD 309)
 //    └─ 41 ОП Воронеж (UF_HEAD 202): user 202
-//       └─ 45 Звездочки (группа, UF_HEAD 203): users 203, 204
+//       ├─ 45 Группа Звездочки (группа, UF_HEAD 203): users 203, 204
+//       └─ 48 Стажеры (подотдел БЕЗ «Группа» — не группа, но user 205 остаётся в ОП)
 // 55 Глава Питер └─ 35 ОС Питер (группа service)
 const ALL_DEPARTMENTS = [
     { ID: 1, NAME: 'ГАРАНТ СЕРВИС', PARENT: '0', SORT: 1, UF_HEAD: 100 },
@@ -25,7 +26,8 @@ const ALL_DEPARTMENTS = [
     { ID: 47, NAME: 'ОПТ склад', PARENT: '1', SORT: 4 },
     { ID: 53, NAME: 'Глава Воронеж', PARENT: '1', SORT: 5, UF_HEAD: 309 },
     { ID: 41, NAME: 'ОП Воронеж', PARENT: '53', SORT: 6, UF_HEAD: 202 },
-    { ID: 45, NAME: 'Звездочки', PARENT: '41', SORT: 7, UF_HEAD: 203 },
+    { ID: 45, NAME: 'Группа Звездочки', PARENT: '41', SORT: 7, UF_HEAD: 203 },
+    { ID: 48, NAME: 'Стажеры', PARENT: '41', SORT: 10 },
     { ID: 55, NAME: 'Глава Питер', PARENT: '1', SORT: 8 },
     { ID: 35, NAME: 'ОС Питер', PARENT: '55', SORT: 9 },
 ];
@@ -40,6 +42,7 @@ const USERS_BY_DEPARTMENT: Record<number, IBXUser[]> = {
         { ID: 203, NAME: 'Лидер группы' },
         { ID: 204, NAME: 'Сотрудник группы' },
     ],
+    48: [{ ID: 205, NAME: 'Стажёр' }],
 };
 
 describe('BxDepartmentStructureService', () => {
@@ -129,14 +132,14 @@ describe('BxDepartmentStructureService', () => {
             // «ОПТ склад» и «ОС Питер» не матчатся
             expect(generalIds).not.toContain(47);
             expect(generalIds).not.toContain(35);
-            // группы всех ОП
+            // все подотделы ОП (включая негрупповые — legacy-формат)
             expect(
                 result.department.childrenDepartments.map(d => d.ID),
-            ).toEqual([45]);
-            // все сотрудники без дублей
+            ).toEqual([45, 48]);
+            // все сотрудники без дублей (205 из негруппового подотдела — тоже)
             expect(
                 result.department.allUsers.map(u => Number(u.ID)).sort(),
-            ).toEqual([201, 202, 203, 204, 210]);
+            ).toEqual([201, 202, 203, 204, 205, 210]);
             // поле department = 0 в мультирежиме
             expect(result.department.department).toBe(0);
         });
@@ -151,9 +154,11 @@ describe('BxDepartmentStructureService', () => {
             const voronezh = result.salesDepartments.find(
                 s => s.department.ID === 41,
             );
+            // группой считается только «Группа…»; «Стажеры» — нет,
+            // но их сотрудник остаётся в allUsers отдела
             expect(voronezh?.groups.map(g => g.ID)).toEqual([45]);
             expect(voronezh?.allUsers.map(u => Number(u.ID)).sort()).toEqual([
-                202, 203, 204,
+                202, 203, 204, 205,
             ]);
 
             const rostov = result.salesDepartments.find(
@@ -251,7 +256,7 @@ describe('BxDepartmentStructureService', () => {
             );
             expect(
                 currentUser.colleagues.department.map(u => Number(u.ID)).sort(),
-            ).toEqual([202, 204]);
+            ).toEqual([202, 204, 205]);
         });
 
         it('руководитель ОП: headOf=op', async () => {
@@ -263,7 +268,7 @@ describe('BxDepartmentStructureService', () => {
             expect(currentUser.colleagues.group).toEqual([]);
             expect(
                 currentUser.colleagues.department.map(u => Number(u.ID)).sort(),
-            ).toEqual([203, 204]);
+            ).toEqual([203, 204, 205]);
         });
 
         it('руководитель родителя ОП: headOf=cup', async () => {
@@ -283,7 +288,7 @@ describe('BxDepartmentStructureService', () => {
             );
             expect(
                 currentUser.colleagues.department.map(u => Number(u.ID)).sort(),
-            ).toEqual([202, 203]);
+            ).toEqual([202, 203, 205]);
         });
     });
 
