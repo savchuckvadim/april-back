@@ -2,14 +2,14 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InstallCallReportSmartUseCase } from '@lib/call-lib';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
-import { CallReportPipelineUseCase } from '../use-cases/call-report-pipeline.use-case';
+import { CallReportAnalyzeUseCase } from '../use-cases/call-report-analyze.use-case';
 import {
     AnalyzeCallDto,
     InstallCallReportSmartDto,
     ScanCallsDto,
 } from '../dto/call-report-request.dto';
 import {
-    AnalyzeCallResponseDto,
+    AnalyzeCallsResponseDto,
     CallReportScanResponseDto,
     InstallCallReportSmartResponseDto,
 } from '../dto/call-report-response.dto';
@@ -24,7 +24,7 @@ export class CallReportController {
     constructor(
         private readonly installSmartUseCase: InstallCallReportSmartUseCase,
         private readonly scanUseCase: CallReportScanUseCase,
-        private readonly pipelineUseCase: CallReportPipelineUseCase,
+        private readonly analyzeUseCase: CallReportAnalyzeUseCase,
     ) {}
 
     @Post('install-smart')
@@ -76,27 +76,28 @@ export class CallReportController {
     @Post('analyze')
     @HttpCode(200)
     @ApiOperation({
-        summary: 'Анализ одного звонка (синхронно)',
+        summary: 'Анализ звонков (синхронно): прямой или подбор последних',
         description:
-            'Полный конвейер для одного звонка без очереди: транскрибация → GigaChat → ' +
-            'персист → таймлайн. Для смоука и отладки; долгие звонки могут обрабатываться минутами.',
+            'Полный конвейер без очереди: транскрибация → классификация → LLM → ' +
+            'персист → таймлайн. Прямой режим — задан activityId (dealId ' +
+            'опционален, определяется по владельцу активности). Режим подбора — ' +
+            'activityId нет: последние записи по dealId ИЛИ userId (bitrix-id ' +
+            'менеджера), параметры limit / maxDurationSec / minDurationSec / ' +
+            'windowHours. Уже обработанные звонки пропускаются (данные в БД). ' +
+            'Для смоука и отладки; звонки обрабатываются по очереди, минутами.',
     })
     @ApiBody({
         type: AnalyzeCallDto,
-        description: 'Адрес звонка: домен, активность, сделка.',
+        description:
+            'Адрес звонка (activityId) или фильтры подбора (dealId/userId + limit).',
     })
     @ApiOkResponse({
-        type: AnalyzeCallResponseDto,
-        description: 'Результат конвейера по звонку.',
+        type: AnalyzeCallsResponseDto,
+        description: 'Итоги обработки по каждому взятому звонку.',
     })
     async analyze(
         @Body() dto: AnalyzeCallDto,
-    ): Promise<AnalyzeCallResponseDto> {
-        return this.pipelineUseCase.execute({
-            domain: dto.domain,
-            activityId: dto.activityId,
-            dealId: dto.dealId,
-            durationSec: dto.durationSec,
-        });
+    ): Promise<AnalyzeCallsResponseDto> {
+        return this.analyzeUseCase.execute(dto);
     }
 }

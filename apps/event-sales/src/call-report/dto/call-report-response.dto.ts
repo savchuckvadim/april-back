@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { InstallCallReportSmartResult } from '@lib/call-lib';
 import { CallReportScanResult } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineResult } from '../use-cases/call-report-pipeline.use-case';
@@ -140,4 +140,130 @@ export class AnalyzeCallResponseDto implements CallReportPipelineResult {
         nullable: true,
     })
     callType: string | null;
+}
+
+/** Итог обработки одного звонка в пакетном /analyze. */
+export class AnalyzeCallItemDto {
+    @ApiProperty({
+        description: 'ID активности-звонка.',
+        example: 781614,
+        type: Number,
+    })
+    activityId: number;
+
+    @ApiProperty({
+        description: 'ID сделки звонка.',
+        example: 12345,
+        type: Number,
+    })
+    dealId: number;
+
+    @ApiProperty({
+        description: 'Итог: done — обработан, error — ошибка (см. error).',
+        enum: ['done', 'error'],
+        example: 'done',
+    })
+    status: 'done' | 'error';
+
+    @ApiPropertyOptional({
+        description: 'ID строки транскрипции (при status=done).',
+        example: '42',
+        type: String,
+    })
+    transcriptionId?: string;
+
+    @ApiPropertyOptional({
+        description: 'Каким транскрибатором обработан звонок.',
+        example: 'bitrix-vibecode',
+        type: String,
+    })
+    provider?: string;
+
+    @ApiPropertyOptional({
+        description: 'Тип звонка от классификатора (null — не определён).',
+        example: 'cold',
+        type: String,
+        nullable: true,
+    })
+    callType?: string | null;
+
+    @ApiPropertyOptional({
+        description: 'Сохранено ли резюме в ais.',
+        example: true,
+        type: Boolean,
+    })
+    resumeSaved?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Сохранены ли рекомендации в ais.',
+        example: true,
+        type: Boolean,
+    })
+    recomendationSaved?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Текст ошибки (при status=error).',
+        example: 'No audio files in activity 781614',
+        type: String,
+    })
+    error?: string;
+}
+
+/**
+ * Результат /call-report/analyze: прямой режим (activityId) даёт один
+ * элемент results; режим подбора (dealId/userId + limit) — до limit
+ * элементов, обработанных синхронно по очереди.
+ */
+export class AnalyzeCallsResponseDto {
+    @ApiProperty({
+        description: 'Домен портала.',
+        example: 'april-garant.bitrix24.ru',
+        type: String,
+    })
+    domain: string;
+
+    @ApiProperty({
+        description:
+            'Режим запуска: direct — по activityId, selection — подбор ' +
+            'последних записей по dealId/userId.',
+        enum: ['direct', 'selection'],
+        example: 'selection',
+    })
+    mode: 'direct' | 'selection';
+
+    @ApiProperty({
+        description:
+            'Сколько кандидатов нашлось в voximplant после фильтров ' +
+            '(в direct-режиме всегда 1).',
+        example: 6,
+        type: Number,
+    })
+    found: number;
+
+    @ApiProperty({
+        description: 'Пропущено: уже обработаны ранее (данные уже в БД).',
+        example: 2,
+        type: Number,
+    })
+    skippedAlreadyProcessed: number;
+
+    @ApiProperty({
+        description: 'Пропущено: активность не принадлежит сделке.',
+        example: 1,
+        type: Number,
+    })
+    skippedNonDeal: number;
+
+    @ApiProperty({
+        description: 'Пропущено: у активности нет аудиозаписи.',
+        example: 0,
+        type: Number,
+    })
+    skippedNoAudio: number;
+
+    @ApiProperty({
+        description: 'Итоги обработки взятых в работу звонков.',
+        type: [AnalyzeCallItemDto],
+    })
+    results: AnalyzeCallItemDto[];
 }

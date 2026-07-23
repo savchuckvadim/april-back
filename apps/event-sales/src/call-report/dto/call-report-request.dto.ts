@@ -78,7 +78,15 @@ export class ScanCallsDto {
     maxPerRun?: number;
 }
 
-/** Ручной запуск анализа одного звонка (смоук/отладка). */
+/**
+ * Ручной запуск анализа звонков (смоук/отладка). Два режима:
+ *
+ * 1. Прямой — задан activityId (dealId опционален: без него сделка
+ *    определяется по владельцу активности).
+ * 2. Подбор — activityId нет: звонки ищутся в voximplant-статистике.
+ *    Обязателен хотя бы один из dealId / userId; limit — сколько
+ *    последних записей взять, maxDurationSec — не длиннее.
+ */
 export class AnalyzeCallDto {
     @ApiProperty({
         description: 'Домен портала Bitrix24.',
@@ -89,30 +97,110 @@ export class AnalyzeCallDto {
     @IsNotEmpty()
     domain: string;
 
-    @ApiProperty({
-        description: 'ID активности-звонка в CRM (crm.activity).',
+    @ApiPropertyOptional({
+        description:
+            'ID активности-звонка в CRM (crm.activity) — прямой режим. ' +
+            'Не задан — включается режим подбора по dealId/userId.',
         example: 781614,
         type: Number,
         minimum: 1,
     })
+    @IsOptional()
     @IsInt()
     @Min(1)
-    activityId: number;
+    activityId?: number;
 
-    @ApiProperty({
-        description: 'ID сделки, которой принадлежит звонок.',
+    @ApiPropertyOptional({
+        description:
+            'ID сделки. В прямом режиме опционален (определяется по ' +
+            'активности); в режиме подбора — фильтр «звонки этой сделки». ' +
+            'Без activityId и dealId обязателен userId.',
         example: 12345,
         type: Number,
         minimum: 1,
     })
+    @IsOptional()
     @IsInt()
     @Min(1)
-    dealId: number;
+    dealId?: number;
 
     @ApiPropertyOptional({
         description:
-            'Длительность звонка в секундах — влияет на выбор транскрибатора ' +
-            '(длинные → Yandex, короткие → Vibecode Whisper).',
+            'Bitrix-id менеджера НА ЭТОМ ПОРТАЛЕ (не id из нашей БД) — ' +
+            'режим подбора: последние звонки этого менеджера ' +
+            '(voximplant PORTAL_USER_ID).',
+        example: 7,
+        type: Number,
+        minimum: 1,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    userId?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Режим подбора: сколько последних подходящих записей взять ' +
+            'и проанализировать (обрабатываются синхронно, по очереди). ' +
+            'По умолчанию 1, максимум 10 — защита бюджета транскрибации.',
+        example: 1,
+        type: Number,
+        minimum: 1,
+        maximum: 10,
+        default: 1,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(10)
+    limit?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Режим подбора: брать только записи длительностью НЕ БОЛЕЕ, сек.',
+        example: 900,
+        type: Number,
+        minimum: 1,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    maxDurationSec?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Режим подбора: минимальная длительность записи, сек. ' +
+            'По умолчанию 0 (в отличие от cron-скана порог не применяется — ' +
+            'смоук должен уметь взять и короткий звонок).',
+        example: 60,
+        type: Number,
+        minimum: 0,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    minDurationSec?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Режим подбора: окно поиска назад в часах. По умолчанию 168 (неделя).',
+        example: 168,
+        type: Number,
+        minimum: 1,
+        maximum: 720,
+        default: 168,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(720)
+    windowHours?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Прямой режим: длительность звонка в секундах — влияет на выбор ' +
+            'транскрибатора (длинные → Yandex, короткие → Vibecode Whisper). ' +
+            'В режиме подбора длительность берётся из voximplant.',
         example: 720,
         type: Number,
         minimum: 1,

@@ -14,6 +14,7 @@ import { AiRagModule } from '@lib/ai-rag';
 import { BxDepartmentModule } from 'libs/bx-department';
 import { CallReportController } from './controllers/call-report.controller';
 import { CallClassifyInstructionService } from './services/call-classify-instruction.service';
+import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
 import { CallReportProcessor } from './queue/call-report.processor';
@@ -49,6 +50,7 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
     controllers: [CallReportController],
     providers: [
         CallClassifyInstructionService,
+        CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
         CallReportScanUseCase,
         CallReportProcessor,
