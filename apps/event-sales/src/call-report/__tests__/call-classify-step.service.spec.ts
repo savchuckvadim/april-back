@@ -32,6 +32,24 @@ const makeDeps = (overrides?: {
     const instruction = {
         resolve: jest.fn().mockResolvedValue('инструкция классификации'),
     };
+    const typeRegistry = {
+        resolve: jest.fn().mockResolvedValue({
+            codes: ['cold', 'renewal'],
+            types: {
+                cold: {
+                    code: 'cold',
+                    title: 'Холодный',
+                    focus: 'Выход на ЛПР',
+                },
+                renewal: {
+                    code: 'renewal',
+                    title: 'Перезаключение',
+                    focus: '',
+                },
+            },
+            source: 'knowledge',
+        }),
+    };
     const aiService = { create: jest.fn().mockResolvedValue({ id: '1' }) };
     const config = {
         get: jest.fn((key: string) => overrides?.env?.[key]),
@@ -40,26 +58,37 @@ const makeDeps = (overrides?: {
         vibecode as never,
         keyResolver as never,
         instruction as never,
+        typeRegistry as never,
         aiService as never,
         config as never,
     );
-    return { service, vibecode, keyResolver, instruction, aiService };
+    return {
+        service,
+        vibecode,
+        keyResolver,
+        instruction,
+        typeRegistry,
+        aiService,
+    };
 };
 
 describe('CallClassifyStepService', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('классифицирует с подменной инструкцией и пер-портальным ключом', async () => {
+    it('классифицирует с подменной инструкцией, каталогом типов и ключом портала', async () => {
         const { service, vibecode, keyResolver, instruction, aiService } =
             makeDeps();
         const result = await service.run('текст', PAYLOAD as never, '42');
 
         expect(instruction.resolve).toHaveBeenCalledWith('test.bitrix24.ru');
         expect(keyResolver.resolve).toHaveBeenCalledWith('test.bitrix24.ru');
+        // Инструкция дополняется каталогом типов из реестра, схема
+        // получает динамический список кодов.
         expect(vibecode.classifyCall).toHaveBeenCalledWith(
             'текст',
-            'инструкция классификации',
+            expect.stringContaining("'renewal' — Перезаключение"),
             'portal-vibe-key',
+            ['cold', 'renewal'],
         );
         expect(aiService.create).toHaveBeenCalledWith(
             expect.objectContaining({

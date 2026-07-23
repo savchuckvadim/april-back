@@ -6,6 +6,8 @@ import {
     AiService,
     CALL_CLASSIFY_TYPE,
     CALL_REPORT_ENTITY_TYPE_DEAL,
+    CallTypeRegistry,
+    CallTypeRegistryService,
 } from '@lib/call-lib';
 import {
     CallClassificationResultDto,
@@ -46,6 +48,7 @@ export class CallClassifyStepService {
         private readonly vibeCodeClient: VibeCodeClient,
         private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly instructionService: CallClassifyInstructionService,
+        private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly aiService: AiService,
         configService: ConfigService,
     ) {
@@ -68,14 +71,20 @@ export class CallClassifyStepService {
     ): Promise<CallClassificationResultDto | null> {
         if (!this.enabled) return null;
         try {
-            const instruction = await this.instructionService.resolve(
+            // Реестр типов (встроенные + общие/клиентские из базы знаний):
+            // enum схемы и каталог типов в промпте строятся из него.
+            const registry = await this.callTypeRegistry.resolve(
                 payload.domain,
             );
+            const instruction =
+                (await this.instructionService.resolve(payload.domain)) +
+                this.renderTypeCatalog(registry);
             const apiKey = await this.vibeKeyResolver.resolve(payload.domain);
             const classification = await this.vibeCodeClient.classifyCall(
                 text,
                 instruction,
                 apiKey,
+                registry.codes,
             );
 
             const needsEscalation =
@@ -115,5 +124,18 @@ export class CallClassifyStepService {
             );
             return null;
         }
+    }
+
+    /**
+     * Каталог типов из реестра — дописывается к любой инструкции
+     * (и дефолтной, и подменной): актуальный набор кодов всегда из
+     * одного источника, а инструкция описывает только критерии выбора.
+     */
+    private renderTypeCatalog(registry: CallTypeRegistry): string {
+        const lines = registry.codes.map(code => {
+            const type = registry.types[code];
+            return `- '${code}' — ${type.title}${type.focus ? `: ${type.focus}` : ''}`;
+        });
+        return `\n\nДопустимые коды callType (используй ровно один из списка):\n${lines.join('\n')}`;
     }
 }

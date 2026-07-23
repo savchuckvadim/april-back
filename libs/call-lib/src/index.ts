@@ -18,6 +18,8 @@ export * from './call-report-analytics/call-report-analytics.service';
 export * from './call-report-analytics/dto/call-report-analytics-query.dto';
 export * from './call-report-analytics/dto/call-report-analytics-response.dto';
 export * from './call-report/call-report-smart.module';
+export * from './call-report/call-type-registry.module';
+export * from './call-report/services/call-type-registry.service';
 export * from './call-report/config/call-report-smart.config';
 export * from './call-report/services/call-report-smart-resolver.service';
 export * from './call-report/services/call-report-smart-writer.service';

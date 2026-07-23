@@ -9,6 +9,7 @@ import {
     IsObject,
     IsOptional,
     IsString,
+    Matches,
     Max,
     Min,
     ValidateNested,
@@ -36,10 +37,16 @@ import {
     CallReportSentimentCode,
 } from '@lib/call-lib';
 
-/** Типы звонков — единый источник: конфиг смарта call-report. */
+/** Встроенные типы звонков — из конфига смарта call-report. */
 export const AGENT_CALL_TYPES = CALL_REPORT_CALL_TYPE_CODES;
 
-export type AgentCallType = (typeof AGENT_CALL_TYPES)[number];
+/**
+ * Тип звонка агента — string, а не union встроенных кодов: реестр типов
+ * (kind call-type-registry) может добавлять общие и клиентские типы.
+ * Полный набор доступных кодов агент получает в пакете звонка
+ * (typeProfiles).
+ */
+export type AgentCallType = string;
 
 /** Разбор одного формализованного раздела разговора. */
 export class AgentSectionAnalysisDto {
@@ -472,13 +479,18 @@ export class AgentObjectionDto {
 export class AgentCallAnalysisDto {
     @ApiProperty({
         description:
-            'Тип звонка, определённый агентом. Должен совпадать с кодами ' +
-            'enum-поля CALL_TYPE смарт-процесса.',
-        enum: AGENT_CALL_TYPES,
+            'Код типа звонка, определённый агентом: встроенные коды ' +
+            '(cold/call/presentation/decision/payment/other) либо код из ' +
+            'реестра типов (пакет звонка несёт typeProfiles со всеми ' +
+            'доступными кодами). Неизвестный смарту код не попадёт в ' +
+            'enum-поле CALL_TYPE элемента (graceful), но сохранится в БД.',
         example: 'presentation',
+        type: String,
     })
     @IsString()
-    @IsIn(AGENT_CALL_TYPES as unknown as string[])
+    @Matches(/^[a-z][a-z0-9_-]*$/, {
+        message: 'callType: слаг вида cold / renewal-call',
+    })
     callType: AgentCallType;
 
     @ApiPropertyOptional({

@@ -142,6 +142,24 @@ export class KnowledgeStorageService {
         this.logger.log(`Удалён документ ${safeFileName} из ${subPath}`);
     }
 
+    /**
+     * Сохраняет ТЕКСТОВЫЙ документ (редактор админки, без multipart):
+     * контент строкой → файл .md/.txt/.json в kind-папке. Тот же fileName —
+     * перезапись (upsert). Валидация имени — на уровне DTO endpoint'а.
+     */
+    async saveTextDocument(
+        kind: string,
+        fileName: string,
+        content: string,
+        domain?: string,
+    ): Promise<KnowledgeUploadResult> {
+        return this.saveDocument(
+            { buffer: Buffer.from(content, 'utf-8'), originalname: fileName },
+            kind,
+            domain,
+        );
+    }
+
     /** Сохраняет загруженный документ в общую (если domain не задан) или клиентскую базу. */
     async saveDocument(
         file: UploadFile,

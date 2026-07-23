@@ -5,6 +5,7 @@ import {
     TranscriptionModule,
     AiModule,
     CallReportSmartModule,
+    CallTypeRegistryModule,
 } from '@lib/call-lib';
 import { AiRagModule } from '@lib/ai-rag';
 import { AgentKeyGuard } from './guards/agent-key.guard';
@@ -28,6 +29,8 @@ import { AgentAnalysisIntakeService } from './services/agent-analysis-intake.ser
         AiModule,
         AiRagModule,
         CallReportSmartModule,
+        // Реестр типов звонков — профили в пакете агента
+        CallTypeRegistryModule,
     ],
     controllers: [AgentCallsController, AgentKnowledgeController],
     providers: [

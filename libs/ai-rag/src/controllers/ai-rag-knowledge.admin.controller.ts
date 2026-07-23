@@ -23,10 +23,13 @@ import { KnowledgeUploadParamsDto } from '../dto/knowledge-upload-params.dto';
 import { KnowledgeUploadBodyDto } from '../dto/knowledge-upload-body.dto';
 import { KnowledgeListQueryDto } from '../dto/knowledge-list-query.dto';
 import { KnowledgeDocumentQueryDto } from '../dto/knowledge-document-query.dto';
+import { KnowledgeTextUpsertDto } from '../dto/knowledge-text-upsert.dto';
+import { KNOWN_KNOWLEDGE_KINDS } from '../domain/types/knowledge-kind-registry';
 import {
     KnowledgeDeleteResponseDto,
     KnowledgeDocumentContentDto,
     KnowledgeDocumentDto,
+    KnowledgeKindInfoDto,
     KnowledgeUploadResponseDto,
 } from '../dto/knowledge-response.dto';
 
@@ -46,16 +49,69 @@ export class AiRagKnowledgeAdminController {
 
     @Get('kinds')
     @ApiOperation({
-        summary: 'Список kind-папок',
+        summary: 'Реестр kind-разделов базы знаний',
         description:
-            'Возвращает имена kind-папок общей базы знаний (типы звонков и материалов).',
+            'Известные kind (реестр с названиями/описаниями/потребителями) + ' +
+            'фактические папки общей базы. Нестандартные папки помечаются ' +
+            'known=false. Основа экрана «Материалы» в админке.',
     })
     @ApiOkResponse({
-        description: 'Массив имён kind-папок.',
-        type: [String],
+        description: 'Реестр kind с описаниями.',
+        type: [KnowledgeKindInfoDto],
     })
-    async listKinds(): Promise<string[]> {
-        return this.knowledgeStorage.listKinds();
+    async listKinds(): Promise<KnowledgeKindInfoDto[]> {
+        const existing = new Set(await this.knowledgeStorage.listKinds());
+        const result: KnowledgeKindInfoDto[] = KNOWN_KNOWLEDGE_KINDS.map(
+            info => ({
+                ...info,
+                known: true,
+                hasSharedDocuments: existing.has(info.kind),
+            }),
+        );
+        for (const kind of existing) {
+            if (KNOWN_KNOWLEDGE_KINDS.some(info => info.kind === kind)) {
+                continue;
+            }
+            result.push({
+                kind,
+                title: kind,
+                description: 'Нестандартный kind (создан загрузкой документа).',
+                consumer: 'неизвестно',
+                known: false,
+                hasSharedDocuments: true,
+            });
+        }
+        return result;
+    }
+
+    @Post(':kind/text')
+    @ApiOperation({
+        summary: 'Сохранить текстовый документ (редактор)',
+        description:
+            'Сохраняет/перезаписывает документ из текста без multipart — для ' +
+            'редактора инструкций в админке. С domain — в клиентскую базу ' +
+            '(перекрывает общую), без — в общую.',
+    })
+    @ApiBody({ type: KnowledgeTextUpsertDto })
+    @ApiOkResponse({
+        description: 'Метаданные сохранённого документа.',
+        type: KnowledgeUploadResponseDto,
+    })
+    async upsertText(
+        @Param() params: KnowledgeUploadParamsDto,
+        @Body() body: KnowledgeTextUpsertDto,
+    ): Promise<KnowledgeUploadResponseDto> {
+        const result = await this.knowledgeStorage.saveTextDocument(
+            params.kind,
+            body.fileName,
+            body.content,
+            body.domain,
+        );
+        return {
+            fileName: result.fileName,
+            kind: result.kind,
+            source: result.source,
+        };
     }
 
     @Get('domains')

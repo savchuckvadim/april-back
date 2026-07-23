@@ -51,10 +51,49 @@ const makeDeps = (options: {
         load: jest.fn().mockResolvedValue(emptyContext),
         empty: jest.fn().mockReturnValue(emptyContext),
     };
+    // Реестр типов: встроенные коды с профилями (как builtin()).
+    const registry = {
+        codes: ['cold', 'presentation', 'other'],
+        types: {
+            cold: {
+                code: 'cold',
+                title: 'Холодный',
+                focus: 'Выход на ЛПР',
+                sectionRelevance: { GREETING: 100, PRICE: 10 },
+                talkRatioNorm: { min: 30, max: 55 },
+                questionsNorm: { min: 3, max: 8 },
+                knowledgeKind: 'call-analysis-cold',
+            },
+            presentation: {
+                code: 'presentation',
+                title: 'Презентация',
+                focus: '',
+                sectionRelevance: { PRESENTATION: 100 },
+                talkRatioNorm: null,
+                questionsNorm: null,
+                knowledgeKind: 'call-analysis-presentation',
+            },
+            other: {
+                code: 'other',
+                title: 'Другое',
+                focus: '',
+                sectionRelevance: {},
+                talkRatioNorm: null,
+                questionsNorm: null,
+                knowledgeKind: 'call-analysis-other',
+            },
+        },
+        source: 'builtin',
+    };
+    const callTypeRegistry = {
+        resolve: jest.fn().mockResolvedValue(registry),
+        builtin: jest.fn().mockReturnValue(registry),
+    };
     const service = new AgentCallPackageService(
         store as never,
         aiService as never,
         bitrixContext as never,
+        callTypeRegistry as never,
     );
     return { service, store };
 };

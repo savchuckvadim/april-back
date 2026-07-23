@@ -4,13 +4,12 @@ import {
     IsNumber,
     IsOptional,
     IsString,
+    Matches,
     Max,
     Min,
 } from 'class-validator';
 import {
-    CALL_REPORT_CALL_TYPE_CODES,
     CALL_REPORT_INTERLOCUTOR_CODES,
-    CallReportCallTypeCode,
     CallReportInterlocutorCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 
@@ -23,15 +22,19 @@ import {
 export class CallClassificationResultDto {
     @ApiProperty({
         description:
-            'Тип звонка по закрытому справочнику смарта: cold (холодный, выход ' +
-            'на ЛПР), call (цель — презентация), presentation (презентация), ' +
-            'decision (звонок по решению), payment (звонок по оплате), other.',
-        enum: CALL_REPORT_CALL_TYPE_CODES,
+            'Код типа звонка. Встроенные: cold (холодный, выход на ЛПР), call ' +
+            '(цель — презентация), presentation, decision (по решению), ' +
+            'payment (по оплате), other; реестр типов (kind call-type-registry) ' +
+            'может добавлять общие и клиентские типы — поэтому валидация по ' +
+            'формату кода, а допустимый набор enforcéится схемой классификатора.',
         example: 'cold',
+        type: String,
     })
     @IsString()
-    @IsIn(CALL_REPORT_CALL_TYPE_CODES as unknown as string[])
-    callType: CallReportCallTypeCode;
+    @Matches(/^[a-z][a-z0-9_-]*$/, {
+        message: 'callType: слаг вида cold / renewal-call',
+    })
+    callType: string;
 
     @ApiProperty({
         description:

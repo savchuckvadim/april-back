@@ -9,8 +9,8 @@ import {
     AiEntityDto,
     AiService,
     CALL_CLASSIFY_TYPE,
-    CALL_REPORT_TYPE_PROFILES,
-    CallReportCallTypeCode,
+    CallTypeRegistry,
+    CallTypeRegistryService,
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
@@ -42,6 +42,7 @@ export class AgentCallPackageService {
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
         private readonly bitrixContext: AgentBitrixContextService,
+        private readonly callTypeRegistry: CallTypeRegistryService,
     ) {}
 
     /**
@@ -196,6 +197,18 @@ export class AgentCallPackageService {
             return this.bitrixContext.empty();
         });
 
+        // Профили типов — из реестра (встроенные + общие/клиентские из
+        // базы знаний); недоступность реестра не роняет пакет.
+        const registry = await this.callTypeRegistry
+            .resolve(row.domain ?? '')
+            .catch((error: Error) => {
+                this.logger.warn(
+                    `Реестр типов не получен (${row.domain}): ${error.message}`,
+                );
+                return this.callTypeRegistry.builtin();
+            });
+        const typeProfiles = this.buildTypeProfiles(registry);
+
         return {
             call: this.toPendingDto(
                 row,
@@ -205,10 +218,8 @@ export class AgentCallPackageService {
             transcript: row.text ?? '',
             aiResults: aiRecords.map(record => this.toAiResultDto(record)),
             classification: this.toClassification(classifyRecord),
-            typeProfile: callType
-                ? (this.buildTypeProfiles()[callType] ?? null)
-                : null,
-            typeProfiles: this.buildTypeProfiles(),
+            typeProfile: callType ? (typeProfiles[callType] ?? null) : null,
+            typeProfiles,
             ...bitrixData,
         };
     }
@@ -226,15 +237,15 @@ export class AgentCallPackageService {
     }
 
     /**
-     * Профили типов звонков для агента — прямой маппинг единого источника
-     * правды CALL_REPORT_TYPE_PROFILES (конфиг смарта).
+     * Профили типов звонков для агента — из реестра типов (встроенные +
+     * переопределения/дополнения из базы знаний, включая клиентские).
      */
-    private buildTypeProfiles(): Record<string, AgentCallTypeProfileDto> {
+    private buildTypeProfiles(
+        registry: CallTypeRegistry,
+    ): Record<string, AgentCallTypeProfileDto> {
         const profiles: Record<string, AgentCallTypeProfileDto> = {};
-        for (const code of Object.keys(
-            CALL_REPORT_TYPE_PROFILES,
-        ) as CallReportCallTypeCode[]) {
-            const profile = CALL_REPORT_TYPE_PROFILES[code];
+        for (const code of registry.codes) {
+            const profile = registry.types[code];
             profiles[code] = {
                 focus: profile.focus,
                 sectionRelevance: { ...profile.sectionRelevance },

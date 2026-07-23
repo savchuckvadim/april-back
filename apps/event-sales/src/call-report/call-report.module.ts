@@ -9,6 +9,7 @@ import {
     AiModule,
     CallReportAnalyticsModule,
     CallReportSmartModule,
+    CallTypeRegistryModule,
 } from '@lib/call-lib';
 import { AiRagModule } from '@lib/ai-rag';
 import { BxDepartmentModule } from 'libs/bx-department';
@@ -45,6 +46,8 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
         // Отчёты по накопленной аналитике: /call-report/analytics/*
         // (переносимый модуль, см. его README)
         CallReportAnalyticsModule,
+        // Реестр типов звонков (встроенные + общие/клиентские из базы знаний)
+        CallTypeRegistryModule,
         // Фильтр сканера «только менеджеры отдела продаж»
         BxDepartmentModule,
     ],

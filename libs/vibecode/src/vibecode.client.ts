@@ -118,15 +118,19 @@ export class VibeCodeClient {
      * транскрипт обрезается — для классификации хватает начала разговора.
      *
      * systemPrompt — подменная инструкция классификации (из базы знаний
-     * kind='call-classify'); коды ответа при этом фиксированы strict
-     * JSON-схемой, инструкция меняет только критерии их выбора.
+     * kind='call-classify'); allowedCallTypes — динамический список кодов
+     * из реестра типов (общие + клиентские): enum схемы строится из него,
+     * иначе — встроенные коды контракта.
      */
     async classifyCall(
         transcript: string,
         systemPrompt: string | undefined,
         apiKey: string,
+        allowedCallTypes?: string[],
     ): Promise<CallClassificationResultDto> {
-        this.logger.log('Classifying call with Vibecode LLM');
+        this.logger.log(
+            `Classifying call with Vibecode LLM (${allowedCallTypes?.length ?? 'builtin'} types)`,
+        );
         const trimmed =
             transcript.length > CLASSIFICATION_TRANSCRIPT_LIMIT
                 ? transcript.slice(0, CLASSIFICATION_TRANSCRIPT_LIMIT)
@@ -135,10 +139,24 @@ export class VibeCodeClient {
             systemPrompt ?? DEFAULT_CLASSIFICATION_SYSTEM_PROMPT,
             `Классифицируй звонок по расшифровке:\n\n${trimmed}`,
             'call_classification',
-            CALL_CLASSIFICATION_SCHEMA,
+            this.buildClassificationSchema(allowedCallTypes),
             apiKey,
         );
         return plainToInstance(CallClassificationResultDto, parsed);
+    }
+
+    /** Схема классификации с динамическим enum типов из реестра. */
+    private buildClassificationSchema(
+        allowedCallTypes?: string[],
+    ): Record<string, unknown> {
+        if (!allowedCallTypes?.length) return CALL_CLASSIFICATION_SCHEMA;
+        const schema = JSON.parse(
+            JSON.stringify(CALL_CLASSIFICATION_SCHEMA),
+        ) as {
+            properties: { callType: { enum: string[] } };
+        };
+        schema.properties.callType.enum = allowedCallTypes;
+        return schema as unknown as Record<string, unknown>;
     }
 
     /** Общий вызов chat/completions со strict JSON-схемой ответа. */

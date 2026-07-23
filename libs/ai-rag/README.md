@@ -32,8 +32,14 @@ Kind — свободный слаг (`[a-z][a-z0-9-]*`), загрузка:
 |---|---|
 | `resume`, `recomendation` | RAG-контекст объединённого анализа (контур 1) |
 | `call-classify` | подменная инструкция классификатора (замещает дефолт) |
-| `call-analysis-<тип>` | инструкция глубокого анализа типа звонка (ночной агент, из `CALL_REPORT_TYPE_PROFILES[type].knowledgeKind`) |
+| `call-analysis-<тип>` | инструкция глубокого анализа типа звонка (ночной агент, из `knowledgeKind` профиля типа) |
+| `call-type-registry` | JSON-реестр типов звонков: общий документ + клиентский поверх; без документов — встроенный реестр (`CallTypeRegistryService` в call-lib) |
 | `general` | общие материалы (подмешиваются к любому kind) |
+
+Реестр kind'ов с описаниями — `GET /admin/ai-rag/knowledge/kinds`
+(`KNOWN_KNOWLEDGE_KINDS`); текстовое редактирование документов —
+`POST /admin/ai-rag/knowledge/{kind}/text` (upsert .md/.txt/.json без
+multipart, с `domain` — в клиентскую базу).
 
 ## Env
 

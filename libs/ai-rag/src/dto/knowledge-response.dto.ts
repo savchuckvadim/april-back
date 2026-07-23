@@ -63,6 +63,53 @@ export class KnowledgeDocumentContentDto
 }
 
 /** Результат удаления документа базы знаний. */
+/** Описание kind'а базы знаний для UI (реестр + фактические папки). */
+export class KnowledgeKindInfoDto {
+    @ApiProperty({
+        description: 'Слаг kind (имя папки).',
+        example: 'call-classify',
+        type: String,
+    })
+    kind: string;
+
+    @ApiProperty({
+        description: 'Человеческое название для интерфейса.',
+        example: 'Инструкция классификатора звонков',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description: 'Что лежит внутри и на что влияет.',
+        example: 'Полностью замещает встроенную инструкцию классификатора.',
+        type: String,
+    })
+    description: string;
+
+    @ApiProperty({
+        description: 'Кто читает материалы этого kind.',
+        example: 'классификатор конвейера (tier-1, VibeCode)',
+        type: String,
+    })
+    consumer: string;
+
+    @ApiProperty({
+        description:
+            'true — kind из реестра известных; false — нестандартная папка, ' +
+            'созданная загрузкой документа.',
+        example: true,
+        type: Boolean,
+    })
+    known: boolean;
+
+    @ApiProperty({
+        description: 'Есть ли уже документы в общей базе этого kind.',
+        example: true,
+        type: Boolean,
+    })
+    hasSharedDocuments: boolean;
+}
+
 export class KnowledgeDeleteResponseDto {
     @ApiProperty({
         description: 'Признак успешного удаления документа.',
