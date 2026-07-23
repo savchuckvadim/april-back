@@ -205,7 +205,7 @@ describe('CallReportPipelineUseCase', () => {
                 type: 'call-classify',
                 user_result: expect.objectContaining({
                     needsEscalation: true,
-                }),
+                }) as object,
             }),
         );
     });
@@ -218,7 +218,7 @@ describe('CallReportPipelineUseCase', () => {
                 type: 'call-classify',
                 user_result: expect.objectContaining({
                     needsEscalation: false,
-                }),
+                }) as object,
             }),
         );
     });
