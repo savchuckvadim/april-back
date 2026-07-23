@@ -77,7 +77,7 @@ export class BxDepartmentDto implements IBXDepartment {
 
     @ApiProperty({
         description: 'Department users',
-        example: [BXUserDto],
+        type: [BXUserDto],
         required: true,
     })
     USERS: BXUserDto[];
