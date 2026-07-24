@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AiRagModule } from '@lib/ai-rag';
+import { AiRagCoreModule } from '@lib/ai-rag';
 import { CallTypeRegistryService } from './services/call-type-registry.service';
 
 /**
@@ -11,7 +11,9 @@ import { CallTypeRegistryService } from './services/call-type-registry.service';
  * при появлении отдела сервиса — переиспользуется со своим kind'ом.
  */
 @Module({
-    imports: [AiRagModule],
+    // Ядро без контроллеров: /ai-rag/* роуты не протекают в приложения,
+    // которым нужен только реестр (например, bitrix-app-client).
+    imports: [AiRagCoreModule],
     providers: [CallTypeRegistryService],
     exports: [CallTypeRegistryService],
 })

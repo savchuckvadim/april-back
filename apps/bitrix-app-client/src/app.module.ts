@@ -5,6 +5,7 @@ import { MetricsModule } from '@lib/metrics';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { BitrixAppClientModule } from './app/bitrix-app-client.module';
+import { AiSettingsModule } from './ai-settings/ai-settings.module';
 
 /**
  * Корневой модуль приложения bitrix-app-client.
@@ -25,6 +26,8 @@ import { BitrixAppClientModule } from './app/bitrix-app-client.module';
         PrismaModule,
         HealthModule,
         BitrixAppClientModule,
+        // Кабинет клиента: управление своими AI-материалами (/ai-settings/*)
+        AiSettingsModule,
     ],
     providers: [GlobalExceptionFilter],
 })
