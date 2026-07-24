@@ -1,8 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
-/** Запрос списка документов клиента по разделу. */
-export class AiSettingsListQueryDto {
+/** Запрос по домену портала клиента. */
+export class AiSettingsDomainQueryDto {
     @ApiProperty({
         description: 'Домен портала клиента (из списка своих порталов).',
         example: 'april-garant.bitrix24.ru',
@@ -11,7 +11,10 @@ export class AiSettingsListQueryDto {
     @IsString()
     @IsNotEmpty()
     domain: string;
+}
 
+/** Запрос списка документов клиента по разделу. */
+export class AiSettingsListQueryDto extends AiSettingsDomainQueryDto {
     @ApiProperty({
         description: 'Раздел базы знаний (kind).',
         example: 'call-classify',
@@ -132,6 +135,56 @@ export class AiSettingsDocumentContentDto extends AiSettingsDocumentDto {
         type: String,
     })
     text: string;
+}
+
+/** Тип звонка из резолвленного реестра домена (клиентский вид). */
+export class AiSettingsCallTypeDto {
+    @ApiProperty({
+        description: 'Код типа звонка (слаг).',
+        example: 'cold',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Человеческое название типа.',
+        example: 'Холодный звонок',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description: 'Что главное в звонке этого типа (фокус анализа).',
+        example: 'Выход на ЛПР: проход секретаря, зацепка...',
+        type: String,
+    })
+    focus: string;
+
+    @ApiProperty({
+        description:
+            'Раздел базы знаний с инструкцией анализа именно этого типа.',
+        example: 'call-analysis-cold',
+        type: String,
+    })
+    knowledgeKind: string;
+}
+
+/** Итоговый реестр типов звонков домена. */
+export class AiSettingsCallTypesResponseDto {
+    @ApiProperty({
+        description:
+            'Источник реестра: builtin — только встроенные типы; ' +
+            'knowledge — с учётом общих/клиентских документов.',
+        example: 'knowledge',
+        enum: ['builtin', 'knowledge'],
+    })
+    source: 'builtin' | 'knowledge';
+
+    @ApiProperty({
+        description: 'Типы звонков в порядке определения.',
+        type: [AiSettingsCallTypeDto],
+    })
+    types: AiSettingsCallTypeDto[];
 }
 
 /** Результат сохранения/удаления. */

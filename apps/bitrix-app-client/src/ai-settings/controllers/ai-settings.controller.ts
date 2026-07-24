@@ -16,15 +16,16 @@ import {
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
-import { CallTypeRegistry } from '@lib/call-lib';
-import { KnowledgeKindInfo } from '@lib/ai-rag';
+import { KnowledgeKindInfo, KnowledgeKindInfoDto } from '@lib/ai-rag';
 import { AuthGuard } from '../../auth/guard/jwt-auth.guard';
 import { AuthRequest } from '../../auth/interfaces/auth-request.interface';
 import { AiSettingsService } from '../services/ai-settings.service';
 import {
+    AiSettingsCallTypesResponseDto,
     AiSettingsDocumentContentDto,
     AiSettingsDocumentDto,
     AiSettingsDocumentQueryDto,
+    AiSettingsDomainQueryDto,
     AiSettingsListQueryDto,
     AiSettingsMutationResponseDto,
     AiSettingsPortalDto,
@@ -37,7 +38,7 @@ import {
  * только чтение. Авторизация — JWT приложения (client_id из токена),
  * доменная изоляция в сервисе (чужой домен = 403).
  */
-@ApiTags('AI Settings (кабинет клиента)')
+@ApiTags('AI Settings Client')
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
 @Controller('ai-settings')
@@ -62,7 +63,7 @@ export class AiSettingsController {
             'можно настроить (инструкция классификатора, материалы по типам ' +
             'звонков, реестр типов и т.д.).',
     })
-    @ApiOkResponse({ description: 'Реестр разделов.' })
+    @ApiOkResponse({ type: [KnowledgeKindInfoDto] })
     kinds(): readonly KnowledgeKindInfo[] {
         return this.aiSettings.kinds();
     }
@@ -154,11 +155,24 @@ export class AiSettingsController {
             'Итоговый реестр типов звонков (встроенные + общие + ваши ' +
             'клиентские из документа call-type-registry).',
     })
-    @ApiOkResponse({ description: 'Резолвленный реестр типов.' })
+    @ApiOkResponse({ type: AiSettingsCallTypesResponseDto })
     async callTypes(
         @Req() req: AuthRequest,
-        @Query() query: AiSettingsListQueryDto,
-    ): Promise<CallTypeRegistry> {
-        return this.aiSettings.getCallTypes(req.user.client_id, query.domain);
+        @Query() query: AiSettingsDomainQueryDto,
+    ): Promise<AiSettingsCallTypesResponseDto> {
+        const registry = await this.aiSettings.getCallTypes(
+            req.user.client_id,
+            query.domain,
+        );
+        // Клиенту — плоский вид без числовых приоров (управление ими — в админке).
+        return {
+            source: registry.source,
+            types: registry.codes.map(code => ({
+                code,
+                title: registry.types[code].title,
+                focus: registry.types[code].focus,
+                knowledgeKind: registry.types[code].knowledgeKind,
+            })),
+        };
     }
 }
