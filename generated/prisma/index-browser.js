@@ -1494,6 +1494,44 @@ exports.Prisma.Portal_invitesScalarFieldEnum = {
   note: 'note'
 };
 
+exports.Prisma.AppCacheScalarFieldEnum = {
+  id: 'id',
+  app: 'app',
+  portalId: 'portalId',
+  domain: 'domain',
+  bxUserId: 'bxUserId',
+  key: 'key',
+  group: 'group',
+  data: 'data',
+  meta: 'meta',
+  checksum: 'checksum',
+  tags: 'tags',
+  expiredAt: 'expiredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ShareLinkScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  token: 'token',
+  portalId: 'portalId',
+  domain: 'domain',
+  creatorBxUserId: 'creatorBxUserId',
+  creatorName: 'creatorName',
+  title: 'title',
+  filterSnapshot: 'filterSnapshot',
+  isRefreshable: 'isRefreshable',
+  refreshIntervalSec: 'refreshIntervalSec',
+  lastRefreshedAt: 'lastRefreshedAt',
+  nextRefreshAt: 'nextRefreshAt',
+  expiresAt: 'expiresAt',
+  status: 'status',
+  viewCount: 'viewCount',
+  lastViewedAt: 'lastViewedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1501,6 +1539,10 @@ exports.Prisma.SortOrder = {
 
 exports.Prisma.NullableJsonNullValueInput = {
   DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.JsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
@@ -2350,6 +2392,25 @@ exports.Prisma.portal_invitesOrderByRelevanceFieldEnum = {
   revoked_by: 'revoked_by',
   note: 'note'
 };
+
+exports.Prisma.AppCacheOrderByRelevanceFieldEnum = {
+  id: 'id',
+  app: 'app',
+  domain: 'domain',
+  key: 'key',
+  group: 'group',
+  checksum: 'checksum'
+};
+
+exports.Prisma.ShareLinkOrderByRelevanceFieldEnum = {
+  id: 'id',
+  token: 'token',
+  domain: 'domain',
+  creatorName: 'creatorName',
+  title: 'title',
+  filterSnapshot: 'filterSnapshot',
+  status: 'status'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -2504,7 +2565,9 @@ exports.Prisma.ModelName = {
   portal_products: 'portal_products',
   marketplace_install_components: 'marketplace_install_components',
   bitrix_app_events: 'bitrix_app_events',
-  portal_invites: 'portal_invites'
+  portal_invites: 'portal_invites',
+  AppCache: 'AppCache',
+  ShareLink: 'ShareLink'
 };
 
 /**

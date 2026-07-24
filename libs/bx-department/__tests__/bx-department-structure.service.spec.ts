@@ -239,6 +239,29 @@ describe('BxDepartmentStructureService', () => {
             // пользовательская часть пересчитывается поверх кеша
             expect(second.currentUser.userId).toBe(203);
         });
+
+        it('resetCache: игнорирует кеш, идёт в Битрикс и перезаписывает кеш', async () => {
+            redisGet.mockResolvedValue(JSON.stringify({ поломанный: 'кеш' }));
+
+            const result = await service.getStructure(
+                DOMAIN,
+                EDepartamentGroup.sales,
+                204,
+                true,
+            );
+
+            expect(redisGet).not.toHaveBeenCalled();
+            expect(apiCall).toHaveBeenCalled();
+            expect(result.department.generalDepartment.map(d => d.ID)).toEqual(
+                expect.arrayContaining([37, 41, 49]),
+            );
+            expect(redisSet).toHaveBeenCalledWith(
+                expect.stringContaining(`department_structure_v2_${DOMAIN}_`),
+                expect.any(String),
+                'EX',
+                86400,
+            );
+        });
     });
 
     describe('текущий пользователь', () => {
@@ -335,6 +358,7 @@ describe('BxDepartmentStructureService', () => {
             expect(getFullDepartment).toHaveBeenCalledWith(
                 DOMAIN,
                 EDepartamentGroup.sales,
+                false,
             );
             expect(result.department.department).toBe(9);
             expect(result.salesDepartments).toHaveLength(1);

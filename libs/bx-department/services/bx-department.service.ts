@@ -11,6 +11,8 @@ import { BxDepartmentResponseDto } from '../dto/bx-department.dto';
 
 // C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
 
+const CACHE_TTL_SECONDS = 86400;
+
 @Injectable()
 export class BxDepartmentService {
     private readonly redis: Redis;
@@ -26,6 +28,7 @@ export class BxDepartmentService {
     async getFullDepartment(
         domain: string,
         group: EDepartamentGroup | undefined,
+        resetCache = false,
     ): Promise<BxDepartmentResponseDto> {
         const { bitrix, PortalModel } = await this.pbx.init(domain);
 
@@ -37,10 +40,11 @@ export class BxDepartmentService {
         const day = dayjs().format('MMDD');
         const sessionKey = `department_${domain}_${day}_${targetGroup}`;
 
-        const fromCache = await this.redis.get(sessionKey);
-        if (fromCache) {
-            const result = JSON.parse(fromCache) as BxDepartmentResponseDto;
-            return result;
+        if (!resetCache) {
+            const fromCache = await this.redis.get(sessionKey);
+            if (fromCache) {
+                return JSON.parse(fromCache) as BxDepartmentResponseDto;
+            }
         }
 
         const departmentService = new DepartmentBitrixService(bitrix);
@@ -76,7 +80,12 @@ export class BxDepartmentService {
             },
         };
 
-        await this.redis.set(sessionKey, JSON.stringify(result));
+        await this.redis.set(
+            sessionKey,
+            JSON.stringify(result),
+            'EX',
+            CACHE_TTL_SECONDS,
+        );
         return {
             department: {
                 department: baseDepartmentBitrixId,

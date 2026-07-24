@@ -443,6 +443,16 @@ export type bitrix_app_events = $Result.DefaultSelection<Prisma.$bitrix_app_even
  * Коды подключения портала к внешнему сервису April (сам код НЕ хранится — только sha256)
  */
 export type portal_invites = $Result.DefaultSelection<Prisma.$portal_invitesPayload>
+/**
+ * Model AppCache
+ * 
+ */
+export type AppCache = $Result.DefaultSelection<Prisma.$AppCachePayload>
+/**
+ * Model ShareLink
+ * 
+ */
+export type ShareLink = $Result.DefaultSelection<Prisma.$ShareLinkPayload>
 
 /**
  * Enums
@@ -1563,6 +1573,26 @@ export class PrismaClient<
     * ```
     */
   get portal_invites(): Prisma.portal_invitesDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.appCache`: Exposes CRUD operations for the **AppCache** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more AppCaches
+    * const appCaches = await prisma.appCache.findMany()
+    * ```
+    */
+  get appCache(): Prisma.AppCacheDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.shareLink`: Exposes CRUD operations for the **ShareLink** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ShareLinks
+    * const shareLinks = await prisma.shareLink.findMany()
+    * ```
+    */
+  get shareLink(): Prisma.ShareLinkDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -2088,7 +2118,9 @@ export namespace Prisma {
     portal_products: 'portal_products',
     marketplace_install_components: 'marketplace_install_components',
     bitrix_app_events: 'bitrix_app_events',
-    portal_invites: 'portal_invites'
+    portal_invites: 'portal_invites',
+    AppCache: 'AppCache',
+    ShareLink: 'ShareLink'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2107,7 +2139,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -7787,6 +7819,138 @@ export namespace Prisma {
           }
         }
       }
+      AppCache: {
+        payload: Prisma.$AppCachePayload<ExtArgs>
+        fields: Prisma.AppCacheFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AppCacheFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AppCacheFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>
+          }
+          findFirst: {
+            args: Prisma.AppCacheFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AppCacheFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>
+          }
+          findMany: {
+            args: Prisma.AppCacheFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>[]
+          }
+          create: {
+            args: Prisma.AppCacheCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>
+          }
+          createMany: {
+            args: Prisma.AppCacheCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AppCacheDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>
+          }
+          update: {
+            args: Prisma.AppCacheUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>
+          }
+          deleteMany: {
+            args: Prisma.AppCacheDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AppCacheUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AppCacheUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppCachePayload>
+          }
+          aggregate: {
+            args: Prisma.AppCacheAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAppCache>
+          }
+          groupBy: {
+            args: Prisma.AppCacheGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AppCacheGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AppCacheCountArgs<ExtArgs>
+            result: $Utils.Optional<AppCacheCountAggregateOutputType> | number
+          }
+        }
+      }
+      ShareLink: {
+        payload: Prisma.$ShareLinkPayload<ExtArgs>
+        fields: Prisma.ShareLinkFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ShareLinkFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ShareLinkFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          findFirst: {
+            args: Prisma.ShareLinkFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ShareLinkFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          findMany: {
+            args: Prisma.ShareLinkFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>[]
+          }
+          create: {
+            args: Prisma.ShareLinkCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          createMany: {
+            args: Prisma.ShareLinkCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ShareLinkDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          update: {
+            args: Prisma.ShareLinkUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          deleteMany: {
+            args: Prisma.ShareLinkDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ShareLinkUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ShareLinkUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          aggregate: {
+            args: Prisma.ShareLinkAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateShareLink>
+          }
+          groupBy: {
+            args: Prisma.ShareLinkGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ShareLinkGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ShareLinkCountArgs<ExtArgs>
+            result: $Utils.Optional<ShareLinkCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -7969,6 +8133,8 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsOmit
     bitrix_app_events?: bitrix_app_eventsOmit
     portal_invites?: portal_invitesOmit
+    appCache?: AppCacheOmit
+    shareLink?: ShareLinkOmit
   }
 
   /* Types for Logging */
@@ -8583,6 +8749,8 @@ export namespace Prisma {
     portal_products: number
     marketplace_install_components: number
     portal_invites: number
+    appCaches: number
+    shareLinks: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8613,6 +8781,8 @@ export namespace Prisma {
     portal_products?: boolean | PortalCountOutputTypeCountPortal_productsArgs
     marketplace_install_components?: boolean | PortalCountOutputTypeCountMarketplace_install_componentsArgs
     portal_invites?: boolean | PortalCountOutputTypeCountPortal_invitesArgs
+    appCaches?: boolean | PortalCountOutputTypeCountAppCachesArgs
+    shareLinks?: boolean | PortalCountOutputTypeCountShareLinksArgs
   }
 
   // Custom InputTypes
@@ -8813,6 +8983,20 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountPortal_invitesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: portal_invitesWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountAppCachesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AppCacheWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountShareLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ShareLinkWhereInput
   }
 
 
@@ -44269,6 +44453,8 @@ export namespace Prisma {
     portal_products?: boolean | Portal$portal_productsArgs<ExtArgs>
     marketplace_install_components?: boolean | Portal$marketplace_install_componentsArgs<ExtArgs>
     portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
+    appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
+    shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -44330,6 +44516,8 @@ export namespace Prisma {
     portal_products?: boolean | Portal$portal_productsArgs<ExtArgs>
     marketplace_install_components?: boolean | Portal$marketplace_install_componentsArgs<ExtArgs>
     portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
+    appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
+    shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -44364,6 +44552,8 @@ export namespace Prisma {
       portal_products: Prisma.$portal_productsPayload<ExtArgs>[]
       marketplace_install_components: Prisma.$marketplace_install_componentsPayload<ExtArgs>[]
       portal_invites: Prisma.$portal_invitesPayload<ExtArgs>[]
+      appCaches: Prisma.$AppCachePayload<ExtArgs>[]
+      shareLinks: Prisma.$ShareLinkPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -44757,6 +44947,8 @@ export namespace Prisma {
     portal_products<T extends Portal$portal_productsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_productsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     marketplace_install_components<T extends Portal$marketplace_install_componentsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$marketplace_install_componentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$marketplace_install_componentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     portal_invites<T extends Portal$portal_invitesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_invitesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    appCaches<T extends Portal$appCachesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appCachesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    shareLinks<T extends Portal$shareLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$shareLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -45816,6 +46008,54 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: Portal_invitesScalarFieldEnum | Portal_invitesScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.appCaches
+   */
+  export type Portal$appCachesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    where?: AppCacheWhereInput
+    orderBy?: AppCacheOrderByWithRelationInput | AppCacheOrderByWithRelationInput[]
+    cursor?: AppCacheWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AppCacheScalarFieldEnum | AppCacheScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.shareLinks
+   */
+  export type Portal$shareLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    where?: ShareLinkWhereInput
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    cursor?: ShareLinkWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
   }
 
   /**
@@ -101844,6 +102084,2178 @@ export namespace Prisma {
 
 
   /**
+   * Model AppCache
+   */
+
+  export type AggregateAppCache = {
+    _count: AppCacheCountAggregateOutputType | null
+    _avg: AppCacheAvgAggregateOutputType | null
+    _sum: AppCacheSumAggregateOutputType | null
+    _min: AppCacheMinAggregateOutputType | null
+    _max: AppCacheMaxAggregateOutputType | null
+  }
+
+  export type AppCacheAvgAggregateOutputType = {
+    portalId: number | null
+    bxUserId: number | null
+  }
+
+  export type AppCacheSumAggregateOutputType = {
+    portalId: bigint | null
+    bxUserId: bigint | null
+  }
+
+  export type AppCacheMinAggregateOutputType = {
+    id: string | null
+    app: string | null
+    portalId: bigint | null
+    domain: string | null
+    bxUserId: bigint | null
+    key: string | null
+    group: string | null
+    checksum: string | null
+    expiredAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AppCacheMaxAggregateOutputType = {
+    id: string | null
+    app: string | null
+    portalId: bigint | null
+    domain: string | null
+    bxUserId: bigint | null
+    key: string | null
+    group: string | null
+    checksum: string | null
+    expiredAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AppCacheCountAggregateOutputType = {
+    id: number
+    app: number
+    portalId: number
+    domain: number
+    bxUserId: number
+    key: number
+    group: number
+    data: number
+    meta: number
+    checksum: number
+    tags: number
+    expiredAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type AppCacheAvgAggregateInputType = {
+    portalId?: true
+    bxUserId?: true
+  }
+
+  export type AppCacheSumAggregateInputType = {
+    portalId?: true
+    bxUserId?: true
+  }
+
+  export type AppCacheMinAggregateInputType = {
+    id?: true
+    app?: true
+    portalId?: true
+    domain?: true
+    bxUserId?: true
+    key?: true
+    group?: true
+    checksum?: true
+    expiredAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AppCacheMaxAggregateInputType = {
+    id?: true
+    app?: true
+    portalId?: true
+    domain?: true
+    bxUserId?: true
+    key?: true
+    group?: true
+    checksum?: true
+    expiredAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AppCacheCountAggregateInputType = {
+    id?: true
+    app?: true
+    portalId?: true
+    domain?: true
+    bxUserId?: true
+    key?: true
+    group?: true
+    data?: true
+    meta?: true
+    checksum?: true
+    tags?: true
+    expiredAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type AppCacheAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AppCache to aggregate.
+     */
+    where?: AppCacheWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppCaches to fetch.
+     */
+    orderBy?: AppCacheOrderByWithRelationInput | AppCacheOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AppCacheWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppCaches from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppCaches.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned AppCaches
+    **/
+    _count?: true | AppCacheCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: AppCacheAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AppCacheSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AppCacheMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AppCacheMaxAggregateInputType
+  }
+
+  export type GetAppCacheAggregateType<T extends AppCacheAggregateArgs> = {
+        [P in keyof T & keyof AggregateAppCache]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAppCache[P]>
+      : GetScalarType<T[P], AggregateAppCache[P]>
+  }
+
+
+
+
+  export type AppCacheGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AppCacheWhereInput
+    orderBy?: AppCacheOrderByWithAggregationInput | AppCacheOrderByWithAggregationInput[]
+    by: AppCacheScalarFieldEnum[] | AppCacheScalarFieldEnum
+    having?: AppCacheScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AppCacheCountAggregateInputType | true
+    _avg?: AppCacheAvgAggregateInputType
+    _sum?: AppCacheSumAggregateInputType
+    _min?: AppCacheMinAggregateInputType
+    _max?: AppCacheMaxAggregateInputType
+  }
+
+  export type AppCacheGroupByOutputType = {
+    id: string
+    app: string
+    portalId: bigint
+    domain: string
+    bxUserId: bigint
+    key: string
+    group: string | null
+    data: JsonValue
+    meta: JsonValue | null
+    checksum: string | null
+    tags: JsonValue | null
+    expiredAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: AppCacheCountAggregateOutputType | null
+    _avg: AppCacheAvgAggregateOutputType | null
+    _sum: AppCacheSumAggregateOutputType | null
+    _min: AppCacheMinAggregateOutputType | null
+    _max: AppCacheMaxAggregateOutputType | null
+  }
+
+  type GetAppCacheGroupByPayload<T extends AppCacheGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AppCacheGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AppCacheGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AppCacheGroupByOutputType[P]>
+            : GetScalarType<T[P], AppCacheGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AppCacheSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    app?: boolean
+    portalId?: boolean
+    domain?: boolean
+    bxUserId?: boolean
+    key?: boolean
+    group?: boolean
+    data?: boolean
+    meta?: boolean
+    checksum?: boolean
+    tags?: boolean
+    expiredAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["appCache"]>
+
+
+
+  export type AppCacheSelectScalar = {
+    id?: boolean
+    app?: boolean
+    portalId?: boolean
+    domain?: boolean
+    bxUserId?: boolean
+    key?: boolean
+    group?: boolean
+    data?: boolean
+    meta?: boolean
+    checksum?: boolean
+    tags?: boolean
+    expiredAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type AppCacheOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "app" | "portalId" | "domain" | "bxUserId" | "key" | "group" | "data" | "meta" | "checksum" | "tags" | "expiredAt" | "createdAt" | "updatedAt", ExtArgs["result"]["appCache"]>
+  export type AppCacheInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $AppCachePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "AppCache"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      app: string
+      portalId: bigint
+      domain: string
+      bxUserId: bigint
+      key: string
+      group: string | null
+      data: Prisma.JsonValue
+      meta: Prisma.JsonValue | null
+      checksum: string | null
+      tags: Prisma.JsonValue | null
+      expiredAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["appCache"]>
+    composites: {}
+  }
+
+  type AppCacheGetPayload<S extends boolean | null | undefined | AppCacheDefaultArgs> = $Result.GetResult<Prisma.$AppCachePayload, S>
+
+  type AppCacheCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<AppCacheFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: AppCacheCountAggregateInputType | true
+    }
+
+  export interface AppCacheDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['AppCache'], meta: { name: 'AppCache' } }
+    /**
+     * Find zero or one AppCache that matches the filter.
+     * @param {AppCacheFindUniqueArgs} args - Arguments to find a AppCache
+     * @example
+     * // Get one AppCache
+     * const appCache = await prisma.appCache.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AppCacheFindUniqueArgs>(args: SelectSubset<T, AppCacheFindUniqueArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one AppCache that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {AppCacheFindUniqueOrThrowArgs} args - Arguments to find a AppCache
+     * @example
+     * // Get one AppCache
+     * const appCache = await prisma.appCache.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AppCacheFindUniqueOrThrowArgs>(args: SelectSubset<T, AppCacheFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AppCache that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheFindFirstArgs} args - Arguments to find a AppCache
+     * @example
+     * // Get one AppCache
+     * const appCache = await prisma.appCache.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AppCacheFindFirstArgs>(args?: SelectSubset<T, AppCacheFindFirstArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AppCache that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheFindFirstOrThrowArgs} args - Arguments to find a AppCache
+     * @example
+     * // Get one AppCache
+     * const appCache = await prisma.appCache.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AppCacheFindFirstOrThrowArgs>(args?: SelectSubset<T, AppCacheFindFirstOrThrowArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more AppCaches that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all AppCaches
+     * const appCaches = await prisma.appCache.findMany()
+     * 
+     * // Get first 10 AppCaches
+     * const appCaches = await prisma.appCache.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const appCacheWithIdOnly = await prisma.appCache.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AppCacheFindManyArgs>(args?: SelectSubset<T, AppCacheFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a AppCache.
+     * @param {AppCacheCreateArgs} args - Arguments to create a AppCache.
+     * @example
+     * // Create one AppCache
+     * const AppCache = await prisma.appCache.create({
+     *   data: {
+     *     // ... data to create a AppCache
+     *   }
+     * })
+     * 
+     */
+    create<T extends AppCacheCreateArgs>(args: SelectSubset<T, AppCacheCreateArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many AppCaches.
+     * @param {AppCacheCreateManyArgs} args - Arguments to create many AppCaches.
+     * @example
+     * // Create many AppCaches
+     * const appCache = await prisma.appCache.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AppCacheCreateManyArgs>(args?: SelectSubset<T, AppCacheCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a AppCache.
+     * @param {AppCacheDeleteArgs} args - Arguments to delete one AppCache.
+     * @example
+     * // Delete one AppCache
+     * const AppCache = await prisma.appCache.delete({
+     *   where: {
+     *     // ... filter to delete one AppCache
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AppCacheDeleteArgs>(args: SelectSubset<T, AppCacheDeleteArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one AppCache.
+     * @param {AppCacheUpdateArgs} args - Arguments to update one AppCache.
+     * @example
+     * // Update one AppCache
+     * const appCache = await prisma.appCache.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AppCacheUpdateArgs>(args: SelectSubset<T, AppCacheUpdateArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more AppCaches.
+     * @param {AppCacheDeleteManyArgs} args - Arguments to filter AppCaches to delete.
+     * @example
+     * // Delete a few AppCaches
+     * const { count } = await prisma.appCache.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AppCacheDeleteManyArgs>(args?: SelectSubset<T, AppCacheDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AppCaches.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many AppCaches
+     * const appCache = await prisma.appCache.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AppCacheUpdateManyArgs>(args: SelectSubset<T, AppCacheUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one AppCache.
+     * @param {AppCacheUpsertArgs} args - Arguments to update or create a AppCache.
+     * @example
+     * // Update or create a AppCache
+     * const appCache = await prisma.appCache.upsert({
+     *   create: {
+     *     // ... data to create a AppCache
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the AppCache we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AppCacheUpsertArgs>(args: SelectSubset<T, AppCacheUpsertArgs<ExtArgs>>): Prisma__AppCacheClient<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of AppCaches.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheCountArgs} args - Arguments to filter AppCaches to count.
+     * @example
+     * // Count the number of AppCaches
+     * const count = await prisma.appCache.count({
+     *   where: {
+     *     // ... the filter for the AppCaches we want to count
+     *   }
+     * })
+    **/
+    count<T extends AppCacheCountArgs>(
+      args?: Subset<T, AppCacheCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AppCacheCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a AppCache.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AppCacheAggregateArgs>(args: Subset<T, AppCacheAggregateArgs>): Prisma.PrismaPromise<GetAppCacheAggregateType<T>>
+
+    /**
+     * Group by AppCache.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppCacheGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AppCacheGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AppCacheGroupByArgs['orderBy'] }
+        : { orderBy?: AppCacheGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AppCacheGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAppCacheGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the AppCache model
+   */
+  readonly fields: AppCacheFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for AppCache.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AppCacheClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the AppCache model
+   */
+  interface AppCacheFieldRefs {
+    readonly id: FieldRef<"AppCache", 'String'>
+    readonly app: FieldRef<"AppCache", 'String'>
+    readonly portalId: FieldRef<"AppCache", 'BigInt'>
+    readonly domain: FieldRef<"AppCache", 'String'>
+    readonly bxUserId: FieldRef<"AppCache", 'BigInt'>
+    readonly key: FieldRef<"AppCache", 'String'>
+    readonly group: FieldRef<"AppCache", 'String'>
+    readonly data: FieldRef<"AppCache", 'Json'>
+    readonly meta: FieldRef<"AppCache", 'Json'>
+    readonly checksum: FieldRef<"AppCache", 'String'>
+    readonly tags: FieldRef<"AppCache", 'Json'>
+    readonly expiredAt: FieldRef<"AppCache", 'DateTime'>
+    readonly createdAt: FieldRef<"AppCache", 'DateTime'>
+    readonly updatedAt: FieldRef<"AppCache", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * AppCache findUnique
+   */
+  export type AppCacheFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * Filter, which AppCache to fetch.
+     */
+    where: AppCacheWhereUniqueInput
+  }
+
+  /**
+   * AppCache findUniqueOrThrow
+   */
+  export type AppCacheFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * Filter, which AppCache to fetch.
+     */
+    where: AppCacheWhereUniqueInput
+  }
+
+  /**
+   * AppCache findFirst
+   */
+  export type AppCacheFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * Filter, which AppCache to fetch.
+     */
+    where?: AppCacheWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppCaches to fetch.
+     */
+    orderBy?: AppCacheOrderByWithRelationInput | AppCacheOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AppCaches.
+     */
+    cursor?: AppCacheWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppCaches from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppCaches.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AppCaches.
+     */
+    distinct?: AppCacheScalarFieldEnum | AppCacheScalarFieldEnum[]
+  }
+
+  /**
+   * AppCache findFirstOrThrow
+   */
+  export type AppCacheFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * Filter, which AppCache to fetch.
+     */
+    where?: AppCacheWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppCaches to fetch.
+     */
+    orderBy?: AppCacheOrderByWithRelationInput | AppCacheOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AppCaches.
+     */
+    cursor?: AppCacheWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppCaches from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppCaches.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AppCaches.
+     */
+    distinct?: AppCacheScalarFieldEnum | AppCacheScalarFieldEnum[]
+  }
+
+  /**
+   * AppCache findMany
+   */
+  export type AppCacheFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * Filter, which AppCaches to fetch.
+     */
+    where?: AppCacheWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppCaches to fetch.
+     */
+    orderBy?: AppCacheOrderByWithRelationInput | AppCacheOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing AppCaches.
+     */
+    cursor?: AppCacheWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppCaches from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppCaches.
+     */
+    skip?: number
+    distinct?: AppCacheScalarFieldEnum | AppCacheScalarFieldEnum[]
+  }
+
+  /**
+   * AppCache create
+   */
+  export type AppCacheCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * The data needed to create a AppCache.
+     */
+    data: XOR<AppCacheCreateInput, AppCacheUncheckedCreateInput>
+  }
+
+  /**
+   * AppCache createMany
+   */
+  export type AppCacheCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many AppCaches.
+     */
+    data: AppCacheCreateManyInput | AppCacheCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * AppCache update
+   */
+  export type AppCacheUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * The data needed to update a AppCache.
+     */
+    data: XOR<AppCacheUpdateInput, AppCacheUncheckedUpdateInput>
+    /**
+     * Choose, which AppCache to update.
+     */
+    where: AppCacheWhereUniqueInput
+  }
+
+  /**
+   * AppCache updateMany
+   */
+  export type AppCacheUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update AppCaches.
+     */
+    data: XOR<AppCacheUpdateManyMutationInput, AppCacheUncheckedUpdateManyInput>
+    /**
+     * Filter which AppCaches to update
+     */
+    where?: AppCacheWhereInput
+    /**
+     * Limit how many AppCaches to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * AppCache upsert
+   */
+  export type AppCacheUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * The filter to search for the AppCache to update in case it exists.
+     */
+    where: AppCacheWhereUniqueInput
+    /**
+     * In case the AppCache found by the `where` argument doesn't exist, create a new AppCache with this data.
+     */
+    create: XOR<AppCacheCreateInput, AppCacheUncheckedCreateInput>
+    /**
+     * In case the AppCache was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AppCacheUpdateInput, AppCacheUncheckedUpdateInput>
+  }
+
+  /**
+   * AppCache delete
+   */
+  export type AppCacheDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+    /**
+     * Filter which AppCache to delete.
+     */
+    where: AppCacheWhereUniqueInput
+  }
+
+  /**
+   * AppCache deleteMany
+   */
+  export type AppCacheDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AppCaches to delete
+     */
+    where?: AppCacheWhereInput
+    /**
+     * Limit how many AppCaches to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * AppCache without action
+   */
+  export type AppCacheDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppCache
+     */
+    select?: AppCacheSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppCache
+     */
+    omit?: AppCacheOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AppCacheInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ShareLink
+   */
+
+  export type AggregateShareLink = {
+    _count: ShareLinkCountAggregateOutputType | null
+    _avg: ShareLinkAvgAggregateOutputType | null
+    _sum: ShareLinkSumAggregateOutputType | null
+    _min: ShareLinkMinAggregateOutputType | null
+    _max: ShareLinkMaxAggregateOutputType | null
+  }
+
+  export type ShareLinkAvgAggregateOutputType = {
+    portalId: number | null
+    creatorBxUserId: number | null
+    refreshIntervalSec: number | null
+    viewCount: number | null
+  }
+
+  export type ShareLinkSumAggregateOutputType = {
+    portalId: bigint | null
+    creatorBxUserId: number | null
+    refreshIntervalSec: number | null
+    viewCount: number | null
+  }
+
+  export type ShareLinkMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    token: string | null
+    portalId: bigint | null
+    domain: string | null
+    creatorBxUserId: number | null
+    creatorName: string | null
+    title: string | null
+    filterSnapshot: string | null
+    isRefreshable: boolean | null
+    refreshIntervalSec: number | null
+    lastRefreshedAt: Date | null
+    nextRefreshAt: Date | null
+    expiresAt: Date | null
+    status: string | null
+    viewCount: number | null
+    lastViewedAt: Date | null
+  }
+
+  export type ShareLinkMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    token: string | null
+    portalId: bigint | null
+    domain: string | null
+    creatorBxUserId: number | null
+    creatorName: string | null
+    title: string | null
+    filterSnapshot: string | null
+    isRefreshable: boolean | null
+    refreshIntervalSec: number | null
+    lastRefreshedAt: Date | null
+    nextRefreshAt: Date | null
+    expiresAt: Date | null
+    status: string | null
+    viewCount: number | null
+    lastViewedAt: Date | null
+  }
+
+  export type ShareLinkCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    token: number
+    portalId: number
+    domain: number
+    creatorBxUserId: number
+    creatorName: number
+    title: number
+    filterSnapshot: number
+    isRefreshable: number
+    refreshIntervalSec: number
+    lastRefreshedAt: number
+    nextRefreshAt: number
+    expiresAt: number
+    status: number
+    viewCount: number
+    lastViewedAt: number
+    _all: number
+  }
+
+
+  export type ShareLinkAvgAggregateInputType = {
+    portalId?: true
+    creatorBxUserId?: true
+    refreshIntervalSec?: true
+    viewCount?: true
+  }
+
+  export type ShareLinkSumAggregateInputType = {
+    portalId?: true
+    creatorBxUserId?: true
+    refreshIntervalSec?: true
+    viewCount?: true
+  }
+
+  export type ShareLinkMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    token?: true
+    portalId?: true
+    domain?: true
+    creatorBxUserId?: true
+    creatorName?: true
+    title?: true
+    filterSnapshot?: true
+    isRefreshable?: true
+    refreshIntervalSec?: true
+    lastRefreshedAt?: true
+    nextRefreshAt?: true
+    expiresAt?: true
+    status?: true
+    viewCount?: true
+    lastViewedAt?: true
+  }
+
+  export type ShareLinkMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    token?: true
+    portalId?: true
+    domain?: true
+    creatorBxUserId?: true
+    creatorName?: true
+    title?: true
+    filterSnapshot?: true
+    isRefreshable?: true
+    refreshIntervalSec?: true
+    lastRefreshedAt?: true
+    nextRefreshAt?: true
+    expiresAt?: true
+    status?: true
+    viewCount?: true
+    lastViewedAt?: true
+  }
+
+  export type ShareLinkCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    token?: true
+    portalId?: true
+    domain?: true
+    creatorBxUserId?: true
+    creatorName?: true
+    title?: true
+    filterSnapshot?: true
+    isRefreshable?: true
+    refreshIntervalSec?: true
+    lastRefreshedAt?: true
+    nextRefreshAt?: true
+    expiresAt?: true
+    status?: true
+    viewCount?: true
+    lastViewedAt?: true
+    _all?: true
+  }
+
+  export type ShareLinkAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ShareLink to aggregate.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ShareLinks
+    **/
+    _count?: true | ShareLinkCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ShareLinkAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ShareLinkSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ShareLinkMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ShareLinkMaxAggregateInputType
+  }
+
+  export type GetShareLinkAggregateType<T extends ShareLinkAggregateArgs> = {
+        [P in keyof T & keyof AggregateShareLink]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateShareLink[P]>
+      : GetScalarType<T[P], AggregateShareLink[P]>
+  }
+
+
+
+
+  export type ShareLinkGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ShareLinkWhereInput
+    orderBy?: ShareLinkOrderByWithAggregationInput | ShareLinkOrderByWithAggregationInput[]
+    by: ShareLinkScalarFieldEnum[] | ShareLinkScalarFieldEnum
+    having?: ShareLinkScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ShareLinkCountAggregateInputType | true
+    _avg?: ShareLinkAvgAggregateInputType
+    _sum?: ShareLinkSumAggregateInputType
+    _min?: ShareLinkMinAggregateInputType
+    _max?: ShareLinkMaxAggregateInputType
+  }
+
+  export type ShareLinkGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    token: string
+    portalId: bigint
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable: boolean
+    refreshIntervalSec: number
+    lastRefreshedAt: Date | null
+    nextRefreshAt: Date | null
+    expiresAt: Date
+    status: string
+    viewCount: number
+    lastViewedAt: Date | null
+    _count: ShareLinkCountAggregateOutputType | null
+    _avg: ShareLinkAvgAggregateOutputType | null
+    _sum: ShareLinkSumAggregateOutputType | null
+    _min: ShareLinkMinAggregateOutputType | null
+    _max: ShareLinkMaxAggregateOutputType | null
+  }
+
+  type GetShareLinkGroupByPayload<T extends ShareLinkGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ShareLinkGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ShareLinkGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ShareLinkGroupByOutputType[P]>
+            : GetScalarType<T[P], ShareLinkGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ShareLinkSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    token?: boolean
+    portalId?: boolean
+    domain?: boolean
+    creatorBxUserId?: boolean
+    creatorName?: boolean
+    title?: boolean
+    filterSnapshot?: boolean
+    isRefreshable?: boolean
+    refreshIntervalSec?: boolean
+    lastRefreshedAt?: boolean
+    nextRefreshAt?: boolean
+    expiresAt?: boolean
+    status?: boolean
+    viewCount?: boolean
+    lastViewedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["shareLink"]>
+
+
+
+  export type ShareLinkSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    token?: boolean
+    portalId?: boolean
+    domain?: boolean
+    creatorBxUserId?: boolean
+    creatorName?: boolean
+    title?: boolean
+    filterSnapshot?: boolean
+    isRefreshable?: boolean
+    refreshIntervalSec?: boolean
+    lastRefreshedAt?: boolean
+    nextRefreshAt?: boolean
+    expiresAt?: boolean
+    status?: boolean
+    viewCount?: boolean
+    lastViewedAt?: boolean
+  }
+
+  export type ShareLinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "token" | "portalId" | "domain" | "creatorBxUserId" | "creatorName" | "title" | "filterSnapshot" | "isRefreshable" | "refreshIntervalSec" | "lastRefreshedAt" | "nextRefreshAt" | "expiresAt" | "status" | "viewCount" | "lastViewedAt", ExtArgs["result"]["shareLink"]>
+  export type ShareLinkInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $ShareLinkPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ShareLink"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      token: string
+      portalId: bigint
+      domain: string
+      creatorBxUserId: number
+      creatorName: string
+      title: string
+      filterSnapshot: string
+      isRefreshable: boolean
+      refreshIntervalSec: number
+      lastRefreshedAt: Date | null
+      nextRefreshAt: Date | null
+      expiresAt: Date
+      status: string
+      viewCount: number
+      lastViewedAt: Date | null
+    }, ExtArgs["result"]["shareLink"]>
+    composites: {}
+  }
+
+  type ShareLinkGetPayload<S extends boolean | null | undefined | ShareLinkDefaultArgs> = $Result.GetResult<Prisma.$ShareLinkPayload, S>
+
+  type ShareLinkCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ShareLinkFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ShareLinkCountAggregateInputType | true
+    }
+
+  export interface ShareLinkDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ShareLink'], meta: { name: 'ShareLink' } }
+    /**
+     * Find zero or one ShareLink that matches the filter.
+     * @param {ShareLinkFindUniqueArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ShareLinkFindUniqueArgs>(args: SelectSubset<T, ShareLinkFindUniqueArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ShareLink that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ShareLinkFindUniqueOrThrowArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ShareLinkFindUniqueOrThrowArgs>(args: SelectSubset<T, ShareLinkFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ShareLink that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkFindFirstArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ShareLinkFindFirstArgs>(args?: SelectSubset<T, ShareLinkFindFirstArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ShareLink that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkFindFirstOrThrowArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ShareLinkFindFirstOrThrowArgs>(args?: SelectSubset<T, ShareLinkFindFirstOrThrowArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ShareLinks that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ShareLinks
+     * const shareLinks = await prisma.shareLink.findMany()
+     * 
+     * // Get first 10 ShareLinks
+     * const shareLinks = await prisma.shareLink.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const shareLinkWithIdOnly = await prisma.shareLink.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ShareLinkFindManyArgs>(args?: SelectSubset<T, ShareLinkFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ShareLink.
+     * @param {ShareLinkCreateArgs} args - Arguments to create a ShareLink.
+     * @example
+     * // Create one ShareLink
+     * const ShareLink = await prisma.shareLink.create({
+     *   data: {
+     *     // ... data to create a ShareLink
+     *   }
+     * })
+     * 
+     */
+    create<T extends ShareLinkCreateArgs>(args: SelectSubset<T, ShareLinkCreateArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ShareLinks.
+     * @param {ShareLinkCreateManyArgs} args - Arguments to create many ShareLinks.
+     * @example
+     * // Create many ShareLinks
+     * const shareLink = await prisma.shareLink.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ShareLinkCreateManyArgs>(args?: SelectSubset<T, ShareLinkCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ShareLink.
+     * @param {ShareLinkDeleteArgs} args - Arguments to delete one ShareLink.
+     * @example
+     * // Delete one ShareLink
+     * const ShareLink = await prisma.shareLink.delete({
+     *   where: {
+     *     // ... filter to delete one ShareLink
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ShareLinkDeleteArgs>(args: SelectSubset<T, ShareLinkDeleteArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ShareLink.
+     * @param {ShareLinkUpdateArgs} args - Arguments to update one ShareLink.
+     * @example
+     * // Update one ShareLink
+     * const shareLink = await prisma.shareLink.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ShareLinkUpdateArgs>(args: SelectSubset<T, ShareLinkUpdateArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ShareLinks.
+     * @param {ShareLinkDeleteManyArgs} args - Arguments to filter ShareLinks to delete.
+     * @example
+     * // Delete a few ShareLinks
+     * const { count } = await prisma.shareLink.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ShareLinkDeleteManyArgs>(args?: SelectSubset<T, ShareLinkDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ShareLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ShareLinks
+     * const shareLink = await prisma.shareLink.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ShareLinkUpdateManyArgs>(args: SelectSubset<T, ShareLinkUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ShareLink.
+     * @param {ShareLinkUpsertArgs} args - Arguments to update or create a ShareLink.
+     * @example
+     * // Update or create a ShareLink
+     * const shareLink = await prisma.shareLink.upsert({
+     *   create: {
+     *     // ... data to create a ShareLink
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ShareLink we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ShareLinkUpsertArgs>(args: SelectSubset<T, ShareLinkUpsertArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ShareLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkCountArgs} args - Arguments to filter ShareLinks to count.
+     * @example
+     * // Count the number of ShareLinks
+     * const count = await prisma.shareLink.count({
+     *   where: {
+     *     // ... the filter for the ShareLinks we want to count
+     *   }
+     * })
+    **/
+    count<T extends ShareLinkCountArgs>(
+      args?: Subset<T, ShareLinkCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ShareLinkCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ShareLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ShareLinkAggregateArgs>(args: Subset<T, ShareLinkAggregateArgs>): Prisma.PrismaPromise<GetShareLinkAggregateType<T>>
+
+    /**
+     * Group by ShareLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ShareLinkGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ShareLinkGroupByArgs['orderBy'] }
+        : { orderBy?: ShareLinkGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ShareLinkGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetShareLinkGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ShareLink model
+   */
+  readonly fields: ShareLinkFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ShareLink.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ShareLinkClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ShareLink model
+   */
+  interface ShareLinkFieldRefs {
+    readonly id: FieldRef<"ShareLink", 'String'>
+    readonly createdAt: FieldRef<"ShareLink", 'DateTime'>
+    readonly updatedAt: FieldRef<"ShareLink", 'DateTime'>
+    readonly token: FieldRef<"ShareLink", 'String'>
+    readonly portalId: FieldRef<"ShareLink", 'BigInt'>
+    readonly domain: FieldRef<"ShareLink", 'String'>
+    readonly creatorBxUserId: FieldRef<"ShareLink", 'Int'>
+    readonly creatorName: FieldRef<"ShareLink", 'String'>
+    readonly title: FieldRef<"ShareLink", 'String'>
+    readonly filterSnapshot: FieldRef<"ShareLink", 'String'>
+    readonly isRefreshable: FieldRef<"ShareLink", 'Boolean'>
+    readonly refreshIntervalSec: FieldRef<"ShareLink", 'Int'>
+    readonly lastRefreshedAt: FieldRef<"ShareLink", 'DateTime'>
+    readonly nextRefreshAt: FieldRef<"ShareLink", 'DateTime'>
+    readonly expiresAt: FieldRef<"ShareLink", 'DateTime'>
+    readonly status: FieldRef<"ShareLink", 'String'>
+    readonly viewCount: FieldRef<"ShareLink", 'Int'>
+    readonly lastViewedAt: FieldRef<"ShareLink", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ShareLink findUnique
+   */
+  export type ShareLinkFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink findUniqueOrThrow
+   */
+  export type ShareLinkFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink findFirst
+   */
+  export type ShareLinkFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ShareLinks.
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ShareLinks.
+     */
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * ShareLink findFirstOrThrow
+   */
+  export type ShareLinkFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ShareLinks.
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ShareLinks.
+     */
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * ShareLink findMany
+   */
+  export type ShareLinkFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLinks to fetch.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ShareLinks.
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * ShareLink create
+   */
+  export type ShareLinkCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ShareLink.
+     */
+    data: XOR<ShareLinkCreateInput, ShareLinkUncheckedCreateInput>
+  }
+
+  /**
+   * ShareLink createMany
+   */
+  export type ShareLinkCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ShareLinks.
+     */
+    data: ShareLinkCreateManyInput | ShareLinkCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ShareLink update
+   */
+  export type ShareLinkUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ShareLink.
+     */
+    data: XOR<ShareLinkUpdateInput, ShareLinkUncheckedUpdateInput>
+    /**
+     * Choose, which ShareLink to update.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink updateMany
+   */
+  export type ShareLinkUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ShareLinks.
+     */
+    data: XOR<ShareLinkUpdateManyMutationInput, ShareLinkUncheckedUpdateManyInput>
+    /**
+     * Filter which ShareLinks to update
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * Limit how many ShareLinks to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ShareLink upsert
+   */
+  export type ShareLinkUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ShareLink to update in case it exists.
+     */
+    where: ShareLinkWhereUniqueInput
+    /**
+     * In case the ShareLink found by the `where` argument doesn't exist, create a new ShareLink with this data.
+     */
+    create: XOR<ShareLinkCreateInput, ShareLinkUncheckedCreateInput>
+    /**
+     * In case the ShareLink was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ShareLinkUpdateInput, ShareLinkUncheckedUpdateInput>
+  }
+
+  /**
+   * ShareLink delete
+   */
+  export type ShareLinkDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter which ShareLink to delete.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink deleteMany
+   */
+  export type ShareLinkDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ShareLinks to delete
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * Limit how many ShareLinks to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ShareLink without action
+   */
+  export type ShareLinkDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -103489,6 +105901,50 @@ export namespace Prisma {
   export type Portal_invitesScalarFieldEnum = (typeof Portal_invitesScalarFieldEnum)[keyof typeof Portal_invitesScalarFieldEnum]
 
 
+  export const AppCacheScalarFieldEnum: {
+    id: 'id',
+    app: 'app',
+    portalId: 'portalId',
+    domain: 'domain',
+    bxUserId: 'bxUserId',
+    key: 'key',
+    group: 'group',
+    data: 'data',
+    meta: 'meta',
+    checksum: 'checksum',
+    tags: 'tags',
+    expiredAt: 'expiredAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type AppCacheScalarFieldEnum = (typeof AppCacheScalarFieldEnum)[keyof typeof AppCacheScalarFieldEnum]
+
+
+  export const ShareLinkScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    token: 'token',
+    portalId: 'portalId',
+    domain: 'domain',
+    creatorBxUserId: 'creatorBxUserId',
+    creatorName: 'creatorName',
+    title: 'title',
+    filterSnapshot: 'filterSnapshot',
+    isRefreshable: 'isRefreshable',
+    refreshIntervalSec: 'refreshIntervalSec',
+    lastRefreshedAt: 'lastRefreshedAt',
+    nextRefreshAt: 'nextRefreshAt',
+    expiresAt: 'expiresAt',
+    status: 'status',
+    viewCount: 'viewCount',
+    lastViewedAt: 'lastViewedAt'
+  };
+
+  export type ShareLinkScalarFieldEnum = (typeof ShareLinkScalarFieldEnum)[keyof typeof ShareLinkScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -103503,6 +105959,13 @@ export namespace Prisma {
   };
 
   export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
   export const NullsOrder: {
@@ -104593,6 +107056,31 @@ export namespace Prisma {
   };
 
   export type portal_invitesOrderByRelevanceFieldEnum = (typeof portal_invitesOrderByRelevanceFieldEnum)[keyof typeof portal_invitesOrderByRelevanceFieldEnum]
+
+
+  export const AppCacheOrderByRelevanceFieldEnum: {
+    id: 'id',
+    app: 'app',
+    domain: 'domain',
+    key: 'key',
+    group: 'group',
+    checksum: 'checksum'
+  };
+
+  export type AppCacheOrderByRelevanceFieldEnum = (typeof AppCacheOrderByRelevanceFieldEnum)[keyof typeof AppCacheOrderByRelevanceFieldEnum]
+
+
+  export const ShareLinkOrderByRelevanceFieldEnum: {
+    id: 'id',
+    token: 'token',
+    domain: 'domain',
+    creatorName: 'creatorName',
+    title: 'title',
+    filterSnapshot: 'filterSnapshot',
+    status: 'status'
+  };
+
+  export type ShareLinkOrderByRelevanceFieldEnum = (typeof ShareLinkOrderByRelevanceFieldEnum)[keyof typeof ShareLinkOrderByRelevanceFieldEnum]
 
 
   /**
@@ -107730,6 +110218,8 @@ export namespace Prisma {
     portal_products?: Portal_productsListRelationFilter
     marketplace_install_components?: Marketplace_install_componentsListRelationFilter
     portal_invites?: Portal_invitesListRelationFilter
+    appCaches?: AppCacheListRelationFilter
+    shareLinks?: ShareLinkListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -107784,6 +110274,8 @@ export namespace Prisma {
     portal_products?: portal_productsOrderByRelationAggregateInput
     marketplace_install_components?: marketplace_install_componentsOrderByRelationAggregateInput
     portal_invites?: portal_invitesOrderByRelationAggregateInput
+    appCaches?: AppCacheOrderByRelationAggregateInput
+    shareLinks?: ShareLinkOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -107842,6 +110334,8 @@ export namespace Prisma {
     portal_products?: Portal_productsListRelationFilter
     marketplace_install_components?: Marketplace_install_componentsListRelationFilter
     portal_invites?: Portal_invitesListRelationFilter
+    appCaches?: AppCacheListRelationFilter
+    shareLinks?: ShareLinkListRelationFilter
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -113319,6 +115813,233 @@ export namespace Prisma {
     note?: StringNullableWithAggregatesFilter<"portal_invites"> | string | null
   }
 
+  export type AppCacheWhereInput = {
+    AND?: AppCacheWhereInput | AppCacheWhereInput[]
+    OR?: AppCacheWhereInput[]
+    NOT?: AppCacheWhereInput | AppCacheWhereInput[]
+    id?: StringFilter<"AppCache"> | string
+    app?: StringFilter<"AppCache"> | string
+    portalId?: BigIntFilter<"AppCache"> | bigint | number
+    domain?: StringFilter<"AppCache"> | string
+    bxUserId?: BigIntFilter<"AppCache"> | bigint | number
+    key?: StringFilter<"AppCache"> | string
+    group?: StringNullableFilter<"AppCache"> | string | null
+    data?: JsonFilter<"AppCache">
+    meta?: JsonNullableFilter<"AppCache">
+    checksum?: StringNullableFilter<"AppCache"> | string | null
+    tags?: JsonNullableFilter<"AppCache">
+    expiredAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type AppCacheOrderByWithRelationInput = {
+    id?: SortOrder
+    app?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    bxUserId?: SortOrder
+    key?: SortOrder
+    group?: SortOrderInput | SortOrder
+    data?: SortOrder
+    meta?: SortOrderInput | SortOrder
+    checksum?: SortOrderInput | SortOrder
+    tags?: SortOrderInput | SortOrder
+    expiredAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: AppCacheOrderByRelevanceInput
+  }
+
+  export type AppCacheWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portalId_app_key_bxUserId?: AppCachePortalIdAppKeyBxUserIdCompoundUniqueInput
+    AND?: AppCacheWhereInput | AppCacheWhereInput[]
+    OR?: AppCacheWhereInput[]
+    NOT?: AppCacheWhereInput | AppCacheWhereInput[]
+    app?: StringFilter<"AppCache"> | string
+    portalId?: BigIntFilter<"AppCache"> | bigint | number
+    domain?: StringFilter<"AppCache"> | string
+    bxUserId?: BigIntFilter<"AppCache"> | bigint | number
+    key?: StringFilter<"AppCache"> | string
+    group?: StringNullableFilter<"AppCache"> | string | null
+    data?: JsonFilter<"AppCache">
+    meta?: JsonNullableFilter<"AppCache">
+    checksum?: StringNullableFilter<"AppCache"> | string | null
+    tags?: JsonNullableFilter<"AppCache">
+    expiredAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "portalId_app_key_bxUserId">
+
+  export type AppCacheOrderByWithAggregationInput = {
+    id?: SortOrder
+    app?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    bxUserId?: SortOrder
+    key?: SortOrder
+    group?: SortOrderInput | SortOrder
+    data?: SortOrder
+    meta?: SortOrderInput | SortOrder
+    checksum?: SortOrderInput | SortOrder
+    tags?: SortOrderInput | SortOrder
+    expiredAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: AppCacheCountOrderByAggregateInput
+    _avg?: AppCacheAvgOrderByAggregateInput
+    _max?: AppCacheMaxOrderByAggregateInput
+    _min?: AppCacheMinOrderByAggregateInput
+    _sum?: AppCacheSumOrderByAggregateInput
+  }
+
+  export type AppCacheScalarWhereWithAggregatesInput = {
+    AND?: AppCacheScalarWhereWithAggregatesInput | AppCacheScalarWhereWithAggregatesInput[]
+    OR?: AppCacheScalarWhereWithAggregatesInput[]
+    NOT?: AppCacheScalarWhereWithAggregatesInput | AppCacheScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"AppCache"> | string
+    app?: StringWithAggregatesFilter<"AppCache"> | string
+    portalId?: BigIntWithAggregatesFilter<"AppCache"> | bigint | number
+    domain?: StringWithAggregatesFilter<"AppCache"> | string
+    bxUserId?: BigIntWithAggregatesFilter<"AppCache"> | bigint | number
+    key?: StringWithAggregatesFilter<"AppCache"> | string
+    group?: StringNullableWithAggregatesFilter<"AppCache"> | string | null
+    data?: JsonWithAggregatesFilter<"AppCache">
+    meta?: JsonNullableWithAggregatesFilter<"AppCache">
+    checksum?: StringNullableWithAggregatesFilter<"AppCache"> | string | null
+    tags?: JsonNullableWithAggregatesFilter<"AppCache">
+    expiredAt?: DateTimeNullableWithAggregatesFilter<"AppCache"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"AppCache"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"AppCache"> | Date | string | null
+  }
+
+  export type ShareLinkWhereInput = {
+    AND?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    OR?: ShareLinkWhereInput[]
+    NOT?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    id?: StringFilter<"ShareLink"> | string
+    createdAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    token?: StringFilter<"ShareLink"> | string
+    portalId?: BigIntFilter<"ShareLink"> | bigint | number
+    domain?: StringFilter<"ShareLink"> | string
+    creatorBxUserId?: IntFilter<"ShareLink"> | number
+    creatorName?: StringFilter<"ShareLink"> | string
+    title?: StringFilter<"ShareLink"> | string
+    filterSnapshot?: StringFilter<"ShareLink"> | string
+    isRefreshable?: BoolFilter<"ShareLink"> | boolean
+    refreshIntervalSec?: IntFilter<"ShareLink"> | number
+    lastRefreshedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    nextRefreshAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    expiresAt?: DateTimeFilter<"ShareLink"> | Date | string
+    status?: StringFilter<"ShareLink"> | string
+    viewCount?: IntFilter<"ShareLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type ShareLinkOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    creatorBxUserId?: SortOrder
+    creatorName?: SortOrder
+    title?: SortOrder
+    filterSnapshot?: SortOrder
+    isRefreshable?: SortOrder
+    refreshIntervalSec?: SortOrder
+    lastRefreshedAt?: SortOrderInput | SortOrder
+    nextRefreshAt?: SortOrderInput | SortOrder
+    expiresAt?: SortOrder
+    status?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: ShareLinkOrderByRelevanceInput
+  }
+
+  export type ShareLinkWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    token?: string
+    AND?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    OR?: ShareLinkWhereInput[]
+    NOT?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    createdAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    portalId?: BigIntFilter<"ShareLink"> | bigint | number
+    domain?: StringFilter<"ShareLink"> | string
+    creatorBxUserId?: IntFilter<"ShareLink"> | number
+    creatorName?: StringFilter<"ShareLink"> | string
+    title?: StringFilter<"ShareLink"> | string
+    filterSnapshot?: StringFilter<"ShareLink"> | string
+    isRefreshable?: BoolFilter<"ShareLink"> | boolean
+    refreshIntervalSec?: IntFilter<"ShareLink"> | number
+    lastRefreshedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    nextRefreshAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    expiresAt?: DateTimeFilter<"ShareLink"> | Date | string
+    status?: StringFilter<"ShareLink"> | string
+    viewCount?: IntFilter<"ShareLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "token">
+
+  export type ShareLinkOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    creatorBxUserId?: SortOrder
+    creatorName?: SortOrder
+    title?: SortOrder
+    filterSnapshot?: SortOrder
+    isRefreshable?: SortOrder
+    refreshIntervalSec?: SortOrder
+    lastRefreshedAt?: SortOrderInput | SortOrder
+    nextRefreshAt?: SortOrderInput | SortOrder
+    expiresAt?: SortOrder
+    status?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrderInput | SortOrder
+    _count?: ShareLinkCountOrderByAggregateInput
+    _avg?: ShareLinkAvgOrderByAggregateInput
+    _max?: ShareLinkMaxOrderByAggregateInput
+    _min?: ShareLinkMinOrderByAggregateInput
+    _sum?: ShareLinkSumOrderByAggregateInput
+  }
+
+  export type ShareLinkScalarWhereWithAggregatesInput = {
+    AND?: ShareLinkScalarWhereWithAggregatesInput | ShareLinkScalarWhereWithAggregatesInput[]
+    OR?: ShareLinkScalarWhereWithAggregatesInput[]
+    NOT?: ShareLinkScalarWhereWithAggregatesInput | ShareLinkScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ShareLink"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+    token?: StringWithAggregatesFilter<"ShareLink"> | string
+    portalId?: BigIntWithAggregatesFilter<"ShareLink"> | bigint | number
+    domain?: StringWithAggregatesFilter<"ShareLink"> | string
+    creatorBxUserId?: IntWithAggregatesFilter<"ShareLink"> | number
+    creatorName?: StringWithAggregatesFilter<"ShareLink"> | string
+    title?: StringWithAggregatesFilter<"ShareLink"> | string
+    filterSnapshot?: StringWithAggregatesFilter<"ShareLink"> | string
+    isRefreshable?: BoolWithAggregatesFilter<"ShareLink"> | boolean
+    refreshIntervalSec?: IntWithAggregatesFilter<"ShareLink"> | number
+    lastRefreshedAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+    nextRefreshAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+    expiresAt?: DateTimeWithAggregatesFilter<"ShareLink"> | Date | string
+    status?: StringWithAggregatesFilter<"ShareLink"> | string
+    viewCount?: IntWithAggregatesFilter<"ShareLink"> | number
+    lastViewedAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+  }
+
   export type agentsCreateInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -116701,6 +119422,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -116754,6 +119477,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUpdateInput = {
@@ -116807,6 +119532,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -116860,6 +119587,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -123164,6 +125893,270 @@ export namespace Prisma {
     note?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type AppCacheCreateInput = {
+    id: string
+    app: string
+    domain: string
+    bxUserId?: bigint | number
+    key: string
+    group?: string | null
+    data: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutAppCachesInput
+  }
+
+  export type AppCacheUncheckedCreateInput = {
+    id: string
+    app: string
+    portalId: bigint | number
+    domain: string
+    bxUserId?: bigint | number
+    key: string
+    group?: string | null
+    data: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AppCacheUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutAppCachesNestedInput
+  }
+
+  export type AppCacheUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AppCacheCreateManyInput = {
+    id: string
+    app: string
+    portalId: bigint | number
+    domain: string
+    bxUserId?: bigint | number
+    key: string
+    group?: string | null
+    data: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AppCacheUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AppCacheUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ShareLinkCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable?: boolean
+    refreshIntervalSec?: number
+    lastRefreshedAt?: Date | string | null
+    nextRefreshAt?: Date | string | null
+    expiresAt: Date | string
+    status?: string
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutShareLinksInput
+  }
+
+  export type ShareLinkUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    portalId: bigint | number
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable?: boolean
+    refreshIntervalSec?: number
+    lastRefreshedAt?: Date | string | null
+    nextRefreshAt?: Date | string | null
+    expiresAt: Date | string
+    status?: string
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type ShareLinkUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutShareLinksNestedInput
+  }
+
+  export type ShareLinkUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ShareLinkCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    portalId: bigint | number
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable?: boolean
+    refreshIntervalSec?: number
+    lastRefreshedAt?: Date | string | null
+    nextRefreshAt?: Date | string | null
+    expiresAt: Date | string
+    status?: string
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type ShareLinkUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ShareLinkUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type BigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -125789,6 +128782,18 @@ export namespace Prisma {
     none?: marketplace_install_componentsWhereInput
   }
 
+  export type AppCacheListRelationFilter = {
+    every?: AppCacheWhereInput
+    some?: AppCacheWhereInput
+    none?: AppCacheWhereInput
+  }
+
+  export type ShareLinkListRelationFilter = {
+    every?: ShareLinkWhereInput
+    some?: ShareLinkWhereInput
+    none?: ShareLinkWhereInput
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -125878,6 +128883,14 @@ export namespace Prisma {
   }
 
   export type marketplace_install_componentsOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type AppCacheOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ShareLinkOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -130014,6 +133027,206 @@ export namespace Prisma {
     client_id?: SortOrder
     redeemed_portal_id?: SortOrder
   }
+  export type JsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type AppCacheOrderByRelevanceInput = {
+    fields: AppCacheOrderByRelevanceFieldEnum | AppCacheOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type AppCachePortalIdAppKeyBxUserIdCompoundUniqueInput = {
+    portalId: bigint | number
+    app: string
+    key: string
+    bxUserId: bigint | number
+  }
+
+  export type AppCacheCountOrderByAggregateInput = {
+    id?: SortOrder
+    app?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    bxUserId?: SortOrder
+    key?: SortOrder
+    group?: SortOrder
+    data?: SortOrder
+    meta?: SortOrder
+    checksum?: SortOrder
+    tags?: SortOrder
+    expiredAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AppCacheAvgOrderByAggregateInput = {
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+  }
+
+  export type AppCacheMaxOrderByAggregateInput = {
+    id?: SortOrder
+    app?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    bxUserId?: SortOrder
+    key?: SortOrder
+    group?: SortOrder
+    checksum?: SortOrder
+    expiredAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AppCacheMinOrderByAggregateInput = {
+    id?: SortOrder
+    app?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    bxUserId?: SortOrder
+    key?: SortOrder
+    group?: SortOrder
+    checksum?: SortOrder
+    expiredAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AppCacheSumOrderByAggregateInput = {
+    portalId?: SortOrder
+    bxUserId?: SortOrder
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
+  }
+
+  export type ShareLinkOrderByRelevanceInput = {
+    fields: ShareLinkOrderByRelevanceFieldEnum | ShareLinkOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type ShareLinkCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    creatorBxUserId?: SortOrder
+    creatorName?: SortOrder
+    title?: SortOrder
+    filterSnapshot?: SortOrder
+    isRefreshable?: SortOrder
+    refreshIntervalSec?: SortOrder
+    lastRefreshedAt?: SortOrder
+    nextRefreshAt?: SortOrder
+    expiresAt?: SortOrder
+    status?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+  }
+
+  export type ShareLinkAvgOrderByAggregateInput = {
+    portalId?: SortOrder
+    creatorBxUserId?: SortOrder
+    refreshIntervalSec?: SortOrder
+    viewCount?: SortOrder
+  }
+
+  export type ShareLinkMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    creatorBxUserId?: SortOrder
+    creatorName?: SortOrder
+    title?: SortOrder
+    filterSnapshot?: SortOrder
+    isRefreshable?: SortOrder
+    refreshIntervalSec?: SortOrder
+    lastRefreshedAt?: SortOrder
+    nextRefreshAt?: SortOrder
+    expiresAt?: SortOrder
+    status?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+  }
+
+  export type ShareLinkMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    domain?: SortOrder
+    creatorBxUserId?: SortOrder
+    creatorName?: SortOrder
+    title?: SortOrder
+    filterSnapshot?: SortOrder
+    isRefreshable?: SortOrder
+    refreshIntervalSec?: SortOrder
+    lastRefreshedAt?: SortOrder
+    nextRefreshAt?: SortOrder
+    expiresAt?: SortOrder
+    status?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+  }
+
+  export type ShareLinkSumOrderByAggregateInput = {
+    portalId?: SortOrder
+    creatorBxUserId?: SortOrder
+    refreshIntervalSec?: SortOrder
+    viewCount?: SortOrder
+  }
 
   export type PortalCreateNestedOneWithoutAgentsInput = {
     create?: XOR<PortalCreateWithoutAgentsInput, PortalUncheckedCreateWithoutAgentsInput>
@@ -131720,6 +134933,20 @@ export namespace Prisma {
     connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
   }
 
+  export type AppCacheCreateNestedManyWithoutPortalInput = {
+    create?: XOR<AppCacheCreateWithoutPortalInput, AppCacheUncheckedCreateWithoutPortalInput> | AppCacheCreateWithoutPortalInput[] | AppCacheUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: AppCacheCreateOrConnectWithoutPortalInput | AppCacheCreateOrConnectWithoutPortalInput[]
+    createMany?: AppCacheCreateManyPortalInputEnvelope
+    connect?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+  }
+
+  export type ShareLinkCreateNestedManyWithoutPortalInput = {
+    create?: XOR<ShareLinkCreateWithoutPortalInput, ShareLinkUncheckedCreateWithoutPortalInput> | ShareLinkCreateWithoutPortalInput[] | ShareLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutPortalInput | ShareLinkCreateOrConnectWithoutPortalInput[]
+    createMany?: ShareLinkCreateManyPortalInputEnvelope
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -131907,6 +135134,20 @@ export namespace Prisma {
     connectOrCreate?: portal_invitesCreateOrConnectWithoutPortalsInput | portal_invitesCreateOrConnectWithoutPortalsInput[]
     createMany?: portal_invitesCreateManyPortalsInputEnvelope
     connect?: portal_invitesWhereUniqueInput | portal_invitesWhereUniqueInput[]
+  }
+
+  export type AppCacheUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<AppCacheCreateWithoutPortalInput, AppCacheUncheckedCreateWithoutPortalInput> | AppCacheCreateWithoutPortalInput[] | AppCacheUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: AppCacheCreateOrConnectWithoutPortalInput | AppCacheCreateOrConnectWithoutPortalInput[]
+    createMany?: AppCacheCreateManyPortalInputEnvelope
+    connect?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+  }
+
+  export type ShareLinkUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<ShareLinkCreateWithoutPortalInput, ShareLinkUncheckedCreateWithoutPortalInput> | ShareLinkCreateWithoutPortalInput[] | ShareLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutPortalInput | ShareLinkCreateOrConnectWithoutPortalInput[]
+    createMany?: ShareLinkCreateManyPortalInputEnvelope
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -132297,6 +135538,34 @@ export namespace Prisma {
     deleteMany?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
   }
 
+  export type AppCacheUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<AppCacheCreateWithoutPortalInput, AppCacheUncheckedCreateWithoutPortalInput> | AppCacheCreateWithoutPortalInput[] | AppCacheUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: AppCacheCreateOrConnectWithoutPortalInput | AppCacheCreateOrConnectWithoutPortalInput[]
+    upsert?: AppCacheUpsertWithWhereUniqueWithoutPortalInput | AppCacheUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: AppCacheCreateManyPortalInputEnvelope
+    set?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    disconnect?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    delete?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    connect?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    update?: AppCacheUpdateWithWhereUniqueWithoutPortalInput | AppCacheUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: AppCacheUpdateManyWithWhereWithoutPortalInput | AppCacheUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: AppCacheScalarWhereInput | AppCacheScalarWhereInput[]
+  }
+
+  export type ShareLinkUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<ShareLinkCreateWithoutPortalInput, ShareLinkUncheckedCreateWithoutPortalInput> | ShareLinkCreateWithoutPortalInput[] | ShareLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutPortalInput | ShareLinkCreateOrConnectWithoutPortalInput[]
+    upsert?: ShareLinkUpsertWithWhereUniqueWithoutPortalInput | ShareLinkUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: ShareLinkCreateManyPortalInputEnvelope
+    set?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    disconnect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    delete?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    update?: ShareLinkUpdateWithWhereUniqueWithoutPortalInput | ShareLinkUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: ShareLinkUpdateManyWithWhereWithoutPortalInput | ShareLinkUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -132673,6 +135942,34 @@ export namespace Prisma {
     update?: portal_invitesUpdateWithWhereUniqueWithoutPortalsInput | portal_invitesUpdateWithWhereUniqueWithoutPortalsInput[]
     updateMany?: portal_invitesUpdateManyWithWhereWithoutPortalsInput | portal_invitesUpdateManyWithWhereWithoutPortalsInput[]
     deleteMany?: portal_invitesScalarWhereInput | portal_invitesScalarWhereInput[]
+  }
+
+  export type AppCacheUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<AppCacheCreateWithoutPortalInput, AppCacheUncheckedCreateWithoutPortalInput> | AppCacheCreateWithoutPortalInput[] | AppCacheUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: AppCacheCreateOrConnectWithoutPortalInput | AppCacheCreateOrConnectWithoutPortalInput[]
+    upsert?: AppCacheUpsertWithWhereUniqueWithoutPortalInput | AppCacheUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: AppCacheCreateManyPortalInputEnvelope
+    set?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    disconnect?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    delete?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    connect?: AppCacheWhereUniqueInput | AppCacheWhereUniqueInput[]
+    update?: AppCacheUpdateWithWhereUniqueWithoutPortalInput | AppCacheUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: AppCacheUpdateManyWithWhereWithoutPortalInput | AppCacheUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: AppCacheScalarWhereInput | AppCacheScalarWhereInput[]
+  }
+
+  export type ShareLinkUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<ShareLinkCreateWithoutPortalInput, ShareLinkUncheckedCreateWithoutPortalInput> | ShareLinkCreateWithoutPortalInput[] | ShareLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutPortalInput | ShareLinkCreateOrConnectWithoutPortalInput[]
+    upsert?: ShareLinkUpsertWithWhereUniqueWithoutPortalInput | ShareLinkUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: ShareLinkCreateManyPortalInputEnvelope
+    set?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    disconnect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    delete?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    update?: ShareLinkUpdateWithWhereUniqueWithoutPortalInput | ShareLinkUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: ShareLinkUpdateManyWithWhereWithoutPortalInput | ShareLinkUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
   }
 
   export type countersCreateNestedOneWithoutRq_counterInput = {
@@ -134399,6 +137696,34 @@ export namespace Prisma {
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutPortal_invitesInput, PortalUpdateWithoutPortal_invitesInput>, PortalUncheckedUpdateWithoutPortal_invitesInput>
   }
 
+  export type PortalCreateNestedOneWithoutAppCachesInput = {
+    create?: XOR<PortalCreateWithoutAppCachesInput, PortalUncheckedCreateWithoutAppCachesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutAppCachesInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutAppCachesNestedInput = {
+    create?: XOR<PortalCreateWithoutAppCachesInput, PortalUncheckedCreateWithoutAppCachesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutAppCachesInput
+    upsert?: PortalUpsertWithoutAppCachesInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutAppCachesInput, PortalUpdateWithoutAppCachesInput>, PortalUncheckedUpdateWithoutAppCachesInput>
+  }
+
+  export type PortalCreateNestedOneWithoutShareLinksInput = {
+    create?: XOR<PortalCreateWithoutShareLinksInput, PortalUncheckedCreateWithoutShareLinksInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutShareLinksInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutShareLinksNestedInput = {
+    create?: XOR<PortalCreateWithoutShareLinksInput, PortalUncheckedCreateWithoutShareLinksInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutShareLinksInput
+    upsert?: PortalUpsertWithoutShareLinksInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutShareLinksInput, PortalUpdateWithoutShareLinksInput>, PortalUncheckedUpdateWithoutShareLinksInput>
+  }
+
   export type NestedBigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -134898,6 +138223,29 @@ export namespace Prisma {
     _min?: NestedEnuminvoice_templates_typeFilter<$PrismaModel>
     _max?: NestedEnuminvoice_templates_typeFilter<$PrismaModel>
   }
+  export type NestedJsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type PortalCreateWithoutAgentsInput = {
     id?: bigint | number
@@ -134949,6 +138297,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -135001,6 +138351,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -135214,6 +138566,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -135266,6 +138620,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -135669,6 +139025,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -135721,6 +139079,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -135789,6 +139149,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -135841,6 +139203,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -135959,6 +139323,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -136011,6 +139377,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -136079,6 +139447,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -136131,6 +139501,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -136183,6 +139555,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -136235,6 +139609,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -136303,6 +139679,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -136355,6 +139733,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -136407,6 +139787,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -136459,6 +139841,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -136527,6 +139911,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -136579,6 +139965,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -136631,6 +140019,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -136683,6 +140073,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -136751,6 +140143,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -136803,6 +140197,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -136939,6 +140335,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -136991,6 +140389,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -137059,6 +140459,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -137111,6 +140513,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -137163,6 +140567,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -137215,6 +140621,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -137682,6 +141090,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -137734,6 +141144,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -137802,6 +141214,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -137854,6 +141268,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -139991,6 +143407,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -140043,6 +143461,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -140232,6 +143652,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -140284,6 +143706,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -140436,6 +143860,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -140488,6 +143914,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -140605,6 +144033,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -140657,6 +144087,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -141736,6 +145168,98 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type AppCacheCreateWithoutPortalInput = {
+    id: string
+    app: string
+    domain: string
+    bxUserId?: bigint | number
+    key: string
+    group?: string | null
+    data: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AppCacheUncheckedCreateWithoutPortalInput = {
+    id: string
+    app: string
+    domain: string
+    bxUserId?: bigint | number
+    key: string
+    group?: string | null
+    data: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AppCacheCreateOrConnectWithoutPortalInput = {
+    where: AppCacheWhereUniqueInput
+    create: XOR<AppCacheCreateWithoutPortalInput, AppCacheUncheckedCreateWithoutPortalInput>
+  }
+
+  export type AppCacheCreateManyPortalInputEnvelope = {
+    data: AppCacheCreateManyPortalInput | AppCacheCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ShareLinkCreateWithoutPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable?: boolean
+    refreshIntervalSec?: number
+    lastRefreshedAt?: Date | string | null
+    nextRefreshAt?: Date | string | null
+    expiresAt: Date | string
+    status?: string
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type ShareLinkUncheckedCreateWithoutPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable?: boolean
+    refreshIntervalSec?: number
+    lastRefreshedAt?: Date | string | null
+    nextRefreshAt?: Date | string | null
+    expiresAt: Date | string
+    status?: string
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type ShareLinkCreateOrConnectWithoutPortalInput = {
+    where: ShareLinkWhereUniqueInput
+    create: XOR<ShareLinkCreateWithoutPortalInput, ShareLinkUncheckedCreateWithoutPortalInput>
+  }
+
+  export type ShareLinkCreateManyPortalInputEnvelope = {
+    data: ShareLinkCreateManyPortalInput | ShareLinkCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -142608,6 +146132,82 @@ export namespace Prisma {
     data: XOR<portal_invitesUpdateManyMutationInput, portal_invitesUncheckedUpdateManyWithoutPortalsInput>
   }
 
+  export type AppCacheUpsertWithWhereUniqueWithoutPortalInput = {
+    where: AppCacheWhereUniqueInput
+    update: XOR<AppCacheUpdateWithoutPortalInput, AppCacheUncheckedUpdateWithoutPortalInput>
+    create: XOR<AppCacheCreateWithoutPortalInput, AppCacheUncheckedCreateWithoutPortalInput>
+  }
+
+  export type AppCacheUpdateWithWhereUniqueWithoutPortalInput = {
+    where: AppCacheWhereUniqueInput
+    data: XOR<AppCacheUpdateWithoutPortalInput, AppCacheUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type AppCacheUpdateManyWithWhereWithoutPortalInput = {
+    where: AppCacheScalarWhereInput
+    data: XOR<AppCacheUpdateManyMutationInput, AppCacheUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type AppCacheScalarWhereInput = {
+    AND?: AppCacheScalarWhereInput | AppCacheScalarWhereInput[]
+    OR?: AppCacheScalarWhereInput[]
+    NOT?: AppCacheScalarWhereInput | AppCacheScalarWhereInput[]
+    id?: StringFilter<"AppCache"> | string
+    app?: StringFilter<"AppCache"> | string
+    portalId?: BigIntFilter<"AppCache"> | bigint | number
+    domain?: StringFilter<"AppCache"> | string
+    bxUserId?: BigIntFilter<"AppCache"> | bigint | number
+    key?: StringFilter<"AppCache"> | string
+    group?: StringNullableFilter<"AppCache"> | string | null
+    data?: JsonFilter<"AppCache">
+    meta?: JsonNullableFilter<"AppCache">
+    checksum?: StringNullableFilter<"AppCache"> | string | null
+    tags?: JsonNullableFilter<"AppCache">
+    expiredAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"AppCache"> | Date | string | null
+  }
+
+  export type ShareLinkUpsertWithWhereUniqueWithoutPortalInput = {
+    where: ShareLinkWhereUniqueInput
+    update: XOR<ShareLinkUpdateWithoutPortalInput, ShareLinkUncheckedUpdateWithoutPortalInput>
+    create: XOR<ShareLinkCreateWithoutPortalInput, ShareLinkUncheckedCreateWithoutPortalInput>
+  }
+
+  export type ShareLinkUpdateWithWhereUniqueWithoutPortalInput = {
+    where: ShareLinkWhereUniqueInput
+    data: XOR<ShareLinkUpdateWithoutPortalInput, ShareLinkUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type ShareLinkUpdateManyWithWhereWithoutPortalInput = {
+    where: ShareLinkScalarWhereInput
+    data: XOR<ShareLinkUpdateManyMutationInput, ShareLinkUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type ShareLinkScalarWhereInput = {
+    AND?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+    OR?: ShareLinkScalarWhereInput[]
+    NOT?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+    id?: StringFilter<"ShareLink"> | string
+    createdAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    token?: StringFilter<"ShareLink"> | string
+    portalId?: BigIntFilter<"ShareLink"> | bigint | number
+    domain?: StringFilter<"ShareLink"> | string
+    creatorBxUserId?: IntFilter<"ShareLink"> | number
+    creatorName?: StringFilter<"ShareLink"> | string
+    title?: StringFilter<"ShareLink"> | string
+    filterSnapshot?: StringFilter<"ShareLink"> | string
+    isRefreshable?: BoolFilter<"ShareLink"> | boolean
+    refreshIntervalSec?: IntFilter<"ShareLink"> | number
+    lastRefreshedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    nextRefreshAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    expiresAt?: DateTimeFilter<"ShareLink"> | Date | string
+    status?: StringFilter<"ShareLink"> | string
+    viewCount?: IntFilter<"ShareLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+  }
+
   export type countersCreateWithoutRq_counterInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -143010,6 +146610,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -143062,6 +146664,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -143130,6 +146734,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -143182,6 +146788,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -143668,6 +147276,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -143720,6 +147330,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -143820,6 +147432,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -143872,6 +147486,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -143924,6 +147540,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -143976,6 +147594,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -144044,6 +147664,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -144096,6 +147718,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -144316,6 +147940,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -144368,6 +147994,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -144567,6 +148195,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -144619,6 +148249,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -144788,6 +148420,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -144840,6 +148474,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -144908,6 +148544,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -144960,6 +148598,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -145012,6 +148652,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -145064,6 +148706,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -145132,6 +148776,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -145184,6 +148830,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -146947,6 +150595,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -146999,6 +150649,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -147146,6 +150798,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -147198,6 +150852,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -147506,6 +151162,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -147558,6 +151216,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -147626,6 +151286,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -147678,6 +151340,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -147865,6 +151529,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -147917,6 +151583,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -148064,6 +151732,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -148116,6 +151786,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -148168,6 +151840,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -148220,6 +151894,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -148319,6 +151995,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -148371,6 +152049,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -148652,6 +152332,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -148704,6 +152386,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -148860,6 +152544,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -148912,6 +152598,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -149694,6 +153382,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -149746,6 +153436,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -149814,6 +153506,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -149866,6 +153560,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -149949,6 +153645,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -150001,6 +153699,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -150106,6 +153806,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -150158,6 +153860,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -150281,6 +153985,8 @@ export namespace Prisma {
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -150333,6 +154039,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -150454,6 +154162,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -150506,6 +154216,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -150558,6 +154270,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -150610,6 +154324,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -150678,6 +154394,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -150730,6 +154448,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -150839,6 +154559,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -150891,6 +154613,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -151022,6 +154746,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -151074,6 +154800,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutPortal_invitesInput = {
@@ -151155,6 +154883,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_invitesInput = {
@@ -151207,6 +154937,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
     portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_invitesInput = {
@@ -151310,6 +155042,8 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
@@ -151362,6 +155096,472 @@ export namespace Prisma {
     marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutAppCachesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutAppCachesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutAppCachesInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutAppCachesInput, PortalUncheckedCreateWithoutAppCachesInput>
+  }
+
+  export type PortalUpsertWithoutAppCachesInput = {
+    update: XOR<PortalUpdateWithoutAppCachesInput, PortalUncheckedUpdateWithoutAppCachesInput>
+    create: XOR<PortalCreateWithoutAppCachesInput, PortalUncheckedCreateWithoutAppCachesInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutAppCachesInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutAppCachesInput, PortalUncheckedUpdateWithoutAppCachesInput>
+  }
+
+  export type PortalUpdateWithoutAppCachesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutAppCachesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutShareLinksInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutShareLinksInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutShareLinksInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutShareLinksInput, PortalUncheckedCreateWithoutShareLinksInput>
+  }
+
+  export type PortalUpsertWithoutShareLinksInput = {
+    update: XOR<PortalUpdateWithoutShareLinksInput, PortalUncheckedUpdateWithoutShareLinksInput>
+    create: XOR<PortalCreateWithoutShareLinksInput, PortalUncheckedCreateWithoutShareLinksInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutShareLinksInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutShareLinksInput, PortalUncheckedUpdateWithoutShareLinksInput>
+  }
+
+  export type PortalUpdateWithoutShareLinksInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutShareLinksInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -151703,6 +155903,8 @@ export namespace Prisma {
     portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -151755,6 +155957,8 @@ export namespace Prisma {
     portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -153727,6 +157931,42 @@ export namespace Prisma {
     note?: string | null
   }
 
+  export type AppCacheCreateManyPortalInput = {
+    id: string
+    app: string
+    domain: string
+    bxUserId?: bigint | number
+    key: string
+    group?: string | null
+    data: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type ShareLinkCreateManyPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    domain: string
+    creatorBxUserId: number
+    creatorName: string
+    title: string
+    filterSnapshot: string
+    isRefreshable?: boolean
+    refreshIntervalSec?: number
+    lastRefreshedAt?: Date | string | null
+    nextRefreshAt?: Date | string | null
+    expiresAt: Date | string
+    status?: string
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -154882,6 +159122,114 @@ export namespace Prisma {
     issued_by?: NullableStringFieldUpdateOperationsInput | string | null
     revoked_by?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type AppCacheUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AppCacheUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AppCacheUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    app?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bxUserId?: BigIntFieldUpdateOperationsInput | bigint | number
+    key?: StringFieldUpdateOperationsInput | string
+    group?: NullableStringFieldUpdateOperationsInput | string | null
+    data?: JsonNullValueInput | InputJsonValue
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    tags?: NullableJsonNullValueInput | InputJsonValue
+    expiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ShareLinkUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ShareLinkUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ShareLinkUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    creatorBxUserId?: IntFieldUpdateOperationsInput | number
+    creatorName?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    filterSnapshot?: StringFieldUpdateOperationsInput | string
+    isRefreshable?: BoolFieldUpdateOperationsInput | boolean
+    refreshIntervalSec?: IntFieldUpdateOperationsInput | number
+    lastRefreshedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type rq_counterCreateManyRqsInput = {

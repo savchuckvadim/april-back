@@ -41,13 +41,18 @@ export class BatchApiService {
                             );
                         }
                     } else {
-                        queryParts.push(`${key}[]=${item}`);
+                        queryParts.push(`${encodeKey(key)}[]=${item}`);
                     }
                 });
             } else {
-                queryParts.push(`${key}=${value}`);
+                queryParts.push(`${encodeKey(key)}=${value}`);
             }
         };
+
+        // '=' внутри ключа фильтра (например filter[=ownerId]) ломает
+        // разбор cmd-строки на стороне Битрикс: строка режется по первому
+        // '='. Экранируем '=' только в ключе — значения не трогаем.
+        const encodeKey = (key: string): string => key.replace(/=/g, '%3D');
 
         for (const [key, value] of Object.entries(data)) {
             processItem(key, value);

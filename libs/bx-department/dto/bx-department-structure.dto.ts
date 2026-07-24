@@ -60,6 +60,18 @@ export class BxDepartmentStructureRequestDto {
     @IsInt()
     @Min(1)
     userId: number;
+
+    @ApiProperty({
+        description:
+            'Сбросить кэш Redis перед запросом: структура будет заново получена из Битрикс и закэширована.',
+        type: Boolean,
+        example: false,
+        required: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    resetCache?: boolean;
 }
 
 export class BxSalesDepartmentDto {
@@ -178,7 +190,9 @@ export class BxDepartmentStructureResponseDto {
         example: 'ОП ОС',
         nullable: true,
     })
-    @ValidateIf((dto: BxDepartmentStructureResponseDto) => dto.multipleTag !== null)
+    @ValidateIf(
+        (dto: BxDepartmentStructureResponseDto) => dto.multipleTag !== null,
+    )
     @IsString()
     multipleTag: string | null;
 

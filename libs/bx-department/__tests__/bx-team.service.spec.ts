@@ -169,6 +169,23 @@ describe('BxTeamService', () => {
         expect(search).not.toHaveBeenCalled();
     });
 
+    it('resetCache: не читает кеш, но перезаписывает его свежими данными', async () => {
+        redisGet.mockResolvedValue(JSON.stringify({ team: tree(1, 'Старая') }));
+        search.mockResolvedValue([teamNode(57, 'ЦУП')]);
+        getSubtreeWithMembers.mockResolvedValue(tree(57, 'ЦУП'));
+
+        const result = await service.getTeam(DOMAIN, EBxTeamGroup.sales, true);
+
+        expect(redisGet).not.toHaveBeenCalled();
+        expect(result.team.node.id).toBe(57);
+        expect(redisSet).toHaveBeenCalledWith(
+            expect.stringContaining(`bx_team_${DOMAIN}_`),
+            expect.any(String),
+            'EX',
+            86400,
+        );
+    });
+
     it('кеширует результат с TTL', async () => {
         search.mockResolvedValue([teamNode(57, 'ЦУП')]);
         getSubtreeWithMembers.mockResolvedValue(tree(57, 'ЦУП'));

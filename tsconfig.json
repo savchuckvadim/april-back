@@ -24,6 +24,8 @@
       // ---- Библиотеки (канонические алиасы, предпочтительны в новом коде) ----
       "@lib/shared": ["libs/shared/src"],
       "@lib/shared/*": ["libs/shared/src/*"],
+      "@lib/app-cache": ["libs/app-cache"],
+      "@lib/app-cache/*": ["libs/app-cache/*"],
       "@lib/auth": ["libs/auth/src"],
       "@lib/auth/*": ["libs/auth/src/*"],
       "@lib/core": ["libs/core/src"],

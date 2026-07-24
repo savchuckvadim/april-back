@@ -1,0 +1,51 @@
+/**
+ * Константы модуля sales-finance: ключи кэша, TTL, WS-события,
+ * runtime-массивы union-литералов для DTO (@IsIn + Swagger enum).
+ * Никаких магических строк в остальном коде модуля (ai/rules/pbx-typing.md).
+ */
+import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+
+/**
+ * v2: в сделки добавлены companyId/companyName — месячные сегменты,
+ * закэшированные до этого, несовместимы. Старые ключи v1 умрут по TTL.
+ */
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v2' as const;
+
+/** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
+export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;
+
+/** TTL смёрженного итога и hot-clients: текущие данные меняются. */
+export const SALES_FINANCE_RESULT_TTL_SECONDS = 60 * 3;
+
+export const SALES_FINANCE_WS_EVENTS = {
+    CLOSED_SALES_DONE: 'sales-finance:closed-sales:done',
+    CLOSED_SALES_ERROR: 'sales-finance:closed-sales:error',
+    HOT_CLIENTS_DONE: 'sales-finance:hot-clients:done',
+    HOT_CLIENTS_ERROR: 'sales-finance:hot-clients:error',
+} as const;
+
+/** Порог «горячести»: от какой стадии и выше берём открытые сделки. */
+export const SALES_HOT_THRESHOLDS = ['presentation', 'document'] as const;
+export type SalesHotThreshold = (typeof SALES_HOT_THRESHOLDS)[number];
+
+/** Порог → код стадии лестницы sales_base. */
+export const SALES_HOT_THRESHOLD_STAGE_CODE = {
+    presentation: 'sales_pres',
+    document: 'sales_offer_create',
+} as const satisfies Record<SalesHotThreshold, PbxDealSalesBaseStageCode>;
+
+export const SALES_FINANCE_RESPONSE_STATUSES = ['ready', 'queued'] as const;
+export type SalesFinanceResponseStatus =
+    (typeof SALES_FINANCE_RESPONSE_STATUSES)[number];
+
+export const SALES_FINANCE_CACHE_SCOPES = ['closed', 'hot', 'all'] as const;
+export type SalesFinanceCacheScope =
+    (typeof SALES_FINANCE_CACHE_SCOPES)[number];
+
+/** Сегменты ключей кэша (между prefix/domain и деталями). */
+export const SALES_FINANCE_CACHE_SECTIONS = {
+    CLOSED: 'closed',
+    HOT: 'hot',
+    MONTH: 'month',
+    RESULT: 'result',
+} as const;

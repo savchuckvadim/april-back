@@ -85,6 +85,62 @@ export class ReportSettingsService {
         }
     }
 
+    /**
+     * UI-настройки фронта (конверсии, блоки, локальные фильтры) —
+     * непрозрачный блоб в свободной колонке `other` (без миграции);
+     * envelope с версией и updatedAt позволяет менять формат без миграций.
+     */
+    async getUiSettings(
+        domain: string,
+        userId: number,
+    ): Promise<{ settings: string | null; updatedAt: string | null }> {
+        const settings = await this.findSettings(domain, userId);
+        const envelope = this.parseJson<{
+            version: number;
+            updatedAt: string;
+            settings: string;
+        }>(settings?.other);
+        if (!envelope || typeof envelope.settings !== 'string') {
+            return { settings: null, updatedAt: null };
+        }
+        return {
+            settings: envelope.settings,
+            updatedAt: envelope.updatedAt ?? null,
+        };
+    }
+
+    async saveUiSettings(
+        domain: string,
+        userId: number,
+        settingsBlob: string,
+    ): Promise<void> {
+        const portal = await this.findPortal(domain);
+        const other = JSON.stringify({
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            settings: settingsBlob,
+        });
+
+        const existing = await this.prisma.report_settings.findFirst({
+            where: { portalId: Number(portal.id), bxUserId: userId },
+        });
+        if (existing) {
+            await this.prisma.report_settings.update({
+                where: { id: existing.id },
+                data: { other },
+            });
+        } else {
+            await this.prisma.report_settings.create({
+                data: {
+                    domain,
+                    portalId: Number(portal.id),
+                    bxUserId: userId,
+                    other,
+                },
+            });
+        }
+    }
+
     private async findPortal(domain: string) {
         const portal = await this.prisma.portal.findFirst({
             where: { domain },
@@ -131,10 +187,12 @@ export class ReportSettingsService {
     }
 
     /** Старый формат: пресет дублировался в from и to вместо ISO-дат. */
-    private fromLegacyDates(legacy: {
-        from?: string;
-        to?: string;
-    } | null): ReportFilterDatesDto {
+    private fromLegacyDates(
+        legacy: {
+            from?: string;
+            to?: string;
+        } | null,
+    ): ReportFilterDatesDto {
         const from = legacy?.from;
         if (from && LEGACY_DATE_MODES.includes(from)) {
             return { mode: from as EReportFilterDateMode };

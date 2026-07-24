@@ -686,6 +686,8 @@ model Portal {
   portal_products                portal_products[]
   marketplace_install_components marketplace_install_components[]
   portal_invites                 portal_invites[]
+  appCaches                      AppCache[]
+  shareLinks                     ShareLink[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
@@ -1860,4 +1862,57 @@ model portal_invites {
   @@index([redeemed_portal_id], map: "portal_invites_redeemed_portal_id_foreign")
   @@index([status], map: "portal_invites_status_index")
   @@index([email], map: "portal_invites_email_index")
+}
+
+model AppCache {
+  id        String    @id @db.Char(36)
+  app       String    @db.VarChar(255)
+  portalId  BigInt    @map("portal_id") @db.UnsignedBigInt
+  domain    String    @db.VarChar(255)
+  bxUserId  BigInt    @default(0) @map("bx_user_id") @db.UnsignedBigInt
+  key       String    @db.VarChar(255)
+  group     String?   @db.VarChar(255)
+  data      Json
+  meta      Json?
+  checksum  String?   @db.Char(32)
+  tags      Json?
+  expiredAt DateTime? @map("expired_at") @db.Timestamp(0)
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+  portal    Portal    @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "app_cache_portal_id_foreign")
+
+  @@unique([portalId, app, key, bxUserId], map: "app_cache_lookup_unique")
+  @@index([bxUserId], map: "app_cache_bx_user_id_index")
+  @@index([expiredAt], map: "app_cache_expired_at_index")
+  @@index([group], map: "app_cache_group_index")
+  @@index([key], map: "app_cache_key_index")
+  @@index([portalId, bxUserId], map: "app_cache_portal_user_index")
+  @@map("app_cache")
+}
+
+model ShareLink {
+  id                 String    @id @db.Char(36)
+  createdAt          DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime? @map("updated_at") @db.Timestamp(0)
+  token              String    @unique(map: "share_link_token_unique") @db.VarChar(64)
+  portalId           BigInt    @map("portal_id") @db.UnsignedBigInt
+  domain             String    @db.VarChar(255)
+  creatorBxUserId    Int       @map("creator_bx_user_id")
+  creatorName        String    @map("creator_name") @db.VarChar(255)
+  title              String    @db.VarChar(255)
+  filterSnapshot     String    @map("filter_snapshot") @db.LongText
+  isRefreshable      Boolean   @default(false) @map("is_refreshable")
+  refreshIntervalSec Int       @default(900) @map("refresh_interval_sec")
+  lastRefreshedAt    DateTime? @map("last_refreshed_at") @db.Timestamp(0)
+  nextRefreshAt      DateTime? @map("next_refresh_at") @db.Timestamp(0)
+  expiresAt          DateTime  @map("expires_at") @db.Timestamp(0)
+  status             String    @default("active") @db.VarChar(255)
+  viewCount          Int       @default(0) @map("view_count")
+  lastViewedAt       DateTime? @map("last_viewed_at") @db.Timestamp(0)
+  portal             Portal    @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "share_link_portal_id_foreign")
+
+  @@index([domain, creatorBxUserId], map: "share_link_domain_creator_bx_user_id_index")
+  @@index([isRefreshable, status, nextRefreshAt], map: "share_link_is_refreshable_status_next_refresh_at_index")
+  @@index([portalId], map: "share_link_portal_id_foreign")
+  @@map("share_link")
 }

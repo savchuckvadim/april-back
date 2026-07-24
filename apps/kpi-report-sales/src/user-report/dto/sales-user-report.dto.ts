@@ -8,7 +8,7 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FieldItem } from '../../dto/kpi.dto';
+import { FieldItem } from '../../shared/dto/kpi.dto';
 
 export class SalesUserReportActionFilterDto {
     @ApiProperty({ description: 'Код' })

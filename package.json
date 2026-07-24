@@ -176,6 +176,7 @@
         },
         "moduleNameMapper": {
             "^@lib/shared(|/.*)$": "<rootDir>/libs/shared/src/$1",
+            "^@lib/app-cache(|/.*)$": "<rootDir>/libs/app-cache/$1",
             "^@lib/auth(|/.*)$": "<rootDir>/libs/auth/src/$1",
             "^@lib/core(|/.*)$": "<rootDir>/libs/core/src/$1",
             "^@lib/bitrix-v3(|/.*)$": "<rootDir>/libs/bitrix-v3/src/$1",

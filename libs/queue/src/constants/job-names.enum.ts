@@ -14,6 +14,13 @@ export enum JobNames {
     SALES_KPI_REPORT_GENERATE = 'sales-kpi-report-generate',
     SALES_USER_REPORT_GENERATE = 'sales-user-report-generate',
 
+    //sales finance (финансовая аналитика отдела продаж)
+    SALES_FINANCE_CLOSED_SALES = 'sales-finance-closed-sales',
+    SALES_FINANCE_HOT_CLIENTS = 'sales-finance-hot-clients',
+
+    //публичные ссылки на KPI-отчёт: фоновая регенерация снимка
+    SHARE_LINK_REFRESH = 'share-link-refresh',
+
     //ork report
     ORK_USER_REPORT_GENERATE = 'ork-user-report-generate',
     PING = 'ping',

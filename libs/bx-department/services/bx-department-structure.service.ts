@@ -83,6 +83,7 @@ export class BxDepartmentStructureService {
         domain: string,
         group: EDepartamentGroup = EDepartamentGroup.sales,
         userId: number,
+        resetCache = false,
     ): Promise<BxDepartmentStructureResponseDto> {
         // Один init на запрос: bitrix и локальный портал берём вместе и
         // протягиваем параметрами (в this их класть нельзя — разные порталы
@@ -101,6 +102,7 @@ export class BxDepartmentStructureService {
             group,
             isMultiple,
             multipleTag,
+            resetCache,
         );
         const currentUser = this.buildCurrentUser(structure, userId);
         return {
@@ -119,6 +121,7 @@ export class BxDepartmentStructureService {
         group: EDepartamentGroup,
         isMultiple: boolean,
         multipleTag: string | null,
+        resetCache: boolean,
     ): Promise<IStructureData> {
         const day = dayjs().format('MMDD');
         const mode = isMultiple
@@ -127,14 +130,16 @@ export class BxDepartmentStructureService {
         // v2: группы фильтруются по названию «Группа…»
         const cacheKey = `department_structure_v2_${domain}_${day}_${group}_${mode}`;
 
-        const cached = await this.redis.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached) as IStructureData;
+        if (!resetCache) {
+            const cached = await this.redis.get(cacheKey);
+            if (cached) {
+                return JSON.parse(cached) as IStructureData;
+            }
         }
 
         const structure = isMultiple
             ? await this.buildMultiple(bitrix, domain, group, multipleTag)
-            : await this.buildSingle(domain, group);
+            : await this.buildSingle(domain, group, resetCache);
 
         await this.redis.set(
             cacheKey,
@@ -157,10 +162,12 @@ export class BxDepartmentStructureService {
     private async buildSingle(
         domain: string,
         group: EDepartamentGroup,
+        resetCache: boolean,
     ): Promise<IStructureData> {
         const base = await this.departmentService.getFullDepartment(
             domain,
             group,
+            resetCache,
         );
         const { generalDepartment, childrenDepartments, allUsers } =
             base.department;

@@ -44,13 +44,16 @@ export class BxTeamService {
     async getTeam(
         domain: string,
         group: EBxTeamGroup = EBxTeamGroup.sales,
+        resetCache = false,
     ): Promise<BxTeamResponseDto> {
         const day = dayjs().format('MMDD');
         const cacheKey = `bx_team_${domain}_${day}_${group}`;
 
-        const cached = await this.redis.get(cacheKey);
-        if (cached) {
-            return JSON.parse(cached) as BxTeamResponseDto;
+        if (!resetCache) {
+            const cached = await this.redis.get(cacheKey);
+            if (cached) {
+                return JSON.parse(cached) as BxTeamResponseDto;
+            }
         }
 
         const bitrixV3 = await this.createClient(domain);

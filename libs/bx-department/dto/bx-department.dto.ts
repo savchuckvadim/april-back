@@ -3,7 +3,7 @@ import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interfa
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
 
 export enum EClients {
     dev = 'april-dev.bitrix24.ru',
@@ -44,6 +44,18 @@ export class BxDepartmentRequestDto {
     @IsEnum(EDepartamentGroup)
     @IsOptional()
     department?: EDepartamentGroup;
+
+    @ApiProperty({
+        description:
+            'Сбросить кэш Redis перед запросом: данные будут заново получены из Битрикс и закэшированы.',
+        type: Boolean,
+        example: false,
+        required: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    resetCache?: boolean;
 }
 
 export class BxDepartmentDto implements IBXDepartment {

@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import {
+    IsArray,
+    IsBoolean,
+    IsEnum,
+    IsOptional,
+    ValidateNested,
+} from 'class-validator';
 import {
     EBxHrMemberRole,
     EBxHrNodeType,
@@ -35,6 +41,18 @@ export class BxTeamRequestDto {
     @IsOptional()
     @IsEnum(EBxTeamGroup)
     group?: EBxTeamGroup;
+
+    @ApiProperty({
+        description:
+            'Сбросить кэш Redis перед запросом: данные будут заново получены из Битрикс и закэшированы.',
+        type: Boolean,
+        example: false,
+        required: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    resetCache?: boolean;
 }
 
 export class BxTeamMemberDto implements IBXHrNodeMember {

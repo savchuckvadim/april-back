@@ -9,21 +9,39 @@ import { GlobalExceptionFilter, HealthModule } from '@/core';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { TelegramModule } from '@lib/telegram/telegram.module';
 import { BxDepartmentModule } from '@lib/bx-department';
-import { BitrixSetupInstallModule } from '@lib/bitrix-setup/install/bitrix-setup-install.module';
+import { AppCacheModule } from '@lib/app-cache';
 
-import { KpiReportModule } from './kpi-report.module';
-import { ReportSettingsModule } from './report-settings/report-settings.module';
+import { ReportModule } from './report';
+import { DownloadModule } from './download';
+import { AirtimeModule } from './airtime';
+import { UserReportModule } from './user-report';
+import { ReportSettingsModule } from './report-settings';
+import { SalesFinanceModule } from './sales-finance';
+import { ShareLinkModule } from './share-link';
 
 /**
  * Корневой модуль приложения kpi-report-sales.
  *
  * Самодостаточное приложение монорепозитория: поднимает только ту
- * инфраструктуру, которая нужна доменному модулю KpiReportModule
- * (Config, Schedule, EventEmitter, Prisma — @Global, Telegram для уведомлений
- * глобального фильтра ошибок).
+ * инфраструктуру, которая нужна доменным модулям (Config, Schedule,
+ * EventEmitter, Prisma — @Global, Telegram для уведомлений глобального
+ * фильтра ошибок), и подключает feature-модули — по одному на тег Swagger:
+ *
+ *   ReportModule         → «Sales Report»
+ *   DownloadModule       → «KPI Sales Report Download»
+ *   AirtimeModule        → «Sales Airtime»
+ *   UserReportModule     → «Sales Report» (ручка sales-user-report)
+ *   ReportSettingsModule → «Report Settings» / «UI Settings»
+ *   SalesFinanceModule   → «Sales Finance»
  *
  * BxDepartmentModule подключён, чтобы эндпоинты отделов/команд Bitrix
  * были доступны и из этого приложения (как в event-sales).
+ *
+ * ВАЖНО про Swagger-изоляцию: сюда НЕЛЬЗЯ импортировать сервисные модули
+ * ради их провайдеров (Token/Secret/PortalStore/BitrixSetupInstall и т.п.) —
+ * вместе с провайдерами Nest затянет их controllers, и чужие роуты утекут
+ * в Swagger этого приложения. Нужен сервис из такого модуля — импортируй
+ * только его *ServiceModule без контроллеров.
  *
  * Свой .env (apps/kpi-report-sales/.env) расширяет/переопределяет корневой .env:
  * значения из app-окружения имеют приоритет (загружается первым в envFilePath).
@@ -51,15 +69,21 @@ import { ReportSettingsModule } from './report-settings/report-settings.module';
         HealthModule,
         PrismaModule,
         TelegramModule,
-        KpiReportModule,
+
+        // Feature-модули (по тегу Swagger)
+        ReportModule,
+        DownloadModule,
+        AirtimeModule,
+        UserReportModule,
         ReportSettingsModule,
+        SalesFinanceModule,
+        ShareLinkModule,
 
         // from shared: эндпоинты отделов/команд Bitrix наружу
         BxDepartmentModule,
 
-        // Приём ONAPPINSTALL (установка Bitrix-приложения) — замена
-        // legacy online API; требует env APP_KEY (шифрование токенов).
-        BitrixSetupInstallModule,
+        // Центральный кэш (Redis + app_cache): сервис глобально + инспекция
+        AppCacheModule,
     ],
     providers: [GlobalExceptionFilter],
 })
