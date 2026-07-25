@@ -18,6 +18,9 @@ export function buildAppCacheRedisKey(
 }
 
 /** SCAN-паттерн по необязательным app/domain (остальное — звёздочки). */
-export function buildAppCacheRedisPattern(app?: string, domain?: string): string {
+export function buildAppCacheRedisPattern(
+    app?: string,
+    domain?: string,
+): string {
     return `${APP_CACHE_PREFIX}:${app ?? '*'}:${domain ?? '*'}:*`;
 }

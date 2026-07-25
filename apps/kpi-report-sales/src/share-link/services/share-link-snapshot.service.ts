@@ -46,9 +46,9 @@ export class ShareLinkSnapshotService {
 
         const reportUseCase = new ReportKpiUseCase();
         await reportUseCase.init(link.domain, this.pbx);
-        const report = (await reportUseCase.generateKpiReport(
+        const report = await reportUseCase.generateKpiReport(
             snapshot.reportFilters,
-        )) as ReportData[];
+        );
 
         // Звонки не валят снимок целиком: KPI-часть ценнее, а статистика
         // звонков может быть недоступна (нет телефонии на портале).

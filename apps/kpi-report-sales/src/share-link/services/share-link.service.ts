@@ -17,9 +17,7 @@ import {
     ShareLinkFilterSnapshotDto,
     UpdateShareLinkDto,
 } from '../dto/share-link.dto';
-import {
-    ShareLinkSnapshotService,
-} from './share-link-snapshot.service';
+import { ShareLinkSnapshotService } from './share-link-snapshot.service';
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -93,9 +91,7 @@ export class ShareLinkService {
         const links = await this.prisma.shareLink.findMany({
             where: {
                 domain,
-                ...(creatorBxUserId !== undefined
-                    ? { creatorBxUserId }
-                    : {}),
+                ...(creatorBxUserId !== undefined ? { creatorBxUserId } : {}),
                 ...(includeInactive
                     ? {}
                     : {
@@ -145,8 +141,7 @@ export class ShareLinkService {
                           isRefreshable: dto.isRefreshable,
                           nextRefreshAt: dto.isRefreshable
                               ? new Date(
-                                    Date.now() +
-                                        link.refreshIntervalSec * 1000,
+                                    Date.now() + link.refreshIntervalSec * 1000,
                                 )
                               : null,
                       }

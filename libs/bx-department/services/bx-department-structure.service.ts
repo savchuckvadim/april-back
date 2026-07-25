@@ -255,13 +255,25 @@ export class BxDepartmentStructureService {
         return DEPARTMENT_NAME_PATTERNS[group] ?? [];
     }
 
-    /** «ОП ОС» → [/^ОП(\s|$)/i, /^ОС(\s|$)/i]. */
+    /** «ОП ОС» → [/^ОП(\s|$)/i, /^ОС(\s|$)/i]; «(ОП)» → [/\(ОП\)/i]. */
     private tagToPatterns(tag: string): RegExp[] {
         return tag
             .split(/[\s,;]+/)
             .map(token => token.trim())
             .filter(Boolean)
-            .map(token => new RegExp(`^${escapeRegExp(token)}(\\s|$)`, 'i'));
+            .map(token => this.tokenToPattern(token));
+    }
+
+    /**
+     * Токен в скобках — маркер вида «(ОП)»: ищется как подстрока в любом
+     * месте названия (скобки сами отсекают ложные совпадения вроде «ОПТ»).
+     * Прочий токен — префикс названия со словограницей.
+     */
+    private tokenToPattern(token: string): RegExp {
+        if (token.startsWith('(') && token.endsWith(')')) {
+            return new RegExp(escapeRegExp(token), 'i');
+        }
+        return new RegExp(`^${escapeRegExp(token)}(\\s|$)`, 'i');
     }
 
     private isGroupName(name: string): boolean {

@@ -118,7 +118,9 @@ export class ShareLinkDto {
     @ApiProperty()
     id: string;
 
-    @ApiProperty({ description: 'Ключ ссылки — хвост публичного URL /share/{token}' })
+    @ApiProperty({
+        description: 'Ключ ссылки — хвост публичного URL /share/{token}',
+    })
     token: string;
 
     @ApiProperty()
@@ -133,10 +135,18 @@ export class ShareLinkDto {
     @ApiProperty()
     title: string;
 
-    @ApiProperty({ description: 'Период фильтра — от', type: String, nullable: true })
+    @ApiProperty({
+        description: 'Период фильтра — от',
+        type: String,
+        nullable: true,
+    })
     periodFrom: string | null;
 
-    @ApiProperty({ description: 'Период фильтра — до', type: String, nullable: true })
+    @ApiProperty({
+        description: 'Период фильтра — до',
+        type: String,
+        nullable: true,
+    })
     periodTo: string | null;
 
     @ApiProperty()
@@ -262,11 +272,15 @@ export class ShareLinkPublicResponseDto {
     @ApiProperty({ type: ShareLinkPublicMetaDto })
     meta: ShareLinkPublicMetaDto;
 
-    @ApiProperty({ description: 'KPI-отчёт (как POST /kpi-report/get)', type: [ReportData] })
+    @ApiProperty({
+        description: 'KPI-отчёт (как POST /kpi-report/get)',
+        type: [ReportData],
+    })
     report: ReportData[];
 
     @ApiProperty({
-        description: 'Статистика звонков (как POST /kpi-report/calling-statistic)',
+        description:
+            'Статистика звонков (как POST /kpi-report/calling-statistic)',
         type: 'array',
         items: { type: 'object', additionalProperties: true },
     })

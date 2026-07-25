@@ -17,12 +17,19 @@ import { Type } from 'class-transformer';
  * `bxUserId = 0` (по умолчанию) — портальный кэш, общий для всех.
  */
 export class AppCacheRefDto {
-    @ApiProperty({ description: 'Пространство кэша (имя приложения/фичи), напр. sales-finance', example: 'sales-finance' })
+    @ApiProperty({
+        description:
+            'Пространство кэша (имя приложения/фичи), напр. sales-finance',
+        example: 'sales-finance',
+    })
     @IsString()
     @IsNotEmpty()
     app: string;
 
-    @ApiProperty({ description: 'Домен портала Bitrix24', example: 'gsr.bitrix24.ru' })
+    @ApiProperty({
+        description: 'Домен портала Bitrix24',
+        example: 'gsr.bitrix24.ru',
+    })
     @IsString()
     @IsNotEmpty()
     domain: string;
@@ -32,7 +39,10 @@ export class AppCacheRefDto {
     @IsNotEmpty()
     key: string;
 
-    @ApiPropertyOptional({ description: 'ID пользователя Bitrix; 0/не указан — портальный кэш', default: 0 })
+    @ApiPropertyOptional({
+        description: 'ID пользователя Bitrix; 0/не указан — портальный кэш',
+        default: 0,
+    })
     @IsOptional()
     @Type(() => Number)
     @IsInt()
@@ -40,28 +50,40 @@ export class AppCacheRefDto {
 }
 
 export class AppCacheSetRequestDto extends AppCacheRefDto {
-    @ApiProperty({ description: 'Полезная нагрузка — любой сериализуемый JSON' })
+    @ApiProperty({
+        description: 'Полезная нагрузка — любой сериализуемый JSON',
+    })
     @IsNotEmpty()
     data: unknown;
 
-    @ApiPropertyOptional({ description: 'TTL в секундах; не указан — бессрочно (в БД без expired_at)' })
+    @ApiPropertyOptional({
+        description:
+            'TTL в секундах; не указан — бессрочно (в БД без expired_at)',
+    })
     @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)
     ttlSeconds?: number;
 
-    @ApiPropertyOptional({ description: 'Группа для пакетного сброса, напр. closed-sales' })
+    @ApiPropertyOptional({
+        description: 'Группа для пакетного сброса, напр. closed-sales',
+    })
     @IsOptional()
     @IsString()
     group?: string;
 
-    @ApiPropertyOptional({ description: 'Произвольные метаданные записи (не участвуют в выборках)' })
+    @ApiPropertyOptional({
+        description: 'Произвольные метаданные записи (не участвуют в выборках)',
+    })
     @IsOptional()
     @IsObject()
     meta?: Record<string, unknown>;
 
-    @ApiPropertyOptional({ description: 'Теги записи для фильтрации в инспекции', type: [String] })
+    @ApiPropertyOptional({
+        description: 'Теги записи для фильтрации в инспекции',
+        type: [String],
+    })
     @IsOptional()
     @IsArray()
     @IsString({ each: true })
@@ -75,7 +97,11 @@ export class AppCacheSetResponseDto {
     @ApiProperty({ description: 'md5-чексумма сериализованных данных' })
     checksum: string;
 
-    @ApiProperty({ description: 'Когда протухнет; null — бессрочно', type: String, nullable: true })
+    @ApiProperty({
+        description: 'Когда протухнет; null — бессрочно',
+        type: String,
+        nullable: true,
+    })
     expiredAt: string | null;
 }
 
@@ -129,7 +155,10 @@ export class AppCacheEntryDto extends AppCacheItemDto {
     @ApiProperty({ description: 'Полезная нагрузка' })
     data: unknown;
 
-    @ApiProperty({ description: 'Метаданные, сохранённые вместе с записью', nullable: true })
+    @ApiProperty({
+        description: 'Метаданные, сохранённые вместе с записью',
+        nullable: true,
+    })
     meta: Record<string, unknown> | null;
 }
 
@@ -160,12 +189,18 @@ export class AppCacheListRequestDto {
     @IsInt()
     bxUserId?: number;
 
-    @ApiPropertyOptional({ description: 'Показывать и протухшие записи', default: false })
+    @ApiPropertyOptional({
+        description: 'Показывать и протухшие записи',
+        default: false,
+    })
     @IsOptional()
     @IsBoolean()
     includeExpired?: boolean;
 
-    @ApiPropertyOptional({ default: 50, description: 'Размер страницы (максимум 200)' })
+    @ApiPropertyOptional({
+        default: 50,
+        description: 'Размер страницы (максимум 200)',
+    })
     @IsOptional()
     @Type(() => Number)
     @IsInt()
@@ -189,7 +224,10 @@ export class AppCacheListResponseDto {
 }
 
 export class AppCacheEntryRequestDto {
-    @ApiPropertyOptional({ description: 'UUID записи; либо id, либо адрес app+domain+key(+bxUserId)' })
+    @ApiPropertyOptional({
+        description:
+            'UUID записи; либо id, либо адрес app+domain+key(+bxUserId)',
+    })
     @IsOptional()
     @IsString()
     id?: string;
@@ -217,7 +255,9 @@ export class AppCacheEntryRequestDto {
 }
 
 export class AppCacheResetRequestDto {
-    @ApiPropertyOptional({ description: 'Сбросить только это пространство app' })
+    @ApiPropertyOptional({
+        description: 'Сбросить только это пространство app',
+    })
     @IsOptional()
     @IsString()
     app?: string;

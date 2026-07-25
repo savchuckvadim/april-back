@@ -43,7 +43,8 @@ export class AppCacheController {
 
     @ApiOperation({
         summary: 'Запись кэша целиком',
-        description: 'По id либо по адресу app+domain+key(+bxUserId), с данными.',
+        description:
+            'По id либо по адресу app+domain+key(+bxUserId), с данными.',
     })
     @ApiOkResponse({ type: AppCacheEntryDto })
     @Post('entry')
@@ -106,7 +107,9 @@ export class AppCacheController {
         return await this.service.reset(dto);
     }
 
-    @ApiOperation({ summary: 'Удалить протухшие строки БД (Redis чистится сам)' })
+    @ApiOperation({
+        summary: 'Удалить протухшие строки БД (Redis чистится сам)',
+    })
     @ApiOkResponse({ type: AppCachePurgeResponseDto })
     @Post('purge-expired')
     @HttpCode(200)

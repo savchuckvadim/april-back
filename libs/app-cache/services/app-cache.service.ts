@@ -78,7 +78,9 @@ export class AppCacheService {
             try {
                 return JSON.parse(raw) as T;
             } catch {
-                this.logger.warn(`Повреждённый JSON в Redis ${redisKey} — читаю из БД`);
+                this.logger.warn(
+                    `Повреждённый JSON в Redis ${redisKey} — читаю из БД`,
+                );
             }
         }
 
@@ -94,7 +96,9 @@ export class AppCacheService {
         await this.redisService
             .getClient()
             .set(redisKey, JSON.stringify(row.data), 'EX', ttl);
-        this.logger.debug(`Регидрация из БД → Redis: ${redisKey} (TTL ${ttl}s)`);
+        this.logger.debug(
+            `Регидрация из БД → Redis: ${redisKey} (TTL ${ttl}s)`,
+        );
 
         return row.data as T;
     }
@@ -188,16 +192,15 @@ export class AppCacheService {
 
     // ─────────────────────── инспекция (для контроллера) ───────────────────────
 
-    async list(filter: AppCacheListRequestDto): Promise<AppCacheListResponseDto> {
+    async list(
+        filter: AppCacheListRequestDto,
+    ): Promise<AppCacheListResponseDto> {
         const where = this.buildWhere(filter);
         if (!filter.includeExpired) {
             where.OR = [{ expiredAt: null }, { expiredAt: { gt: new Date() } }];
         }
 
-        const take = Math.min(
-            filter.take ?? 50,
-            AppCacheService.LIST_MAX_TAKE,
-        );
+        const take = Math.min(filter.take ?? 50, AppCacheService.LIST_MAX_TAKE);
 
         const [total, rows] = await Promise.all([
             this.prisma.appCache.count({ where }),
@@ -228,7 +231,9 @@ export class AppCacheService {
     }): Promise<AppCacheEntryDto> {
         let row: AppCache | null = null;
         if (req.id) {
-            row = await this.prisma.appCache.findUnique({ where: { id: req.id } });
+            row = await this.prisma.appCache.findUnique({
+                where: { id: req.id },
+            });
         } else if (req.app && req.domain && req.key) {
             row = await this.findRow({
                 app: req.app,
@@ -261,7 +266,9 @@ export class AppCacheService {
      * Точные Redis-ключи берём из строк БД; при сбросе без group/keyPrefix
      * дополнительно проходим SCAN-паттерном — подчистит осиротевшие ключи.
      */
-    async reset(filter: AppCacheResetRequestDto): Promise<AppCacheResetResponseDto> {
+    async reset(
+        filter: AppCacheResetRequestDto,
+    ): Promise<AppCacheResetResponseDto> {
         const where = this.buildWhere(filter);
         const rows = await this.prisma.appCache.findMany({
             where,
@@ -273,14 +280,21 @@ export class AppCacheService {
         for (let i = 0; i < rows.length; i += 500) {
             const keys = rows
                 .slice(i, i + 500)
-                .map(r => buildAppCacheRedisKey(r.app, r.domain, r.bxUserId, r.key));
+                .map(r =>
+                    buildAppCacheRedisKey(r.app, r.domain, r.bxUserId, r.key),
+                );
             if (keys.length) deletedRedis += await client.del(...keys);
         }
 
-        const { count: deletedDb } = await this.prisma.appCache.deleteMany({ where });
+        const { count: deletedDb } = await this.prisma.appCache.deleteMany({
+            where,
+        });
 
         if (!filter.group && !filter.keyPrefix) {
-            const pattern = buildAppCacheRedisPattern(filter.app, filter.domain);
+            const pattern = buildAppCacheRedisPattern(
+                filter.app,
+                filter.domain,
+            );
             const stream = client.scanStream({ match: pattern, count: 100 });
             for await (const keys of stream as AsyncIterable<string[]>) {
                 if (keys.length) deletedRedis += await client.del(...keys);
@@ -372,7 +386,14 @@ export class AppCacheService {
         await this.prisma.appCache.deleteMany({ where: { id: row.id } });
         await this.redisService
             .getClient()
-            .del(buildAppCacheRedisKey(row.app, row.domain, row.bxUserId, row.key));
+            .del(
+                buildAppCacheRedisKey(
+                    row.app,
+                    row.domain,
+                    row.bxUserId,
+                    row.key,
+                ),
+            );
     }
 
     private buildWhere(filter: {
@@ -401,7 +422,12 @@ export class AppCacheService {
         const pipeline = this.redisService.getClient().pipeline();
         for (const row of rows) {
             pipeline.exists(
-                buildAppCacheRedisKey(row.app, row.domain, row.bxUserId, row.key),
+                buildAppCacheRedisKey(
+                    row.app,
+                    row.domain,
+                    row.bxUserId,
+                    row.key,
+                ),
             );
         }
         const results = await pipeline.exec();

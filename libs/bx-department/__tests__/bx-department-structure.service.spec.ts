@@ -198,6 +198,65 @@ describe('BxDepartmentStructureService', () => {
             ).not.toContain(37);
         });
 
+        it('скобочный тэг «(ОП)» ищется как подстрока в любом месте названия', async () => {
+            pbxInit.mockResolvedValue(
+                initResult(
+                    {
+                        [EDepartamentGroup.sales]: true,
+                        [EDepartamentGroup.service]: false,
+                        [EDepartamentGroup.tmc]: false,
+                    },
+                    { [EDepartamentGroup.sales]: '(ОП)' },
+                ),
+            );
+            apiCall.mockImplementation((method: string): Promise<unknown> => {
+                if (method === 'department.get') {
+                    return Promise.resolve({
+                        result: [
+                            {
+                                ID: 1,
+                                NAME: 'ГАРАНТ СЕРВИС',
+                                PARENT: '0',
+                                SORT: 1,
+                            },
+                            // тэг в конце названия — должен найтись
+                            {
+                                ID: 61,
+                                NAME: 'Отдел продаж (ОП)',
+                                PARENT: '1',
+                                SORT: 2,
+                            },
+                            // тэг в начале — тоже
+                            {
+                                ID: 62,
+                                NAME: '(ОП) Воронеж',
+                                PARENT: '1',
+                                SORT: 3,
+                            },
+                            // «ОП» без скобок — не матчится
+                            {
+                                ID: 63,
+                                NAME: 'ОП Ростов',
+                                PARENT: '1',
+                                SORT: 4,
+                            },
+                        ],
+                    });
+                }
+                return Promise.resolve({ result: [] });
+            });
+
+            const result = await service.getStructure(
+                DOMAIN,
+                EDepartamentGroup.sales,
+                204,
+            );
+
+            expect(
+                result.department.generalDepartment.map(d => d.ID).sort(),
+            ).toEqual([61, 62]);
+        });
+
         it('service: матчит отделы «ОС …»', async () => {
             const result = await service.getStructure(
                 DOMAIN,
