@@ -39,6 +39,7 @@ describe('buildClosedSalesDeal', () => {
         expect(deal.advanceAmount).toBe(12000);
         expect(deal.paidMonths).toBe(12);
         expect(deal.monthlyAmount).toBe(1000); // 12000 / 12
+        expect(deal.quantity).toBe(1);
         expect(deal.contractMonths).toBe(12); // 01.03.2026–28.02.2027
         expect(deal.expectedContractAmount).toBe(12000); // 1000 × 12
     });
@@ -127,6 +128,7 @@ describe('aggregateClosedSales', () => {
         expect(totals.dealsCount).toBe(3);
         expect(totals.advanceAmount).toBe(1200 + 600 + 2400);
         expect(totals.paidMonths).toBe(12 + 6 + 24);
+        expect(totals.quantity).toBe(1 + 1 + 2);
 
         expect(employees).toHaveLength(2);
         const [emp10, emp20] = employees;

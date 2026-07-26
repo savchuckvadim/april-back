@@ -43,6 +43,8 @@ describe('buildHotClientDeal', () => {
         expect(deal.opportunity).toBe(50000);
         expect(deal.productRowsAmount).toBe(5000);
         expect(deal.monthlyAmount).toBe(416.67); // 5000 / 12
+        expect(deal.paidMonths).toBe(12); // 1 × лиц.12мес.
+        expect(deal.quantity).toBe(1);
         expect(deal.opHistory).toEqual(['12.05 Презентация', '20.05 КП']);
         expect(deal.comments).toEqual(['Просят скидку']);
         expect(deal.companyId).toBe(512);
@@ -86,5 +88,7 @@ describe('buildHotClientsTotals', () => {
         expect(totals.opportunityTotal).toBe(300);
         expect(totals.productRowsAmountTotal).toBe(1300);
         expect(totals.monthlyAmountTotal).toBe(200); // 100 + 100
+        expect(totals.paidMonthsTotal).toBe(13); // шт(1) + лиц.12мес.(12)
+        expect(totals.quantityTotal).toBe(2); // 1 + 1
     });
 });

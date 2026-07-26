@@ -10,6 +10,7 @@ import {
     roundMoney,
     sumRowsMonthly,
     sumRowsMonths,
+    sumRowsQuantity,
     sumRowsTotal,
 } from '@lib/shared/lib/deal-finance';
 import {
@@ -57,6 +58,7 @@ export function buildClosedSalesDeal(
         advanceAmount: sumRowsTotal(rows),
         paidMonths: sumRowsMonths(rows),
         monthlyAmount,
+        quantity: sumRowsQuantity(rows),
         contractStart: toIsoOrNull(deal[uf.contractStart]),
         contractEnd: toIsoOrNull(deal[uf.contractEnd]),
         contractMonths,
@@ -73,6 +75,7 @@ function emptyTotals(): ClosedSalesTotalsDto {
         advanceAmount: 0,
         paidMonths: 0,
         monthlyAmount: 0,
+        quantity: 0,
         expectedContractAmount: 0,
     };
 }
@@ -89,6 +92,7 @@ function addToTotals(
     totals.monthlyAmount = roundMoney(
         totals.monthlyAmount + deal.monthlyAmount,
     );
+    totals.quantity += deal.quantity;
     totals.expectedContractAmount = roundMoney(
         totals.expectedContractAmount + deal.expectedContractAmount,
     );

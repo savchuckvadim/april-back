@@ -46,3 +46,11 @@ export function sumRowsMonths(rows: DealFinanceRow[]): number {
         return acc + quantity * measureMonthFactorFromName(row.measureName);
     }, 0);
 }
+
+/** Σ количества товара по строкам (без коэффициентов, «штук»/лицензий). */
+export function sumRowsQuantity(rows: DealFinanceRow[]): number {
+    return rows.reduce(
+        (acc, row) => acc + Math.max(Number(row.quantity ?? 0), 0),
+        0,
+    );
+}

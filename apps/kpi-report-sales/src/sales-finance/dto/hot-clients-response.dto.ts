@@ -69,6 +69,23 @@ export class HotClientDealDto {
     monthlyAmount: number;
 
     @ApiProperty({
+        description:
+            'Потенциально оплаченных месяцев: Σ количество × коэффициент ' +
+            'из единицы измерения (сколько месяцев закроется при выигрыше).',
+        type: Number,
+        example: 12,
+    })
+    paidMonths: number;
+
+    @ApiProperty({
+        description:
+            'Количество товара (Σ количество по товарным строкам, без коэффициентов).',
+        type: Number,
+        example: 1,
+    })
+    quantity: number;
+
+    @ApiProperty({
         description: 'Значения поля «ОП История» (op_history).',
         type: [String],
         example: ['12.05 Презентация проведена', '20.05 КП отправлено'],
@@ -141,6 +158,20 @@ export class HotClientsTotalsDto {
         example: 144000,
     })
     monthlyAmountTotal: number;
+
+    @ApiProperty({
+        description: 'Σ потенциально оплаченных месяцев.',
+        type: Number,
+        example: 144,
+    })
+    paidMonthsTotal: number;
+
+    @ApiProperty({
+        description: 'Σ количества товара.',
+        type: Number,
+        example: 12,
+    })
+    quantityTotal: number;
 }
 
 /**

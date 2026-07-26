@@ -71,6 +71,14 @@ export class ClosedSalesDealDto {
 
     @ApiProperty({
         description:
+            'Количество товара (Σ количество по товарным строкам, без коэффициентов).',
+        type: Number,
+        example: 1,
+    })
+    quantity: number;
+
+    @ApiProperty({
+        description:
             'Дата начала действия договора (поле contract_start), ISO; null, если не заполнена.',
         type: String,
         nullable: true,
@@ -162,6 +170,13 @@ export class ClosedSalesTotalsDto {
         example: 84000,
     })
     monthlyAmount: number;
+
+    @ApiProperty({
+        description: 'Σ количества товара по сделкам.',
+        type: Number,
+        example: 7,
+    })
+    quantity: number;
 
     @ApiProperty({
         description: 'Σ ожидаемых сумм за договор по сделкам.',

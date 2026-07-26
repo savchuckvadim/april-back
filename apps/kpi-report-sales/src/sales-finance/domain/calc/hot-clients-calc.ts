@@ -6,6 +6,8 @@ import { IBXProductRowRow } from '@/modules/bitrix/domain/crm/product-row/interf
 import {
     roundMoney,
     sumRowsMonthly,
+    sumRowsMonths,
+    sumRowsQuantity,
     sumRowsTotal,
 } from '@lib/shared/lib/deal-finance';
 import {
@@ -43,6 +45,8 @@ export function buildHotClientDeal(
         opportunity: Number(deal.OPPORTUNITY ?? 0),
         productRowsAmount: sumRowsTotal(rows),
         monthlyAmount: sumRowsMonthly(rows),
+        paidMonths: sumRowsMonths(rows),
+        quantity: sumRowsQuantity(rows),
         opHistory: toStringArray(deal[uf.opHistory]),
         comments: toStringArray(deal[uf.presComments]),
         companyId,
@@ -66,12 +70,16 @@ export function buildHotClientsTotals(
             monthlyAmountTotal: roundMoney(
                 totals.monthlyAmountTotal + deal.monthlyAmount,
             ),
+            paidMonthsTotal: totals.paidMonthsTotal + deal.paidMonths,
+            quantityTotal: totals.quantityTotal + deal.quantity,
         }),
         {
             dealsCount: 0,
             opportunityTotal: 0,
             productRowsAmountTotal: 0,
             monthlyAmountTotal: 0,
+            paidMonthsTotal: 0,
+            quantityTotal: 0,
         },
     );
 }

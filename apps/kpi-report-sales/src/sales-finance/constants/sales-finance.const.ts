@@ -11,7 +11,9 @@ import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-dea
  */
 // v3: сделки обзавелись companyColor (перспектива) — старые v2-ключи в
 // кэше без этого поля инвалидируются сменой префикса (протухнут по TTL).
-export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v3' as const;
+// v4: closed/hot сделки обзавелись quantity, hot — paidMonths (кол-во
+// товара и предоплаченные месяцы) — старые v3-ключи протухнут по TTL.
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v4' as const;
 
 /** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
 export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;
