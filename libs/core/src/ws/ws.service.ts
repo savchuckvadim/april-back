@@ -44,6 +44,20 @@ export class WsService {
             client.emit(event, payload);
         }
     }
+
+    /**
+     * Эмит в комнату socket.io (room). Комнаты — механизм, ОРТОГОНАЛЬНЫЙ
+     * существующим per-socketId sendToClient/emitToClient (те не трогаются).
+     * Используется presence публичных ссылок: владелец подписан на свою
+     * комнату (room:join), бэк пушит туда изменения онлайна.
+     *
+     * ⚠️ Одна in-memory реплика: комнаты работают в пределах процесса.
+     * Для multi-replica понадобится @socket.io/redis-adapter.
+     */
+    emitToRoom(room: string, event: string, data: any) {
+        this.server?.to(room).emit(event, data);
+    }
+
     isConnected(socketId: string): boolean {
         const client = this.clients.get(socketId);
         return !!(client && client.connected);

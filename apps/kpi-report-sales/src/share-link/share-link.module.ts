@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
+import { RedisModule } from '@/core/redis/redis.module';
 import { DownloadModule } from '../download';
 import { ShareLinkController } from './controllers/share-link.controller';
 import { ShareLinkPublicController } from './controllers/share-link-public.controller';
 import { ShareLinkService } from './services/share-link.service';
 import { ShareLinkSnapshotService } from './services/share-link-snapshot.service';
+import { SharePresenceService } from './services/share-presence.service';
 import { ShareLinkRefreshCron } from './services/share-link-refresh.cron';
 import { ShareLinkRefreshProcessor } from './queue/share-link.processor';
 
@@ -23,11 +25,12 @@ import { ShareLinkRefreshProcessor } from './queue/share-link.processor';
  * per-вызов через `new` — см. CLAUDE.md про race condition c this.bitrix.
  */
 @Module({
-    imports: [PBXModule, QueueModule, DownloadModule],
+    imports: [PBXModule, QueueModule, RedisModule, DownloadModule],
     controllers: [ShareLinkController, ShareLinkPublicController],
     providers: [
         ShareLinkService,
         ShareLinkSnapshotService,
+        SharePresenceService,
         ShareLinkRefreshCron,
         ShareLinkRefreshProcessor,
     ],

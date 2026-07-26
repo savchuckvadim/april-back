@@ -2,17 +2,27 @@ import {
     Body,
     Controller,
     Get,
+    Headers,
     HttpCode,
+    Ip,
     Param,
     Post,
     Res,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { WsService } from '@/core/ws';
 import { ShareLinkService } from '../services/share-link.service';
 import { ShareLinkSnapshotService } from '../services/share-link-snapshot.service';
+import { SharePresenceService } from '../services/share-presence.service';
+import {
+    SHARE_PRESENCE_EVENT,
+    sharePresenceRoom,
+} from '../lib/presence-room.util';
 import {
     EShareLinkStatus,
+    ShareLinkHeartbeatDto,
+    ShareLinkHeartbeatResponseDto,
     ShareLinkPublicResponseDto,
 } from '../dto/share-link.dto';
 import { ExcelReportService } from '../../download/services/excel-report.service';
@@ -32,8 +42,24 @@ export class ShareLinkPublicController {
     constructor(
         private readonly service: ShareLinkService,
         private readonly snapshots: ShareLinkSnapshotService,
+        private readonly presence: SharePresenceService,
+        private readonly ws: WsService,
         private readonly excel: ExcelReportService,
     ) {}
+
+    /** До протухания ссылки, секунд (TTL presence-ключей). */
+    private ttlSeconds(expiresAt: Date): number {
+        return Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+    }
+
+    /**
+     * Реальный IP клиента. Next-прокси кладёт его в x-forwarded-for;
+     * Nest @Ip() без trust-proxy отдал бы IP прокси — потому берём заголовок
+     * (первый в цепочке), fallback — @Ip().
+     */
+    private clientIp(xff: string | undefined, ip: string): string {
+        return xff?.split(',')[0]?.trim() || ip || '';
+    }
 
     @ApiOperation({
         summary: 'Снимок отчёта по токену',
@@ -45,6 +71,8 @@ export class ShareLinkPublicController {
     @Get(':token')
     async getSnapshot(
         @Param('token') token: string,
+        @Ip() ip: string,
+        @Headers('x-forwarded-for') xff: string,
     ): Promise<ShareLinkPublicResponseDto> {
         const link = await this.service.getPublicByToken(token);
         const snapshot = this.service.parseSnapshot(link);
@@ -80,6 +108,13 @@ export class ShareLinkPublicController {
         }
 
         await this.service.registerView(link.id);
+        // Уникальные зрители — по хэшу IP (только реальные заходы; поллинг
+        // generating сюда не доходит). SADD-дедуп внутри.
+        await this.presence.registerUniqueViewer(
+            token,
+            this.clientIp(xff, ip),
+            this.ttlSeconds(link.expiresAt),
+        );
 
         return {
             meta: {
@@ -99,6 +134,65 @@ export class ShareLinkPublicController {
             > | null,
             ui: snapshot.ui ?? {},
         };
+    }
+
+    @ApiOperation({
+        summary: 'Heartbeat зрителя (presence)',
+        description:
+            'Публичная страница шлёт каждые ~20с, чтобы числиться «онлайн» ' +
+            '(45с TTL). Возвращает текущее число зрителей онлайн. Данные ' +
+            'отчёта тут не отдаются.',
+    })
+    @ApiOkResponse({ type: ShareLinkHeartbeatResponseDto })
+    @Post(':token/ping')
+    @HttpCode(200)
+    async ping(
+        @Param('token') token: string,
+        @Body() dto: ShareLinkHeartbeatDto,
+    ): Promise<ShareLinkHeartbeatResponseDto> {
+        const link = await this.service.getPublicByToken(token);
+        const online = await this.presence.heartbeat(
+            token,
+            dto.viewerId,
+            this.ttlSeconds(link.expiresAt),
+        );
+        this.pushPresence(link, token, online);
+        return { online };
+    }
+
+    @ApiOperation({
+        summary: 'Выход зрителя (presence leave)',
+        description:
+            'Beacon при закрытии/скрытии вкладки — убирает зрителя из ' +
+            'онлайна немедленно (не ждём протухания TTL). Отдаёт онлайн.',
+    })
+    @ApiOkResponse({ type: ShareLinkHeartbeatResponseDto })
+    @Post(':token/leave')
+    @HttpCode(200)
+    async leave(
+        @Param('token') token: string,
+        @Body() dto: ShareLinkHeartbeatDto,
+    ): Promise<ShareLinkHeartbeatResponseDto> {
+        const link = await this.service.getPublicByToken(token);
+        const online = await this.presence.leave(token, dto.viewerId);
+        this.pushPresence(link, token, online);
+        return { online };
+    }
+
+    /**
+     * Живой push владельцу (в его комнату). Публика WS не трогает — это
+     * исходящий эмит по HTTP-событию зрителя. Летит только счётчик.
+     */
+    private pushPresence(
+        link: { domain: string; creatorBxUserId: number },
+        token: string,
+        online: number,
+    ): void {
+        this.ws.emitToRoom(
+            sharePresenceRoom(link.domain, link.creatorBxUserId),
+            SHARE_PRESENCE_EVENT,
+            { token, online },
+        );
     }
 
     @ApiOperation({

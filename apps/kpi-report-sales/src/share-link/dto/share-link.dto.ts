@@ -214,8 +214,14 @@ export class ShareLinkDto {
     @ApiProperty({ description: 'Ссылка протухла по сроку' })
     isExpired: boolean;
 
-    @ApiProperty()
+    @ApiProperty({ description: 'Всего заходов на снимок (хиты)' })
     viewCount: number;
+
+    @ApiProperty({ description: 'Уникальных зрителей (по IP)' })
+    uniqueViewCount: number;
+
+    @ApiProperty({ description: 'Смотрят прямо сейчас (онлайн)' })
+    onlineCount: number;
 
     @ApiProperty({ type: String, nullable: true })
     lastViewedAt: string | null;
@@ -255,6 +261,19 @@ export class ShareLinkTokenRequestDto {
     @IsString()
     @IsNotEmpty()
     token: string;
+}
+
+/** Heartbeat публичного зрителя (presence). */
+export class ShareLinkHeartbeatDto {
+    @ApiProperty({ description: 'Случайный id вкладки зрителя (per-tab)' })
+    @IsString()
+    @IsNotEmpty()
+    viewerId: string;
+}
+
+export class ShareLinkHeartbeatResponseDto {
+    @ApiProperty({ description: 'Смотрят сейчас (включая этого зрителя)' })
+    online: number;
 }
 
 /**

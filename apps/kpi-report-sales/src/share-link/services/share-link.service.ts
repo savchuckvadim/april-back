@@ -22,6 +22,7 @@ import {
     UpdateShareLinkDto,
 } from '../dto/share-link.dto';
 import { ShareLinkSnapshotService } from './share-link-snapshot.service';
+import { SharePresenceService } from './share-presence.service';
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -39,6 +40,7 @@ export class ShareLinkService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly snapshots: ShareLinkSnapshotService,
+        private readonly presence: SharePresenceService,
         private readonly dispatcher: QueueDispatcherService,
     ) {}
 
@@ -128,7 +130,14 @@ export class ShareLinkService {
             },
             orderBy: { createdAt: 'desc' },
         });
-        return links.map(link => this.toDto(link));
+        // Обогащаем presence-счётчиками (Redis): онлайн + уникальные.
+        return Promise.all(
+            links.map(async link => ({
+                ...this.toDto(link),
+                onlineCount: await this.presence.countOnline(link.token),
+                uniqueViewCount: await this.presence.countUnique(link.token),
+            })),
+        );
     }
 
     async revoke(domain: string, token: string): Promise<ShareLinkDto> {
@@ -138,6 +147,7 @@ export class ShareLinkService {
             data: { status: EShareLinkStatus.REVOKED, nextRefreshAt: null },
         });
         await this.snapshots.drop(link);
+        await this.presence.drop(link.token);
         this.logger.log(`Отозвана ссылка ${token} (${domain})`);
         return this.toDto(updated);
     }
@@ -373,6 +383,9 @@ export class ShareLinkService {
             status: link.status as EShareLinkStatus,
             isExpired: link.expiresAt.getTime() <= Date.now(),
             viewCount: link.viewCount,
+            // presence — обогащается в list() (async); дефолт 0
+            uniqueViewCount: 0,
+            onlineCount: 0,
             lastViewedAt: link.lastViewedAt?.toISOString() ?? null,
             createdAt: link.createdAt?.toISOString() ?? null,
         };
