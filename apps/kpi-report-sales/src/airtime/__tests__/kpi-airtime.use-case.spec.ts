@@ -45,10 +45,27 @@ const row = (
     CALL_TYPE: String(callType),
 });
 
+
+/**
+ * Мок кэша месячных ячеек: всегда промах (тесты используют текущий месяц —
+ * некэшируемый сегмент, кэш не трогается; промах ведёт к живой выборке).
+ */
+const createCacheMock = () => ({
+    getMonthCells: jest.fn(
+        async (_domain: string, _month: string, userIds: number[]) =>
+            new Map(userIds.map(id => [id, null])),
+    ),
+    setMonthCells: jest.fn(async () => undefined),
+});
+
 describe('AirtimeStatisticUseCase', () => {
     it('возвращает пустой результат для пустого отдела и не ходит в Битрикс', async () => {
         const api = createApiMock([]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto({ departament: [] }));
 
@@ -58,7 +75,11 @@ describe('AirtimeStatisticUseCase', () => {
 
     it('передаёт в фильтр всех сотрудников, период и отсечку нулевой длительности', async () => {
         const api = createApiMock([{ result: [] }]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         await useCase.get(createDto());
 
@@ -86,7 +107,11 @@ describe('AirtimeStatisticUseCase', () => {
                 ],
             },
         ]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto());
 
@@ -108,7 +133,11 @@ describe('AirtimeStatisticUseCase', () => {
 
     it('сотрудник без звонков получает нулевую статистику', async () => {
         const api = createApiMock([{ result: [row('1', 45, 1)] }]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto());
 
@@ -122,7 +151,11 @@ describe('AirtimeStatisticUseCase', () => {
         const api = createApiMock([
             { result: [row('1', 60, 1), row('999', 500, 1)] },
         ]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto());
 
@@ -137,7 +170,11 @@ describe('AirtimeStatisticUseCase', () => {
             { result: [row('1', 20, 1, 'b')], next: 100 },
             { result: [row('2', 30, 2, 'c')] },
         ]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto());
 
@@ -161,7 +198,11 @@ describe('AirtimeStatisticUseCase', () => {
             row('1', 10, 1, `call-${index}`),
         );
         const api = createApiMock([{ result: bigPage, next: 50 }]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto({ maxRows: 50 }));
 
@@ -179,7 +220,11 @@ describe('AirtimeStatisticUseCase', () => {
                 ],
             },
         ]);
-        const useCase = new AirtimeStatisticUseCase(api as never);
+        const useCase = new AirtimeStatisticUseCase(
+            api as never,
+            createCacheMock() as never,
+            'example.bitrix24.ru',
+        );
 
         const result = await useCase.get(createDto());
 

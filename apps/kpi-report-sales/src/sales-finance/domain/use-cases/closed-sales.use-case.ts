@@ -28,7 +28,7 @@ import {
 import {
     MonthSegment,
     splitIntoMonthSegments,
-} from '../calc/month-segments.util';
+} from '../../../shared/lib/month-segments.util';
 import { SalesFinanceCompanyService } from '../services/sales-finance-company.service';
 import { SalesFinanceDealQueryService } from '../services/sales-finance-deal-query.service';
 import { SalesFinanceProductRowsService } from '../services/sales-finance-product-rows.service';

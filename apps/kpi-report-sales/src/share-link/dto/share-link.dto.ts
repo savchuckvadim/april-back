@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+    IsArray,
     IsBoolean,
     IsInt,
     IsNotEmpty,
@@ -36,6 +37,24 @@ export enum EShareLinkStatus {
  * и фронту, чтобы отрисовать read-only страницу в том же виде.
  * Хранится в share_link.filter_snapshot (LONGTEXT, JSON).
  */
+/**
+ * Фильтры финансовой аналитики (вкладка «Финансы»): закрытые продажи
+ * за период + горячие клиенты. Не переданы — финансов в снимке нет.
+ */
+export class ShareLinkFinanceFiltersDto {
+    @ApiProperty({ description: 'ID сотрудников (assignedIds)', type: [Number] })
+    @IsArray()
+    assignedIds: number[];
+
+    @ApiProperty({ description: 'Период yyyy-MM-dd (как state.report.date)' })
+    @IsString()
+    dateFrom: string;
+
+    @ApiProperty()
+    @IsString()
+    dateTo: string;
+}
+
 export class ShareLinkFilterSnapshotDto {
     @ApiProperty({ description: 'Версия формата снимка', default: 1 })
     @IsInt()
@@ -56,6 +75,29 @@ export class ShareLinkFilterSnapshotDto {
     @ValidateNested()
     @Type(() => GetCallingStatisticFiltersDto)
     callingFilters: GetCallingStatisticFiltersDto;
+
+    @ApiProperty({
+        description:
+            'Фильтры финансовой аналитики; не переданы — финансов в снимке нет',
+        type: ShareLinkFinanceFiltersDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ShareLinkFinanceFiltersDto)
+    financeFilters?: ShareLinkFinanceFiltersDto;
+
+    @ApiProperty({
+        description:
+            'Фильтры эфирного времени (сотрудники + raw-даты отчёта); ' +
+            'не переданы — эфирного времени в снимке нет',
+        type: GetCallingStatisticFiltersDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => GetCallingStatisticFiltersDto)
+    airtimeFilters?: GetCallingStatisticFiltersDto;
 
     @ApiProperty({
         description:
@@ -213,6 +255,31 @@ export class ShareLinkTokenRequestDto {
     token: string;
 }
 
+/**
+ * Сброс снимков ссылок из кэша (метаданные ссылок не трогаются):
+ * token указан — один снимок, иначе все снимки портала. Следующий
+ * просмотр публичной страницы синхронно перегенерирует данные.
+ */
+export class ShareLinkCacheResetRequestDto {
+    @ApiProperty({ description: 'Домен портала' })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiPropertyOptional({ description: 'Токен конкретной ссылки; не указан — все снимки портала' })
+    @IsOptional()
+    @IsString()
+    token?: string;
+}
+
+export class ShareLinkCacheResetResponseDto {
+    @ApiProperty({ description: 'Удалено строк в БД (app_cache)' })
+    deletedDb: number;
+
+    @ApiProperty({ description: 'Удалено ключей в Redis' })
+    deletedRedis: number;
+}
+
 export class UpdateShareLinkDto extends ShareLinkTokenRequestDto {
     @ApiPropertyOptional()
     @IsOptional()
@@ -285,6 +352,25 @@ export class ShareLinkPublicResponseDto {
         items: { type: 'object', additionalProperties: true },
     })
     callings: unknown[];
+
+    @ApiProperty({
+        description:
+            'Финансовая аналитика: { closed: ClosedSalesReportDto, ' +
+            'hotByThreshold: { presentation, document } }; null — не собиралась',
+        type: 'object',
+        additionalProperties: true,
+        nullable: true,
+    })
+    finance: Record<string, unknown> | null;
+
+    @ApiProperty({
+        description:
+            'Эфирное время команды (AirtimeStatisticResponseDto); null — не собиралось',
+        type: 'object',
+        additionalProperties: true,
+        nullable: true,
+    })
+    airtime: Record<string, unknown> | null;
 
     @ApiProperty({
         description: 'UI-конфиг фронта из снимка (как сохранил создатель)',

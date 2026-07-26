@@ -276,6 +276,15 @@ export class AppCacheResetRequestDto {
     @IsOptional()
     @IsString()
     keyPrefix?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Сбросить ключи, заканчивающиеся на… (например ":2026-06" — ' +
+            'все ячейки месяца по всем сотрудникам)',
+    })
+    @IsOptional()
+    @IsString()
+    keySuffix?: string;
 }
 
 export class AppCacheResetResponseDto {

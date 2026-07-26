@@ -6,21 +6,27 @@
  * Текущий месяц и неполные краевые сегменты всегда считаются заново.
  */
 
+/** Дата в формате yyyy-MM-dd. */
+export type IsoDate = `${number}-${number}-${number}`;
+
+/** Календарный месяц в формате yyyy-MM. */
+export type IsoMonth = `${number}-${number}`;
+
 export interface MonthSegment {
     /** Начало сегмента, yyyy-MM-dd (включительно). */
-    from: string;
+    from: IsoDate;
     /** Конец сегмента, yyyy-MM-dd (включительно). */
-    to: string;
+    to: IsoDate;
     /** Календарный месяц сегмента, yyyy-MM. */
-    month: string;
+    month: IsoMonth;
     /** Можно ли кэшировать сегмент долгоживуще. */
     cacheable: boolean;
 }
 
-function toIsoDate(year: number, monthIndex: number, day: number): string {
+function toIsoDate(year: number, monthIndex: number, day: number): IsoDate {
     const mm = String(monthIndex + 1).padStart(2, '0');
     const dd = String(day).padStart(2, '0');
-    return `${year}-${mm}-${dd}`;
+    return `${year}-${mm}-${dd}` as IsoDate;
 }
 
 function daysInMonth(year: number, monthIndex: number): number {
@@ -34,6 +40,14 @@ function parseIsoDate(value: string): {
 } {
     const [year, month, day] = value.split('-').map(Number);
     return { year, monthIndex: month - 1, day };
+}
+
+/** Первый день следующего месяца — эксклюзивная граница `<` для выборок. */
+export function firstDayOfNextMonth(month: IsoMonth): IsoDate {
+    const [year, mm] = month.split('-').map(Number);
+    const nextYear = mm === 12 ? year + 1 : year;
+    const nextMonth = mm === 12 ? 1 : mm + 1;
+    return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01` as IsoDate;
 }
 
 /**
@@ -74,7 +88,7 @@ export function splitIntoMonthSegments(
         segments.push({
             from: toIsoDate(year, monthIndex, fromDay),
             to: toIsoDate(year, monthIndex, toDay),
-            month: `${year}-${String(monthIndex + 1).padStart(2, '0')}`,
+            month: `${year}-${String(monthIndex + 1).padStart(2, '0')}` as IsoMonth,
             cacheable: coversFullMonth && isPastMonth,
         });
 

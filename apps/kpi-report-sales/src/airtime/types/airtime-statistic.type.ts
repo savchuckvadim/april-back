@@ -63,3 +63,16 @@ export interface IAirtimeStatisticResult {
     rowsFetched: number;
     truncated: boolean;
 }
+
+/**
+ * Кэш-ячейка «сотрудник × календарный месяц»: только агрегат (~120 байт),
+ * сырые строки звонков не хранятся. Из таких ячеек собирается ЛЮБОЙ
+ * состав команды и ЛЮБОЙ диапазон прошлых месяцев — ключи не растут
+ * комбинаторно от фильтров (в отличие от кэша по составам).
+ */
+export interface AirtimeMonthCell {
+    callsCount: number;
+    airtimeSeconds: number;
+    incoming: IAirtimeDirectionStat;
+    outgoing: IAirtimeDirectionStat;
+}

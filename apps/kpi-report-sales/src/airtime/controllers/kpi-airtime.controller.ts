@@ -6,6 +6,7 @@ import {
     GetAirtimeStatisticDto,
 } from '../dto/airtime-statistic.dto';
 import { AirtimeStatisticUseCase } from '../use-cases/kpi-airtime.use-case';
+import { AirtimeCacheService } from '../cache/airtime-cache.service';
 
 /**
  * Отдельный контроллер отчёта «эфирное время» —
@@ -14,7 +15,10 @@ import { AirtimeStatisticUseCase } from '../use-cases/kpi-airtime.use-case';
 @ApiTags('Sales Airtime')
 @Controller('kpi-airtime')
 export class KpiAirtimeController {
-    constructor(private readonly pbx: PBXService) {}
+    constructor(
+        private readonly pbx: PBXService,
+        private readonly airtimeCache: AirtimeCacheService,
+    ) {}
 
     @Post('get')
     @HttpCode(200)
@@ -40,7 +44,11 @@ export class KpiAirtimeController {
         @Body() dto: GetAirtimeStatisticDto,
     ): Promise<AirtimeStatisticResponseDto> {
         const { bitrix } = await this.pbx.init(dto.domain);
-        const airtimeUseCase = new AirtimeStatisticUseCase(bitrix.api);
+        const airtimeUseCase = new AirtimeStatisticUseCase(
+            bitrix.api,
+            this.airtimeCache,
+            dto.domain,
+        );
         return await airtimeUseCase.get(dto);
     }
 }

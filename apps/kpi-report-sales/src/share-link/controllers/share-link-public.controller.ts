@@ -69,6 +69,14 @@ export class ShareLinkPublicController {
             },
             report: data.report,
             callings: data.callings,
+            finance: (data.finance ?? null) as Record<
+                string,
+                unknown
+            > | null,
+            airtime: (data.airtime ?? null) as Record<
+                string,
+                unknown
+            > | null,
             ui: snapshot.ui ?? {},
         };
     }

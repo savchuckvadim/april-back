@@ -10,6 +10,7 @@
 |---|---|---|
 | kpi-report-sales / sales-finance | `apps/kpi-report-sales/src/sales-finance/cache/sales-finance-cache.service.ts` | `sales-finance:v2` / closed, hot |
 | kpi-report-sales / share-link (снимки публичных ссылок) | `apps/kpi-report-sales/src/share-link/services/share-link-snapshot.service.ts` | `kpi-share` / snapshot |
+| kpi-report-sales / airtime (месячные ячейки «сотрудник × месяц», getMany/setMany) | `apps/kpi-report-sales/src/airtime/cache/airtime-cache.service.ts` (+ README модуля) | `airtime` / month |
 
 ## 🎯 Приоритет 1 — прямые кандидаты (тяжёлые данные, обидно терять при рестарте Redis)
 

@@ -1,4 +1,4 @@
-import { splitIntoMonthSegments } from '../domain/calc/month-segments.util';
+import { splitIntoMonthSegments } from '../../shared/lib/month-segments.util';
 
 describe('splitIntoMonthSegments', () => {
     const now = new Date(2026, 6, 24); // 24.07.2026

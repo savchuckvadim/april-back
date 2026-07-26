@@ -1,8 +1,11 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ShareLinkService } from '../services/share-link.service';
+import { ShareLinkSnapshotService } from '../services/share-link-snapshot.service';
 import {
     CreateShareLinkDto,
+    ShareLinkCacheResetRequestDto,
+    ShareLinkCacheResetResponseDto,
     ShareLinkDto,
     ShareLinkListRequestDto,
     ShareLinkListResponseDto,
@@ -17,7 +20,10 @@ import {
 @ApiTags('Share Link')
 @Controller('kpi-report/share')
 export class ShareLinkController {
-    constructor(private readonly service: ShareLinkService) {}
+    constructor(
+        private readonly service: ShareLinkService,
+        private readonly snapshots: ShareLinkSnapshotService,
+    ) {}
 
     @ApiOperation({
         summary: 'Создать публичную ссылку на отчёт',
@@ -82,5 +88,22 @@ export class ShareLinkController {
     @HttpCode(200)
     async update(@Body() dto: UpdateShareLinkDto): Promise<ShareLinkDto> {
         return await this.service.update(dto);
+    }
+
+    @ApiOperation({
+        summary: 'Сбросить снимки ссылок из кэша',
+        description:
+            'Удаляет данные снимков (БД app_cache + Redis), сами ссылки ' +
+            'остаются активными. token — один снимок, без token — все ' +
+            'снимки портала. Следующий просмотр публичной страницы ' +
+            'синхронно перегенерирует данные из Bitrix.',
+    })
+    @ApiOkResponse({ type: ShareLinkCacheResetResponseDto })
+    @Post('cache/reset')
+    @HttpCode(200)
+    async resetCache(
+        @Body() dto: ShareLinkCacheResetRequestDto,
+    ): Promise<ShareLinkCacheResetResponseDto> {
+        return await this.snapshots.resetCache(dto.domain, dto.token);
     }
 }

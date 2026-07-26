@@ -12,3 +12,4 @@
 export * from './dto/bx-user.dto';
 export * from './dto/kpi.dto';
 export * from './lib/date-util';
+export * from './lib/month-segments.util';

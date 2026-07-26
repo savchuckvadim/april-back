@@ -171,6 +171,151 @@ export class AppCacheService {
         return data;
     }
 
+    /**
+     * Пакетное чтение (порядок результата = порядку refs, промах → null).
+     *
+     * Redis — одним MGET; промахи добираются из БД группированными
+     * findMany (по одной выборке на пару портал+app) и регидрируются в
+     * Redis pipeline'ом. Протухшие строки БД пропускаются (их удалит
+     * почасовой purgeExpired). Нужен потребителям с сотнями мелких ячеек
+     * (например месячные ячейки airtime) — поштучный get там дал бы сотни
+     * roundtrip'ов.
+     */
+    async getMany<T>(refs: AppCacheRef[]): Promise<(T | null)[]> {
+        if (!refs.length) return [];
+        const client = this.redisService.getClient();
+
+        const raw = await client.mget(...refs.map(ref => this.redisKeyOf(ref)));
+        const results: (T | null)[] = new Array<T | null>(refs.length).fill(
+            null,
+        );
+        const missIndexes: number[] = [];
+        raw.forEach((value, i) => {
+            if (value === null) {
+                missIndexes.push(i);
+                return;
+            }
+            try {
+                results[i] = JSON.parse(value) as T;
+            } catch {
+                missIndexes.push(i);
+            }
+        });
+        if (!missIndexes.length) return results;
+
+        // Группируем промахи по (portalId, app, bxUserId) → по одному
+        // findMany с key IN (...) на группу; обычно группа одна.
+        const groups = new Map<string, { where: Prisma.AppCacheWhereInput; indexes: number[] }>();
+        for (const i of missIndexes) {
+            const ref = refs[i];
+            const portalId = await this.resolvePortalId(ref.domain);
+            if (portalId === null) continue;
+            const bxUserId = BigInt(ref.bxUserId ?? 0);
+            const groupKey = `${portalId}|${ref.app}|${bxUserId}`;
+            let group = groups.get(groupKey);
+            if (!group) {
+                group = {
+                    where: { portalId, app: ref.app, bxUserId, key: { in: [] } },
+                    indexes: [],
+                };
+                groups.set(groupKey, group);
+            }
+            (group.where.key as { in: string[] }).in.push(ref.key);
+            group.indexes.push(i);
+        }
+
+        const pipeline = client.pipeline();
+        let rehydrated = 0;
+        for (const group of groups.values()) {
+            const rows = await this.prisma.appCache.findMany({
+                where: group.where,
+            });
+            const byKey = new Map(rows.map(row => [row.key, row]));
+            for (const i of group.indexes) {
+                const row = byKey.get(refs[i].key);
+                if (!row || this.isExpired(row)) continue;
+                results[i] = row.data as T;
+                pipeline.set(
+                    this.redisKeyOf(refs[i]),
+                    JSON.stringify(row.data),
+                    'EX',
+                    this.remainingTtlSec(row),
+                );
+                rehydrated += 1;
+            }
+        }
+        if (rehydrated > 0) {
+            await pipeline.exec();
+            this.logger.debug(
+                `getMany: регидрация из БД → Redis, ключей: ${rehydrated}`,
+            );
+        }
+        return results;
+    }
+
+    /**
+     * Пакетная запись: upsert'ы одной prisma-транзакцией + Redis pipeline.
+     * Семантика каждой записи идентична set(); для потоков мелких ячеек
+     * (airtime-месяцы) экономит N-1 roundtrip'ов в БД и Redis.
+     */
+    async setMany(entries: AppCacheSetOptions[]): Promise<void> {
+        if (!entries.length) return;
+        const client = this.redisService.getClient();
+        const pipeline = client.pipeline();
+        const ops: Prisma.PrismaPromise<unknown>[] = [];
+
+        for (const opts of entries) {
+            const portalId = await this.requirePortalId(opts.domain);
+            const bxUserId = BigInt(opts.bxUserId ?? 0);
+            const serialized = JSON.stringify(opts.data);
+            const checksum = createHash('md5').update(serialized).digest('hex');
+            const expiredAt = opts.ttlSeconds
+                ? new Date(Date.now() + opts.ttlSeconds * 1000)
+                : null;
+
+            const values = {
+                domain: opts.domain,
+                group: opts.group ?? null,
+                data: opts.data as Prisma.InputJsonValue,
+                meta: (opts.meta ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+                tags: (opts.tags ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+                checksum,
+                expiredAt,
+            };
+            ops.push(
+                this.prisma.appCache.upsert({
+                    where: {
+                        portalId_app_key_bxUserId: {
+                            portalId,
+                            app: opts.app,
+                            key: opts.key,
+                            bxUserId,
+                        },
+                    },
+                    create: {
+                        id: randomUUID(),
+                        app: opts.app,
+                        portalId,
+                        bxUserId,
+                        key: opts.key,
+                        ...values,
+                    },
+                    update: values,
+                }),
+            );
+            pipeline.set(
+                this.redisKeyOf(opts),
+                serialized,
+                'EX',
+                opts.ttlSeconds ?? AppCacheService.REHYDRATE_TTL_SEC,
+            );
+        }
+
+        await this.prisma.$transaction(ops);
+        await pipeline.exec();
+        this.logger.debug(`setMany: записано ячеек: ${entries.length}`);
+    }
+
     /** Удаляет запись из БД и Redis. */
     async delete(ref: AppCacheRef): Promise<boolean> {
         const portalId = await this.resolvePortalId(ref.domain);
@@ -290,7 +435,7 @@ export class AppCacheService {
             where,
         });
 
-        if (!filter.group && !filter.keyPrefix) {
+        if (!filter.group && !filter.keyPrefix && !filter.keySuffix) {
             const pattern = buildAppCacheRedisPattern(
                 filter.app,
                 filter.domain,
@@ -401,13 +546,21 @@ export class AppCacheService {
         domain?: string;
         group?: string;
         keyPrefix?: string;
+        keySuffix?: string;
         bxUserId?: number;
     }): Prisma.AppCacheWhereInput {
         const where: Prisma.AppCacheWhereInput = {};
         if (filter.app) where.app = filter.app;
         if (filter.domain) where.domain = filter.domain;
         if (filter.group) where.group = filter.group;
-        if (filter.keyPrefix) where.key = { startsWith: filter.keyPrefix };
+        if (filter.keyPrefix || filter.keySuffix) {
+            where.key = {
+                ...(filter.keyPrefix
+                    ? { startsWith: filter.keyPrefix }
+                    : {}),
+                ...(filter.keySuffix ? { endsWith: filter.keySuffix } : {}),
+            };
+        }
         if (filter.bxUserId !== undefined) {
             where.bxUserId = BigInt(filter.bxUserId);
         }
