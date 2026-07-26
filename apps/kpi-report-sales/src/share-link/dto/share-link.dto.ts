@@ -26,6 +26,8 @@ export const SHARE_LINK_MAX_REFRESHABLE_RANGE_DAYS = 31;
 export const SHARE_LINK_MAX_ACTIVE_PER_CREATOR = 20;
 
 export enum EShareLinkStatus {
+    /** Снимок готовится фоновой джобой (сразу после создания). */
+    PENDING = 'pending',
     ACTIVE = 'active',
     REVOKED = 'revoked',
     ERROR = 'error',
@@ -303,6 +305,14 @@ export class ShareLinkListResponseDto {
 // ─────────────────────────── публичная сторона ───────────────────────────
 
 export class ShareLinkPublicMetaDto {
+    @ApiProperty({
+        description:
+            'ready — снимок готов; generating — ещё строится (данные пустые, ' +
+            'страница показывает «готовится» и подтягивает)',
+        enum: ['ready', 'generating'],
+    })
+    status: 'ready' | 'generating';
+
     @ApiProperty()
     title: string;
 

@@ -9,7 +9,9 @@ import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-dea
  * v2: в сделки добавлены companyId/companyName — месячные сегменты,
  * закэшированные до этого, несовместимы. Старые ключи v1 умрут по TTL.
  */
-export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v2' as const;
+// v3: сделки обзавелись companyColor (перспектива) — старые v2-ключи в
+// кэше без этого поля инвалидируются сменой префикса (протухнут по TTL).
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v3' as const;
 
 /** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
 export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;

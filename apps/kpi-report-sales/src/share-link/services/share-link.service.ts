@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '@/core/prisma';
+import { QueueDispatcherService } from '@/modules/queue';
+import { JobNames } from '@/modules/queue/constants/job-names.enum';
+import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { ShareLink } from 'generated/prisma';
+import type { ShareLinkRefreshJobData } from './share-link-refresh.cron';
 import {
     CreateShareLinkDto,
     EShareLinkStatus,
@@ -35,6 +39,7 @@ export class ShareLinkService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly snapshots: ShareLinkSnapshotService,
+        private readonly dispatcher: QueueDispatcherService,
     ) {}
 
     // ─────────────────────────── создание/CRUD ───────────────────────────
@@ -48,6 +53,11 @@ export class ShareLinkService {
         const now = Date.now();
         const expiresAt = new Date(now + dto.expiresInDays * DAY_MS);
 
+        // Статус PENDING: снимок строится АСИНХРОННО фоновой джобой —
+        // создание возвращается мгновенно (генерация report+calling+
+        // finance×2+airtime занимала десятки секунд и провоцировала
+        // повторные клики/дубли). nextRefreshAt проставит джоба после
+        // первого снимка (markGenerated).
         const link = await this.prisma.shareLink.create({
             data: {
                 id: randomUUID(),
@@ -59,28 +69,39 @@ export class ShareLinkService {
                 title: dto.title?.trim() || this.defaultTitle(dto),
                 filterSnapshot: JSON.stringify(dto.snapshot),
                 isRefreshable: dto.isRefreshable,
-                nextRefreshAt: dto.isRefreshable
-                    ? new Date(now + 900 * 1000)
-                    : null,
+                nextRefreshAt: null,
                 expiresAt,
-                status: EShareLinkStatus.ACTIVE,
+                status: EShareLinkStatus.PENDING,
             },
         });
 
-        // Первый снимок — синхронно: создатель ждёт так же, как ждёт
-        // обычную загрузку отчёта. Ошибка генерации = ссылка не создана.
-        try {
-            await this.snapshots.generate(link, dto.snapshot);
-        } catch (error) {
-            await this.prisma.shareLink.delete({ where: { id: link.id } });
-            throw error;
-        }
+        await this.dispatcher.dispatch<ShareLinkRefreshJobData>(
+            QueueNames.SALES_KPI_REPORT,
+            JobNames.SHARE_LINK_REFRESH,
+            { token } satisfies ShareLinkRefreshJobData,
+            `share-refresh-${token}`,
+            { removeOnComplete: true, removeOnFail: true },
+        );
 
         this.logger.log(
             `Создана ссылка ${token} (${dto.domain}, автор ${dto.creatorBxUserId}, ` +
-                `${dto.isRefreshable ? 'обновляемая' : 'статичная'}, до ${expiresAt.toISOString()})`,
+                `${dto.isRefreshable ? 'обновляемая' : 'статичная'}, до ${expiresAt.toISOString()}) — снимок в очереди`,
         );
         return this.toDto(link);
+    }
+
+    /** Снимок готов (после первой генерации PENDING → ACTIVE). */
+    async markGenerated(link: ShareLink): Promise<ShareLink> {
+        return this.prisma.shareLink.update({
+            where: { id: link.id },
+            data: {
+                status: EShareLinkStatus.ACTIVE,
+                lastRefreshedAt: new Date(),
+                nextRefreshAt: link.isRefreshable
+                    ? new Date(Date.now() + link.refreshIntervalSec * 1000)
+                    : null,
+            },
+        });
     }
 
     async list(
@@ -95,7 +116,13 @@ export class ShareLinkService {
                 ...(includeInactive
                     ? {}
                     : {
-                          status: EShareLinkStatus.ACTIVE,
+                          // PENDING (готовится) тоже показываем владельцу
+                          status: {
+                              in: [
+                                  EShareLinkStatus.PENDING,
+                                  EShareLinkStatus.ACTIVE,
+                              ],
+                          },
                           expiresAt: { gt: new Date() },
                       }),
             },
@@ -161,6 +188,26 @@ export class ShareLinkService {
         if (
             !link ||
             link.status !== EShareLinkStatus.ACTIVE ||
+            link.expiresAt.getTime() <= Date.now()
+        ) {
+            throw new GoneException('Ссылка недействительна');
+        }
+        return link;
+    }
+
+    /**
+     * Публичный доступ: активная ИЛИ готовящаяся (pending) ссылка.
+     * Отозвана/протухла/error → 410. Pending — контроллер отдаст
+     * «generating» без данных (снимок ещё строится).
+     */
+    async getPublicByToken(token: string): Promise<ShareLink> {
+        const link = await this.prisma.shareLink.findUnique({
+            where: { token },
+        });
+        if (
+            !link ||
+            (link.status !== EShareLinkStatus.ACTIVE &&
+                link.status !== EShareLinkStatus.PENDING) ||
             link.expiresAt.getTime() <= Date.now()
         ) {
             throw new GoneException('Ссылка недействительна');
@@ -263,7 +310,10 @@ export class ShareLinkService {
             where: {
                 domain,
                 creatorBxUserId,
-                status: EShareLinkStatus.ACTIVE,
+                // PENDING (готовится) тоже занимает слот лимита
+                status: {
+                    in: [EShareLinkStatus.PENDING, EShareLinkStatus.ACTIVE],
+                },
                 expiresAt: { gt: new Date() },
             },
         });

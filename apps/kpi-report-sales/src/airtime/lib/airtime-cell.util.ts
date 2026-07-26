@@ -33,6 +33,17 @@ const resolveDirection = (
     return null;
 };
 
+const applyRow = (cell: AirtimeMonthCell, row: VoximplantAirtimeRow): void => {
+    const seconds = Number(row.CALL_DURATION) || 0;
+    cell.callsCount += 1;
+    cell.airtimeSeconds += seconds;
+    const direction = resolveDirection(row.CALL_TYPE);
+    if (direction) {
+        cell[direction].count += 1;
+        cell[direction].seconds += seconds;
+    }
+};
+
 /**
  * Агрегация сырых строк в ячейки по сотрудникам. Для каждого userId из
  * списка создаётся ячейка (нулевая, если звонков нет) — нулевые ячейки
@@ -45,22 +56,51 @@ export const aggregateRowsToCells = (
     const cells = new Map<number, AirtimeMonthCell>(
         userIds.map(userId => [userId, emptyAirtimeCell()]),
     );
-
     for (const row of rows) {
         const cell = cells.get(Number(row.PORTAL_USER_ID));
-        if (!cell) continue;
-
-        const seconds = Number(row.CALL_DURATION) || 0;
-        cell.callsCount += 1;
-        cell.airtimeSeconds += seconds;
-
-        const direction = resolveDirection(row.CALL_TYPE);
-        if (direction) {
-            cell[direction].count += 1;
-            cell[direction].seconds += seconds;
-        }
+        if (cell) applyRow(cell, row);
     }
     return cells;
+};
+
+/** День строки статистики: CALL_START_DATE → yyyy-MM-dd (ISO с 'T'). */
+const rowDay = (row: VoximplantAirtimeRow): string =>
+    String(row.CALL_START_DATE ?? '').slice(0, 10);
+
+/**
+ * Агрегация строк в ДНЕВНЫЕ ячейки по (userId, дата). Ключ карты —
+ * `${userId}|${yyyy-MM-dd}`. Для каждой пары (сотрудник × день диапазона)
+ * создаётся нулевая ячейка — иначе тихие дни промахиваются вечно.
+ */
+export const aggregateRowsToDayCells = (
+    rows: readonly VoximplantAirtimeRow[],
+    userIds: readonly number[],
+    dates: readonly string[],
+): Map<string, AirtimeMonthCell> => {
+    const cells = new Map<string, AirtimeMonthCell>();
+    for (const userId of userIds) {
+        for (const date of dates) {
+            cells.set(`${userId}|${date}`, emptyAirtimeCell());
+        }
+    }
+    for (const row of rows) {
+        const cell = cells.get(`${Number(row.PORTAL_USER_ID)}|${rowDay(row)}`);
+        if (cell) applyRow(cell, row);
+    }
+    return cells;
+};
+
+/** Прибавляет source к acc (мутирует acc). */
+export const addCellInto = (
+    acc: AirtimeMonthCell,
+    cell: AirtimeMonthCell,
+): void => {
+    acc.callsCount += cell.callsCount;
+    acc.airtimeSeconds += cell.airtimeSeconds;
+    acc.incoming.count += cell.incoming.count;
+    acc.incoming.seconds += cell.incoming.seconds;
+    acc.outgoing.count += cell.outgoing.count;
+    acc.outgoing.seconds += cell.outgoing.seconds;
 };
 
 /** Прибавляет ячейки source к target (мутирует target; новых юзеров добавляет). */
@@ -70,12 +110,7 @@ export const mergeCellsInto = (
 ): void => {
     for (const [userId, cell] of source) {
         const acc = target.get(userId) ?? emptyAirtimeCell();
-        acc.callsCount += cell.callsCount;
-        acc.airtimeSeconds += cell.airtimeSeconds;
-        acc.incoming.count += cell.incoming.count;
-        acc.incoming.seconds += cell.incoming.seconds;
-        acc.outgoing.count += cell.outgoing.count;
-        acc.outgoing.seconds += cell.outgoing.seconds;
+        addCellInto(acc, cell);
         target.set(userId, acc);
     }
 };

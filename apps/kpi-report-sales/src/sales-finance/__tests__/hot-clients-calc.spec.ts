@@ -25,7 +25,7 @@ function openDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     } as IBXDeal;
 }
 
-const NO_COMPANIES = new Map<number, string>();
+const NO_COMPANIES = new Map<number, { title: string; color: string | null }>();
 
 describe('buildHotClientDeal', () => {
     it('собирает строку сделки со стадией, суммами и историей', () => {
@@ -34,7 +34,7 @@ describe('buildHotClientDeal', () => {
             [{ price: 5000, quantity: 1, measureName: 'лиц.12мес.' }],
             { code: 'sales_offer_create', name: 'Документы' },
             UF,
-            new Map([[512, 'ООО Лютик']]),
+            new Map([[512, { title: 'ООО Лютик', color: 'yellow' }]]),
         );
 
         expect(deal.id).toBe(200);

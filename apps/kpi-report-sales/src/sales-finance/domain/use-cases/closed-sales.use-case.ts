@@ -45,7 +45,7 @@ export class ClosedSalesUseCase {
 
         const dealQuery = new SalesFinanceDealQueryService(bitrix, portal);
         const productRows = new SalesFinanceProductRowsService(bitrix);
-        const companies = new SalesFinanceCompanyService(bitrix);
+        const companies = new SalesFinanceCompanyService(bitrix, portal);
 
         const segments = splitIntoMonthSegments(
             filters.dateFrom,
@@ -120,8 +120,8 @@ export class ClosedSalesUseCase {
         const rowsByDealId = await productRows.getRowsByDealIds(
             bxDeals.map(deal => Number(deal.ID)),
         );
-        // Компании — до кэша сегмента: v2-сегменты уже содержат названия.
-        const companyMap = await companies.getTitleMap(
+        // Компании — до кэша сегмента: сегменты уже содержат название+цвет.
+        const companyMap = await companies.getInfoMap(
             bxDeals.map(deal => dealCompanyId(deal) ?? 0),
         );
 

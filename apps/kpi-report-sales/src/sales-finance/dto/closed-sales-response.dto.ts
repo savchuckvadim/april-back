@@ -120,6 +120,15 @@ export class ClosedSalesDealDto {
         example: 'ООО Ромашка',
     })
     companyName: string | null;
+
+    @ApiProperty({
+        description:
+            'Перспектива компании (pbx op_prospects, code = цвет: green/yellow/red…); null — не задана.',
+        type: String,
+        nullable: true,
+        example: 'green',
+    })
+    companyColor: string | null;
 }
 
 /**

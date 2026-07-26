@@ -128,12 +128,48 @@ export class ConversionsExcelRowDto {
     values: (number | null)[];
 }
 
+/**
+ * Секция листа «Конверсии» — отдел или группа. Считает фронт (итог
+ * секции — из сумм числителей/знаменателей, НЕ среднее процентов),
+ * бэк только рендерит блок с заголовком и своим «Итого».
+ */
+export class ConversionsExcelSectionDto {
+    @ApiProperty({ description: 'Заголовок секции (отдел / группа)' })
+    @IsString()
+    title: string;
+
+    @ApiProperty({
+        description: 'Строки менеджеров секции',
+        type: [ConversionsExcelRowDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ConversionsExcelRowDto)
+    rows: ConversionsExcelRowDto[];
+
+    @ApiProperty({
+        description: 'Итог секции (доли из сумм числителей/знаменателей)',
+        type: 'array',
+        items: { type: 'number', nullable: true },
+    })
+    @IsArray()
+    total: (number | null)[];
+}
+
 export class ConversionsExcelDto {
     @ApiProperty({
         description: 'Способ расчёта: «Цепочка — к предыдущему» и т.п.',
     })
     @IsString()
     methodLabel: string;
+
+    @ApiProperty({
+        description: 'Тип отчёта, из которого выгружены конверсии (для подписи листа)',
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    reportTypeLabel?: string;
 
     @ApiProperty({
         description: 'Заголовки шагов («Звонки → Презентации»)',
@@ -159,6 +195,19 @@ export class ConversionsExcelDto {
     })
     @IsArray()
     total: (number | null)[];
+
+    @ApiProperty({
+        description:
+            'Разбивка по отделам/группам (мульти — отделы и группы с ' +
+            'префиксом отдела, моно — группы); не передана — только сводная',
+        type: [ConversionsExcelSectionDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ConversionsExcelSectionDto)
+    sections?: ConversionsExcelSectionDto[];
 }
 
 export class DownLoadKpiReportDto {

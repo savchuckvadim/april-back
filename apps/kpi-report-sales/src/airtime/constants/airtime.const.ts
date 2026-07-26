@@ -4,6 +4,17 @@ export const AIRTIME_CACHE_APP = 'airtime' as const;
 /** Группа месячных ячеек — для пакетного сброса/инспекции в /app-cache. */
 export const AIRTIME_CACHE_GROUP_MONTH = 'month' as const;
 
+/** Группа дневных ячеек текущего месяца. */
+export const AIRTIME_CACHE_GROUP_DAY = 'day' as const;
+
+/**
+ * TTL дневной ячейки прошедшего дня текущего месяца: 60 суток.
+ * День неизменяем; ячейка нужна лишь пока месяц не закрылся (после
+ * закрытия работает месячная ячейка) — 60 дней с запасом. Чистка —
+ * как у месячных (Redis TTL + почасовой purge БД).
+ */
+export const AIRTIME_DAY_TTL_SECONDS = 60 * 24 * 3600;
+
 /**
  * TTL ячейки прошлого месяца: 180 суток.
  *

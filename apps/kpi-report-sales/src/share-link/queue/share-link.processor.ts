@@ -30,22 +30,31 @@ export class ShareLinkRefreshProcessor {
         const { token } = job.data;
         const link = await this.shareLinks.findByToken(token);
 
-        if (
-            !link ||
-            link.status !== EShareLinkStatus.ACTIVE ||
-            link.expiresAt.getTime() <= Date.now()
-        ) {
-            this.logger.debug(`SHARE_LINK_REFRESH: ${token} уже не активна`);
+        // Обрабатываем и PENDING (первая генерация после создания), и
+        // ACTIVE (плановое/ручное обновление). Отозвана/протухла/error — стоп.
+        const processable =
+            link &&
+            (link.status === EShareLinkStatus.PENDING ||
+                link.status === EShareLinkStatus.ACTIVE) &&
+            link.expiresAt.getTime() > Date.now();
+        if (!link || !processable) {
+            this.logger.debug(`SHARE_LINK_REFRESH: ${token} не подлежит обработке`);
             return;
         }
+        const isFirstSnapshot = link.status === EShareLinkStatus.PENDING;
 
         try {
             await this.snapshots.generate(
                 link,
                 this.shareLinks.parseSnapshot(link),
             );
-            await this.shareLinks.markRefreshed(link);
-            this.logger.log(`Снимок ${token} обновлён`);
+            if (isFirstSnapshot) {
+                await this.shareLinks.markGenerated(link);
+                this.logger.log(`Снимок ${token} сгенерирован (PENDING → ACTIVE)`);
+            } else {
+                await this.shareLinks.markRefreshed(link);
+                this.logger.log(`Снимок ${token} обновлён`);
+            }
         } catch (error) {
             if (error instanceof NotFoundException) {
                 this.logger.error(

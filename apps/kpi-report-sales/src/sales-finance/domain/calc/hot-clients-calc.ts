@@ -13,6 +13,7 @@ import {
     HotClientsTotalsDto,
 } from '../../dto/hot-clients-response.dto';
 import { SalesFinanceUfFields } from '../services/sales-finance-deal-query.service';
+import { CompanyInfo } from '../services/sales-finance-company.service';
 import { dealCompanyId } from './closed-sales-calc';
 
 /** Multiple-поля Bitrix приходят массивом, но страхуемся от строки. */
@@ -29,9 +30,10 @@ export function buildHotClientDeal(
     rows: IBXProductRowRow[],
     stageInfo: { code: string; name: string } | undefined,
     uf: SalesFinanceUfFields,
-    companyMap: Map<number, string>,
+    companyMap: Map<number, CompanyInfo>,
 ): HotClientDealDto {
     const companyId = dealCompanyId(deal);
+    const company = companyId !== null ? companyMap.get(companyId) : undefined;
     return {
         id: Number(deal.ID),
         title: String(deal.TITLE ?? ''),
@@ -44,8 +46,8 @@ export function buildHotClientDeal(
         opHistory: toStringArray(deal[uf.opHistory]),
         comments: toStringArray(deal[uf.presComments]),
         companyId,
-        companyName:
-            companyId !== null ? (companyMap.get(companyId) ?? null) : null,
+        companyName: company?.title ?? null,
+        companyColor: company?.color ?? null,
     };
 }
 

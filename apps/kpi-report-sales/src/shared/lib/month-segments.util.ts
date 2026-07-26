@@ -50,6 +50,42 @@ export function firstDayOfNextMonth(month: IsoMonth): IsoDate {
     return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01` as IsoDate;
 }
 
+/** Date → yyyy-MM-dd (локальные компоненты — как воспринимает фильтр отчёта). */
+export function toIsoDateOf(d: Date): IsoDate {
+    return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Календарный месяц Date → yyyy-MM. */
+export function monthOf(d: Date): IsoMonth {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` as IsoMonth;
+}
+
+/** Следующий календарный день (эксклюзивная граница `<` для выборок дня). */
+export function nextDay(date: IsoDate): IsoDate {
+    const { year, monthIndex, day } = parseIsoDate(date);
+    const d = new Date(Date.UTC(year, monthIndex, day + 1));
+    return toIsoDate(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** Предыдущий календарный день. */
+export function prevDay(date: IsoDate): IsoDate {
+    const { year, monthIndex, day } = parseIsoDate(date);
+    const d = new Date(Date.UTC(year, monthIndex, day - 1));
+    return toIsoDate(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** Список дат [from..to] включительно (yyyy-MM-dd); from>to → пусто. */
+export function enumerateDates(from: IsoDate, to: IsoDate): IsoDate[] {
+    if (from > to) return [];
+    const dates: IsoDate[] = [];
+    let cursor = from;
+    while (cursor <= to) {
+        dates.push(cursor);
+        cursor = nextDay(cursor);
+    }
+    return dates;
+}
+
 /**
  * Разбивает [dateFrom..dateTo] (yyyy-MM-dd, включительно) на сегменты
  * по календарным месяцам. from > to → пустой массив.

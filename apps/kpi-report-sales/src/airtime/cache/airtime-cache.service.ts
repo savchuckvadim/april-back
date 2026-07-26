@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { AppCacheService, AppCacheResetResponseDto } from '@lib/app-cache';
-import type { IsoMonth } from '../../shared/lib/month-segments.util';
+import type { IsoDate, IsoMonth } from '../../shared/lib/month-segments.util';
 import type { AirtimeMonthCell } from '../types/airtime-statistic.type';
-import { buildAirtimeCellKey } from './airtime-cache-key.util';
+import { buildAirtimeCellKey, buildAirtimeDayKey } from './airtime-cache-key.util';
 import {
     AIRTIME_CACHE_APP,
+    AIRTIME_CACHE_GROUP_DAY,
     AIRTIME_CACHE_GROUP_MONTH,
+    AIRTIME_DAY_TTL_SECONDS,
     AIRTIME_MONTH_TTL_SECONDS,
 } from '../constants/airtime.const';
 
@@ -72,6 +74,55 @@ export class AirtimeCacheService {
                 data: cell,
                 ttlSeconds: AIRTIME_MONTH_TTL_SECONDS,
             })),
+        );
+    }
+
+    /**
+     * Дневные ячейки прошедших дней текущего месяца по (дата × сотрудник).
+     * Результат — Map по ключу `${userId}|${date}`; null — промах.
+     * Один Redis MGET + один findMany на все промахи.
+     */
+    async getDayCells(
+        domain: string,
+        dates: IsoDate[],
+        userIds: number[],
+    ): Promise<Map<string, AirtimeMonthCell | null>> {
+        const refs = dates.flatMap(date =>
+            userIds.map(userId => ({
+                app: AIRTIME_CACHE_APP,
+                domain,
+                key: buildAirtimeDayKey(userId, date),
+                pair: `${userId}|${date}`,
+            })),
+        );
+        const cells = await this.appCache.getMany<AirtimeMonthCell>(
+            refs.map(({ app, domain: d, key }) => ({ app, domain: d, key })),
+        );
+        return new Map(refs.map((ref, i) => [ref.pair, cells[i]]));
+    }
+
+    /**
+     * Пишет дневные ячейки (write-through). Ключ карты — `${userId}|${date}`.
+     * Нулевые ячейки (день без звонков) писать обязательно — иначе тихие
+     * дни промахиваются вечно.
+     */
+    async setDayCells(
+        domain: string,
+        cells: ReadonlyMap<string, AirtimeMonthCell>,
+    ): Promise<void> {
+        if (!cells.size) return;
+        await this.appCache.setMany(
+            [...cells.entries()].map(([pair, cell]) => {
+                const [userId, date] = pair.split('|');
+                return {
+                    app: AIRTIME_CACHE_APP,
+                    domain,
+                    key: buildAirtimeDayKey(Number(userId), date as IsoDate),
+                    group: AIRTIME_CACHE_GROUP_DAY,
+                    data: cell,
+                    ttlSeconds: AIRTIME_DAY_TTL_SECONDS,
+                };
+            }),
         );
     }
 

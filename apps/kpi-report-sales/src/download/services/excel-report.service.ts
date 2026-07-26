@@ -361,6 +361,12 @@ export class ExcelReportService {
         this.renderDateHeader(dto, sheet);
         sheet.addRow([]);
 
+        if (conversions.reportTypeLabel) {
+            const typeRow = sheet.addRow([
+                `Тип отчёта: ${conversions.reportTypeLabel}`,
+            ]);
+            typeRow.font = { bold: true, size: 12 };
+        }
         const methodRow = sheet.addRow([
             `Способ расчёта: ${conversions.methodLabel}`,
         ]);
@@ -386,29 +392,57 @@ export class ExcelReportService {
             });
         };
 
-        for (const item of conversions.rows) {
-            const row = sheet.addRow([item.userName]);
-            const nameCell = row.getCell(1);
-            nameCell.font = { bold: true, size: 10 };
-            nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
-            nameCell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFDDDDDD' },
-            };
-            writePercentCells(row, item.values);
-        }
+        const writeRowsBlock = (
+            rows: ConversionsExcelDto['rows'],
+            total: (number | null)[],
+            totalLabel: string,
+        ) => {
+            for (const item of rows) {
+                const row = sheet.addRow([item.userName]);
+                const nameCell = row.getCell(1);
+                nameCell.font = { bold: true, size: 10 };
+                nameCell.alignment = {
+                    vertical: 'middle',
+                    horizontal: 'left',
+                };
+                nameCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFDDDDDD' },
+                };
+                writePercentCells(row, item.values);
+            }
 
-        const totalRow = sheet.addRow(['Итого']);
-        totalRow.font = { bold: true };
-        writePercentCells(totalRow, conversions.total);
-        totalRow.eachCell(cell => {
-            cell.fill = {
+            const totalRow = sheet.addRow([totalLabel]);
+            totalRow.font = { bold: true };
+            writePercentCells(totalRow, total);
+            totalRow.eachCell(cell => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFEEEEEE' },
+                };
+            });
+        };
+
+        writeRowsBlock(conversions.rows, conversions.total, 'Итого');
+
+        // Разбивка по отделам/группам (как на KPI-листах): заголовок секции
+        // + свой «Итого» из сумм числителей/знаменателей (считает фронт).
+        for (const section of conversions.sections ?? []) {
+            if (!section.rows.length) continue;
+            sheet.addRow([]);
+            const titleRow = sheet.addRow([section.title]);
+            titleRow.font = { bold: true, size: 12 };
+            titleRow.getCell(1).fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFEEEEEE' },
+                fgColor: { argb: 'FFBFBFBF' },
             };
-        });
+            const sectionHead = sheet.addRow(['ФИО', ...conversions.columns]);
+            this.styleHeadRow(sectionHead);
+            writeRowsBlock(section.rows, section.total, 'Итого по секции');
+        }
 
         sheet.columns = new Array(conversions.columns.length + 1)
             .fill(null)

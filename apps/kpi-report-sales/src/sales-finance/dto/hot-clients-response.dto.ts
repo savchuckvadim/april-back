@@ -99,6 +99,15 @@ export class HotClientDealDto {
         example: 'ООО Лютик',
     })
     companyName: string | null;
+
+    @ApiProperty({
+        description:
+            'Перспектива компании (pbx op_prospects, code = цвет: green/yellow/red…); null — не задана.',
+        type: String,
+        nullable: true,
+        example: 'yellow',
+    })
+    companyColor: string | null;
 }
 
 /**

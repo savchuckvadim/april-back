@@ -1,10 +1,15 @@
 import { Logger } from '@nestjs/common';
 import { BitrixBaseApi } from '@lib/bitrix';
 import {
+    enumerateDates,
     firstDayOfNextMonth,
     IsoDate,
     MonthSegment,
+    monthOf,
+    nextDay,
+    prevDay,
     splitIntoMonthSegments,
+    toIsoDateOf,
 } from '../../shared/lib/month-segments.util';
 import { GetAirtimeStatisticDto } from '../dto/airtime-statistic.dto';
 import { AirtimeCacheService } from '../cache/airtime-cache.service';
@@ -16,8 +21,11 @@ import {
     VoximplantStatisticEnvelope,
 } from '../types/airtime-statistic.type';
 import {
+    addCellInto,
     aggregateRowsToCells,
+    aggregateRowsToDayCells,
     cellsToUserResults,
+    emptyAirtimeCell,
     mergeCellsInto,
 } from '../lib/airtime-cell.util';
 
@@ -73,10 +81,13 @@ export class AirtimeStatisticUseCase {
         // учитывать срез по часам.
         const hasTimePart = (value: string) => value.length > 10;
 
+        const now = new Date();
+        const today = toIsoDateOf(now);
+        const currentMonth = monthOf(now);
         const segments = splitIntoMonthSegments(
             rawFrom.slice(0, 10) as IsoDate,
             rawTo.slice(0, 10) as IsoDate,
-            new Date(),
+            now,
         );
 
         const totals = new Map<number, AirtimeMonthCell>();
@@ -86,21 +97,36 @@ export class AirtimeStatisticUseCase {
         for (const [index, segment] of segments.entries()) {
             const isFirst = index === 0;
             const isLast = index === segments.length - 1;
-            const cacheable =
-                segment.cacheable &&
-                !(isFirst && hasTimePart(rawFrom)) &&
-                !(isLast && hasTimePart(rawTo));
+            const timeEdge =
+                (isFirst && hasTimePart(rawFrom)) ||
+                (isLast && hasTimePart(rawTo));
 
-            const loaded = cacheable
-                ? await this.loadCacheableMonth(segment, userIds, rowBudget)
-                : await this.loadLiveSegment(
-                      userIds,
-                      // Краевые сегменты сохраняют исходные (строгие) границы
-                      // запроса — семантика 1:1 с прежней единой выборкой.
-                      isFirst ? rawFrom : segment.from,
-                      isLast ? rawTo : firstDayOfNextMonth(segment.month),
-                      rowBudget,
-                  );
+            let loaded: SegmentLoad;
+            if (segment.cacheable && !timeEdge) {
+                // Полный прошлый месяц — месячная ячейка.
+                loaded = await this.loadCacheableMonth(
+                    segment,
+                    userIds,
+                    rowBudget,
+                );
+            } else if (segment.month === currentMonth && !timeEdge) {
+                // Текущий месяц — прошедшие дни поднёвно из кэша, сегодня живьём.
+                loaded = await this.loadCurrentMonthDays(
+                    segment.from,
+                    segment.to,
+                    userIds,
+                    today,
+                    rowBudget,
+                );
+            } else {
+                // Неполный краевой сегмент / дата с временем — живьём без кэша.
+                loaded = await this.loadLiveSegment(
+                    userIds,
+                    isFirst ? rawFrom : segment.from,
+                    isLast ? rawTo : firstDayOfNextMonth(segment.month),
+                    rowBudget,
+                );
+            }
 
             mergeCellsInto(totals, loaded.cells);
             rowsFetched += loaded.rowsFetched;
@@ -157,7 +183,91 @@ export class AirtimeStatisticUseCase {
         return { cells, rowsFetched: rows.length, truncated };
     }
 
-    /** Текущий месяц / неполный краевой сегмент — всегда живьём, без кэша. */
+    /**
+     * Текущий месяц: прошедшие дни — поднёвные ячейки из кэша (недостающие
+     * добираются ОДНОЙ выборкой span'а промахов и кэшируются, включая нули);
+     * СЕГОДНЯ — живой запрос без кэша («сегодня данные ещё меняются»).
+     */
+    private async loadCurrentMonthDays(
+        segFrom: IsoDate,
+        segTo: IsoDate,
+        userIds: number[],
+        today: IsoDate,
+        maxRows: number,
+    ): Promise<SegmentLoad> {
+        const cells = new Map<number, AirtimeMonthCell>(
+            userIds.map(id => [id, emptyAirtimeCell()]),
+        );
+        let rowsFetched = 0;
+        let truncated = false;
+
+        // Прошедшие дни: [segFrom .. min(segTo, вчера)]
+        const yesterday = prevDay(today);
+        const completedEnd = segTo < yesterday ? segTo : yesterday;
+        if (segFrom <= completedEnd) {
+            const days = enumerateDates(segFrom, completedEnd);
+            const cached = await this.cache.getDayCells(
+                this.domain,
+                days,
+                userIds,
+            );
+
+            const missingDates = new Set<string>();
+            const missingUsers = new Set<number>();
+            for (const [pair, cell] of cached) {
+                if (!cell) {
+                    const [u, d] = pair.split('|');
+                    missingDates.add(d!);
+                    missingUsers.add(Number(u));
+                }
+            }
+
+            if (missingDates.size) {
+                const sorted = [...missingDates].sort();
+                const fetchFrom = sorted[0] as IsoDate;
+                const fetchTo = sorted[sorted.length - 1] as IsoDate;
+                const usersArr = [...missingUsers];
+                const { rows, truncated: tr } = await this.fetchRows(
+                    this.buildFilter(usersArr, fetchFrom, nextDay(fetchTo)),
+                    maxRows,
+                );
+                rowsFetched += rows.length;
+                truncated = truncated || tr;
+
+                const fresh = aggregateRowsToDayCells(
+                    rows,
+                    usersArr,
+                    enumerateDates(fetchFrom, fetchTo),
+                );
+                if (!tr) {
+                    await this.cache.setDayCells(this.domain, fresh);
+                }
+                for (const [pair, cell] of fresh) cached.set(pair, cell);
+            }
+
+            for (const [pair, cell] of cached) {
+                if (!cell) continue;
+                const acc = cells.get(Number(pair.split('|')[0]!));
+                if (acc) addCellInto(acc, cell);
+            }
+        }
+
+        // Сегодня (если период его включает) — живьём.
+        if (segTo >= today) {
+            const todayFrom = segFrom > today ? segFrom : today;
+            const { rows, truncated: tr } = await this.fetchRows(
+                this.buildFilter(userIds, todayFrom, nextDay(segTo)),
+                maxRows,
+            );
+            rowsFetched += rows.length;
+            truncated = truncated || tr;
+            mergeCellsInto(cells, aggregateRowsToCells(rows, userIds));
+        }
+
+        return { cells, rowsFetched, truncated };
+    }
+
+    /** Неполный краевой сегмент / дата с временем — всегда живьём, без кэша. */
     private async loadLiveSegment(
         userIds: number[],
         fromExclusive: string,

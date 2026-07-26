@@ -5,6 +5,7 @@
 import { IBXDeal } from '@/modules/bitrix';
 import { IBXProductRowRow } from '@/modules/bitrix/domain/crm/product-row/interface/bx-product-row.interface';
 import { countContractMonths, parseContractDate } from '@lib/shared/lib/date';
+import { CompanyInfo } from '../services/sales-finance-company.service';
 import {
     roundMoney,
     sumRowsMonthly,
@@ -34,7 +35,7 @@ export function buildClosedSalesDeal(
     deal: IBXDeal,
     rows: IBXProductRowRow[],
     uf: SalesFinanceUfFields,
-    companyMap: Map<number, string>,
+    companyMap: Map<number, CompanyInfo>,
 ): ClosedSalesDealDto {
     const contractStartDate = parseContractDate(deal[uf.contractStart]);
     const contractEndDate = parseContractDate(deal[uf.contractEnd]);
@@ -45,6 +46,7 @@ export function buildClosedSalesDeal(
 
     const monthlyAmount = sumRowsMonthly(rows);
     const companyId = dealCompanyId(deal);
+    const company = companyId !== null ? companyMap.get(companyId) : undefined;
 
     return {
         id: Number(deal.ID),
@@ -60,8 +62,8 @@ export function buildClosedSalesDeal(
         contractMonths,
         expectedContractAmount: roundMoney(monthlyAmount * contractMonths),
         companyId,
-        companyName:
-            companyId !== null ? (companyMap.get(companyId) ?? null) : null,
+        companyName: company?.title ?? null,
+        companyColor: company?.color ?? null,
     };
 }
 

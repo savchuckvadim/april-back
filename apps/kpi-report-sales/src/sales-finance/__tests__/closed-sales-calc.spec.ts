@@ -25,7 +25,7 @@ function wonDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     } as IBXDeal;
 }
 
-const NO_COMPANIES = new Map<number, string>();
+const NO_COMPANIES = new Map<number, { title: string; color: string | null }>();
 
 describe('buildClosedSalesDeal', () => {
     it('аванс, месяцы и ожидаемая сумма для договора на 12 месяцев', () => {
@@ -56,7 +56,7 @@ describe('buildClosedSalesDeal', () => {
             wonDeal({ COMPANY_ID: '512' }),
             [],
             UF,
-            new Map([[512, 'ООО Ромашка']]),
+            new Map([[512, { title: 'ООО Ромашка', color: 'green' }]]),
         );
         expect(withCompany.companyId).toBe(512);
         expect(withCompany.companyName).toBe('ООО Ромашка');

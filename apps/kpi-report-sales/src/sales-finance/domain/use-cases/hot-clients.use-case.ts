@@ -47,7 +47,8 @@ export class HotClientsUseCase {
         );
         const companyMap = await new SalesFinanceCompanyService(
             bitrix,
-        ).getTitleMap(bxDeals.map(deal => dealCompanyId(deal) ?? 0));
+            portal,
+        ).getInfoMap(bxDeals.map(deal => dealCompanyId(deal) ?? 0));
 
         const deals = bxDeals.map(deal =>
             buildHotClientDeal(

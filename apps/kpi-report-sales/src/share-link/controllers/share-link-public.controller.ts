@@ -11,7 +11,10 @@ import { Response } from 'express';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ShareLinkService } from '../services/share-link.service';
 import { ShareLinkSnapshotService } from '../services/share-link-snapshot.service';
-import { ShareLinkPublicResponseDto } from '../dto/share-link.dto';
+import {
+    EShareLinkStatus,
+    ShareLinkPublicResponseDto,
+} from '../dto/share-link.dto';
 import { ExcelReportService } from '../../download/services/excel-report.service';
 import { DownLoadKpiReportDto } from '../../download/dto/get-excel-report.dto';
 
@@ -43,12 +46,35 @@ export class ShareLinkPublicController {
     async getSnapshot(
         @Param('token') token: string,
     ): Promise<ShareLinkPublicResponseDto> {
-        const link = await this.service.getActiveByToken(token);
+        const link = await this.service.getPublicByToken(token);
         const snapshot = this.service.parseSnapshot(link);
 
-        // AppCache: Redis → БД-фолбэк; совсем пусто (вычищено вручную) —
-        // регенерируем синхронно, зритель подождёт один раз.
+        const meta = {
+            title: link.title,
+            creatorName: link.creatorName,
+            periodFrom: snapshot.reportFilters?.dateFrom ?? null,
+            periodTo: snapshot.reportFilters?.dateTo ?? null,
+            isRefreshable: link.isRefreshable,
+            refreshIntervalSec: link.refreshIntervalSec,
+            lastRefreshedAt: link.lastRefreshedAt?.toISOString() ?? null,
+            expiresAt: link.expiresAt.toISOString(),
+        };
+
+        // Снимок ещё готовится (создание async) — отдаём generating без
+        // данных; страница показывает «отчёт готовится» и подтягивает.
         let data = await this.snapshots.load(link);
+        if (!data && link.status === EShareLinkStatus.PENDING) {
+            return {
+                meta: { ...meta, status: 'generating', generatedAt: '' },
+                report: [],
+                callings: [],
+                finance: null,
+                airtime: null,
+                ui: snapshot.ui ?? {},
+            };
+        }
+
+        // ACTIVE, но снимок вычищен вручную — регенерируем синхронно (редко).
         if (!data) {
             data = await this.snapshots.generate(link, snapshot);
         }
@@ -57,14 +83,8 @@ export class ShareLinkPublicController {
 
         return {
             meta: {
-                title: link.title,
-                creatorName: link.creatorName,
-                periodFrom: snapshot.reportFilters?.dateFrom ?? null,
-                periodTo: snapshot.reportFilters?.dateTo ?? null,
-                isRefreshable: link.isRefreshable,
-                refreshIntervalSec: link.refreshIntervalSec,
-                lastRefreshedAt: link.lastRefreshedAt?.toISOString() ?? null,
-                expiresAt: link.expiresAt.toISOString(),
+                ...meta,
+                status: 'ready',
                 generatedAt: data.generatedAt,
             },
             report: data.report,

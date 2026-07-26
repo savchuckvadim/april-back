@@ -1,5 +1,6 @@
 import {
     aggregateRowsToCells,
+    aggregateRowsToDayCells,
     cellsToUserResults,
     emptyAirtimeCell,
     mergeCellsInto,
@@ -13,11 +14,13 @@ const row = (
     userId: string,
     duration: number,
     callType: number,
+    startDate?: string,
 ): VoximplantAirtimeRow => ({
-    CALL_ID: `${userId}-${duration}-${callType}`,
+    CALL_ID: `${userId}-${duration}-${callType}-${startDate ?? ''}`,
     PORTAL_USER_ID: userId,
     CALL_DURATION: String(duration),
     CALL_TYPE: String(callType),
+    ...(startDate ? { CALL_START_DATE: startDate } : {}),
 });
 
 describe('airtime-cell.util', () => {
@@ -78,6 +81,25 @@ describe('airtime-cell.util', () => {
             outgoing: { count: 2, seconds: 50 },
         });
         expect(target.get(2)).toEqual(emptyAirtimeCell());
+    });
+
+    it('aggregateRowsToDayCells: бакетит по (userId, день) из CALL_START_DATE, нули для всех пар', () => {
+        const cells = aggregateRowsToDayCells(
+            [
+                row('1', 60, 1, '2026-07-01T10:00:00+03:00'),
+                row('1', 40, 2, '2026-07-01T18:00:00+03:00'),
+                row('1', 30, 1, '2026-07-02T09:00:00+03:00'),
+            ],
+            [1, 2],
+            ['2026-07-01', '2026-07-02'],
+        );
+
+        expect(cells.get('1|2026-07-01')?.callsCount).toBe(2);
+        expect(cells.get('1|2026-07-01')?.airtimeSeconds).toBe(100);
+        expect(cells.get('1|2026-07-02')?.airtimeSeconds).toBe(30);
+        // тихий сотрудник/день — нулевая ячейка обязательна
+        expect(cells.get('2|2026-07-01')).toEqual(emptyAirtimeCell());
+        expect(cells.get('2|2026-07-02')).toEqual(emptyAirtimeCell());
     });
 
     it('cellsToUserResults: порядок и имена из departament, нули для отсутствующих', () => {
