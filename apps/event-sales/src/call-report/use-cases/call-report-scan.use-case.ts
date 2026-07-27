@@ -22,6 +22,12 @@ export interface CallReportScanOptions {
     windowHours?: number;
     /** Максимум звонков в очередь за один скан (default env CALL_REPORT_MAX_PER_RUN | 10). */
     maxPerRun?: number;
+    /**
+     * ДЕМО-режим портала: анализировать только этих сотрудников (bitrix-id).
+     * Источник — суффикс домена в CALL_REPORT_DOMAINS
+     * (`domain:222|323`). Применяется ПОВЕРХ фильтра отдела продаж.
+     */
+    allowedUserIds?: number[];
 }
 
 export interface CallReportScanResult {
@@ -31,6 +37,8 @@ export interface CallReportScanResult {
     skippedNonDeal: number;
     skippedNoAudio: number;
     skippedNotSales: number;
+    /** Отсеяно демо-фильтром сотрудников (allowedUserIds). */
+    skippedNotDemo?: number;
     enqueued: number;
 }
 
@@ -138,7 +146,26 @@ export class CallReportScanUseCase {
               })
             : rows;
 
-        const candidates = salesRows.filter(row => row.CRM_ACTIVITY_ID);
+        // ДЕМО-режим портала: только указанные сотрудники (поверх фильтра ОП).
+        const demoIds = options?.allowedUserIds?.length
+            ? new Set(options.allowedUserIds)
+            : null;
+        const demoRows = demoIds
+            ? salesRows.filter(row => {
+                  const allowed = demoIds.has(Number(row.PORTAL_USER_ID));
+                  if (!allowed) {
+                      result.skippedNotDemo = (result.skippedNotDemo ?? 0) + 1;
+                  }
+                  return allowed;
+              })
+            : salesRows;
+        if (demoIds) {
+            this.logger.log(
+                `Демо-режим ${domain}: сотрудники [${options?.allowedUserIds?.join(', ')}]`,
+            );
+        }
+
+        const candidates = demoRows.filter(row => row.CRM_ACTIVITY_ID);
         const dedupKeys = candidates.map(row =>
             buildDedupKey(domain, String(row.CRM_ACTIVITY_ID)),
         );

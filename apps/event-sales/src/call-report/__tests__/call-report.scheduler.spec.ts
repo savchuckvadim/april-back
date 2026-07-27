@@ -66,8 +66,24 @@ describe('CallReportScheduler', () => {
         });
         await scheduler.tick();
         expect(scan.execute).toHaveBeenCalledTimes(2);
-        expect(scan.execute).toHaveBeenCalledWith('b.bitrix24.ru');
+        expect(scan.execute).toHaveBeenCalledWith('b.bitrix24.ru', {
+            allowedUserIds: undefined,
+        });
         expect(redisClient.del).toHaveBeenCalled();
+    });
+
+    it('демо-режим: суффикс domain:222|323 передаёт allowedUserIds в скан', async () => {
+        const { scheduler, scan } = makeDeps({
+            enabled: '1',
+            domains: 'a.bitrix24.ru:222|323, b.bitrix24.ru',
+        });
+        await scheduler.tick();
+        expect(scan.execute).toHaveBeenCalledWith('a.bitrix24.ru', {
+            allowedUserIds: [222, 323],
+        });
+        expect(scan.execute).toHaveBeenCalledWith('b.bitrix24.ru', {
+            allowedUserIds: undefined,
+        });
     });
 
     it('перед сканом выполняется реанимация зависших processing', async () => {
