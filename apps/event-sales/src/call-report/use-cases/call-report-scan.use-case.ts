@@ -162,10 +162,16 @@ export class CallReportScanUseCase {
                 );
                 continue;
             }
-            if (
-                Number(activity.OWNER_TYPE_ID) !==
-                Number(BitrixOwnerTypeId.DEAL)
-            ) {
+            // Активные продажи: звонки идут и по сделкам, и по ЛИДАМ (до
+            // конвертации) — берём оба типа владельца; остальное — скип.
+            const ownerTypeId = Number(activity.OWNER_TYPE_ID);
+            const entityType =
+                ownerTypeId === Number(BitrixOwnerTypeId.DEAL)
+                    ? ('deal' as const)
+                    : ownerTypeId === Number(BitrixOwnerTypeId.LEAD)
+                      ? ('lead' as const)
+                      : null;
+            if (!entityType) {
                 result.skippedNonDeal++;
                 continue;
             }
@@ -178,6 +184,7 @@ export class CallReportScanUseCase {
                 domain,
                 activityId,
                 dealId: Number(activity.OWNER_ID),
+                entityType,
                 callId: row.CALL_ID,
                 callStartedAtIso: row.CALL_START_DATE,
                 durationSec: row.CALL_DURATION

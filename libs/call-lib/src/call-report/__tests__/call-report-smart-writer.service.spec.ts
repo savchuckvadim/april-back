@@ -21,6 +21,7 @@ const makeBitrix = () => ({
     item: {
         add: jest.fn().mockResolvedValue({ result: { item: { id: 7 } } }),
         list: jest.fn().mockResolvedValue({ result: { items: [] } }),
+        update: jest.fn().mockResolvedValue({ result: {} }),
     },
 });
 

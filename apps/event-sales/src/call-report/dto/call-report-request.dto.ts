@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    IsBoolean,
     IsInt,
     IsNotEmpty,
     IsOptional,
@@ -128,7 +129,10 @@ export class AnalyzeCallDto {
         description:
             'Bitrix-id менеджера НА ЭТОМ ПОРТАЛЕ (не id из нашей БД) — ' +
             'режим подбора: последние звонки этого менеджера ' +
-            '(voximplant PORTAL_USER_ID).',
+            '(voximplant PORTAL_USER_ID). НЕ передан вместе с dealId и ' +
+            'activityId — включается режим department: менеджеры берутся ' +
+            'автоматически из отдела продаж портала (bx-department), их ' +
+            'список возвращается в salesUserIds.',
         example: 7,
         type: Number,
         minimum: 1,
@@ -209,4 +213,20 @@ export class AnalyzeCallDto {
     @IsInt()
     @Min(1)
     durationSec?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'ПОЛНЫЙ FLOW одним вызовом: после конвейера создать БАЗОВЫЙ ' +
+            'элемент смарта «AI-анализ звонков» (связи сделка/лид/компания/' +
+            'контакт/менеджер, транскрипт, gigachat-резюме, тип звонка, ' +
+            'запись разговора с плеером в таймлайне). Глубокие поля анализа ' +
+            'позже дополнит агент — тот же элемент, без дублей (upsert по ' +
+            'xmlId). По умолчанию false — смарт создаёт только агент.',
+        example: true,
+        type: Boolean,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    createSmartItem?: boolean;
 }

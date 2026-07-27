@@ -24,6 +24,11 @@ export const TRANSCRIPTION_BUSY_STATUSES: TranscriptionPipelineStatus[] = [
 
 /** Единая конвенция entity_type для конвейера (см. call-report). */
 export const CALL_REPORT_ENTITY_TYPE_DEAL = 'deal';
+/** Звонок по лиду (активные продажи: до конвертации в сделку). */
+export const CALL_REPORT_ENTITY_TYPE_LEAD = 'lead';
+export type CallReportEntityType =
+    | typeof CALL_REPORT_ENTITY_TYPE_DEAL
+    | typeof CALL_REPORT_ENTITY_TYPE_LEAD;
 
 /** Собирает ключ идемпотентности автоконвейера. */
 export function buildDedupKey(

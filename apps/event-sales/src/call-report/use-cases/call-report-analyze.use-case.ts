@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { BitrixOwnerTypeId } from '@lib/bitrix';
+import { BxDepartmentService } from 'libs/bx-department/services/bx-department.service';
+import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
     buildDedupKey,
     CallAnalysisBitrixService,
+    CallReportBaseItemService,
     TranscriptionStoreService,
 } from '@lib/call-lib';
 import {
@@ -52,6 +55,8 @@ export class CallReportAnalyzeUseCase {
         private readonly pbxService: PBXService,
         private readonly pipeline: CallReportPipelineUseCase,
         private readonly transcriptionStore: TranscriptionStoreService,
+        private readonly baseItem: CallReportBaseItemService,
+        private readonly bxDepartmentService: BxDepartmentService,
     ) {}
 
     async execute(dto: AnalyzeCallDto): Promise<AnalyzeCallsResponseDto> {
@@ -59,11 +64,40 @@ export class CallReportAnalyzeUseCase {
             return this.runDirect(dto);
         }
         if (!dto.dealId && !dto.userId) {
-            throw new BadRequestException(
-                'Без activityId укажите dealId или userId (bitrix-id менеджера) — иначе непонятно, чьи звонки брать',
-            );
+            // Режим department: менеджеры определяются автоматически из
+            // отдела продаж портала — как в cron-сканере, но с диагностикой
+            // (salesUserIds в ответе: видно, кого нашёл bx-department).
+            return this.runDepartmentSelection(dto);
         }
         return this.runSelection(dto);
+    }
+
+    /** Режим department: подбор по всем менеджерам ОП (bx-department). */
+    private async runDepartmentSelection(
+        dto: AnalyzeCallDto,
+    ): Promise<AnalyzeCallsResponseDto> {
+        const response = await this.bxDepartmentService.getFullDepartment(
+            dto.domain,
+            EDepartamentGroup.sales,
+        );
+        const salesUserIds = Array.from(
+            new Set(
+                (response.department.allUsers ?? [])
+                    .map(user => Number(user.ID))
+                    .filter(id => Number.isFinite(id) && id > 0),
+            ),
+        );
+        if (!salesUserIds.length) {
+            throw new BadRequestException(
+                `Отдел продаж на ${dto.domain} пуст или не настроен ` +
+                    '(bx-department) — укажите userId явно',
+            );
+        }
+        this.logger.log(
+            `Режим department (${dto.domain}): менеджеры ОП [${salesUserIds.join(', ')}]`,
+        );
+        const result = await this.runSelection(dto, new Set(salesUserIds));
+        return { ...result, mode: 'department', salesUserIds };
     }
 
     /** Прямой режим: конкретная активность, сделка — из владельца при необходимости. */
@@ -76,6 +110,7 @@ export class CallReportAnalyzeUseCase {
         );
 
         let dealId = dto.dealId;
+        let entityType: 'deal' | 'lead' = 'deal';
         if (!dealId) {
             const { bitrix } = await this.pbxService.init(dto.domain);
             const bx = new CallAnalysisBitrixService(bitrix);
@@ -85,27 +120,28 @@ export class CallReportAnalyzeUseCase {
                     `Активность ${activityId} не найдена (${dto.domain})`,
                 );
             }
-            if (
-                Number(activity.OWNER_TYPE_ID) !==
-                Number(BitrixOwnerTypeId.DEAL)
-            ) {
+            const resolved = this.resolveOwner(activity.OWNER_TYPE_ID);
+            if (!resolved) {
                 throw new BadRequestException(
-                    `Активность ${activityId} принадлежит не сделке ` +
-                        `(OWNER_TYPE_ID=${activity.OWNER_TYPE_ID}) — контур 1 работает по сделкам, укажите dealId явно`,
+                    `Активность ${activityId} принадлежит не сделке и не лиду ` +
+                        `(OWNER_TYPE_ID=${activity.OWNER_TYPE_ID}) — укажите dealId явно`,
                 );
             }
+            entityType = resolved;
             dealId = Number(activity.OWNER_ID);
-            this.logger.log(
-                `Сделка определена по владельцу активности: ${dealId}`,
-            );
+            this.logger.log(`Владелец активности: ${entityType} ${dealId}`);
         }
 
-        const item = await this.runPipelineSafe({
-            domain: dto.domain,
-            activityId,
-            dealId,
-            durationSec: dto.durationSec,
-        });
+        const item = await this.runPipelineSafe(
+            {
+                domain: dto.domain,
+                activityId,
+                dealId,
+                entityType,
+                durationSec: dto.durationSec,
+            },
+            dto.createSmartItem,
+        );
         return {
             domain: dto.domain,
             mode: 'direct',
@@ -117,9 +153,13 @@ export class CallReportAnalyzeUseCase {
         };
     }
 
-    /** Режим подбора: последние записи по dealId/userId из voximplant. */
+    /**
+     * Режим подбора: последние записи по dealId/userId из voximplant.
+     * salesFilter (режим department) — допустимые PORTAL_USER_ID менеджеров ОП.
+     */
     private async runSelection(
         dto: AnalyzeCallDto,
+        salesFilter?: Set<number>,
     ): Promise<AnalyzeCallsResponseDto> {
         const limit = dto.limit ?? DEFAULT_SELECTION_LIMIT;
         const windowHours = dto.windowHours ?? DEFAULT_SELECTION_WINDOW_HOURS;
@@ -143,7 +183,7 @@ export class CallReportAnalyzeUseCase {
 
         // Свежие первыми: «последние N записей».
         const candidates = rows
-            .filter(row => this.matchesSelection(row, dto))
+            .filter(row => this.matchesSelection(row, dto, salesFilter))
             .sort(
                 (a, b) =>
                     new Date(b.CALL_START_DATE ?? 0).getTime() -
@@ -185,10 +225,9 @@ export class CallReportAnalyzeUseCase {
                 );
                 continue;
             }
-            if (
-                Number(activity.OWNER_TYPE_ID) !==
-                Number(BitrixOwnerTypeId.DEAL)
-            ) {
+            // Звонки берём и по сделкам, и по лидам (активные продажи).
+            const entityType = this.resolveOwner(activity.OWNER_TYPE_ID);
+            if (!entityType) {
                 response.skippedNonDeal++;
                 continue;
             }
@@ -202,18 +241,23 @@ export class CallReportAnalyzeUseCase {
                 continue;
             }
 
-            response.results.push(
-                await this.runPipelineSafe({
+            const item = await this.runPipelineSafe(
+                {
                     domain: dto.domain,
                     activityId,
                     dealId: Number(activity.OWNER_ID),
+                    entityType,
                     callId: row.CALL_ID,
                     callStartedAtIso: row.CALL_START_DATE,
                     durationSec: row.CALL_DURATION
                         ? Number(row.CALL_DURATION)
                         : undefined,
-                }),
+                },
+                dto.createSmartItem,
             );
+            // Чей звонок реально взялся — диагностика режима department.
+            item.userId = Number(row.PORTAL_USER_ID) || undefined;
+            response.results.push(item);
         }
 
         this.logger.log(
@@ -228,9 +272,13 @@ export class CallReportAnalyzeUseCase {
     private matchesSelection(
         row: VoximplantCallRow,
         dto: AnalyzeCallDto,
+        salesFilter?: Set<number>,
     ): boolean {
         if (!row.CRM_ACTIVITY_ID) return false;
         if (dto.userId && Number(row.PORTAL_USER_ID) !== dto.userId) {
+            return false;
+        }
+        if (salesFilter && !salesFilter.has(Number(row.PORTAL_USER_ID))) {
             return false;
         }
         if (
@@ -242,13 +290,24 @@ export class CallReportAnalyzeUseCase {
         return true;
     }
 
+    /** Владелец активности → тип сущности конвейера; null — не поддержан. */
+    private resolveOwner(
+        ownerTypeId: string | number | undefined,
+    ): 'deal' | 'lead' | null {
+        const id = Number(ownerTypeId);
+        if (id === Number(BitrixOwnerTypeId.DEAL)) return 'deal';
+        if (id === Number(BitrixOwnerTypeId.LEAD)) return 'lead';
+        return null;
+    }
+
     /** Пайплайн одного звонка; ошибка → item со status=error (батч продолжается). */
     private async runPipelineSafe(
         payload: CallReportJobPayload,
+        createSmartItem?: boolean,
     ): Promise<AnalyzeCallItemDto> {
         try {
             const result = await this.pipeline.execute(payload);
-            return {
+            const item: AnalyzeCallItemDto = {
                 activityId: payload.activityId,
                 dealId: payload.dealId,
                 status: 'done',
@@ -258,6 +317,20 @@ export class CallReportAnalyzeUseCase {
                 resumeSaved: result.resumeSaved,
                 recomendationSaved: result.recomendationSaved,
             };
+            // Полный flow одним вызовом: базовый смарт-элемент (транскрипт,
+            // связи, gigachat, запись звонка) без глубокого анализа агента —
+            // агент потом дополнит тот же элемент (upsert по xmlId).
+            if (createSmartItem) {
+                item.smartItemId = await this.baseItem
+                    .createBaseItem(result.transcriptionId, result.callType)
+                    .catch((error: Error) => {
+                        this.logger.warn(
+                            `Базовый смарт-элемент не создан (transcription ${result.transcriptionId}): ${error.message}`,
+                        );
+                        return null;
+                    });
+            }
+            return item;
         } catch (error) {
             this.logger.error(
                 `Анализ activity ${payload.activityId} упал: ${(error as Error).message}`,

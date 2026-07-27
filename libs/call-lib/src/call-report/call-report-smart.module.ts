@@ -3,6 +3,9 @@ import { PBXModule } from '@lib/pbx/pbx.module';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalSmartModule } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { AiModule } from '../ai/ai.module';
+import { TranscriptionModule } from '../transcription/transcription.module';
+import { CallReportBaseItemService } from './services/call-report-base-item.service';
 import { CallReportSmartResolverService } from './services/call-report-smart-resolver.service';
 import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-smart.use-case';
 
@@ -15,8 +18,23 @@ import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-s
  * admin: /admin/pbx/smarts/install-aicall).
  */
 @Module({
-    imports: [PBXModule, RedisModule, PortalSmartModule, PbxAicallSmartModule],
-    providers: [CallReportSmartResolverService, InstallCallReportSmartUseCase],
-    exports: [CallReportSmartResolverService, InstallCallReportSmartUseCase],
+    imports: [
+        PBXModule,
+        RedisModule,
+        PortalSmartModule,
+        PbxAicallSmartModule,
+        TranscriptionModule,
+        AiModule,
+    ],
+    providers: [
+        CallReportSmartResolverService,
+        InstallCallReportSmartUseCase,
+        CallReportBaseItemService,
+    ],
+    exports: [
+        CallReportSmartResolverService,
+        InstallCallReportSmartUseCase,
+        CallReportBaseItemService,
+    ],
 })
 export class CallReportSmartModule {}

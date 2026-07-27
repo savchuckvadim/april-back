@@ -126,8 +126,22 @@ export class CallReportSmartWriterService {
         if (xmlId) {
             const existingId = await this.findIdByXmlId(xmlId);
             if (existingId) {
+                // Upsert: существующий элемент ДОПОЛНЯЕТСЯ переданными полями
+                // (частичный update) — базовый элемент из smoke-прогона
+                // конвейера потом обогащается глубоким анализом агента.
+                await this.bitrix.item
+                    .update(
+                        existingId,
+                        this.smartInfo.entityTypeId as never,
+                        this.buildFields(input),
+                    )
+                    .catch((error: Error) =>
+                        this.logger.warn(
+                            `Элемент #${existingId} не обновлён (${xmlId}): ${error.message}`,
+                        ),
+                    );
                 this.logger.log(
-                    `Элемент смарта уже существует: #${existingId} (${xmlId}) — дубль не создаю`,
+                    `Элемент смарта уже существует: #${existingId} (${xmlId}) — обновил поля, дубль не создаю`,
                 );
                 return existingId;
             }

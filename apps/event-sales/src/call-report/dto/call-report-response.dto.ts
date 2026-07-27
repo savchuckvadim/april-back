@@ -202,6 +202,26 @@ export class AnalyzeCallItemDto {
     recomendationSaved?: boolean;
 
     @ApiPropertyOptional({
+        description:
+            'ID базового смарт-элемента «AI-анализ звонков» ' +
+            '(запрос с createSmartItem=true); null — смарт не установлен ' +
+            'или создание не удалось (детали в логах).',
+        example: 512,
+        type: Number,
+        nullable: true,
+    })
+    smartItemId?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Bitrix-id менеджера звонка (PORTAL_USER_ID из voximplant) — ' +
+            'видно, чьи звонки реально взялись в работу.',
+        example: 222,
+        type: Number,
+    })
+    userId?: number;
+
+    @ApiPropertyOptional({
         description: 'Текст ошибки (при status=error).',
         example: 'No audio files in activity 781614',
         type: String,
@@ -224,12 +244,24 @@ export class AnalyzeCallsResponseDto {
 
     @ApiProperty({
         description:
-            'Режим запуска: direct — по activityId, selection — подбор ' +
-            'последних записей по dealId/userId.',
-        enum: ['direct', 'selection'],
+            'Режим запуска: direct — по activityId; selection — подбор ' +
+            'последних записей по dealId/userId; department — dealId/userId ' +
+            'не переданы, менеджеры определены автоматически из отдела ' +
+            'продаж портала (bx-department, см. salesUserIds).',
+        enum: ['direct', 'selection', 'department'],
         example: 'selection',
     })
-    mode: 'direct' | 'selection';
+    mode: 'direct' | 'selection' | 'department';
+
+    @ApiPropertyOptional({
+        description:
+            'Режим department: bitrix-id менеджеров отдела продаж, ' +
+            'найденных через bx-department (все сотрудники ОП, включая ' +
+            'вложенные подразделения) — их звонки и подбираются.',
+        example: [7, 174, 222],
+        type: [Number],
+    })
+    salesUserIds?: number[];
 
     @ApiProperty({
         description:

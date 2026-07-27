@@ -7,8 +7,10 @@ import {
     buildDedupKey,
     CALL_RECOMENDATION_TYPE,
     CALL_REPORT_ENTITY_TYPE_DEAL,
+    CALL_REPORT_ENTITY_TYPE_LEAD,
     CALL_RESUME_TYPE,
     CallAnalysisBitrixService,
+    CallReportEntityType,
     TranscriptionRouterService,
     TranscriptionStoreService,
     AiService,
@@ -16,11 +18,17 @@ import {
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
 import { CallClassifyStepService } from '../services/call-classify-step.service';
 
-/** Задача конвейера: один звонок (сделка) на обработку. */
+/** Задача конвейера: один звонок (по сделке или лиду) на обработку. */
 export interface CallReportJobPayload {
     domain: string;
     activityId: number;
+    /**
+     * Id сущности-владельца звонка. Историческое имя: для entityType='lead'
+     * здесь лежит id ЛИДА (менять имя нельзя — payload живёт в Redis-джобах).
+     */
     dealId: number;
+    /** Тип владельца; отсутствует в старых джобах → 'deal'. */
+    entityType?: CallReportEntityType;
     callId?: string;
     callStartedAtIso?: string;
     durationSec?: number;
@@ -126,7 +134,7 @@ export class CallReportPipelineUseCase {
             callStartedAt: payload.callStartedAtIso
                 ? new Date(payload.callStartedAtIso)
                 : undefined,
-            entityType: CALL_REPORT_ENTITY_TYPE_DEAL,
+            entityType: payload.entityType ?? CALL_REPORT_ENTITY_TYPE_DEAL,
             entityId: String(payload.dealId),
             durationSec: payload.durationSec,
             app: APP_NAME,
@@ -162,16 +170,18 @@ export class CallReportPipelineUseCase {
                     durationSec: payload.durationSec,
                 });
 
-            // Менеджер (ответственный сделки) — для фильтров отчётов
+            // Менеджер (ответственный сделки/лида) — для фильтров отчётов
             // call-report-analytics; недоступность Bitrix шаг не роняет.
-            const responsibleId = await bx
-                .getDealResponsibleId(payload.dealId)
-                .catch((error: Error) => {
-                    this.logger.warn(
-                        `Ответственный сделки ${payload.dealId} не получен: ${error.message}`,
-                    );
-                    return undefined;
-                });
+            const responsibleId = await this.getResponsibleId(
+                bitrix,
+                bx,
+                payload,
+            ).catch((error: Error) => {
+                this.logger.warn(
+                    `Ответственный ${payload.entityType ?? 'deal'} ${payload.dealId} не получен: ${error.message}`,
+                );
+                return undefined;
+            });
 
             await this.transcriptionStore.finishPipeline(row.id, {
                 status: 'done',
@@ -337,7 +347,7 @@ export class CallReportPipelineUseCase {
                 result,
                 user_result: { text: result } as Prisma.JsonValue,
                 activity_id: String(payload.activityId),
-                entity_type: CALL_REPORT_ENTITY_TYPE_DEAL,
+                entity_type: payload.entityType ?? CALL_REPORT_ENTITY_TYPE_DEAL,
                 entity_id: payload.dealId,
                 domain: payload.domain,
                 app: APP_NAME,
@@ -357,16 +367,32 @@ export class CallReportPipelineUseCase {
         payload: CallReportJobPayload,
         resume: string,
     ): Promise<void> {
-        const responsibleId = await bx.getDealResponsibleId(payload.dealId);
         const { bitrix } = await this.pbxService.init(payload.domain);
+        const responsibleId = await this.getResponsibleId(bitrix, bx, payload);
         const comment =
             `📞 [b]AI-резюме звонка[/b] (активность #${payload.activityId})\n\n` +
             `${resume.slice(0, 3000)}${resume.length > 3000 ? '...' : ''}`;
         await bitrix.timeline.addTimelineComment({
             ENTITY_ID: payload.dealId,
-            ENTITY_TYPE: CALL_REPORT_ENTITY_TYPE_DEAL,
+            ENTITY_TYPE: payload.entityType ?? CALL_REPORT_ENTITY_TYPE_DEAL,
             COMMENT: comment,
-            AUTHOR_ID: String(responsibleId),
+            AUTHOR_ID: String(responsibleId ?? 1),
         });
+    }
+
+    /** Ответственный сущности-владельца: сделка — через bx, лид — crm.lead.get. */
+    private async getResponsibleId(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        bx: CallAnalysisBitrixService,
+        payload: CallReportJobPayload,
+    ): Promise<number | undefined> {
+        if (payload.entityType === CALL_REPORT_ENTITY_TYPE_LEAD) {
+            const response = (await bitrix.api.call('crm.lead.get', {
+                id: payload.dealId,
+            })) as { result?: { ASSIGNED_BY_ID?: string | number } };
+            const id = Number(response?.result?.ASSIGNED_BY_ID);
+            return Number.isFinite(id) && id > 0 ? id : undefined;
+        }
+        return bx.getDealResponsibleId(payload.dealId);
     }
 }

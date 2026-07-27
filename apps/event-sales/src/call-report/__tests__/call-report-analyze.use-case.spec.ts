@@ -24,6 +24,8 @@ const makeDeps = (options?: {
     activities?: Record<number, Record<string, unknown> | null>;
     busyKeys?: string[];
     pipelineError?: boolean;
+    /** Менеджеры ОП для мока bx-department (режим department). */
+    salesUsers?: number[];
 }) => {
     const activities = options?.activities ?? { 101: activity(101) };
     const bitrix = {
@@ -61,22 +63,61 @@ const makeDeps = (options?: {
             .fn()
             .mockResolvedValue(new Set(options?.busyKeys ?? [])),
     };
+    const baseItem = { createBaseItem: jest.fn().mockResolvedValue(512) };
+    const bxDepartment = {
+        getFullDepartment: jest.fn().mockResolvedValue({
+            department: {
+                allUsers:
+                    options?.salesUsers?.map((id: number) => ({
+                        ID: String(id),
+                    })) ?? [],
+            },
+        }),
+    };
     const useCase = new CallReportAnalyzeUseCase(
         pbxService as never,
         pipeline as never,
         transcriptionStore as never,
+        baseItem as never,
+        bxDepartment as never,
     );
-    return { useCase, pipeline, bitrix };
+    return { useCase, pipeline, bitrix, baseItem, bxDepartment };
 };
 
 describe('CallReportAnalyzeUseCase', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('без activityId/dealId/userId — 400', async () => {
-        const { useCase } = makeDeps();
+    it('без activityId/dealId/userId — режим department: менеджеры из ОП', async () => {
+        const { useCase, pipeline, bxDepartment } = makeDeps({
+            salesUsers: [7, 174],
+            voxRows: [
+                voxRow({ CRM_ACTIVITY_ID: '101', PORTAL_USER_ID: '7' }),
+                // Не из отдела продаж — должен быть отфильтрован.
+                voxRow({ CRM_ACTIVITY_ID: '102', PORTAL_USER_ID: '99' }),
+            ],
+            activities: { 101: activity(101) },
+        });
+        const result = await useCase.execute({
+            domain: 'test.bitrix24.ru',
+            limit: 5,
+        } as never);
+
+        expect(bxDepartment.getFullDepartment).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            expect.anything(),
+        );
+        expect(result.mode).toBe('department');
+        expect(result.salesUserIds).toEqual([7, 174]);
+        expect(result.found).toBe(1);
+        expect(pipeline.execute).toHaveBeenCalledTimes(1);
+        expect(result.results[0].userId).toBe(7);
+    });
+
+    it('режим department: пустой отдел продаж — 400 с подсказкой', async () => {
+        const { useCase } = makeDeps({ salesUsers: [] });
         await expect(
             useCase.execute({ domain: 'test.bitrix24.ru' } as never),
-        ).rejects.toThrow('укажите dealId или userId');
+        ).rejects.toThrow('Отдел продаж');
     });
 
     it('прямой режим: dealId определяется по владельцу активности', async () => {
@@ -98,16 +139,44 @@ describe('CallReportAnalyzeUseCase', () => {
         );
     });
 
-    it('прямой режим: активность не сделки — 400 с подсказкой', async () => {
-        const { useCase } = makeDeps({
+    it('прямой режим: активность лида обрабатывается с entityType=lead', async () => {
+        const { useCase, pipeline } = makeDeps({
             activities: { 101: activity(101, { OWNER_TYPE_ID: '1' }) },
+        });
+        await useCase.execute({
+            domain: 'test.bitrix24.ru',
+            activityId: 101,
+        } as never);
+        expect(pipeline.execute).toHaveBeenCalledWith(
+            expect.objectContaining({
+                activityId: 101,
+                dealId: 555,
+                entityType: 'lead',
+            }),
+        );
+    });
+
+    it('прямой режим: активность контакта (не сделка/лид) — 400', async () => {
+        const { useCase } = makeDeps({
+            activities: { 101: activity(101, { OWNER_TYPE_ID: '3' }) },
         });
         await expect(
             useCase.execute({
                 domain: 'test.bitrix24.ru',
                 activityId: 101,
             } as never),
-        ).rejects.toThrow('не сделке');
+        ).rejects.toThrow('не сделке и не лиду');
+    });
+
+    it('createSmartItem=true: после конвейера создаётся базовый смарт-элемент', async () => {
+        const { useCase, baseItem } = makeDeps();
+        const result = await useCase.execute({
+            domain: 'test.bitrix24.ru',
+            activityId: 101,
+            createSmartItem: true,
+        } as never);
+        expect(baseItem.createBaseItem).toHaveBeenCalledWith('t-101', 'cold');
+        expect(result.results[0].smartItemId).toBe(512);
     });
 
     it('подбор по userId: берёт последние limit записей менеджера', async () => {

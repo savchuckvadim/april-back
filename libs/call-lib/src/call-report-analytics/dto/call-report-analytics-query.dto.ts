@@ -106,8 +106,11 @@ export class CallReportAnalyticsQueryDto {
 
     @ApiPropertyOptional({
         description:
-            'Сохранить построенный отчёт в историю (таблица ais, ' +
-            'type=report-<вид>). По умолчанию false.',
+            'Сохранить построенный отчёт снапшотом в историю (таблица ais, ' +
+            'type=report-<вид>). Нужно для трендов и сравнения периодов: ' +
+            'история хранит отчёт таким, каким он был на момент построения, ' +
+            'даже если звонки потом переразобраны. Разовые ad-hoc запросы ' +
+            'историю не засоряют — по умолчанию false.',
         example: false,
         type: Boolean,
         default: false,
@@ -118,9 +121,12 @@ export class CallReportAnalyticsQueryDto {
 
     @ApiPropertyOptional({
         description:
-            'Использовать кэш (Redis): true — отдать кэшированный отчёт по ' +
-            'тем же параметрам, если он свежий; false — пересчитать заново ' +
-            '(кэш при этом обновляется). По умолчанию true.',
+            'Использовать Redis-кэш. true (по умолчанию) — если по ТЕМ ЖЕ ' +
+            'параметрам (домен+период+все фильтры) отчёт уже строился и не ' +
+            'протух (TTL 1 час, env CALL_REPORT_ANALYTICS_CACHE_TTL_SEC) — ' +
+            'отдаётся мгновенно из кэша, meta.fromCache=true. false — ' +
+            'принудительный пересчёт из БД (forceRefresh), результат ' +
+            'перезаписывает кэш. Полный сброс — POST cache/reset.',
         example: true,
         type: Boolean,
         default: true,
