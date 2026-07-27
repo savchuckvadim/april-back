@@ -86,6 +86,31 @@ export class ReportSettingsService {
     }
 
     /**
+     * Аварийный сброс сохранённого фильтра пользователя: v2 (filters) и
+     * legacy-зеркало (filter/department/dates) → NULL, отчёт вернётся к
+     * дефолтному периоду. Кейс: сохранён неподъёмный период — отчёт не
+     * догружается, а сменить фильтр из зависшего UI нельзя. Колонка
+     * `other` (ui-настройки, конфиг планов) не трогается.
+     */
+    async resetFilter(domain: string, userId: number): Promise<boolean> {
+        const portal = await this.findPortal(domain);
+        const existing = await this.prisma.report_settings.findFirst({
+            where: { portalId: Number(portal.id), bxUserId: userId },
+        });
+        if (!existing) return false;
+        await this.prisma.report_settings.update({
+            where: { id: existing.id },
+            data: {
+                filters: null,
+                filter: null,
+                department: null,
+                dates: null,
+            },
+        });
+        return true;
+    }
+
+    /**
      * UI-настройки фронта (конверсии, блоки, локальные фильтры) —
      * непрозрачный блоб в свободной колонке `other` (без миграции);
      * envelope с версией и updatedAt позволяет менять формат без миграций.

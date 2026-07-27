@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
     ReportFilterGetRequestDto,
     ReportFilterGetResponseDto,
+    ReportFilterResetResponseDto,
     ReportFilterSaveRequestDto,
     ReportFilterSaveResponseDto,
 } from './dto/report-filter.dto';
@@ -47,5 +48,23 @@ export class ReportSettingsController {
     ): Promise<ReportFilterSaveResponseDto> {
         await this.settings.saveFilter(dto.domain, dto.userId, dto.filter);
         return { saved: true };
+    }
+
+    @Post('reset')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Аварийный сброс сохранённого фильтра пользователя',
+        description:
+            'Обнуляет сохранённый фильтр (v2 + legacy-зеркало) — отчёт ' +
+            'вернётся к дефолтному периоду. Кейс: сохранён неподъёмный ' +
+            'период и отчёт не может догрузиться. UI-настройки (колонка ' +
+            'other) не затрагиваются.',
+    })
+    @ApiOkResponse({ type: ReportFilterResetResponseDto })
+    async resetFilter(
+        @Body() dto: ReportFilterGetRequestDto,
+    ): Promise<ReportFilterResetResponseDto> {
+        const reset = await this.settings.resetFilter(dto.domain, dto.userId);
+        return { reset };
     }
 }

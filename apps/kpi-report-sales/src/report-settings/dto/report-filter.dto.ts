@@ -226,3 +226,14 @@ export class ReportFilterSaveResponseDto {
     @IsBoolean()
     saved: boolean;
 }
+
+export class ReportFilterResetResponseDto {
+    @ApiProperty({
+        description:
+            'Сохранённый фильтр сброшен (false — записи и не было). ' +
+            'UI-настройки (колонка other) не затрагиваются.',
+        type: Boolean,
+    })
+    @IsBoolean()
+    reset: boolean;
+}
