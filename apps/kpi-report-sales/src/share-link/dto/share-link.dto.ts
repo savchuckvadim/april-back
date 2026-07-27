@@ -8,6 +8,7 @@ import {
     IsObject,
     IsOptional,
     IsString,
+    Matches,
     Max,
     Min,
     ValidateNested,
@@ -150,6 +151,17 @@ export class CreateShareLinkDto {
     })
     @IsBoolean()
     isRefreshable: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Клиентский токен ссылки (base64url, 20–64 символа): фронт ' +
+            'генерит его в момент клика и кладёт URL в буфер синхронно ' +
+            '(clipboard во фрейме Bitrix работает только в жесте юзера). ' +
+            'Не передан — сгенерит бэк; занят — 409.',
+    })
+    @IsOptional()
+    @Matches(/^[A-Za-z0-9_-]{20,64}$/)
+    token?: string;
 
     @ApiProperty({ type: ShareLinkFilterSnapshotDto })
     @ValidateNested()

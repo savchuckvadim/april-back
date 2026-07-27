@@ -1,5 +1,6 @@
 import {
     BadRequestException,
+    ConflictException,
     GoneException,
     Injectable,
     Logger,
@@ -51,7 +52,20 @@ export class ShareLinkService {
         await this.validateActiveLimit(dto.domain, dto.creatorBxUserId);
 
         const portalId = await this.requirePortalId(dto.domain);
-        const token = randomBytes(24).toString('base64url');
+        // Клиентский токен (фронт уже положил URL в буфер в жесте клика)
+        // либо серверный. Занятый клиентский — конфликт, не перезаписываем.
+        const token = dto.token ?? randomBytes(24).toString('base64url');
+        if (dto.token) {
+            const busy = await this.prisma.shareLink.findUnique({
+                where: { token: dto.token },
+                select: { id: true },
+            });
+            if (busy) {
+                throw new ConflictException(
+                    'Токен ссылки уже занят — повторите создание',
+                );
+            }
+        }
         const now = Date.now();
         const expiresAt = new Date(now + dto.expiresInDays * DAY_MS);
 
