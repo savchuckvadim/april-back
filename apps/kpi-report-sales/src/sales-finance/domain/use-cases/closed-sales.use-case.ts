@@ -26,7 +26,11 @@ import {
     ContractTypeDictItem,
     dealCompanyId,
 } from '../calc/closed-sales-calc';
-import { ContractTypeItemsService } from '../services/contract-type-items.service';
+import {
+    ContractTypeItemsService,
+    mergeContractTypeItems,
+} from '../services/contract-type-items.service';
+import { PBX_SALES_KONSTRUCTOR_FIELD_CODES } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 import {
     MonthSegment,
     splitIntoMonthSegments,
@@ -52,13 +56,19 @@ export class ClosedSalesUseCase {
             domain,
         );
         const companies = new SalesFinanceCompanyService(bitrix, portal);
-        // Живой словарь типов договора — один на весь пересчёт.
+        // Словарь типов договора — один на весь пересчёт: портальные items
+        // (семантические коды) + живой список (свежие имена, ручные элементы).
         const contractTypeItems = ContractTypeItemsService.byId(
-            await new ContractTypeItemsService(
-                bitrix,
-                this.cache,
-                domain,
-            ).getItems(dealQuery.getUfFields().contractType, forceRefresh),
+            mergeContractTypeItems(
+                portal.getDealFieldByCode(
+                    PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+                )?.items ?? [],
+                await new ContractTypeItemsService(
+                    bitrix,
+                    this.cache,
+                    domain,
+                ).getItems(dealQuery.getUfFields().contractType, forceRefresh),
+            ),
         );
 
         const segments = splitIntoMonthSegments(

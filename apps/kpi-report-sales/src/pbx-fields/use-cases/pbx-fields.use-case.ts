@@ -12,7 +12,10 @@ import { PBX_SALES_KONSTRUCTOR_FIELD_CODES } from '@lib/portal-lib/pbx-domain/fi
 import { SalesFinanceCacheService } from '../../sales-finance/cache/sales-finance-cache.service';
 import { buildResetPattern } from '../../sales-finance/cache/cache-key.util';
 import { SALES_FINANCE_CACHE_SCOPE } from '../../sales-finance/constants/sales-finance.const';
-import { ContractTypeItemsService } from '../../sales-finance/domain/services/contract-type-items.service';
+import {
+    ContractTypeItemsService,
+    mergeContractTypeItems,
+} from '../../sales-finance/domain/services/contract-type-items.service';
 import {
     EDITABLE_PBX_FIELDS,
     EditablePbxFieldConfig,
@@ -57,7 +60,8 @@ export class PbxFieldsUseCase {
             return [meta];
         });
 
-        // contract_type: заменяем items портальной БД живым словарём.
+        // contract_type: merge портальных items (семантические коды) с живым
+        // словарём (свежие имена + элементы, добавленные на портале руками).
         const contractTypeMeta = fields.find(
             field =>
                 field.code === PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
@@ -72,10 +76,12 @@ export class PbxFieldsUseCase {
                     PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
                 ),
             );
-            contractTypeMeta.items = liveItems.map(item => ({
-                code: item.code,
-                name: item.name,
-            }));
+            contractTypeMeta.items = mergeContractTypeItems(
+                portal.getDealFieldByCode(
+                    PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+                )?.items ?? [],
+                liveItems,
+            ).map(item => ({ code: item.code, name: item.name }));
         }
 
         return { fields };
@@ -89,8 +95,8 @@ export class PbxFieldsUseCase {
         const config = findEditablePbxField(dto.fieldCode)!;
         const { bitrix, PortalModel: portal } = await this.pbx.init(dto.domain);
 
-        // contract_type: code → numeric id по живому словарю (портальная БД
-        // не знает элементов, добавленных руками).
+        // contract_type: code → numeric id по merged-словарю (портальные
+        // семантические коды + живые элементы, добавленные руками).
         let enumDict: ReadonlyMap<string, number> | undefined;
         if (
             dto.fieldCode === PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type
@@ -105,7 +111,12 @@ export class PbxFieldsUseCase {
                 ),
             );
             enumDict = new Map(
-                liveItems.map(item => [item.code, item.id]),
+                mergeContractTypeItems(
+                    portal.getDealFieldByCode(
+                        PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+                    )?.items ?? [],
+                    liveItems,
+                ).map(item => [item.code, item.id]),
             );
         }
 
@@ -141,11 +152,17 @@ export class PbxFieldsUseCase {
                 : portal.getCompanyFieldByCode(config.code);
         if (!field || !field.bitrixId) return null;
 
+        // Портальные name/title бывают пустыми или равными коду («contract_type»)
+        // — тогда берём человекочитаемое имя из истинной типизации.
+        const portalName =
+            [field.name, field.title].find(
+                value => value && value !== config.code,
+            ) ?? '';
         return {
             code: config.code,
             entity: config.entity,
             valueKind: config.valueKind,
-            name: field.name || field.title || config.code,
+            name: portalName || config.displayName,
             confirm: config.confirm,
             items: (field.items ?? []).map(item => ({
                 code: item.code,

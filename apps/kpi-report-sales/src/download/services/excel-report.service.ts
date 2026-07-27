@@ -4,6 +4,11 @@ import {
     ConversionsExcelDto,
     DownLoadKpiReportDto as KpiReportDto,
     DownloadKpiReportItemDto,
+    FinanceClosedExcelDto,
+    FinanceExcelDealRowDto,
+    FinanceExcelEmployeeRowDto,
+    FinanceExcelTotalsDto,
+    FinanceHotExcelDto,
     PlanMainRowDto,
     PlansExcelCellDto,
     PlansExcelDto,
@@ -35,38 +40,59 @@ export class ExcelReportService {
         try {
             const workbook: Workbook = new Workbook();
 
-            const summary = workbook.addWorksheet(
-                dto.structure ? 'Сводный' : 'KPI Отчет',
-            );
-            this.renderDateHeader(dto, summary);
-            summary.addRow([]);
-            this.renderReportBlock(
-                summary,
-                dto.report,
-                null,
-                'Итого',
-                dto.plans?.mainRows,
-            );
-            this.setColumnWidths(summary, dto.report);
+            // ЗЕРКАЛО UI: на вкладке «Финансы» kpi-таблиц нет — фронт шлёт
+            // report: [] и Excel состоит только из финансовых листов.
+            if (dto.report.length) {
+                const summary = workbook.addWorksheet(
+                    dto.structure ? 'Сводный' : 'KPI Отчет',
+                );
+                this.renderDateHeader(dto, summary);
+                summary.addRow([]);
+                this.renderReportBlock(
+                    summary,
+                    dto.report,
+                    null,
+                    'Итого',
+                    dto.plans?.mainRows,
+                );
+                this.setColumnWidths(summary, dto.report);
 
-            const departments = dto.structure?.departments ?? [];
-            if (dto.structure && departments.length) {
-                if (dto.structure.isMultiple) {
-                    for (const department of departments) {
-                        this.renderDepartmentSheet(workbook, dto, department);
+                const departments = dto.structure?.departments ?? [];
+                if (dto.structure && departments.length) {
+                    if (dto.structure.isMultiple) {
+                        for (const department of departments) {
+                            this.renderDepartmentSheet(
+                                workbook,
+                                dto,
+                                department,
+                            );
+                        }
+                    } else if (
+                        departments.some(dep => dep.groups.length > 0)
+                    ) {
+                        const sheet = workbook.addWorksheet('По группам');
+                        this.renderDateHeader(dto, sheet);
+                        sheet.addRow([]);
+                        for (const department of departments) {
+                            this.renderDepartmentSections(
+                                sheet,
+                                dto,
+                                department,
+                            );
+                        }
+                        this.setColumnWidths(sheet, dto.report);
                     }
-                } else if (departments.some(dep => dep.groups.length > 0)) {
-                    const sheet = workbook.addWorksheet('По группам');
-                    this.renderDateHeader(dto, sheet);
-                    sheet.addRow([]);
-                    for (const department of departments) {
-                        this.renderDepartmentSections(sheet, dto, department);
-                    }
-                    this.setColumnWidths(sheet, dto.report);
                 }
+
+                this.renderRatingSheets(workbook, dto);
             }
 
-            this.renderRatingSheets(workbook, dto);
+            if (dto.finance?.closed) {
+                this.renderFinanceClosedSheet(workbook, dto, dto.finance.closed);
+            }
+            if (dto.finance?.hot) {
+                this.renderFinanceHotSheet(workbook, dto, dto.finance.hot);
+            }
 
             if (dto.conversions?.columns?.length) {
                 this.renderConversionsSheet(workbook, dto, dto.conversions);
@@ -642,6 +668,217 @@ export class ExcelReportService {
         sheet.columns = new Array(headCells.length + 1)
             .fill(null)
             .map((_item, index) => ({ width: index === 0 ? 28 : 18 }));
+    }
+
+    /** Заголовки колонок денежного свода финансовых листов. */
+    private static readonly FINANCE_TOTALS_HEAD = [
+        'Сделок',
+        'Аванс, ₽',
+        'Опл. месяцы',
+        'Абон./мес, ₽',
+        'Кол-во, шт.',
+        'Ожидаемая сумма, ₽',
+    ];
+
+    /** Значения свода в порядке FINANCE_TOTALS_HEAD. */
+    private financeTotalsValues(totals: FinanceExcelTotalsDto): number[] {
+        return [
+            totals.dealsCount,
+            totals.advanceAmount,
+            totals.paidMonths,
+            totals.monthlyAmount,
+            totals.quantity,
+            totals.expectedContractAmount,
+        ];
+    }
+
+    /** Денежный numFmt колонкам свода (аванс/абон/ожидаемая). */
+    private styleFinanceTotalsRow(row: Row): void {
+        [3, 5, 7].forEach(col => {
+            row.getCell(col).numFmt = PLAN_MONEY_FORMAT;
+        });
+    }
+
+    /** Таблица «Сотрудник + свод» (свод/секции финансового листа). */
+    private renderFinanceEmployeesBlock(
+        sheet: Worksheet,
+        rows: FinanceExcelEmployeeRowDto[],
+        total: FinanceExcelTotalsDto,
+        totalLabel: string,
+    ): void {
+        const head = sheet.addRow([
+            'Сотрудник',
+            ...ExcelReportService.FINANCE_TOTALS_HEAD,
+        ]);
+        this.styleHeadRow(head);
+        for (const item of rows) {
+            const row = sheet.addRow([
+                item.name,
+                ...this.financeTotalsValues(item.totals),
+            ]);
+            row.getCell(1).font = { bold: true, size: 10 };
+            this.styleFinanceTotalsRow(row);
+        }
+        const totalRow = sheet.addRow([
+            totalLabel,
+            ...this.financeTotalsValues(total),
+        ]);
+        totalRow.font = { bold: true };
+        this.styleFinanceTotalsRow(totalRow);
+        totalRow.getCell(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFEEEEEE' },
+        };
+    }
+
+    /** Детализация сделок (закрытые: statusLabel = дата, горячие: стадия). */
+    private renderFinanceDealsBlock(
+        sheet: Worksheet,
+        deals: FinanceExcelDealRowDto[],
+        statusHead: string,
+        advanceHead = 'Аванс, ₽',
+        amountHead = 'Ожидаемая сумма, ₽',
+    ): void {
+        const head = sheet.addRow([
+            'Сотрудник',
+            'Сделка',
+            statusHead,
+            'Компания',
+            'Тип клиента',
+            'Тип договора',
+            'Договор с',
+            'Договор по',
+            'Абон./мес, ₽',
+            advanceHead,
+            'Опл. месяцы',
+            'Кол-во, шт.',
+            amountHead,
+        ]);
+        this.styleHeadRow(head);
+        for (const deal of deals) {
+            const row = sheet.addRow([
+                deal.employeeName,
+                deal.title,
+                deal.statusLabel,
+                deal.companyName ?? '—',
+                deal.clientTypeName ?? '—',
+                deal.contractTypeName ?? '—',
+                deal.contractStart ?? '—',
+                deal.contractEnd ?? '—',
+                deal.monthlyAmount,
+                deal.advanceAmount,
+                deal.paidMonths,
+                deal.quantity,
+                deal.expectedContractAmount,
+            ]);
+            [9, 10, 13].forEach(col => {
+                row.getCell(col).numFmt = PLAN_MONEY_FORMAT;
+            });
+        }
+    }
+
+    /** Лист «Финансы — Продажи»: свод, разбивки, детализация сделок. */
+    private renderFinanceClosedSheet(
+        workbook: Workbook,
+        dto: KpiReportDto,
+        closed: FinanceClosedExcelDto,
+    ): void {
+        const sheet = workbook.addWorksheet(
+            this.sanitizeSheetName('Финансы — Продажи'),
+        );
+        this.renderDateHeader(dto, sheet);
+        sheet.addRow([]);
+
+        this.renderFinanceEmployeesBlock(
+            sheet,
+            closed.rows,
+            closed.totals,
+            'Итого',
+        );
+
+        for (const section of closed.sections ?? []) {
+            if (!section.rows.length) continue;
+            sheet.addRow([]);
+            const titleRow = sheet.addRow([section.title]);
+            titleRow.font = { bold: true, size: 12 };
+            titleRow.getCell(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFBFBFBF' },
+            };
+            this.renderFinanceEmployeesBlock(
+                sheet,
+                section.rows,
+                section.total,
+                'Итого по секции',
+            );
+        }
+
+        if (closed.deals.length) {
+            sheet.addRow([]);
+            const titleRow = sheet.addRow(['Сделки']);
+            titleRow.font = { bold: true, size: 12 };
+            this.renderFinanceDealsBlock(sheet, closed.deals, 'Дата закрытия');
+        }
+
+        sheet.columns = new Array(13)
+            .fill(null)
+            .map((_item, index) => ({ width: index < 2 ? 28 : 16 }));
+    }
+
+    /** Лист «Финансы — Горячие»: порог + открытые сделки + итог. */
+    private renderFinanceHotSheet(
+        workbook: Workbook,
+        dto: KpiReportDto,
+        hot: FinanceHotExcelDto,
+    ): void {
+        const sheet = workbook.addWorksheet(
+            this.sanitizeSheetName('Финансы — Горячие'),
+        );
+        this.renderDateHeader(dto, sheet);
+        const thresholdRow = sheet.addRow([
+            `Горячие клиенты — ${hot.thresholdLabel}`,
+        ]);
+        thresholdRow.font = { bold: true, size: 12 };
+        sheet.addRow([]);
+
+        this.renderFinanceDealsBlock(
+            sheet,
+            hot.deals,
+            'Стадия',
+            'Предложение, ₽',
+            'Сумма сделки, ₽',
+        );
+
+        const totalRow = sheet.addRow([
+            'Итого',
+            `Сделок: ${hot.totals.dealsCount}`,
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            hot.totals.monthlyAmount,
+            hot.totals.advanceAmount,
+            hot.totals.paidMonths,
+            hot.totals.quantity,
+            hot.totals.expectedContractAmount,
+        ]);
+        totalRow.font = { bold: true };
+        [9, 10, 13].forEach(col => {
+            totalRow.getCell(col).numFmt = PLAN_MONEY_FORMAT;
+        });
+        totalRow.getCell(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFEEEEEE' },
+        };
+
+        sheet.columns = new Array(13)
+            .fill(null)
+            .map((_item, index) => ({ width: index < 2 ? 28 : 16 }));
     }
 
     private sumActionByUsers(

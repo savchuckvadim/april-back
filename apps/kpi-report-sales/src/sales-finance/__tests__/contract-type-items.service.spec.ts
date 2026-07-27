@@ -1,6 +1,10 @@
 import { BitrixService } from '@/modules/bitrix';
+import { IFieldItem } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { SalesFinanceCacheService } from '../cache/sales-finance-cache.service';
-import { ContractTypeItemsService } from '../domain/services/contract-type-items.service';
+import {
+    ContractTypeItemsService,
+    mergeContractTypeItems,
+} from '../domain/services/contract-type-items.service';
 
 const DOMAIN = 'april.bitrix24.ru';
 const UF_KEY = 'UF_CRM_CONTRACT_TYPE';
@@ -80,5 +84,47 @@ describe('ContractTypeItemsService', () => {
         expect(items).toEqual([]);
         expect(getFieldsList).not.toHaveBeenCalled();
         expect(cache.getJson).not.toHaveBeenCalled();
+    });
+});
+
+describe('mergeContractTypeItems', () => {
+    const portalItem = (
+        code: string,
+        bitrixId: number,
+        name: string,
+    ): IFieldItem => ({ code, bitrixId, name }) as unknown as IFieldItem;
+
+    it('портальный code первичен, имя — из живого списка', () => {
+        const merged = mergeContractTypeItems(
+            [portalItem('internet', 5440, 'Интернет')],
+            [{ id: 5440, code: 'bx_5440', name: 'Интернет-Версия' }],
+        );
+        expect(merged).toEqual([
+            { id: 5440, code: 'internet', name: 'Интернет-Версия' },
+        ]);
+    });
+
+    it('живые элементы вне портальной БД (ручные) добавляются в хвост', () => {
+        const merged = mergeContractTypeItems(
+            [portalItem('lic', 5444, 'Лицензионный')],
+            [
+                { id: 5444, code: 'bx_5444', name: 'Лицензионный' },
+                { id: 9001, code: 'bx_9001', name: 'Ручной тип' },
+            ],
+        );
+        expect(merged).toEqual([
+            { id: 5444, code: 'lic', name: 'Лицензионный' },
+            { id: 9001, code: 'bx_9001', name: 'Ручной тип' },
+        ]);
+    });
+
+    it('портальный элемент без живой пары сохраняется с портальным именем', () => {
+        const merged = mergeContractTypeItems(
+            [portalItem('abon', 5442, 'Абонентский')],
+            [],
+        );
+        expect(merged).toEqual([
+            { id: 5442, code: 'abon', name: 'Абонентский' },
+        ]);
     });
 });

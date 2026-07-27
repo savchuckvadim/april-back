@@ -350,6 +350,220 @@ export class PlansExcelDto {
     mainRows?: PlanMainRowDto[];
 }
 
+/** Денежные итоги финансового листа (сотрудник / секция / всего). */
+export class FinanceExcelTotalsDto {
+    @ApiProperty({ description: 'Число сделок' })
+    @IsNumber()
+    dealsCount: number;
+
+    @ApiProperty({ description: 'Аванс (Σ оплат), руб.' })
+    @IsNumber()
+    advanceAmount: number;
+
+    @ApiProperty({ description: 'Оплаченные месяцы' })
+    @IsNumber()
+    paidMonths: number;
+
+    @ApiProperty({ description: 'Абонентская сумма в месяц, руб.' })
+    @IsNumber()
+    monthlyAmount: number;
+
+    @ApiProperty({ description: 'Количество (шт. по строкам товаров)' })
+    @IsNumber()
+    quantity: number;
+
+    @ApiProperty({ description: 'Ожидаемая сумма по договорам, руб.' })
+    @IsNumber()
+    expectedContractAmount: number;
+}
+
+export class FinanceExcelEmployeeRowDto {
+    @ApiProperty({ description: 'ФИО сотрудника' })
+    @IsString()
+    name: string;
+
+    @ApiProperty({ description: 'Итоги сотрудника', type: FinanceExcelTotalsDto })
+    @ValidateNested()
+    @Type(() => FinanceExcelTotalsDto)
+    totals: FinanceExcelTotalsDto;
+}
+
+/** Секция финансового листа — отдел или группа (агрегаты считает фронт). */
+export class FinanceExcelSectionDto {
+    @ApiProperty({ description: 'Заголовок секции (отдел / группа)' })
+    @IsString()
+    title: string;
+
+    @ApiProperty({
+        description: 'Строки сотрудников секции',
+        type: [FinanceExcelEmployeeRowDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => FinanceExcelEmployeeRowDto)
+    rows: FinanceExcelEmployeeRowDto[];
+
+    @ApiProperty({ description: 'Итог секции', type: FinanceExcelTotalsDto })
+    @ValidateNested()
+    @Type(() => FinanceExcelTotalsDto)
+    total: FinanceExcelTotalsDto;
+}
+
+/** Сделка детализации финансового листа (закрытая или горячая). */
+export class FinanceExcelDealRowDto {
+    @ApiProperty({ description: 'ФИО ответственного' })
+    @IsString()
+    employeeName: string;
+
+    @ApiProperty({ description: 'Название сделки' })
+    @IsString()
+    title: string;
+
+    @ApiProperty({
+        description: 'Дата закрытия (закрытые) / стадия (горячие)',
+    })
+    @IsString()
+    statusLabel: string;
+
+    @ApiProperty({ description: 'Компания', type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    companyName: string | null;
+
+    @ApiProperty({ description: 'Тип клиента', type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    clientTypeName: string | null;
+
+    @ApiProperty({ description: 'Тип договора', type: String, nullable: true })
+    @IsOptional()
+    @IsString()
+    contractTypeName: string | null;
+
+    @ApiProperty({
+        description: 'Действие договора с (дд.мм.гггг)',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    contractStart: string | null;
+
+    @ApiProperty({
+        description: 'Действие договора по (дд.мм.гггг)',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    contractEnd: string | null;
+
+    @ApiProperty({ description: 'Абонентская сумма в месяц, руб.' })
+    @IsNumber()
+    monthlyAmount: number;
+
+    @ApiProperty({ description: 'Аванс, руб.' })
+    @IsNumber()
+    advanceAmount: number;
+
+    @ApiProperty({ description: 'Оплаченные месяцы' })
+    @IsNumber()
+    paidMonths: number;
+
+    @ApiProperty({ description: 'Количество, шт.' })
+    @IsNumber()
+    quantity: number;
+
+    @ApiProperty({ description: 'Ожидаемая сумма по договору, руб.' })
+    @IsNumber()
+    expectedContractAmount: number;
+}
+
+/** Блок «Продажи» вкладки «Финансы» (закрытые в успех сделки). */
+export class FinanceClosedExcelDto {
+    @ApiProperty({ description: 'Общие итоги', type: FinanceExcelTotalsDto })
+    @ValidateNested()
+    @Type(() => FinanceExcelTotalsDto)
+    totals: FinanceExcelTotalsDto;
+
+    @ApiProperty({
+        description: 'Свод по сотрудникам',
+        type: [FinanceExcelEmployeeRowDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => FinanceExcelEmployeeRowDto)
+    rows: FinanceExcelEmployeeRowDto[];
+
+    @ApiProperty({
+        description: 'Разбивка по отделам/группам (как у конверсий)',
+        type: [FinanceExcelSectionDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => FinanceExcelSectionDto)
+    sections?: FinanceExcelSectionDto[];
+
+    @ApiProperty({
+        description: 'Детализация по сделкам',
+        type: [FinanceExcelDealRowDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => FinanceExcelDealRowDto)
+    deals: FinanceExcelDealRowDto[];
+}
+
+/** Блок «Горячие клиенты» вкладки «Финансы» (открытые сделки от порога). */
+export class FinanceHotExcelDto {
+    @ApiProperty({ description: 'Подпись порога («от Презентации» и т.п.)' })
+    @IsString()
+    thresholdLabel: string;
+
+    @ApiProperty({ description: 'Итоги', type: FinanceExcelTotalsDto })
+    @ValidateNested()
+    @Type(() => FinanceExcelTotalsDto)
+    totals: FinanceExcelTotalsDto;
+
+    @ApiProperty({
+        description: 'Открытые сделки (statusLabel = стадия)',
+        type: [FinanceExcelDealRowDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => FinanceExcelDealRowDto)
+    deals: FinanceExcelDealRowDto[];
+}
+
+/**
+ * Финансовая вкладка для Excel (ЗЕРКАЛО UI): передаются только видимые
+ * блоки — скрыт тумблером/недоступен → соответствующего листа нет.
+ * Все данные считает фронт из своего стора, бэк только рендерит.
+ */
+export class FinanceExcelDto {
+    @ApiProperty({
+        description: 'Блок «Продажи» (лист «Финансы — Продажи»)',
+        type: FinanceClosedExcelDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => FinanceClosedExcelDto)
+    closed?: FinanceClosedExcelDto;
+
+    @ApiProperty({
+        description: 'Блок «Горячие клиенты» (лист «Финансы — Горячие»)',
+        type: FinanceHotExcelDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => FinanceHotExcelDto)
+    hot?: FinanceHotExcelDto;
+}
+
 export class DownLoadKpiReportDto {
     @ApiProperty({ description: 'Download type', enum: EDownloadType })
     @IsEnum(EDownloadType)
@@ -403,4 +617,17 @@ export class DownLoadKpiReportDto {
     @ValidateNested()
     @Type(() => PlansExcelDto)
     plans?: PlansExcelDto;
+
+    @ApiProperty({
+        description:
+            'Финансовая вкладка (листы «Финансы — Продажи» / «Финансы — Горячие»); ' +
+            'передаётся ТОЛЬКО когда вкладка «Финансы» видима в отчёте — ' +
+            'Excel зеркалит UI.',
+        type: FinanceExcelDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => FinanceExcelDto)
+    finance?: FinanceExcelDto;
 }

@@ -120,10 +120,10 @@ describe('ClosedSalesUseCase', () => {
             (call: unknown[]) => call[0],
         );
         expect(writtenKeys).toContain(
-            'sales-finance:v6:april.bitrix24.ru:closed:month:2026-03:10',
+            'sales-finance:v7:april.bitrix24.ru:closed:month:2026-03:10',
         );
         expect(writtenKeys).toContain(
-            'sales-finance:v6:april.bitrix24.ru:closed:result:2026-03-01_2026-03-31_10',
+            'sales-finance:v7:april.bitrix24.ru:closed:result:2026-03-01_2026-03-31_10',
         );
     });
 

@@ -59,11 +59,18 @@ export class InitComplectService {
         if (!complects) return null;
 
         // В таблице complects лежат и сервисы (lt/star/consalting) —
-        // в prof/universal попадают только комплекты Гаранта.
+        // в prof/universal попадают только комплекты Гаранта. Неизвестные
+        // productType (в БД встречается битое 'orange' у glavbuh) считаем
+        // гарантом, чтобы грязные данные не выбивали комплект из init.
+        const serviceTypes: string[] = [
+            ComplectProductTypeEnum.LT,
+            ComplectProductTypeEnum.STAR,
+            ComplectProductTypeEnum.CONSALING,
+        ];
         const garant = complects.filter(
             complect =>
                 !complect.productType ||
-                complect.productType === ComplectProductTypeEnum.GARANT,
+                !serviceTypes.includes(complect.productType),
         );
 
         return {

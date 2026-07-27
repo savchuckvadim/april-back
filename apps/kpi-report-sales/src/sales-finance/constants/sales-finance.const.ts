@@ -17,7 +17,7 @@ import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-dea
 // contractEnd у горячих (pbx-fields) — старые v4-ключи протухнут по TTL.
 // v6: + contractTypeName (live-словарь типов договора), opMHistory у
 // горячих, кэш товарных строк per-сделка (версия по DATE_MODIFY).
-export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v6' as const;
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v7' as const;
 
 /** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
 export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;

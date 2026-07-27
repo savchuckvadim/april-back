@@ -18,7 +18,7 @@ export class ComplectCodesDto {
     ersInPacket: string[];
 }
 
-export class ComplectDto implements IComplect {
+export class InitComplectDto implements IComplect {
     @ApiProperty({ description: 'Id', type: Number })
     id: number;
     @ApiProperty({ description: 'Name', type: String })
@@ -86,10 +86,10 @@ export class ComplectDto implements IComplect {
     abs: number | null;
 }
 export class ComplectsDto implements IComplects {
-    @ApiProperty({ description: 'Prof', type: [ComplectDto] })
-    prof: ComplectDto[];
-    @ApiProperty({ description: 'Universal', type: [ComplectDto] })
-    universal: ComplectDto[];
+    @ApiProperty({ description: 'Prof', type: [InitComplectDto] })
+    prof: InitComplectDto[];
+    @ApiProperty({ description: 'Universal', type: [InitComplectDto] })
+    universal: InitComplectDto[];
 }
 
 export class InfoblockDto implements IInfoblock {

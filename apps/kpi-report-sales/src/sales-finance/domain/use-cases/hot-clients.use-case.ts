@@ -17,7 +17,11 @@ import { dealCompanyId } from '../calc/closed-sales-calc';
 import { SalesFinanceCompanyService } from '../services/sales-finance-company.service';
 import { SalesFinanceDealQueryService } from '../services/sales-finance-deal-query.service';
 import { SalesFinanceProductRowsService } from '../services/sales-finance-product-rows.service';
-import { ContractTypeItemsService } from '../services/contract-type-items.service';
+import {
+    ContractTypeItemsService,
+    mergeContractTypeItems,
+} from '../services/contract-type-items.service';
+import { PBX_SALES_KONSTRUCTOR_FIELD_CODES } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 
 export class HotClientsUseCase {
     constructor(
@@ -47,13 +51,19 @@ export class HotClientsUseCase {
             assignedIds,
         );
         const uf = dealQuery.getUfFields();
-        // Живой словарь типов договора (включая ручные элементы портала).
+        // Словарь типов договора: портальные items (семантические коды) +
+        // живой список (свежие имена, ручные элементы портала).
         const contractTypeItems = ContractTypeItemsService.byId(
-            await new ContractTypeItemsService(
-                bitrix,
-                this.cache,
-                domain,
-            ).getItems(uf.contractType, forceRefresh),
+            mergeContractTypeItems(
+                portal.getDealFieldByCode(
+                    PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+                )?.items ?? [],
+                await new ContractTypeItemsService(
+                    bitrix,
+                    this.cache,
+                    domain,
+                ).getItems(uf.contractType, forceRefresh),
+            ),
         );
         // Строки — из промежуточного кэша per-сделка (версия DATE_MODIFY).
         const rowsByDealId = await productRows.getRowsByDeals(

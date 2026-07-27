@@ -8,10 +8,14 @@
  * read-DTO финансов); контроллер/сервисы менять не нужно.
  */
 import {
+    PBX_SALES_KONSTRUCTOR_FIELDS,
     PBX_SALES_KONSTRUCTOR_FIELD_CODES,
     type PbxSalesKonstructorFieldType,
 } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
-import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import {
+    PBX_SALES_EVENT_FIELDS,
+    PBX_SALES_EVENT_FIELD_CODES,
+} from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import { createEnumObject } from '@lib/portal-lib/pbx-domain/field/type/pbx-field-type.util';
 
 /** Сущности Bitrix, чьи поля поддерживает модуль (масштабируется). */
@@ -39,7 +43,18 @@ export interface EditablePbxFieldConfig {
      * финансовые расчёты/документы).
      */
     confirm: boolean;
+    /**
+     * Человекочитаемое имя из истинной типизации — fallback, когда у
+     * портальной строки поля пустые name/title (бывает у konstructor-строк).
+     */
+    displayName: string;
 }
+
+/** Имя поля из истинной типизации portal-lib (fallback — сам код). */
+const typedFieldName = (code: string): string =>
+    [...PBX_SALES_KONSTRUCTOR_FIELDS, ...PBX_SALES_EVENT_FIELDS].find(
+        field => field.code === code,
+    )?.name ?? code;
 
 /**
  * Редактируемые поля. op_client_type — поле КОМПАНИИ (legacy konstructor
@@ -51,24 +66,34 @@ export const EDITABLE_PBX_FIELDS: readonly EditablePbxFieldConfig[] = [
         entity: PBX_FIELD_ENTITY.deal,
         valueKind: PBX_FIELD_VALUE_KIND.enum,
         confirm: true,
+        displayName: typedFieldName(
+            PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+        ),
     },
     {
         code: PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_start,
         entity: PBX_FIELD_ENTITY.deal,
         valueKind: PBX_FIELD_VALUE_KIND.date,
         confirm: true,
+        displayName: typedFieldName(
+            PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_start,
+        ),
     },
     {
         code: PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_end,
         entity: PBX_FIELD_ENTITY.deal,
         valueKind: PBX_FIELD_VALUE_KIND.date,
         confirm: true,
+        displayName: typedFieldName(
+            PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_end,
+        ),
     },
     {
         code: PBX_SALES_EVENT_FIELD_CODES.op_client_type,
         entity: PBX_FIELD_ENTITY.company,
         valueKind: PBX_FIELD_VALUE_KIND.enum,
         confirm: false,
+        displayName: typedFieldName(PBX_SALES_EVENT_FIELD_CODES.op_client_type),
     },
 ] as const;
 

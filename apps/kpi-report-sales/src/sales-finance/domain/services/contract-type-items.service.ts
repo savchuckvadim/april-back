@@ -9,9 +9,14 @@
  * code элемента: XML_ID (инсталляция пишет туда семантический код) либо
  * `bx_<ID>` для ручных элементов без XML_ID; name = VALUE.
  *
+ * Итоговый словарь — merge с портальными items (mergeContractTypeItems):
+ * семантические коды портала первичны (по-pbx-овски: bitrixId item-а =
+ * значение в Битриксе), живой список даёт свежие имена и ручные элементы.
+ *
  * НЕ @Injectable: per-request `new Svc(bitrix, cache, domain)`.
  */
 import { BitrixService } from '@/modules/bitrix';
+import { IFieldItem } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { SalesFinanceCacheService } from '../../cache/sales-finance-cache.service';
 import { buildContractTypeDictKey } from '../../cache/cache-key.util';
 import { SALES_FINANCE_DICT_TTL_SECONDS } from '../../constants/sales-finance.const';
@@ -95,4 +100,33 @@ export class ContractTypeItemsService {
     ): ReadonlyMap<string, ContractTypeItem> {
         return new Map(items.map(item => [item.code, item]));
     }
+}
+
+/**
+ * Итоговый словарь типов договора: портальные items первичны (их `code` —
+ * семантический, `bitrixId` — численное значение enum в Битриксе), живой
+ * список даёт актуальные имена и элементы, добавленные на портале руками.
+ */
+export function mergeContractTypeItems(
+    portalItems: IFieldItem[],
+    liveItems: ContractTypeItem[],
+): ContractTypeItem[] {
+    const liveById = new Map(liveItems.map(item => [item.id, item]));
+    const portalIds = new Set(portalItems.map(item => Number(item.bitrixId)));
+    const merged: ContractTypeItem[] = portalItems.map(item => {
+        const id = Number(item.bitrixId);
+        return {
+            id,
+            code: item.code,
+            name:
+                liveById.get(id)?.name ||
+                item.name ||
+                item.title ||
+                item.code,
+        };
+    });
+    for (const live of liveItems) {
+        if (!portalIds.has(live.id)) merged.push(live);
+    }
+    return merged;
 }

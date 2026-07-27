@@ -90,7 +90,11 @@ export class ContractDto {
     @IsObject({ message: 'contract must be a valid ContracPortaltDto' })
     contract: ContracPortaltDto;
 
-    @ApiProperty({ description: 'Code of the contract' })
+    @ApiProperty({
+        description: 'Code of the contract',
+        enum: CONTRACT_CODE,
+        enumName: 'ContractCode',
+    })
     @IsString({ message: 'code must be a string' })
     code: CONTRACT_CODE;
 

@@ -169,7 +169,7 @@ export class PortalModel {
             field => field.code === code,
         );
         if (!field) return '';
-        return `UF_CRM_${field.bitrixId}`;
+        return this.getFieldBitrixId(field);
     }
     getDealFieldItemByCode(code: string): IFieldItem | undefined {
         for (const field of this.portal.deals[0].bitrixfields || []) {
@@ -319,8 +319,14 @@ export class PortalModel {
         ) as IPPortalMeasure;
     }
 
+    /**
+     * Полное имя UF_CRM-поля. `bitrixId` в БД портала неоднороден:
+     * konstructor-строки хранят полное имя («UF_CRM_1684144993»), остальные —
+     * суффикс («CONTRACT_TYPE», «1687967605») — не наклеиваем префикс дважды.
+     */
     getFieldBitrixId(field: IField): string {
-        return `UF_CRM_${field.bitrixId}`;
+        const raw = String(field.bitrixId ?? '');
+        return raw.startsWith('UF_CRM_') ? raw : `UF_CRM_${raw}`;
     }
 
     getFieldItemByCode(
