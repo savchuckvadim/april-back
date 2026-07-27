@@ -32,15 +32,22 @@ export function dealCompanyId(deal: IBXDeal): number | null {
     return id > 0 ? id : null;
 }
 
+/** Элемент живого словаря типов договора (code XML_ID/bx_<ID> + name). */
+export interface ContractTypeDictItem {
+    code: string;
+    name: string;
+}
+
 /**
- * Код типа договора сделки: UF-значение (numeric id элемента) → code через
- * карту items поля (getContractTypeItemMap). Поле не настроено/пусто → null.
+ * Тип договора сделки: UF-значение (numeric id элемента) → {code, name}
+ * через ЖИВОЙ словарь (ContractTypeItemsService). Поле не настроено/
+ * пусто/id вне словаря → null.
  */
-export function resolveContractTypeCode(
+export function resolveContractType(
     deal: IBXDeal,
     ufKey: string,
-    contractTypeItems: ReadonlyMap<number, string>,
-): string | null {
+    contractTypeItems: ReadonlyMap<number, ContractTypeDictItem>,
+): ContractTypeDictItem | null {
     if (!ufKey) return null;
     const itemId = Number(deal[ufKey] ?? 0);
     if (!itemId) return null;
@@ -53,7 +60,7 @@ export function buildClosedSalesDeal(
     rows: IBXProductRowRow[],
     uf: SalesFinanceUfFields,
     companyMap: Map<number, CompanyInfo>,
-    contractTypeItems: ReadonlyMap<number, string>,
+    contractTypeItems: ReadonlyMap<number, ContractTypeDictItem>,
 ): ClosedSalesDealDto {
     const contractStartDate = parseContractDate(deal[uf.contractStart]);
     const contractEndDate = parseContractDate(deal[uf.contractEnd]);
@@ -65,6 +72,11 @@ export function buildClosedSalesDeal(
     const monthlyAmount = sumRowsMonthly(rows);
     const companyId = dealCompanyId(deal);
     const company = companyId !== null ? companyMap.get(companyId) : undefined;
+    const contractType = resolveContractType(
+        deal,
+        uf.contractType,
+        contractTypeItems,
+    );
 
     return {
         id: Number(deal.ID),
@@ -79,11 +91,8 @@ export function buildClosedSalesDeal(
         contractStart: toIsoOrNull(deal[uf.contractStart]),
         contractEnd: toIsoOrNull(deal[uf.contractEnd]),
         contractMonths,
-        contractTypeCode: resolveContractTypeCode(
-            deal,
-            uf.contractType,
-            contractTypeItems,
-        ),
+        contractTypeCode: contractType?.code ?? null,
+        contractTypeName: contractType?.name ?? null,
         expectedContractAmount: roundMoney(monthlyAmount * contractMonths),
         companyId,
         companyName: company?.title ?? null,

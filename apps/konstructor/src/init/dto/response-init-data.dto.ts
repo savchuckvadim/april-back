@@ -4,8 +4,19 @@ import { IInfoblock, IInfoGroups } from '../services/init-infoblock.service';
 import { RegionEntity } from '@lib/garant';
 import { IComplect } from '../services/init-complect.service';
 import { IKonstruktorInit } from '../konstructor-init.use-case';
-import { ProductRowContractDto } from '../../document-generate';
 import { ContractDto } from '../../dto/contract.dto';
+import { IKServiceItem, IKServices } from '../services/init-services.service';
+
+export class ComplectCodesDto {
+    @ApiProperty({ description: 'Коды инфоблоков наполнения', type: [String] })
+    filling: string[];
+    @ApiProperty({ description: 'Коды ЭР', type: [String] })
+    ers: string[];
+    @ApiProperty({ description: 'Коды пакетов ЭР', type: [String] })
+    packetsEr: string[];
+    @ApiProperty({ description: 'Коды ЭР внутри пакетов', type: [String] })
+    ersInPacket: string[];
+}
 
 export class ComplectDto implements IComplect {
     @ApiProperty({ description: 'Id', type: Number })
@@ -25,19 +36,30 @@ export class ComplectDto implements IComplect {
     packetsEr: number[];
     @ApiProperty({ description: 'Ers In Packet', type: [Number] })
     ersInPacket: number[];
-    @ApiProperty({ description: 'Codes', type: [String] })
-    codes: {
-        filling: string[];
-        ers: string[];
-        packetsEr: string[];
-        ersInPacket: string[];
-    };
+    @ApiProperty({ description: 'Codes', type: ComplectCodesDto })
+    codes: ComplectCodesDto;
     @ApiProperty({ description: 'Type', type: String })
     type: 'prof' | 'universal';
     @ApiProperty({ description: 'With Consalting', type: Boolean })
     withConsalting: boolean;
+    @ApiProperty({ description: 'With ABS', type: Boolean })
+    withABS: boolean;
+    @ApiProperty({ description: 'With Lt', type: Boolean })
+    withLt: boolean;
+    @ApiProperty({ description: 'With Services', type: Boolean })
+    withServices: boolean;
+    @ApiProperty({
+        description: 'Есть ли наполнение по умолчанию',
+        type: Boolean,
+    })
+    withDefault: boolean;
     @ApiProperty({ description: 'Is Changing', type: Boolean })
     isChanging: boolean;
+    @ApiProperty({
+        description: 'Тип продукта (garant/lt/star/consalting)',
+        type: String,
+    })
+    productType: string;
 
     @ApiProperty({ description: 'Short Title', type: String })
     shortTitle: string;
@@ -45,10 +67,23 @@ export class ComplectDto implements IComplect {
     tag: string;
     @ApiProperty({ description: 'Class Name', type: String })
     className: string;
+    @ApiProperty({
+        description: 'Цвет комплекта из админки',
+        type: String,
+        nullable: true,
+    })
+    color: string | null;
     @ApiProperty({ description: 'Number', type: Number })
     number: number;
     @ApiProperty({ description: 'Weight', type: Number })
     weight: number;
+    @ApiProperty({
+        description:
+            'База абонентского обслуживания (universal: цена = abs × region.abs × coefficient)',
+        type: Number,
+        nullable: true,
+    })
+    abs: number | null;
 }
 export class ComplectsDto implements IComplects {
     @ApiProperty({ description: 'Prof', type: [ComplectDto] })
@@ -178,13 +213,150 @@ export class ContractsDto {
     @ApiProperty({ description: 'Items', type: [ContractDto] })
     items: ContractDto[];
 }
+
+export class SupplyInitDto {
+    @ApiProperty({ description: 'Id', type: Number })
+    id: number;
+    @ApiProperty({ description: 'Название', type: String })
+    name: string;
+    @ApiProperty({ description: 'Полное название', type: String })
+    fullName: string;
+    @ApiProperty({ description: 'Короткое название', type: String })
+    shortName: string;
+    @ApiProperty({ description: 'Код', type: String })
+    code: string;
+    @ApiProperty({
+        description: 'Тип поставки (internet/proxima)',
+        type: String,
+    })
+    type: string;
+    @ApiProperty({
+        description: 'Количество одновременных доступов (ОД)',
+        type: Number,
+    })
+    usersQuantity: number;
+    @ApiProperty({ description: 'Ценовой коэффициент', type: Number })
+    coefficient: number;
+    @ApiProperty({ description: 'Цвет', type: String, nullable: true })
+    color: string | null;
+    @ApiProperty({ description: 'Описание', type: String, nullable: true })
+    description: string | null;
+    @ApiProperty({
+        description: 'Имя для продажи 1',
+        type: String,
+        nullable: true,
+    })
+    saleName_1: string | null;
+    @ApiProperty({
+        description: 'Имя для продажи 2',
+        type: String,
+        nullable: true,
+    })
+    saleName_2: string | null;
+    @ApiProperty({
+        description: 'Имя для продажи 3',
+        type: String,
+        nullable: true,
+    })
+    saleName_3: string | null;
+}
+
+export class PriceInitDto {
+    @ApiProperty({ description: 'Id', type: Number })
+    id: number;
+    @ApiProperty({ description: 'Код цены', type: String })
+    code: string;
+    @ApiProperty({ description: 'Значение (руб/мес)', type: Number })
+    value: number;
+    @ApiProperty({ description: 'Спеццена', type: Boolean })
+    isSpecial: boolean;
+    @ApiProperty({ description: 'Скидка', type: Number, nullable: true })
+    discount: number | null;
+    @ApiProperty({
+        description: 'Тип региона: 0 — регионы, 1 — Москва',
+        type: String,
+    })
+    region_type: string;
+    @ApiProperty({
+        description: 'Тип поставки (internet/proxima)',
+        type: String,
+        nullable: true,
+    })
+    supply_type: string | null;
+    @ApiProperty({ description: 'Код поставки', type: String, nullable: true })
+    supply_code: string | null;
+    @ApiProperty({ description: 'Код комплекта', type: String, nullable: true })
+    complect_code: string | null;
+    @ApiProperty({
+        description: 'Код пакета (LT/сервисы)',
+        type: String,
+        nullable: true,
+    })
+    garant_package_code: string | null;
+}
+
+export class KServiceItemDto implements IKServiceItem {
+    @ApiProperty({ description: 'Id', type: Number })
+    id: number;
+    @ApiProperty({ description: 'Код', type: String })
+    code: string;
+    @ApiProperty({ description: 'Название', type: String })
+    name: string;
+    @ApiProperty({ description: 'Полное название', type: String })
+    fullName: string;
+    @ApiProperty({ description: 'Короткое название', type: String })
+    shortName: string;
+    @ApiProperty({ description: 'Номер', type: Number })
+    number: number;
+    @ApiProperty({ description: 'Вес', type: Number })
+    weight: number;
+    @ApiProperty({
+        description: 'База абонентского обслуживания',
+        type: Number,
+        nullable: true,
+    })
+    abs: number | null;
+    @ApiProperty({ description: 'Цвет', type: String, nullable: true })
+    color: string | null;
+    @ApiProperty({
+        description: 'Тип продукта (lt/star/consalting)',
+        type: String,
+    })
+    productType: string;
+    @ApiProperty({ description: 'Из garant_packages (пакет)', type: Boolean })
+    isPackage: boolean;
+}
+
+export class ServicesInitDto implements IKServices {
+    @ApiProperty({ description: 'Продукты Legal Tech', type: [KServiceItemDto] })
+    lt: KServiceItemDto[];
+    @ApiProperty({ description: 'Пакеты Legal Tech', type: [KServiceItemDto] })
+    ltPackages: KServiceItemDto[];
+    @ApiProperty({ description: 'Консалтинг', type: [KServiceItemDto] })
+    consalting: KServiceItemDto[];
+    @ApiProperty({ description: 'СТАР', type: [KServiceItemDto] })
+    star: KServiceItemDto[];
+}
+
 export class KonstructorInitDataDto implements IKonstruktorInit {
     @ApiProperty({ description: 'Complects', type: ComplectsDto })
     complects: ComplectsDto;
     @ApiProperty({ description: 'Infoblocks', type: [InfoGroupsDto] })
     infoblocks: InfoGroupsDto[];
-    @ApiProperty({ description: 'Regions', type: [RegionEntity] })
-    regions: RegionEntity[];
+    @ApiProperty({ description: 'Regions', type: [RegionInitDto] })
+    regions: RegionInitDto[];
     @ApiProperty({ description: 'Contracts', type: ContractsDto })
     contracts: ContractsDto;
+    @ApiProperty({ description: 'Виды поставки (ОД)', type: [SupplyInitDto] })
+    supplies: SupplyInitDto[];
+    @ApiProperty({
+        description: 'Прайс-таблица (code-джойны)',
+        type: [PriceInitDto],
+    })
+    prices: PriceInitDto[];
+    @ApiProperty({
+        description: 'Дополнительные сервисы (LT/консалтинг/СТАР)',
+        type: ServicesInitDto,
+    })
+    services: ServicesInitDto;
 }

@@ -19,6 +19,8 @@ export interface SalesFinanceUfFields {
     contractEnd: string;
     contractType: string;
     opHistory: string;
+    /** «ОП История (Комментарии)» — multiple; '' если не настроено. */
+    opMHistory: string;
     presComments: string;
 }
 
@@ -52,9 +54,8 @@ export class SalesFinanceDealQueryService {
             }
             return bitrixId;
         };
-        // contract_type опционален: не настроен на портале → '' (селекты
-        // фильтруют пустое, тип договора в отчёте будет null) — не валим
-        // весь финансовый отчёт из-за одного необязательного поля.
+        // Опциональные поля: не настроены на портале → '' (селекты фильтруют
+        // пустое, значение в отчёте будет null/[]) — не валим весь отчёт.
         const resolveOptional = (code: string): string =>
             this.portal.getDealFieldBitrixIdByCode(code) || '';
         return {
@@ -68,24 +69,11 @@ export class SalesFinanceDealQueryService {
                 PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
             ),
             opHistory: resolve(PBX_SALES_EVENT_FIELD_CODES.op_history),
+            opMHistory: resolveOptional(
+                PBX_SALES_EVENT_FIELD_CODES.op_mhistory,
+            ),
             presComments: resolve(PBX_SALES_EVENT_FIELD_CODES.pres_comments),
         };
-    }
-
-    /**
-     * Карта элементов enum-поля «Тип договора»: numeric id элемента → code.
-     * Поле не настроено на портале → пустая карта (тип договора = null).
-     */
-    getContractTypeItemMap(): ReadonlyMap<number, string> {
-        const field = this.portal.getDealFieldByCode(
-            PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
-        );
-        return new Map(
-            (field?.items ?? []).map(item => [
-                Number(item.bitrixId),
-                String(item.code),
-            ]),
-        );
     }
 
     /** Сделки, закрытые в успех, по сотрудникам и периоду CLOSEDATE. */
@@ -117,6 +105,7 @@ export class SalesFinanceDealQueryService {
                 'OPPORTUNITY',
                 'STAGE_ID',
                 'COMPANY_ID',
+                'DATE_MODIFY',
                 uf.contractStart,
                 uf.contractEnd,
                 uf.contractType,
@@ -151,7 +140,9 @@ export class SalesFinanceDealQueryService {
                 'STAGE_ID',
                 'OPPORTUNITY',
                 'COMPANY_ID',
+                'DATE_MODIFY',
                 uf.opHistory,
+                uf.opMHistory,
                 uf.presComments,
                 uf.contractStart,
                 uf.contractEnd,

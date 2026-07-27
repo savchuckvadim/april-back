@@ -13,7 +13,11 @@ type DealAllMock = jest.Mock;
 
 function makeBitrixMock(dealAll: DealAllMock) {
     return {
-        deal: { all: dealAll },
+        deal: {
+            all: dealAll,
+            // живой словарь типов договора (crm.deal.userfield.list)
+            getFieldsList: jest.fn().mockResolvedValue({ result: [] }),
+        },
         company: { all: jest.fn().mockResolvedValue([]) },
         batch: { productRow: { list: jest.fn() } },
         api: {
@@ -50,6 +54,8 @@ function makeCacheMock(monthCacheValue: unknown = null) {
     return {
         getJson: jest.fn().mockResolvedValue(monthCacheValue),
         setJson: jest.fn().mockResolvedValue(undefined),
+        getJsonMany: jest.fn().mockResolvedValue([]),
+        setJsonMany: jest.fn().mockResolvedValue(undefined),
     } as unknown as SalesFinanceCacheService & {
         getJson: jest.Mock;
         setJson: jest.Mock;
@@ -114,10 +120,10 @@ describe('ClosedSalesUseCase', () => {
             (call: unknown[]) => call[0],
         );
         expect(writtenKeys).toContain(
-            'sales-finance:v5:april.bitrix24.ru:closed:month:2026-03:10',
+            'sales-finance:v6:april.bitrix24.ru:closed:month:2026-03:10',
         );
         expect(writtenKeys).toContain(
-            'sales-finance:v5:april.bitrix24.ru:closed:result:2026-03-01_2026-03-31_10',
+            'sales-finance:v6:april.bitrix24.ru:closed:result:2026-03-01_2026-03-31_10',
         );
     });
 
@@ -130,7 +136,8 @@ describe('ClosedSalesUseCase', () => {
 
         expect(cache.getJson).not.toHaveBeenCalled();
         expect(dealAll).toHaveBeenCalledTimes(1);
-        expect(cache.setJson).toHaveBeenCalledTimes(2); // сегмент + итог
+        // словарь типов + сегмент + итог (forceRefresh перезаписывает всё)
+        expect(cache.setJson).toHaveBeenCalledTimes(3);
     });
 
     it('текущий месяц всегда пересчитывается и не пишется в месячный кэш', async () => {
@@ -148,7 +155,8 @@ describe('ClosedSalesUseCase', () => {
             }),
         );
 
-        expect(cache.getJson).not.toHaveBeenCalled(); // сегмент не кэшируемый
+        // читается только словарь типов договора, месячный сегмент — нет
+        expect(cache.getJson).toHaveBeenCalledTimes(1);
         expect(dealAll).toHaveBeenCalledTimes(1);
         expect(cache.setJson).toHaveBeenCalledTimes(1); // только итог
     });

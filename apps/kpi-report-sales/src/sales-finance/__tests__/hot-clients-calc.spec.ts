@@ -10,14 +10,17 @@ const UF: SalesFinanceUfFields = {
     contractEnd: 'UF_CRM_CONTRACT_END',
     contractType: 'UF_CRM_CONTRACT_TYPE',
     opHistory: 'UF_CRM_OP_HISTORY',
+    opMHistory: 'UF_CRM_OP_MHISTORY',
     presComments: 'UF_CRM_PRES_COMMENTS',
 };
 
-/** Карта элементов «Типа договора»: numeric id элемента → code. */
-const CONTRACT_TYPE_ITEMS: ReadonlyMap<number, string> = new Map([
-    [301, 'garant_standart'],
-]);
-const NO_ITEMS: ReadonlyMap<number, string> = new Map();
+/** Живой словарь «Типа договора»: numeric id элемента → {code, name}. */
+const CONTRACT_TYPE_ITEMS: ReadonlyMap<
+    number,
+    { code: string; name: string }
+> = new Map([[301, { code: 'garant_standart', name: 'Гарант Стандарт' }]]);
+const NO_ITEMS: ReadonlyMap<number, { code: string; name: string }> =
+    new Map();
 
 function openDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     return {
@@ -45,6 +48,7 @@ describe('buildHotClientDeal', () => {
                 UF_CRM_CONTRACT_START: '2026-03-01',
                 UF_CRM_CONTRACT_END: '2027-02-28',
                 UF_CRM_CONTRACT_TYPE: '301',
+                UF_CRM_OP_MHISTORY: ['12.05 просили перезвонить'],
             } as Partial<IBXDeal>),
             [{ price: 5000, quantity: 1, measureName: 'лиц.12мес.' }],
             { code: 'sales_offer_create', name: 'Документы' },
@@ -73,7 +77,9 @@ describe('buildHotClientDeal', () => {
         expect(deal.contractStart).not.toBeNull();
         expect(deal.contractEnd).not.toBeNull();
         expect(deal.contractTypeCode).toBe('garant_standart');
+        expect(deal.contractTypeName).toBe('Гарант Стандарт');
         expect(deal.opHistory).toEqual(['12.05 Презентация', '20.05 КП']);
+        expect(deal.opMHistory).toEqual(['12.05 просили перезвонить']);
         expect(deal.comments).toEqual(['Просят скидку']);
         expect(deal.companyId).toBe(512);
         expect(deal.companyName).toBe('ООО Лютик');

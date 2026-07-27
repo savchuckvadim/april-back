@@ -35,6 +35,13 @@ function makeMocks(options: { withDealFields?: boolean } = {}) {
                     ? CONTRACT_TYPE_FIELD
                     : undefined,
             ),
+        getDealFieldBitrixIdByCode: jest
+            .fn()
+            .mockImplementation((code: string) =>
+                withDealFields && code === CONTRACT_TYPE_FIELD.code
+                    ? `UF_CRM_${CONTRACT_TYPE_FIELD.bitrixId}`
+                    : '',
+            ),
         getCompanyFieldByCode: jest
             .fn()
             .mockImplementation((code: string) =>
@@ -47,10 +54,25 @@ function makeMocks(options: { withDealFields?: boolean } = {}) {
             ),
     };
 
+    // Живой словарь типов договора (userfield.list) — те же элементы,
+    // что у портального поля, чтобы meta-ассерты совпадали.
+    const getFieldsList = jest.fn().mockResolvedValue({
+        result: [
+            {
+                FIELD_NAME: `UF_CRM_${CONTRACT_TYPE_FIELD.bitrixId}`,
+                LIST: CONTRACT_TYPE_FIELD.items.map(item => ({
+                    ID: String(item.bitrixId),
+                    VALUE: item.name,
+                    XML_ID: item.code,
+                })),
+            },
+        ],
+    });
+
     const pbx = {
         init: jest.fn().mockResolvedValue({
             bitrix: {
-                deal: { update: dealUpdate },
+                deal: { update: dealUpdate, getFieldsList },
                 company: { update: companyUpdate },
             },
             PortalModel: portal,
@@ -60,6 +82,8 @@ function makeMocks(options: { withDealFields?: boolean } = {}) {
     const resetByPattern = jest.fn().mockResolvedValue(3);
     const cache = {
         resetByPattern,
+        getJson: jest.fn().mockResolvedValue(null),
+        setJson: jest.fn().mockResolvedValue(undefined),
     } as unknown as SalesFinanceCacheService;
 
     return { pbx, cache, dealUpdate, companyUpdate, resetByPattern };

@@ -17,8 +17,9 @@ import {
 import { SalesFinanceUfFields } from '../services/sales-finance-deal-query.service';
 import { CompanyInfo } from '../services/sales-finance-company.service';
 import {
+    ContractTypeDictItem,
     dealCompanyId,
-    resolveContractTypeCode,
+    resolveContractType,
     toIsoOrNull,
 } from './closed-sales-calc';
 
@@ -37,10 +38,15 @@ export function buildHotClientDeal(
     stageInfo: { code: string; name: string } | undefined,
     uf: SalesFinanceUfFields,
     companyMap: Map<number, CompanyInfo>,
-    contractTypeItems: ReadonlyMap<number, string>,
+    contractTypeItems: ReadonlyMap<number, ContractTypeDictItem>,
 ): HotClientDealDto {
     const companyId = dealCompanyId(deal);
     const company = companyId !== null ? companyMap.get(companyId) : undefined;
+    const contractType = resolveContractType(
+        deal,
+        uf.contractType,
+        contractTypeItems,
+    );
     return {
         id: Number(deal.ID),
         title: String(deal.TITLE ?? ''),
@@ -54,12 +60,12 @@ export function buildHotClientDeal(
         quantity: sumRowsQuantity(rows),
         contractStart: toIsoOrNull(deal[uf.contractStart]),
         contractEnd: toIsoOrNull(deal[uf.contractEnd]),
-        contractTypeCode: resolveContractTypeCode(
-            deal,
-            uf.contractType,
-            contractTypeItems,
-        ),
+        contractTypeCode: contractType?.code ?? null,
+        contractTypeName: contractType?.name ?? null,
         opHistory: toStringArray(deal[uf.opHistory]),
+        opMHistory: uf.opMHistory
+            ? toStringArray(deal[uf.opMHistory])
+            : [],
         comments: toStringArray(deal[uf.presComments]),
         companyId,
         companyName: company?.title ?? null,

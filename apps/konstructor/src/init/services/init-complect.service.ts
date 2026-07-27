@@ -6,6 +6,7 @@ import {
     InfogroupService,
     InfogroupType,
 } from '@lib/garant';
+import { ComplectProductTypeEnum } from '@lib/garant/complect/types/complect.type';
 import { Injectable } from '@nestjs/common';
 
 export interface IComplects {
@@ -20,37 +21,31 @@ export interface IComplect {
     shortTitle: string;
     tag: string;
     className: string;
+    color: string | null;
     number: number;
     weight: number;
+    /** База абонентского обслуживания: цена universal = abs × region.abs × supply.coefficient */
+    abs: number | null;
     withConsalting: boolean;
+    withABS: boolean;
+    withLt: boolean;
+    withServices: boolean;
+    withDefault: boolean;
     isChanging: boolean;
+    productType: string;
     filling: string[]; //  "Законодательство России",...
 
     ers: number[];
     packetsEr: number[];
     ersInPacket: number[];
-    // lt: number[]
-    // ltInPacket: number[]
-    // freeBlocks: number[]
-    // consalting: number[]
-    // star: number[]
     codes: {
         filling: string[];
 
         ers: string[];
         packetsEr: string[];
         ersInPacket: string[];
-        // lt: string[]
-        // ltInPacket: string[]
-        // freeBlocks: string[]
-        // consalting: string[]
-        // star: string[]
     };
-    // consaltingProduct: number
     type: 'prof' | 'universal';
-    // withStar: boolean
-
-    // regions: number[]
 }
 @Injectable()
 export class InitComplectService {
@@ -63,11 +58,19 @@ export class InitComplectService {
         const complects = await this.complectService.findAll();
         if (!complects) return null;
 
+        // В таблице complects лежат и сервисы (lt/star/consalting) —
+        // в prof/universal попадают только комплекты Гаранта.
+        const garant = complects.filter(
+            complect =>
+                !complect.productType ||
+                complect.productType === ComplectProductTypeEnum.GARANT,
+        );
+
         return {
-            prof: complects
+            prof: garant
                 .filter(complect => complect.type === 'prof')
                 .map(complect => this.getComplectItem(complect)),
-            universal: complects
+            universal: garant
                 .filter(complect => complect.type === 'universal')
                 .map(complect => this.getComplectItem(complect)),
         };
@@ -96,13 +99,18 @@ export class InitComplectService {
             shortTitle: complect.shortName || '',
             tag: complect.code || '',
             className: complect.color || '',
+            color: complect.color || null,
             number: complect.number || 0,
             weight: complect.weight || 0,
+            abs: this.getAbs(complect.abs),
             withConsalting: complect.withConsalting || false,
+            withABS: complect.withABS || false,
+            withLt: complect.withLt || false,
+            withServices: complect.withServices || false,
+            withDefault: complect.withDefault || false,
             isChanging: complect.isChanging || false,
+            productType: complect.productType || 'garant',
             type: complect.type === 'prof' ? 'prof' : 'universal',
-            // withStar: complect.wi || false,
-            // regions: complect.regions || [],
             filling,
             ers: this.getErs(complect.infoblocks).numbers,
             packetsEr: this.getPacketsErs(complect.infoblocks).numbers,
@@ -123,6 +131,12 @@ export class InitComplectService {
                 // star: this.getStar(complect.infoblocks).codes,
             },
         };
+    }
+
+    private getAbs(abs: string | undefined | null): number | null {
+        if (abs === undefined || abs === null || abs === '') return null;
+        const parsed = Number(abs);
+        return Number.isFinite(parsed) ? parsed : null;
     }
 
     private getFillingAndInfoblocks(iblocks: InfoblockEntity[]): {

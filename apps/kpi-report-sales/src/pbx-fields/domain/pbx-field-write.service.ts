@@ -34,14 +34,19 @@ export class PbxFieldWriteService {
     /**
      * Записывает значение поля; возвращает нормализованное сохранённое
      * значение (code элемента / ISO-дата / null).
+     *
+     * enumDict — опциональный ЖИВОЙ словарь code→id (contract_type:
+     * портальная БД не знает элементов, добавленных руками); без него
+     * enum резолвится по items поля портала.
      */
     async write(
         config: EditablePbxFieldConfig,
         entityId: number,
         value: string | null,
+        enumDict?: ReadonlyMap<string, number>,
     ): Promise<string | null> {
         const field = this.resolveField(config);
-        const bitrixValue = this.toBitrixValue(config, field, value);
+        const bitrixValue = this.toBitrixValue(config, field, value, enumDict);
         const fields = { [this.portal.getFieldBitrixId(field)]: bitrixValue };
 
         if (config.entity === PBX_FIELD_ENTITY.deal) {
@@ -71,11 +76,22 @@ export class PbxFieldWriteService {
         config: EditablePbxFieldConfig,
         field: IField,
         value: string | null,
+        enumDict?: ReadonlyMap<string, number>,
     ): string | number {
         if (value === null || value === undefined || value === '') {
             return PBX_BITRIX_EMPTY_VALUE;
         }
         if (config.valueKind === PBX_FIELD_VALUE_KIND.enum) {
+            // Живой словарь (contract_type) приоритетнее портальной БД.
+            if (enumDict) {
+                const id = enumDict.get(value);
+                if (!id) {
+                    throw new BadRequestException(
+                        `У поля ${config.code} нет элемента с кодом ${value}`,
+                    );
+                }
+                return id;
+            }
             const item = (field.items ?? []).find(
                 fieldItem => fieldItem.code === value,
             );

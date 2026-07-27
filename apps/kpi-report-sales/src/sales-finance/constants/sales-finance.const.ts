@@ -15,13 +15,29 @@ import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-dea
 // товара и предоплаченные месяцы) — старые v3-ключи протухнут по TTL.
 // v5: + contractTypeCode/companyClientType (оба DTO) и contractStart/
 // contractEnd у горячих (pbx-fields) — старые v4-ключи протухнут по TTL.
-export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v5' as const;
+// v6: + contractTypeName (live-словарь типов договора), opMHistory у
+// горячих, кэш товарных строк per-сделка (версия по DATE_MODIFY).
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v6' as const;
 
 /** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
 export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 /** TTL смёрженного итога и hot-clients: текущие данные меняются. */
 export const SALES_FINANCE_RESULT_TTL_SECONDS = 60 * 3;
+
+/**
+ * TTL кэша товарных строк ОДНОЙ сделки. Версия ключа включает DATE_MODIFY
+ * сделки: изменилась сделка → другой ключ (промах), старая ячейка
+ * протухнет сама. Поэтому TTL длинный.
+ */
+export const SALES_FINANCE_ROWS_TTL_SECONDS = 60 * 60 * 24 * 30;
+
+/**
+ * TTL живого словаря типов договора (crm.deal.userfield.list): включает
+ * типы, добавленные на портале руками мимо инсталляции (их нет в
+ * портальной БД bitrixfield_items).
+ */
+export const SALES_FINANCE_DICT_TTL_SECONDS = 60 * 60;
 
 export const SALES_FINANCE_WS_EVENTS = {
     CLOSED_SALES_DONE: 'sales-finance:closed-sales:done',
@@ -60,4 +76,8 @@ export const SALES_FINANCE_CACHE_SECTIONS = {
     HOT: 'hot',
     MONTH: 'month',
     RESULT: 'result',
+    /** Товарные строки одной сделки (версия по DATE_MODIFY). */
+    ROWS: 'rows',
+    /** Живые словари полей (типы договора). */
+    DICT: 'dict',
 } as const;

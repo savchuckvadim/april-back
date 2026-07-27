@@ -105,8 +105,8 @@ export class HotClientDealDto {
 
     @ApiProperty({
         description:
-            'Код типа договора (enum-элемент pbx-поля contract_type, ' +
-            'items per-portal); null — не задан/поле не настроено.',
+            'Код типа договора (XML_ID элемента живого словаря; bx_<ID> для ' +
+            'элементов без XML_ID); null — не задан/поле не настроено.',
         type: String,
         nullable: true,
         example: 'garant_standart',
@@ -114,11 +114,30 @@ export class HotClientDealDto {
     contractTypeCode: string | null;
 
     @ApiProperty({
+        description:
+            'Название типа договора (VALUE живого словаря — включает типы, ' +
+            'добавленные на портале руками); null — не задан.',
+        type: String,
+        nullable: true,
+        example: 'Интернет-версия',
+    })
+    contractTypeName: string | null;
+
+    @ApiProperty({
         description: 'Значения поля «ОП История» (op_history).',
         type: [String],
         example: ['12.05 Презентация проведена', '20.05 КП отправлено'],
     })
     opHistory: string[];
+
+    @ApiProperty({
+        description:
+            'Значения multiple-поля «ОП История (Комментарии)» (op_mhistory); ' +
+            'пустой массив — не заполнено/поле не настроено.',
+        type: [String],
+        example: ['12.05 клиент попросил перезвонить'],
+    })
+    opMHistory: string[];
 
     @ApiProperty({
         description: 'Комментарии презентаций (поле pres_comments).',

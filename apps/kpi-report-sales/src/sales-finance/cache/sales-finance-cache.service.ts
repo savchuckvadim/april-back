@@ -42,6 +42,57 @@ export class SalesFinanceCacheService {
         this.logger.debug(`Записан кэш ${key} (TTL ${ttlSeconds}s)`);
     }
 
+    /** Батч-чтение (MGET + группированный findMany AppCache). */
+    async getJsonMany<T>(keys: string[]): Promise<(T | null)[]> {
+        if (!keys.length) return [];
+        const refs = keys.map(key => this.parseKey(key));
+        const validRefs = refs.flatMap(ref =>
+            ref
+                ? [
+                      {
+                          app: SALES_FINANCE_CACHE_PREFIX,
+                          domain: ref.domain,
+                          key: ref.key,
+                      },
+                  ]
+                : [],
+        );
+        const values = await this.appCache.getMany<T>(validRefs);
+        // Восстанавливаем позиции невалидных ключей (null).
+        const result: (T | null)[] = [];
+        let cursor = 0;
+        refs.forEach(ref => {
+            result.push(ref ? (values[cursor++] ?? null) : null);
+        });
+        return result;
+    }
+
+    /** Батч-запись (pipeline + $transaction AppCache), write-through. */
+    async setJsonMany<T>(
+        entries: { key: string; value: T }[],
+        ttlSeconds: number,
+    ): Promise<void> {
+        if (!entries.length) return;
+        const options = entries.flatMap(entry => {
+            const ref = this.parseKey(entry.key);
+            if (!ref) return [];
+            return [
+                {
+                    app: SALES_FINANCE_CACHE_PREFIX,
+                    domain: ref.domain,
+                    key: ref.key,
+                    group: ref.section,
+                    data: entry.value,
+                    ttlSeconds,
+                },
+            ];
+        });
+        await this.appCache.setMany(options);
+        this.logger.debug(
+            `Записан батч кэша: ${options.length} ячеек (TTL ${ttlSeconds}s)`,
+        );
+    }
+
     /**
      * Сброс по прежнему SCAN-паттерну `sales-finance:{domain}:{section}:*`.
      * Возвращает число удалённых записей (по строкам БД).

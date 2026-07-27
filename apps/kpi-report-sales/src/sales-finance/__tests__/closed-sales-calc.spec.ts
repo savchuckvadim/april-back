@@ -10,14 +10,17 @@ const UF: SalesFinanceUfFields = {
     contractEnd: 'UF_CRM_CONTRACT_END',
     contractType: 'UF_CRM_CONTRACT_TYPE',
     opHistory: 'UF_CRM_OP_HISTORY',
+    opMHistory: 'UF_CRM_OP_MHISTORY',
     presComments: 'UF_CRM_PRES_COMMENTS',
 };
 
-/** Карта элементов «Типа договора»: numeric id элемента → code. */
-const CONTRACT_TYPE_ITEMS: ReadonlyMap<number, string> = new Map([
-    [301, 'garant_standart'],
-]);
-const NO_ITEMS: ReadonlyMap<number, string> = new Map();
+/** Живой словарь «Типа договора»: numeric id элемента → {code, name}. */
+const CONTRACT_TYPE_ITEMS: ReadonlyMap<
+    number,
+    { code: string; name: string }
+> = new Map([[301, { code: 'garant_standart', name: 'Гарант Стандарт' }]]);
+const NO_ITEMS: ReadonlyMap<number, { code: string; name: string }> =
+    new Map();
 
 function wonDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     return {
@@ -120,6 +123,7 @@ describe('buildClosedSalesDeal', () => {
             CONTRACT_TYPE_ITEMS,
         );
         expect(resolved.contractTypeCode).toBe('garant_standart');
+        expect(resolved.contractTypeName).toBe('Гарант Стандарт');
 
         const unknown = buildClosedSalesDeal(
             wonDeal({ UF_CRM_CONTRACT_TYPE: '999' } as Partial<IBXDeal>),

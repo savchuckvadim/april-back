@@ -5,6 +5,7 @@ import { InitRegionService } from './services/init.region.service';
 import { KonstructorInitController } from './konstructor-init.controller';
 import { InitComplectService } from './services/init-complect.service';
 import { InitInfoblockService } from './services/init-infoblock.service';
+import { InitServicesService } from './services/init-services.service';
 import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-konstructor.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-kons
         InitRegionService,
         InitComplectService,
         InitInfoblockService,
+        InitServicesService,
     ],
 })
 export class KonstructorInitModule {}

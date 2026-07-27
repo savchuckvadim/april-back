@@ -8,9 +8,11 @@
 import { Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PBX_SALES_KONSTRUCTOR_FIELD_CODES } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 import { SalesFinanceCacheService } from '../../sales-finance/cache/sales-finance-cache.service';
 import { buildResetPattern } from '../../sales-finance/cache/cache-key.util';
 import { SALES_FINANCE_CACHE_SCOPE } from '../../sales-finance/constants/sales-finance.const';
+import { ContractTypeItemsService } from '../../sales-finance/domain/services/contract-type-items.service';
 import {
     EDITABLE_PBX_FIELDS,
     EditablePbxFieldConfig,
@@ -38,9 +40,11 @@ export class PbxFieldsUseCase {
     /**
      * Метаданные редактируемых полей портала. Ненастроенное на портале
      * поле пропускается (не валим весь ответ из-за одного поля).
+     * Items «Типа договора» — из ЖИВОГО словаря (userfield.list): включает
+     * элементы, добавленные на портале руками мимо инсталляции.
      */
     async getMeta(domain: string): Promise<PbxFieldsMetaResponseDto> {
-        const { PortalModel: portal } = await this.pbx.init(domain);
+        const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
 
         const fields = EDITABLE_PBX_FIELDS.flatMap(config => {
             const meta = this.buildFieldMeta(portal, config);
@@ -53,6 +57,27 @@ export class PbxFieldsUseCase {
             return [meta];
         });
 
+        // contract_type: заменяем items портальной БД живым словарём.
+        const contractTypeMeta = fields.find(
+            field =>
+                field.code === PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+        );
+        if (contractTypeMeta) {
+            const liveItems = await new ContractTypeItemsService(
+                bitrix,
+                this.financeCache,
+                domain,
+            ).getItems(
+                portal.getDealFieldBitrixIdByCode(
+                    PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+                ),
+            );
+            contractTypeMeta.items = liveItems.map(item => ({
+                code: item.code,
+                name: item.name,
+            }));
+        }
+
         return { fields };
     }
 
@@ -64,11 +89,32 @@ export class PbxFieldsUseCase {
         const config = findEditablePbxField(dto.fieldCode)!;
         const { bitrix, PortalModel: portal } = await this.pbx.init(dto.domain);
 
+        // contract_type: code → numeric id по живому словарю (портальная БД
+        // не знает элементов, добавленных руками).
+        let enumDict: ReadonlyMap<string, number> | undefined;
+        if (
+            dto.fieldCode === PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type
+        ) {
+            const liveItems = await new ContractTypeItemsService(
+                bitrix,
+                this.financeCache,
+                dto.domain,
+            ).getItems(
+                portal.getDealFieldBitrixIdByCode(
+                    PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+                ),
+            );
+            enumDict = new Map(
+                liveItems.map(item => [item.code, item.id]),
+            );
+        }
+
         const writer = new PbxFieldWriteService(bitrix, portal);
         const value = await writer.write(
             config,
             dto.entityId,
             dto.value ?? null,
+            enumDict,
         );
 
         // Финансовые отчёты читают эти поля из кэша — сбрасываем весь домен

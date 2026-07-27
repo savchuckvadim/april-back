@@ -23,8 +23,10 @@ import { ClosedSalesJobData } from '../../dto/sales-finance-job.dto';
 import {
     aggregateClosedSales,
     buildClosedSalesDeal,
+    ContractTypeDictItem,
     dealCompanyId,
 } from '../calc/closed-sales-calc';
+import { ContractTypeItemsService } from '../services/contract-type-items.service';
 import {
     MonthSegment,
     splitIntoMonthSegments,
@@ -44,8 +46,20 @@ export class ClosedSalesUseCase {
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
 
         const dealQuery = new SalesFinanceDealQueryService(bitrix, portal);
-        const productRows = new SalesFinanceProductRowsService(bitrix);
+        const productRows = new SalesFinanceProductRowsService(
+            bitrix,
+            this.cache,
+            domain,
+        );
         const companies = new SalesFinanceCompanyService(bitrix, portal);
+        // Живой словарь типов договора — один на весь пересчёт.
+        const contractTypeItems = ContractTypeItemsService.byId(
+            await new ContractTypeItemsService(
+                bitrix,
+                this.cache,
+                domain,
+            ).getItems(dealQuery.getUfFields().contractType, forceRefresh),
+        );
 
         const segments = splitIntoMonthSegments(
             filters.dateFrom,
@@ -61,6 +75,7 @@ export class ClosedSalesUseCase {
                 dealQuery,
                 productRows,
                 companies,
+                contractTypeItems,
                 forceRefresh,
             );
             allDeals.push(...deals);
@@ -96,6 +111,7 @@ export class ClosedSalesUseCase {
         dealQuery: SalesFinanceDealQueryService,
         productRows: SalesFinanceProductRowsService,
         companies: SalesFinanceCompanyService,
+        contractTypeItems: ReadonlyMap<number, ContractTypeDictItem>,
         forceRefresh: boolean,
     ): Promise<ClosedSalesDealDto[]> {
         const { domain, filters } = jobData;
@@ -117,9 +133,13 @@ export class ClosedSalesUseCase {
             segment.to,
         );
         const uf = dealQuery.getUfFields();
-        const contractTypeItems = dealQuery.getContractTypeItemMap();
-        const rowsByDealId = await productRows.getRowsByDealIds(
-            bxDeals.map(deal => Number(deal.ID)),
+        // Строки — из промежуточного кэша per-сделка (версия DATE_MODIFY):
+        // повторный пересчёт тянет только изменённые/новые сделки.
+        const rowsByDealId = await productRows.getRowsByDeals(
+            bxDeals.map(deal => ({
+                id: Number(deal.ID),
+                dateModify: String(deal.DATE_MODIFY ?? ''),
+            })),
         );
         // Компании — до кэша сегмента: сегменты уже содержат название+цвет.
         const companyMap = await companies.getInfoMap(

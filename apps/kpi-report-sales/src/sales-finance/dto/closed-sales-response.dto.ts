@@ -105,13 +105,23 @@ export class ClosedSalesDealDto {
 
     @ApiProperty({
         description:
-            'Код типа договора (enum-элемент pbx-поля contract_type, ' +
-            'items per-portal); null — не задан/поле не настроено.',
+            'Код типа договора (XML_ID элемента живого словаря; bx_<ID> для ' +
+            'элементов без XML_ID); null — не задан/поле не настроено.',
         type: String,
         nullable: true,
         example: 'garant_standart',
     })
     contractTypeCode: string | null;
+
+    @ApiProperty({
+        description:
+            'Название типа договора (VALUE живого словаря — включает типы, ' +
+            'добавленные на портале руками); null — не задан.',
+        type: String,
+        nullable: true,
+        example: 'Интернет-версия',
+    })
+    contractTypeName: string | null;
 
     @ApiProperty({
         description:

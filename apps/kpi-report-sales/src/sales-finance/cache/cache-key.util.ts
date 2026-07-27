@@ -40,6 +40,30 @@ export function buildClosedResultKey(
     return `${SALES_FINANCE_CACHE_PREFIX}:${domain}:${CLOSED}:${RESULT}:${dateFrom}_${dateTo}_${buildEmployeesKey(assignedIds)}`;
 }
 
+/** Штамп версии сделки из DATE_MODIFY: только [a-zA-Z0-9-] (ключ Redis). */
+export function buildDealStamp(dateModify: string | undefined): string {
+    return String(dateModify ?? 'na').replace(/[^0-9A-Za-z]+/g, '-');
+}
+
+/**
+ * Товарные строки одной сделки. Версия в ключе = DATE_MODIFY сделки:
+ * сделка изменилась → другой ключ → промах; старая ячейка протухнет по TTL.
+ */
+export function buildRowsKey(
+    domain: string,
+    dealId: number,
+    dealStamp: string,
+): string {
+    const { ROWS } = SALES_FINANCE_CACHE_SECTIONS;
+    return `${SALES_FINANCE_CACHE_PREFIX}:${domain}:${ROWS}:${dealId}:${dealStamp}`;
+}
+
+/** Живой словарь типов договора портала (userfield.list, TTL час). */
+export function buildContractTypeDictKey(domain: string): string {
+    const { DICT } = SALES_FINANCE_CACHE_SECTIONS;
+    return `${SALES_FINANCE_CACHE_PREFIX}:${domain}:${DICT}:contract-type`;
+}
+
 export function buildHotClientsKey(
     domain: string,
     threshold: SalesHotThreshold,
