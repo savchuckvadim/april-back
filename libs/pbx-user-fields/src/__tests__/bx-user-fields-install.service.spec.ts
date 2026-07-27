@@ -1,5 +1,5 @@
-import { BxUserFieldsInstallService } from './bx-user-fields-install.service';
-import { Field } from '../../parse-field-excel/type/parse-field.type';
+import { BxUserFieldsInstallService } from '../bx-user-fields-install.service';
+import { Field } from '../types/install-field.type';
 
 const STRING_FIELD: Field = {
     name: 'Комментарий события',

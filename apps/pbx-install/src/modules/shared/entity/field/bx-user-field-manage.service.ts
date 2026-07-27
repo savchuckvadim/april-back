@@ -9,7 +9,7 @@ import {
     BxFieldDeleteResult,
     BxFieldItemOperationResult,
 } from './bx-entity-field-manage.service';
-import { USER_FIELD_PREFIX } from './bx-user-fields-install.service';
+import { USER_FIELD_PREFIX } from '@lib/pbx-user-fields';
 
 /**
  * Manage-операции над пользовательскими полями ПОЛЬЗОВАТЕЛЯ в Bitrix

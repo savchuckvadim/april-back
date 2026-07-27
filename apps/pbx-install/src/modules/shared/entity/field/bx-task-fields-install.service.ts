@@ -5,7 +5,7 @@ import {
     ITaskUserFieldParams,
 } from '@/modules/bitrix';
 import { Field } from '../../parse-field-excel';
-import { AbstractBxFieldsInstallService } from './abstract-bx-fields-install.service';
+import { AbstractBxFieldsInstallService } from '@lib/pbx-user-fields';
 
 /** Префикс пользовательских полей задачи в Bitrix. */
 export const TASK_FIELD_PREFIX = 'UF_TASK_';
