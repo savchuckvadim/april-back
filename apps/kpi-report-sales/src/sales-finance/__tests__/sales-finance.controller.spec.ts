@@ -104,11 +104,11 @@ describe('SalesFinanceController', () => {
         });
 
         expect(cache.resetByPattern).toHaveBeenCalledWith(
-            'sales-finance:v4:april.bitrix24.ru:closed:*',
+            'sales-finance:v5:april.bitrix24.ru:closed:*',
         );
         expect(response).toEqual({
             deletedCount: 5,
-            pattern: 'sales-finance:v4:april.bitrix24.ru:closed:*',
+            pattern: 'sales-finance:v5:april.bitrix24.ru:closed:*',
         });
     });
 
@@ -118,7 +118,7 @@ describe('SalesFinanceController', () => {
         await controller.resetCache({ domain: 'd.ru' });
 
         expect(cache.resetByPattern).toHaveBeenCalledWith(
-            'sales-finance:v4:d.ru:*',
+            'sales-finance:v5:d.ru:*',
         );
     });
 });

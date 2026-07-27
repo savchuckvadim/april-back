@@ -105,6 +105,16 @@ export class ClosedSalesDealDto {
 
     @ApiProperty({
         description:
+            'Код типа договора (enum-элемент pbx-поля contract_type, ' +
+            'items per-portal); null — не задан/поле не настроено.',
+        type: String,
+        nullable: true,
+        example: 'garant_standart',
+    })
+    contractTypeCode: string | null;
+
+    @ApiProperty({
+        description:
             'Ожидаемая сумма за весь договор: месячная сумма × месяцы договора.',
         type: Number,
         example: 144000,
@@ -137,6 +147,15 @@ export class ClosedSalesDealDto {
         example: 'green',
     })
     companyColor: string | null;
+
+    @ApiProperty({
+        description:
+            'Тип клиента компании (pbx op_client_type: state/commerc/ip/fiz/layer); null — не задан.',
+        type: String,
+        nullable: true,
+        example: 'commerc',
+    })
+    companyClientType: string | null;
 }
 
 /**

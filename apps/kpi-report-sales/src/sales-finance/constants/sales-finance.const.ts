@@ -13,7 +13,9 @@ import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-dea
 // кэше без этого поля инвалидируются сменой префикса (протухнут по TTL).
 // v4: closed/hot сделки обзавелись quantity, hot — paidMonths (кол-во
 // товара и предоплаченные месяцы) — старые v3-ключи протухнут по TTL.
-export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v4' as const;
+// v5: + contractTypeCode/companyClientType (оба DTO) и contractStart/
+// contractEnd у горячих (pbx-fields) — старые v4-ключи протухнут по TTL.
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v5' as const;
 
 /** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
 export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -45,6 +47,12 @@ export type SalesFinanceResponseStatus =
 export const SALES_FINANCE_CACHE_SCOPES = ['closed', 'hot', 'all'] as const;
 export type SalesFinanceCacheScope =
     (typeof SALES_FINANCE_CACHE_SCOPES)[number];
+/** Объект-enum scope'ов (типизированный доступ без строковых литералов). */
+export const SALES_FINANCE_CACHE_SCOPE = Object.freeze(
+    Object.fromEntries(
+        SALES_FINANCE_CACHE_SCOPES.map(scope => [scope, scope]),
+    ) as { [Scope in SalesFinanceCacheScope]: Scope },
+);
 
 /** Сегменты ключей кэша (между prefix/domain и деталями). */
 export const SALES_FINANCE_CACHE_SECTIONS = {

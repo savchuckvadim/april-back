@@ -328,12 +328,29 @@ export class AirtimeStatisticUseCase {
             }
         }
 
+        // Диагностика направлений: гистограмма CALL_TYPE в ответе Bitrix.
+        // Если входящие (CALL_TYPE 2/3) в отчёте всегда нули — по логу видно,
+        // приходят ли они вообще из voximplant.statistic.get (или портал
+        // отдаёт только исходящие / поле пустое).
         this.logger.log(
             `${VOXIMPLANT_STATISTIC_METHOD}: собрано ${rows.length} строк` +
-                (complete ? '' : ` — обрезано по лимиту ${maxRows}`),
+                (complete ? '' : ` — обрезано по лимиту ${maxRows}`) +
+                ` · CALL_TYPE=${JSON.stringify(callTypeHistogram(rows))}`,
         );
         return { rows, truncated: !complete };
     }
+}
+
+/** Гистограмма значений CALL_TYPE (для диагностики входящих/исходящих). */
+function callTypeHistogram(
+    rows: readonly VoximplantAirtimeRow[],
+): Record<string, number> {
+    const histogram: Record<string, number> = {};
+    for (const row of rows) {
+        const key = row.CALL_TYPE === undefined ? 'undefined' : String(row.CALL_TYPE);
+        histogram[key] = (histogram[key] ?? 0) + 1;
+    }
+    return histogram;
 }
 
 /** Итог загрузки одного месячного сегмента. */

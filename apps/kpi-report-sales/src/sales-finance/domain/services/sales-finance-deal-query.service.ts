@@ -17,6 +17,7 @@ const STAGE_SEMANTIC_WON = 'S';
 export interface SalesFinanceUfFields {
     contractStart: string;
     contractEnd: string;
+    contractType: string;
     opHistory: string;
     presComments: string;
 }
@@ -51,6 +52,11 @@ export class SalesFinanceDealQueryService {
             }
             return bitrixId;
         };
+        // contract_type опционален: не настроен на портале → '' (селекты
+        // фильтруют пустое, тип договора в отчёте будет null) — не валим
+        // весь финансовый отчёт из-за одного необязательного поля.
+        const resolveOptional = (code: string): string =>
+            this.portal.getDealFieldBitrixIdByCode(code) || '';
         return {
             contractStart: resolve(
                 PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_start,
@@ -58,9 +64,28 @@ export class SalesFinanceDealQueryService {
             contractEnd: resolve(
                 PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_end,
             ),
+            contractType: resolveOptional(
+                PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+            ),
             opHistory: resolve(PBX_SALES_EVENT_FIELD_CODES.op_history),
             presComments: resolve(PBX_SALES_EVENT_FIELD_CODES.pres_comments),
         };
+    }
+
+    /**
+     * Карта элементов enum-поля «Тип договора»: numeric id элемента → code.
+     * Поле не настроено на портале → пустая карта (тип договора = null).
+     */
+    getContractTypeItemMap(): ReadonlyMap<number, string> {
+        const field = this.portal.getDealFieldByCode(
+            PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type,
+        );
+        return new Map(
+            (field?.items ?? []).map(item => [
+                Number(item.bitrixId),
+                String(item.code),
+            ]),
+        );
     }
 
     /** Сделки, закрытые в успех, по сотрудникам и периоду CLOSEDATE. */
@@ -82,17 +107,21 @@ export class SalesFinanceDealQueryService {
             '<=CLOSEDATE': dateTo,
         };
 
-        return await this.bitrix.deal.all(filter, [
-            'ID',
-            'TITLE',
-            'ASSIGNED_BY_ID',
-            'CLOSEDATE',
-            'OPPORTUNITY',
-            'STAGE_ID',
-            'COMPANY_ID',
-            uf.contractStart,
-            uf.contractEnd,
-        ]);
+        return await this.bitrix.deal.all(
+            filter,
+            [
+                'ID',
+                'TITLE',
+                'ASSIGNED_BY_ID',
+                'CLOSEDATE',
+                'OPPORTUNITY',
+                'STAGE_ID',
+                'COMPANY_ID',
+                uf.contractStart,
+                uf.contractEnd,
+                uf.contractType,
+            ].filter(Boolean),
+        );
     }
 
     /** Открытые сделки на заданных стадиях (опц. фильтр по сотрудникам). */
@@ -113,15 +142,21 @@ export class SalesFinanceDealQueryService {
             filter['=ASSIGNED_BY_ID'] = assignedIds.map(String);
         }
 
-        return await this.bitrix.deal.all(filter, [
-            'ID',
-            'TITLE',
-            'ASSIGNED_BY_ID',
-            'STAGE_ID',
-            'OPPORTUNITY',
-            'COMPANY_ID',
-            uf.opHistory,
-            uf.presComments,
-        ]);
+        return await this.bitrix.deal.all(
+            filter,
+            [
+                'ID',
+                'TITLE',
+                'ASSIGNED_BY_ID',
+                'STAGE_ID',
+                'OPPORTUNITY',
+                'COMPANY_ID',
+                uf.opHistory,
+                uf.presComments,
+                uf.contractStart,
+                uf.contractEnd,
+                uf.contractType,
+            ].filter(Boolean),
+        );
     }
 }

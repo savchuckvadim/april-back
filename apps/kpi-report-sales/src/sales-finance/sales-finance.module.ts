@@ -18,5 +18,8 @@ import { SalesFinanceQueueProcessor } from './queue/sales-finance.processor';
     imports: [PBXModule, QueueModule, WsModule],
     controllers: [SalesFinanceController],
     providers: [SalesFinanceCacheService, SalesFinanceQueueProcessor],
+    // Кэш экспортируется для pbx-fields: запись pbx-поля сделки/компании
+    // инвалидирует финансовые отчёты домена.
+    exports: [SalesFinanceCacheService],
 })
 export class SalesFinanceModule {}

@@ -86,6 +86,34 @@ export class HotClientDealDto {
     quantity: number;
 
     @ApiProperty({
+        description:
+            'Дата начала действия договора (pbx contract_start), ISO; null — не заполнена.',
+        type: String,
+        nullable: true,
+        example: '2026-03-01',
+    })
+    contractStart: string | null;
+
+    @ApiProperty({
+        description:
+            'Дата окончания действия договора (pbx contract_end), ISO; null — не заполнена.',
+        type: String,
+        nullable: true,
+        example: '2027-02-28',
+    })
+    contractEnd: string | null;
+
+    @ApiProperty({
+        description:
+            'Код типа договора (enum-элемент pbx-поля contract_type, ' +
+            'items per-portal); null — не задан/поле не настроено.',
+        type: String,
+        nullable: true,
+        example: 'garant_standart',
+    })
+    contractTypeCode: string | null;
+
+    @ApiProperty({
         description: 'Значения поля «ОП История» (op_history).',
         type: [String],
         example: ['12.05 Презентация проведена', '20.05 КП отправлено'],
@@ -125,6 +153,15 @@ export class HotClientDealDto {
         example: 'yellow',
     })
     companyColor: string | null;
+
+    @ApiProperty({
+        description:
+            'Тип клиента компании (pbx op_client_type: state/commerc/ip/fiz/layer); null — не задан.',
+        type: String,
+        nullable: true,
+        example: 'commerc',
+    })
+    companyClientType: string | null;
 }
 
 /**

@@ -35,6 +35,14 @@ function makePortalMock() {
             .mockImplementation(
                 (code: string) => `UF_CRM_${code.toUpperCase()}`,
             ),
+        // Тип договора и enum-поля компании: в моке полей нет → пустые items.
+        getDealFieldByCode: jest.fn().mockReturnValue(undefined),
+        getCompanyFieldByCode: jest.fn().mockReturnValue(undefined),
+        getFieldBitrixId: jest
+            .fn()
+            .mockImplementation(
+                (field: { bitrixId: string }) => `UF_CRM_${field.bitrixId}`,
+            ),
     };
 }
 
@@ -106,10 +114,10 @@ describe('ClosedSalesUseCase', () => {
             (call: unknown[]) => call[0],
         );
         expect(writtenKeys).toContain(
-            'sales-finance:v4:april.bitrix24.ru:closed:month:2026-03:10',
+            'sales-finance:v5:april.bitrix24.ru:closed:month:2026-03:10',
         );
         expect(writtenKeys).toContain(
-            'sales-finance:v4:april.bitrix24.ru:closed:result:2026-03-01_2026-03-31_10',
+            'sales-finance:v5:april.bitrix24.ru:closed:result:2026-03-01_2026-03-31_10',
         );
     });
 

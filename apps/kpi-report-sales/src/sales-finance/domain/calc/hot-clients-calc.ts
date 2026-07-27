@@ -16,7 +16,11 @@ import {
 } from '../../dto/hot-clients-response.dto';
 import { SalesFinanceUfFields } from '../services/sales-finance-deal-query.service';
 import { CompanyInfo } from '../services/sales-finance-company.service';
-import { dealCompanyId } from './closed-sales-calc';
+import {
+    dealCompanyId,
+    resolveContractTypeCode,
+    toIsoOrNull,
+} from './closed-sales-calc';
 
 /** Multiple-поля Bitrix приходят массивом, но страхуемся от строки. */
 function toStringArray(value: unknown): string[] {
@@ -33,6 +37,7 @@ export function buildHotClientDeal(
     stageInfo: { code: string; name: string } | undefined,
     uf: SalesFinanceUfFields,
     companyMap: Map<number, CompanyInfo>,
+    contractTypeItems: ReadonlyMap<number, string>,
 ): HotClientDealDto {
     const companyId = dealCompanyId(deal);
     const company = companyId !== null ? companyMap.get(companyId) : undefined;
@@ -47,11 +52,19 @@ export function buildHotClientDeal(
         monthlyAmount: sumRowsMonthly(rows),
         paidMonths: sumRowsMonths(rows),
         quantity: sumRowsQuantity(rows),
+        contractStart: toIsoOrNull(deal[uf.contractStart]),
+        contractEnd: toIsoOrNull(deal[uf.contractEnd]),
+        contractTypeCode: resolveContractTypeCode(
+            deal,
+            uf.contractType,
+            contractTypeItems,
+        ),
         opHistory: toStringArray(deal[uf.opHistory]),
         comments: toStringArray(deal[uf.presComments]),
         companyId,
         companyName: company?.title ?? null,
         companyColor: company?.color ?? null,
+        companyClientType: company?.clientTypeCode ?? null,
     };
 }
 

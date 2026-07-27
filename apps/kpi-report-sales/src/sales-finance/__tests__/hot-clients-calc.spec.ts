@@ -8,9 +8,16 @@ import { SalesFinanceUfFields } from '../domain/services/sales-finance-deal-quer
 const UF: SalesFinanceUfFields = {
     contractStart: 'UF_CRM_CONTRACT_START',
     contractEnd: 'UF_CRM_CONTRACT_END',
+    contractType: 'UF_CRM_CONTRACT_TYPE',
     opHistory: 'UF_CRM_OP_HISTORY',
     presComments: 'UF_CRM_PRES_COMMENTS',
 };
+
+/** Карта элементов «Типа договора»: numeric id элемента → code. */
+const CONTRACT_TYPE_ITEMS: ReadonlyMap<number, string> = new Map([
+    [301, 'garant_standart'],
+]);
+const NO_ITEMS: ReadonlyMap<number, string> = new Map();
 
 function openDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     return {
@@ -25,16 +32,34 @@ function openDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     } as IBXDeal;
 }
 
-const NO_COMPANIES = new Map<number, { title: string; color: string | null }>();
+const NO_COMPANIES = new Map<
+    number,
+    { title: string; color: string | null; clientTypeCode: string | null }
+>();
 
 describe('buildHotClientDeal', () => {
     it('собирает строку сделки со стадией, суммами и историей', () => {
         const deal = buildHotClientDeal(
-            openDeal({ COMPANY_ID: '512' }),
+            openDeal({
+                COMPANY_ID: '512',
+                UF_CRM_CONTRACT_START: '2026-03-01',
+                UF_CRM_CONTRACT_END: '2027-02-28',
+                UF_CRM_CONTRACT_TYPE: '301',
+            } as Partial<IBXDeal>),
             [{ price: 5000, quantity: 1, measureName: 'лиц.12мес.' }],
             { code: 'sales_offer_create', name: 'Документы' },
             UF,
-            new Map([[512, { title: 'ООО Лютик', color: 'yellow' }]]),
+            new Map([
+                [
+                    512,
+                    {
+                        title: 'ООО Лютик',
+                        color: 'yellow',
+                        clientTypeCode: 'state',
+                    },
+                ],
+            ]),
+            CONTRACT_TYPE_ITEMS,
         );
 
         expect(deal.id).toBe(200);
@@ -45,10 +70,14 @@ describe('buildHotClientDeal', () => {
         expect(deal.monthlyAmount).toBe(416.67); // 5000 / 12
         expect(deal.paidMonths).toBe(12); // 1 × лиц.12мес.
         expect(deal.quantity).toBe(1);
+        expect(deal.contractStart).not.toBeNull();
+        expect(deal.contractEnd).not.toBeNull();
+        expect(deal.contractTypeCode).toBe('garant_standart');
         expect(deal.opHistory).toEqual(['12.05 Презентация', '20.05 КП']);
         expect(deal.comments).toEqual(['Просят скидку']);
         expect(deal.companyId).toBe(512);
         expect(deal.companyName).toBe('ООО Лютик');
+        expect(deal.companyClientType).toBe('state');
     });
 
     it('строковое значение истории нормализуется в массив', () => {
@@ -58,6 +87,7 @@ describe('buildHotClientDeal', () => {
             undefined,
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         expect(deal.opHistory).toEqual(['одна запись']);
         expect(deal.stageCode).toBe('C7:OFFER_CREATE'); // fallback на STAGE_ID
@@ -74,6 +104,7 @@ describe('buildHotClientsTotals', () => {
             undefined,
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         const dealB = buildHotClientDeal(
             openDeal({ ID: 2, OPPORTUNITY: '200' }),
@@ -81,6 +112,7 @@ describe('buildHotClientsTotals', () => {
             undefined,
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
 
         const totals = buildHotClientsTotals([dealA, dealB]);

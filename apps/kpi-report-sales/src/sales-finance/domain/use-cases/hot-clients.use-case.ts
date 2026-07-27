@@ -42,6 +42,7 @@ export class HotClientsUseCase {
             assignedIds,
         );
         const uf = dealQuery.getUfFields();
+        const contractTypeItems = dealQuery.getContractTypeItemMap();
         const rowsByDealId = await productRows.getRowsByDealIds(
             bxDeals.map(deal => Number(deal.ID)),
         );
@@ -57,6 +58,7 @@ export class HotClientsUseCase {
                 stageByStageId.get(String(deal.STAGE_ID ?? '')),
                 uf,
                 companyMap,
+                contractTypeItems,
             ),
         );
 

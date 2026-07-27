@@ -117,6 +117,7 @@ export class ClosedSalesUseCase {
             segment.to,
         );
         const uf = dealQuery.getUfFields();
+        const contractTypeItems = dealQuery.getContractTypeItemMap();
         const rowsByDealId = await productRows.getRowsByDealIds(
             bxDeals.map(deal => Number(deal.ID)),
         );
@@ -131,6 +132,7 @@ export class ClosedSalesUseCase {
                 rowsByDealId.get(Number(deal.ID)) ?? [],
                 uf,
                 companyMap,
+                contractTypeItems,
             ),
         );
 

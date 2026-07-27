@@ -20,7 +20,8 @@ import {
 } from '../../dto/closed-sales-response.dto';
 import { SalesFinanceUfFields } from '../services/sales-finance-deal-query.service';
 
-function toIsoOrNull(value: unknown): string | null {
+/** Дата контрактного поля Bitrix → ISO или null (экспорт для hot-calc). */
+export function toIsoOrNull(value: unknown): string | null {
     const date = parseContractDate(value);
     return date ? date.toISOString() : null;
 }
@@ -31,12 +32,28 @@ export function dealCompanyId(deal: IBXDeal): number | null {
     return id > 0 ? id : null;
 }
 
+/**
+ * Код типа договора сделки: UF-значение (numeric id элемента) → code через
+ * карту items поля (getContractTypeItemMap). Поле не настроено/пусто → null.
+ */
+export function resolveContractTypeCode(
+    deal: IBXDeal,
+    ufKey: string,
+    contractTypeItems: ReadonlyMap<number, string>,
+): string | null {
+    if (!ufKey) return null;
+    const itemId = Number(deal[ufKey] ?? 0);
+    if (!itemId) return null;
+    return contractTypeItems.get(itemId) ?? null;
+}
+
 /** Финансовые показатели одной закрытой сделки из её товарных строк. */
 export function buildClosedSalesDeal(
     deal: IBXDeal,
     rows: IBXProductRowRow[],
     uf: SalesFinanceUfFields,
     companyMap: Map<number, CompanyInfo>,
+    contractTypeItems: ReadonlyMap<number, string>,
 ): ClosedSalesDealDto {
     const contractStartDate = parseContractDate(deal[uf.contractStart]);
     const contractEndDate = parseContractDate(deal[uf.contractEnd]);
@@ -62,10 +79,16 @@ export function buildClosedSalesDeal(
         contractStart: toIsoOrNull(deal[uf.contractStart]),
         contractEnd: toIsoOrNull(deal[uf.contractEnd]),
         contractMonths,
+        contractTypeCode: resolveContractTypeCode(
+            deal,
+            uf.contractType,
+            contractTypeItems,
+        ),
         expectedContractAmount: roundMoney(monthlyAmount * contractMonths),
         companyId,
         companyName: company?.title ?? null,
         companyColor: company?.color ?? null,
+        companyClientType: company?.clientTypeCode ?? null,
     };
 }
 

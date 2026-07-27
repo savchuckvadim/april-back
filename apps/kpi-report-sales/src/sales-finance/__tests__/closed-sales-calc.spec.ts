@@ -8,9 +8,16 @@ import { SalesFinanceUfFields } from '../domain/services/sales-finance-deal-quer
 const UF: SalesFinanceUfFields = {
     contractStart: 'UF_CRM_CONTRACT_START',
     contractEnd: 'UF_CRM_CONTRACT_END',
+    contractType: 'UF_CRM_CONTRACT_TYPE',
     opHistory: 'UF_CRM_OP_HISTORY',
     presComments: 'UF_CRM_PRES_COMMENTS',
 };
+
+/** Карта элементов «Типа договора»: numeric id элемента → code. */
+const CONTRACT_TYPE_ITEMS: ReadonlyMap<number, string> = new Map([
+    [301, 'garant_standart'],
+]);
+const NO_ITEMS: ReadonlyMap<number, string> = new Map();
 
 function wonDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     return {
@@ -25,7 +32,10 @@ function wonDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     } as IBXDeal;
 }
 
-const NO_COMPANIES = new Map<number, { title: string; color: string | null }>();
+const NO_COMPANIES = new Map<
+    number,
+    { title: string; color: string | null; clientTypeCode: string | null }
+>();
 
 describe('buildClosedSalesDeal', () => {
     it('аванс, месяцы и ожидаемая сумма для договора на 12 месяцев', () => {
@@ -34,6 +44,7 @@ describe('buildClosedSalesDeal', () => {
             [{ price: 12000, quantity: 1, measureName: 'лиц.12мес.' }],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
 
         expect(deal.advanceAmount).toBe(12000);
@@ -45,7 +56,13 @@ describe('buildClosedSalesDeal', () => {
     });
 
     it('сделка без товарных строк даёт нулевые финансовые показатели', () => {
-        const deal = buildClosedSalesDeal(wonDeal(), [], UF, NO_COMPANIES);
+        const deal = buildClosedSalesDeal(
+            wonDeal(),
+            [],
+            UF,
+            NO_COMPANIES,
+            NO_ITEMS,
+        );
         expect(deal.advanceAmount).toBe(0);
         expect(deal.paidMonths).toBe(0);
         expect(deal.monthlyAmount).toBe(0);
@@ -57,16 +74,28 @@ describe('buildClosedSalesDeal', () => {
             wonDeal({ COMPANY_ID: '512' }),
             [],
             UF,
-            new Map([[512, { title: 'ООО Ромашка', color: 'green' }]]),
+            new Map([
+                [
+                    512,
+                    {
+                        title: 'ООО Ромашка',
+                        color: 'green',
+                        clientTypeCode: 'commerc',
+                    },
+                ],
+            ]),
+            NO_ITEMS,
         );
         expect(withCompany.companyId).toBe(512);
         expect(withCompany.companyName).toBe('ООО Ромашка');
+        expect(withCompany.companyClientType).toBe('commerc');
 
         const unknownCompany = buildClosedSalesDeal(
             wonDeal({ COMPANY_ID: '77' }),
             [],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         expect(unknownCompany.companyId).toBe(77);
         expect(unknownCompany.companyName).toBeNull();
@@ -76,9 +105,39 @@ describe('buildClosedSalesDeal', () => {
             [],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         expect(noCompany.companyId).toBeNull();
         expect(noCompany.companyName).toBeNull();
+    });
+
+    it('тип договора: numeric id элемента → code; неизвестный/пустой → null', () => {
+        const resolved = buildClosedSalesDeal(
+            wonDeal({ UF_CRM_CONTRACT_TYPE: '301' } as Partial<IBXDeal>),
+            [],
+            UF,
+            NO_COMPANIES,
+            CONTRACT_TYPE_ITEMS,
+        );
+        expect(resolved.contractTypeCode).toBe('garant_standart');
+
+        const unknown = buildClosedSalesDeal(
+            wonDeal({ UF_CRM_CONTRACT_TYPE: '999' } as Partial<IBXDeal>),
+            [],
+            UF,
+            NO_COMPANIES,
+            CONTRACT_TYPE_ITEMS,
+        );
+        expect(unknown.contractTypeCode).toBeNull();
+
+        const empty = buildClosedSalesDeal(
+            wonDeal(),
+            [],
+            UF,
+            NO_COMPANIES,
+            CONTRACT_TYPE_ITEMS,
+        );
+        expect(empty.contractTypeCode).toBeNull();
     });
 
     it('без дат договора contractMonths = 0, даты null', () => {
@@ -90,6 +149,7 @@ describe('buildClosedSalesDeal', () => {
             [{ price: 1000, quantity: 1, measureName: 'шт' }],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         expect(deal.contractStart).toBeNull();
         expect(deal.contractEnd).toBeNull();
@@ -105,18 +165,21 @@ describe('aggregateClosedSales', () => {
             [{ price: 1200, quantity: 1, measureName: 'лиц.12мес.' }],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         const dealB = buildClosedSalesDeal(
             wonDeal({ ID: 2, ASSIGNED_BY_ID: '20' }),
             [{ price: 600, quantity: 1, measureName: 'лиц.6мес.' }],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
         const dealC = buildClosedSalesDeal(
             wonDeal({ ID: 3, ASSIGNED_BY_ID: '10' }),
             [{ price: 1200, quantity: 2, measureName: 'лиц.12мес.' }],
             UF,
             NO_COMPANIES,
+            NO_ITEMS,
         );
 
         const { employees, totals } = aggregateClosedSales([
