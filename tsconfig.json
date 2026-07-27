@@ -64,6 +64,8 @@
       "@lib/call-lib/*": ["libs/call-lib/src/*"],
       "@lib/vibecode": ["libs/vibecode/src"],
       "@lib/vibecode/*": ["libs/vibecode/src/*"],
+      "@lib/pbx-user-fields": ["libs/pbx-user-fields/src"],
+      "@lib/pbx-user-fields/*": ["libs/pbx-user-fields/src/*"],
 
       // ---- portal-lib: единая библиотека Portal (portal + store + pbx-domain + konstructor) ----
       // Канонический алиас. Старые @lib/portal, @lib/portal-konstructor,

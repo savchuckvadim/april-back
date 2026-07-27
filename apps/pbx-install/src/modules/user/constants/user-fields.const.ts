@@ -1,4 +1,5 @@
 import { Field } from '../../shared/parse-field-excel/type/parse-field.type';
+import { buildPlanInstallFields } from '@lib/pbx-user-fields';
 
 /**
  * Пользовательские поля ПОЛЬЗОВАТЕЛЯ для установки в Bitrix.
@@ -7,7 +8,10 @@ import { Field } from '../../shared/parse-field-excel/type/parse-field.type';
  * итоговое имя поля в Bitrix = `UF_USR_` + `bxFieldName`.
  * Так, `EVENT_COMMENT` → `UF_USR_EVENT_COMMENT`.
  *
- * Стартовый набор-пример; дополняется по мере необходимости.
+ * Плановые поля (UF_USR_A_SALES_PLAN_*) — из истинной типизации
+ * portal-lib (PBX_SALES_USER_PLAN_FIELDS): полная инсталляция портала
+ * ставит их штатно; kpi-report-sales доустанавливает находу при первом
+ * сохранении планов тем же buildPlanInstallFields.
  */
 export const USER_FIELDS: Field[] = [
     {
@@ -21,4 +25,5 @@ export const USER_FIELDS: Field[] = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    ...buildPlanInstallFields(),
 ];

@@ -210,6 +210,146 @@ export class ConversionsExcelDto {
     sections?: ConversionsExcelSectionDto[];
 }
 
+/** Ячейка листа «Планы»: план/факт/достижение одного показателя. */
+export class PlansExcelCellDto {
+    @ApiProperty({
+        description: 'План на выбранный период (пересчитан фронтом); null — не задан',
+        type: Number,
+        nullable: true,
+    })
+    plan: number | null;
+
+    @ApiProperty({ description: 'Факт за выбранный период', type: Number })
+    fact: number;
+
+    @ApiProperty({
+        description: 'Достижение (0.84 = 84%); null — план не задан',
+        type: Number,
+        nullable: true,
+    })
+    percent: number | null;
+}
+
+export class PlansExcelRowDto {
+    @ApiProperty({ description: 'ФИО менеджера (или название секции-итога)' })
+    @IsString()
+    userName: string;
+
+    @ApiProperty({
+        description: 'Ячейки по показателям (порядок = columns)',
+        type: [PlansExcelCellDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlansExcelCellDto)
+    cells: PlansExcelCellDto[];
+}
+
+/** Секция листа «Планы» — отдел или группа (агрегаты считает фронт). */
+export class PlansExcelSectionDto {
+    @ApiProperty({ description: 'Заголовок секции (отдел / группа)' })
+    @IsString()
+    title: string;
+
+    @ApiProperty({ description: 'Строки менеджеров секции', type: [PlansExcelRowDto] })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlansExcelRowDto)
+    rows: PlansExcelRowDto[];
+
+    @ApiProperty({ description: 'Итог секции (Σ планов и фактов)', type: [PlansExcelCellDto] })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlansExcelCellDto)
+    total: PlansExcelCellDto[];
+}
+
+/** План одного показателя для подстроки «— план» главной таблицы. */
+export class PlanMainCellDto {
+    @ApiProperty({ description: 'innerCode показателя kpi-отчёта' })
+    @IsString()
+    code: string;
+
+    @ApiProperty({ description: 'План на выбранный период', type: Number })
+    @IsNumber()
+    plan: number;
+}
+
+export class PlanMainRowDto {
+    @ApiProperty({ description: 'Bitrix ID сотрудника' })
+    @IsNumber()
+    userId: number;
+
+    @ApiProperty({
+        description: 'Планы по показателям главной таблицы',
+        type: [PlanMainCellDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlanMainCellDto)
+    cells: PlanMainCellDto[];
+}
+
+/**
+ * Планы руководителя для Excel: лист «Планы» (план/факт/% по включённым
+ * показателям; рядовой сотрудник получает только свою строку — фильтрует
+ * фронт) + опц. подстроки «— план» главной таблицы (mainRows — только
+ * когда показ планов включён в отчёте). Всё считает фронт, бэк рендерит.
+ */
+export class PlansExcelDto {
+    @ApiProperty({
+        description: 'Названия включённых показателей (custom/default)',
+        type: [String],
+    })
+    @IsArray()
+    @IsString({ each: true })
+    columns: string[];
+
+    @ApiProperty({
+        description:
+            'Единицы показателей (порядок = columns): count | money | minutes — numFmt',
+        type: [String],
+    })
+    @IsArray()
+    @IsString({ each: true })
+    units: string[];
+
+    @ApiProperty({ description: 'Строки сводной таблицы', type: [PlansExcelRowDto] })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlansExcelRowDto)
+    rows: PlansExcelRowDto[];
+
+    @ApiProperty({ description: 'Итог по всем строкам', type: [PlansExcelCellDto] })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlansExcelCellDto)
+    total: PlansExcelCellDto[];
+
+    @ApiProperty({
+        description: 'Разбивка по отделам/группам (как у конверсий)',
+        type: [PlansExcelSectionDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlansExcelSectionDto)
+    sections?: PlansExcelSectionDto[];
+
+    @ApiProperty({
+        description:
+            'Планы для подстрок «— план» главной таблицы (только при включённом показе планов)',
+        type: [PlanMainRowDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => PlanMainRowDto)
+    mainRows?: PlanMainRowDto[];
+}
+
 export class DownLoadKpiReportDto {
     @ApiProperty({ description: 'Download type', enum: EDownloadType })
     @IsEnum(EDownloadType)
@@ -251,4 +391,16 @@ export class DownLoadKpiReportDto {
     @ValidateNested()
     @Type(() => ConversionsExcelDto)
     conversions?: ConversionsExcelDto;
+
+    @ApiProperty({
+        description:
+            'Планы руководителя (лист «Планы» + подстроки главной таблицы); ' +
+            'считает фронт, не передана — листа нет.',
+        type: PlansExcelDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => PlansExcelDto)
+    plans?: PlansExcelDto;
 }

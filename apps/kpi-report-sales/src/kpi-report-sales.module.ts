@@ -19,6 +19,7 @@ import { ReportSettingsModule } from './report-settings';
 import { SalesFinanceModule } from './sales-finance';
 import { ShareLinkModule } from './share-link';
 import { PbxFieldsModule } from './pbx-fields';
+import { PlansModule } from './plans';
 
 /**
  * Корневой модуль приложения kpi-report-sales.
@@ -35,6 +36,7 @@ import { PbxFieldsModule } from './pbx-fields';
  *   ReportSettingsModule → «Report Settings» / «UI Settings»
  *   SalesFinanceModule   → «Sales Finance»
  *   PbxFieldsModule      → «PBX Fields» (метаданные + запись pbx-полей)
+ *   PlansModule          → «Sales Plans» (планы руководителя)
  *
  * BxDepartmentModule подключён, чтобы эндпоинты отделов/команд Bitrix
  * были доступны и из этого приложения (как в event-sales).
@@ -81,6 +83,7 @@ import { PbxFieldsModule } from './pbx-fields';
         SalesFinanceModule,
         ShareLinkModule,
         PbxFieldsModule,
+        PlansModule,
 
         // from shared: эндпоинты отделов/команд Bitrix наружу
         BxDepartmentModule,

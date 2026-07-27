@@ -4,11 +4,22 @@ import {
     ConversionsExcelDto,
     DownLoadKpiReportDto as KpiReportDto,
     DownloadKpiReportItemDto,
+    PlanMainRowDto,
+    PlansExcelCellDto,
+    PlansExcelDto,
+    PlansExcelRowDto,
     ReportStructureDepartmentDto,
 } from '../dto/get-excel-report.dto';
 import { Buffer } from 'buffer';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+
+/** Мягкая заливка плановых строк/колонок (голубая, читаема при печати). */
+const PLAN_FILL_ARGB = 'FFDCE9F7';
+/** numFmt достижения плана (доля 0.84 → 84,0%). */
+const PLAN_PERCENT_FORMAT = '0.0%';
+/** numFmt денежных показателей листа «Планы». */
+const PLAN_MONEY_FORMAT = '#,##0';
 
 /**
  * Генерация Excel KPI-отчёта.
@@ -29,7 +40,13 @@ export class ExcelReportService {
             );
             this.renderDateHeader(dto, summary);
             summary.addRow([]);
-            this.renderReportBlock(summary, dto.report, null, 'Итого');
+            this.renderReportBlock(
+                summary,
+                dto.report,
+                null,
+                'Итого',
+                dto.plans?.mainRows,
+            );
             this.setColumnWidths(summary, dto.report);
 
             const departments = dto.structure?.departments ?? [];
@@ -53,6 +70,10 @@ export class ExcelReportService {
 
             if (dto.conversions?.columns?.length) {
                 this.renderConversionsSheet(workbook, dto, dto.conversions);
+            }
+
+            if (dto.plans?.columns?.length) {
+                this.renderPlansSheet(workbook, dto, dto.plans);
             }
 
             return Buffer.from(await workbook.xlsx.writeBuffer());
@@ -83,12 +104,19 @@ export class ExcelReportService {
         department: ReportStructureDepartmentDto,
     ): void {
         const departmentRows: DownloadKpiReportItemDto[] = [];
+        const planRows = dto.plans?.mainRows;
 
         for (const group of department.groups) {
             const rows = this.rowsByIds(dto.report, group.userIds);
             if (!rows.length) continue;
             departmentRows.push(...rows);
-            this.renderReportBlock(sheet, rows, group.name, 'Итого по группе');
+            this.renderReportBlock(
+                sheet,
+                rows,
+                group.name,
+                'Итого по группе',
+                planRows,
+            );
         }
 
         const directRows = this.rowsByIds(dto.report, department.userIds);
@@ -99,6 +127,7 @@ export class ExcelReportService {
                 directRows,
                 department.groups.length ? 'Без группы' : department.name,
                 'Итого',
+                planRows,
             );
         }
 
@@ -112,12 +141,13 @@ export class ExcelReportService {
         }
     }
 
-    /** Блок: [заголовок секции] + шапка + строки + итог + пустая строка. */
+    /** Блок: [заголовок секции] + шапка + строки (+ подстроки «— план») + итог. */
     private renderReportBlock(
         sheet: Worksheet,
         rows: DownloadKpiReportItemDto[],
         title: string | null,
         totalLabel: string,
+        planRows?: PlanMainRowDto[],
     ): void {
         if (!rows.length) return;
 
@@ -148,10 +178,48 @@ export class ExcelReportService {
                 pattern: 'solid',
                 fgColor: { argb: 'FFDDDDDD' },
             };
+            this.renderPlanSubRow(sheet, item, planRows);
         }
 
         this.renderTotalRow(sheet, rows, totalLabel);
         sheet.addRow([]);
+    }
+
+    /**
+     * Подстрока «— план» под строкой сотрудника: планы руководителя по
+     * колонкам показателей (голубая заливка). Нет планов — строки нет.
+     */
+    private renderPlanSubRow(
+        sheet: Worksheet,
+        item: DownloadKpiReportItemDto,
+        planRows?: PlanMainRowDto[],
+    ): void {
+        const userPlans = planRows?.find(plan => plan.userId === item.id);
+        if (!userPlans?.cells.length) return;
+
+        const planByCode = new Map(
+            userPlans.cells.map(cell => [cell.code, cell.plan]),
+        );
+        const hasAny = item.kpi.some(
+            kpi => kpi.id && planByCode.has(kpi.id),
+        );
+        if (!hasAny) return;
+
+        const row = sheet.addRow([
+            '— план',
+            ...item.kpi.map(kpi =>
+                kpi.id && planByCode.has(kpi.id) ? planByCode.get(kpi.id) : '',
+            ),
+        ]);
+        row.font = { italic: true, size: 9 };
+        row.alignment = { vertical: 'middle', horizontal: 'right' };
+        row.eachCell(cell => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: PLAN_FILL_ARGB },
+            };
+        });
     }
 
     private renderTotalRow(
@@ -447,6 +515,133 @@ export class ExcelReportService {
         sheet.columns = new Array(conversions.columns.length + 1)
             .fill(null)
             .map((_item, index) => ({ width: index === 0 ? 28 : 26 }));
+    }
+
+    /**
+     * Лист «Планы»: по каждому включённому показателю три колонки
+     * (план / факт / %). План пересчитан фронтом на выбранный период;
+     * рядовой сотрудник получает только свою строку (фильтрует фронт).
+     */
+    private renderPlansSheet(
+        workbook: Workbook,
+        dto: KpiReportDto,
+        plans: PlansExcelDto,
+    ): void {
+        const sheet = workbook.addWorksheet(this.sanitizeSheetName('Планы'));
+        this.renderDateHeader(dto, sheet);
+        sheet.addRow([]);
+
+        const headCells = plans.columns.flatMap(name => [
+            `${name} — план`,
+            `${name} — факт`,
+            `${name} — %`,
+        ]);
+        const headRow = sheet.addRow(['ФИО', ...headCells]);
+        this.styleHeadRow(headRow);
+        // План-колонки подсвечены (та же заливка, что подстроки «— план»).
+        headRow.eachCell((cell, colNumber) => {
+            if (colNumber > 1 && (colNumber - 2) % 3 === 0) {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: PLAN_FILL_ARGB },
+                };
+                cell.font = { bold: true };
+            }
+        });
+
+        const writeCells = (row: Row, cells: PlansExcelCellDto[]) => {
+            cells.forEach((cell, index) => {
+                const base = 2 + index * 3;
+                const unit = plans.units[index];
+                const moneyFmt = unit === 'money' ? PLAN_MONEY_FORMAT : undefined;
+
+                const planCell = row.getCell(base);
+                if (cell.plan === null) {
+                    planCell.value = '—';
+                    planCell.alignment = {
+                        vertical: 'middle',
+                        horizontal: 'right',
+                    };
+                } else {
+                    planCell.value = cell.plan;
+                    if (moneyFmt) planCell.numFmt = moneyFmt;
+                }
+                planCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: PLAN_FILL_ARGB },
+                };
+
+                const factCell = row.getCell(base + 1);
+                factCell.value = cell.fact;
+                if (moneyFmt) factCell.numFmt = moneyFmt;
+
+                const percentCell = row.getCell(base + 2);
+                if (cell.percent === null) {
+                    percentCell.value = '—';
+                    percentCell.alignment = {
+                        vertical: 'middle',
+                        horizontal: 'right',
+                    };
+                } else {
+                    percentCell.value = cell.percent;
+                    percentCell.numFmt = PLAN_PERCENT_FORMAT;
+                }
+            });
+        };
+
+        const writeRowsBlock = (
+            rows: PlansExcelRowDto[],
+            total: PlansExcelCellDto[],
+            totalLabel: string,
+        ) => {
+            for (const item of rows) {
+                const row = sheet.addRow([item.userName]);
+                const nameCell = row.getCell(1);
+                nameCell.font = { bold: true, size: 10 };
+                nameCell.alignment = {
+                    vertical: 'middle',
+                    horizontal: 'left',
+                };
+                nameCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFDDDDDD' },
+                };
+                writeCells(row, item.cells);
+            }
+
+            const totalRow = sheet.addRow([totalLabel]);
+            totalRow.font = { bold: true };
+            writeCells(totalRow, total);
+            totalRow.getCell(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFEEEEEE' },
+            };
+        };
+
+        writeRowsBlock(plans.rows, plans.total, 'Итого');
+
+        for (const section of plans.sections ?? []) {
+            if (!section.rows.length) continue;
+            sheet.addRow([]);
+            const titleRow = sheet.addRow([section.title]);
+            titleRow.font = { bold: true, size: 12 };
+            titleRow.getCell(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFBFBFBF' },
+            };
+            const sectionHead = sheet.addRow(['ФИО', ...headCells]);
+            this.styleHeadRow(sectionHead);
+            writeRowsBlock(section.rows, section.total, 'Итого по секции');
+        }
+
+        sheet.columns = new Array(headCells.length + 1)
+            .fill(null)
+            .map((_item, index) => ({ width: index === 0 ? 28 : 18 }));
     }
 
     private sumActionByUsers(
