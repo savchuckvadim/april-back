@@ -158,6 +158,13 @@ export class PbxAicallSmartService {
         /** id смарт-типа из crm.type.list (НЕ entityTypeId). */
         typeId: number,
         bxFields: IUserFieldConfig[],
+        /**
+         * entityTypeId смарта — для чтения ФАКТИЧЕСКИХ camel-ключей полей из
+         * crm.item.fields. Формула ufCrm{typeId}{Pascal} не всегда совпадает
+         * с реальностью (боевой инцидент: UF_CRM_94_TRANSCRIPT_1 — значения
+         * по формульному ключу молча не сохранялись).
+         */
+        entityTypeId?: number,
     ): Promise<number> {
         const portal = await this.portalStoreService.getPortalByDomain(domain);
         if (!portal) throw new Error('Portal not found (локальная БД)');
@@ -168,8 +175,18 @@ export class PbxAicallSmartService {
         );
         if (!row) throw new Error('Строка smarts не найдена (зеркало типа)');
 
+        const camelByNormalized = entityTypeId
+            ? await this.loadItemFieldKeys(domain, entityTypeId)
+            : {};
+        this.logger.log(
+            `Зеркало полей aicall (${domain}): crm.item.fields дал ` +
+                `${Object.keys(camelByNormalized).length} camel-ключей` +
+                `${entityTypeId ? '' : ' (entityTypeId не передан — формула)'}`,
+        );
+
         const parentType = `${CALL_REPORT_SMART_GROUP}_${CALL_REPORT_SMART_TYPE}`;
         const entities: PbxFieldEntity[] = [];
+        const formulaMismatches: string[] = [];
         for (const def of CALL_REPORT_SMART_FIELDS) {
             const fieldName = `UF_CRM_${typeId}_${def.code}`;
             const bxField = bxFields.find(
@@ -183,10 +200,13 @@ export class PbxAicallSmartService {
             entity.type = def.type;
             entity.isPlural = bxField.multiple === 'Y';
             entity.bitrixId = fieldName;
-            entity.bitrixCamelId = buildCallReportItemFieldName(
-                typeId,
-                def.code,
-            );
+            const formulaCamel = buildCallReportItemFieldName(typeId, def.code);
+            const factualCamel =
+                camelByNormalized[this.normalizeKey(fieldName)];
+            if (factualCamel && factualCamel !== formulaCamel) {
+                formulaMismatches.push(`${formulaCamel}→${factualCamel}`);
+            }
+            entity.bitrixCamelId = factualCamel ?? formulaCamel;
             entity.entity_type = PbxEntityTypePrisma.SMART;
             entity.entity_id = Number(row.id);
             entity.parent_type = parentType;
@@ -201,8 +221,49 @@ export class PbxAicallSmartService {
             entities.push(entity);
         }
 
+        // Диагностика бага «поле отправлено, но пусто»: какие camel-ключи
+        // по факту отличаются от формулы (пример: TRANSCRIPT_1).
+        if (formulaMismatches.length) {
+            this.logger.warn(
+                `camel-ключи расходятся с формулой (${formulaMismatches.length} шт): ` +
+                    formulaMismatches.slice(0, 6).join(', '),
+            );
+        }
+
         await this.pbxFieldService.upsertFields(entities);
         return entities.length;
+    }
+
+    /**
+     * Фактические camel-ключи UF-полей смарта из crm.item.fields:
+     * normalized(UF-имя без подчёркиваний, lowercase) → реальный ключ.
+     * Fail-open: пустая карта откатывает bitrixCamelId на формулу.
+     */
+    private async loadItemFieldKeys(
+        domain: string,
+        entityTypeId: number,
+    ): Promise<Record<string, string>> {
+        try {
+            const { bitrix } = await this.pbxService.init(domain);
+            const response = (await bitrix.api.call('crm.item.fields', {
+                entityTypeId,
+            })) as { result?: { fields?: Record<string, unknown> } };
+            const map: Record<string, string> = {};
+            for (const key of Object.keys(response?.result?.fields ?? {})) {
+                map[this.normalizeKey(key)] = key;
+            }
+            return map;
+        } catch (error) {
+            this.logger.warn(
+                `crm.item.fields не прочитан (${domain}, ${entityTypeId}): ${(error as Error).message} — camel-ключи по формуле`,
+            );
+            return {};
+        }
+    }
+
+    /** UF_CRM_94_TRANSCRIPT_1 и ufCrm94Transcript1 → 'ufcrm94transcript1'. */
+    private normalizeKey(value: string): string {
+        return value.replace(/_/g, '').toLowerCase();
     }
 
     private lowerFirst(value: string): string {

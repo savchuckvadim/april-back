@@ -84,11 +84,13 @@ describe('InstallCallReportSmartUseCase', () => {
             'aicall',
             'sales',
         );
-        // Зеркало полей и UF-имена — по id типа (128), НЕ по entityTypeId.
+        // Зеркало полей и UF-имена — по id типа (128), НЕ по entityTypeId;
+        // entityTypeId передаётся для чтения фактических camel-ключей.
         expect(aicallSmart.mirrorFields).toHaveBeenCalledWith(
             DOMAIN,
             128,
             expect.any(Array),
+            1056,
         );
         expect(resolver.invalidate).toHaveBeenCalledWith(DOMAIN);
 

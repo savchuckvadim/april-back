@@ -165,6 +165,7 @@ export class InstallCallReportSmartUseCase {
                 domain,
                 typeId,
                 bxFields,
+                entityTypeId,
             );
             this.logger.log(
                 `Зеркало полей aicall в PortalDB: ${mirrored} шт (${domain})`,

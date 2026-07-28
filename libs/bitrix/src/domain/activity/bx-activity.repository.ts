@@ -27,12 +27,13 @@ export class BxActivityRepository {
         entityTypeId: number,
         entityId: number | string,
     ): Promise<unknown> {
+        // Параметры ПЛОСКИЕ, без обёртки fields — с fields Bitrix отвечает
+        // «Could not find value for parameter {activityId}» (боевой лог
+        // 2026-07-27).
         return this.bitrixService.call('crm.activity.binding.add', {
-            fields: {
-                activityId: Number(activityId),
-                entityTypeId,
-                entityId: Number(entityId),
-            },
+            activityId: Number(activityId),
+            entityTypeId,
+            entityId: Number(entityId),
         });
     }
 
@@ -43,11 +44,9 @@ export class BxActivityRepository {
         entityId: number | string,
     ): Promise<unknown> {
         return this.bitrixService.call('crm.activity.binding.delete', {
-            fields: {
-                activityId: Number(activityId),
-                entityTypeId,
-                entityId: Number(entityId),
-            },
+            activityId: Number(activityId),
+            entityTypeId,
+            entityId: Number(entityId),
         });
     }
 
