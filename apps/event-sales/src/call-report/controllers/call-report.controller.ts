@@ -70,6 +70,7 @@ export class CallReportController {
             minDurationSec: dto.minDurationSec,
             windowHours: dto.windowHours,
             maxPerRun: dto.maxPerRun,
+            allowedUserIds: dto.userIds,
         });
     }
 

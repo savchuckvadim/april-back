@@ -77,6 +77,20 @@ export class ScanCallsDto {
     @Min(1)
     @Max(100)
     maxPerRun?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Только эти сотрудники (bitrix-id менеджеров портала) — ' +
+            'асинхронный прогон одного/нескольких менеджеров за период ' +
+            'без таймаутов синхронного analyze. Фильтр применяется поверх ' +
+            'фильтра отдела продаж. Пусто — весь отдел продаж.',
+        example: [35],
+        type: [Number],
+    })
+    @IsOptional()
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    userIds?: number[];
 }
 
 /**
