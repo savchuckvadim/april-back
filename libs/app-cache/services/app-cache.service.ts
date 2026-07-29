@@ -205,7 +205,10 @@ export class AppCacheService {
 
         // Группируем промахи по (portalId, app, bxUserId) → по одному
         // findMany с key IN (...) на группу; обычно группа одна.
-        const groups = new Map<string, { where: Prisma.AppCacheWhereInput; indexes: number[] }>();
+        const groups = new Map<
+            string,
+            { where: Prisma.AppCacheWhereInput; indexes: number[] }
+        >();
         for (const i of missIndexes) {
             const ref = refs[i];
             const portalId = await this.resolvePortalId(ref.domain);
@@ -215,7 +218,12 @@ export class AppCacheService {
             let group = groups.get(groupKey);
             if (!group) {
                 group = {
-                    where: { portalId, app: ref.app, bxUserId, key: { in: [] } },
+                    where: {
+                        portalId,
+                        app: ref.app,
+                        bxUserId,
+                        key: { in: [] },
+                    },
                     indexes: [],
                 };
                 groups.set(groupKey, group);
@@ -555,9 +563,7 @@ export class AppCacheService {
         if (filter.group) where.group = filter.group;
         if (filter.keyPrefix || filter.keySuffix) {
             where.key = {
-                ...(filter.keyPrefix
-                    ? { startsWith: filter.keyPrefix }
-                    : {}),
+                ...(filter.keyPrefix ? { startsWith: filter.keyPrefix } : {}),
                 ...(filter.keySuffix ? { endsWith: filter.keySuffix } : {}),
             };
         }

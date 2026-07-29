@@ -63,9 +63,7 @@ export function buildHotClientDeal(
         contractTypeCode: contractType?.code ?? null,
         contractTypeName: contractType?.name ?? null,
         opHistory: toStringArray(deal[uf.opHistory]),
-        opMHistory: uf.opMHistory
-            ? toStringArray(deal[uf.opMHistory])
-            : [],
+        opMHistory: uf.opMHistory ? toStringArray(deal[uf.opMHistory]) : [],
         comments: toStringArray(deal[uf.presComments]),
         companyId,
         companyName: company?.title ?? null,

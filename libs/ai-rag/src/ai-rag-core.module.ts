@@ -7,6 +7,7 @@ import { KnowledgeContentService } from './application/knowledge-content.service
 import { FileLoaderService } from './infrastructure/file-loader/file-loader.service';
 import { KnowledgeStorageService } from './infrastructure/knowledge/knowledge-storage.service';
 import { MemoryVectorStoreService } from './infrastructure/vector-store/memory-vector-store.service';
+import { CloudRuProvider } from './infrastructure/providers/cloudru.provider';
 import { FakeProvider } from './infrastructure/providers/fake.provider';
 import { GigaChatProvider } from './infrastructure/providers/gigachat.provider';
 import { OllamaProvider } from './infrastructure/providers/ollama.provider';
@@ -31,6 +32,7 @@ import { OpenAiProvider } from './infrastructure/providers/openai.provider';
         FileLoaderService,
         KnowledgeStorageService,
         MemoryVectorStoreService,
+        CloudRuProvider,
         FakeProvider,
         GigaChatProvider,
         OllamaProvider,

@@ -144,9 +144,7 @@ export const PLAN_INDICATOR_CODE_LIST: readonly PlanIndicatorCode[] =
     PLAN_INDICATORS.map(indicator => indicator.code);
 
 /** Определение показателя по коду. */
-export const findPlanIndicator = (
-    code: string,
-): PlanIndicatorDef | undefined =>
+export const findPlanIndicator = (code: string): PlanIndicatorDef | undefined =>
     PLAN_INDICATORS.find(indicator => indicator.code === code);
 
 /** Полное имя Bitrix user-поля плана (UF_USR_A_SALES_PLAN_*). */

@@ -29,7 +29,9 @@ export class AirtimeCacheResetRequestDto {
         example: '2026-06',
     })
     @IsOptional()
-    @Matches(/^\d{4}-\d{2}$/, { message: 'month должен быть в формате yyyy-MM' })
+    @Matches(/^\d{4}-\d{2}$/, {
+        message: 'month должен быть в формате yyyy-MM',
+    })
     month?: string;
 
     @ApiPropertyOptional({

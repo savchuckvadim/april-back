@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { Agent } from 'https';
 import {
     Injectable,
     InternalServerErrorException,
@@ -38,6 +40,15 @@ export class GigaChatProvider implements LlmProvider {
     private llmInstance: GigaChat | null = null;
     private embeddingsInstance: GigaChatEmbeddings | null = null;
     /**
+     * TLS для сбер-шлюза ngw.devices.sberbank.ru: он подписан российским
+     * корневым сертификатом (Минцифры), которого нет в стандартном
+     * CA-бандле Node — без настройки авторизация падает с
+     * SELF_SIGNED_CERT_IN_CHAIN (боевой инцидент 2026-07-29).
+     * GIGACHAT_CA_PATH — путь к PEM Russian Trusted Root CA (правильный
+     * путь); GIGACHAT_INSECURE_TLS=1 — отключить проверку (быстрый обход).
+     */
+    private readonly httpsAgent: Agent | undefined;
+    /**
      * Пер-провайдерный лимитер: очередь call-report обрабатывает несколько
      * звонков параллельно, но одновременных запросов к GigaChat — не больше
      * лимита (защита от rate limit и всплеска бюджета).
@@ -54,6 +65,7 @@ export class GigaChatProvider implements LlmProvider {
         private readonly combinedAnalysis: CombinedCallAnalysisService,
     ) {
         this.apiKey = configService.get<string>('GIGACHAT_API_KEY');
+        this.httpsAgent = this.buildHttpsAgent(configService);
         this.limiter = new Semaphore(
             parseConcurrency(
                 configService.get<string>('GIGACHAT_CONCURRENCY'),
@@ -176,10 +188,32 @@ export class GigaChatProvider implements LlmProvider {
         }
     }
 
+    /** TLS-агент для сбер-шлюза; undefined — стандартное поведение Node. */
+    private buildHttpsAgent(configService: ConfigService): Agent | undefined {
+        const caPath = configService.get<string>('GIGACHAT_CA_PATH');
+        if (caPath) {
+            try {
+                return new Agent({ ca: readFileSync(caPath) });
+            } catch (error) {
+                this.logger.error(
+                    `GIGACHAT_CA_PATH не прочитан (${caPath}): ${(error as Error).message}`,
+                );
+            }
+        }
+        if (configService.get<string>('GIGACHAT_INSECURE_TLS') === '1') {
+            this.logger.warn(
+                'GIGACHAT_INSECURE_TLS=1 — проверка TLS-сертификата сбер-шлюза ОТКЛЮЧЕНА (используйте GIGACHAT_CA_PATH для боевого режима)',
+            );
+            return new Agent({ rejectUnauthorized: false });
+        }
+        return undefined;
+    }
+
     private getLlm(): GigaChat {
         if (!this.llmInstance) {
             this.llmInstance = new GigaChat({
                 credentials: this.requireApiKey(),
+                httpsAgent: this.httpsAgent,
             });
         }
         return this.llmInstance;
@@ -189,6 +223,7 @@ export class GigaChatProvider implements LlmProvider {
         if (!this.embeddingsInstance) {
             this.embeddingsInstance = new GigaChatEmbeddings({
                 credentials: this.requireApiKey(),
+                httpsAgent: this.httpsAgent,
             });
         }
         return this.embeddingsInstance;

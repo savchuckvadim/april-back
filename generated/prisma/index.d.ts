@@ -66880,6 +66880,7 @@ export namespace Prisma {
     shadowDealId: number | null
     serviceSmartId: number | null
     smartId: number | null
+    offerSmartId: number | null
   }
 
   export type BxDocumentDealSumAggregateOutputType = {
@@ -66899,6 +66900,7 @@ export namespace Prisma {
     shadowDealId: number | null
     serviceSmartId: number | null
     smartId: number | null
+    offerSmartId: bigint | null
   }
 
   export type BxDocumentDealMinAggregateOutputType = {
@@ -66955,6 +66957,9 @@ export namespace Prisma {
     shadowDealId: number | null
     serviceSmartId: number | null
     smartId: number | null
+    offerSmartId: bigint | null
+    ltOther: string | null
+    iskraConfig: string | null
   }
 
   export type BxDocumentDealMaxAggregateOutputType = {
@@ -67011,6 +67016,9 @@ export namespace Prisma {
     shadowDealId: number | null
     serviceSmartId: number | null
     smartId: number | null
+    offerSmartId: bigint | null
+    ltOther: string | null
+    iskraConfig: string | null
   }
 
   export type BxDocumentDealCountAggregateOutputType = {
@@ -67067,6 +67075,9 @@ export namespace Prisma {
     shadowDealId: number
     serviceSmartId: number
     smartId: number
+    offerSmartId: number
+    ltOther: number
+    iskraConfig: number
     _all: number
   }
 
@@ -67088,6 +67099,7 @@ export namespace Prisma {
     shadowDealId?: true
     serviceSmartId?: true
     smartId?: true
+    offerSmartId?: true
   }
 
   export type BxDocumentDealSumAggregateInputType = {
@@ -67107,6 +67119,7 @@ export namespace Prisma {
     shadowDealId?: true
     serviceSmartId?: true
     smartId?: true
+    offerSmartId?: true
   }
 
   export type BxDocumentDealMinAggregateInputType = {
@@ -67163,6 +67176,9 @@ export namespace Prisma {
     shadowDealId?: true
     serviceSmartId?: true
     smartId?: true
+    offerSmartId?: true
+    ltOther?: true
+    iskraConfig?: true
   }
 
   export type BxDocumentDealMaxAggregateInputType = {
@@ -67219,6 +67235,9 @@ export namespace Prisma {
     shadowDealId?: true
     serviceSmartId?: true
     smartId?: true
+    offerSmartId?: true
+    ltOther?: true
+    iskraConfig?: true
   }
 
   export type BxDocumentDealCountAggregateInputType = {
@@ -67275,6 +67294,9 @@ export namespace Prisma {
     shadowDealId?: true
     serviceSmartId?: true
     smartId?: true
+    offerSmartId?: true
+    ltOther?: true
+    iskraConfig?: true
     _all?: true
   }
 
@@ -67418,6 +67440,9 @@ export namespace Prisma {
     shadowDealId: number | null
     serviceSmartId: number | null
     smartId: number | null
+    offerSmartId: bigint | null
+    ltOther: string | null
+    iskraConfig: string | null
     _count: BxDocumentDealCountAggregateOutputType | null
     _avg: BxDocumentDealAvgAggregateOutputType | null
     _sum: BxDocumentDealSumAggregateOutputType | null
@@ -67493,6 +67518,9 @@ export namespace Prisma {
     shadowDealId?: boolean
     serviceSmartId?: boolean
     smartId?: boolean
+    offerSmartId?: boolean
+    ltOther?: boolean
+    iskraConfig?: boolean
   }, ExtArgs["result"]["bxDocumentDeal"]>
 
 
@@ -67551,9 +67579,12 @@ export namespace Prisma {
     shadowDealId?: boolean
     serviceSmartId?: boolean
     smartId?: boolean
+    offerSmartId?: boolean
+    ltOther?: boolean
+    iskraConfig?: boolean
   }
 
-  export type BxDocumentDealOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portalId" | "dealId" | "userId" | "infoblockId" | "supplyId" | "contractId" | "complectId" | "actionId" | "regionId" | "favoriteId" | "templateId" | "title" | "domain" | "dealName" | "app" | "global" | "currentComplect" | "od" | "result" | "contract" | "product" | "rows" | "regions" | "tags" | "department" | "target" | "promotionName" | "promotion" | "code" | "order" | "group" | "clientGroup" | "clientType" | "clientCompanyName" | "clientName" | "clientPosition" | "clientNameCase" | "clientPositionCase" | "settings" | "saleText" | "letterText" | "options" | "offer" | "invoice" | "contractDocument" | "act" | "isFavorite" | "shadowDealId" | "serviceSmartId" | "smartId", ExtArgs["result"]["bxDocumentDeal"]>
+  export type BxDocumentDealOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portalId" | "dealId" | "userId" | "infoblockId" | "supplyId" | "contractId" | "complectId" | "actionId" | "regionId" | "favoriteId" | "templateId" | "title" | "domain" | "dealName" | "app" | "global" | "currentComplect" | "od" | "result" | "contract" | "product" | "rows" | "regions" | "tags" | "department" | "target" | "promotionName" | "promotion" | "code" | "order" | "group" | "clientGroup" | "clientType" | "clientCompanyName" | "clientName" | "clientPosition" | "clientNameCase" | "clientPositionCase" | "settings" | "saleText" | "letterText" | "options" | "offer" | "invoice" | "contractDocument" | "act" | "isFavorite" | "shadowDealId" | "serviceSmartId" | "smartId" | "offerSmartId" | "ltOther" | "iskraConfig", ExtArgs["result"]["bxDocumentDeal"]>
 
   export type $BxDocumentDealPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "BxDocumentDeal"
@@ -67612,6 +67643,9 @@ export namespace Prisma {
       shadowDealId: number | null
       serviceSmartId: number | null
       smartId: number | null
+      offerSmartId: bigint | null
+      ltOther: string | null
+      iskraConfig: string | null
     }, ExtArgs["result"]["bxDocumentDeal"]>
     composites: {}
   }
@@ -68034,6 +68068,9 @@ export namespace Prisma {
     readonly shadowDealId: FieldRef<"BxDocumentDeal", 'Int'>
     readonly serviceSmartId: FieldRef<"BxDocumentDeal", 'Int'>
     readonly smartId: FieldRef<"BxDocumentDeal", 'Int'>
+    readonly offerSmartId: FieldRef<"BxDocumentDeal", 'BigInt'>
+    readonly ltOther: FieldRef<"BxDocumentDeal", 'String'>
+    readonly iskraConfig: FieldRef<"BxDocumentDeal", 'String'>
   }
     
 
@@ -105263,7 +105300,10 @@ export namespace Prisma {
     isFavorite: 'isFavorite',
     shadowDealId: 'shadowDealId',
     serviceSmartId: 'serviceSmartId',
-    smartId: 'smartId'
+    smartId: 'smartId',
+    offerSmartId: 'offerSmartId',
+    ltOther: 'ltOther',
+    iskraConfig: 'iskraConfig'
   };
 
   export type BxDocumentDealScalarFieldEnum = (typeof BxDocumentDealScalarFieldEnum)[keyof typeof BxDocumentDealScalarFieldEnum]
@@ -106663,7 +106703,9 @@ export namespace Prisma {
     offer: 'offer',
     invoice: 'invoice',
     contractDocument: 'contractDocument',
-    act: 'act'
+    act: 'act',
+    ltOther: 'ltOther',
+    iskraConfig: 'iskraConfig'
   };
 
   export type BxDocumentDealOrderByRelevanceFieldEnum = (typeof BxDocumentDealOrderByRelevanceFieldEnum)[keyof typeof BxDocumentDealOrderByRelevanceFieldEnum]
@@ -112267,6 +112309,9 @@ export namespace Prisma {
     shadowDealId?: IntNullableFilter<"BxDocumentDeal"> | number | null
     serviceSmartId?: IntNullableFilter<"BxDocumentDeal"> | number | null
     smartId?: IntNullableFilter<"BxDocumentDeal"> | number | null
+    offerSmartId?: BigIntNullableFilter<"BxDocumentDeal"> | bigint | number | null
+    ltOther?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    iskraConfig?: StringNullableFilter<"BxDocumentDeal"> | string | null
   }
 
   export type BxDocumentDealOrderByWithRelationInput = {
@@ -112323,6 +112368,9 @@ export namespace Prisma {
     shadowDealId?: SortOrderInput | SortOrder
     serviceSmartId?: SortOrderInput | SortOrder
     smartId?: SortOrderInput | SortOrder
+    offerSmartId?: SortOrderInput | SortOrder
+    ltOther?: SortOrderInput | SortOrder
+    iskraConfig?: SortOrderInput | SortOrder
     _relevance?: BxDocumentDealOrderByRelevanceInput
   }
 
@@ -112383,6 +112431,9 @@ export namespace Prisma {
     shadowDealId?: IntNullableFilter<"BxDocumentDeal"> | number | null
     serviceSmartId?: IntNullableFilter<"BxDocumentDeal"> | number | null
     smartId?: IntNullableFilter<"BxDocumentDeal"> | number | null
+    offerSmartId?: BigIntNullableFilter<"BxDocumentDeal"> | bigint | number | null
+    ltOther?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    iskraConfig?: StringNullableFilter<"BxDocumentDeal"> | string | null
   }, "id">
 
   export type BxDocumentDealOrderByWithAggregationInput = {
@@ -112439,6 +112490,9 @@ export namespace Prisma {
     shadowDealId?: SortOrderInput | SortOrder
     serviceSmartId?: SortOrderInput | SortOrder
     smartId?: SortOrderInput | SortOrder
+    offerSmartId?: SortOrderInput | SortOrder
+    ltOther?: SortOrderInput | SortOrder
+    iskraConfig?: SortOrderInput | SortOrder
     _count?: BxDocumentDealCountOrderByAggregateInput
     _avg?: BxDocumentDealAvgOrderByAggregateInput
     _max?: BxDocumentDealMaxOrderByAggregateInput
@@ -112503,6 +112557,9 @@ export namespace Prisma {
     shadowDealId?: IntNullableWithAggregatesFilter<"BxDocumentDeal"> | number | null
     serviceSmartId?: IntNullableWithAggregatesFilter<"BxDocumentDeal"> | number | null
     smartId?: IntNullableWithAggregatesFilter<"BxDocumentDeal"> | number | null
+    offerSmartId?: BigIntNullableWithAggregatesFilter<"BxDocumentDeal"> | bigint | number | null
+    ltOther?: StringNullableWithAggregatesFilter<"BxDocumentDeal"> | string | null
+    iskraConfig?: StringNullableWithAggregatesFilter<"BxDocumentDeal"> | string | null
   }
 
   export type bx_rqsWhereInput = {
@@ -121762,6 +121819,9 @@ export namespace Prisma {
     shadowDealId?: number | null
     serviceSmartId?: number | null
     smartId?: number | null
+    offerSmartId?: bigint | number | null
+    ltOther?: string | null
+    iskraConfig?: string | null
   }
 
   export type BxDocumentDealUncheckedCreateInput = {
@@ -121818,6 +121878,9 @@ export namespace Prisma {
     shadowDealId?: number | null
     serviceSmartId?: number | null
     smartId?: number | null
+    offerSmartId?: bigint | number | null
+    ltOther?: string | null
+    iskraConfig?: string | null
   }
 
   export type BxDocumentDealUpdateInput = {
@@ -121874,6 +121937,9 @@ export namespace Prisma {
     shadowDealId?: NullableIntFieldUpdateOperationsInput | number | null
     serviceSmartId?: NullableIntFieldUpdateOperationsInput | number | null
     smartId?: NullableIntFieldUpdateOperationsInput | number | null
+    offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    ltOther?: NullableStringFieldUpdateOperationsInput | string | null
+    iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BxDocumentDealUncheckedUpdateInput = {
@@ -121930,6 +121996,9 @@ export namespace Prisma {
     shadowDealId?: NullableIntFieldUpdateOperationsInput | number | null
     serviceSmartId?: NullableIntFieldUpdateOperationsInput | number | null
     smartId?: NullableIntFieldUpdateOperationsInput | number | null
+    offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    ltOther?: NullableStringFieldUpdateOperationsInput | string | null
+    iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BxDocumentDealCreateManyInput = {
@@ -121986,6 +122055,9 @@ export namespace Prisma {
     shadowDealId?: number | null
     serviceSmartId?: number | null
     smartId?: number | null
+    offerSmartId?: bigint | number | null
+    ltOther?: string | null
+    iskraConfig?: string | null
   }
 
   export type BxDocumentDealUpdateManyMutationInput = {
@@ -122042,6 +122114,9 @@ export namespace Prisma {
     shadowDealId?: NullableIntFieldUpdateOperationsInput | number | null
     serviceSmartId?: NullableIntFieldUpdateOperationsInput | number | null
     smartId?: NullableIntFieldUpdateOperationsInput | number | null
+    offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    ltOther?: NullableStringFieldUpdateOperationsInput | string | null
+    iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BxDocumentDealUncheckedUpdateManyInput = {
@@ -122098,6 +122173,9 @@ export namespace Prisma {
     shadowDealId?: NullableIntFieldUpdateOperationsInput | number | null
     serviceSmartId?: NullableIntFieldUpdateOperationsInput | number | null
     smartId?: NullableIntFieldUpdateOperationsInput | number | null
+    offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    ltOther?: NullableStringFieldUpdateOperationsInput | string | null
+    iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type bx_rqsCreateInput = {
@@ -130407,6 +130485,9 @@ export namespace Prisma {
     shadowDealId?: SortOrder
     serviceSmartId?: SortOrder
     smartId?: SortOrder
+    offerSmartId?: SortOrder
+    ltOther?: SortOrder
+    iskraConfig?: SortOrder
   }
 
   export type BxDocumentDealAvgOrderByAggregateInput = {
@@ -130426,6 +130507,7 @@ export namespace Prisma {
     shadowDealId?: SortOrder
     serviceSmartId?: SortOrder
     smartId?: SortOrder
+    offerSmartId?: SortOrder
   }
 
   export type BxDocumentDealMaxOrderByAggregateInput = {
@@ -130482,6 +130564,9 @@ export namespace Prisma {
     shadowDealId?: SortOrder
     serviceSmartId?: SortOrder
     smartId?: SortOrder
+    offerSmartId?: SortOrder
+    ltOther?: SortOrder
+    iskraConfig?: SortOrder
   }
 
   export type BxDocumentDealMinOrderByAggregateInput = {
@@ -130538,6 +130623,9 @@ export namespace Prisma {
     shadowDealId?: SortOrder
     serviceSmartId?: SortOrder
     smartId?: SortOrder
+    offerSmartId?: SortOrder
+    ltOther?: SortOrder
+    iskraConfig?: SortOrder
   }
 
   export type BxDocumentDealSumOrderByAggregateInput = {
@@ -130557,6 +130645,7 @@ export namespace Prisma {
     shadowDealId?: SortOrder
     serviceSmartId?: SortOrder
     smartId?: SortOrder
+    offerSmartId?: SortOrder
   }
 
   export type PortalNullableScalarRelationFilter = {

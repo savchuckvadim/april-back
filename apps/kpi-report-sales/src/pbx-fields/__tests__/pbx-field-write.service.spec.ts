@@ -180,9 +180,9 @@ describe('PbxFieldWriteService', () => {
 
     it('поле не настроено на портале → BadRequest', async () => {
         const { bitrix, portal } = makeMocks();
-        (
-            portal.getDealFieldByCode as unknown as jest.Mock
-        ).mockReturnValue(undefined);
+        (portal.getDealFieldByCode as unknown as jest.Mock).mockReturnValue(
+            undefined,
+        );
         const service = new PbxFieldWriteService(bitrix, portal);
 
         await expect(

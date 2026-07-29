@@ -521,6 +521,15 @@ export class AgentAnalysisIntakeService {
             );
             return true;
         } catch (error) {
+            // «Дело уже привязано» — это успех (повторный push-back):
+            // запись звонка уже в таймлайне элемента, fallback не нужен.
+            const raw =
+                (error as Error).message +
+                JSON.stringify(
+                    (error as { response?: { data?: unknown } }).response
+                        ?.data ?? '',
+                );
+            if (raw.includes('ALREADY_BOUND')) return true;
             this.logger.warn(
                 `binding активности ${row.activityId} к смарту не выполнен: ${(error as Error).message}`,
             );

@@ -26,7 +26,12 @@ const row = (
 describe('airtime-cell.util', () => {
     it('aggregateRowsToCells: раскладывает строки по сотрудникам и направлениям', () => {
         const cells = aggregateRowsToCells(
-            [row('1', 60, 1), row('1', 30, 2), row('2', 10, 4), row('99', 5, 1)],
+            [
+                row('1', 60, 1),
+                row('1', 30, 2),
+                row('2', 10, 4),
+                row('99', 5, 1),
+            ],
             [1, 2],
         );
 

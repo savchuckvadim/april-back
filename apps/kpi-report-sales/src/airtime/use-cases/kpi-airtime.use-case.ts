@@ -217,7 +217,7 @@ export class AirtimeStatisticUseCase {
             for (const [pair, cell] of cached) {
                 if (!cell) {
                     const [u, d] = pair.split('|');
-                    missingDates.add(d!);
+                    missingDates.add(d);
                     missingUsers.add(Number(u));
                 }
             }
@@ -247,7 +247,7 @@ export class AirtimeStatisticUseCase {
 
             for (const [pair, cell] of cached) {
                 if (!cell) continue;
-                const acc = cells.get(Number(pair.split('|')[0]!));
+                const acc = cells.get(Number(pair.split('|')[0]));
                 if (acc) addCellInto(acc, cell);
             }
         }
@@ -347,7 +347,8 @@ function callTypeHistogram(
 ): Record<string, number> {
     const histogram: Record<string, number> = {};
     for (const row of rows) {
-        const key = row.CALL_TYPE === undefined ? 'undefined' : String(row.CALL_TYPE);
+        const key =
+            row.CALL_TYPE === undefined ? 'undefined' : String(row.CALL_TYPE);
         histogram[key] = (histogram[key] ?? 0) + 1;
     }
     return histogram;

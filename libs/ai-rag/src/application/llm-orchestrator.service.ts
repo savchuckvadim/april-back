@@ -4,6 +4,7 @@ import {
     LlmProvider,
 } from '../domain/interfaces/llm-provider.interface';
 import { LlmModel } from '../domain/types/llm-model.type';
+import { CloudRuProvider } from '../infrastructure/providers/cloudru.provider';
 import { FakeProvider } from '../infrastructure/providers/fake.provider';
 import { GigaChatProvider } from '../infrastructure/providers/gigachat.provider';
 import { OllamaProvider } from '../infrastructure/providers/ollama.provider';
@@ -13,6 +14,7 @@ import { OpenAiProvider } from '../infrastructure/providers/openai.provider';
 export class LlmOrchestratorService {
     constructor(
         private readonly gigaChatProvider: GigaChatProvider,
+        private readonly cloudRuProvider: CloudRuProvider,
         private readonly openAiProvider: OpenAiProvider,
         private readonly ollamaProvider: OllamaProvider,
         private readonly fakeProvider: FakeProvider,
@@ -46,6 +48,8 @@ export class LlmOrchestratorService {
         switch (model) {
             case 'gigachat':
                 return this.gigaChatProvider;
+            case 'cloudru':
+                return this.cloudRuProvider;
             case 'openai':
                 return this.openAiProvider;
             case 'ollama':

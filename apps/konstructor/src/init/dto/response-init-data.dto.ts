@@ -328,7 +328,10 @@ export class KServiceItemDto implements IKServiceItem {
 }
 
 export class ServicesInitDto implements IKServices {
-    @ApiProperty({ description: 'Продукты Legal Tech', type: [KServiceItemDto] })
+    @ApiProperty({
+        description: 'Продукты Legal Tech',
+        type: [KServiceItemDto],
+    })
     lt: KServiceItemDto[];
     @ApiProperty({ description: 'Пакеты Legal Tech', type: [KServiceItemDto] })
     ltPackages: KServiceItemDto[];

@@ -98,9 +98,7 @@ export class PbxFieldsUseCase {
         // contract_type: code → numeric id по merged-словарю (портальные
         // семантические коды + живые элементы, добавленные руками).
         let enumDict: ReadonlyMap<string, number> | undefined;
-        if (
-            dto.fieldCode === PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type
-        ) {
+        if (dto.fieldCode === PBX_SALES_KONSTRUCTOR_FIELD_CODES.contract_type) {
             const liveItems = await new ContractTypeItemsService(
                 bitrix,
                 this.financeCache,

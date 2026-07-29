@@ -67,9 +67,7 @@ export class ExcelReportService {
                                 department,
                             );
                         }
-                    } else if (
-                        departments.some(dep => dep.groups.length > 0)
-                    ) {
+                    } else if (departments.some(dep => dep.groups.length > 0)) {
                         const sheet = workbook.addWorksheet('По группам');
                         this.renderDateHeader(dto, sheet);
                         sheet.addRow([]);
@@ -88,7 +86,11 @@ export class ExcelReportService {
             }
 
             if (dto.finance?.closed) {
-                this.renderFinanceClosedSheet(workbook, dto, dto.finance.closed);
+                this.renderFinanceClosedSheet(
+                    workbook,
+                    dto,
+                    dto.finance.closed,
+                );
             }
             if (dto.finance?.hot) {
                 this.renderFinanceHotSheet(workbook, dto, dto.finance.hot);
@@ -226,9 +228,7 @@ export class ExcelReportService {
         const planByCode = new Map(
             userPlans.cells.map(cell => [cell.code, cell.plan]),
         );
-        const hasAny = item.kpi.some(
-            kpi => kpi.id && planByCode.has(kpi.id),
-        );
+        const hasAny = item.kpi.some(kpi => kpi.id && planByCode.has(kpi.id));
         if (!hasAny) return;
 
         const row = sheet.addRow([
@@ -580,7 +580,8 @@ export class ExcelReportService {
             cells.forEach((cell, index) => {
                 const base = 2 + index * 3;
                 const unit = plans.units[index];
-                const moneyFmt = unit === 'money' ? PLAN_MONEY_FORMAT : undefined;
+                const moneyFmt =
+                    unit === 'money' ? PLAN_MONEY_FORMAT : undefined;
 
                 const planCell = row.getCell(base);
                 if (cell.plan === null) {

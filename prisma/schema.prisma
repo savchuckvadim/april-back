@@ -1098,6 +1098,9 @@ model BxDocumentDeal {
     shadowDealId       Int?
     serviceSmartId     Int?
     smartId            Int?
+    offerSmartId       BigInt?
+    ltOther            String?   @db.LongText
+    iskraConfig        String?   @db.LongText
 
     @@map("bx_document_deals")
 }

@@ -90,7 +90,9 @@ export class ContractTypeItemsService {
     }
 
     /** Карта id → элемент (резолв UF-значения сделки). */
-    static byId(items: ContractTypeItem[]): ReadonlyMap<number, ContractTypeItem> {
+    static byId(
+        items: ContractTypeItem[],
+    ): ReadonlyMap<number, ContractTypeItem> {
         return new Map(items.map(item => [item.id, item]));
     }
 
@@ -119,10 +121,7 @@ export function mergeContractTypeItems(
             id,
             code: item.code,
             name:
-                liveById.get(id)?.name ||
-                item.name ||
-                item.title ||
-                item.code,
+                liveById.get(id)?.name || item.name || item.title || item.code,
         };
     });
     for (const live of liveItems) {

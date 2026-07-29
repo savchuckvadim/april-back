@@ -164,7 +164,8 @@ export class ConversionsExcelDto {
     methodLabel: string;
 
     @ApiProperty({
-        description: 'Тип отчёта, из которого выгружены конверсии (для подписи листа)',
+        description:
+            'Тип отчёта, из которого выгружены конверсии (для подписи листа)',
         required: false,
     })
     @IsOptional()
@@ -213,7 +214,8 @@ export class ConversionsExcelDto {
 /** Ячейка листа «Планы»: план/факт/достижение одного показателя. */
 export class PlansExcelCellDto {
     @ApiProperty({
-        description: 'План на выбранный период (пересчитан фронтом); null — не задан',
+        description:
+            'План на выбранный период (пересчитан фронтом); null — не задан',
         type: Number,
         nullable: true,
     })
@@ -251,13 +253,19 @@ export class PlansExcelSectionDto {
     @IsString()
     title: string;
 
-    @ApiProperty({ description: 'Строки менеджеров секции', type: [PlansExcelRowDto] })
+    @ApiProperty({
+        description: 'Строки менеджеров секции',
+        type: [PlansExcelRowDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => PlansExcelRowDto)
     rows: PlansExcelRowDto[];
 
-    @ApiProperty({ description: 'Итог секции (Σ планов и фактов)', type: [PlansExcelCellDto] })
+    @ApiProperty({
+        description: 'Итог секции (Σ планов и фактов)',
+        type: [PlansExcelCellDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => PlansExcelCellDto)
@@ -314,13 +322,19 @@ export class PlansExcelDto {
     @IsString({ each: true })
     units: string[];
 
-    @ApiProperty({ description: 'Строки сводной таблицы', type: [PlansExcelRowDto] })
+    @ApiProperty({
+        description: 'Строки сводной таблицы',
+        type: [PlansExcelRowDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => PlansExcelRowDto)
     rows: PlansExcelRowDto[];
 
-    @ApiProperty({ description: 'Итог по всем строкам', type: [PlansExcelCellDto] })
+    @ApiProperty({
+        description: 'Итог по всем строкам',
+        type: [PlansExcelCellDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => PlansExcelCellDto)
@@ -382,7 +396,10 @@ export class FinanceExcelEmployeeRowDto {
     @IsString()
     name: string;
 
-    @ApiProperty({ description: 'Итоги сотрудника', type: FinanceExcelTotalsDto })
+    @ApiProperty({
+        description: 'Итоги сотрудника',
+        type: FinanceExcelTotalsDto,
+    })
     @ValidateNested()
     @Type(() => FinanceExcelTotalsDto)
     totals: FinanceExcelTotalsDto;

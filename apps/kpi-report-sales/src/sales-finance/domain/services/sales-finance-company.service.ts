@@ -52,12 +52,12 @@ export class SalesFinanceCompanyService {
                 {
                     title: String(company.TITLE ?? ''),
                     color: this.resolveItemCode(
-                        company as IBXCompany,
+                        company,
                         PBX_SALES_EVENT_FIELD_CODES.op_prospects,
                         prospectsUf,
                     ),
                     clientTypeCode: this.resolveItemCode(
-                        company as IBXCompany,
+                        company,
                         PBX_SALES_EVENT_FIELD_CODES.op_client_type,
                         clientTypeUf,
                     ),

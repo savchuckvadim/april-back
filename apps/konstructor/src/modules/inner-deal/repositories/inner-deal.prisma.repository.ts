@@ -20,6 +20,33 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
             where: { domain, dealId },
         });
     }
+    async findSnapshot(
+        domain: string,
+        dealId: number,
+        serviceSmartId: number | null,
+    ): Promise<BxDocumentDeal | null> {
+        // serviceSmartId: null матчит SQL NULL — обычные (не смарт) записи
+        return this.prisma.bxDocumentDeal.findFirst({
+            where: { domain, dealId, serviceSmartId },
+            orderBy: { id: 'asc' },
+        });
+    }
+    async listByDealId(
+        domain: string,
+        dealId: number,
+    ): Promise<BxDocumentDeal[]> {
+        return this.prisma.bxDocumentDeal.findMany({
+            where: { domain, dealId },
+            orderBy: { id: 'asc' },
+        });
+    }
+    async findPortalIdByDomain(domain: string): Promise<bigint | null> {
+        const portal = await this.prisma.portal.findFirst({
+            where: { domain },
+            select: { id: true },
+        });
+        return portal?.id ?? null;
+    }
     async findByDomain(domain: string): Promise<BxDocumentDeal[] | null> {
         return this.prisma.bxDocumentDeal.findMany({
             where: { domain },

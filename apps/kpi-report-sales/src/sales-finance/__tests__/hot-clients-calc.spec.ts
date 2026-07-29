@@ -15,12 +15,9 @@ const UF: SalesFinanceUfFields = {
 };
 
 /** Живой словарь «Типа договора»: numeric id элемента → {code, name}. */
-const CONTRACT_TYPE_ITEMS: ReadonlyMap<
-    number,
-    { code: string; name: string }
-> = new Map([[301, { code: 'garant_standart', name: 'Гарант Стандарт' }]]);
-const NO_ITEMS: ReadonlyMap<number, { code: string; name: string }> =
-    new Map();
+const CONTRACT_TYPE_ITEMS: ReadonlyMap<number, { code: string; name: string }> =
+    new Map([[301, { code: 'garant_standart', name: 'Гарант Стандарт' }]]);
+const NO_ITEMS: ReadonlyMap<number, { code: string; name: string }> = new Map();
 
 function openDeal(overrides: Partial<IBXDeal> = {}): IBXDeal {
     return {

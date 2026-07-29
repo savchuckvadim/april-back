@@ -49,7 +49,10 @@ export class ShareLinkPublicController {
 
     /** До протухания ссылки, секунд (TTL presence-ключей). */
     private ttlSeconds(expiresAt: Date): number {
-        return Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+        return Math.max(
+            60,
+            Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+        );
     }
 
     /**
@@ -124,14 +127,8 @@ export class ShareLinkPublicController {
             },
             report: data.report,
             callings: data.callings,
-            finance: (data.finance ?? null) as Record<
-                string,
-                unknown
-            > | null,
-            airtime: (data.airtime ?? null) as Record<
-                string,
-                unknown
-            > | null,
+            finance: (data.finance ?? null) as Record<string, unknown> | null,
+            airtime: (data.airtime ?? null) as Record<string, unknown> | null,
             ui: snapshot.ui ?? {},
         };
     }

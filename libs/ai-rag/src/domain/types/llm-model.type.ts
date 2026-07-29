@@ -1,4 +1,10 @@
-export const LLM_MODELS = ['gigachat', 'openai', 'ollama', 'fake'] as const;
+export const LLM_MODELS = [
+    'gigachat',
+    'cloudru',
+    'openai',
+    'ollama',
+    'fake',
+] as const;
 
 export type LlmModel = (typeof LLM_MODELS)[number];
 

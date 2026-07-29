@@ -64,7 +64,9 @@ describe('PortalModel UF_CRM-имена', () => {
     it('getFieldBitrixId нормализует так же', () => {
         const model = new PortalModel(makePortal([]), telegramStub);
         expect(
-            model.getFieldBitrixId(makeField('op_client_type', 'OP_CLIENT_TYPE')),
+            model.getFieldBitrixId(
+                makeField('op_client_type', 'OP_CLIENT_TYPE'),
+            ),
         ).toBe('UF_CRM_OP_CLIENT_TYPE');
         expect(
             model.getFieldBitrixId(

@@ -6,6 +6,16 @@ export abstract class InnerDealRepository {
         domain: string,
         dealId: number,
     ): Promise<BxDocumentDeal | null>;
+    abstract findSnapshot(
+        domain: string,
+        dealId: number,
+        serviceSmartId: number | null,
+    ): Promise<BxDocumentDeal | null>;
+    abstract listByDealId(
+        domain: string,
+        dealId: number,
+    ): Promise<BxDocumentDeal[]>;
+    abstract findPortalIdByDomain(domain: string): Promise<bigint | null>;
     abstract findByDomain(domain: string): Promise<BxDocumentDeal[] | null>;
 
     abstract findByServiceSmartId(

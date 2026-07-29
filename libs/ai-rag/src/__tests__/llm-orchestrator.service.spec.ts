@@ -14,12 +14,14 @@ function makeProvider(label: string): jest.Mocked<LlmProvider> {
 
 describe('LlmOrchestratorService', () => {
     const giga = makeProvider('giga');
+    const cloudru = makeProvider('cloudru');
     const openai = makeProvider('openai');
     const ollama = makeProvider('ollama');
     const fake = makeProvider('fake');
 
     const orchestrator = new LlmOrchestratorService(
         giga as unknown as never,
+        cloudru as unknown as never,
         openai as unknown as never,
         ollama as unknown as never,
         fake as unknown as never,
@@ -29,6 +31,7 @@ describe('LlmOrchestratorService', () => {
 
     it.each([
         ['gigachat', giga],
+        ['cloudru', cloudru],
         ['openai', openai],
         ['ollama', ollama],
         ['fake', fake],
@@ -41,6 +44,7 @@ describe('LlmOrchestratorService', () => {
 
     it.each([
         ['gigachat', giga],
+        ['cloudru', cloudru],
         ['openai', openai],
         ['ollama', ollama],
         ['fake', fake],
@@ -61,6 +65,7 @@ describe('LlmOrchestratorService', () => {
 
     it.each([
         ['gigachat', giga],
+        ['cloudru', cloudru],
         ['openai', openai],
         ['ollama', ollama],
         ['fake', fake],

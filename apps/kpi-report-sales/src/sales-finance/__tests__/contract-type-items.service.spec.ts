@@ -15,7 +15,11 @@ function makeMocks(cached: unknown = null) {
             {
                 FIELD_NAME: UF_KEY,
                 LIST: [
-                    { ID: '301', VALUE: 'Гарант Стандарт', XML_ID: 'garant_standart' },
+                    {
+                        ID: '301',
+                        VALUE: 'Гарант Стандарт',
+                        XML_ID: 'garant_standart',
+                    },
                     // элемент, добавленный на портале руками — без XML_ID
                     { ID: '407', VALUE: 'Интернет-версия', XML_ID: '' },
                 ],

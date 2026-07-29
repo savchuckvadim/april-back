@@ -7,8 +7,8 @@ RAG-контекст из базы знаний, объединённый ана
 
 | Часть | Файлы | Что |
 |---|---|---|
-| Оркестратор | `application/llm-orchestrator.service.ts` | выбор провайдера по `LlmModel` (gigachat/openai/ollama/fake); методы `resume`, `recomendation`, `analyzeCall` |
-| Провайдеры | `infrastructure/providers/*` | реализуют `LlmProvider`; GigaChat — основной (семафор `GIGACHAT_CONCURRENCY`, map-reduce длинных транскриптов) |
+| Оркестратор | `application/llm-orchestrator.service.ts` | выбор провайдера по `LlmModel` (gigachat/cloudru/openai/ollama/fake); методы `resume`, `recomendation`, `analyzeCall` |
+| Провайдеры | `infrastructure/providers/*` | реализуют `LlmProvider`; GigaChat — основной (семафор `GIGACHAT_CONCURRENCY`, map-reduce длинных транскриптов); Cloud.ru — открытые модели в РФ-облаке за OpenAI-совместимым API (`CLOUDRU_*`, baseURL настраивается — подходит и для vLLM/Yandex) |
 | Объединённый анализ | `application/combined-call-analysis.service.ts` | резюме+рекомендации ОДНИМ вызовом (маркеры секций, парсинг кодом, fallback на два вызова); порог `GIGACHAT_COMBINED_MAX_CHARS` (default 12000) |
 | База знаний | `infrastructure/knowledge/*`, `knowledge-content.service.ts` | файлы по (source: shared/домен, kind); клиентская база перекрывает общую; текст для промптов/агента |
 | Вектор-стор | `infrastructure/vector-store/*` | in-memory индекс с персистом на диск, ключ = (провайдер, source, kind, hash контента) |

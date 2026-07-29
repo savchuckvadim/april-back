@@ -113,9 +113,7 @@ describe('PlansConfigService', () => {
             }
         ).data.other;
         const envelope = JSON.parse(savedOther);
-        expect(envelope.config.indicators).toHaveLength(
-            PLAN_INDICATORS.length,
-        );
+        expect(envelope.config.indicators).toHaveLength(PLAN_INDICATORS.length);
     });
 
     it('портал не найден → NotFound', async () => {

@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { AppCacheService, AppCacheResetResponseDto } from '@lib/app-cache';
 import type { IsoDate, IsoMonth } from '../../shared/lib/month-segments.util';
 import type { AirtimeMonthCell } from '../types/airtime-statistic.type';
-import { buildAirtimeCellKey, buildAirtimeDayKey } from './airtime-cache-key.util';
+import {
+    buildAirtimeCellKey,
+    buildAirtimeDayKey,
+} from './airtime-cache-key.util';
 import {
     AIRTIME_CACHE_APP,
     AIRTIME_CACHE_GROUP_DAY,

@@ -952,7 +952,10 @@ exports.Prisma.BxDocumentDealScalarFieldEnum = {
   isFavorite: 'isFavorite',
   shadowDealId: 'shadowDealId',
   serviceSmartId: 'serviceSmartId',
-  smartId: 'smartId'
+  smartId: 'smartId',
+  offerSmartId: 'offerSmartId',
+  ltOther: 'ltOther',
+  iskraConfig: 'iskraConfig'
 };
 
 exports.Prisma.Bx_rqsScalarFieldEnum = {
@@ -2079,7 +2082,9 @@ exports.Prisma.BxDocumentDealOrderByRelevanceFieldEnum = {
   offer: 'offer',
   invoice: 'invoice',
   contractDocument: 'contractDocument',
-  act: 'act'
+  act: 'act',
+  ltOther: 'ltOther',
+  iskraConfig: 'iskraConfig'
 };
 
 exports.Prisma.bx_rqsOrderByRelevanceFieldEnum = {

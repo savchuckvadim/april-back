@@ -181,9 +181,13 @@ export class CallReportAnalyzeUseCase {
             minDurationSec: dto.minDurationSec ?? 0,
         });
 
-        // Свежие первыми: «последние N записей».
+        // Свежие первыми: «последние N записей». Счётчики отсева — в лог:
+        // «собрано 212, кандидатов 0» без причин не диагностируется.
+        const dropped = { noActivityId: 0, userMismatch: 0, durationOver: 0 };
         const candidates = rows
-            .filter(row => this.matchesSelection(row, dto, salesFilter))
+            .filter(row =>
+                this.matchesSelection(row, dto, salesFilter, dropped),
+            )
             .sort(
                 (a, b) =>
                     new Date(b.CALL_START_DATE ?? 0).getTime() -
@@ -263,7 +267,10 @@ export class CallReportAnalyzeUseCase {
         this.logger.log(
             `Подбор завершён: кандидатов ${response.found}, обработано ${response.results.length}, ` +
                 `уже обработано ${response.skippedAlreadyProcessed}, не сделки ${response.skippedNonDeal}, ` +
-                `без аудио ${response.skippedNoAudio}`,
+                `без аудио ${response.skippedNoAudio}; отсев до кандидатов: ` +
+                `без CRM_ACTIVITY_ID ${dropped.noActivityId}, ` +
+                `другой менеджер ${dropped.userMismatch}, ` +
+                `длиннее maxDurationSec ${dropped.durationOver}`,
         );
         return response;
     }
@@ -273,18 +280,29 @@ export class CallReportAnalyzeUseCase {
         row: VoximplantCallRow,
         dto: AnalyzeCallDto,
         salesFilter?: Set<number>,
+        dropped?: {
+            noActivityId: number;
+            userMismatch: number;
+            durationOver: number;
+        },
     ): boolean {
-        if (!row.CRM_ACTIVITY_ID) return false;
+        if (!row.CRM_ACTIVITY_ID) {
+            if (dropped) dropped.noActivityId++;
+            return false;
+        }
         if (dto.userId && Number(row.PORTAL_USER_ID) !== dto.userId) {
+            if (dropped) dropped.userMismatch++;
             return false;
         }
         if (salesFilter && !salesFilter.has(Number(row.PORTAL_USER_ID))) {
+            if (dropped) dropped.userMismatch++;
             return false;
         }
         if (
             dto.maxDurationSec !== undefined &&
             Number(row.CALL_DURATION ?? 0) > dto.maxDurationSec
         ) {
+            if (dropped) dropped.durationOver++;
             return false;
         }
         return true;

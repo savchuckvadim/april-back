@@ -45,7 +45,10 @@ export enum EShareLinkStatus {
  * за период + горячие клиенты. Не переданы — финансов в снимке нет.
  */
 export class ShareLinkFinanceFiltersDto {
-    @ApiProperty({ description: 'ID сотрудников (assignedIds)', type: [Number] })
+    @ApiProperty({
+        description: 'ID сотрудников (assignedIds)',
+        type: [Number],
+    })
     @IsArray()
     assignedIds: number[];
 
@@ -299,7 +302,9 @@ export class ShareLinkCacheResetRequestDto {
     @IsNotEmpty()
     domain: string;
 
-    @ApiPropertyOptional({ description: 'Токен конкретной ссылки; не указан — все снимки портала' })
+    @ApiPropertyOptional({
+        description: 'Токен конкретной ссылки; не указан — все снимки портала',
+    })
     @IsOptional()
     @IsString()
     token?: string;

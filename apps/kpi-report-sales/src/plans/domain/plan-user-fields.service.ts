@@ -38,7 +38,8 @@ export class PlanUserFieldsService {
         );
 
         const missing = buildPlanInstallFields().filter(
-            field => !existingNames.has(`${USER_FIELD_PREFIX}${field.bxFieldName}`),
+            field =>
+                !existingNames.has(`${USER_FIELD_PREFIX}${field.bxFieldName}`),
         );
         if (!missing.length) return;
 

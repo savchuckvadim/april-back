@@ -38,7 +38,9 @@ export class ShareLinkRefreshProcessor {
                 link.status === EShareLinkStatus.ACTIVE) &&
             link.expiresAt.getTime() > Date.now();
         if (!link || !processable) {
-            this.logger.debug(`SHARE_LINK_REFRESH: ${token} не подлежит обработке`);
+            this.logger.debug(
+                `SHARE_LINK_REFRESH: ${token} не подлежит обработке`,
+            );
             return;
         }
         const isFirstSnapshot = link.status === EShareLinkStatus.PENDING;
@@ -50,7 +52,9 @@ export class ShareLinkRefreshProcessor {
             );
             if (isFirstSnapshot) {
                 await this.shareLinks.markGenerated(link);
-                this.logger.log(`Снимок ${token} сгенерирован (PENDING → ACTIVE)`);
+                this.logger.log(
+                    `Снимок ${token} сгенерирован (PENDING → ACTIVE)`,
+                );
             } else {
                 await this.shareLinks.markRefreshed(link);
                 this.logger.log(`Снимок ${token} обновлён`);

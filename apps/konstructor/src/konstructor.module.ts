@@ -7,6 +7,7 @@ import { KonstructorInitModule } from './init/konstructor-init.module';
 import { PBXModule } from '@lib/pbx';
 import { InitSupplyModule } from './supply/init-supply/init-supply.module';
 import { SupplyInitDealModule } from './supply/init-deal/supply-init-deal.module';
+import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 @Module({
     imports: [
         ZakupkiOfferModule,
@@ -17,6 +18,7 @@ import { SupplyInitDealModule } from './supply/init-deal/supply-init-deal.module
         PBXModule,
         InitSupplyModule,
         SupplyInitDealModule,
+        InnerDealModule,
     ],
 
     exports: [
