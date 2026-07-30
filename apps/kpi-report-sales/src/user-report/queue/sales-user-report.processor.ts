@@ -13,28 +13,22 @@ import { SalesUserReportService } from '../services/sales-user-report.service';
 export enum SALES_USER_REPORT_EVENT {
     PROGRESS = 'sales-user-report:progress',
     DONE = 'sales-user-report:done',
+    ERROR = 'sales-user-report:error',
 }
 @Processor(QueueNames.SALES_KPI_REPORT)
 export class SalesUserReportQueueProcessor {
-    onActive(job: Job) {
-        console.log(
-            `Processing job ${job.id} of type ${job.name} with data ${job.data}...`,
-        );
-    }
-    private readonly logger = new Logger(QueueNames.SALES_KPI_REPORT);
+    private readonly logger = new Logger(SalesUserReportQueueProcessor.name);
 
     constructor(
         readonly redis: RedisService,
         private readonly ws: WsService, // WebSocket шлюз,
         private readonly service: SalesUserReportService,
-    ) {
-        this.logger.log('constructor SALES USER-PERSONAL-KPI REPORT');
-    }
+    ) {}
 
     @Process(JobNames.SALES_USER_REPORT_GENERATE)
-    async handle(job: Job<SalesUserReportJobDataDto>) {
+    async handle(job: Job<SalesUserReportJobDataDto>): Promise<boolean> {
         const { userId, socketId, _hash } = job.data;
-        this.logger.log('SALES_KPI_REPORT_GENERATE');
+        this.logger.log('SALES_USER_REPORT_GENERATE');
         try {
             const redis = this.redis.getClient();
 
@@ -43,16 +37,16 @@ export class SalesUserReportQueueProcessor {
 
                 if (!active || active !== 'active') {
                     this.logger.warn(`Job ${job.id} not active — aborting job`);
-                    await job.moveToFailed({ message: 'Job cancelled' }); // ❗ по желанию, можно просто return
+                    await job.moveToFailed({ message: 'Job cancelled' });
                     return false;
                 }
 
-                // 🧩 Проверяем, жив ли сокет. Если нет, то удаляем задачу и выходим
+                // Сокет умер — стриминг некому доставлять, снимаем задачу.
                 if (!this.ws.isConnected(socketId)) {
                     this.logger.warn(
                         `Socket ${socketId} disconnected — aborting job ${job.id}`,
                     );
-                    await job.remove(); // ❗ по желанию, можно просто return
+                    await job.remove();
                     return false;
                 }
 
@@ -69,9 +63,17 @@ export class SalesUserReportQueueProcessor {
             });
             return true;
         } catch (error) {
-            this.logger.error('Error SALES_KPI_REPORT_GENERATE');
-            this.logger.error(error);
-            return false;
+            // Раньше ошибка глоталась (return false) — job числился успешным,
+            // фронт ждал done вечно. Теперь: громкое событие + rethrow.
+            const message =
+                error instanceof Error ? error.message : String(error);
+            this.logger.error(`SALES_USER_REPORT_GENERATE упал: ${message}`);
+            this.ws.sendToClient(socketId, {
+                event: SALES_USER_REPORT_EVENT.ERROR,
+                userId,
+                data: { message },
+            });
+            throw error;
         }
     }
 }

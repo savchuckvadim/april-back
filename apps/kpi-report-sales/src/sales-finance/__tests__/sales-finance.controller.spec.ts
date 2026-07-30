@@ -66,6 +66,9 @@ describe('SalesFinanceController', () => {
                 forceRefresh: false,
                 filters: closedDto.filters,
             }),
+            // jobId = ключ результата — дедуп повторных кликов
+            expect.stringContaining(closedDto.domain) as string,
+            { removeOnComplete: true, removeOnFail: true },
         );
     });
 
@@ -92,6 +95,8 @@ describe('SalesFinanceController', () => {
             QueueNames.SALES_KPI_REPORT,
             JobNames.SALES_FINANCE_HOT_CLIENTS,
             expect.objectContaining({ threshold: 'document' }),
+            expect.stringContaining('hot') as string,
+            { removeOnComplete: true, removeOnFail: true },
         );
     });
 

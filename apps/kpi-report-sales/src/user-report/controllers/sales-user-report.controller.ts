@@ -66,11 +66,15 @@ export class SalesUserReportController {
         await redis.set(hash, 'active');
         await redis.expire(hash, 3600); // 1 hour TTL
 
+        // jobId = hash: дедуп реально работает (раньше jobId не передавался,
+        // и getJob(hash) выше никогда ничего не находил — мёртвый код);
+        // removeOnComplete/Fail освобождают id после завершения.
         const job = await this.queue.dispatch(
             QueueNames.SALES_KPI_REPORT,
             JobNames.SALES_USER_REPORT_GENERATE,
             { ...body, _hash: hash },
-            // hash
+            hash,
+            { removeOnComplete: true, removeOnFail: true },
         );
         await redis.set(`${REPORT_OPERATION_HASH}` + job.id.toString(), hash);
         await redis.expire(
@@ -98,13 +102,11 @@ export class SalesUserReportController {
     ): Promise<SalesUserReportStartResponseDto> {
         const redis = this.redis.getClient();
         const hash = await redis.get(`${REPORT_OPERATION_HASH}` + operationId);
-        console.log('operationId remove');
-        console.log(operationId);
-        console.log('hash');
-        console.log(hash);
 
+        // Фикс: искали job в ЧУЖОЙ очереди ORK_KPI_REPORT — отмена
+        // никогда не находила задачу.
         const job = await this.queue.getJob(
-            QueueNames.ORK_KPI_REPORT,
+            QueueNames.SALES_KPI_REPORT,
             operationId,
         );
         if (!job) {
@@ -147,10 +149,18 @@ export class SalesUserReportController {
         }
         return list;
     }
+    /**
+     * Ключ дедупликации: домен + userId + фильтры. socketId ИСКЛЮЧЁН
+     * намеренно — раньше он входил в hash, и повторный клик из другой
+     * вкладки (другой socketId) плодил параллельный прогон того же отчёта.
+     */
     private hashBody(body: SalesUserReportGetRequestDto): string {
+        const { domain, userId, filters } = body;
         return (
             `${REPORT_HASH}` +
-            Buffer.from(JSON.stringify(body)).toString('base64')
+            Buffer.from(JSON.stringify({ domain, userId, filters })).toString(
+                'base64',
+            )
         );
     }
 }

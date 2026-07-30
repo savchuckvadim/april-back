@@ -78,10 +78,15 @@ export class SalesFinanceController {
             forceRefresh,
             filters: dto.filters,
         };
+        // jobId = ключ результата (домен уже внутри): даблклик/второй юзер
+        // с теми же фильтрами не плодят второй прогон — подписываются на
+        // идущий job; removeOnComplete/Fail освобождают id после завершения.
         await this.queue.dispatch(
             QueueNames.SALES_KPI_REPORT,
             JobNames.SALES_FINANCE_CLOSED_SALES,
             jobData,
+            resultKey,
+            { removeOnComplete: true, removeOnFail: true },
         );
         return { status: 'queued' };
     }
@@ -121,10 +126,13 @@ export class SalesFinanceController {
             threshold: dto.threshold,
             assignedIds: dto.assignedIds,
         };
+        // jobId = ключ кэша (домен внутри) — дедуп повторных кликов.
         await this.queue.dispatch(
             QueueNames.SALES_KPI_REPORT,
             JobNames.SALES_FINANCE_HOT_CLIENTS,
             jobData,
+            cacheKey,
+            { removeOnComplete: true, removeOnFail: true },
         );
         return { status: 'queued' };
     }
