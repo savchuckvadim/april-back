@@ -19,6 +19,7 @@ import {
     SHARE_PRESENCE_EVENT,
     sharePresenceRoom,
 } from '../lib/presence-room.util';
+import { parseSnapshotPeriod } from '../lib/snapshot-period.util';
 import {
     EShareLinkStatus,
     ShareLinkHeartbeatDto,
@@ -79,12 +80,19 @@ export class ShareLinkPublicController {
     ): Promise<ShareLinkPublicResponseDto> {
         const link = await this.service.getPublicByToken(token);
         const snapshot = this.service.parseSnapshot(link);
+        // ISO с включительным концом из снимка любой эпохи (сырой dateTo
+        // может быть dd.MM.yyyy и эксклюзивным +1 день).
+        const period = parseSnapshotPeriod(snapshot);
 
         const meta = {
             title: link.title,
             creatorName: link.creatorName,
-            periodFrom: snapshot.reportFilters?.dateFrom ?? null,
-            periodTo: snapshot.reportFilters?.dateTo ?? null,
+            periodFrom:
+                period?.fromIso ?? snapshot.reportFilters?.dateFrom ?? null,
+            periodTo:
+                period?.toIsoInclusive ??
+                snapshot.reportFilters?.dateTo ??
+                null,
             isRefreshable: link.isRefreshable,
             refreshIntervalSec: link.refreshIntervalSec,
             lastRefreshedAt: link.lastRefreshedAt?.toISOString() ?? null,

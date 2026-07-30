@@ -22,6 +22,10 @@ import {
     ShareLinkFilterSnapshotDto,
     UpdateShareLinkDto,
 } from '../dto/share-link.dto';
+import {
+    formatPeriodDate,
+    parseSnapshotPeriod,
+} from '../lib/snapshot-period.util';
 import { ShareLinkSnapshotService } from './share-link-snapshot.service';
 import { SharePresenceService } from './share-presence.service';
 
@@ -312,13 +316,16 @@ export class ShareLinkService {
         snapshot: ShareLinkFilterSnapshotDto,
     ): void {
         if (!isRefreshable) return;
-        const from = Date.parse(snapshot.reportFilters?.dateFrom ?? '');
-        const to = Date.parse(snapshot.reportFilters?.dateTo ?? '');
-        if (Number.isNaN(from) || Number.isNaN(to)) {
+        // Снимки двух эпох (ISO / dd.MM.yyyy с эксклюзивным to) — прямой
+        // Date.parse на dd.MM.yyyy давал NaN и ложный 400 на toggle.
+        const period = parseSnapshotPeriod(snapshot);
+        if (!period) {
             throw new BadRequestException(
                 'У обновляемой ссылки должен быть корректный период фильтра',
             );
         }
+        const from = Date.parse(period.fromIso);
+        const to = Date.parse(period.toIsoInclusive);
         if (to - from > SHARE_LINK_MAX_REFRESHABLE_RANGE_DAYS * DAY_MS) {
             throw new BadRequestException(
                 `Период обновляемой ссылки — не более ${SHARE_LINK_MAX_REFRESHABLE_RANGE_DAYS} дней`,
@@ -373,13 +380,23 @@ export class ShareLinkService {
     }
 
     private defaultTitle(dto: CreateShareLinkDto): string {
-        const from = dto.snapshot.reportFilters?.dateFrom?.slice(0, 10) ?? '';
-        const to = dto.snapshot.reportFilters?.dateTo?.slice(0, 10) ?? '';
+        // Человекочитаемый период с ВКЛЮЧИТЕЛЬНЫМ концом (сырой dateTo
+        // снимка может быть эксклюзивным +1 день — заголовок врал на день).
+        const period = parseSnapshotPeriod(dto.snapshot);
+        const from = period
+            ? formatPeriodDate(period.fromIso)
+            : (dto.snapshot.reportFilters?.dateFrom?.slice(0, 10) ?? '');
+        const to = period
+            ? formatPeriodDate(period.toIsoInclusive)
+            : (dto.snapshot.reportFilters?.dateTo?.slice(0, 10) ?? '');
         return `от ${dto.creatorName}: ${from} — ${to}`;
     }
 
     private toDto(link: ShareLink): ShareLinkDto {
         const snapshot = this.safeParseSnapshot(link);
+        // Наружу — всегда каноничный ISO с включительным концом, из
+        // снимка любой эпохи (фронт форматирует parseISO).
+        const period = parseSnapshotPeriod(snapshot);
         return {
             id: link.id,
             token: link.token,
@@ -387,8 +404,12 @@ export class ShareLinkService {
             creatorBxUserId: link.creatorBxUserId,
             creatorName: link.creatorName,
             title: link.title,
-            periodFrom: snapshot?.reportFilters?.dateFrom ?? null,
-            periodTo: snapshot?.reportFilters?.dateTo ?? null,
+            periodFrom:
+                period?.fromIso ?? snapshot?.reportFilters?.dateFrom ?? null,
+            periodTo:
+                period?.toIsoInclusive ??
+                snapshot?.reportFilters?.dateTo ??
+                null,
             isRefreshable: link.isRefreshable,
             refreshIntervalSec: link.refreshIntervalSec,
             lastRefreshedAt: link.lastRefreshedAt?.toISOString() ?? null,
