@@ -16,7 +16,6 @@ import {
     normalizeReportPeriod,
     NormalizedReportPeriod,
 } from '../../shared/lib/date-util';
-import { toIsoDateOf } from '../../shared/lib/month-segments.util';
 import { ReportResultCacheService } from '../cache/report-result-cache.service';
 import {
     buildCallingStatResultKey,
@@ -24,8 +23,7 @@ import {
 } from '../cache/report-cache-key.util';
 import {
     CALLING_STAT_CACHE_APP,
-    KPI_RESULT_TTL_LIVE_SECONDS,
-    KPI_RESULT_TTL_PAST_SECONDS,
+    KPI_RESULT_TTL_SECONDS,
 } from '../constants/report-queue.const';
 
 const VOXIMPLANT_METHOD = 'voximplant.statistic.get';
@@ -143,7 +141,6 @@ export class CallingStatisticUseCase {
     ): Promise<void> {
         if (!this.cache) return;
         const usersKey = buildReportUsersKey(departament.map(user => user.ID));
-        const isPastPeriod = period.toIsoInclusive < toIsoDateOf(new Date());
         await this.cache.setReady(
             CALLING_STAT_CACHE_APP,
             domain,
@@ -153,9 +150,8 @@ export class CallingStatisticUseCase {
                 usersKey,
             ),
             result,
-            isPastPeriod
-                ? KPI_RESULT_TTL_PAST_SECONDS
-                : KPI_RESULT_TTL_LIVE_SECONDS,
+            // Транспортный буфер доставки очереди, не кэш (2026-07-30)
+            KPI_RESULT_TTL_SECONDS,
         );
     }
 }

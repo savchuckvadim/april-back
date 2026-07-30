@@ -11,11 +11,13 @@ export const CALLING_STAT_CACHE_APP = 'calling-stat' as const;
 /** Версия формата ключей — входит в ключ (дешёвая инвалидация). */
 export const KPI_REPORT_CACHE_VERSION = 'v1' as const;
 
-/** TTL результата: период, задевающий сегодня, — живой (минуты). */
-export const KPI_RESULT_TTL_LIVE_SECONDS = 180;
-
-/** TTL результата полностью прошедшего периода — данные закрыты. */
-export const KPI_RESULT_TTL_PAST_SECONDS = 30 * 24 * 3600;
+/**
+ * TTL ready-конверта: ТРАНСПОРТНЫЙ БУФЕР доставки очереди, а НЕ кэш
+ * (решение 2026-07-30: report/calling не кэшируем — счётчики берутся
+ * одной цифрой за период, долгоживущий кэш скрывал бы правки данных).
+ * Буфер нужен, чтобы поллинг/повторный POST забрал результат воркера.
+ */
+export const KPI_RESULT_TTL_SECONDS = 180;
 
 /** TTL error-конверта: ломает вечный queued у поллинга, гасит crash-loop. */
 export const KPI_RESULT_ERROR_TTL_SECONDS = 120;

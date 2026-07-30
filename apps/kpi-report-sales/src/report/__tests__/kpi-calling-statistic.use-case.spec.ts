@@ -69,7 +69,7 @@ describe('CallingStatisticUseCase', () => {
         });
     });
 
-    it('канон-запрос (YYYY-MM-DD) шлёт в фильтр ISO-границы: from вкл., to+1 экскл.', async () => {
+    it('канон-запрос (YYYY-MM-DD) шлёт в фильтр DD.MM.YYYY: from вкл., to+1 экскл.', async () => {
         const api = createApi([chunk(fullTotals('1'))]);
         const useCase = new CallingStatisticUseCase(api as never);
 
@@ -81,8 +81,8 @@ describe('CallingStatisticUseCase', () => {
             {
                 FILTER: {
                     PORTAL_USER_ID: '1',
-                    '>CALL_START_DATE': '2026-07-01',
-                    '<CALL_START_DATE': '2026-07-31',
+                    '>CALL_START_DATE': '01.07.2026',
+                    '<CALL_START_DATE': '31.07.2026',
                 },
             },
         );
@@ -120,7 +120,7 @@ describe('CallingStatisticUseCase', () => {
         expect(cache.setReady).not.toHaveBeenCalled();
     });
 
-    it('успех пишет ready-конверт: прошлый период → длинный TTL', async () => {
+    it('успех пишет ready-конверт с транспортным TTL (не кэш)', async () => {
         const api = createApi([chunk(fullTotals('1'))]);
         const cache = createCache();
         const useCase = new CallingStatisticUseCase(
@@ -135,7 +135,7 @@ describe('CallingStatisticUseCase', () => {
             'example.bitrix24.ru',
             'v1:result:2026-06-01_2026-06-30:1',
             expect.any(Array),
-            30 * 24 * 3600,
+            180,
         );
     });
 

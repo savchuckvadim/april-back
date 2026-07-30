@@ -1,14 +1,16 @@
 import { normalizeReportPeriod, ReportPeriodError } from '../lib/date-util';
 
 describe('normalizeReportPeriod', () => {
-    it('канон YYYY-MM-DD: обе границы включительны, exclusive = to+1 день, в Битрикс уходит ISO', () => {
+    it('канон YYYY-MM-DD: границы включительны, в Битрикс уходит DD.MM.YYYY (to+1 экскл.)', () => {
         expect(normalizeReportPeriod('2026-07-01', '2026-07-30')).toEqual({
             fromIso: '2026-07-01',
             toIsoInclusive: '2026-07-30',
             toIsoExclusive: '2026-07-31',
             legacyFormat: false,
-            bitrixFrom: '2026-07-01',
-            bitrixTo: '2026-07-31',
+            // В Битрикс — только исторически проверенный формат
+            // (lists.element.get не понимает ISO: инцидент 2026-07-30)
+            bitrixFrom: '01.07.2026',
+            bitrixTo: '31.07.2026',
         });
     });
 

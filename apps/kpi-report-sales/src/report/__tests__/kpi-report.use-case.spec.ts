@@ -156,7 +156,7 @@ describe('ReportKpiUseCase', () => {
         expect(mocks.cache.setReady).not.toHaveBeenCalled();
     });
 
-    it('успех пишет ready-конверт результата (прошлый период → длинный TTL)', async () => {
+    it('успех пишет ready-конверт с транспортным TTL (не кэш)', async () => {
         const mocks = createMocks([chunk(fullTotals('1'))]);
         const useCase = new ReportKpiUseCase();
         await useCase.init(
@@ -172,7 +172,7 @@ describe('ReportKpiUseCase', () => {
             'example.bitrix24.ru',
             'v1:result:2026-06-01_2026-06-30:1',
             expect.any(Array),
-            30 * 24 * 3600,
+            180,
         );
     });
 });

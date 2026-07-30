@@ -25,11 +25,14 @@ export interface NormalizedReportPeriod {
     /** Запрос пришёл в легаси-формате DD.MM.YYYY. */
     legacyFormat: boolean;
     /**
-     * Значения для ФИЛЬТРОВ Битрикса (страховка обратной совместимости):
-     * легаси-запрос шлёт ИСХОДНЫЕ строки байт-в-байт, как текущий прод
-     * (нормализация используется только для ключей кэша/дедупа); канон —
-     * ISO (`>` bitrixFrom / `<` bitrixTo). Так поведение старого фронта
-     * не меняется вовсе, а ISO в фильтрах проверяется только новым фронтом.
+     * Значения для ФИЛЬТРОВ Битрикса — ВСЕГДА `DD.MM.YYYY`:
+     * bitrixFrom включителен, bitrixTo ЭКСКЛЮЗИВЕН (выбранная дата + 1
+     * день — чтобы последний день попадал целиком; так делал старый фронт).
+     *
+     * Прод-инцидент 2026-07-30: `lists.element.get` НЕ понимает ISO
+     * `yyyy-MM-dd` в фильтрах списковых дат — счётчики возвращались
+     * нулями. ISO живёт только во внутренних ключах кэша/дедупа, в
+     * Битрикс уходит исключительно исторически проверенный формат.
      */
     bitrixFrom: string;
     bitrixTo: string;
@@ -99,6 +102,12 @@ function buildValidIso(
     return `${year}-${mm}-${dd}` as IsoDate;
 }
 
+/** yyyy-MM-dd → DD.MM.YYYY (формат фильтров Битрикса). */
+function toBitrixDate(iso: IsoDate): string {
+    const [year, month, day] = iso.split('-');
+    return `${day}.${month}.${year}`;
+}
+
 export function normalizeReportPeriod(
     dateFrom: string,
     dateTo: string,
@@ -129,7 +138,8 @@ export function normalizeReportPeriod(
         toIsoInclusive,
         toIsoExclusive,
         legacyFormat,
-        bitrixFrom: legacyFormat ? String(dateFrom).trim() : from.iso,
-        bitrixTo: legacyFormat ? String(dateTo).trim() : toIsoExclusive,
+        // Всегда DD.MM.YYYY (для легаси-входа равно исходным строкам).
+        bitrixFrom: toBitrixDate(from.iso),
+        bitrixTo: toBitrixDate(toIsoExclusive),
     };
 }
