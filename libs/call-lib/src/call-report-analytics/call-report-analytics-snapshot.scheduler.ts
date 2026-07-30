@@ -49,7 +49,9 @@ export class CallReportAnalyticsSnapshotScheduler {
             this.configService.get<string>('CALL_REPORT_DOMAINS') ?? ''
         )
             .split(',')
-            .map(domain => domain.trim())
+            // Демо-суффикс сотрудников (`domain:222|323`) к снапшотам не
+            // относится — берём только домен до двоеточия.
+            .map(entry => entry.trim().split(':')[0].trim())
             .filter(Boolean);
         if (!domains.length) {
             this.logger.warn(
