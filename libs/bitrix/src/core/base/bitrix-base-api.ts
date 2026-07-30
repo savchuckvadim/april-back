@@ -71,8 +71,11 @@ export class BitrixBaseApi {
         return await this.batchApi.callBatchAsync();
     }
 
-    async callBatchWithConcurrency(limit: number = 1) {
-        return await this.batchApi.callBatchWithConcurrency(limit);
+    async callBatchWithConcurrency(
+        limit: number = 1,
+        options?: { strict?: boolean },
+    ) {
+        return await this.batchApi.callBatchWithConcurrency(limit, options);
     }
 
     addCmdBatch(cmd: string, method: string, query: Record<string, any>) {

@@ -1,4 +1,3 @@
-// report-kpi.service.ts
 import { GetCallingStatisticDto } from '../dto/calling-statistic.dto';
 import {
     CALLING_TYPES,
@@ -7,129 +6,154 @@ import {
     VoximplantFilter,
 } from '../types/calling-statistic.type';
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
-import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { BitrixBaseApi } from '@/modules/bitrix';
+import {
+    assertBatchComplete,
+    mergeBatchResults,
+    MergedBatchResults,
+} from '../../shared/lib/batch-completeness.util';
+import {
+    normalizeReportPeriod,
+    NormalizedReportPeriod,
+} from '../../shared/lib/date-util';
+import { toIsoDateOf } from '../../shared/lib/month-segments.util';
+import { ReportResultCacheService } from '../cache/report-result-cache.service';
+import {
+    buildCallingStatResultKey,
+    buildReportUsersKey,
+} from '../cache/report-cache-key.util';
+import {
+    CALLING_STAT_CACHE_APP,
+    KPI_RESULT_TTL_LIVE_SECONDS,
+    KPI_RESULT_TTL_PAST_SECONDS,
+} from '../constants/report-queue.const';
 
+const VOXIMPLANT_METHOD = 'voximplant.statistic.get';
+
+/**
+ * Счётная статистика звонков: 6 бакетов длительности × N сотрудников
+ * одним батчем result_total (строки не выгружаются).
+ *
+ * Громкие ошибки вместо тихо неполных счётчиков (инцидент 2026-07-28,
+ * «наборы» 1000+ → 72 → 9 при истинных 88): strict-батч роняет упавший
+ * чанк, assertBatchComplete — пропавшую команду; у каждого сотрудника
+ * ровно 6 бакетов (кардинальность фиксирована).
+ *
+ * Даты нормализуются к ISO (normalizeReportPeriod): легаси DD.MM.YYYY
+ * старого фронта и каноничный YYYY-MM-DD дают одинаковые границы фильтра
+ * и один ключ кэша.
+ *
+ * НЕ Injectable: `new CallingStatisticUseCase(bitrix.api, cache?)` per-domain
+ * (правило CLAUDE.md). cache опционален — write-through конверта результата.
+ */
 export class CallingStatisticUseCase {
-    // private bitrixApi: BitrixApiService;
-
     constructor(
         private readonly bitrixApi: BitrixBaseApi,
-        // private readonly portalContext: PortalContextService,
+        private readonly cache?: ReportResultCacheService,
     ) {}
 
-    // async init(
-    //     // domain: string
-    // ) {
-
-    //     const portalModel = await this.portalProvider.getModelFromRequest();
-    //     const portal = portalModel.getPortal();
-
-    //     if (!portal) throw new Error('Portal not found');
-
-    //     // this.bitrixApi = this.bitrixContext.getApi();
-
-    // }
-
     async get(dto: GetCallingStatisticDto): Promise<ICallingStatisticResult[]> {
-        // Logger.log(dto)
-
         const departament = dto.filters.departament;
-        // const dateFrom = parseToISO(dto.filters.dateFrom, 0)
-        const dateFrom = dto.filters.dateFrom;
-        const dateTo = dto.filters.dateTo;
+        const period = normalizeReportPeriod(
+            dto.filters.dateFrom,
+            dto.filters.dateTo,
+        );
 
-        const callingsTypes = CALLING_TYPES.map(type => ({
-            ...type,
-            count: 0,
-        }));
-
-        const method = 'voximplant.statistic.get';
-
+        const expectedKeys: string[] = [];
         for (const user of departament) {
             const userId = user.ID;
-            // const resultUserReport = {
-            //     user,
-            //     userName: user.NAME,
-            //     callings: JSON.parse(JSON.stringify(callingsTypes)), // deep clone
-            // };
-            if (!userId) {
-                continue;
+            if (!userId) continue;
+            for (const type of CALLING_TYPES) {
+                const key = `${VOXIMPLANT_METHOD}_${type.id}_${userId}`;
+                this.bitrixApi.addCmdBatch(key, VOXIMPLANT_METHOD, {
+                    FILTER: this.buildVoximplantFilter(
+                        userId,
+                        period.fromIso,
+                        period.toIsoExclusive,
+                        type.id,
+                    ),
+                });
+                expectedKeys.push(key);
             }
-            callingsTypes.forEach(type => {
-                const filter: VoximplantFilter = this.buildVoximplantFilter(
-                    userId,
-                    dateFrom,
-                    dateTo,
-                    type.id,
-                );
-                const key = `${method}_${type.id}_${userId}`;
-                const data = {
-                    FILTER: filter,
-                };
-                // Logger.log(filter)
-                this.bitrixApi.addCmdBatch(key, method, data);
-            });
         }
-        const response = await this.bitrixApi.callBatchWithConcurrency(2);
-        const result = this.getFormedResults(response, departament, method);
 
+        const response = await this.bitrixApi.callBatchWithConcurrency(2, {
+            strict: true,
+        });
+        const merged = mergeBatchResults(response);
+        assertBatchComplete(merged, expectedKeys, 'статистика звонков');
+
+        const result = this.getFormedResults(merged, departament);
+        await this.writeCache(dto.domain, period, departament, result);
         return result;
     }
 
     private buildVoximplantFilter = (
         userId: number | string,
-        dateFrom: string,
-        dateTo: string,
+        fromInclusive: string,
+        toExclusive: string,
         duration: CallingDuration,
     ): VoximplantFilter => {
         const filter: VoximplantFilter = {
             PORTAL_USER_ID: userId,
-            '>CALL_START_DATE': dateFrom,
-            '<CALL_START_DATE': dateTo,
+            '>CALL_START_DATE': fromInclusive,
+            '<CALL_START_DATE': toExclusive,
         };
-
         if (duration !== 'all') {
             filter['>CALL_DURATION'] = duration;
         }
-
         return filter;
     };
 
+    /**
+     * У каждого сотрудника с ID — ровно 6 бакетов (счётчик из result_total,
+     * полнота гарантирована assertBatchComplete). Сотрудник без ID —
+     * пустой список (команд по нему не было), как и раньше.
+     */
     private getFormedResults = (
-        results: IBitrixBatchResponseResult[],
+        merged: MergedBatchResults,
         departament: IBXUser[],
-        method: string,
-    ) => {
-        const result: ICallingStatisticResult[] = [];
-        for (const user of departament) {
-            const userId = user.ID;
-            const resultUserReport = {
-                user,
-                userName: user.NAME,
-                callings: [], // JSON.parse(JSON.stringify(callingsTypes)), // deep clone
-            } as ICallingStatisticResult;
+    ): ICallingStatisticResult[] =>
+        departament.map(user => ({
+            user,
+            userName: user.NAME ?? '',
+            callings: user.ID
+                ? CALLING_TYPES.map(type => ({
+                      id: type.id,
+                      action: type.action,
+                      count:
+                          Number(
+                              merged.totals[
+                                  `${VOXIMPLANT_METHOD}_${type.id}_${user.ID}`
+                              ],
+                          ) || 0,
+                      duration: 0,
+                  }))
+                : [],
+        }));
 
-            CALLING_TYPES.forEach(type => {
-                const cmdkey = `${method}_${type.id}_${userId}`;
-
-                results.forEach(res => {
-                    for (const key of Object.keys(res.result_total)) {
-                        if (key === cmdkey) {
-                            const calling = {
-                                id: type.id,
-                                action: type.action,
-                                count: Number(res.result_total[key]),
-                                duration: 0,
-                            };
-                            resultUserReport.callings.push(calling);
-                        }
-                    }
-                });
-            });
-
-            result.push(resultUserReport);
-        }
-        return result;
-    };
+    /** Write-through конверта результата (воркер, легаси-sync, снапшот). */
+    private async writeCache(
+        domain: string,
+        period: NormalizedReportPeriod,
+        departament: IBXUser[],
+        result: ICallingStatisticResult[],
+    ): Promise<void> {
+        if (!this.cache) return;
+        const usersKey = buildReportUsersKey(departament.map(user => user.ID));
+        const isPastPeriod = period.toIsoInclusive < toIsoDateOf(new Date());
+        await this.cache.setReady(
+            CALLING_STAT_CACHE_APP,
+            domain,
+            buildCallingStatResultKey(
+                period.fromIso,
+                period.toIsoInclusive,
+                usersKey,
+            ),
+            result,
+            isPastPeriod
+                ? KPI_RESULT_TTL_PAST_SECONDS
+                : KPI_RESULT_TTL_LIVE_SECONDS,
+        );
+    }
 }

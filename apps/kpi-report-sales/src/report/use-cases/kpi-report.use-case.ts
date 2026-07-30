@@ -11,37 +11,68 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../../shared/dto/kpi.dto';
 import { ActionService } from '../services/action.service';
-import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PBXService } from '@/modules/pbx';
 import { BitrixBaseApi } from '@/modules/bitrix';
+import {
+    assertBatchComplete,
+    mergeBatchResults,
+    MergedBatchResults,
+} from '../../shared/lib/batch-completeness.util';
+import {
+    normalizeReportPeriod,
+    NormalizedReportPeriod,
+} from '../../shared/lib/date-util';
+import { toIsoDateOf } from '../../shared/lib/month-segments.util';
+import { ReportResultCacheService } from '../cache/report-result-cache.service';
+import {
+    buildKpiReportResultKey,
+    buildReportUsersKey,
+} from '../cache/report-cache-key.util';
+import {
+    KPI_REPORT_CACHE_APP,
+    KPI_RESULT_TTL_LIVE_SECONDS,
+    KPI_RESULT_TTL_PAST_SECONDS,
+} from '../constants/report-queue.const';
 
+/**
+ * KPI-отчёт отдела продаж: батч lists.element.get (сотрудник × действие),
+ * счётчики из result_total.
+ *
+ * Громкие ошибки: strict-батч + assertBatchComplete — пропавшая команда
+ * (дроп rate-limiter) роняет расчёт, а не тихо занижает показатели.
+ * Кардинальность фиксирована: у каждого сотрудника KPI по каждому
+ * сгенерированному действию (count 0 при нуле).
+ *
+ * Даты нормализуются к ISO (легаси DD.MM.YYYY и канон YYYY-MM-DD дают
+ * одинаковые фильтры и один ключ кэша).
+ *
+ * НЕ Injectable: `new ReportKpiUseCase()` + init(domain, pbx, cache?)
+ * per-domain (правило CLAUDE.md). cache — write-through конверта результата.
+ */
 export class ReportKpiUseCase {
-    // protected domain: string;
     protected portal: IPortal;
     protected portalKPIList?: IPBXList;
     protected portalHistoryList?: IPBXList;
     protected hook: string;
     private portalModel: PortalModel;
     private bitrixApi: BitrixBaseApi;
+    private domain: string;
+    private cache?: ReportResultCacheService;
 
-    constructor() {} // private readonly pbx: PBXService, // private readonly bxFactory: BitrixApiFactoryService // scope: QUEUE // private readonly bitrixApi: BitrixRequestApiService, // scope: REQUEST // private readonly portalContext: PortalContextService,
-
-    async init(domain: string, pbx: PBXService) {
-        // this.domain = domain;
+    async init(
+        domain: string,
+        pbx: PBXService,
+        cache?: ReportResultCacheService,
+    ) {
         const { portal, PortalModel, bitrix } = await pbx.init(domain);
         this.portalModel = PortalModel;
-        // const portal = this.portalModel.getPortal();
-
-        //for queue
-        // this.portalModel = await this.portalProvider.getModelByDomain(domain);
-        // const portal = this.portalModel.getPortal();
 
         if (!portal) throw new Error('Portal not found');
 
-        // //for queue
-        // this.bitrixApi = await this.bxFactory.create(portal)
         this.bitrixApi = bitrix.api;
         this.portal = portal;
+        this.domain = domain;
+        this.cache = cache;
         this.hook = this.portalModel.getHook();
 
         this.portalKPIList = this.portalModel.getListByCode('sales_kpi');
@@ -50,21 +81,16 @@ export class ReportKpiUseCase {
     }
 
     async generateKpiReport(dto: ReportGetFiltersDto): Promise<ReportData[]> {
-        // const bitrixApi = this.bitrixContext.getApi();
-
         const departament = dto.departament;
-        const dateFrom = dto.dateFrom;
-        const dateTo = dto.dateTo;
+        const period = normalizeReportPeriod(dto.dateFrom, dto.dateTo);
 
         const listId = this.portalKPIList?.bitrixId;
-        // const listFields = this.portalKPIList?.bitrixfields;
         const {
             eventAction,
             eventActionType,
             actionId,
             actionTypeId,
             eventResponsibleId,
-            // eventDateId,
             dateFieldForHookFrom,
             dateFieldForHookTo,
         } = this.getPbxFiledsData().fields;
@@ -74,7 +100,7 @@ export class ReportKpiUseCase {
             eventActionType.items,
         );
 
-        this.generateBatchCommands(
+        const expectedKeys = this.generateBatchCommands(
             departament,
             currentActionsData,
             eventResponsibleId,
@@ -82,19 +108,48 @@ export class ReportKpiUseCase {
             actionTypeId,
             dateFieldForHookFrom,
             dateFieldForHookTo,
-            dateFrom,
-            dateTo,
+            period.fromIso,
+            period.toIsoExclusive,
             listId as string,
         );
-        // const commandsResult = bitrixApi.getCmdBatch();
-        const results = await this.bitrixApi.callBatchWithConcurrency(1);
+        const results = await this.bitrixApi.callBatchWithConcurrency(1, {
+            strict: true,
+        });
+        const merged = mergeBatchResults(results);
+        assertBatchComplete(merged, expectedKeys, 'KPI-отчёт');
+
         const report = this.getCalculateResults(
-            results,
+            merged,
+            new Set(expectedKeys),
             departament,
             currentActionsData,
         );
-
+        await this.writeCache(period, departament, report);
         return report;
+    }
+
+    /** Write-through конверта результата (воркер, легаси-sync, снапшот). */
+    private async writeCache(
+        period: NormalizedReportPeriod,
+        departament: BXUserDto[],
+        report: ReportData[],
+    ): Promise<void> {
+        if (!this.cache) return;
+        const usersKey = buildReportUsersKey(departament.map(user => user.ID));
+        const isPastPeriod = period.toIsoInclusive < toIsoDateOf(new Date());
+        await this.cache.setReady(
+            KPI_REPORT_CACHE_APP,
+            this.domain,
+            buildKpiReportResultKey(
+                period.fromIso,
+                period.toIsoInclusive,
+                usersKey,
+            ),
+            report,
+            isPastPeriod
+                ? KPI_RESULT_TTL_PAST_SECONDS
+                : KPI_RESULT_TTL_LIVE_SECONDS,
+        );
     }
 
     private getPbxFiledsData = (): {
@@ -185,6 +240,11 @@ export class ReportKpiUseCase {
         return currentActionsData.sort((a, b) => a.order - b.order);
     };
 
+    /**
+     * Генерирует батч-команды и возвращает СПИСОК ОЖИДАЕМЫХ cmdKey —
+     * единственный источник истины для контроля полноты результата и
+     * фиксированной кардинальности отчёта.
+     */
     private generateBatchCommands = (
         departament: BXUserDto[],
         currentActionsData: Filter[],
@@ -197,7 +257,8 @@ export class ReportKpiUseCase {
         dateFrom: string,
         dateTo: string,
         listId: string,
-    ): void => {
+    ): string[] => {
+        const expectedKeys: string[] = [];
         for (const user of departament) {
             const userId = user.ID;
 
@@ -254,6 +315,7 @@ export class ReportKpiUseCase {
                             'lists.element.get',
                             getListData,
                         );
+                        expectedKeys.push(cmdKey);
                     }
 
                     if (action.code == 'call_done') {
@@ -294,6 +356,7 @@ export class ReportKpiUseCase {
                             'lists.element.get',
                             getListData,
                         );
+                        expectedKeys.push(cmdKey);
                     }
                 }
             }
@@ -327,9 +390,11 @@ export class ReportKpiUseCase {
                         'lists.element.get',
                         getListData,
                     );
+                    expectedKeys.push(cmdKey);
                 }
             }
         }
+        return expectedKeys;
     };
 
     private proccesResultCommunications = (
@@ -400,8 +465,16 @@ export class ReportKpiUseCase {
         return reportData;
     };
 
+    /**
+     * Сборка отчёта из СЛИТЫХ результатов: KPI создаётся для каждого
+     * сгенерированного действия (expectedKeys — источник истины), счётчик
+     * из result_total, count 0 при нуле. Раньше пропавший ключ молча
+     * СЖИМАЛ список KPI — теперь кардинальность фиксирована (полнота
+     * гарантирована assertBatchComplete выше).
+     */
     private getCalculateResults = (
-        results: IBitrixBatchResponseResult[],
+        merged: MergedBatchResults,
+        expectedKeys: ReadonlySet<string>,
         departament: BXUserDto[],
         currentActionsData: Filter[],
     ): ReportData[] => {
@@ -419,21 +492,12 @@ export class ReportKpiUseCase {
             } as ReportData;
             for (const action of currentActionsData) {
                 const cmdKey = `user_${userId}_action_${action.code}`;
-                const kpi = {
+                if (!expectedKeys.has(cmdKey)) continue;
+                userReport.kpi.push({
                     id: action.innerCode,
                     action: action,
-                    count: 0,
-                } as KPI;
-                for (const result of results) {
-                    for (const resultKey in result.result) {
-                        if (resultKey === cmdKey) {
-                            kpi.count =
-                                Number(result.result_total[resultKey]) || 0;
-
-                            userReport.kpi.push(kpi);
-                        }
-                    }
-                }
+                    count: Number(merged.totals[cmdKey]) || 0,
+                } as KPI);
             }
             userReport = this.proccesResultCommunications(userReport);
             report.push(userReport);

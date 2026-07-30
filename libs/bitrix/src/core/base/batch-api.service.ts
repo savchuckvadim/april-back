@@ -166,8 +166,17 @@ export class BatchApiService {
         this.cmdBatch = {};
         return results;
     }
+    /**
+     * options.strict — упавший чанк (ответ без поля result: сетевой обрыв,
+     * дроп rate-limiter, ошибка Битрикса) БРОСАЕТ исключение вместо тихого
+     * пропуска. По умолчанию поведение прежнее (warn + skip) — для
+     * существующих потребителей ничего не меняется. Strict обязателен для
+     * отчётных воркеров: тихо неполный батч = недостоверные цифры
+     * (инцидент kpi-sales 2026-07-27/28).
+     */
     async callBatchWithConcurrency(
         limit = 3,
+        options?: { strict?: boolean },
     ): Promise<IBitrixBatchResponseResult[]> {
         this.core.logger.log(
             'Calling batch async with concurrency limit:',
@@ -192,6 +201,18 @@ export class BatchApiService {
                     'result' in result
                 ) {
                     results.push(result);
+                } else if (options?.strict) {
+                    const reason =
+                        result &&
+                        typeof result === 'object' &&
+                        'message' in result
+                            ? String((result as { message: unknown }).message)
+                            : JSON.stringify(result ?? null).slice(0, 200);
+                    throw new Error(
+                        `Батч-чанк не выполнен (offset ${start}, ` +
+                            `${batch.length} команд): ${reason}. ` +
+                            'Результат был бы неполным, выполнение остановлено.',
+                    );
                 } else {
                     this.core.logger.warn(
                         `Skipping failed batch at index ${start}`,
@@ -202,14 +223,18 @@ export class BatchApiService {
             }
         };
 
-        // Запускаем до `limit` параллельных воркеров
-        await Promise.all(
-            Array(limit)
-                .fill(0)
-                .map(() => runBatch()),
-        );
-
-        this.cmdBatch = {};
+        try {
+            // Запускаем до `limit` параллельных воркеров
+            await Promise.all(
+                Array(limit)
+                    .fill(0)
+                    .map(() => runBatch()),
+            );
+        } finally {
+            // КРИТИЧНО чистить буфер и при strict-исключении: инстанс общий
+            // на домен, «протёкшие» команды повторились бы в следующем вызове.
+            this.cmdBatch = {};
+        }
         return results;
     }
 

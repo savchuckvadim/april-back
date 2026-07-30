@@ -11,5 +11,6 @@
  */
 export * from './dto/bx-user.dto';
 export * from './dto/kpi.dto';
+export * from './lib/batch-completeness.util';
 export * from './lib/date-util';
 export * from './lib/month-segments.util';

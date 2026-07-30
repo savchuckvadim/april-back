@@ -72,6 +72,7 @@ export abstract class AbstractBitrixApi {
     abstract callBatchAsync: () => Promise<IBitrixBatchResponseResult[]>;
     abstract callBatchWithConcurrency: (
         limit?: number,
+        options?: { strict?: boolean },
     ) => Promise<IBitrixBatchResponseResult[]>;
     abstract executeBatch: (
         batch: [string, string][],
@@ -124,5 +125,6 @@ export abstract class BitrixBaseApi {
     abstract callBatchAsync: () => Promise<IBitrixBatchResponseResult[]>;
     abstract callBatchWithConcurrency: (
         limit?: number,
+        options?: { strict?: boolean },
     ) => Promise<IBitrixBatchResponseResult[]>;
 }

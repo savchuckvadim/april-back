@@ -4,6 +4,7 @@ import { AppCacheService } from '@lib/app-cache';
 import { ShareLink } from 'generated/prisma';
 import { ReportKpiUseCase } from '../../report/use-cases/kpi-report.use-case';
 import { CallingStatisticUseCase } from '../../report/use-cases/kpi-calling-statistic.use-case';
+import { ReportResultCacheService } from '../../report/cache/report-result-cache.service';
 import { ClosedSalesUseCase } from '../../sales-finance/domain/use-cases/closed-sales.use-case';
 import { HotClientsUseCase } from '../../sales-finance/domain/use-cases/hot-clients.use-case';
 import { SalesFinanceCacheService } from '../../sales-finance/cache/sales-finance-cache.service';
@@ -18,7 +19,7 @@ export const SHARE_LINK_CACHE_APP = 'kpi-share';
 
 /** Финансовая часть снимка: закрытые продажи + горячие по обоим порогам. */
 export interface ShareLinkSnapshotFinance {
-    closed: unknown | null;
+    closed: unknown;
     /** presentation/document — переключатель порога работает офлайн. */
     hotByThreshold: Record<string, unknown>;
 }
@@ -29,7 +30,7 @@ export interface ShareLinkSnapshotData {
     report: ReportData[];
     callings: unknown[];
     finance?: ShareLinkSnapshotFinance | null;
-    airtime?: unknown | null;
+    airtime?: unknown;
 }
 
 /**
@@ -59,8 +60,12 @@ export class ShareLinkSnapshotService {
     ): Promise<ShareLinkSnapshotData> {
         this.logger.log(`Генерация снимка ${link.token} (${link.domain})`);
 
+        // Write-through: реплей снапшота заодно греет конверт-кэш очереди
+        // (прецедент — ручные new SalesFinanceCacheService/AirtimeCacheService ниже).
+        const resultCache = new ReportResultCacheService(this.appCache);
+
         const reportUseCase = new ReportKpiUseCase();
-        await reportUseCase.init(link.domain, this.pbx);
+        await reportUseCase.init(link.domain, this.pbx, resultCache);
         const report = await reportUseCase.generateKpiReport(
             snapshot.reportFilters,
         );
@@ -70,7 +75,10 @@ export class ShareLinkSnapshotService {
         let callings: unknown[] = [];
         try {
             const { bitrix } = await this.pbx.init(link.domain);
-            const callingUseCase = new CallingStatisticUseCase(bitrix.api);
+            const callingUseCase = new CallingStatisticUseCase(
+                bitrix.api,
+                resultCache,
+            );
             callings = (await callingUseCase.get({
                 domain: link.domain,
                 filters: snapshot.callingFilters,
@@ -150,7 +158,7 @@ export class ShareLinkSnapshotService {
     private async generateAirtime(
         link: Pick<ShareLink, 'token' | 'domain'>,
         snapshot: ShareLinkFilterSnapshotDto,
-    ): Promise<unknown | null> {
+    ): Promise<unknown> {
         const filters = snapshot.airtimeFilters;
         if (!filters?.departament?.length) return null;
 
