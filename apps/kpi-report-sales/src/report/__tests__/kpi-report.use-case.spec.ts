@@ -90,7 +90,7 @@ const filters = (dateFrom: string, dateTo: string): ReportGetFiltersDto =>
     }) as ReportGetFiltersDto;
 
 describe('ReportKpiUseCase', () => {
-    it('строит команды по действиям с ISO-границами дат и вызывает strict-батч', async () => {
+    it('строит команды по действиям (легаси-даты уходят в фильтр как есть) и вызывает strict-батч', async () => {
         const mocks = createMocks([chunk(fullTotals('1'))]);
         const useCase = new ReportKpiUseCase();
         await useCase.init('example.bitrix24.ru', mocks.pbx as never);
@@ -102,15 +102,15 @@ describe('ReportKpiUseCase', () => {
         expect(keys.sort()).toEqual(
             EXPECTED_CODES.map(code => `user_1_action_${code}`).sort(),
         );
-        // Даты нормализованы: легаси 01.06–01.07 (to эксклюзивна) → июнь.
+        // Легаси-строки в фильтре без изменений (страховка совместимости).
         const callPlanArgs = mocks.api.addCmdBatch.mock.calls.find(
             call => call[0] === 'user_1_action_call_plan',
         ) as unknown[];
         expect(callPlanArgs[2]).toEqual(
             expect.objectContaining({
                 filter: expect.objectContaining({
-                    '>PROPERTY_103': '2026-06-01',
-                    '<PROPERTY_103': '2026-07-01',
+                    '>PROPERTY_103': '01.06.2026',
+                    '<PROPERTY_103': '01.07.2026',
                 }) as Record<string, unknown>,
             }),
         );

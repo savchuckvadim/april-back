@@ -39,11 +39,11 @@ const dto = (
     }) as GetCallingStatisticDto;
 
 describe('CallingStatisticUseCase', () => {
-    it('строит 6 команд на сотрудника с нормализованными ISO-границами и strict-батчем', async () => {
+    it('легаси-запрос шлёт в фильтр ИСХОДНЫЕ строки дат (байт-в-байт как прод) + strict-батч', async () => {
         const api = createApi([chunk(fullTotals('1'))]);
         const useCase = new CallingStatisticUseCase(api as never);
 
-        // Легаси-формат: dateTo эксклюзивна (старый фронт прибавил день).
+        // Легаси-формат: строки уходят в Битрикс без изменений.
         await useCase.get(dto('01.07.2026', '31.07.2026'));
 
         expect(api.addCmdBatch).toHaveBeenCalledTimes(6);
@@ -53,8 +53,8 @@ describe('CallingStatisticUseCase', () => {
             {
                 FILTER: {
                     PORTAL_USER_ID: '1',
-                    '>CALL_START_DATE': '2026-07-01',
-                    '<CALL_START_DATE': '2026-07-31',
+                    '>CALL_START_DATE': '01.07.2026',
+                    '<CALL_START_DATE': '31.07.2026',
                 },
             },
         );
@@ -67,6 +67,25 @@ describe('CallingStatisticUseCase', () => {
         expect(api.callBatchWithConcurrency).toHaveBeenCalledWith(2, {
             strict: true,
         });
+    });
+
+    it('канон-запрос (YYYY-MM-DD) шлёт в фильтр ISO-границы: from вкл., to+1 экскл.', async () => {
+        const api = createApi([chunk(fullTotals('1'))]);
+        const useCase = new CallingStatisticUseCase(api as never);
+
+        await useCase.get(dto('2026-07-01', '2026-07-30'));
+
+        expect(api.addCmdBatch).toHaveBeenCalledWith(
+            `${METHOD}_all_1`,
+            METHOD,
+            {
+                FILTER: {
+                    PORTAL_USER_ID: '1',
+                    '>CALL_START_DATE': '2026-07-01',
+                    '<CALL_START_DATE': '2026-07-31',
+                },
+            },
+        );
     });
 
     it('счётчики из result_total, у каждого сотрудника ровно 6 бакетов', async () => {

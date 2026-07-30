@@ -24,6 +24,15 @@ export interface NormalizedReportPeriod {
     toIsoExclusive: IsoDate;
     /** Запрос пришёл в легаси-формате DD.MM.YYYY. */
     legacyFormat: boolean;
+    /**
+     * Значения для ФИЛЬТРОВ Битрикса (страховка обратной совместимости):
+     * легаси-запрос шлёт ИСХОДНЫЕ строки байт-в-байт, как текущий прод
+     * (нормализация используется только для ключей кэша/дедупа); канон —
+     * ISO (`>` bitrixFrom / `<` bitrixTo). Так поведение старого фронта
+     * не меняется вовсе, а ISO в фильтрах проверяется только новым фронтом.
+     */
+    bitrixFrom: string;
+    bitrixTo: string;
 }
 
 /** Ошибка формата/семантики периода — контроллер отдаёт её как 400. */
@@ -120,5 +129,7 @@ export function normalizeReportPeriod(
         toIsoInclusive,
         toIsoExclusive,
         legacyFormat,
+        bitrixFrom: legacyFormat ? String(dateFrom).trim() : from.iso,
+        bitrixTo: legacyFormat ? String(dateTo).trim() : toIsoExclusive,
     };
 }

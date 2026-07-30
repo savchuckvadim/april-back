@@ -100,6 +100,8 @@ export class ReportKpiUseCase {
             eventActionType.items,
         );
 
+        // Легаси-запрос шлёт в фильтры исходные строки (байт-в-байт как
+        // прод), канон — ISO; см. NormalizedReportPeriod.bitrixFrom.
         const expectedKeys = this.generateBatchCommands(
             departament,
             currentActionsData,
@@ -108,8 +110,8 @@ export class ReportKpiUseCase {
             actionTypeId,
             dateFieldForHookFrom,
             dateFieldForHookTo,
-            period.fromIso,
-            period.toIsoExclusive,
+            period.bitrixFrom,
+            period.bitrixTo,
             listId as string,
         );
         const results = await this.bitrixApi.callBatchWithConcurrency(1, {

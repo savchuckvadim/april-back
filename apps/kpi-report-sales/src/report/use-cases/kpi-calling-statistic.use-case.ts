@@ -66,10 +66,12 @@ export class CallingStatisticUseCase {
             for (const type of CALLING_TYPES) {
                 const key = `${VOXIMPLANT_METHOD}_${type.id}_${userId}`;
                 this.bitrixApi.addCmdBatch(key, VOXIMPLANT_METHOD, {
+                    // Легаси-запрос шлёт в фильтр исходные строки (как прод),
+                    // канон — ISO; см. NormalizedReportPeriod.bitrixFrom.
                     FILTER: this.buildVoximplantFilter(
                         userId,
-                        period.fromIso,
-                        period.toIsoExclusive,
+                        period.bitrixFrom,
+                        period.bitrixTo,
                         type.id,
                     ),
                 });

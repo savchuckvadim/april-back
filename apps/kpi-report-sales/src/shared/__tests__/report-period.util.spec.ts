@@ -1,12 +1,14 @@
 import { normalizeReportPeriod, ReportPeriodError } from '../lib/date-util';
 
 describe('normalizeReportPeriod', () => {
-    it('канон YYYY-MM-DD: обе границы включительны, exclusive = to+1 день', () => {
+    it('канон YYYY-MM-DD: обе границы включительны, exclusive = to+1 день, в Битрикс уходит ISO', () => {
         expect(normalizeReportPeriod('2026-07-01', '2026-07-30')).toEqual({
             fromIso: '2026-07-01',
             toIsoInclusive: '2026-07-30',
             toIsoExclusive: '2026-07-31',
             legacyFormat: false,
+            bitrixFrom: '2026-07-01',
+            bitrixTo: '2026-07-31',
         });
     });
 
@@ -19,12 +21,16 @@ describe('normalizeReportPeriod', () => {
         expect(period.toIsoInclusive).toBe('2026-07-30');
     });
 
-    it('легаси DD.MM.YYYY: dateTo уже эксклюзивна (старый фронт прибавил день)', () => {
+    it('легаси DD.MM.YYYY: dateTo уже эксклюзивна, в Битрикс уходят ИСХОДНЫЕ строки (как прод)', () => {
         expect(normalizeReportPeriod('01.07.2026', '31.07.2026')).toEqual({
             fromIso: '2026-07-01',
             toIsoInclusive: '2026-07-30',
             toIsoExclusive: '2026-07-31',
             legacyFormat: true,
+            // Страховка обратной совместимости: фильтры Битрикса получают
+            // те же строки, что шлёт старый фронт, — поведение не меняется.
+            bitrixFrom: '01.07.2026',
+            bitrixTo: '31.07.2026',
         });
     });
 
