@@ -14,6 +14,11 @@ export enum JobNames {
     SALES_KPI_REPORT_GENERATE = 'sales-kpi-report-generate',
     SALES_USER_REPORT_GENERATE = 'sales-user-report-generate',
 
+    //эфирное время (kpi-airtime): сбор месячной партиции по всему порталу
+    //и дособор дневного диапазона текущего/краевого месяца
+    AIRTIME_MONTH_PARTITION = 'airtime-month-partition',
+    AIRTIME_DAY_SPAN = 'airtime-day-span',
+
     //sales finance (финансовая аналитика отдела продаж)
     SALES_FINANCE_CLOSED_SALES = 'sales-finance-closed-sales',
     SALES_FINANCE_HOT_CLIENTS = 'sales-finance-hot-clients',

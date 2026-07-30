@@ -51,10 +51,10 @@ const row = (
  */
 const createCacheMock = () => ({
     getMonthCells: jest.fn(
-        async (_domain: string, _month: string, userIds: number[]) =>
-            new Map(userIds.map(id => [id, null])),
+        (_domain: string, _month: string, userIds: number[]) =>
+            Promise.resolve(new Map(userIds.map(id => [id, null]))),
     ),
-    setMonthCells: jest.fn(async () => undefined),
+    setMonthCells: jest.fn(() => Promise.resolve(undefined)),
 });
 
 describe('AirtimeStatisticUseCase', () => {

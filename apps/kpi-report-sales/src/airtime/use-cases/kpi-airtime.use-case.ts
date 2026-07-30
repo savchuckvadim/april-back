@@ -17,8 +17,6 @@ import {
     AirtimeMonthCell,
     IAirtimeStatisticResult,
     VoximplantAirtimeFilter,
-    VoximplantAirtimeRow,
-    VoximplantStatisticEnvelope,
 } from '../types/airtime-statistic.type';
 import {
     addCellInto,
@@ -28,8 +26,11 @@ import {
     emptyAirtimeCell,
     mergeCellsInto,
 } from '../lib/airtime-cell.util';
+import {
+    buildAirtimeFilter,
+    fetchAirtimeRows,
+} from '../lib/voximplant-fetch.util';
 
-const VOXIMPLANT_STATISTIC_METHOD = 'voximplant.statistic.get';
 const DEFAULT_MAX_ROWS = 10_000;
 
 /**
@@ -285,73 +286,23 @@ export class AirtimeStatisticUseCase {
         };
     }
 
+    /** Фильтр по сотрудникам отдела (sync-режим всегда фильтрует по юзерам). */
     private buildFilter(
         userIds: readonly number[],
         fromExclusive: string,
         toExclusive: string,
     ): VoximplantAirtimeFilter {
-        return {
-            PORTAL_USER_ID: userIds.map(String),
-            '>CALL_START_DATE': fromExclusive,
-            '<CALL_START_DATE': toExclusive,
-            '>CALL_DURATION': 0,
-        };
+        return buildAirtimeFilter(userIds, fromExclusive, toExclusive);
     }
 
-    /** Пагинированная выгрузка строк статистики (Битрикс отдаёт по 50 строк). */
-    private async fetchRows(
-        filter: VoximplantAirtimeFilter,
-        maxRows: number,
-    ): Promise<{ rows: VoximplantAirtimeRow[]; truncated: boolean }> {
-        const rows: VoximplantAirtimeRow[] = [];
-        let start = 0;
-        let complete = false;
-
-        while (!complete && rows.length < maxRows) {
-            const response = (await this.bitrixApi.call(
-                VOXIMPLANT_STATISTIC_METHOD,
-                {
-                    FILTER: filter,
-                    SORT: 'CALL_START_DATE',
-                    ORDER: 'ASC',
-                    start,
-                },
-            )) as VoximplantStatisticEnvelope;
-
-            const page = response.result ?? [];
-            rows.push(...page);
-
-            if (!page.length || response.next === undefined) {
-                complete = true;
-            } else {
-                start = response.next;
-            }
-        }
-
-        // Диагностика направлений: гистограмма CALL_TYPE в ответе Bitrix.
-        // Если входящие (CALL_TYPE 2/3) в отчёте всегда нули — по логу видно,
-        // приходят ли они вообще из voximplant.statistic.get (или портал
-        // отдаёт только исходящие / поле пустое).
-        this.logger.log(
-            `${VOXIMPLANT_STATISTIC_METHOD}: собрано ${rows.length} строк` +
-                (complete ? '' : ` — обрезано по лимиту ${maxRows}`) +
-                ` · CALL_TYPE=${JSON.stringify(callTypeHistogram(rows))}`,
-        );
-        return { rows, truncated: !complete };
+    /**
+     * Пагинированная выгрузка (общая утилита воркеров и sync-режима).
+     * Потерянная страница (дроп rate-limiter) — исключение, а не тихо
+     * неполный отчёт (инцидент 2026-07-27).
+     */
+    private async fetchRows(filter: VoximplantAirtimeFilter, maxRows: number) {
+        return fetchAirtimeRows(this.bitrixApi, filter, maxRows, this.logger);
     }
-}
-
-/** Гистограмма значений CALL_TYPE (для диагностики входящих/исходящих). */
-function callTypeHistogram(
-    rows: readonly VoximplantAirtimeRow[],
-): Record<string, number> {
-    const histogram: Record<string, number> = {};
-    for (const row of rows) {
-        const key =
-            row.CALL_TYPE === undefined ? 'undefined' : String(row.CALL_TYPE);
-        histogram[key] = (histogram[key] ?? 0) + 1;
-    }
-    return histogram;
 }
 
 /** Итог загрузки одного месячного сегмента. */

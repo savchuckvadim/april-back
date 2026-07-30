@@ -63,9 +63,67 @@ export const aggregateRowsToCells = (
     return cells;
 };
 
+/**
+ * Портал-wide агрегация: группировка по PORTAL_USER_ID БЕЗ предзаданного
+ * списка сотрудников (полный список юзеров портала воркеру неизвестен).
+ * Нулевые ячейки не создаются — «сотрудник не звонил» кодируется маркером
+ * партиции, а не ячейкой.
+ */
+export const aggregateRowsToCellsAllUsers = (
+    rows: readonly VoximplantAirtimeRow[],
+): Map<number, AirtimeMonthCell> => {
+    const cells = new Map<number, AirtimeMonthCell>();
+    for (const row of rows) {
+        const userId = Number(row.PORTAL_USER_ID);
+        if (!Number.isFinite(userId) || userId <= 0) continue;
+        let cell = cells.get(userId);
+        if (!cell) {
+            cell = emptyAirtimeCell();
+            cells.set(userId, cell);
+        }
+        applyRow(cell, row);
+    }
+    return cells;
+};
+
 /** День строки статистики: CALL_START_DATE → yyyy-MM-dd (ISO с 'T'). */
 const rowDay = (row: VoximplantAirtimeRow): string =>
     String(row.CALL_START_DATE ?? '').slice(0, 10);
+
+/**
+ * Портал-wide агрегация в ДНЕВНЫЕ ячейки `${userId}|${yyyy-MM-dd}` без
+ * предзаданных списков (нули кодируются дневными маркерами). Строки вне
+ * дат диапазона игнорируются (могут прилететь на границе выборки).
+ */
+export const aggregateRowsToDayCellsAllUsers = (
+    rows: readonly VoximplantAirtimeRow[],
+    dates: readonly string[],
+): Map<string, AirtimeMonthCell> => {
+    const allowedDays = new Set(dates);
+    const cells = new Map<string, AirtimeMonthCell>();
+    for (const row of rows) {
+        const userId = Number(row.PORTAL_USER_ID);
+        const day = rowDay(row);
+        if (!Number.isFinite(userId) || userId <= 0) continue;
+        if (!allowedDays.has(day)) continue;
+        const key = `${userId}|${day}`;
+        let cell = cells.get(key);
+        if (!cell) {
+            cell = emptyAirtimeCell();
+            cells.set(key, cell);
+        }
+        applyRow(cell, row);
+    }
+    return cells;
+};
+
+/** Числовые userId из departament-списка (мусорные/пустые ID отбрасываются). */
+export const parseDepartamentUserIds = (
+    departament: readonly IAirtimeUser[],
+): number[] =>
+    departament
+        .map(user => Number(String(user.ID ?? '').trim()))
+        .filter(id => Number.isFinite(id) && id > 0);
 
 /**
  * Агрегация строк в ДНЕВНЫЕ ячейки по (userId, дата). Ключ карты —
