@@ -16,6 +16,7 @@ import {
 import { CallReportModule } from './call-report/call-report.module';
 import { AgentGateModule } from './agent-gate/agent-gate.module';
 import { BitrixProxyModule } from './bitrix-proxy/bitrix-proxy.module';
+import { MergeDealsModule } from './merge-deals/merge-deals.module';
 
 @Module({
     imports: [
@@ -45,6 +46,8 @@ import { BitrixProxyModule } from './bitrix-proxy/bitrix-proxy.module';
         AgentGateModule,
         // Agent API: прокси произвольных методов Bitrix (те же ключи агентов)
         BitrixProxyModule,
+        // Объединение сделок: пока заглушка — маршруты и Swagger без логики
+        MergeDealsModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],
