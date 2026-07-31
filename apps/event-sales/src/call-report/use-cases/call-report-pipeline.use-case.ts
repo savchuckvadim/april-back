@@ -32,6 +32,13 @@ export interface CallReportJobPayload {
     callId?: string;
     callStartedAtIso?: string;
     durationSec?: number;
+    /**
+     * После стадии ANALYZE создать базовый элемент смарта «AI-анализ
+     * звонков». Ставит флаг сканер (cron/ручка), исполняет процессор —
+     * сам конвейер смарт по-прежнему не трогает. Отсутствует в старых
+     * джобах → false.
+     */
+    createSmartItem?: boolean;
 }
 
 /**

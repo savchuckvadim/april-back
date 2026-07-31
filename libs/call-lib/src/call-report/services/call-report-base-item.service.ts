@@ -3,6 +3,7 @@ import { PBXService } from '@lib/pbx/pbx.service';
 import { BitrixService } from '@lib/bitrix';
 import { CallAnalysisBitrixService } from '../../call-analysis/services/call-analysis-bitrix.service';
 import { AiService } from '../../ai/services/ai.service';
+import { AiEntityDto } from '../../ai/dto/ai-entity.dto';
 import {
     CALL_RECOMENDATION_TYPE,
     CALL_RESUME_TYPE,
@@ -121,9 +122,11 @@ export class CallReportBaseItemService {
         resume?: string;
         recomendation?: string;
     }> {
+        // Тип возврата у catch задан явно: без него пустой литерал даёт
+        // never[], union схлопывает элемент find() в never и ломает сборку.
         const records = await this.aiService
             .findByTranscriptionIds([transcriptionId])
-            .catch(() => []);
+            .catch((): AiEntityDto[] => []);
         return {
             resume:
                 records.find(record => record.type === CALL_RESUME_TYPE)

@@ -5,11 +5,15 @@ const makeDeps = (options: {
     domains?: string;
     lockTaken?: boolean;
     scanError?: string[];
+    /** '0' — выключить создание смарт-элементов кроном. */
+    createSmart?: string;
 }) => {
     const config = {
         get: jest.fn((key: string) => {
             if (key === 'CALL_REPORT_CRON_ENABLED') return options.enabled;
             if (key === 'CALL_REPORT_DOMAINS') return options.domains;
+            if (key === 'CALL_REPORT_CRON_CREATE_SMART')
+                return options.createSmart;
             return undefined;
         }),
     };
@@ -68,6 +72,7 @@ describe('CallReportScheduler', () => {
         expect(scan.execute).toHaveBeenCalledTimes(2);
         expect(scan.execute).toHaveBeenCalledWith('b.bitrix24.ru', {
             allowedUserIds: undefined,
+            createSmartItem: true,
         });
         expect(redisClient.del).toHaveBeenCalled();
     });
@@ -80,9 +85,24 @@ describe('CallReportScheduler', () => {
         await scheduler.tick();
         expect(scan.execute).toHaveBeenCalledWith('a.bitrix24.ru', {
             allowedUserIds: [222, 323],
+            createSmartItem: true,
         });
         expect(scan.execute).toHaveBeenCalledWith('b.bitrix24.ru', {
             allowedUserIds: undefined,
+            createSmartItem: true,
+        });
+    });
+
+    it('CALL_REPORT_CRON_CREATE_SMART=0 выключает создание смарт-элементов', async () => {
+        const { scheduler, scan } = makeDeps({
+            enabled: '1',
+            domains: 'a.bitrix24.ru',
+            createSmart: '0',
+        });
+        await scheduler.tick();
+        expect(scan.execute).toHaveBeenCalledWith('a.bitrix24.ru', {
+            allowedUserIds: undefined,
+            createSmartItem: false,
         });
     });
 

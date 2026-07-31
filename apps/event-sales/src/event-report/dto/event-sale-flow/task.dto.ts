@@ -38,29 +38,32 @@ export class EventTaskUserDto {
     @IsNumeric()
     id: number;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Имя пользователя (ФИО).',
         type: String,
         example: 'Иван Иванов',
     })
     @IsString()
-    name: string;
+    @IsOptional()
+    name?: string;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Ссылка на иконку/аватар пользователя.',
         type: String,
         example: 'https://portal.bitrix24.ru/upload/photo.jpg',
     })
     @IsString()
-    icon: string;
+    @IsOptional()
+    icon?: string;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'Должность пользователя.',
         type: String,
         example: 'Менеджер по продажам',
     })
     @IsString()
-    workPosition: string;
+    @IsOptional()
+    workPosition?: string;
 }
 
 export class EventTaskGroupDto {

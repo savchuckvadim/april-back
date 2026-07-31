@@ -89,7 +89,8 @@ export class FullUserDto implements IBXUser {
         example: 'Иванов',
     })
     @IsString()
-    LAST_NAME: string;
+    @IsOptional()
+    LAST_NAME?: string;
 
     @ApiProperty({
         description: 'Имя пользователя.',
@@ -97,7 +98,8 @@ export class FullUserDto implements IBXUser {
         example: 'Иван',
     })
     @IsString()
-    NAME: string;
+    @IsOptional()
+    NAME?: string;
 
     @ApiPropertyOptional({
         description: 'Дата рождения пользователя (ISO 8601).',

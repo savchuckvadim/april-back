@@ -4,7 +4,7 @@ import { Job } from 'bull';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
-import { buildDedupKey } from '@lib/call-lib';
+import { buildDedupKey, CallReportBaseItemService } from '@lib/call-lib';
 import {
     CallReportAnalyzeStagePayload,
     CallReportJobPayload,
@@ -54,6 +54,7 @@ export class CallReportProcessor {
     constructor(
         private readonly pipeline: CallReportPipelineUseCase,
         private readonly queueDispatcher: QueueDispatcherService,
+        private readonly baseItem: CallReportBaseItemService,
     ) {}
 
     @Process({
@@ -97,9 +98,45 @@ export class CallReportProcessor {
                     `provider ${result.provider}, callType=${result.callType ?? '—'}, ` +
                     `resume=${result.resumeSaved}, recomendation=${result.recomendationSaved}`,
             );
+            if (job.data.createSmartItem) {
+                await this.createSmartItem(
+                    result.transcriptionId,
+                    result.callType,
+                    job.data,
+                );
+            }
         } catch (error) {
             this.reportFailure('ANALYZE', job, error as Error);
             throw error;
+        }
+    }
+
+    /**
+     * Базовый элемент смарта после анализа. Ошибка НЕ роняет джоб:
+     * транскрипт и ais-записи уже сохранены, повторный прогон стоил бы
+     * бюджета транскрибации. Элемент дольётся ретраем скана или глубоким
+     * анализом — writer работает upsert-ом по xmlId.
+     */
+    private async createSmartItem(
+        transcriptionId: string,
+        callType: string | null,
+        payload: CallReportJobPayload,
+    ): Promise<void> {
+        try {
+            const itemId = await this.baseItem.createBaseItem(
+                transcriptionId,
+                callType,
+            );
+            this.logger.log(
+                itemId
+                    ? `Смарт-элемент ${itemId} (transcription ${transcriptionId})`
+                    : `Смарт не установлен на ${payload.domain} — элемент не создан`,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Смарт-элемент не создан (${payload.domain}, activity ` +
+                    `${payload.activityId}): ${(error as Error).message}`,
+            );
         }
     }
 

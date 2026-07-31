@@ -84,6 +84,18 @@ describe('CallReportScanUseCase', () => {
 
     afterEach(() => jest.clearAllMocks());
 
+    it('createSmartItem едет в payload джоба — cron доводит звонок до карточки', async () => {
+        const { useCase, dispatcher } = makeDeps({ rows: [row(101)] });
+        await useCase.execute(DOMAIN, { createSmartItem: true });
+        expect(dispatcher.dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-transcribe',
+            expect.objectContaining({ createSmartItem: true }),
+            expect.any(String),
+            expect.anything(),
+        );
+    });
+
     it('новый звонок сделки ставится в очередь с dedup-ключом как jobId', async () => {
         const { useCase, dispatcher } = makeDeps({ rows: [row(101)] });
         const result = await useCase.execute(DOMAIN);

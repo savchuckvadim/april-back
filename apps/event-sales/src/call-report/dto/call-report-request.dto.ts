@@ -66,16 +66,18 @@ export class ScanCallsDto {
     @ApiPropertyOptional({
         description:
             'Максимум звонков, поставленных в очередь за один скан — защита ' +
-            'бюджета транскрибации. По умолчанию из env CALL_REPORT_MAX_PER_RUN (10).',
+            'бюджета транскрибации. По умолчанию из env CALL_REPORT_MAX_PER_RUN (10). ' +
+            'Постановка асинхронная (очередь CALL_REPORT), поэтому большие ' +
+            'значения безопасны для HTTP — упираются только в бюджет.',
         example: 10,
         type: Number,
         minimum: 1,
-        maximum: 100,
+        maximum: 500,
     })
     @IsOptional()
     @IsInt()
     @Min(1)
-    @Max(100)
+    @Max(500)
     maxPerRun?: number;
 
     @ApiPropertyOptional({
@@ -91,6 +93,19 @@ export class ScanCallsDto {
     @IsInt({ each: true })
     @Min(1, { each: true })
     userIds?: number[];
+
+    @ApiPropertyOptional({
+        description:
+            'Создавать элемент смарта «AI-анализ звонков» по каждому ' +
+            'обработанному звонку. Работа идёт в очереди, поэтому ' +
+            'HTTP-таймаутов нет. По умолчанию берётся из env ' +
+            'CALL_REPORT_CRON_CREATE_SMART (включено; выключается «0»).',
+        example: true,
+        type: Boolean,
+    })
+    @IsOptional()
+    @IsBoolean()
+    createSmartItem?: boolean;
 }
 
 /**
@@ -159,18 +174,22 @@ export class AnalyzeCallDto {
     @ApiPropertyOptional({
         description:
             'Режим подбора: сколько последних подходящих записей взять ' +
-            'и проанализировать (обрабатываются синхронно, по очереди). ' +
-            'По умолчанию 1, максимум 10 — защита бюджета транскрибации.',
+            'и проанализировать. По умолчанию 1. ВНИМАНИЕ: звонки ' +
+            'обрабатываются синхронно и по очереди (транскрибация + LLM — ' +
+            'минуты на звонок), поэтому значения больше ~10 реально ' +
+            'применимы только при прямом вызове без прокси-таймаута; для ' +
+            'массовых прогонов за день используйте асинхронный ' +
+            'POST /call-report/scan.',
         example: 1,
         type: Number,
         minimum: 1,
-        maximum: 10,
+        maximum: 500,
         default: 1,
     })
     @IsOptional()
     @IsInt()
     @Min(1)
-    @Max(10)
+    @Max(500)
     limit?: number;
 
     @ApiPropertyOptional({

@@ -36,11 +36,13 @@ const makeDeps = () => {
         }),
     };
     const dispatcher = { dispatch: jest.fn().mockResolvedValue({}) };
+    const baseItem = { createBaseItem: jest.fn().mockResolvedValue(777) };
     const processor = new CallReportProcessor(
         pipeline as never,
         dispatcher as never,
+        baseItem as never,
     );
-    return { processor, pipeline, dispatcher };
+    return { processor, pipeline, dispatcher, baseItem };
 };
 
 describe('CallReportProcessor (стадии)', () => {
@@ -87,5 +89,39 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(makeJob(PAYLOAD));
         expect(pipeline.execute).toHaveBeenCalledWith(PAYLOAD);
         expect(pipeline.executeAnalyze).not.toHaveBeenCalled();
+    });
+
+    it('без createSmartItem элемент смарта не создаётся', async () => {
+        const { processor, baseItem } = makeDeps();
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(baseItem.createBaseItem).not.toHaveBeenCalled();
+    });
+
+    it('createSmartItem доводит звонок до элемента смарта', async () => {
+        const { processor, baseItem } = makeDeps();
+        await processor.handleAnalyze(
+            makeJob({
+                ...PAYLOAD,
+                transcriptionId: '42',
+                createSmartItem: true,
+            }),
+        );
+        expect(baseItem.createBaseItem).toHaveBeenCalledWith('42', 'cold');
+    });
+
+    it('падение создания смарта не роняет джоб (данные уже в БД)', async () => {
+        const { processor, baseItem } = makeDeps();
+        baseItem.createBaseItem.mockRejectedValue(new Error('bitrix down'));
+        await expect(
+            processor.handleAnalyze(
+                makeJob({
+                    ...PAYLOAD,
+                    transcriptionId: '42',
+                    createSmartItem: true,
+                }),
+            ),
+        ).resolves.toBeUndefined();
     });
 });

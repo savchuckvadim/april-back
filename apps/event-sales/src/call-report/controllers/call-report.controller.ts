@@ -71,6 +71,7 @@ export class CallReportController {
             windowHours: dto.windowHours,
             maxPerRun: dto.maxPerRun,
             allowedUserIds: dto.userIds,
+            createSmartItem: dto.createSmartItem,
         });
     }
 

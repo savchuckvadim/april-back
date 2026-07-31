@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib';
+import { envEnabledByDefault } from '@lib/shared';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 
 const LOCK_KEY = 'call-report:scan-lock';
@@ -49,7 +50,8 @@ export class CallReportScheduler implements OnModuleInit {
             .join(', ');
         this.logger.log(
             `Автоконвейер call-report: cron ${enabled ? 'ВКЛЮЧЁН' : 'ВЫКЛЮЧЕН (CALL_REPORT_CRON_ENABLED!=1)'}` +
-                `, домены: ${domainsLabel || '(пусто)'}`,
+                `, домены: ${domainsLabel || '(пусто)'}` +
+                `, смарт-элементы: ${this.isSmartItemEnabled() ? 'создаются' : 'ВЫКЛЮЧЕНЫ (CALL_REPORT_CRON_CREATE_SMART=0)'}`,
         );
         if (enabled && !domains.length) {
             this.logger.warn(
@@ -93,6 +95,7 @@ export class CallReportScheduler implements OnModuleInit {
                 try {
                     await this.scanUseCase.execute(entry.domain, {
                         allowedUserIds: entry.demoUserIds,
+                        createSmartItem: this.isSmartItemEnabled(),
                     });
                 } catch (error) {
                     // { telegram: true } — форс-алерт админам (транспорт логгера)
@@ -105,6 +108,18 @@ export class CallReportScheduler implements OnModuleInit {
         } finally {
             await redis.del(LOCK_KEY).catch(() => undefined);
         }
+    }
+
+    /**
+     * Доводить ли звонок до карточки в Битриксе. Включено по умолчанию:
+     * без этого cron доходил только до БД и таймлайна, а смарт-элементы
+     * появлялись исключительно после ручного прогона с createSmartItem
+     * (прод-расхождение 31.07.2026). Выключается CALL_REPORT_CRON_CREATE_SMART=0.
+     */
+    private isSmartItemEnabled(): boolean {
+        return envEnabledByDefault(
+            this.configService.get<string>('CALL_REPORT_CRON_CREATE_SMART'),
+        );
     }
 
     /** Зависшие processing старше порога → error (звонок снова виден дедупу). */

@@ -28,6 +28,12 @@ export interface CallReportScanOptions {
      * (`domain:222|323`). Применяется ПОВЕРХ фильтра отдела продаж.
      */
     allowedUserIds?: number[];
+    /**
+     * Создавать базовый элемент смарта после анализа каждого звонка.
+     * Флаг едет в payload джоба и исполняется процессором — так cron
+     * доводит звонок до карточки в Битриксе, а не только до БД.
+     */
+    createSmartItem?: boolean;
 }
 
 export interface CallReportScanResult {
@@ -217,6 +223,7 @@ export class CallReportScanUseCase {
                 durationSec: row.CALL_DURATION
                     ? Number(row.CALL_DURATION)
                     : undefined,
+                createSmartItem: options?.createSmartItem,
             };
 
             // Стадия 1 конвейера; стадию ANALYZE поставит процессор
