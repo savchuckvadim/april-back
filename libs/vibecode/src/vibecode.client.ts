@@ -159,6 +159,28 @@ export class VibeCodeClient {
         return schema as unknown as Record<string, unknown>;
     }
 
+    /**
+     * Произвольный strict-JSON вызов: схему и промпт задаёт вызывающий
+     * модуль. Нужен там, где состав ответа — предметная область прикладного
+     * кода, а не транспорта (глубокий разбор звонка по разделам смарта:
+     * коды разделов живут в portal-lib, тянуть его в клиент нельзя).
+     */
+    async structuredCompletion(
+        systemPrompt: string,
+        userContent: string,
+        schemaName: string,
+        schema: Record<string, unknown>,
+        apiKey: string,
+    ): Promise<unknown> {
+        return this.chatCompletionJson(
+            systemPrompt,
+            userContent,
+            schemaName,
+            schema,
+            apiKey,
+        );
+    }
+
     /** Общий вызов chat/completions со strict JSON-схемой ответа. */
     private async chatCompletionJson(
         systemPrompt: string,

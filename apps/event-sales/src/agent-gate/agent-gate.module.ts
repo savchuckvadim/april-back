@@ -39,5 +39,9 @@ import { AgentAnalysisIntakeService } from './services/agent-analysis-intake.ser
         AgentCallPackageService,
         AgentAnalysisIntakeService,
     ],
+    // Приём разбора переиспользует внутренний конвейер (call-report):
+    // запись ais, создание/дополнение смарт-элемента, таймлайн разделов и
+    // идемпотентность живут здесь и не дублируются.
+    exports: [AgentAnalysisIntakeService],
 })
 export class AgentGateModule {}

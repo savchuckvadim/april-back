@@ -13,9 +13,11 @@ import {
 } from '@lib/call-lib';
 import { AiRagModule } from '@lib/ai-rag';
 import { BxDepartmentModule } from 'libs/bx-department';
+import { AgentGateModule } from '../agent-gate/agent-gate.module';
 import { CallReportController } from './controllers/call-report.controller';
 import { CallClassifyInstructionService } from './services/call-classify-instruction.service';
 import { CallClassifyStepService } from './services/call-classify-step.service';
+import { CallDeepAnalysisService } from './services/call-deep-analysis.service';
 import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
@@ -50,11 +52,16 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
         CallTypeRegistryModule,
         // Фильтр сканера «только менеджеры отдела продаж»
         BxDepartmentModule,
+        // Запись глубокого разбора (ais + смарт + таймлайн) —
+        // AgentAnalysisIntakeService. Внешнего агента больше нет: разбор
+        // считает CallDeepAnalysisService здесь же, а приём переиспользуем.
+        AgentGateModule,
     ],
     controllers: [CallReportController],
     providers: [
         CallClassifyInstructionService,
         CallClassifyStepService,
+        CallDeepAnalysisService,
         CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
         CallReportScanUseCase,

@@ -4,7 +4,13 @@ import { Job } from 'bull';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
-import { buildDedupKey, CallReportBaseItemService } from '@lib/call-lib';
+import {
+    buildDedupKey,
+    CallReportBaseItemService,
+    TranscriptionStoreService,
+} from '@lib/call-lib';
+import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import { CallDeepAnalysisService } from '../services/call-deep-analysis.service';
 import {
     CallReportAnalyzeStagePayload,
     CallReportJobPayload,
@@ -55,7 +61,13 @@ export class CallReportProcessor {
         private readonly pipeline: CallReportPipelineUseCase,
         private readonly queueDispatcher: QueueDispatcherService,
         private readonly baseItem: CallReportBaseItemService,
+        private readonly deepAnalysis: CallDeepAnalysisService,
+        private readonly analysisIntake: AgentAnalysisIntakeService,
+        private readonly transcriptionStore: TranscriptionStoreService,
     ) {}
+
+    /** Имя аналитика в ais-записях и в поле смарта «Имя агента-аналитика». */
+    private static readonly ANALYZER_NAME = 'call-report-analyzer';
 
     @Process({
         name: JobNames.CALL_REPORT_TRANSCRIBE,
@@ -105,9 +117,64 @@ export class CallReportProcessor {
                     job.data,
                 );
             }
+            // Глубокий разбор идёт ПОСЛЕ базового элемента: каркас со
+            // связями и транскриптом уже стоит, разбор дополняет его по
+            // xmlId. Если разбор не удался — остаётся базовый элемент.
+            await this.runDeepAnalysis(
+                result.transcriptionId,
+                result.callType,
+                job.data,
+            );
         } catch (error) {
             this.reportFailure('ANALYZE', job, error as Error);
             throw error;
+        }
+    }
+
+    /**
+     * Глубокий разбор (7 разделов, спич, оценки) и его запись. Считается
+     * здесь же — внешнего агента-аналитика больше нет; приём результата
+     * переиспользует AgentAnalysisIntakeService (идемпотентность, ais,
+     * дополнение смарт-элемента, таймлайн разделов).
+     *
+     * Ошибка НЕ роняет джоб: транскрипт, первичный анализ и базовый
+     * элемент уже сохранены, разбор дольётся повторным прогоном.
+     */
+    private async runDeepAnalysis(
+        transcriptionId: string,
+        callType: string | null,
+        payload: CallReportJobPayload,
+    ): Promise<void> {
+        try {
+            const row =
+                await this.transcriptionStore.findPipelineById(transcriptionId);
+            if (!row.text) {
+                this.logger.warn(
+                    `Транскрипт ${transcriptionId} пуст — глубокий разбор пропущен`,
+                );
+                return;
+            }
+            const analysis = await this.deepAnalysis.run(
+                payload.domain,
+                row.text,
+                callType,
+            );
+            if (!analysis) return;
+
+            const written = await this.analysisIntake.intake(
+                transcriptionId,
+                CallReportProcessor.ANALYZER_NAME,
+                analysis,
+            );
+            this.logger.log(
+                `Глубокий разбор записан: ais ${written.aiId}, ` +
+                    `смарт-элемент ${written.smartItemId ?? '—'}`,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Глубокий разбор не записан (${payload.domain}, activity ` +
+                    `${payload.activityId}): ${(error as Error).message}`,
+            );
         }
     }
 
