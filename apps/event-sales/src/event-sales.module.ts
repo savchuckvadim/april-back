@@ -17,6 +17,8 @@ import { CallReportModule } from './call-report/call-report.module';
 import { AgentGateModule } from './agent-gate/agent-gate.module';
 import { BitrixProxyModule } from './bitrix-proxy/bitrix-proxy.module';
 import { MergeDealsModule } from './merge-deals/merge-deals.module';
+import { DuplicatesModule } from './duplicates/duplicates.module';
+import { AppCacheServiceModule } from '@lib/app-cache';
 
 @Module({
     imports: [
@@ -48,6 +50,11 @@ import { MergeDealsModule } from './merge-deals/merge-deals.module';
         BitrixProxyModule,
         // Объединение сделок: пока заглушка — маршруты и Swagger без логики
         MergeDealsModule,
+        // Центральный кэш: сервисный модуль без контроллера, чтобы роуты
+        // /app-cache не утекли в Swagger приложения (по нему генерится клиент).
+        AppCacheServiceModule,
+        // Поиск дублей клиента для фрейма отдела продаж
+        DuplicatesModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

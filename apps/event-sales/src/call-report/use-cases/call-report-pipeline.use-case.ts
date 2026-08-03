@@ -11,12 +11,15 @@ import {
     CALL_RESUME_TYPE,
     CallAnalysisBitrixService,
     CallReportEntityType,
+    TranscriptionPipelineView,
     TranscriptionRouterService,
     TranscriptionStoreService,
     AiService,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
 import { CallClassifyStepService } from '../services/call-classify-step.service';
+import { CallContextBuilderService } from '../services/call-context-builder.service';
+import { CallReportSettingsService } from '../services/call-report-settings.service';
 
 /** Задача конвейера: один звонок (по сделке или лиду) на обработку. */
 export interface CallReportJobPayload {
@@ -102,6 +105,8 @@ export class CallReportPipelineUseCase {
         private readonly aiService: AiService,
         private readonly llmOrchestrator: LlmOrchestratorService,
         private readonly classifyStep: CallClassifyStepService,
+        private readonly contextBuilder: CallContextBuilderService,
+        private readonly settingsService: CallReportSettingsService,
         private readonly configService: ConfigService,
     ) {
         const model = this.configService.get<string>('CALL_REPORT_LLM_MODEL');
@@ -236,15 +241,24 @@ export class CallReportPipelineUseCase {
         }
         const provider = row.provider ?? 'unknown';
 
+        // Настройки портала (склейка портал → env → дефолт): классификация
+        // и модель первичного анализа управляются из админки без деплоя.
+        const settings = await this.settingsService.resolve(payload.domain);
+
         const classification = await this.classifyStep.run(
             text,
             payload,
             payload.transcriptionId,
+            settings.classifyEnabled,
         );
 
+        // Паспорт звонка (слой 0) — тот же CRM-контекст, что у глубокого
+        // разбора: без него GigaChat судит «холодный/тёплый» вслепую.
+        const passportBlock = await this.buildPassportBlock(row);
         const { resume, recomendation } = await this.runLlmAnalysis(
-            text,
+            passportBlock ? `${passportBlock}\n\n${text}` : text,
             payload,
+            settings.llmModel,
         );
 
         const resumeSaved = await this.saveAiRecord(
@@ -279,6 +293,21 @@ export class CallReportPipelineUseCase {
         };
     }
 
+    /** Паспорт для первичного анализа; любая ошибка → анализ без паспорта. */
+    private async buildPassportBlock(
+        row: TranscriptionPipelineView,
+    ): Promise<string | null> {
+        try {
+            const passport = await this.contextBuilder.build(row);
+            return this.contextBuilder.renderForPrompt(passport);
+        } catch (error) {
+            this.logger.warn(
+                `Паспорт для первичного анализа не собран (строка ${row.id}): ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
     /**
      * Резюме + рекомендации: по умолчанию ОДНИМ объединённым вызовом LLM
      * (провайдер сам откатывается на два вызова при непарсибельном ответе);
@@ -288,11 +317,13 @@ export class CallReportPipelineUseCase {
     private async runLlmAnalysis(
         text: string,
         payload: CallReportJobPayload,
+        modelOverride?: string,
     ): Promise<{ resume: string | null; recomendation: string | null }> {
+        const model = this.resolveLlmModel(modelOverride);
         if (this.combinedAnalysisEnabled) {
             try {
                 return await this.llmOrchestrator.analyzeCall(
-                    this.llmModel,
+                    model,
                     text,
                     payload.domain,
                 );
@@ -303,13 +334,24 @@ export class CallReportPipelineUseCase {
                 return { resume: null, recomendation: null };
             }
         }
-        const resume = await this.runAnalysis('resume', text, payload);
+        const resume = await this.runAnalysis('resume', text, payload, model);
         const recomendation = await this.runAnalysis(
             'recomendation',
             text,
             payload,
+            model,
         );
         return { resume, recomendation };
+    }
+
+    /**
+     * Модель первичного анализа: значение из настроек портала, если оно
+     * из списка поддерживаемых; иначе — глобальная (env → 'gigachat').
+     */
+    private resolveLlmModel(override?: string): LlmModel {
+        return override && LLM_MODELS.includes(override as LlmModel)
+            ? (override as LlmModel)
+            : this.llmModel;
     }
 
     /** Один вид анализа; ошибка не роняет конвейер (транскрипт уже сохранён). */
@@ -317,16 +359,13 @@ export class CallReportPipelineUseCase {
         kind: 'resume' | 'recomendation',
         text: string,
         payload: CallReportJobPayload,
+        model: LlmModel,
     ): Promise<string | null> {
         try {
             return kind === 'resume'
-                ? await this.llmOrchestrator.resume(
-                      this.llmModel,
-                      text,
-                      payload.domain,
-                  )
+                ? await this.llmOrchestrator.resume(model, text, payload.domain)
                 : await this.llmOrchestrator.recomendation(
-                      this.llmModel,
+                      model,
                       text,
                       payload.domain,
                   );

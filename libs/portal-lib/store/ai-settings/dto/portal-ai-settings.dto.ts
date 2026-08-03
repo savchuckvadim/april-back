@@ -141,9 +141,11 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
 
     @ApiProperty({
         description:
-            'Модель глубокого разбора звонка. Здесь оправданна модель ' +
-            'посильнее: именно она формирует оценки и рекомендации.',
-        example: 'cloudru',
+            'Модель VibeCode для глубокого разбора звонка (точное имя из ' +
+            'каталога VibeCode). Здесь оправданна модель посильнее: именно ' +
+            'она формирует оценки и рекомендации. Пусто — модель по ' +
+            'умолчанию (bitrix/bitrixgpt-5.5).',
+        example: 'bitrix/bitrixgpt-5.5',
         type: String,
         nullable: true,
     })
@@ -172,7 +174,8 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
 
     @ApiProperty({
         description:
-            'Начало ночного окна, час 0-23 по таймзоне портала. Окно может ' +
+            'Начало ночного окна, час 0-23 по московскому времени ' +
+            '(таймзону портал не хранит, все клиенты в РФ). Окно может ' +
             'пересекать полночь (например, с 22 до 6).',
         example: 22,
         type: Number,
@@ -181,7 +184,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
     nightStartHour: number | null;
 
     @ApiProperty({
-        description: 'Конец ночного окна, час 0-23 по таймзоне портала.',
+        description: 'Конец ночного окна, час 0-23 по московскому времени.',
         example: 6,
         type: Number,
         nullable: true,
@@ -327,8 +330,10 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     llmModel?: string | null;
 
     @ApiPropertyOptional({
-        description: 'Модель глубокого разбора звонка.',
-        example: 'cloudru',
+        description:
+            'Модель VibeCode для глубокого разбора звонка. Пусто — модель ' +
+            'по умолчанию (bitrix/bitrixgpt-5.5).',
+        example: 'bitrix/bitrixgpt-5.5',
         type: String,
         nullable: true,
     })
@@ -361,7 +366,7 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     nightScanIntervalMinutes?: number | null;
 
     @ApiPropertyOptional({
-        description: 'Начало ночного окна, час 0-23 по таймзоне портала.',
+        description: 'Начало ночного окна, час 0-23 по московскому времени.',
         example: 22,
         type: Number,
         minimum: 0,
@@ -375,7 +380,7 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     nightStartHour?: number | null;
 
     @ApiPropertyOptional({
-        description: 'Конец ночного окна, час 0-23 по таймзоне портала.',
+        description: 'Конец ночного окна, час 0-23 по московскому времени.',
         example: 6,
         type: Number,
         minimum: 0,

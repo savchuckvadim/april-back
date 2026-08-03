@@ -37,7 +37,6 @@ const ANALYSIS_RESPONSE = {
 };
 
 const makeDeps = (options?: {
-    enabled?: string;
     documents?: { kind: string; text: string }[];
     profileMissing?: boolean;
     registryError?: boolean;
@@ -61,19 +60,11 @@ const makeDeps = (options?: {
                   source: 'builtin',
               }),
     };
-    const configService = {
-        get: jest.fn((key: string) =>
-            key === 'CALL_REPORT_DEEP_ANALYSIS_ENABLED'
-                ? options?.enabled
-                : undefined,
-        ),
-    };
     const service = new CallDeepAnalysisService(
         vibeCodeClient as never,
         vibeKeyResolver as never,
         knowledgeContent as never,
         callTypeRegistry as never,
-        configService as never,
     );
     return { service, vibeCodeClient, knowledgeContent, callTypeRegistry };
 };
@@ -188,11 +179,18 @@ describe('CallDeepAnalysisService', () => {
         expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
     });
 
-    it('CALL_REPORT_DEEP_ANALYSIS_ENABLED=0 выключает шаг', async () => {
-        const { service, vibeCodeClient } = makeDeps({ enabled: '0' });
-        const result = await service.run('test.bitrix24.ru', 'алло', 'cold');
+    // Выключатель шага живёт в processor (настройки портала → env → дефолт,
+    // CallReportSettingsService) — см. call-report.processor.spec.
 
-        expect(result).toBeNull();
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+    it('модель из настроек портала уезжает в structuredCompletion', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+        await service.run('test.bitrix24.ru', 'алло', 'cold', undefined, {
+            model: 'bitrix/custom-model',
+        });
+
+        const options = (
+            vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[]
+        )[5];
+        expect(options).toEqual({ model: 'bitrix/custom-model' });
     });
 });

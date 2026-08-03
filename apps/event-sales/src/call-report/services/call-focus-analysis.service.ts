@@ -77,11 +77,13 @@ export class CallFocusAnalysisService {
         private readonly callTypeRegistry: CallTypeRegistryService,
     ) {}
 
+    /** options.model — модель VibeCode из настроек портала (deepAnalysisModel). */
     async run(
         domain: string,
         transcript: string,
         callType: string | null,
         passportBlock?: string,
+        options?: { model?: string },
     ): Promise<AgentCallAnalysisDto | null> {
         if (!transcript.trim()) {
             this.logger.warn(
@@ -100,7 +102,14 @@ export class CallFocusAnalysisService {
 
             const results = await Promise.all(
                 FOCUS_PASSES.map(pass =>
-                    this.runFocus(pass, context, userContent, apiKey, domain),
+                    this.runFocus(
+                        pass,
+                        context,
+                        userContent,
+                        apiKey,
+                        domain,
+                        options?.model,
+                    ),
                 ),
             );
             const byKey = Object.fromEntries(
@@ -121,6 +130,7 @@ export class CallFocusAnalysisService {
                 userContent,
                 apiKey,
                 domain,
+                options?.model,
             );
 
             const merged: Record<string, unknown> = {
@@ -209,6 +219,7 @@ export class CallFocusAnalysisService {
         userContent: string,
         apiKey: string,
         domain: string,
+        model?: string,
     ): Promise<Record<string, unknown> | null> {
         try {
             const parsed = await this.vibeCodeClient.structuredCompletion(
@@ -217,6 +228,7 @@ export class CallFocusAnalysisService {
                 `call_focus_${pass.key}`,
                 pass.schema,
                 apiKey,
+                { model },
             );
             return parsed as Record<string, unknown>;
         } catch (error) {
@@ -234,6 +246,7 @@ export class CallFocusAnalysisService {
         userContent: string,
         apiKey: string,
         domain: string,
+        model?: string,
     ): Promise<Record<string, unknown> | null> {
         const digests = [
             renderFocusDigest('ФОРМА РАЗГОВОРА', byKey.form),
@@ -247,6 +260,7 @@ export class CallFocusAnalysisService {
                 'call_focus_synthesis',
                 FOCUS_SYNTHESIS_SCHEMA,
                 apiKey,
+                { model },
             );
             return parsed as Record<string, unknown>;
         } catch (error) {

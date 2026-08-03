@@ -20,6 +20,8 @@ const makeDeps = (overrides?: {
     noAudio?: boolean;
     classifyFailed?: boolean;
     combinedDisabled?: boolean;
+    /** llmModel из настроек портала (склейка портал → env → дефолт). */
+    portalLlmModel?: string;
 }) => {
     const bitrix = {
         activity: {
@@ -101,6 +103,19 @@ const makeDeps = (overrides?: {
                 : undefined,
         ),
     };
+    // Паспорт звонка (слой 0) для первичного анализа — свой спек у
+    // call-context-builder; здесь только префикс к тексту LLM.
+    const contextBuilder = {
+        build: jest.fn().mockResolvedValue({ certainty: 'rich' }),
+        renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ: тест'),
+    };
+    // Настройки портала: дефолты «как глобально» (свой спек у settings).
+    const settingsService = {
+        resolve: jest.fn().mockResolvedValue({
+            classifyEnabled: true,
+            llmModel: overrides?.portalLlmModel ?? 'gigachat',
+        }),
+    };
     global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)),
@@ -113,9 +128,21 @@ const makeDeps = (overrides?: {
         aiService as never,
         llm as never,
         classifyStep as never,
+        contextBuilder as never,
+        settingsService as never,
         config as never,
     );
-    return { useCase, store, aiService, bitrix, router, llm, classifyStep };
+    return {
+        useCase,
+        store,
+        aiService,
+        bitrix,
+        router,
+        llm,
+        classifyStep,
+        contextBuilder,
+        settingsService,
+    };
 };
 
 describe('CallReportPipelineUseCase', () => {
@@ -137,10 +164,12 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ status: 'done', provider: 'yandex' }),
         );
+        // 4-й аргумент — classifyEnabled из настроек портала.
         expect(classifyStep.run).toHaveBeenCalledWith(
             'текст',
             expect.objectContaining(PAYLOAD),
             '42',
+            true,
         );
         // Резюме+рекомендации — ОДНИМ объединённым вызовом.
         expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
@@ -169,6 +198,42 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ userId: '7' }),
         );
+    });
+
+    it('llmModel из настроек портала уезжает в объединённый вызов', async () => {
+        const { useCase, llm } = makeDeps({ portalLlmModel: 'cloudru' });
+        await useCase.execute(PAYLOAD);
+        expect(llm.analyzeCall).toHaveBeenCalledWith(
+            'cloudru',
+            expect.any(String),
+            'test.bitrix24.ru',
+        );
+    });
+
+    it('мусорная llmModel портала откатывается на глобальную', async () => {
+        const { useCase, llm } = makeDeps({ portalLlmModel: 'нейросеть' });
+        await useCase.execute(PAYLOAD);
+        expect(llm.analyzeCall).toHaveBeenCalledWith(
+            'gigachat',
+            expect.any(String),
+            'test.bitrix24.ru',
+        );
+    });
+
+    it('паспорт звонка префиксуется к тексту первичного LLM-анализа', async () => {
+        const { useCase, llm } = makeDeps();
+        await useCase.execute(PAYLOAD);
+        const sentText = (llm.analyzeCall.mock.calls[0] as string[])[1];
+        expect(sentText).toContain('ПАСПОРТ: тест');
+        expect(sentText).toContain('текст');
+    });
+
+    it('паспорт не собрался — первичный анализ идёт по голому тексту', async () => {
+        const { useCase, llm, contextBuilder } = makeDeps();
+        contextBuilder.build.mockRejectedValue(new Error('crm down'));
+        const result = await useCase.execute(PAYLOAD);
+        expect(result.resumeSaved).toBe(true);
+        expect((llm.analyzeCall.mock.calls[0] as string[])[1]).toBe('текст');
     });
 
     it('CALL_REPORT_COMBINED_ANALYSIS=0 возвращает два раздельных вызова', async () => {

@@ -77,6 +77,10 @@
       "@lib/portal-lib/konstructor/*": ["libs/portal-lib/konstructor/src/*"],
       "@lib/portal-lib/pbx-domain": ["libs/portal-lib/pbx/domain/src"],
       "@lib/portal-lib/pbx-domain/*": ["libs/portal-lib/pbx/domain/src/*"],
+      "@lib/portal-lib/pbx-duplicate": ["libs/portal-lib/pbx/duplicate/src"],
+      "@lib/portal-lib/pbx-duplicate/*": [
+        "libs/portal-lib/pbx/duplicate/src/*"
+      ],
       "@lib/portal-lib/store": ["libs/portal-lib/store"],
       "@lib/portal-lib/store/*": ["libs/portal-lib/store/*"],
       "@lib/portal-lib/builder": ["libs/portal-lib/builder/src"],

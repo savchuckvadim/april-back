@@ -13,6 +13,7 @@ import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-anal
 import { CallContextBuilderService } from '../services/call-context-builder.service';
 import { CallDeepAnalysisService } from '../services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { CallReportSettingsService } from '../services/call-report-settings.service';
 import {
     CallReportAnalyzeStagePayload,
     CallReportJobPayload,
@@ -68,6 +69,7 @@ export class CallReportProcessor {
         private readonly contextBuilder: CallContextBuilderService,
         private readonly analysisIntake: AgentAnalysisIntakeService,
         private readonly transcriptionStore: TranscriptionStoreService,
+        private readonly settingsService: CallReportSettingsService,
     ) {}
 
     /** Имя аналитика в ais-записях и в поле смарта «Имя агента-аналитика». */
@@ -150,6 +152,15 @@ export class CallReportProcessor {
         payload: CallReportJobPayload,
     ): Promise<void> {
         try {
+            // Включение и модель шага — из настроек портала (склейка
+            // портал → env CALL_REPORT_DEEP_ANALYSIS_ENABLED → дефолт).
+            const settings = await this.settingsService.resolve(payload.domain);
+            if (!settings.deepAnalysisEnabled) {
+                this.logger.log(
+                    `Глубокий разбор выключен для ${payload.domain} (настройки/env) — пропуск`,
+                );
+                return;
+            }
             const row =
                 await this.transcriptionStore.findPipelineById(transcriptionId);
             if (!row.text) {
@@ -168,6 +179,7 @@ export class CallReportProcessor {
             const passportBlock = this.contextBuilder.renderForPrompt(passport);
             // Режим разбора: focus — три фокус-вызова + синтез (Фаза 2 плана
             // v2, глубже и точнее, ×1.5 вызовов); иначе — цельный разбор.
+            const model = settings.deepAnalysisModel ?? undefined;
             const analysis =
                 process.env.CALL_REPORT_ANALYSIS_MODE === 'focus'
                     ? await this.focusAnalysis.run(
@@ -175,12 +187,14 @@ export class CallReportProcessor {
                           row.text,
                           callType,
                           passportBlock,
+                          { model },
                       )
                     : await this.deepAnalysis.run(
                           payload.domain,
                           row.text,
                           callType,
                           passportBlock,
+                          { model },
                       );
             if (!analysis) return;
 

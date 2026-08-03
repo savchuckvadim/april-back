@@ -18,6 +18,12 @@ const DEFAULTS = {
  * всё готово к использованию.
  */
 export interface EffectiveCallReportSettings {
+    /**
+     * Главный выключатель портала из БД: false — админ явно выключил
+     * конвейер, true — явно включил (портал сканируется даже без env-списка),
+     * null — в БД не задано (портал живёт по env CALL_REPORT_DOMAINS).
+     */
+    enabled: boolean | null;
     deepAnalysisEnabled: boolean;
     createSmartEnabled: boolean;
     classifyEnabled: boolean;
@@ -83,6 +89,7 @@ export class CallReportSettingsService {
         portal: PortalAiSettingsRecord | null,
     ): EffectiveCallReportSettings {
         return {
+            enabled: portal?.enabled ?? null,
             deepAnalysisEnabled:
                 portal?.deepAnalysisEnabled ??
                 this.envFlag('CALL_REPORT_DEEP_ANALYSIS_ENABLED'),

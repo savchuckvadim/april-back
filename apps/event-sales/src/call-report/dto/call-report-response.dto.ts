@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { InstallCallReportSmartResult } from '@lib/call-lib';
 import { CallReportScanResult } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineResult } from '../use-cases/call-report-pipeline.use-case';
+import { CallRevisionDomainResult } from '../services/call-revision.service';
 
 /** Результат установки смарт-процесса «AI-анализ звонков». */
 export class InstallCallReportSmartResponseDto
@@ -298,4 +299,38 @@ export class AnalyzeCallsResponseDto {
         type: [AnalyzeCallItemDto],
     })
     results: AnalyzeCallItemDto[];
+}
+
+/** Итог ночной ревизии домена (Фаза 3: свод по сущностям). */
+export class ReviseCallsResponseDto implements CallRevisionDomainResult {
+    @ApiProperty({
+        description: 'Домен портала, по которому выполнена ревизия.',
+        example: 'april-garant.bitrix24.ru',
+        type: String,
+    })
+    domain: string;
+
+    @ApiProperty({
+        description:
+            'Сколько сущностей (сделок/лидов) имели разборы звонков в окне ревизии.',
+        example: 7,
+        type: Number,
+    })
+    entitiesTotal: number;
+
+    @ApiProperty({
+        description:
+            'Сколько сущностей отревизировано: свод записан в смарт-элемент и таймлайн.',
+        example: 6,
+        type: Number,
+    })
+    entitiesRevised: number;
+
+    @ApiProperty({
+        description:
+            'Сколько сущностей пропущено из-за ошибок (детали в логах) — попадут в следующий прогон.',
+        example: 1,
+        type: Number,
+    })
+    entitiesFailed: number;
 }

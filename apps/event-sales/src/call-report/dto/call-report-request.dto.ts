@@ -263,3 +263,48 @@ export class AnalyzeCallDto {
     @IsBoolean()
     createSmartItem?: boolean;
 }
+
+/** Ручной запуск ночной ревизии домена (смоук Фазы 3 на ограниченных данных). */
+export class ReviseCallsDto {
+    @ApiProperty({
+        description:
+            'Домен портала Bitrix24, по сущностям которого выполняется ревизия.',
+        example: 'april-garant.bitrix24.ru',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Окно ревизии назад в часах: берутся сущности, у которых за это ' +
+            'время появились разборы звонков. По умолчанию из env ' +
+            'CALL_REPORT_REVISOR_WINDOW_HOURS (24).',
+        example: 24,
+        type: Number,
+        minimum: 1,
+        maximum: 720,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(720)
+    windowHours?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Максимум сущностей (сделок/лидов) за один прогон — защита ' +
+            'LLM-бюджета: на каждую сущность уходит один запрос-ревизия. ' +
+            'По умолчанию из env CALL_REPORT_REVISOR_MAX_ENTITIES (20).',
+        example: 5,
+        type: Number,
+        minimum: 1,
+        maximum: 200,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(200)
+    maxEntities?: number;
+}

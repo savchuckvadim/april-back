@@ -3,8 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib';
-import { envEnabledByDefault } from '@lib/shared';
+import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
+import {
+    CallReportSettingsService,
+    EffectiveCallReportSettings,
+} from '../services/call-report-settings.service';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
+import {
+    CallReportDomainEntry,
+    CallReportDomainRosterService,
+} from './call-report-domain-roster.service';
 
 const LOCK_KEY = 'call-report:scan-lock';
 const LOCK_TTL_SEC = 25 * 60;
@@ -12,9 +20,11 @@ const LOCK_TTL_SEC = 25 * 60;
 /**
  * Планировщик автоконвейера AI-отчётности по звонкам.
  *
- * Каждые 30 минут: реанимация зависших processing (упавший воркер не
- * должен прятать звонок от дедупа навсегда) + скан доменов из env
- * CALL_REPORT_DOMAINS (allowlist пилотных порталов через запятую).
+ * Каждые 30 минут: реанимация зависших processing + обход доменов из
+ * ростера (env CALL_REPORT_DOMAINS ∪ включённые порталы portal_ai_settings).
+ * Параметры каждого домена — из склейки портал → env → дефолт
+ * (CallReportSettingsService): пороги, демо-список, интервалы сканирования
+ * (портал пропускается, пока с lastScanAt не прошёл его интервал).
  *
  * Защита: kill-switch CALL_REPORT_CRON_ENABLED=1, Redis-лок от
  * наложения тиков, ошибка одного домена не роняет цикл
@@ -29,6 +39,9 @@ export class CallReportScheduler implements OnModuleInit {
         private readonly redisService: RedisService,
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly scanUseCase: CallReportScanUseCase,
+        private readonly roster: CallReportDomainRosterService,
+        private readonly settingsService: CallReportSettingsService,
+        private readonly portalAiSettings: PortalAiSettingsService,
     ) {}
 
     /**
@@ -36,11 +49,13 @@ export class CallReportScheduler implements OnModuleInit {
      * Прод-инцидент 2026-07-27: флаг «включали», но контейнеру приезжал
      * другой env (второй env_file перекрывает первый; env_file применяется
      * только при recreate) — тик выходил молча, причину было не разглядеть.
+     * Порталы из БД сюда не попадают намеренно: они читаются на каждом
+     * тике, а не при старте.
      */
     onModuleInit(): void {
         const enabled =
             this.configService.get<string>('CALL_REPORT_CRON_ENABLED') === '1';
-        const domains = this.getDomains();
+        const domains = this.roster.fromEnv();
         const domainsLabel = domains
             .map(entry =>
                 entry.demoUserIds
@@ -50,14 +65,9 @@ export class CallReportScheduler implements OnModuleInit {
             .join(', ');
         this.logger.log(
             `Автоконвейер call-report: cron ${enabled ? 'ВКЛЮЧЁН' : 'ВЫКЛЮЧЕН (CALL_REPORT_CRON_ENABLED!=1)'}` +
-                `, домены: ${domainsLabel || '(пусто)'}` +
-                `, смарт-элементы: ${this.isSmartItemEnabled() ? 'создаются' : 'ВЫКЛЮЧЕНЫ (CALL_REPORT_CRON_CREATE_SMART=0)'}`,
+                `, env-домены: ${domainsLabel || '(пусто)'} + включённые порталы из БД` +
+                `, смарт-элементы по умолчанию: ${this.settingsService.globals().createSmartEnabled ? 'создаются' : 'ВЫКЛЮЧЕНЫ (CALL_REPORT_CRON_CREATE_SMART=0)'}`,
         );
-        if (enabled && !domains.length) {
-            this.logger.warn(
-                'CALL_REPORT_CRON_ENABLED=1, но CALL_REPORT_DOMAINS пуст — тики будут пропускаться',
-            );
-        }
     }
 
     @Cron(CronExpression.EVERY_30_MINUTES)
@@ -68,10 +78,10 @@ export class CallReportScheduler implements OnModuleInit {
             return;
         }
 
-        const domains = this.getDomains();
+        const domains = await this.roster.resolve();
         if (!domains.length) {
             this.logger.warn(
-                'CALL_REPORT_CRON_ENABLED=1, но CALL_REPORT_DOMAINS пуст — скан пропущен',
+                'CALL_REPORT_CRON_ENABLED=1, но домены не заданы ни в CALL_REPORT_DOMAINS, ни в настройках порталов — скан пропущен',
             );
             return;
         }
@@ -93,10 +103,7 @@ export class CallReportScheduler implements OnModuleInit {
             await this.reanimateStale();
             for (const entry of domains) {
                 try {
-                    await this.scanUseCase.execute(entry.domain, {
-                        allowedUserIds: entry.demoUserIds,
-                        createSmartItem: this.isSmartItemEnabled(),
-                    });
+                    await this.scanDomain(entry);
                 } catch (error) {
                     // { telegram: true } — форс-алерт админам (транспорт логгера)
                     this.logger.error(
@@ -110,23 +117,94 @@ export class CallReportScheduler implements OnModuleInit {
         }
     }
 
+    /** Скан одного домена с эффективными настройками его портала. */
+    private async scanDomain(entry: CallReportDomainEntry): Promise<void> {
+        const settings = await this.settingsService.resolve(entry.domain);
+        if (settings.enabled === false) {
+            this.logger.log(
+                `Домен ${entry.domain} выключен в настройках портала — пропуск`,
+            );
+            return;
+        }
+        if (!this.isDueByInterval(settings, new Date())) {
+            return;
+        }
+
+        await this.scanUseCase.execute(entry.domain, {
+            minDurationSec: settings.minDurationSec,
+            windowHours: settings.windowHours,
+            maxPerRun: settings.maxPerRun,
+            // ДЕМО-список портала главнее env-суффикса — та же склейка,
+            // что и у остальных настроек (портал → env).
+            allowedUserIds: settings.allowedUserIds ?? entry.demoUserIds,
+            createSmartItem: settings.createSmartEnabled,
+            salesOnly: settings.salesOnly,
+        });
+
+        if (entry.portalId != null) {
+            await this.portalAiSettings
+                .markScanned(entry.portalId)
+                .catch((error: Error) =>
+                    this.logger.warn(
+                        `lastScanAt портала ${entry.portalId} не записан: ${error.message}`,
+                    ),
+                );
+        }
+    }
+
     /**
-     * Доводить ли звонок до карточки в Битриксе. Включено по умолчанию:
-     * без этого cron доходил только до БД и таймлайна, а смарт-элементы
-     * появлялись исключительно после ручного прогона с createSmartItem
-     * (прод-расхождение 31.07.2026). Выключается CALL_REPORT_CRON_CREATE_SMART=0.
+     * Пора ли сканировать портал: интервал не задан — на каждом тике;
+     * задан — только когда с lastScanAt прошло не меньше интервала.
+     * В ночном окне действует ночной интервал (звонков нет — тики реже).
      */
-    private isSmartItemEnabled(): boolean {
-        return envEnabledByDefault(
-            this.configService.get<string>('CALL_REPORT_CRON_CREATE_SMART'),
+    private isDueByInterval(
+        settings: EffectiveCallReportSettings,
+        now: Date,
+    ): boolean {
+        const interval = this.currentIntervalMinutes(settings, now);
+        if (interval == null || settings.lastScanAt == null) return true;
+        return (
+            now.getTime() - settings.lastScanAt.getTime() >= interval * 60_000
+        );
+    }
+
+    /** Действующий интервал: ночной внутри ночного окна, иначе дневной. */
+    private currentIntervalMinutes(
+        settings: EffectiveCallReportSettings,
+        now: Date,
+    ): number | null {
+        const { nightStartHour, nightEndHour, nightScanIntervalMinutes } =
+            settings;
+        if (
+            nightStartHour != null &&
+            nightEndHour != null &&
+            nightScanIntervalMinutes != null
+        ) {
+            const hour = this.moscowHour(now);
+            // Окно может пересекать полночь: 22-6 значит «с 22 до 6 утра».
+            const isNight =
+                nightStartHour <= nightEndHour
+                    ? hour >= nightStartHour && hour < nightEndHour
+                    : hour >= nightStartHour || hour < nightEndHour;
+            if (isNight) return nightScanIntervalMinutes;
+        }
+        return settings.scanIntervalMinutes;
+    }
+
+    /** Час суток по Москве — все клиенты в РФ, таймзону портал не хранит. */
+    private moscowHour(now: Date): number {
+        return Number(
+            new Intl.DateTimeFormat('ru-RU', {
+                hour: 'numeric',
+                hour12: false,
+                timeZone: 'Europe/Moscow',
+            }).format(now),
         );
     }
 
     /** Зависшие processing старше порога → error (звонок снова виден дедупу). */
     private async reanimateStale(): Promise<void> {
-        const staleMinutes = Number(
-            this.configService.get<string>('CALL_REPORT_STALE_MINUTES') ?? 90,
-        );
+        const staleMinutes = this.settingsService.globals().staleMinutes;
         const olderThan = new Date(Date.now() - staleMinutes * 60_000);
         try {
             const count =
@@ -145,31 +223,5 @@ export class CallReportScheduler implements OnModuleInit {
                 { telegram: true },
             );
         }
-    }
-
-    /**
-     * Парсит CALL_REPORT_DOMAINS. Формат записи (через запятую):
-     * `domain` — полный режим (весь отдел продаж);
-     * `domain:222|323` — ДЕМО: анализировать только этих сотрудников
-     * (bitrix-id, через |), поверх фильтра ОП.
-     */
-    private getDomains(): { domain: string; demoUserIds?: number[] }[] {
-        const raw = this.configService.get<string>('CALL_REPORT_DOMAINS') ?? '';
-        return raw
-            .split(',')
-            .map(entry => entry.trim())
-            .filter(Boolean)
-            .map(entry => {
-                const [domain, users] = entry.split(':');
-                const demoUserIds = users
-                    ?.split('|')
-                    .map(id => Number(id.trim()))
-                    .filter(id => Number.isFinite(id) && id > 0);
-                return {
-                    domain: domain.trim(),
-                    demoUserIds: demoUserIds?.length ? demoUserIds : undefined,
-                };
-            })
-            .filter(entry => Boolean(entry.domain));
     }
 }

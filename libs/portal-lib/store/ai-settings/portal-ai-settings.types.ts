@@ -43,7 +43,7 @@ export interface PortalAiSettingsRecord {
     scanIntervalMinutes: number | null;
     /** Интервал в ночные часы (основная работа дешевле ночью). */
     nightScanIntervalMinutes: number | null;
-    /** Начало ночного окна, час 0-23 по таймзоне портала. */
+    /** Начало ночного окна, час 0-23 по московскому времени. */
     nightStartHour: number | null;
     /** Конец ночного окна, час 0-23. Окно может пересекать полночь. */
     nightEndHour: number | null;

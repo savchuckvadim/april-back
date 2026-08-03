@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
-import { envEnabledByDefault } from '@lib/shared';
 import { KnowledgeContentService } from '@lib/ai-rag';
 import { CallTypeDefinition, CallTypeRegistryService } from '@lib/call-lib';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
@@ -35,39 +33,36 @@ const FALLBACK_CALL_TYPE = 'other';
  * RAG-анализ и базовый элемент смарта уже сохранены, разбор дольётся
  * повторным прогоном (writer работает upsert-ом по xmlId).
  *
- * Env: CALL_REPORT_DEEP_ANALYSIS_ENABLED (0 — выключить шаг).
+ * Включение шага решает вызывающий код (processor) по настройкам портала
+ * (CallReportSettingsService: портал → env CALL_REPORT_DEEP_ANALYSIS_ENABLED
+ * → дефолт) — сервис своего выключателя не имеет.
  */
 @Injectable()
 export class CallDeepAnalysisService {
     private readonly logger = new Logger(CallDeepAnalysisService.name);
-    private readonly enabled: boolean;
 
     constructor(
         private readonly vibeCodeClient: VibeCodeClient,
         private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly knowledgeContent: KnowledgeContentService,
         private readonly callTypeRegistry: CallTypeRegistryService,
-        configService: ConfigService,
-    ) {
-        this.enabled = envEnabledByDefault(
-            configService.get<string>('CALL_REPORT_DEEP_ANALYSIS_ENABLED'),
-        );
-    }
+    ) {}
 
     /**
-     * Разбор одного звонка. null — шаг выключён или не удался;
-     * вызывающий код обязан продолжить работу без разбора.
+     * Разбор одного звонка. null — шаг не удался; вызывающий код обязан
+     * продолжить работу без разбора.
      * passportBlock — «паспорт звонка» слоя 0 (CRM-контекст/направление/
      * история, CallContextBuilderService.renderForPrompt); опционален —
      * без него разбор работает как раньше.
+     * options.model — модель VibeCode из настроек портала (deepAnalysisModel).
      */
     async run(
         domain: string,
         transcript: string,
         callType: string | null,
         passportBlock?: string,
+        options?: { model?: string },
     ): Promise<AgentCallAnalysisDto | null> {
-        if (!this.enabled) return null;
         if (!transcript.trim()) {
             this.logger.warn(
                 `Пустой транскрипт (${domain}) — глубокий разбор пропущен`,
@@ -88,6 +83,7 @@ export class CallDeepAnalysisService {
                 'call_deep_analysis',
                 CALL_DEEP_ANALYSIS_SCHEMA,
                 apiKey,
+                { model: options?.model },
             );
 
             const dto = plainToInstance(AgentCallAnalysisDto, {

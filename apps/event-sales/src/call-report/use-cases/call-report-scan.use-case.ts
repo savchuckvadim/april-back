@@ -34,6 +34,12 @@ export interface CallReportScanOptions {
      * доводит звонок до карточки в Битриксе, а не только до БД.
      */
     createSmartItem?: boolean;
+    /**
+     * Фильтр «только отдел продаж» из настроек портала (склейка портал →
+     * env уже сделана CallReportSettingsService); без него — глобальный
+     * env CALL_REPORT_SALES_ONLY.
+     */
+    salesOnly?: boolean;
 }
 
 export interface CallReportScanResult {
@@ -73,8 +79,14 @@ export class CallReportScanUseCase {
      * null — фильтр недоступен/выключен: работаем без него (fail-open),
      * чтобы сбой department.get не останавливал пилот; факт пишется в лог.
      */
-    private async getSalesUserIds(domain: string): Promise<Set<number> | null> {
-        if (this.configService.get<string>('CALL_REPORT_SALES_ONLY') === '0') {
+    private async getSalesUserIds(
+        domain: string,
+        salesOnlyOverride?: boolean,
+    ): Promise<Set<number> | null> {
+        const salesOnly =
+            salesOnlyOverride ??
+            this.configService.get<string>('CALL_REPORT_SALES_ONLY') !== '0';
+        if (!salesOnly) {
             return null;
         }
         try {
@@ -143,7 +155,10 @@ export class CallReportScanUseCase {
         };
 
         // Анализируем только реальных менеджеров отдела продаж.
-        const salesUserIds = await this.getSalesUserIds(domain);
+        const salesUserIds = await this.getSalesUserIds(
+            domain,
+            options?.salesOnly,
+        );
         const salesRows = salesUserIds
             ? rows.filter(row => {
                   const isSales = salesUserIds.has(Number(row.PORTAL_USER_ID));

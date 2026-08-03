@@ -59,6 +59,13 @@ const makeDeps = () => {
     const focusAnalysis = {
         run: jest.fn().mockResolvedValue({ callType: 'cold', score: 8 }),
     };
+    // Настройки портала: глубокий разбор включён, модель не переопределена.
+    const settingsService = {
+        resolve: jest.fn().mockResolvedValue({
+            deepAnalysisEnabled: true,
+            deepAnalysisModel: null,
+        }),
+    };
     const processor = new CallReportProcessor(
         pipeline as never,
         dispatcher as never,
@@ -68,6 +75,7 @@ const makeDeps = () => {
         contextBuilder as never,
         analysisIntake as never,
         transcriptionStore as never,
+        settingsService as never,
     );
     return {
         processor,
@@ -78,6 +86,7 @@ const makeDeps = () => {
         contextBuilder,
         analysisIntake,
         transcriptionStore,
+        settingsService,
     };
 };
 
@@ -152,17 +161,51 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
-        // Четвёртый аргумент — «паспорт звонка» слоя 0 (контекст CRM).
+        // Четвёртый аргумент — «паспорт звонка» слоя 0 (контекст CRM),
+        // пятый — модель из настроек портала (не переопределена).
         expect(deepAnalysis.run).toHaveBeenCalledWith(
             'test.bitrix24.ru',
             'алло, здравствуйте',
             'cold',
             'КОНТЕКСТ ИЗ CRM: тест',
+            { model: undefined },
         );
         expect(analysisIntake.intake).toHaveBeenCalledWith(
             '42',
             'call-report-analyzer',
             expect.objectContaining({ callType: 'cold' }),
+        );
+    });
+
+    it('deepAnalysisEnabled=false в настройках портала пропускает разбор', async () => {
+        const { processor, deepAnalysis, analysisIntake, settingsService } =
+            makeDeps();
+        settingsService.resolve.mockResolvedValue({
+            deepAnalysisEnabled: false,
+            deepAnalysisModel: null,
+        });
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(deepAnalysis.run).not.toHaveBeenCalled();
+        expect(analysisIntake.intake).not.toHaveBeenCalled();
+    });
+
+    it('deepAnalysisModel из настроек портала уезжает в разбор', async () => {
+        const { processor, deepAnalysis, settingsService } = makeDeps();
+        settingsService.resolve.mockResolvedValue({
+            deepAnalysisEnabled: true,
+            deepAnalysisModel: 'bitrix/custom-model',
+        });
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(deepAnalysis.run).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            { model: 'bitrix/custom-model' },
         );
     });
 

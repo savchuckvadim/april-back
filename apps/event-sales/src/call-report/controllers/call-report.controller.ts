@@ -3,16 +3,22 @@ import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InstallCallReportSmartUseCase } from '@lib/call-lib';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { CallReportAnalyzeUseCase } from '../use-cases/call-report-analyze.use-case';
+import { CallRevisionService } from '../services/call-revision.service';
 import {
     AnalyzeCallDto,
     InstallCallReportSmartDto,
+    ReviseCallsDto,
     ScanCallsDto,
 } from '../dto/call-report-request.dto';
 import {
     AnalyzeCallsResponseDto,
     CallReportScanResponseDto,
     InstallCallReportSmartResponseDto,
+    ReviseCallsResponseDto,
 } from '../dto/call-report-response.dto';
+
+const REVISOR_DEFAULT_WINDOW_HOURS = 24;
+const REVISOR_DEFAULT_MAX_ENTITIES = 20;
 
 /**
  * AI-отчётность по звонкам: установка смарта-витрины, ручной скан
@@ -25,6 +31,7 @@ export class CallReportController {
         private readonly installSmartUseCase: InstallCallReportSmartUseCase,
         private readonly scanUseCase: CallReportScanUseCase,
         private readonly analyzeUseCase: CallReportAnalyzeUseCase,
+        private readonly revisionService: CallRevisionService,
     ) {}
 
     @Post('install-smart')
@@ -101,5 +108,44 @@ export class CallReportController {
         @Body() dto: AnalyzeCallDto,
     ): Promise<AnalyzeCallsResponseDto> {
         return this.analyzeUseCase.execute(dto);
+    }
+
+    @Post('revise')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Ночная ревизия по сущностям (синхронно, ручной запуск)',
+        description:
+            'Второй такт анализа (Фаза 3): для каждой сделки/лида с разборами ' +
+            'звонков за окно собирает свежие разборы + историю + паспорт CRM, ' +
+            'запрашивает LLM-свод (невыполненные обещания, рекомендации по ' +
+            'сделке, риски) и записывает его в последний смарт-элемент и ' +
+            'таймлайн сущности. Ручной аналог ночного крона ' +
+            'CallRevisionScheduler (23:30 МСК) — для смоука на ограниченных ' +
+            'данных; выполняется синхронно, на сущность уходит один LLM-запрос.',
+    })
+    @ApiBody({
+        type: ReviseCallsDto,
+        description: 'Домен и границы прогона (окно, лимит сущностей).',
+    })
+    @ApiOkResponse({
+        type: ReviseCallsResponseDto,
+        description:
+            'Статистика ревизии: сущностей найдено/обработано/с ошибками.',
+    })
+    async revise(@Body() dto: ReviseCallsDto): Promise<ReviseCallsResponseDto> {
+        const to = new Date();
+        const from = new Date(
+            to.getTime() -
+                (dto.windowHours ?? REVISOR_DEFAULT_WINDOW_HOURS) *
+                    60 *
+                    60 *
+                    1000,
+        );
+        return this.revisionService.runForDomain(
+            dto.domain,
+            from,
+            to,
+            dto.maxEntities ?? REVISOR_DEFAULT_MAX_ENTITIES,
+        );
     }
 }

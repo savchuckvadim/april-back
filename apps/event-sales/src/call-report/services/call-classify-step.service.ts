@@ -64,12 +64,17 @@ export class CallClassifyStepService {
         );
     }
 
+    /**
+     * enabledOverride — включённость из настроек портала (склейка портал →
+     * env уже сделана CallReportSettingsService); без него — глобальный env.
+     */
     async run(
         text: string,
         payload: CallReportJobPayload,
         transcriptionId: string,
+        enabledOverride?: boolean,
     ): Promise<CallClassificationResultDto | null> {
-        if (!this.enabled) return null;
+        if (!(enabledOverride ?? this.enabled)) return null;
         try {
             // Реестр типов (встроенные + общие/клиентские из базы знаний):
             // enum схемы и каталог типов в промпте строятся из него.

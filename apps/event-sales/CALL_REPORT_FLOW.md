@@ -63,11 +63,21 @@ Bitrix телефония ──► cron 30 мин ──► сканер voximp
 Шаг за шагом, с «зачем»:
 
 1. **Cron каждые 30 минут** (`CallReportScheduler`). Kill-switch
-   `CALL_REPORT_CRON_ENABLED=1`, домены — allowlist `CALL_REPORT_DOMAINS`
-   (мультипортальность: каждый домен → свой `PBXService.init`, ошибка одного
-   не роняет цикл). Redis-лок против наложения тиков. Перед сканом —
-   **реанимация**: строки `processing` старше `CALL_REPORT_STALE_MINUTES`
-   переводятся в `error`, иначе упавший воркер навсегда спрятал бы звонок.
+   `CALL_REPORT_CRON_ENABLED=1`. Домены — ростер
+   (`CallReportDomainRosterService`, с 03.08.2026): env `CALL_REPORT_DOMAINS`
+   (пилоты/аварийный fallback) ∪ порталы с `enabled=true` в
+   `portal_ai_settings` — штатное включение клиента делается из админки, без
+   деплоя. Параметры каждого домена — склейка **портал → env → дефолт**
+   (`CallReportSettingsService`): пороги скана, демо-список
+   `allowedUserIds`, `createSmartEnabled`, интервалы (`scanIntervalMinutes`
+   + ночное окно `nightStartHour..nightEndHour` с ночным интервалом; портал
+   пропускается, пока с `lastScanAt` не прошёл интервал; после успешного
+   скана планировщик пишет `lastScanAt`). `enabled=false` в БД выключает
+   портал даже из env-списка. Мультипортальность: каждый домен → свой
+   `PBXService.init`, ошибка одного не роняет цикл. Redis-лок против
+   наложения тиков. Перед сканом — **реанимация**: строки `processing`
+   старше `CALL_REPORT_STALE_MINUTES` переводятся в `error`, иначе упавший
+   воркер навсегда спрятал бы звонок.
 
 2. **Сканер** (`CallReportScanUseCase` + `VoximplantCallsService`):
    `voximplant.statistic.get` с фильтром `'>CALL_DURATION' >=
@@ -173,8 +183,28 @@ Bitrix телефония ──► cron 30 мин ──► сканер voximp
 
     Env: `CALL_REPORT_DEEP_ANALYSIS_ENABLED=0` выключает шаг.
 
+11. **Ночной РЕВИЗОР** (`CallRevisionService` + `CallRevisionScheduler`,
+    Фаза 3 Analysis v2, с 03.08.2026) — второй такт двухтактной модели:
+    днём каждый звонок разбирается сам по себе, в 23:30 МСК ревизор
+    проходит по **сущностям** (сделкам/лидам), у которых за окно
+    (`CALL_REPORT_REVISOR_WINDOW_HOURS`, 24ч) появились done-разборы. Для
+    каждой сущности: паспорт CRM + выжимки свежих разборов (agent-analysis
+    из `ais.user_result`, fallback — gigachat-резюме) + история прошлых
+    звонков → один strict-JSON запрос VibeCode
+    (`call-revision.contract.ts`): сводка по клиенту, **невыполненные
+    обещания** (обещали в прошлых звонках — в свежих ни слова),
+    рекомендации ПО СДЕЛКЕ, riskFlags, coachingPriority. Запись:
+    writer-upsert ПОСЛЕДНЕГО смарт-элемента сущности (рекомендации + риски
+    + coaching) и коммент «📋 Ночная ревизия по клиенту» в таймлайн
+    сделки/лида. Opt-in: `CALL_REPORT_REVISOR_ENABLED=1` (по умолчанию
+    выключен — на сущность уходит дополнительный LLM-запрос), лимит
+    `CALL_REPORT_REVISOR_MAX_ENTITIES` (20) — хвост уходит в следующий
+    прогон. Ошибка сущности/домена не роняет обход. Накопительные профили
+    менеджера/клиента — следующий шаг Фазы 3 (3.1).
+
 Ручные ручки (смоук/наполнение до включения крона): `POST /call-report/scan`,
-`POST /call-report/analyze`, `POST /call-report/install-smart`.
+`POST /call-report/analyze`, `POST /call-report/revise` (ручной прогон
+ревизора на ограниченных данных), `POST /call-report/install-smart`.
 
 ## 4. Agent API (apps/event-sales/src/agent-gate) — внешний API, не обязательный
 

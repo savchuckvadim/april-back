@@ -22,11 +22,14 @@ import { CallContextBuilderService } from './services/call-context-builder.servi
 import { CallDeepAnalysisService } from './services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from './services/call-focus-analysis.service';
 import { CallReportSettingsService } from './services/call-report-settings.service';
+import { CallRevisionService } from './services/call-revision.service';
 import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
 import { CallReportProcessor } from './queue/call-report.processor';
+import { CallReportDomainRosterService } from './cron/call-report-domain-roster.service';
 import { CallReportScheduler } from './cron/call-report.scheduler';
+import { CallRevisionScheduler } from './cron/call-revision.scheduler';
 
 /**
  * AI-отчётность по звонкам (внутренний контур):
@@ -73,11 +76,15 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
         CallDeepAnalysisService,
         CallFocusAnalysisService,
         CallReportSettingsService,
+        CallRevisionService,
         CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
         CallReportScanUseCase,
         CallReportProcessor,
+        CallReportDomainRosterService,
         CallReportScheduler,
+        // Ночной ревизор (Фаза 3): свод по сущностям в 23:30 МСК
+        CallRevisionScheduler,
     ],
 })
 export class CallReportModule {}

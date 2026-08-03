@@ -171,6 +171,10 @@ export class VibeCodeClient {
         schemaName: string,
         schema: Record<string, unknown>,
         apiKey: string,
+        options?: {
+            /** Модель VibeCode вместо дефолтной (например, из настроек портала). */
+            model?: string;
+        },
     ): Promise<unknown> {
         return this.chatCompletionJson(
             systemPrompt,
@@ -178,6 +182,7 @@ export class VibeCodeClient {
             schemaName,
             schema,
             apiKey,
+            options?.model,
         );
     }
 
@@ -188,9 +193,10 @@ export class VibeCodeClient {
         schemaName: string,
         schema: Record<string, unknown>,
         apiKey: string,
+        model?: string,
     ): Promise<unknown> {
         const body = {
-            model: ANALYSIS_MODEL,
+            model: model?.trim() || ANALYSIS_MODEL,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userContent },
