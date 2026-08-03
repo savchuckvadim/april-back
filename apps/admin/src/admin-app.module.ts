@@ -27,6 +27,7 @@ import { AdminGarantPackageModule } from '@lib/garant/package';
 import { AdminGarantProfPriceModule } from '@lib/garant/price';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
 import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
+import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 
@@ -67,6 +68,9 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         AdminGarantProfPriceModule,
         ProviderAdminModule,
         PortalKeysAdminModule,
+        // Настройки AI-конвейера на портал (пороги, модели, расписание).
+        // Незаданные значения падают в глобальные env приложения.
+        PortalAiSettingsAdminModule,
         // Маркетплейс «Менеджер Гарант»: модерация заявок на подключение
         // (approve/block, прогресс установки) — этап 3 онбординга.
         MarketplaceModerationModule,

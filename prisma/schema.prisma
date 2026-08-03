@@ -652,6 +652,11 @@ model Portal {
     nestWebhooksKey                String?                          @db.Text
     nestScheduleKey                String?                          @db.Text
     vibeKey                        String?                          @db.Text
+    // Собственные креды LLM клиента: llmKey шифруется на стороне Nest,
+    // baseUrl и имя модели — открытые значения рядом с ключом
+    llmKey                         String?                          @db.Text
+    llmBaseUrl                     String?                          @db.Text
+    llmModelName                   String?                          @db.Text
     // Маркетплейс: идентичность и допуск портала (member_id хранится ОТКРЫТО — не шифровать)
     member_id                      String?                          @unique(map: "portals_member_id_unique") @db.VarChar(255)
     source                         String                           @default("legacy") @db.VarChar(255)
@@ -688,9 +693,56 @@ model Portal {
     portal_invites                 portal_invites[]
     appCaches                      AppCache[]
     shareLinks                     ShareLink[]
+    aiSettings                     PortalAiSettings?
 
     @@index([client_id], map: "portals_client_id_foreign")
     @@map("portals")
+}
+
+/// Настройки AI-отчётности по звонкам на конкретный портал.
+/// NULL в любом поле = «на портале не задано», значение берётся из
+/// глобальных env приложения (CALL_REPORT_*). Поэтому здесь нет default —
+/// смысловые дефолты живут в коде резолвера, а не в БД.
+model PortalAiSettings {
+    id        String    @id @db.Char(36)
+    portal_id BigInt    @unique(map: "portal_ai_settings_portal_unique") @db.UnsignedBigInt
+    domain    String    @db.VarChar(255)
+    createdAt DateTime? @map("created_at") @db.Timestamp(0)
+    updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+    // Тумблеры
+    enabled             Boolean? @map("enabled")
+    deepAnalysisEnabled Boolean? @map("deep_analysis_enabled")
+    createSmartEnabled  Boolean? @map("create_smart_enabled")
+    classifyEnabled     Boolean? @map("classify_enabled")
+    salesOnly           Boolean? @map("sales_only")
+
+    // Пороги отбора звонков
+    minDurationSec Int? @map("min_duration_sec")
+    windowHours    Int? @map("window_hours")
+    maxPerRun      Int? @map("max_per_run")
+    staleMinutes   Int? @map("stale_minutes")
+
+    // Модели
+    llmModel          String? @map("llm_model") @db.VarChar(255)
+    deepAnalysisModel String? @map("deep_analysis_model") @db.VarChar(255)
+
+    // Частота обработки портала: крон тикает часто, портал пропускается,
+    // пока с lastScanAt не прошло его интервала
+    scanIntervalMinutes      Int?      @map("scan_interval_minutes")
+    nightScanIntervalMinutes Int?      @map("night_scan_interval_minutes")
+    nightStartHour           Int?      @map("night_start_hour") @db.UnsignedTinyInt
+    nightEndHour             Int?      @map("night_end_hour") @db.UnsignedTinyInt
+    lastScanAt               DateTime? @map("last_scan_at") @db.Timestamp(0)
+
+    /// ДЕМО-режим: bitrix-id сотрудников, чьи звонки анализируем
+    allowedUserIds Json? @map("allowed_user_ids")
+    /// Параметры, которым не нужна отдельная колонка (без миграций)
+    settings       Json?
+
+    portal Portal @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_ai_settings_portal_id_foreign")
+
+    @@map("portal_ai_settings")
 }
 
 model price_row_cells {

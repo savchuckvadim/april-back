@@ -167,6 +167,9 @@ export class PortalPrismaRepository implements PortalRepository {
                 nestWebhooksKey: true,
                 nestScheduleKey: true,
                 vibeKey: true,
+                llmKey: true,
+                llmBaseUrl: true,
+                llmModelName: true,
             },
         });
         return result;

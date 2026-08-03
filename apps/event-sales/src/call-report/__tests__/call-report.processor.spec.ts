@@ -48,11 +48,24 @@ const makeDeps = () => {
             .fn()
             .mockResolvedValue({ id: '42', text: 'алло, здравствуйте' }),
     };
+    const contextBuilder = {
+        build: jest.fn().mockResolvedValue({
+            certainty: 'rich',
+            history: [],
+            identity: [],
+        }),
+        renderForPrompt: jest.fn().mockReturnValue('КОНТЕКСТ ИЗ CRM: тест'),
+    };
+    const focusAnalysis = {
+        run: jest.fn().mockResolvedValue({ callType: 'cold', score: 8 }),
+    };
     const processor = new CallReportProcessor(
         pipeline as never,
         dispatcher as never,
         baseItem as never,
         deepAnalysis as never,
+        focusAnalysis as never,
+        contextBuilder as never,
         analysisIntake as never,
         transcriptionStore as never,
     );
@@ -62,6 +75,7 @@ const makeDeps = () => {
         dispatcher,
         baseItem,
         deepAnalysis,
+        contextBuilder,
         analysisIntake,
         transcriptionStore,
     };
@@ -138,10 +152,12 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
+        // Четвёртый аргумент — «паспорт звонка» слоя 0 (контекст CRM).
         expect(deepAnalysis.run).toHaveBeenCalledWith(
             'test.bitrix24.ru',
             'алло, здравствуйте',
             'cold',
+            'КОНТЕКСТ ИЗ CRM: тест',
         );
         expect(analysisIntake.intake).toHaveBeenCalledWith(
             '42',

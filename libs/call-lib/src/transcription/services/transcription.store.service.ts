@@ -119,6 +119,27 @@ export class TranscriptionStoreService {
         return new Set(busy);
     }
 
+    /**
+     * История звонков той же CRM-сущности (паспорт звонка глубокого
+     * разбора): последние done-строки, новые первыми, без текущей.
+     */
+    async findRecentByEntity(
+        domain: string,
+        entityType: string,
+        entityId: string,
+        excludeId: string | null,
+        take = 3,
+    ): Promise<TranscriptionPipelineView[]> {
+        const rows = await this.transcriptionRepository.findRecentByEntity(
+            domain,
+            entityType,
+            entityId,
+            excludeId,
+            take,
+        );
+        return rows.map(row => this.toPipelineView(row));
+    }
+
     /** Зависшие processing старше порога переводит в error (реанимация). */
     async reanimateStaleProcessing(olderThan: Date): Promise<number> {
         return this.transcriptionRepository.reanimateStaleProcessing(olderThan);

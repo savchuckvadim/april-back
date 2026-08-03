@@ -12,7 +12,10 @@ export type PortalKeyName =
     | 'nestServiceKey'
     | 'nestWebhooksKey'
     | 'nestScheduleKey'
-    | 'vibeKey';
+    | 'vibeKey'
+    | 'llmKey'
+    | 'llmBaseUrl'
+    | 'llmModelName';
 
 /**
  * Runtime-список имён ключей. Единый источник правды для:
@@ -28,6 +31,9 @@ export const PORTAL_KEY_NAMES = [
     'nestWebhooksKey',
     'nestScheduleKey',
     'vibeKey',
+    'llmKey',
+    'llmBaseUrl',
+    'llmModelName',
 ] as const satisfies readonly PortalKeyName[];
 
 /** Набор всех ключей портала (в открытом или зашифрованном виде). */

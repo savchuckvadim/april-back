@@ -205,6 +205,30 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         });
     }
 
+    /**
+     * История звонков той же CRM-сущности (для «паспорта звонка» глубокого
+     * разбора): последние done-строки, новые первыми, без текущей.
+     */
+    async findRecentByEntity(
+        domain: string,
+        entityType: string,
+        entityId: string,
+        excludeId: string | null,
+        take: number,
+    ): Promise<Transcription[]> {
+        return this.prisma.transcription.findMany({
+            where: {
+                status: 'done',
+                domain,
+                entity_type: entityType,
+                entity_id: entityId,
+                ...(excludeId ? { id: { not: BigInt(excludeId) } } : {}),
+            },
+            orderBy: { id: 'desc' },
+            take,
+        });
+    }
+
     async findDonePipelineInPeriod(
         domain: string,
         from: Date,

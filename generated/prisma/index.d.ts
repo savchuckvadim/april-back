@@ -184,6 +184,14 @@ export type portal_measure = $Result.DefaultSelection<Prisma.$portal_measurePayl
  */
 export type Portal = $Result.DefaultSelection<Prisma.$PortalPayload>
 /**
+ * Model PortalAiSettings
+ * Настройки AI-отчётности по звонкам на конкретный портал.
+ * NULL в любом поле = «на портале не задано», значение берётся из
+ * глобальных env приложения (CALL_REPORT_*). Поэтому здесь нет default —
+ * смысловые дефолты живут в коде резолвера, а не в БД.
+ */
+export type PortalAiSettings = $Result.DefaultSelection<Prisma.$PortalAiSettingsPayload>
+/**
  * Model price_row_cells
  * 
  */
@@ -1053,6 +1061,16 @@ export class PrismaClient<
     * ```
     */
   get portal(): Prisma.PortalDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portalAiSettings`: Exposes CRUD operations for the **PortalAiSettings** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PortalAiSettings
+    * const portalAiSettings = await prisma.portalAiSettings.findMany()
+    * ```
+    */
+  get portalAiSettings(): Prisma.PortalAiSettingsDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.price_row_cells`: Exposes CRUD operations for the **price_row_cells** model.
@@ -2067,6 +2085,7 @@ export namespace Prisma {
     portal_contracts: 'portal_contracts',
     portal_measure: 'portal_measure',
     Portal: 'Portal',
+    PortalAiSettings: 'PortalAiSettings',
     price_row_cells: 'price_row_cells',
     rq_counter: 'rq_counter',
     rqs: 'rqs',
@@ -2139,7 +2158,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4384,6 +4403,72 @@ export namespace Prisma {
           count: {
             args: Prisma.PortalCountArgs<ExtArgs>
             result: $Utils.Optional<PortalCountAggregateOutputType> | number
+          }
+        }
+      }
+      PortalAiSettings: {
+        payload: Prisma.$PortalAiSettingsPayload<ExtArgs>
+        fields: Prisma.PortalAiSettingsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PortalAiSettingsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PortalAiSettingsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>
+          }
+          findFirst: {
+            args: Prisma.PortalAiSettingsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PortalAiSettingsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>
+          }
+          findMany: {
+            args: Prisma.PortalAiSettingsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>[]
+          }
+          create: {
+            args: Prisma.PortalAiSettingsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>
+          }
+          createMany: {
+            args: Prisma.PortalAiSettingsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PortalAiSettingsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>
+          }
+          update: {
+            args: Prisma.PortalAiSettingsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>
+          }
+          deleteMany: {
+            args: Prisma.PortalAiSettingsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PortalAiSettingsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PortalAiSettingsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAiSettingsPayload>
+          }
+          aggregate: {
+            args: Prisma.PortalAiSettingsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortalAiSettings>
+          }
+          groupBy: {
+            args: Prisma.PortalAiSettingsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PortalAiSettingsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PortalAiSettingsCountArgs<ExtArgs>
+            result: $Utils.Optional<PortalAiSettingsCountAggregateOutputType> | number
           }
         }
       }
@@ -8081,6 +8166,7 @@ export namespace Prisma {
     portal_contracts?: portal_contractsOmit
     portal_measure?: portal_measureOmit
     portal?: PortalOmit
+    portalAiSettings?: PortalAiSettingsOmit
     price_row_cells?: price_row_cellsOmit
     rq_counter?: rq_counterOmit
     rqs?: rqsOmit
@@ -44118,6 +44204,9 @@ export namespace Prisma {
     nestWebhooksKey: string | null
     nestScheduleKey: string | null
     vibeKey: string | null
+    llmKey: string | null
+    llmBaseUrl: string | null
+    llmModelName: string | null
     member_id: string | null
     source: string | null
     approval_status: string | null
@@ -44144,6 +44233,9 @@ export namespace Prisma {
     nestWebhooksKey: string | null
     nestScheduleKey: string | null
     vibeKey: string | null
+    llmKey: string | null
+    llmBaseUrl: string | null
+    llmModelName: string | null
     member_id: string | null
     source: string | null
     approval_status: string | null
@@ -44170,6 +44262,9 @@ export namespace Prisma {
     nestWebhooksKey: number
     nestScheduleKey: number
     vibeKey: number
+    llmKey: number
+    llmBaseUrl: number
+    llmModelName: number
     member_id: number
     source: number
     approval_status: number
@@ -44210,6 +44305,9 @@ export namespace Prisma {
     nestWebhooksKey?: true
     nestScheduleKey?: true
     vibeKey?: true
+    llmKey?: true
+    llmBaseUrl?: true
+    llmModelName?: true
     member_id?: true
     source?: true
     approval_status?: true
@@ -44236,6 +44334,9 @@ export namespace Prisma {
     nestWebhooksKey?: true
     nestScheduleKey?: true
     vibeKey?: true
+    llmKey?: true
+    llmBaseUrl?: true
+    llmModelName?: true
     member_id?: true
     source?: true
     approval_status?: true
@@ -44262,6 +44363,9 @@ export namespace Prisma {
     nestWebhooksKey?: true
     nestScheduleKey?: true
     vibeKey?: true
+    llmKey?: true
+    llmBaseUrl?: true
+    llmModelName?: true
     member_id?: true
     source?: true
     approval_status?: true
@@ -44375,6 +44479,9 @@ export namespace Prisma {
     nestWebhooksKey: string | null
     nestScheduleKey: string | null
     vibeKey: string | null
+    llmKey: string | null
+    llmBaseUrl: string | null
+    llmModelName: string | null
     member_id: string | null
     source: string
     approval_status: string | null
@@ -44420,6 +44527,9 @@ export namespace Prisma {
     nestWebhooksKey?: boolean
     nestScheduleKey?: boolean
     vibeKey?: boolean
+    llmKey?: boolean
+    llmBaseUrl?: boolean
+    llmModelName?: boolean
     member_id?: boolean
     source?: boolean
     approval_status?: boolean
@@ -44455,6 +44565,7 @@ export namespace Prisma {
     portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
+    aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -44479,6 +44590,9 @@ export namespace Prisma {
     nestWebhooksKey?: boolean
     nestScheduleKey?: boolean
     vibeKey?: boolean
+    llmKey?: boolean
+    llmBaseUrl?: boolean
+    llmModelName?: boolean
     member_id?: boolean
     source?: boolean
     approval_status?: boolean
@@ -44486,7 +44600,7 @@ export namespace Prisma {
     approved_by?: boolean
   }
 
-  export type PortalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "domain" | "key" | "C_REST_CLIENT_ID" | "C_REST_CLIENT_SECRET" | "C_REST_WEB_HOOK_URL" | "number" | "client_id" | "nestKey" | "nestKonstructorKey" | "nestReportKey" | "nestEventsKey" | "nestServiceKey" | "nestWebhooksKey" | "nestScheduleKey" | "vibeKey" | "member_id" | "source" | "approval_status" | "approved_at" | "approved_by", ExtArgs["result"]["portal"]>
+  export type PortalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "domain" | "key" | "C_REST_CLIENT_ID" | "C_REST_CLIENT_SECRET" | "C_REST_WEB_HOOK_URL" | "number" | "client_id" | "nestKey" | "nestKonstructorKey" | "nestReportKey" | "nestEventsKey" | "nestServiceKey" | "nestWebhooksKey" | "nestScheduleKey" | "vibeKey" | "llmKey" | "llmBaseUrl" | "llmModelName" | "member_id" | "source" | "approval_status" | "approved_at" | "approved_by", ExtArgs["result"]["portal"]>
   export type PortalInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     bitrix_apps?: boolean | Portal$bitrix_appsArgs<ExtArgs>
     bitrixlists?: boolean | Portal$bitrixlistsArgs<ExtArgs>
@@ -44518,6 +44632,7 @@ export namespace Prisma {
     portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
+    aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -44554,6 +44669,7 @@ export namespace Prisma {
       portal_invites: Prisma.$portal_invitesPayload<ExtArgs>[]
       appCaches: Prisma.$AppCachePayload<ExtArgs>[]
       shareLinks: Prisma.$ShareLinkPayload<ExtArgs>[]
+      aiSettings: Prisma.$PortalAiSettingsPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -44574,6 +44690,9 @@ export namespace Prisma {
       nestWebhooksKey: string | null
       nestScheduleKey: string | null
       vibeKey: string | null
+      llmKey: string | null
+      llmBaseUrl: string | null
+      llmModelName: string | null
       member_id: string | null
       source: string
       approval_status: string | null
@@ -44949,6 +45068,7 @@ export namespace Prisma {
     portal_invites<T extends Portal$portal_invitesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_invitesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     appCaches<T extends Portal$appCachesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appCachesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     shareLinks<T extends Portal$shareLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$shareLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    aiSettings<T extends Portal$aiSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$aiSettingsArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -44996,6 +45116,9 @@ export namespace Prisma {
     readonly nestWebhooksKey: FieldRef<"Portal", 'String'>
     readonly nestScheduleKey: FieldRef<"Portal", 'String'>
     readonly vibeKey: FieldRef<"Portal", 'String'>
+    readonly llmKey: FieldRef<"Portal", 'String'>
+    readonly llmBaseUrl: FieldRef<"Portal", 'String'>
+    readonly llmModelName: FieldRef<"Portal", 'String'>
     readonly member_id: FieldRef<"Portal", 'String'>
     readonly source: FieldRef<"Portal", 'String'>
     readonly approval_status: FieldRef<"Portal", 'String'>
@@ -46059,6 +46182,25 @@ export namespace Prisma {
   }
 
   /**
+   * Portal.aiSettings
+   */
+  export type Portal$aiSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    where?: PortalAiSettingsWhereInput
+  }
+
+  /**
    * Portal without action
    */
   export type PortalDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -46074,6 +46216,1197 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PortalInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PortalAiSettings
+   */
+
+  export type AggregatePortalAiSettings = {
+    _count: PortalAiSettingsCountAggregateOutputType | null
+    _avg: PortalAiSettingsAvgAggregateOutputType | null
+    _sum: PortalAiSettingsSumAggregateOutputType | null
+    _min: PortalAiSettingsMinAggregateOutputType | null
+    _max: PortalAiSettingsMaxAggregateOutputType | null
+  }
+
+  export type PortalAiSettingsAvgAggregateOutputType = {
+    portal_id: number | null
+    minDurationSec: number | null
+    windowHours: number | null
+    maxPerRun: number | null
+    staleMinutes: number | null
+    scanIntervalMinutes: number | null
+    nightScanIntervalMinutes: number | null
+    nightStartHour: number | null
+    nightEndHour: number | null
+  }
+
+  export type PortalAiSettingsSumAggregateOutputType = {
+    portal_id: bigint | null
+    minDurationSec: number | null
+    windowHours: number | null
+    maxPerRun: number | null
+    staleMinutes: number | null
+    scanIntervalMinutes: number | null
+    nightScanIntervalMinutes: number | null
+    nightStartHour: number | null
+    nightEndHour: number | null
+  }
+
+  export type PortalAiSettingsMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    enabled: boolean | null
+    deepAnalysisEnabled: boolean | null
+    createSmartEnabled: boolean | null
+    classifyEnabled: boolean | null
+    salesOnly: boolean | null
+    minDurationSec: number | null
+    windowHours: number | null
+    maxPerRun: number | null
+    staleMinutes: number | null
+    llmModel: string | null
+    deepAnalysisModel: string | null
+    scanIntervalMinutes: number | null
+    nightScanIntervalMinutes: number | null
+    nightStartHour: number | null
+    nightEndHour: number | null
+    lastScanAt: Date | null
+  }
+
+  export type PortalAiSettingsMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    enabled: boolean | null
+    deepAnalysisEnabled: boolean | null
+    createSmartEnabled: boolean | null
+    classifyEnabled: boolean | null
+    salesOnly: boolean | null
+    minDurationSec: number | null
+    windowHours: number | null
+    maxPerRun: number | null
+    staleMinutes: number | null
+    llmModel: string | null
+    deepAnalysisModel: string | null
+    scanIntervalMinutes: number | null
+    nightScanIntervalMinutes: number | null
+    nightStartHour: number | null
+    nightEndHour: number | null
+    lastScanAt: Date | null
+  }
+
+  export type PortalAiSettingsCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    createdAt: number
+    updatedAt: number
+    enabled: number
+    deepAnalysisEnabled: number
+    createSmartEnabled: number
+    classifyEnabled: number
+    salesOnly: number
+    minDurationSec: number
+    windowHours: number
+    maxPerRun: number
+    staleMinutes: number
+    llmModel: number
+    deepAnalysisModel: number
+    scanIntervalMinutes: number
+    nightScanIntervalMinutes: number
+    nightStartHour: number
+    nightEndHour: number
+    lastScanAt: number
+    allowedUserIds: number
+    settings: number
+    _all: number
+  }
+
+
+  export type PortalAiSettingsAvgAggregateInputType = {
+    portal_id?: true
+    minDurationSec?: true
+    windowHours?: true
+    maxPerRun?: true
+    staleMinutes?: true
+    scanIntervalMinutes?: true
+    nightScanIntervalMinutes?: true
+    nightStartHour?: true
+    nightEndHour?: true
+  }
+
+  export type PortalAiSettingsSumAggregateInputType = {
+    portal_id?: true
+    minDurationSec?: true
+    windowHours?: true
+    maxPerRun?: true
+    staleMinutes?: true
+    scanIntervalMinutes?: true
+    nightScanIntervalMinutes?: true
+    nightStartHour?: true
+    nightEndHour?: true
+  }
+
+  export type PortalAiSettingsMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    createdAt?: true
+    updatedAt?: true
+    enabled?: true
+    deepAnalysisEnabled?: true
+    createSmartEnabled?: true
+    classifyEnabled?: true
+    salesOnly?: true
+    minDurationSec?: true
+    windowHours?: true
+    maxPerRun?: true
+    staleMinutes?: true
+    llmModel?: true
+    deepAnalysisModel?: true
+    scanIntervalMinutes?: true
+    nightScanIntervalMinutes?: true
+    nightStartHour?: true
+    nightEndHour?: true
+    lastScanAt?: true
+  }
+
+  export type PortalAiSettingsMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    createdAt?: true
+    updatedAt?: true
+    enabled?: true
+    deepAnalysisEnabled?: true
+    createSmartEnabled?: true
+    classifyEnabled?: true
+    salesOnly?: true
+    minDurationSec?: true
+    windowHours?: true
+    maxPerRun?: true
+    staleMinutes?: true
+    llmModel?: true
+    deepAnalysisModel?: true
+    scanIntervalMinutes?: true
+    nightScanIntervalMinutes?: true
+    nightStartHour?: true
+    nightEndHour?: true
+    lastScanAt?: true
+  }
+
+  export type PortalAiSettingsCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    createdAt?: true
+    updatedAt?: true
+    enabled?: true
+    deepAnalysisEnabled?: true
+    createSmartEnabled?: true
+    classifyEnabled?: true
+    salesOnly?: true
+    minDurationSec?: true
+    windowHours?: true
+    maxPerRun?: true
+    staleMinutes?: true
+    llmModel?: true
+    deepAnalysisModel?: true
+    scanIntervalMinutes?: true
+    nightScanIntervalMinutes?: true
+    nightStartHour?: true
+    nightEndHour?: true
+    lastScanAt?: true
+    allowedUserIds?: true
+    settings?: true
+    _all?: true
+  }
+
+  export type PortalAiSettingsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalAiSettings to aggregate.
+     */
+    where?: PortalAiSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAiSettings to fetch.
+     */
+    orderBy?: PortalAiSettingsOrderByWithRelationInput | PortalAiSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PortalAiSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAiSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAiSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PortalAiSettings
+    **/
+    _count?: true | PortalAiSettingsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PortalAiSettingsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PortalAiSettingsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PortalAiSettingsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PortalAiSettingsMaxAggregateInputType
+  }
+
+  export type GetPortalAiSettingsAggregateType<T extends PortalAiSettingsAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortalAiSettings]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortalAiSettings[P]>
+      : GetScalarType<T[P], AggregatePortalAiSettings[P]>
+  }
+
+
+
+
+  export type PortalAiSettingsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalAiSettingsWhereInput
+    orderBy?: PortalAiSettingsOrderByWithAggregationInput | PortalAiSettingsOrderByWithAggregationInput[]
+    by: PortalAiSettingsScalarFieldEnum[] | PortalAiSettingsScalarFieldEnum
+    having?: PortalAiSettingsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PortalAiSettingsCountAggregateInputType | true
+    _avg?: PortalAiSettingsAvgAggregateInputType
+    _sum?: PortalAiSettingsSumAggregateInputType
+    _min?: PortalAiSettingsMinAggregateInputType
+    _max?: PortalAiSettingsMaxAggregateInputType
+  }
+
+  export type PortalAiSettingsGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    enabled: boolean | null
+    deepAnalysisEnabled: boolean | null
+    createSmartEnabled: boolean | null
+    classifyEnabled: boolean | null
+    salesOnly: boolean | null
+    minDurationSec: number | null
+    windowHours: number | null
+    maxPerRun: number | null
+    staleMinutes: number | null
+    llmModel: string | null
+    deepAnalysisModel: string | null
+    scanIntervalMinutes: number | null
+    nightScanIntervalMinutes: number | null
+    nightStartHour: number | null
+    nightEndHour: number | null
+    lastScanAt: Date | null
+    allowedUserIds: JsonValue | null
+    settings: JsonValue | null
+    _count: PortalAiSettingsCountAggregateOutputType | null
+    _avg: PortalAiSettingsAvgAggregateOutputType | null
+    _sum: PortalAiSettingsSumAggregateOutputType | null
+    _min: PortalAiSettingsMinAggregateOutputType | null
+    _max: PortalAiSettingsMaxAggregateOutputType | null
+  }
+
+  type GetPortalAiSettingsGroupByPayload<T extends PortalAiSettingsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PortalAiSettingsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PortalAiSettingsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PortalAiSettingsGroupByOutputType[P]>
+            : GetScalarType<T[P], PortalAiSettingsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PortalAiSettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    enabled?: boolean
+    deepAnalysisEnabled?: boolean
+    createSmartEnabled?: boolean
+    classifyEnabled?: boolean
+    salesOnly?: boolean
+    minDurationSec?: boolean
+    windowHours?: boolean
+    maxPerRun?: boolean
+    staleMinutes?: boolean
+    llmModel?: boolean
+    deepAnalysisModel?: boolean
+    scanIntervalMinutes?: boolean
+    nightScanIntervalMinutes?: boolean
+    nightStartHour?: boolean
+    nightEndHour?: boolean
+    lastScanAt?: boolean
+    allowedUserIds?: boolean
+    settings?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portalAiSettings"]>
+
+
+
+  export type PortalAiSettingsSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    enabled?: boolean
+    deepAnalysisEnabled?: boolean
+    createSmartEnabled?: boolean
+    classifyEnabled?: boolean
+    salesOnly?: boolean
+    minDurationSec?: boolean
+    windowHours?: boolean
+    maxPerRun?: boolean
+    staleMinutes?: boolean
+    llmModel?: boolean
+    deepAnalysisModel?: boolean
+    scanIntervalMinutes?: boolean
+    nightScanIntervalMinutes?: boolean
+    nightStartHour?: boolean
+    nightEndHour?: boolean
+    lastScanAt?: boolean
+    allowedUserIds?: boolean
+    settings?: boolean
+  }
+
+  export type PortalAiSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "createdAt" | "updatedAt" | "enabled" | "deepAnalysisEnabled" | "createSmartEnabled" | "classifyEnabled" | "salesOnly" | "minDurationSec" | "windowHours" | "maxPerRun" | "staleMinutes" | "llmModel" | "deepAnalysisModel" | "scanIntervalMinutes" | "nightScanIntervalMinutes" | "nightStartHour" | "nightEndHour" | "lastScanAt" | "allowedUserIds" | "settings", ExtArgs["result"]["portalAiSettings"]>
+  export type PortalAiSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $PortalAiSettingsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PortalAiSettings"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      enabled: boolean | null
+      deepAnalysisEnabled: boolean | null
+      createSmartEnabled: boolean | null
+      classifyEnabled: boolean | null
+      salesOnly: boolean | null
+      minDurationSec: number | null
+      windowHours: number | null
+      maxPerRun: number | null
+      staleMinutes: number | null
+      llmModel: string | null
+      deepAnalysisModel: string | null
+      scanIntervalMinutes: number | null
+      nightScanIntervalMinutes: number | null
+      nightStartHour: number | null
+      nightEndHour: number | null
+      lastScanAt: Date | null
+      /**
+       * ДЕМО-режим: bitrix-id сотрудников, чьи звонки анализируем
+       */
+      allowedUserIds: Prisma.JsonValue | null
+      /**
+       * Параметры, которым не нужна отдельная колонка (без миграций)
+       */
+      settings: Prisma.JsonValue | null
+    }, ExtArgs["result"]["portalAiSettings"]>
+    composites: {}
+  }
+
+  type PortalAiSettingsGetPayload<S extends boolean | null | undefined | PortalAiSettingsDefaultArgs> = $Result.GetResult<Prisma.$PortalAiSettingsPayload, S>
+
+  type PortalAiSettingsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PortalAiSettingsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PortalAiSettingsCountAggregateInputType | true
+    }
+
+  export interface PortalAiSettingsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PortalAiSettings'], meta: { name: 'PortalAiSettings' } }
+    /**
+     * Find zero or one PortalAiSettings that matches the filter.
+     * @param {PortalAiSettingsFindUniqueArgs} args - Arguments to find a PortalAiSettings
+     * @example
+     * // Get one PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PortalAiSettingsFindUniqueArgs>(args: SelectSubset<T, PortalAiSettingsFindUniqueArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PortalAiSettings that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PortalAiSettingsFindUniqueOrThrowArgs} args - Arguments to find a PortalAiSettings
+     * @example
+     * // Get one PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PortalAiSettingsFindUniqueOrThrowArgs>(args: SelectSubset<T, PortalAiSettingsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalAiSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsFindFirstArgs} args - Arguments to find a PortalAiSettings
+     * @example
+     * // Get one PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PortalAiSettingsFindFirstArgs>(args?: SelectSubset<T, PortalAiSettingsFindFirstArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalAiSettings that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsFindFirstOrThrowArgs} args - Arguments to find a PortalAiSettings
+     * @example
+     * // Get one PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PortalAiSettingsFindFirstOrThrowArgs>(args?: SelectSubset<T, PortalAiSettingsFindFirstOrThrowArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PortalAiSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.findMany()
+     * 
+     * // Get first 10 PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portalAiSettingsWithIdOnly = await prisma.portalAiSettings.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PortalAiSettingsFindManyArgs>(args?: SelectSubset<T, PortalAiSettingsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PortalAiSettings.
+     * @param {PortalAiSettingsCreateArgs} args - Arguments to create a PortalAiSettings.
+     * @example
+     * // Create one PortalAiSettings
+     * const PortalAiSettings = await prisma.portalAiSettings.create({
+     *   data: {
+     *     // ... data to create a PortalAiSettings
+     *   }
+     * })
+     * 
+     */
+    create<T extends PortalAiSettingsCreateArgs>(args: SelectSubset<T, PortalAiSettingsCreateArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PortalAiSettings.
+     * @param {PortalAiSettingsCreateManyArgs} args - Arguments to create many PortalAiSettings.
+     * @example
+     * // Create many PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PortalAiSettingsCreateManyArgs>(args?: SelectSubset<T, PortalAiSettingsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PortalAiSettings.
+     * @param {PortalAiSettingsDeleteArgs} args - Arguments to delete one PortalAiSettings.
+     * @example
+     * // Delete one PortalAiSettings
+     * const PortalAiSettings = await prisma.portalAiSettings.delete({
+     *   where: {
+     *     // ... filter to delete one PortalAiSettings
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PortalAiSettingsDeleteArgs>(args: SelectSubset<T, PortalAiSettingsDeleteArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PortalAiSettings.
+     * @param {PortalAiSettingsUpdateArgs} args - Arguments to update one PortalAiSettings.
+     * @example
+     * // Update one PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PortalAiSettingsUpdateArgs>(args: SelectSubset<T, PortalAiSettingsUpdateArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PortalAiSettings.
+     * @param {PortalAiSettingsDeleteManyArgs} args - Arguments to filter PortalAiSettings to delete.
+     * @example
+     * // Delete a few PortalAiSettings
+     * const { count } = await prisma.portalAiSettings.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PortalAiSettingsDeleteManyArgs>(args?: SelectSubset<T, PortalAiSettingsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PortalAiSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PortalAiSettingsUpdateManyArgs>(args: SelectSubset<T, PortalAiSettingsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PortalAiSettings.
+     * @param {PortalAiSettingsUpsertArgs} args - Arguments to update or create a PortalAiSettings.
+     * @example
+     * // Update or create a PortalAiSettings
+     * const portalAiSettings = await prisma.portalAiSettings.upsert({
+     *   create: {
+     *     // ... data to create a PortalAiSettings
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PortalAiSettings we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PortalAiSettingsUpsertArgs>(args: SelectSubset<T, PortalAiSettingsUpsertArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PortalAiSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsCountArgs} args - Arguments to filter PortalAiSettings to count.
+     * @example
+     * // Count the number of PortalAiSettings
+     * const count = await prisma.portalAiSettings.count({
+     *   where: {
+     *     // ... the filter for the PortalAiSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends PortalAiSettingsCountArgs>(
+      args?: Subset<T, PortalAiSettingsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PortalAiSettingsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PortalAiSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PortalAiSettingsAggregateArgs>(args: Subset<T, PortalAiSettingsAggregateArgs>): Prisma.PrismaPromise<GetPortalAiSettingsAggregateType<T>>
+
+    /**
+     * Group by PortalAiSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAiSettingsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PortalAiSettingsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PortalAiSettingsGroupByArgs['orderBy'] }
+        : { orderBy?: PortalAiSettingsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PortalAiSettingsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortalAiSettingsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PortalAiSettings model
+   */
+  readonly fields: PortalAiSettingsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PortalAiSettings.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PortalAiSettingsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PortalAiSettings model
+   */
+  interface PortalAiSettingsFieldRefs {
+    readonly id: FieldRef<"PortalAiSettings", 'String'>
+    readonly portal_id: FieldRef<"PortalAiSettings", 'BigInt'>
+    readonly domain: FieldRef<"PortalAiSettings", 'String'>
+    readonly createdAt: FieldRef<"PortalAiSettings", 'DateTime'>
+    readonly updatedAt: FieldRef<"PortalAiSettings", 'DateTime'>
+    readonly enabled: FieldRef<"PortalAiSettings", 'Boolean'>
+    readonly deepAnalysisEnabled: FieldRef<"PortalAiSettings", 'Boolean'>
+    readonly createSmartEnabled: FieldRef<"PortalAiSettings", 'Boolean'>
+    readonly classifyEnabled: FieldRef<"PortalAiSettings", 'Boolean'>
+    readonly salesOnly: FieldRef<"PortalAiSettings", 'Boolean'>
+    readonly minDurationSec: FieldRef<"PortalAiSettings", 'Int'>
+    readonly windowHours: FieldRef<"PortalAiSettings", 'Int'>
+    readonly maxPerRun: FieldRef<"PortalAiSettings", 'Int'>
+    readonly staleMinutes: FieldRef<"PortalAiSettings", 'Int'>
+    readonly llmModel: FieldRef<"PortalAiSettings", 'String'>
+    readonly deepAnalysisModel: FieldRef<"PortalAiSettings", 'String'>
+    readonly scanIntervalMinutes: FieldRef<"PortalAiSettings", 'Int'>
+    readonly nightScanIntervalMinutes: FieldRef<"PortalAiSettings", 'Int'>
+    readonly nightStartHour: FieldRef<"PortalAiSettings", 'Int'>
+    readonly nightEndHour: FieldRef<"PortalAiSettings", 'Int'>
+    readonly lastScanAt: FieldRef<"PortalAiSettings", 'DateTime'>
+    readonly allowedUserIds: FieldRef<"PortalAiSettings", 'Json'>
+    readonly settings: FieldRef<"PortalAiSettings", 'Json'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PortalAiSettings findUnique
+   */
+  export type PortalAiSettingsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAiSettings to fetch.
+     */
+    where: PortalAiSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAiSettings findUniqueOrThrow
+   */
+  export type PortalAiSettingsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAiSettings to fetch.
+     */
+    where: PortalAiSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAiSettings findFirst
+   */
+  export type PortalAiSettingsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAiSettings to fetch.
+     */
+    where?: PortalAiSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAiSettings to fetch.
+     */
+    orderBy?: PortalAiSettingsOrderByWithRelationInput | PortalAiSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalAiSettings.
+     */
+    cursor?: PortalAiSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAiSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAiSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalAiSettings.
+     */
+    distinct?: PortalAiSettingsScalarFieldEnum | PortalAiSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PortalAiSettings findFirstOrThrow
+   */
+  export type PortalAiSettingsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAiSettings to fetch.
+     */
+    where?: PortalAiSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAiSettings to fetch.
+     */
+    orderBy?: PortalAiSettingsOrderByWithRelationInput | PortalAiSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalAiSettings.
+     */
+    cursor?: PortalAiSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAiSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAiSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalAiSettings.
+     */
+    distinct?: PortalAiSettingsScalarFieldEnum | PortalAiSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PortalAiSettings findMany
+   */
+  export type PortalAiSettingsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAiSettings to fetch.
+     */
+    where?: PortalAiSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAiSettings to fetch.
+     */
+    orderBy?: PortalAiSettingsOrderByWithRelationInput | PortalAiSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PortalAiSettings.
+     */
+    cursor?: PortalAiSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAiSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAiSettings.
+     */
+    skip?: number
+    distinct?: PortalAiSettingsScalarFieldEnum | PortalAiSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PortalAiSettings create
+   */
+  export type PortalAiSettingsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PortalAiSettings.
+     */
+    data: XOR<PortalAiSettingsCreateInput, PortalAiSettingsUncheckedCreateInput>
+  }
+
+  /**
+   * PortalAiSettings createMany
+   */
+  export type PortalAiSettingsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PortalAiSettings.
+     */
+    data: PortalAiSettingsCreateManyInput | PortalAiSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PortalAiSettings update
+   */
+  export type PortalAiSettingsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PortalAiSettings.
+     */
+    data: XOR<PortalAiSettingsUpdateInput, PortalAiSettingsUncheckedUpdateInput>
+    /**
+     * Choose, which PortalAiSettings to update.
+     */
+    where: PortalAiSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAiSettings updateMany
+   */
+  export type PortalAiSettingsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PortalAiSettings.
+     */
+    data: XOR<PortalAiSettingsUpdateManyMutationInput, PortalAiSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which PortalAiSettings to update
+     */
+    where?: PortalAiSettingsWhereInput
+    /**
+     * Limit how many PortalAiSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalAiSettings upsert
+   */
+  export type PortalAiSettingsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PortalAiSettings to update in case it exists.
+     */
+    where: PortalAiSettingsWhereUniqueInput
+    /**
+     * In case the PortalAiSettings found by the `where` argument doesn't exist, create a new PortalAiSettings with this data.
+     */
+    create: XOR<PortalAiSettingsCreateInput, PortalAiSettingsUncheckedCreateInput>
+    /**
+     * In case the PortalAiSettings was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PortalAiSettingsUpdateInput, PortalAiSettingsUncheckedUpdateInput>
+  }
+
+  /**
+   * PortalAiSettings delete
+   */
+  export type PortalAiSettingsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
+    /**
+     * Filter which PortalAiSettings to delete.
+     */
+    where: PortalAiSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAiSettings deleteMany
+   */
+  export type PortalAiSettingsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalAiSettings to delete
+     */
+    where?: PortalAiSettingsWhereInput
+    /**
+     * Limit how many PortalAiSettings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalAiSettings without action
+   */
+  export type PortalAiSettingsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAiSettings
+     */
+    select?: PortalAiSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAiSettings
+     */
+    omit?: PortalAiSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAiSettingsInclude<ExtArgs> | null
   }
 
 
@@ -104888,6 +106221,9 @@ export namespace Prisma {
     nestWebhooksKey: 'nestWebhooksKey',
     nestScheduleKey: 'nestScheduleKey',
     vibeKey: 'vibeKey',
+    llmKey: 'llmKey',
+    llmBaseUrl: 'llmBaseUrl',
+    llmModelName: 'llmModelName',
     member_id: 'member_id',
     source: 'source',
     approval_status: 'approval_status',
@@ -104896,6 +106232,35 @@ export namespace Prisma {
   };
 
   export type PortalScalarFieldEnum = (typeof PortalScalarFieldEnum)[keyof typeof PortalScalarFieldEnum]
+
+
+  export const PortalAiSettingsScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    enabled: 'enabled',
+    deepAnalysisEnabled: 'deepAnalysisEnabled',
+    createSmartEnabled: 'createSmartEnabled',
+    classifyEnabled: 'classifyEnabled',
+    salesOnly: 'salesOnly',
+    minDurationSec: 'minDurationSec',
+    windowHours: 'windowHours',
+    maxPerRun: 'maxPerRun',
+    staleMinutes: 'staleMinutes',
+    llmModel: 'llmModel',
+    deepAnalysisModel: 'deepAnalysisModel',
+    scanIntervalMinutes: 'scanIntervalMinutes',
+    nightScanIntervalMinutes: 'nightScanIntervalMinutes',
+    nightStartHour: 'nightStartHour',
+    nightEndHour: 'nightEndHour',
+    lastScanAt: 'lastScanAt',
+    allowedUserIds: 'allowedUserIds',
+    settings: 'settings'
+  };
+
+  export type PortalAiSettingsScalarFieldEnum = (typeof PortalAiSettingsScalarFieldEnum)[keyof typeof PortalAiSettingsScalarFieldEnum]
 
 
   export const Price_row_cellsScalarFieldEnum: {
@@ -106399,6 +107764,9 @@ export namespace Prisma {
     nestWebhooksKey: 'nestWebhooksKey',
     nestScheduleKey: 'nestScheduleKey',
     vibeKey: 'vibeKey',
+    llmKey: 'llmKey',
+    llmBaseUrl: 'llmBaseUrl',
+    llmModelName: 'llmModelName',
     member_id: 'member_id',
     source: 'source',
     approval_status: 'approval_status',
@@ -106406,6 +107774,33 @@ export namespace Prisma {
   };
 
   export type PortalOrderByRelevanceFieldEnum = (typeof PortalOrderByRelevanceFieldEnum)[keyof typeof PortalOrderByRelevanceFieldEnum]
+
+
+  export const JsonNullValueFilter: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull,
+    AnyNull: typeof AnyNull
+  };
+
+  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+  export const QueryMode: {
+    default: 'default',
+    insensitive: 'insensitive'
+  };
+
+  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+  export const PortalAiSettingsOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    llmModel: 'llmModel',
+    deepAnalysisModel: 'deepAnalysisModel'
+  };
+
+  export type PortalAiSettingsOrderByRelevanceFieldEnum = (typeof PortalAiSettingsOrderByRelevanceFieldEnum)[keyof typeof PortalAiSettingsOrderByRelevanceFieldEnum]
 
 
   export const price_row_cellsOrderByRelevanceFieldEnum: {
@@ -106557,23 +107952,6 @@ export namespace Prisma {
   };
 
   export type UserOrderByRelevanceFieldEnum = (typeof UserOrderByRelevanceFieldEnum)[keyof typeof UserOrderByRelevanceFieldEnum]
-
-
-  export const JsonNullValueFilter: {
-    DbNull: typeof DbNull,
-    JsonNull: typeof JsonNull,
-    AnyNull: typeof AnyNull
-  };
-
-  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
-
-
-  export const QueryMode: {
-    default: 'default',
-    insensitive: 'insensitive'
-  };
-
-  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
   export const AiOrderByRelevanceFieldEnum: {
@@ -110227,6 +111605,9 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableFilter<"Portal"> | string | null
     vibeKey?: StringNullableFilter<"Portal"> | string | null
+    llmKey?: StringNullableFilter<"Portal"> | string | null
+    llmBaseUrl?: StringNullableFilter<"Portal"> | string | null
+    llmModelName?: StringNullableFilter<"Portal"> | string | null
     member_id?: StringNullableFilter<"Portal"> | string | null
     source?: StringFilter<"Portal"> | string
     approval_status?: StringNullableFilter<"Portal"> | string | null
@@ -110262,6 +111643,7 @@ export namespace Prisma {
     portal_invites?: Portal_invitesListRelationFilter
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
+    aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -110283,6 +111665,9 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrderInput | SortOrder
     nestScheduleKey?: SortOrderInput | SortOrder
     vibeKey?: SortOrderInput | SortOrder
+    llmKey?: SortOrderInput | SortOrder
+    llmBaseUrl?: SortOrderInput | SortOrder
+    llmModelName?: SortOrderInput | SortOrder
     member_id?: SortOrderInput | SortOrder
     source?: SortOrder
     approval_status?: SortOrderInput | SortOrder
@@ -110318,6 +111703,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesOrderByRelationAggregateInput
     appCaches?: AppCacheOrderByRelationAggregateInput
     shareLinks?: ShareLinkOrderByRelationAggregateInput
+    aiSettings?: PortalAiSettingsOrderByWithRelationInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -110344,6 +111730,9 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableFilter<"Portal"> | string | null
     vibeKey?: StringNullableFilter<"Portal"> | string | null
+    llmKey?: StringNullableFilter<"Portal"> | string | null
+    llmBaseUrl?: StringNullableFilter<"Portal"> | string | null
+    llmModelName?: StringNullableFilter<"Portal"> | string | null
     source?: StringFilter<"Portal"> | string
     approval_status?: StringNullableFilter<"Portal"> | string | null
     approved_at?: DateTimeNullableFilter<"Portal"> | Date | string | null
@@ -110378,6 +111767,7 @@ export namespace Prisma {
     portal_invites?: Portal_invitesListRelationFilter
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
+    aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -110399,6 +111789,9 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrderInput | SortOrder
     nestScheduleKey?: SortOrderInput | SortOrder
     vibeKey?: SortOrderInput | SortOrder
+    llmKey?: SortOrderInput | SortOrder
+    llmBaseUrl?: SortOrderInput | SortOrder
+    llmModelName?: SortOrderInput | SortOrder
     member_id?: SortOrderInput | SortOrder
     source?: SortOrder
     approval_status?: SortOrderInput | SortOrder
@@ -110433,11 +111826,162 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     vibeKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+    llmKey?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+    llmBaseUrl?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+    llmModelName?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     member_id?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     source?: StringWithAggregatesFilter<"Portal"> | string
     approval_status?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     approved_at?: DateTimeNullableWithAggregatesFilter<"Portal"> | Date | string | null
     approved_by?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+  }
+
+  export type PortalAiSettingsWhereInput = {
+    AND?: PortalAiSettingsWhereInput | PortalAiSettingsWhereInput[]
+    OR?: PortalAiSettingsWhereInput[]
+    NOT?: PortalAiSettingsWhereInput | PortalAiSettingsWhereInput[]
+    id?: StringFilter<"PortalAiSettings"> | string
+    portal_id?: BigIntFilter<"PortalAiSettings"> | bigint | number
+    domain?: StringFilter<"PortalAiSettings"> | string
+    createdAt?: DateTimeNullableFilter<"PortalAiSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalAiSettings"> | Date | string | null
+    enabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    deepAnalysisEnabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    createSmartEnabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    classifyEnabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    salesOnly?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    minDurationSec?: IntNullableFilter<"PortalAiSettings"> | number | null
+    windowHours?: IntNullableFilter<"PortalAiSettings"> | number | null
+    maxPerRun?: IntNullableFilter<"PortalAiSettings"> | number | null
+    staleMinutes?: IntNullableFilter<"PortalAiSettings"> | number | null
+    llmModel?: StringNullableFilter<"PortalAiSettings"> | string | null
+    deepAnalysisModel?: StringNullableFilter<"PortalAiSettings"> | string | null
+    scanIntervalMinutes?: IntNullableFilter<"PortalAiSettings"> | number | null
+    nightScanIntervalMinutes?: IntNullableFilter<"PortalAiSettings"> | number | null
+    nightStartHour?: IntNullableFilter<"PortalAiSettings"> | number | null
+    nightEndHour?: IntNullableFilter<"PortalAiSettings"> | number | null
+    lastScanAt?: DateTimeNullableFilter<"PortalAiSettings"> | Date | string | null
+    allowedUserIds?: JsonNullableFilter<"PortalAiSettings">
+    settings?: JsonNullableFilter<"PortalAiSettings">
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type PortalAiSettingsOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    enabled?: SortOrderInput | SortOrder
+    deepAnalysisEnabled?: SortOrderInput | SortOrder
+    createSmartEnabled?: SortOrderInput | SortOrder
+    classifyEnabled?: SortOrderInput | SortOrder
+    salesOnly?: SortOrderInput | SortOrder
+    minDurationSec?: SortOrderInput | SortOrder
+    windowHours?: SortOrderInput | SortOrder
+    maxPerRun?: SortOrderInput | SortOrder
+    staleMinutes?: SortOrderInput | SortOrder
+    llmModel?: SortOrderInput | SortOrder
+    deepAnalysisModel?: SortOrderInput | SortOrder
+    scanIntervalMinutes?: SortOrderInput | SortOrder
+    nightScanIntervalMinutes?: SortOrderInput | SortOrder
+    nightStartHour?: SortOrderInput | SortOrder
+    nightEndHour?: SortOrderInput | SortOrder
+    lastScanAt?: SortOrderInput | SortOrder
+    allowedUserIds?: SortOrderInput | SortOrder
+    settings?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: PortalAiSettingsOrderByRelevanceInput
+  }
+
+  export type PortalAiSettingsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id?: bigint | number
+    AND?: PortalAiSettingsWhereInput | PortalAiSettingsWhereInput[]
+    OR?: PortalAiSettingsWhereInput[]
+    NOT?: PortalAiSettingsWhereInput | PortalAiSettingsWhereInput[]
+    domain?: StringFilter<"PortalAiSettings"> | string
+    createdAt?: DateTimeNullableFilter<"PortalAiSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalAiSettings"> | Date | string | null
+    enabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    deepAnalysisEnabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    createSmartEnabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    classifyEnabled?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    salesOnly?: BoolNullableFilter<"PortalAiSettings"> | boolean | null
+    minDurationSec?: IntNullableFilter<"PortalAiSettings"> | number | null
+    windowHours?: IntNullableFilter<"PortalAiSettings"> | number | null
+    maxPerRun?: IntNullableFilter<"PortalAiSettings"> | number | null
+    staleMinutes?: IntNullableFilter<"PortalAiSettings"> | number | null
+    llmModel?: StringNullableFilter<"PortalAiSettings"> | string | null
+    deepAnalysisModel?: StringNullableFilter<"PortalAiSettings"> | string | null
+    scanIntervalMinutes?: IntNullableFilter<"PortalAiSettings"> | number | null
+    nightScanIntervalMinutes?: IntNullableFilter<"PortalAiSettings"> | number | null
+    nightStartHour?: IntNullableFilter<"PortalAiSettings"> | number | null
+    nightEndHour?: IntNullableFilter<"PortalAiSettings"> | number | null
+    lastScanAt?: DateTimeNullableFilter<"PortalAiSettings"> | Date | string | null
+    allowedUserIds?: JsonNullableFilter<"PortalAiSettings">
+    settings?: JsonNullableFilter<"PortalAiSettings">
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "portal_id">
+
+  export type PortalAiSettingsOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    enabled?: SortOrderInput | SortOrder
+    deepAnalysisEnabled?: SortOrderInput | SortOrder
+    createSmartEnabled?: SortOrderInput | SortOrder
+    classifyEnabled?: SortOrderInput | SortOrder
+    salesOnly?: SortOrderInput | SortOrder
+    minDurationSec?: SortOrderInput | SortOrder
+    windowHours?: SortOrderInput | SortOrder
+    maxPerRun?: SortOrderInput | SortOrder
+    staleMinutes?: SortOrderInput | SortOrder
+    llmModel?: SortOrderInput | SortOrder
+    deepAnalysisModel?: SortOrderInput | SortOrder
+    scanIntervalMinutes?: SortOrderInput | SortOrder
+    nightScanIntervalMinutes?: SortOrderInput | SortOrder
+    nightStartHour?: SortOrderInput | SortOrder
+    nightEndHour?: SortOrderInput | SortOrder
+    lastScanAt?: SortOrderInput | SortOrder
+    allowedUserIds?: SortOrderInput | SortOrder
+    settings?: SortOrderInput | SortOrder
+    _count?: PortalAiSettingsCountOrderByAggregateInput
+    _avg?: PortalAiSettingsAvgOrderByAggregateInput
+    _max?: PortalAiSettingsMaxOrderByAggregateInput
+    _min?: PortalAiSettingsMinOrderByAggregateInput
+    _sum?: PortalAiSettingsSumOrderByAggregateInput
+  }
+
+  export type PortalAiSettingsScalarWhereWithAggregatesInput = {
+    AND?: PortalAiSettingsScalarWhereWithAggregatesInput | PortalAiSettingsScalarWhereWithAggregatesInput[]
+    OR?: PortalAiSettingsScalarWhereWithAggregatesInput[]
+    NOT?: PortalAiSettingsScalarWhereWithAggregatesInput | PortalAiSettingsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PortalAiSettings"> | string
+    portal_id?: BigIntWithAggregatesFilter<"PortalAiSettings"> | bigint | number
+    domain?: StringWithAggregatesFilter<"PortalAiSettings"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"PortalAiSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalAiSettings"> | Date | string | null
+    enabled?: BoolNullableWithAggregatesFilter<"PortalAiSettings"> | boolean | null
+    deepAnalysisEnabled?: BoolNullableWithAggregatesFilter<"PortalAiSettings"> | boolean | null
+    createSmartEnabled?: BoolNullableWithAggregatesFilter<"PortalAiSettings"> | boolean | null
+    classifyEnabled?: BoolNullableWithAggregatesFilter<"PortalAiSettings"> | boolean | null
+    salesOnly?: BoolNullableWithAggregatesFilter<"PortalAiSettings"> | boolean | null
+    minDurationSec?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    windowHours?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    maxPerRun?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    staleMinutes?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    llmModel?: StringNullableWithAggregatesFilter<"PortalAiSettings"> | string | null
+    deepAnalysisModel?: StringNullableWithAggregatesFilter<"PortalAiSettings"> | string | null
+    scanIntervalMinutes?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    nightScanIntervalMinutes?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    nightStartHour?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    nightEndHour?: IntNullableWithAggregatesFilter<"PortalAiSettings"> | number | null
+    lastScanAt?: DateTimeNullableWithAggregatesFilter<"PortalAiSettings"> | Date | string | null
+    allowedUserIds?: JsonNullableWithAggregatesFilter<"PortalAiSettings">
+    settings?: JsonNullableWithAggregatesFilter<"PortalAiSettings">
   }
 
   export type price_row_cellsWhereInput = {
@@ -119446,6 +120990,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -119481,6 +121028,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -119502,6 +121050,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -119536,6 +121087,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUpdateInput = {
@@ -119556,6 +121108,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -119591,6 +121146,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -119612,6 +121168,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -119646,6 +121205,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -119667,6 +121227,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -119692,6 +121255,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -119718,11 +121284,195 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
     approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type PortalAiSettingsCreateInput = {
+    id: string
+    domain: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    enabled?: boolean | null
+    deepAnalysisEnabled?: boolean | null
+    createSmartEnabled?: boolean | null
+    classifyEnabled?: boolean | null
+    salesOnly?: boolean | null
+    minDurationSec?: number | null
+    windowHours?: number | null
+    maxPerRun?: number | null
+    staleMinutes?: number | null
+    llmModel?: string | null
+    deepAnalysisModel?: string | null
+    scanIntervalMinutes?: number | null
+    nightScanIntervalMinutes?: number | null
+    nightStartHour?: number | null
+    nightEndHour?: number | null
+    lastScanAt?: Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    portal: PortalCreateNestedOneWithoutAiSettingsInput
+  }
+
+  export type PortalAiSettingsUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    enabled?: boolean | null
+    deepAnalysisEnabled?: boolean | null
+    createSmartEnabled?: boolean | null
+    classifyEnabled?: boolean | null
+    salesOnly?: boolean | null
+    minDurationSec?: number | null
+    windowHours?: number | null
+    maxPerRun?: number | null
+    staleMinutes?: number | null
+    llmModel?: string | null
+    deepAnalysisModel?: string | null
+    scanIntervalMinutes?: number | null
+    nightScanIntervalMinutes?: number | null
+    nightStartHour?: number | null
+    nightEndHour?: number | null
+    lastScanAt?: Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    deepAnalysisEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    createSmartEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    classifyEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    salesOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    minDurationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    windowHours?: NullableIntFieldUpdateOperationsInput | number | null
+    maxPerRun?: NullableIntFieldUpdateOperationsInput | number | null
+    staleMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    llmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    deepAnalysisModel?: NullableStringFieldUpdateOperationsInput | string | null
+    scanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightScanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightStartHour?: NullableIntFieldUpdateOperationsInput | number | null
+    nightEndHour?: NullableIntFieldUpdateOperationsInput | number | null
+    lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    portal?: PortalUpdateOneRequiredWithoutAiSettingsNestedInput
+  }
+
+  export type PortalAiSettingsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    deepAnalysisEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    createSmartEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    classifyEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    salesOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    minDurationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    windowHours?: NullableIntFieldUpdateOperationsInput | number | null
+    maxPerRun?: NullableIntFieldUpdateOperationsInput | number | null
+    staleMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    llmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    deepAnalysisModel?: NullableStringFieldUpdateOperationsInput | string | null
+    scanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightScanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightStartHour?: NullableIntFieldUpdateOperationsInput | number | null
+    nightEndHour?: NullableIntFieldUpdateOperationsInput | number | null
+    lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    enabled?: boolean | null
+    deepAnalysisEnabled?: boolean | null
+    createSmartEnabled?: boolean | null
+    classifyEnabled?: boolean | null
+    salesOnly?: boolean | null
+    minDurationSec?: number | null
+    windowHours?: number | null
+    maxPerRun?: number | null
+    staleMinutes?: number | null
+    llmModel?: string | null
+    deepAnalysisModel?: string | null
+    scanIntervalMinutes?: number | null
+    nightScanIntervalMinutes?: number | null
+    nightStartHour?: number | null
+    nightEndHour?: number | null
+    lastScanAt?: Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    deepAnalysisEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    createSmartEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    classifyEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    salesOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    minDurationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    windowHours?: NullableIntFieldUpdateOperationsInput | number | null
+    maxPerRun?: NullableIntFieldUpdateOperationsInput | number | null
+    staleMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    llmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    deepAnalysisModel?: NullableStringFieldUpdateOperationsInput | string | null
+    scanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightScanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightStartHour?: NullableIntFieldUpdateOperationsInput | number | null
+    nightEndHour?: NullableIntFieldUpdateOperationsInput | number | null
+    lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    deepAnalysisEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    createSmartEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    classifyEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    salesOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    minDurationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    windowHours?: NullableIntFieldUpdateOperationsInput | number | null
+    maxPerRun?: NullableIntFieldUpdateOperationsInput | number | null
+    staleMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    llmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    deepAnalysisModel?: NullableStringFieldUpdateOperationsInput | string | null
+    scanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightScanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightStartHour?: NullableIntFieldUpdateOperationsInput | number | null
+    nightEndHour?: NullableIntFieldUpdateOperationsInput | number | null
+    lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type price_row_cellsCreateInput = {
@@ -128872,6 +130622,11 @@ export namespace Prisma {
     none?: ShareLinkWhereInput
   }
 
+  export type PortalAiSettingsNullableScalarRelationFilter = {
+    is?: PortalAiSettingsWhereInput | null
+    isNot?: PortalAiSettingsWhereInput | null
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -128997,6 +130752,9 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrder
     nestScheduleKey?: SortOrder
     vibeKey?: SortOrder
+    llmKey?: SortOrder
+    llmBaseUrl?: SortOrder
+    llmModelName?: SortOrder
     member_id?: SortOrder
     source?: SortOrder
     approval_status?: SortOrder
@@ -129029,6 +130787,9 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrder
     nestScheduleKey?: SortOrder
     vibeKey?: SortOrder
+    llmKey?: SortOrder
+    llmBaseUrl?: SortOrder
+    llmModelName?: SortOrder
     member_id?: SortOrder
     source?: SortOrder
     approval_status?: SortOrder
@@ -129055,6 +130816,9 @@ export namespace Prisma {
     nestWebhooksKey?: SortOrder
     nestScheduleKey?: SortOrder
     vibeKey?: SortOrder
+    llmKey?: SortOrder
+    llmBaseUrl?: SortOrder
+    llmModelName?: SortOrder
     member_id?: SortOrder
     source?: SortOrder
     approval_status?: SortOrder
@@ -129066,6 +130830,159 @@ export namespace Prisma {
     id?: SortOrder
     number?: SortOrder
     client_id?: SortOrder
+  }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type PortalAiSettingsOrderByRelevanceInput = {
+    fields: PortalAiSettingsOrderByRelevanceFieldEnum | PortalAiSettingsOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PortalAiSettingsCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    enabled?: SortOrder
+    deepAnalysisEnabled?: SortOrder
+    createSmartEnabled?: SortOrder
+    classifyEnabled?: SortOrder
+    salesOnly?: SortOrder
+    minDurationSec?: SortOrder
+    windowHours?: SortOrder
+    maxPerRun?: SortOrder
+    staleMinutes?: SortOrder
+    llmModel?: SortOrder
+    deepAnalysisModel?: SortOrder
+    scanIntervalMinutes?: SortOrder
+    nightScanIntervalMinutes?: SortOrder
+    nightStartHour?: SortOrder
+    nightEndHour?: SortOrder
+    lastScanAt?: SortOrder
+    allowedUserIds?: SortOrder
+    settings?: SortOrder
+  }
+
+  export type PortalAiSettingsAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    minDurationSec?: SortOrder
+    windowHours?: SortOrder
+    maxPerRun?: SortOrder
+    staleMinutes?: SortOrder
+    scanIntervalMinutes?: SortOrder
+    nightScanIntervalMinutes?: SortOrder
+    nightStartHour?: SortOrder
+    nightEndHour?: SortOrder
+  }
+
+  export type PortalAiSettingsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    enabled?: SortOrder
+    deepAnalysisEnabled?: SortOrder
+    createSmartEnabled?: SortOrder
+    classifyEnabled?: SortOrder
+    salesOnly?: SortOrder
+    minDurationSec?: SortOrder
+    windowHours?: SortOrder
+    maxPerRun?: SortOrder
+    staleMinutes?: SortOrder
+    llmModel?: SortOrder
+    deepAnalysisModel?: SortOrder
+    scanIntervalMinutes?: SortOrder
+    nightScanIntervalMinutes?: SortOrder
+    nightStartHour?: SortOrder
+    nightEndHour?: SortOrder
+    lastScanAt?: SortOrder
+  }
+
+  export type PortalAiSettingsMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    enabled?: SortOrder
+    deepAnalysisEnabled?: SortOrder
+    createSmartEnabled?: SortOrder
+    classifyEnabled?: SortOrder
+    salesOnly?: SortOrder
+    minDurationSec?: SortOrder
+    windowHours?: SortOrder
+    maxPerRun?: SortOrder
+    staleMinutes?: SortOrder
+    llmModel?: SortOrder
+    deepAnalysisModel?: SortOrder
+    scanIntervalMinutes?: SortOrder
+    nightScanIntervalMinutes?: SortOrder
+    nightStartHour?: SortOrder
+    nightEndHour?: SortOrder
+    lastScanAt?: SortOrder
+  }
+
+  export type PortalAiSettingsSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    minDurationSec?: SortOrder
+    windowHours?: SortOrder
+    maxPerRun?: SortOrder
+    staleMinutes?: SortOrder
+    scanIntervalMinutes?: SortOrder
+    nightScanIntervalMinutes?: SortOrder
+    nightStartHour?: SortOrder
+    nightEndHour?: SortOrder
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type price_row_cellsOrderByRelevanceInput = {
@@ -129887,29 +131804,6 @@ export namespace Prisma {
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
-  export type JsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type AiOrderByRelevanceInput = {
     fields: AiOrderByRelevanceFieldEnum | AiOrderByRelevanceFieldEnum[]
@@ -130056,32 +131950,6 @@ export namespace Prisma {
     _sum?: NestedFloatNullableFilter<$PrismaModel>
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type Bitrix_appsScalarRelationFilter = {
@@ -135036,6 +136904,12 @@ export namespace Prisma {
     connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
   }
 
+  export type PortalAiSettingsCreateNestedOneWithoutPortalInput = {
+    create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
+    connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
+    connect?: PortalAiSettingsWhereUniqueInput
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -135237,6 +137111,12 @@ export namespace Prisma {
     connectOrCreate?: ShareLinkCreateOrConnectWithoutPortalInput | ShareLinkCreateOrConnectWithoutPortalInput[]
     createMany?: ShareLinkCreateManyPortalInputEnvelope
     connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+  }
+
+  export type PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput = {
+    create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
+    connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
+    connect?: PortalAiSettingsWhereUniqueInput
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -135655,6 +137535,16 @@ export namespace Prisma {
     deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
   }
 
+  export type PortalAiSettingsUpdateOneWithoutPortalNestedInput = {
+    create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
+    connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
+    upsert?: PortalAiSettingsUpsertWithoutPortalInput
+    disconnect?: PortalAiSettingsWhereInput | boolean
+    delete?: PortalAiSettingsWhereInput | boolean
+    connect?: PortalAiSettingsWhereUniqueInput
+    update?: XOR<XOR<PortalAiSettingsUpdateToOneWithWhereWithoutPortalInput, PortalAiSettingsUpdateWithoutPortalInput>, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -136059,6 +137949,30 @@ export namespace Prisma {
     update?: ShareLinkUpdateWithWhereUniqueWithoutPortalInput | ShareLinkUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: ShareLinkUpdateManyWithWhereWithoutPortalInput | ShareLinkUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+  }
+
+  export type PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput = {
+    create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
+    connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
+    upsert?: PortalAiSettingsUpsertWithoutPortalInput
+    disconnect?: PortalAiSettingsWhereInput | boolean
+    delete?: PortalAiSettingsWhereInput | boolean
+    connect?: PortalAiSettingsWhereUniqueInput
+    update?: XOR<XOR<PortalAiSettingsUpdateToOneWithWhereWithoutPortalInput, PortalAiSettingsUpdateWithoutPortalInput>, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type PortalCreateNestedOneWithoutAiSettingsInput = {
+    create?: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutAiSettingsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutAiSettingsNestedInput = {
+    create?: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutAiSettingsInput
+    upsert?: PortalUpsertWithoutAiSettingsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutAiSettingsInput, PortalUpdateWithoutAiSettingsInput>, PortalUncheckedUpdateWithoutAiSettingsInput>
   }
 
   export type countersCreateNestedOneWithoutRq_counterInput = {
@@ -138100,22 +140014,6 @@ export namespace Prisma {
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
-
-  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-  }
   export type NestedJsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -138138,6 +140036,22 @@ export namespace Prisma {
     gt?: InputJsonValue
     gte?: InputJsonValue
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumoffer_templates_visibilityFilter<$PrismaModel = never> = {
@@ -138354,6 +140268,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -138388,6 +140305,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -138409,6 +140327,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -138442,6 +140363,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -138623,6 +140545,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -138657,6 +140582,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -138678,6 +140604,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -138711,6 +140640,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -139082,6 +141012,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139116,6 +141049,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -139137,6 +141071,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139170,6 +141107,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -139206,6 +141144,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139240,6 +141181,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -139261,6 +141203,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139294,6 +141239,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -139380,6 +141326,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139414,6 +141363,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -139435,6 +141385,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139468,6 +141421,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -139504,6 +141458,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139538,6 +141495,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -139559,6 +141517,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139592,6 +141553,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -139612,6 +141574,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139646,6 +141611,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -139667,6 +141633,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139700,6 +141669,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -139736,6 +141706,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139770,6 +141743,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -139791,6 +141765,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139824,6 +141801,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -139844,6 +141822,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139878,6 +141859,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -139899,6 +141881,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -139932,6 +141917,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -139968,6 +141954,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140002,6 +141991,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -140023,6 +142013,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140056,6 +142049,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -140076,6 +142070,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -140110,6 +142107,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -140131,6 +142129,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -140164,6 +142165,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -140200,6 +142202,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140234,6 +142239,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -140255,6 +142261,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140288,6 +142297,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -140392,6 +142402,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -140426,6 +142439,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -140447,6 +142461,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -140480,6 +142497,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -140516,6 +142534,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140550,6 +142571,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -140571,6 +142593,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140604,6 +142629,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -140624,6 +142650,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -140658,6 +142687,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -140678,6 +142708,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -140712,6 +142745,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -140858,6 +142892,9 @@ export namespace Prisma {
     nestWebhooksKey?: StringNullableFilter<"Portal"> | string | null
     nestScheduleKey?: StringNullableFilter<"Portal"> | string | null
     vibeKey?: StringNullableFilter<"Portal"> | string | null
+    llmKey?: StringNullableFilter<"Portal"> | string | null
+    llmBaseUrl?: StringNullableFilter<"Portal"> | string | null
+    llmModelName?: StringNullableFilter<"Portal"> | string | null
     member_id?: StringNullableFilter<"Portal"> | string | null
     source?: StringFilter<"Portal"> | string
     approval_status?: StringNullableFilter<"Portal"> | string | null
@@ -141147,6 +143184,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -141181,6 +143221,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -141202,6 +143243,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -141235,6 +143279,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -141271,6 +143316,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -141305,6 +143353,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -141326,6 +143375,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -141359,6 +143411,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -143464,6 +145517,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -143498,6 +145554,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -143519,6 +145576,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -143552,6 +145612,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -143709,6 +145770,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -143743,6 +145807,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -143764,6 +145829,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -143797,6 +145865,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -143917,6 +145986,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -143951,6 +146023,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -143972,6 +146045,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -144005,6 +146081,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -144090,6 +146167,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -144124,6 +146204,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -144145,6 +146226,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -144178,6 +146262,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -145349,6 +147434,61 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PortalAiSettingsCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    enabled?: boolean | null
+    deepAnalysisEnabled?: boolean | null
+    createSmartEnabled?: boolean | null
+    classifyEnabled?: boolean | null
+    salesOnly?: boolean | null
+    minDurationSec?: number | null
+    windowHours?: number | null
+    maxPerRun?: number | null
+    staleMinutes?: number | null
+    llmModel?: string | null
+    deepAnalysisModel?: string | null
+    scanIntervalMinutes?: number | null
+    nightScanIntervalMinutes?: number | null
+    nightStartHour?: number | null
+    nightEndHour?: number | null
+    lastScanAt?: Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    enabled?: boolean | null
+    deepAnalysisEnabled?: boolean | null
+    createSmartEnabled?: boolean | null
+    classifyEnabled?: boolean | null
+    salesOnly?: boolean | null
+    minDurationSec?: number | null
+    windowHours?: number | null
+    maxPerRun?: number | null
+    staleMinutes?: number | null
+    llmModel?: string | null
+    deepAnalysisModel?: string | null
+    scanIntervalMinutes?: number | null
+    nightScanIntervalMinutes?: number | null
+    nightStartHour?: number | null
+    nightEndHour?: number | null
+    lastScanAt?: Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsCreateOrConnectWithoutPortalInput = {
+    where: PortalAiSettingsWhereUniqueInput
+    create: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -146297,6 +148437,315 @@ export namespace Prisma {
     lastViewedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
   }
 
+  export type PortalAiSettingsUpsertWithoutPortalInput = {
+    update: XOR<PortalAiSettingsUpdateWithoutPortalInput, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
+    create: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
+    where?: PortalAiSettingsWhereInput
+  }
+
+  export type PortalAiSettingsUpdateToOneWithWhereWithoutPortalInput = {
+    where?: PortalAiSettingsWhereInput
+    data: XOR<PortalAiSettingsUpdateWithoutPortalInput, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type PortalAiSettingsUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    deepAnalysisEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    createSmartEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    classifyEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    salesOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    minDurationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    windowHours?: NullableIntFieldUpdateOperationsInput | number | null
+    maxPerRun?: NullableIntFieldUpdateOperationsInput | number | null
+    staleMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    llmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    deepAnalysisModel?: NullableStringFieldUpdateOperationsInput | string | null
+    scanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightScanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightStartHour?: NullableIntFieldUpdateOperationsInput | number | null
+    nightEndHour?: NullableIntFieldUpdateOperationsInput | number | null
+    lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAiSettingsUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    deepAnalysisEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    createSmartEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    classifyEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    salesOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    minDurationSec?: NullableIntFieldUpdateOperationsInput | number | null
+    windowHours?: NullableIntFieldUpdateOperationsInput | number | null
+    maxPerRun?: NullableIntFieldUpdateOperationsInput | number | null
+    staleMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    llmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    deepAnalysisModel?: NullableStringFieldUpdateOperationsInput | string | null
+    scanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightScanIntervalMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    nightStartHour?: NullableIntFieldUpdateOperationsInput | number | null
+    nightEndHour?: NullableIntFieldUpdateOperationsInput | number | null
+    lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
+    settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalCreateWithoutAiSettingsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutAiSettingsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutAiSettingsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
+  }
+
+  export type PortalUpsertWithoutAiSettingsInput = {
+    update: XOR<PortalUpdateWithoutAiSettingsInput, PortalUncheckedUpdateWithoutAiSettingsInput>
+    create: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutAiSettingsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutAiSettingsInput, PortalUncheckedUpdateWithoutAiSettingsInput>
+  }
+
+  export type PortalUpdateWithoutAiSettingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutAiSettingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
   export type countersCreateWithoutRq_counterInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -146667,6 +149116,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -146701,6 +149153,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -146722,6 +149175,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -146755,6 +149211,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -146791,6 +149248,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -146825,6 +149285,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -146846,6 +149307,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -146879,6 +149343,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -147333,6 +149798,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -147367,6 +149835,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -147388,6 +149857,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -147421,6 +149893,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -147489,6 +149962,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147523,6 +149999,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -147544,6 +150021,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147577,6 +150057,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -147597,6 +150078,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -147631,6 +150115,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -147652,6 +150137,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -147685,6 +150173,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -147721,6 +150210,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147755,6 +150247,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -147776,6 +150269,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147809,6 +150305,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -147997,6 +150494,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -148031,6 +150531,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -148052,6 +150553,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -148085,6 +150589,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -148252,6 +150757,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148286,6 +150794,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -148307,6 +150816,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148340,6 +150852,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -148477,6 +150990,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -148511,6 +151027,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -148532,6 +151049,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -148565,6 +151085,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -148601,6 +151122,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148635,6 +151159,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -148656,6 +151181,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148689,6 +151217,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -148709,6 +151238,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -148743,6 +151275,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -148764,6 +151297,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -148797,6 +151333,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -148833,6 +151370,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148867,6 +151407,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -148888,6 +151429,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148921,6 +151465,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -150652,6 +153197,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -150686,6 +153234,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -150707,6 +153256,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -150740,6 +153292,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -150855,6 +153408,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -150889,6 +153445,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -150910,6 +153467,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -150943,6 +153503,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -151219,6 +153780,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -151253,6 +153817,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -151274,6 +153839,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -151307,6 +153875,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -151343,6 +153912,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -151377,6 +153949,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -151398,6 +153971,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -151431,6 +154007,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -151586,6 +154163,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -151620,6 +154200,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -151641,6 +154222,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -151674,6 +154258,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -151789,6 +154374,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -151823,6 +154411,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -151844,6 +154433,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -151877,6 +154469,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -151897,6 +154490,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -151931,6 +154527,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -151952,6 +154549,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -151985,6 +154585,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -152052,6 +154653,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -152086,6 +154690,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -152107,6 +154712,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -152140,6 +154748,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -152389,6 +154998,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -152423,6 +155035,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -152444,6 +155057,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -152477,6 +155093,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -152601,6 +155218,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -152635,6 +155255,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -152656,6 +155277,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -152689,6 +155313,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -153439,6 +156064,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -153473,6 +156101,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -153494,6 +156123,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -153527,6 +156159,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -153563,6 +156196,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -153597,6 +156233,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -153618,6 +156255,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -153651,6 +156291,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -153702,6 +156343,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -153736,6 +156380,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -153757,6 +156402,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -153790,6 +156438,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -153863,6 +156512,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -153897,6 +156549,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -153918,6 +156571,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -153951,6 +156607,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -154042,6 +156699,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154076,6 +156736,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -154097,6 +156758,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154130,6 +156794,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -154219,6 +156884,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154253,6 +156921,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -154274,6 +156943,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154307,6 +156979,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -154327,6 +157000,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154361,6 +157037,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -154382,6 +157059,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154415,6 +157095,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -154451,6 +157132,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154485,6 +157169,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -154506,6 +157191,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154539,6 +157227,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -154616,6 +157305,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154650,6 +157342,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -154671,6 +157364,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154704,6 +157400,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -154803,6 +157500,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154837,6 +157537,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -154858,6 +157559,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154891,6 +157595,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutPortal_invitesInput = {
@@ -154940,6 +157645,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -154974,6 +157682,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_invitesInput = {
@@ -154995,6 +157704,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -155028,6 +157740,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_invitesInput = {
@@ -155099,6 +157812,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155133,6 +157849,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
@@ -155154,6 +157871,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155187,6 +157907,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppCachesInput = {
@@ -155207,6 +157928,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -155241,6 +157965,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppCachesInput = {
@@ -155262,6 +157987,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -155295,6 +158023,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppCachesInput = {
@@ -155331,6 +158060,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155365,6 +158097,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppCachesInput = {
@@ -155386,6 +158119,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155419,6 +158155,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutShareLinksInput = {
@@ -155439,6 +158176,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -155473,6 +158213,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutShareLinksInput = {
@@ -155494,6 +158235,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -155527,6 +158271,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutShareLinksInput = {
@@ -155563,6 +158308,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155597,6 +158345,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutShareLinksInput = {
@@ -155618,6 +158367,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155651,6 +158403,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -155897,6 +158650,9 @@ export namespace Prisma {
     nestWebhooksKey?: string | null
     nestScheduleKey?: string | null
     vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
     member_id?: string | null
     source?: string
     approval_status?: string | null
@@ -155960,6 +158716,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155994,6 +158753,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -156014,6 +158774,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
@@ -156048,6 +158811,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -156068,6 +158832,9 @@ export namespace Prisma {
     nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
     nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
     vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
     member_id?: NullableStringFieldUpdateOperationsInput | string | null
     source?: StringFieldUpdateOperationsInput | string
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null

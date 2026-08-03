@@ -603,11 +603,40 @@ exports.Prisma.PortalScalarFieldEnum = {
   nestWebhooksKey: 'nestWebhooksKey',
   nestScheduleKey: 'nestScheduleKey',
   vibeKey: 'vibeKey',
+  llmKey: 'llmKey',
+  llmBaseUrl: 'llmBaseUrl',
+  llmModelName: 'llmModelName',
   member_id: 'member_id',
   source: 'source',
   approval_status: 'approval_status',
   approved_at: 'approved_at',
   approved_by: 'approved_by'
+};
+
+exports.Prisma.PortalAiSettingsScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  enabled: 'enabled',
+  deepAnalysisEnabled: 'deepAnalysisEnabled',
+  createSmartEnabled: 'createSmartEnabled',
+  classifyEnabled: 'classifyEnabled',
+  salesOnly: 'salesOnly',
+  minDurationSec: 'minDurationSec',
+  windowHours: 'windowHours',
+  maxPerRun: 'maxPerRun',
+  staleMinutes: 'staleMinutes',
+  llmModel: 'llmModel',
+  deepAnalysisModel: 'deepAnalysisModel',
+  scanIntervalMinutes: 'scanIntervalMinutes',
+  nightScanIntervalMinutes: 'nightScanIntervalMinutes',
+  nightStartHour: 'nightStartHour',
+  nightEndHour: 'nightEndHour',
+  lastScanAt: 'lastScanAt',
+  allowedUserIds: 'allowedUserIds',
+  settings: 'settings'
 };
 
 exports.Prisma.Price_row_cellsScalarFieldEnum = {
@@ -1844,10 +1873,31 @@ exports.Prisma.PortalOrderByRelevanceFieldEnum = {
   nestWebhooksKey: 'nestWebhooksKey',
   nestScheduleKey: 'nestScheduleKey',
   vibeKey: 'vibeKey',
+  llmKey: 'llmKey',
+  llmBaseUrl: 'llmBaseUrl',
+  llmModelName: 'llmModelName',
   member_id: 'member_id',
   source: 'source',
   approval_status: 'approval_status',
   approved_by: 'approved_by'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
+exports.Prisma.PortalAiSettingsOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  llmModel: 'llmModel',
+  deepAnalysisModel: 'deepAnalysisModel'
 };
 
 exports.Prisma.price_row_cellsOrderByRelevanceFieldEnum = {
@@ -1963,17 +2013,6 @@ exports.Prisma.UserOrderByRelevanceFieldEnum = {
   two_factor_recovery_codes: 'two_factor_recovery_codes',
   remember_token: 'remember_token',
   bitrix_id: 'bitrix_id'
-};
-
-exports.Prisma.JsonNullValueFilter = {
-  DbNull: Prisma.DbNull,
-  JsonNull: Prisma.JsonNull,
-  AnyNull: Prisma.AnyNull
-};
-
-exports.Prisma.QueryMode = {
-  default: 'default',
-  insensitive: 'insensitive'
 };
 
 exports.Prisma.AiOrderByRelevanceFieldEnum = {
@@ -2519,6 +2558,7 @@ exports.Prisma.ModelName = {
   portal_contracts: 'portal_contracts',
   portal_measure: 'portal_measure',
   Portal: 'Portal',
+  PortalAiSettings: 'PortalAiSettings',
   price_row_cells: 'price_row_cells',
   rq_counter: 'rq_counter',
   rqs: 'rqs',

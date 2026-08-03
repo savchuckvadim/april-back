@@ -3,16 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
 import { envEnabledByDefault } from '@lib/shared';
 import { KnowledgeContentService } from '@lib/ai-rag';
+import { CallTypeDefinition, CallTypeRegistryService } from '@lib/call-lib';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildDeepAnalysisUserContent,
     CALL_DEEP_ANALYSIS_SCHEMA,
     CALL_DEEP_ANALYSIS_SYSTEM_PROMPT,
+    renderCallTypeProfile,
 } from '../contracts/call-deep-analysis.contract';
-
-/** Префикс kind-ов базы знаний с методичками разбора по типам звонков. */
-const DEEP_ANALYSIS_KIND_PREFIX = 'call-analysis-';
 
 /** Тип, под которым ищем методичку, если классификатор промолчал. */
 const FALLBACK_CALL_TYPE = 'other';
@@ -47,6 +46,7 @@ export class CallDeepAnalysisService {
         private readonly vibeCodeClient: VibeCodeClient,
         private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly knowledgeContent: KnowledgeContentService,
+        private readonly callTypeRegistry: CallTypeRegistryService,
         configService: ConfigService,
     ) {
         this.enabled = envEnabledByDefault(
@@ -57,11 +57,15 @@ export class CallDeepAnalysisService {
     /**
      * Разбор одного звонка. null — шаг выключён или не удался;
      * вызывающий код обязан продолжить работу без разбора.
+     * passportBlock — «паспорт звонка» слоя 0 (CRM-контекст/направление/
+     * история, CallContextBuilderService.renderForPrompt); опционален —
+     * без него разбор работает как раньше.
      */
     async run(
         domain: string,
         transcript: string,
         callType: string | null,
+        passportBlock?: string,
     ): Promise<AgentCallAnalysisDto | null> {
         if (!this.enabled) return null;
         if (!transcript.trim()) {
@@ -76,7 +80,11 @@ export class CallDeepAnalysisService {
             const apiKey = await this.vibeKeyResolver.resolve(domain);
             const parsed = await this.vibeCodeClient.structuredCompletion(
                 systemPrompt,
-                buildDeepAnalysisUserContent(transcript, callType),
+                buildDeepAnalysisUserContent(
+                    transcript,
+                    callType,
+                    passportBlock,
+                ),
                 'call_deep_analysis',
                 CALL_DEEP_ANALYSIS_SCHEMA,
                 apiKey,
@@ -102,16 +110,29 @@ export class CallDeepAnalysisService {
     }
 
     /**
-     * Базовый промпт + методички портала по типу звонка. Как и в
-     * классификаторе, берём строго документы своего kind: listDocuments
-     * подмешивает general/, и без фильтра промпт зарос бы общими
-     * материалами базы знаний.
+     * Промпт = базовые правила разбора + профиль этапа продаж + методички
+     * портала.
+     *
+     * Профиль (фокус этапа, приоры актуальности разделов, нормы речи)
+     * берётся из реестра типов — того же, что использует классификатор,
+     * и подменяемого через базу знаний. Без него холодный звонок
+     * оценивался бы по меркам презентации: там, где менеджер правильно
+     * НЕ стал презентовать, разбор списывал бы ему баллы.
+     *
+     * Kind методички тоже берём из профиля (knowledgeKind), а не собираем
+     * строкой: у клиентского типа звонка он может быть нестандартным.
      */
     private async buildSystemPrompt(
         domain: string,
         callType: string | null,
     ): Promise<string> {
-        const kind = `${DEEP_ANALYSIS_KIND_PREFIX}${callType ?? FALLBACK_CALL_TYPE}`;
+        const profile = await this.resolveProfile(domain, callType);
+        const basePrompt = profile
+            ? CALL_DEEP_ANALYSIS_SYSTEM_PROMPT + renderCallTypeProfile(profile)
+            : CALL_DEEP_ANALYSIS_SYSTEM_PROMPT;
+        const kind =
+            profile?.knowledgeKind ??
+            `call-analysis-${callType ?? FALLBACK_CALL_TYPE}`;
         try {
             const documents = await this.knowledgeContent.readAll(domain, kind);
             const materials = documents
@@ -123,19 +144,43 @@ export class CallDeepAnalysisService {
                     `Методички разбора ${kind} (${domain}): ${materials.length} докум.`,
                 );
                 return (
-                    `${CALL_DEEP_ANALYSIS_SYSTEM_PROMPT}\n\n` +
+                    `${basePrompt}\n\n` +
                     `МАТЕРИАЛЫ КОМПАНИИ (скрипты, критерии оценки, эталонные разборы) — ` +
                     `опирайся на них при оценке:\n\n${materials.join('\n\n---\n\n')}`
                 );
             }
             this.logger.log(
-                `Методичек ${kind} нет (${domain}) — базовый промпт разбора`,
+                `Методичек ${kind} нет (${domain}) — разбор по базовому промпту`,
             );
         } catch (error) {
             this.logger.warn(
                 `База знаний ${kind} недоступна (${domain}): ${(error as Error).message}`,
             );
         }
-        return CALL_DEEP_ANALYSIS_SYSTEM_PROMPT;
+        return basePrompt;
+    }
+
+    /** Профиль типа звонка из реестра; null — тип неизвестен реестру. */
+    private async resolveProfile(
+        domain: string,
+        callType: string | null,
+    ): Promise<CallTypeDefinition | null> {
+        try {
+            const registry = await this.callTypeRegistry.resolve(domain);
+            const profile =
+                registry.types[callType ?? FALLBACK_CALL_TYPE] ?? null;
+            if (!profile) {
+                this.logger.warn(
+                    `Тип «${callType ?? FALLBACK_CALL_TYPE}» вне реестра (${domain}) — ` +
+                        'разбор без калибровки по этапу',
+                );
+            }
+            return profile;
+        } catch (error) {
+            this.logger.warn(
+                `Реестр типов недоступен (${domain}): ${(error as Error).message}`,
+            );
+            return null;
+        }
     }
 }

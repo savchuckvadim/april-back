@@ -172,6 +172,40 @@ export class EventReportContext {
     /**
      * Маппинг DTO-кодов плана (cold/warm/presentation/hot/moneyAwait/supply) в
      * унифицированный EventReportEventType. `cold` из DTO → `xo` (исторически).
+     *
+     * ВНИМАНИЕ: здесь известное расхождение, пока НЕ исправленное.
+     *
+     * Коды плана и коды задачи — разные наборы. План приходит из
+     * EnumEventPlanCode (libs/shared/src/event-sales/types/plan-types.ts):
+     * cold | warm | presentation | hot | moneyAwait | supply — и после
+     * замены cold → xo полностью совпадает с EventReportEventType.
+     *
+     * А тип ЗАДАЧИ приходит из EnumTaskEventType
+     * (libs/shared/src/event-sales/dto/task.dto.ts):
+     * xo | warm | presentation | in_progress | money_await | event | supply.
+     * Три значения не совпадают ни с чем: `in_progress` вместо `hot`,
+     * `money_await` вместо `moneyAwait`, и `event`, которого в
+     * EventReportEventType нет вовсе. Фронт их действительно шлёт —
+     * parseTaskTitle ставит `in_progress` для «Решение» и `money_await`
+     * для «Оплата» (front/apps/event-sales/modules/entities/EventTask/lib/
+     * task-util.ts).
+     *
+     * Функция их не приводит, а вызывающий код гасит ошибку приведением
+     * `as EventReportEventType`. Из-за этого reportEventType по таким
+     * задачам не совпадает ни с одной записью SALES_BASE_EVENT_ORDER
+     * (deal-target-stage.calculator.ts) и не проходит switch в mapEventType
+     * (kpi-list/event-report-kpi-payload.builder.ts). Практически это значит:
+     *   — отчёт по «Звонку по решению» и «Звонку по оплате» НЕ поднимает
+     *     стадию (вниз она не съезжает: держит currentStageEvent, он выводится
+     *     из текущей стадии и потому всегда в правильном алфавите);
+     *   — запись в «ОП KPI» по таким отчётам НЕ создаётся.
+     * Планирование при этом работает: коды плана с лестницей совпадают.
+     *
+     * Чинится здесь же — добавить in_progress → hot, money_await → moneyAwait
+     * и решить, чем считать `event` (по смыслу warm), — плюс убрать приведение
+     * `as EventReportEventType`, чтобы компилятор впредь ловил такие
+     * расхождения сам. Правка меняет цифры отчётности, поэтому сравнивать
+     * периоды до и после будет некорректно: делать отдельной задачей.
      */
     private normalizeEventType(raw: string): string {
         if (raw === 'cold') return 'xo';

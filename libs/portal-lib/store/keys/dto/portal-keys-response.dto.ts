@@ -16,6 +16,9 @@ export class PortalKeysResponseDto implements PortalKeysRecord {
         this.nestWebhooksKey = keys.nestWebhooksKey;
         this.nestScheduleKey = keys.nestScheduleKey;
         this.vibeKey = keys.vibeKey;
+        this.llmKey = keys.llmKey;
+        this.llmBaseUrl = keys.llmBaseUrl;
+        this.llmModelName = keys.llmModelName;
     }
 
     @ApiProperty({
@@ -81,4 +84,34 @@ export class PortalKeysResponseDto implements PortalKeysRecord {
         nullable: true,
     })
     vibeKey: string | null;
+
+    @ApiProperty({
+        description:
+            'Собственный ключ LLM клиента (Cloud.ru, GigaChat и т.п.). ' +
+            'Не задан — AI-анализ работает на общем ключе приложения.',
+        example: 'sk_live_...redacted',
+        type: String,
+        nullable: true,
+    })
+    llmKey: string | null;
+
+    @ApiProperty({
+        description:
+            'Endpoint OpenAI-совместимого API клиента для его ключа LLM. ' +
+            'Не задан — используется endpoint провайдера по умолчанию.',
+        example: 'https://foundation-models.api.cloud.ru/v1',
+        type: String,
+        nullable: true,
+    })
+    llmBaseUrl: string | null;
+
+    @ApiProperty({
+        description:
+            'Id модели в каталоге провайдера клиента. Не задан — берётся ' +
+            'модель по умолчанию для выбранного провайдера.',
+        example: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
+        type: String,
+        nullable: true,
+    })
+    llmModelName: string | null;
 }

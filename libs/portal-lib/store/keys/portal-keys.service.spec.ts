@@ -13,6 +13,9 @@ const emptyKeys = (): PortalKeysRecord => ({
     nestWebhooksKey: null,
     nestScheduleKey: null,
     vibeKey: null,
+    llmKey: null,
+    llmBaseUrl: null,
+    llmModelName: null,
 });
 
 describe('PortalKeysService', () => {

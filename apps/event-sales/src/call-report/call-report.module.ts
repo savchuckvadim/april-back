@@ -12,12 +12,16 @@ import {
     CallTypeRegistryModule,
 } from '@lib/call-lib';
 import { AiRagModule } from '@lib/ai-rag';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { BxDepartmentModule } from 'libs/bx-department';
 import { AgentGateModule } from '../agent-gate/agent-gate.module';
 import { CallReportController } from './controllers/call-report.controller';
 import { CallClassifyInstructionService } from './services/call-classify-instruction.service';
 import { CallClassifyStepService } from './services/call-classify-step.service';
+import { CallContextBuilderService } from './services/call-context-builder.service';
 import { CallDeepAnalysisService } from './services/call-deep-analysis.service';
+import { CallFocusAnalysisService } from './services/call-focus-analysis.service';
+import { CallReportSettingsService } from './services/call-report-settings.service';
 import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
@@ -52,6 +56,10 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
         CallTypeRegistryModule,
         // Фильтр сканера «только менеджеры отдела продаж»
         BxDepartmentModule,
+        // Настройки AI на портал: пороги, модели и расписание берутся из БД,
+        // а незаданные значения падают в глобальные env (см.
+        // CallReportSettingsService)
+        PortalStoreModule,
         // Запись глубокого разбора (ais + смарт + таймлайн) —
         // AgentAnalysisIntakeService. Внешнего агента больше нет: разбор
         // считает CallDeepAnalysisService здесь же, а приём переиспользуем.
@@ -61,7 +69,10 @@ import { CallReportScheduler } from './cron/call-report.scheduler';
     providers: [
         CallClassifyInstructionService,
         CallClassifyStepService,
+        CallContextBuilderService,
         CallDeepAnalysisService,
+        CallFocusAnalysisService,
+        CallReportSettingsService,
         CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
         CallReportScanUseCase,

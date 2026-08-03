@@ -10,7 +10,9 @@ import {
     TranscriptionStoreService,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import { CallContextBuilderService } from '../services/call-context-builder.service';
 import { CallDeepAnalysisService } from '../services/call-deep-analysis.service';
+import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
 import {
     CallReportAnalyzeStagePayload,
     CallReportJobPayload,
@@ -62,6 +64,8 @@ export class CallReportProcessor {
         private readonly queueDispatcher: QueueDispatcherService,
         private readonly baseItem: CallReportBaseItemService,
         private readonly deepAnalysis: CallDeepAnalysisService,
+        private readonly focusAnalysis: CallFocusAnalysisService,
+        private readonly contextBuilder: CallContextBuilderService,
         private readonly analysisIntake: AgentAnalysisIntakeService,
         private readonly transcriptionStore: TranscriptionStoreService,
     ) {}
@@ -154,11 +158,30 @@ export class CallReportProcessor {
                 );
                 return;
             }
-            const analysis = await this.deepAnalysis.run(
-                payload.domain,
-                row.text,
-                callType,
+            // Слой 0: «паспорт звонка» (CRM-контекст, направление, история) —
+            // fail-open, пустой паспорт не мешает разбору.
+            const passport = await this.contextBuilder.build(row);
+            this.logger.log(
+                `Паспорт звонка ${transcriptionId}: certainty=${passport.certainty}, ` +
+                    `история=${passport.history.length}, identity=${passport.identity.length}`,
             );
+            const passportBlock = this.contextBuilder.renderForPrompt(passport);
+            // Режим разбора: focus — три фокус-вызова + синтез (Фаза 2 плана
+            // v2, глубже и точнее, ×1.5 вызовов); иначе — цельный разбор.
+            const analysis =
+                process.env.CALL_REPORT_ANALYSIS_MODE === 'focus'
+                    ? await this.focusAnalysis.run(
+                          payload.domain,
+                          row.text,
+                          callType,
+                          passportBlock,
+                      )
+                    : await this.deepAnalysis.run(
+                          payload.domain,
+                          row.text,
+                          callType,
+                          passportBlock,
+                      );
             if (!analysis) return;
 
             const written = await this.analysisIntake.intake(

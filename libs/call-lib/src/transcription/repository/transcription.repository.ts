@@ -65,4 +65,16 @@ export abstract class TranscriptionRepository {
         from: Date,
         to: Date,
     ): Promise<Transcription[]>;
+
+    /**
+     * История звонков той же CRM-сущности (паспорт звонка глубокого
+     * разбора): последние done-строки, новые первыми, без excludeId.
+     */
+    abstract findRecentByEntity(
+        domain: string,
+        entityType: string,
+        entityId: string,
+        excludeId: string | null,
+        take: number,
+    ): Promise<Transcription[]>;
 }

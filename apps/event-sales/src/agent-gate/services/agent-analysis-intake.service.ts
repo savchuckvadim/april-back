@@ -60,6 +60,9 @@ export class AgentAnalysisIntakeService {
         dto: AgentCallAnalysisDto,
         allowedDomains: string[] | null = null,
     ): Promise<AgentAnalysisResponseDto> {
+        // Гигиена входа от LLM-агента: LaTeX-артефакты (\rightarrow → «→»)
+        // и литеральные "null"-строки (боевые кейсы 2026-07-30).
+        dto = this.sanitizeAgentStrings(dto);
         dto = this.applySpeechMetrics(transcriptionId, dto);
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
@@ -460,10 +463,13 @@ export class AgentAnalysisIntakeService {
         );
 
         for (const section of [...sections].reverse()) {
+            const comment = this.renderSectionComment(section);
+            // Разделы-пустышки (REFUSAL без отказов и т.п.) не постим.
+            if (!comment) continue;
             await bitrix.timeline.addTimelineComment({
                 ENTITY_ID: written.itemId,
                 ENTITY_TYPE: entityType,
-                COMMENT: this.renderSectionComment(section),
+                COMMENT: comment,
                 AUTHOR_ID: authorId,
             });
         }
@@ -609,30 +615,81 @@ export class AgentAnalysisIntakeService {
         return 'Другой участник';
     }
 
-    /** Одна таймлайн-запись раздела: как было / слабые места / варианты. */
-    private renderSectionComment(section: AgentSectionAnalysisDto): string {
+    /**
+     * Одна таймлайн-запись раздела: как было / слабые места / варианты.
+     * null — раздел-пустышка (агент прислал relevance>0 без содержимого,
+     * например REFUSAL при звонке без отказов) — коммент не постится.
+     */
+    private renderSectionComment(
+        section: AgentSectionAnalysisDto,
+    ): string | null {
+        const asWas = this.cleanText(section.asWas ?? section.analysis);
+        const weaknesses = this.cleanText(section.weaknesses);
+        const alternatives = (section.alternatives ?? [])
+            .map(variant => this.cleanText(variant))
+            .filter((variant): variant is string => Boolean(variant));
+        const advice = this.cleanText(section.advice);
+        if (!asWas && !weaknesses && !alternatives.length && !advice) {
+            return null;
+        }
+
         const title =
             CALL_REPORT_SECTIONS.find(item => item.code === section.section)
                 ?.title ?? section.section;
-        const score =
-            section.score !== undefined ? ` — ${section.score}/10` : '';
+        const score = Number.isFinite(Number(section.score))
+            ? ` — ${section.score}/10`
+            : '';
         let text = `[b]${title}[/b]${score}\n`;
 
-        const asWas = section.asWas ?? section.analysis;
         if (asWas) text += `\n[b]Как было:[/b]\n${asWas}\n`;
-        if (section.weaknesses) {
-            text += `\n[b]Что в таком подходе не самое лучшее:[/b]\n${section.weaknesses}\n`;
+        if (weaknesses) {
+            text += `\n[b]Что в таком подходе не самое лучшее:[/b]\n${weaknesses}\n`;
         }
-        if (section.alternatives?.length) {
+        if (alternatives.length) {
             text +=
                 `\n[b]Как можно было по-другому:[/b]\n` +
-                section.alternatives
+                alternatives
                     .map((variant, index) => `${index + 1}) ${variant}`)
                     .join('\n');
-        } else if (section.advice) {
-            text += `\n[b]Как можно было по-другому:[/b]\n${section.advice}`;
+        } else if (advice) {
+            text += `\n[b]Как можно было по-другому:[/b]\n${advice}`;
         }
         return text;
+    }
+
+    /** Строка без LLM-мусора: null/'null'/'undefined'/пусто → undefined. */
+    private cleanText(value: string | null | undefined): string | undefined {
+        if (typeof value !== 'string') return undefined;
+        const trimmed = value.trim();
+        if (!trimmed || /^(null|undefined|n\/a|-)$/i.test(trimmed)) {
+            return undefined;
+        }
+        return trimmed;
+    }
+
+    /**
+     * Рекурсивная гигиена строк от LLM-агента: LaTeX-стрелки
+     * (`$\rightarrow$`, в т.ч. с потерянным `\r` — « ightarrow») → «→».
+     */
+    private sanitizeAgentStrings<T>(value: T): T {
+        if (typeof value === 'string') {
+            return value
+                .replace(/\$\s*\\?r?ightarrow\s*\$/g, '→')
+                .replace(/\\?r?ightarrow/g, '→') as unknown as T;
+        }
+        if (Array.isArray(value)) {
+            return (value as unknown[]).map(item =>
+                this.sanitizeAgentStrings(item),
+            ) as unknown as T;
+        }
+        if (value && typeof value === 'object') {
+            const out: Record<string, unknown> = {};
+            for (const [key, item] of Object.entries(value)) {
+                out[key] = this.sanitizeAgentStrings(item);
+            }
+            return out as T;
+        }
+        return value;
     }
 
     /**
