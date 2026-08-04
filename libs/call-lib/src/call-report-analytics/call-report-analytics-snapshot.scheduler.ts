@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { CallReportAnalyticsService } from './call-report-analytics.service';
 import {
     CALL_REPORT_ANALYTICS_KINDS,
@@ -12,17 +12,14 @@ const SNAPSHOT_WINDOW_DAYS = 7;
 
 /**
  * Weekly-снапшоты профилей порталов: раз в неделю строит ВСЕ отчёты
- * (summary/speech/objections/managers) по каждому домену из allowlist
- * CALL_REPORT_DOMAINS за прошедшие 7 дней и сохраняет в историю
- * (ais type=report-<вид>). Накопленные снапшоты — временной ряд для
- * трендов «куда движемся»: спады/подъёмы, гипотезы, прогнозы
- * (раздел 5.6 плана оптимизации).
+ * (summary/speech/objections/managers) по каждому ВКЛЮЧЁННОМУ порталу
+ * (portal_ai_settings.enabled=true — как и весь конвейер, без env) за
+ * прошедшие 7 дней и сохраняет в историю (ais type=report-<вид>).
+ * Накопленные снапшоты — временной ряд для трендов «куда движемся»:
+ * спады/подъёмы, гипотезы, прогнозы (раздел 5.6 плана оптимизации).
  *
- * Включение: CALL_REPORT_ANALYTICS_SNAPSHOT_ENABLED=1 (по умолчанию
- * ВЫКЛЮЧЕН — включается сознательно, как и cron конвейера). Кэш при
- * построении не используется (useCache=false) — снапшот всегда свежий.
- *
- * Ошибка одного домена/отчёта не прерывает остальные — всё логируется.
+ * Кэш при построении не используется (useCache=false) — снапшот всегда
+ * свежий. Ошибка одного домена/отчёта не прерывает остальные.
  */
 @Injectable()
 export class CallReportAnalyticsSnapshotScheduler {
@@ -32,31 +29,23 @@ export class CallReportAnalyticsSnapshotScheduler {
 
     constructor(
         private readonly analytics: CallReportAnalyticsService,
-        private readonly configService: ConfigService,
+        private readonly portalAiSettings: PortalAiSettingsService,
     ) {}
 
     /** Понедельник 03:15 — после ночного прогона агента за воскресенье. */
     @Cron('15 3 * * 1')
     async tick(): Promise<void> {
-        if (
-            this.configService.get<string>(
-                'CALL_REPORT_ANALYTICS_SNAPSHOT_ENABLED',
-            ) !== '1'
-        ) {
-            return;
-        }
-        const domains = (
-            this.configService.get<string>('CALL_REPORT_DOMAINS') ?? ''
-        )
-            .split(',')
-            // Демо-суффикс сотрудников (`domain:222|323`) к снапшотам не
-            // относится — берём только домен до двоеточия.
-            .map(entry => entry.trim().split(':')[0].trim())
-            .filter(Boolean);
+        const domains = await this.portalAiSettings
+            .findEnabled()
+            .then(portals => portals.map(portal => portal.domain))
+            .catch((error: Error) => {
+                this.logger.error(
+                    `Снапшоты профилей: порталы не прочитаны (${error.message})`,
+                    { telegram: true },
+                );
+                return [] as string[];
+            });
         if (!domains.length) {
-            this.logger.warn(
-                'Снапшоты профилей: CALL_REPORT_DOMAINS пуст — нечего снимать',
-            );
             return;
         }
         this.logger.log(

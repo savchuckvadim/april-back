@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib';
@@ -20,22 +19,21 @@ const LOCK_TTL_SEC = 25 * 60;
 /**
  * Планировщик автоконвейера AI-отчётности по звонкам.
  *
- * Каждые 30 минут: реанимация зависших processing + обход доменов из
- * ростера (env CALL_REPORT_DOMAINS ∪ включённые порталы portal_ai_settings).
- * Параметры каждого домена — из склейки портал → env → дефолт
- * (CallReportSettingsService): пороги, демо-список, интервалы сканирования
- * (портал пропускается, пока с lastScanAt не прошёл его интервал).
+ * Каждые 30 минут: реанимация зависших processing + обход ВКЛЮЧЁННЫХ
+ * порталов из portal_ai_settings (включение — из админки: карточка
+ * портала → вкладка AI). Параметры каждого домена — из настроек портала
+ * с дефолтами кода (CallReportSettingsService); env-конфигурации нет.
+ * Портал пропускается, пока с lastScanAt не прошёл его интервал.
  *
- * Защита: kill-switch CALL_REPORT_CRON_ENABLED=1, Redis-лок от
- * наложения тиков, ошибка одного домена не роняет цикл
- * (паттерн pbx-list-field-monitoring).
+ * Kill-switch отдельного нет: нет включённых порталов — тик no-op.
+ * Защита: Redis-лок от наложения тиков, ошибка одного домена не роняет
+ * цикл (паттерн pbx-list-field-monitoring).
  */
 @Injectable()
 export class CallReportScheduler implements OnModuleInit {
     private readonly logger = new Logger(CallReportScheduler.name);
 
     constructor(
-        private readonly configService: ConfigService,
         private readonly redisService: RedisService,
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly scanUseCase: CallReportScanUseCase,
@@ -44,47 +42,18 @@ export class CallReportScheduler implements OnModuleInit {
         private readonly portalAiSettings: PortalAiSettingsService,
     ) {}
 
-    /**
-     * Диагностика на старте: какие значения cron РЕАЛЬНО видит из env.
-     * Прод-инцидент 2026-07-27: флаг «включали», но контейнеру приезжал
-     * другой env (второй env_file перекрывает первый; env_file применяется
-     * только при recreate) — тик выходил молча, причину было не разглядеть.
-     * Порталы из БД сюда не попадают намеренно: они читаются на каждом
-     * тике, а не при старте.
-     */
+    /** Диагностика на старте: откуда берётся конфигурация. */
     onModuleInit(): void {
-        const enabled =
-            this.configService.get<string>('CALL_REPORT_CRON_ENABLED') === '1';
-        const domains = this.roster.fromEnv();
-        const domainsLabel = domains
-            .map(entry =>
-                entry.demoUserIds
-                    ? `${entry.domain} (ДЕМО: ${entry.demoUserIds.join('|')})`
-                    : entry.domain,
-            )
-            .join(', ');
         this.logger.log(
-            `Автоконвейер call-report: cron ${enabled ? 'ВКЛЮЧЁН' : 'ВЫКЛЮЧЕН (CALL_REPORT_CRON_ENABLED!=1)'}` +
-                `, env-домены: ${domainsLabel || '(пусто)'} + включённые порталы из БД` +
-                `, смарт-элементы по умолчанию: ${this.settingsService.globals().createSmartEnabled ? 'создаются' : 'ВЫКЛЮЧЕНЫ (CALL_REPORT_CRON_CREATE_SMART=0)'}`,
+            'Автоконвейер call-report: конфигурация — ТОЛЬКО portal_ai_settings ' +
+                '(админка → карточка портала → вкладка AI); env-настроек нет. ' +
+                'Включённые порталы читаются на каждом тике (раз в 30 минут).',
         );
     }
 
     @Cron(CronExpression.EVERY_30_MINUTES)
     async tick(): Promise<void> {
-        if (
-            this.configService.get<string>('CALL_REPORT_CRON_ENABLED') !== '1'
-        ) {
-            return;
-        }
-
         const domains = await this.roster.resolve();
-        if (!domains.length) {
-            this.logger.warn(
-                'CALL_REPORT_CRON_ENABLED=1, но домены не заданы ни в CALL_REPORT_DOMAINS, ни в настройках порталов — скан пропущен',
-            );
-            return;
-        }
 
         const redis = this.redisService.getClient();
         const locked = await redis.set(
@@ -120,10 +89,9 @@ export class CallReportScheduler implements OnModuleInit {
     /** Скан одного домена с эффективными настройками его портала. */
     private async scanDomain(entry: CallReportDomainEntry): Promise<void> {
         const settings = await this.settingsService.resolve(entry.domain);
-        if (settings.enabled === false) {
-            this.logger.log(
-                `Домен ${entry.domain} выключен в настройках портала — пропуск`,
-            );
+        if (!settings.enabled) {
+            // Ростер отдаёт включённые, но между выборкой и сканом админ
+            // мог выключить портал — перечитанные настройки главнее.
             return;
         }
         if (!this.isDueByInterval(settings, new Date())) {
@@ -134,22 +102,18 @@ export class CallReportScheduler implements OnModuleInit {
             minDurationSec: settings.minDurationSec,
             windowHours: settings.windowHours,
             maxPerRun: settings.maxPerRun,
-            // ДЕМО-список портала главнее env-суффикса — та же склейка,
-            // что и у остальных настроек (портал → env).
-            allowedUserIds: settings.allowedUserIds ?? entry.demoUserIds,
+            allowedUserIds: settings.allowedUserIds ?? undefined,
             createSmartItem: settings.createSmartEnabled,
             salesOnly: settings.salesOnly,
         });
 
-        if (entry.portalId != null) {
-            await this.portalAiSettings
-                .markScanned(entry.portalId)
-                .catch((error: Error) =>
-                    this.logger.warn(
-                        `lastScanAt портала ${entry.portalId} не записан: ${error.message}`,
-                    ),
-                );
-        }
+        await this.portalAiSettings
+            .markScanned(entry.portalId)
+            .catch((error: Error) =>
+                this.logger.warn(
+                    `lastScanAt портала ${entry.portalId} не записан: ${error.message}`,
+                ),
+            );
     }
 
     /**

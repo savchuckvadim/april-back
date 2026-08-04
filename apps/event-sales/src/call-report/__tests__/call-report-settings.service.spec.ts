@@ -19,11 +19,12 @@ const emptyPortalSettings = () => ({
     nightEndHour: null,
     lastScanAt: null,
     allowedUserIds: null,
+    irrelevantConfidence: null,
+    revisorEnabled: null,
 });
 
 const makeDeps = (options?: {
     portal?: Record<string, unknown> | null;
-    env?: Record<string, string>;
     dbError?: boolean;
 }) => {
     const portalAiSettings = {
@@ -31,123 +32,68 @@ const makeDeps = (options?: {
             ? jest.fn().mockRejectedValue(new Error('db down'))
             : jest.fn().mockResolvedValue(options?.portal ?? null),
     };
-    const configService = {
-        get: jest.fn((key: string) => options?.env?.[key]),
-    };
-    const service = new CallReportSettingsService(
-        portalAiSettings as never,
-        configService as never,
-    );
+    const service = new CallReportSettingsService(portalAiSettings as never);
     return { service, portalAiSettings };
 };
 
-describe('CallReportSettingsService (портал → env → дефолт кода)', () => {
+describe('CallReportSettingsService (портал → дефолт кода, env-слоя нет)', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('без настроек портала и без env берутся дефолты кода', async () => {
+    it('без настроек портала действуют дефолты кода, портал ВЫКЛЮЧЕН', async () => {
         const { service } = makeDeps();
 
         const settings = await service.resolve('gsr.bitrix24.ru');
 
+        // Главное следствие отказа от env: без строки в БД портал не
+        // обрабатывается — включение только из админки.
+        expect(settings.enabled).toBe(false);
         expect(settings.minDurationSec).toBe(300);
         expect(settings.windowHours).toBe(25);
         expect(settings.maxPerRun).toBe(10);
         expect(settings.staleMinutes).toBe(90);
         expect(settings.llmModel).toBe('gigachat');
-        expect(settings.source).toBe('global');
+        expect(settings.irrelevantConfidence).toBe(0.7);
+        expect(settings.revisorEnabled).toBe(false);
+        expect(settings.deepAnalysisEnabled).toBe(true);
+        expect(settings.createSmartEnabled).toBe(true);
+        expect(settings.classifyEnabled).toBe(true);
+        expect(settings.salesOnly).toBe(true);
+        expect(settings.source).toBe('default');
     });
 
-    it('env перекрывает дефолты кода', async () => {
-        const { service } = makeDeps({
-            env: {
-                CALL_REPORT_MIN_DURATION_SEC: '120',
-                CALL_REPORT_LLM_MODEL: 'cloudru',
-            },
-        });
-
-        const settings = await service.resolve('gsr.bitrix24.ru');
-
-        expect(settings.minDurationSec).toBe(120);
-        expect(settings.llmModel).toBe('cloudru');
-    });
-
-    it('настройка портала перекрывает env', async () => {
-        const { service } = makeDeps({
-            portal: { ...emptyPortalSettings(), minDurationSec: 60 },
-            env: { CALL_REPORT_MIN_DURATION_SEC: '120' },
-        });
-
-        const settings = await service.resolve('gsr.bitrix24.ru');
-
-        expect(settings.minDurationSec).toBe(60);
-        expect(settings.source).toBe('portal');
-    });
-
-    it('незаданное поле портала падает в env, заданное — нет', async () => {
-        const { service } = makeDeps({
-            portal: { ...emptyPortalSettings(), maxPerRun: 50 },
-            env: {
-                CALL_REPORT_MAX_PER_RUN: '10',
-                CALL_REPORT_WINDOW_HOURS: '48',
-            },
-        });
-
-        const settings = await service.resolve('gsr.bitrix24.ru');
-
-        expect(settings.maxPerRun).toBe(50); // из портала
-        expect(settings.windowHours).toBe(48); // из env
-    });
-
-    it('тумблеры: false на портале выигрывает у включённого по умолчанию env', async () => {
+    it('заданные поля портала перекрывают дефолты, незаданные — нет', async () => {
         const { service } = makeDeps({
             portal: {
                 ...emptyPortalSettings(),
+                enabled: true,
+                minDurationSec: 60,
+                irrelevantConfidence: 0.9,
+                revisorEnabled: true,
                 deepAnalysisEnabled: false,
-                salesOnly: false,
             },
         });
 
         const settings = await service.resolve('gsr.bitrix24.ru');
 
+        expect(settings.enabled).toBe(true);
+        expect(settings.minDurationSec).toBe(60);
+        expect(settings.irrelevantConfidence).toBe(0.9);
+        expect(settings.revisorEnabled).toBe(true);
         expect(settings.deepAnalysisEnabled).toBe(false);
-        expect(settings.salesOnly).toBe(false);
-        // Не заданный на портале тумблер остаётся включённым по конвенции env
-        expect(settings.createSmartEnabled).toBe(true);
+        expect(settings.windowHours).toBe(25); // дефолт кода
+        expect(settings.source).toBe('portal');
     });
 
-    it('env-нуль выключает тумблер, когда портал молчит', async () => {
-        const { service } = makeDeps({
-            env: { CALL_REPORT_DEEP_ANALYSIS_ENABLED: '0' },
-        });
+    it('недоступная БД не роняет конвейер — дефолты (портал выключен)', async () => {
+        const { service } = makeDeps({ dbError: true });
 
         const settings = await service.resolve('gsr.bitrix24.ru');
 
-        expect(settings.deepAnalysisEnabled).toBe(false);
+        expect(settings.enabled).toBe(false);
+        expect(settings.source).toBe('default');
     });
 
-    it('мусор в env игнорируется в пользу дефолта кода', async () => {
-        const { service } = makeDeps({
-            env: { CALL_REPORT_WINDOW_HOURS: 'нет' },
-        });
-
-        const settings = await service.resolve('gsr.bitrix24.ru');
-
-        expect(settings.windowHours).toBe(25);
-    });
-
-    it('недоступная БД не роняет конвейер — работаем на глобальных', async () => {
-        const { service } = makeDeps({
-            dbError: true,
-            env: { CALL_REPORT_MIN_DURATION_SEC: '120' },
-        });
-
-        const settings = await service.resolve('gsr.bitrix24.ru');
-
-        expect(settings.minDurationSec).toBe(120);
-        expect(settings.source).toBe('global');
-    });
-
-    it('параметры расписания есть только у портала, глобального аналога нет', async () => {
+    it('параметры расписания без дефолтов: null = каждый тик / без ночного окна', async () => {
         const { service } = makeDeps({
             portal: {
                 ...emptyPortalSettings(),
@@ -162,10 +108,13 @@ describe('CallReportSettingsService (портал → env → дефолт ко�
         expect(settings.scanIntervalMinutes).toBe(60);
         expect(settings.nightStartHour).toBe(22);
         expect(settings.nightEndHour).toBe(6);
-        expect(service.globals()).toMatchObject({ scanIntervalMinutes: null });
+        expect(service.globals()).toMatchObject({
+            scanIntervalMinutes: null,
+            nightScanIntervalMinutes: null,
+        });
     });
 
-    it('демо-список сотрудников берётся с портала вместо суффикса в env', async () => {
+    it('демо-список сотрудников берётся с портала', async () => {
         const { service } = makeDeps({
             portal: { ...emptyPortalSettings(), allowedUserIds: [222, 323] },
         });

@@ -69,8 +69,9 @@ export class EventReportContext {
     }
 
     // === Result/work-status flags ===
-    get resultStatus(): EnumEventItemResultType {
-        return this.dto.report.resultStatus;
+    get resultStatus(): EnumEventItemResultType | null {
+        // null — отчёт из списка (недозвон / возврат в ТМЦ): меню результата не открывали.
+        return this.dto.report?.resultStatus ?? null;
     }
     get isResult(): boolean {
         return this.resultStatus === EnumEventItemResultType.RESULT;

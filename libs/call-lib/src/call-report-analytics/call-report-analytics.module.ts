@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from '@lib/core/redis/redis.module';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { AiModule } from '../ai/ai.module';
 import { TranscriptionStoreModule } from '../transcription/transcription-store.module';
 import { CallReportAnalyticsController } from './controllers/call-report-analytics.controller';
@@ -24,7 +25,14 @@ import { CallReportAnalyticsHistoryService } from './services/call-report-analyt
  * Подробности и контракт — в README.md рядом.
  */
 @Module({
-    imports: [ConfigModule, RedisModule, AiModule, TranscriptionStoreModule],
+    imports: [
+        ConfigModule,
+        RedisModule,
+        AiModule,
+        TranscriptionStoreModule,
+        // Снапшот-крон идёт по включённым порталам portal_ai_settings
+        PortalStoreModule,
+    ],
     controllers: [CallReportAnalyticsController],
     providers: [
         CallReportAnalyticsService,
@@ -32,7 +40,7 @@ import { CallReportAnalyticsHistoryService } from './services/call-report-analyt
         CallReportAnalyticsAggregatorService,
         CallReportAnalyticsCacheService,
         CallReportAnalyticsHistoryService,
-        // Weekly-снапшоты профилей порталов (крон включается env'ом,
+        // Weekly-снапшоты профилей порталов (по включённым порталам БД,
         // требует ScheduleModule.forRoot в app-потребителе)
         CallReportAnalyticsSnapshotScheduler,
     ],

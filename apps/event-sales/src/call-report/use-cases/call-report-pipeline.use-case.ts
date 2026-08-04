@@ -1,7 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Prisma } from 'generated/prisma';
-import { envEnabledByDefault } from '@lib/shared';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
     buildDedupKey,
@@ -66,9 +64,18 @@ export interface CallReportPipelineResult {
     recomendationSaved: boolean;
     /** Тип звонка от дешёвого классификатора (null — классификация не удалась/выключена). */
     callType: string | null;
+    /**
+     * Гейт нерелевантности сработал: разговор не про работу менеджера
+     * (звонок в стороннюю организацию и т.п.) — анализ остановлен после
+     * классификации, процессор не создаёт смарт и не делает глубокий разбор.
+     */
+    irrelevant?: boolean;
 }
 
 const APP_NAME = 'call-report';
+
+/** Код типа-гейта из конфига смарта: «не наш разговор». */
+const IRRELEVANT_CALL_TYPE = 'irrelevant';
 
 /**
  * Конвейер обработки одного звонка, ДВЕ стадии:
@@ -94,9 +101,6 @@ const APP_NAME = 'call-report';
 @Injectable()
 export class CallReportPipelineUseCase {
     private readonly logger = new Logger(CallReportPipelineUseCase.name);
-    private readonly llmModel: LlmModel;
-    /** Kill-switch объединённого вызова: CALL_REPORT_COMBINED_ANALYSIS=0 → два раздельных. */
-    private readonly combinedAnalysisEnabled: boolean;
 
     constructor(
         private readonly pbxService: PBXService,
@@ -107,16 +111,7 @@ export class CallReportPipelineUseCase {
         private readonly classifyStep: CallClassifyStepService,
         private readonly contextBuilder: CallContextBuilderService,
         private readonly settingsService: CallReportSettingsService,
-        private readonly configService: ConfigService,
-    ) {
-        const model = this.configService.get<string>('CALL_REPORT_LLM_MODEL');
-        this.llmModel = LLM_MODELS.includes(model as LlmModel)
-            ? (model as LlmModel)
-            : 'gigachat';
-        this.combinedAnalysisEnabled = envEnabledByDefault(
-            this.configService.get<string>('CALL_REPORT_COMBINED_ANALYSIS'),
-        );
-    }
+    ) {}
 
     /** Обе стадии подряд (синхронный путь POST /call-report/analyze). */
     async execute(
@@ -252,13 +247,38 @@ export class CallReportPipelineUseCase {
             settings.classifyEnabled,
         );
 
+        // ГЕЙТ НЕРЕЛЕВАНТНОСТИ: сотрудник сам звонил в стороннюю
+        // организацию / личный / ошибочный разговор — техника продаж не
+        // оценивается, дорогие шаги (паспорт, GigaChat, глубокий разбор,
+        // смарт-элемент) не тратятся. Классификация уже в ais — звонок
+        // виден в отчётах с типом irrelevant. Ложное срабатывание чинится
+        // порогом уверенности: сомнительные случаи идут полным путём.
+        if (
+            classification?.callType === IRRELEVANT_CALL_TYPE &&
+            classification.confidence >= settings.irrelevantConfidence
+        ) {
+            this.logger.log(
+                `Звонок нерелевантен (activity ${payload.activityId}, ` +
+                    `confidence ${classification.confidence}): ${classification.reason} — анализ остановлен`,
+            );
+            return {
+                transcriptionId: payload.transcriptionId,
+                provider,
+                resumeSaved: false,
+                recomendationSaved: false,
+                callType: classification.callType,
+                irrelevant: true,
+            };
+        }
+
         // Паспорт звонка (слой 0) — тот же CRM-контекст, что у глубокого
         // разбора: без него GigaChat судит «холодный/тёплый» вслепую.
         const passportBlock = await this.buildPassportBlock(row);
+        const llmModel = this.resolveLlmModel(settings.llmModel);
         const { resume, recomendation } = await this.runLlmAnalysis(
             passportBlock ? `${passportBlock}\n\n${text}` : text,
             payload,
-            settings.llmModel,
+            llmModel,
         );
 
         const resumeSaved = await this.saveAiRecord(
@@ -266,12 +286,14 @@ export class CallReportPipelineUseCase {
             resume,
             payload,
             payload.transcriptionId,
+            llmModel,
         );
         const recomendationSaved = await this.saveAiRecord(
             CALL_RECOMENDATION_TYPE,
             recomendation,
             payload,
             payload.transcriptionId,
+            llmModel,
         );
 
         if (resume) {
@@ -317,64 +339,33 @@ export class CallReportPipelineUseCase {
     private async runLlmAnalysis(
         text: string,
         payload: CallReportJobPayload,
-        modelOverride?: string,
+        model: LlmModel,
     ): Promise<{ resume: string | null; recomendation: string | null }> {
-        const model = this.resolveLlmModel(modelOverride);
-        if (this.combinedAnalysisEnabled) {
-            try {
-                return await this.llmOrchestrator.analyzeCall(
-                    model,
-                    text,
-                    payload.domain,
-                );
-            } catch (error) {
-                this.logger.warn(
-                    `LLM-анализ не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
-                );
-                return { resume: null, recomendation: null };
-            }
+        try {
+            // Резюме + рекомендации всегда одним объединённым вызовом
+            // (провайдер сам откатывается на два вызова при непарсибельном
+            // ответе) — отдельного kill-switch больше нет.
+            return await this.llmOrchestrator.analyzeCall(
+                model,
+                text,
+                payload.domain,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `LLM-анализ не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
+            );
+            return { resume: null, recomendation: null };
         }
-        const resume = await this.runAnalysis('resume', text, payload, model);
-        const recomendation = await this.runAnalysis(
-            'recomendation',
-            text,
-            payload,
-            model,
-        );
-        return { resume, recomendation };
     }
 
     /**
      * Модель первичного анализа: значение из настроек портала, если оно
-     * из списка поддерживаемых; иначе — глобальная (env → 'gigachat').
+     * из списка поддерживаемых; иначе — дефолт кода (gigachat).
      */
     private resolveLlmModel(override?: string): LlmModel {
         return override && LLM_MODELS.includes(override as LlmModel)
             ? (override as LlmModel)
-            : this.llmModel;
-    }
-
-    /** Один вид анализа; ошибка не роняет конвейер (транскрипт уже сохранён). */
-    private async runAnalysis(
-        kind: 'resume' | 'recomendation',
-        text: string,
-        payload: CallReportJobPayload,
-        model: LlmModel,
-    ): Promise<string | null> {
-        try {
-            return kind === 'resume'
-                ? await this.llmOrchestrator.resume(model, text, payload.domain)
-                : await this.llmOrchestrator.recomendation(
-                      model,
-                      text,
-                      payload.domain,
-                  );
-        } catch (error) {
-            this.logger.warn(
-                `GigaChat ${kind} не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
-            );
-            return null;
-        }
+            : 'gigachat';
     }
 
     private async saveAiRecord(
@@ -382,12 +373,13 @@ export class CallReportPipelineUseCase {
         result: string | null,
         payload: CallReportJobPayload,
         transcriptionId: string,
+        llmModel: LlmModel,
     ): Promise<boolean> {
         if (!result) return false;
         try {
             await this.aiService.create({
-                provider: this.llmModel,
-                model: this.llmModel,
+                provider: llmModel,
+                model: llmModel,
                 type,
                 status: 'done',
                 result,

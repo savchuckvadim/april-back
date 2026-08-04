@@ -1,9 +1,9 @@
 import { CallReportScheduler } from '../cron/call-report.scheduler';
 import { CallReportDomainRosterService } from '../cron/call-report-domain-roster.service';
 
-/** Эффективные настройки «всё по умолчанию» — как отдаёт settings-сервис. */
+/** Эффективные настройки: дефолты кода + включённый портал. */
 const effectiveSettings = (overrides?: Record<string, unknown>) => ({
-    enabled: null,
+    enabled: true,
     deepAnalysisEnabled: true,
     createSmartEnabled: true,
     classifyEnabled: true,
@@ -20,27 +20,21 @@ const effectiveSettings = (overrides?: Record<string, unknown>) => ({
     nightEndHour: null,
     lastScanAt: null,
     allowedUserIds: null,
-    source: 'global',
+    irrelevantConfidence: 0.7,
+    revisorEnabled: false,
+    source: 'portal',
     ...overrides,
 });
 
 const makeDeps = (options: {
-    enabled?: string;
-    domains?: string;
     lockTaken?: boolean;
     scanError?: string[];
-    /** Порталы из БД (findEnabled). */
+    /** Включённые порталы из БД (findEnabled). */
     dbPortals?: { portalId: number; domain: string }[];
     /** Настройки по домену (resolve). */
     settingsByDomain?: Record<string, Record<string, unknown>>;
+    dbError?: boolean;
 }) => {
-    const config = {
-        get: jest.fn((key: string) => {
-            if (key === 'CALL_REPORT_CRON_ENABLED') return options.enabled;
-            if (key === 'CALL_REPORT_DOMAINS') return options.domains;
-            return undefined;
-        }),
-    };
     const redisClient = {
         set: jest.fn().mockResolvedValue(options.lockTaken ? null : 'OK'),
         del: jest.fn().mockResolvedValue(1),
@@ -55,14 +49,13 @@ const makeDeps = (options: {
         ),
     };
     const portalAiSettings = {
-        findEnabled: jest.fn().mockResolvedValue(options.dbPortals ?? []),
+        findEnabled: options.dbError
+            ? jest.fn().mockRejectedValue(new Error('db down'))
+            : jest.fn().mockResolvedValue(options.dbPortals ?? []),
         markScanned: jest.fn().mockResolvedValue(undefined),
     };
-    // Настоящий ростер: тестируем и merge env ∪ БД, а не только тик.
-    const roster = new CallReportDomainRosterService(
-        config as never,
-        portalAiSettings as never,
-    );
+    // Настоящий ростер: проверяем и его (только БД, fail-open в пустой список).
+    const roster = new CallReportDomainRosterService(portalAiSettings as never);
     const settingsService = {
         resolve: jest.fn((domain: string) =>
             Promise.resolve(
@@ -72,7 +65,6 @@ const makeDeps = (options: {
         globals: jest.fn().mockReturnValue(effectiveSettings()),
     };
     const scheduler = new CallReportScheduler(
-        config as never,
         redisService as never,
         store as never,
         scan as never,
@@ -90,23 +82,51 @@ const makeDeps = (options: {
     };
 };
 
-describe('CallReportScheduler', () => {
+describe('CallReportScheduler (конфигурация — только БД)', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('kill-switch: без CALL_REPORT_CRON_ENABLED=1 тик ничего не делает', async () => {
-        const { scheduler, scan, store } = makeDeps({
-            enabled: '0',
-            domains: 'a.bitrix24.ru',
+    it('включённый в БД портал сканируется с его настройками, lastScanAt отмечается', async () => {
+        const { scheduler, scan, portalAiSettings } = makeDeps({
+            dbPortals: [{ portalId: 5, domain: 'db.bitrix24.ru' }],
+            settingsByDomain: {
+                'db.bitrix24.ru': {
+                    minDurationSec: 60,
+                    windowHours: 48,
+                    maxPerRun: 3,
+                    createSmartEnabled: false,
+                    salesOnly: false,
+                    allowedUserIds: [222],
+                },
+            },
         });
         await scheduler.tick();
+        expect(scan.execute).toHaveBeenCalledWith('db.bitrix24.ru', {
+            minDurationSec: 60,
+            windowHours: 48,
+            maxPerRun: 3,
+            allowedUserIds: [222],
+            createSmartItem: false,
+            salesOnly: false,
+        });
+        expect(portalAiSettings.markScanned).toHaveBeenCalledWith(5);
+    });
+
+    it('нет включённых порталов — тик no-op (но реанимация выполняется)', async () => {
+        const { scheduler, scan, store } = makeDeps({});
+        await scheduler.tick();
         expect(scan.execute).not.toHaveBeenCalled();
-        expect(store.reanimateStaleProcessing).not.toHaveBeenCalled();
+        expect(store.reanimateStaleProcessing).toHaveBeenCalled();
+    });
+
+    it('недоступная БД — пустой ростер, тик не падает', async () => {
+        const { scheduler, scan } = makeDeps({ dbError: true });
+        await expect(scheduler.tick()).resolves.toBeUndefined();
+        expect(scan.execute).not.toHaveBeenCalled();
     });
 
     it('занятый Redis-лок пропускает тик (наложение прогонов)', async () => {
         const { scheduler, scan } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru',
+            dbPortals: [{ portalId: 1, domain: 'a.bitrix24.ru' }],
             lockTaken: true,
         });
         await scheduler.tick();
@@ -115,86 +135,32 @@ describe('CallReportScheduler', () => {
 
     it('ошибка одного домена не роняет обход остальных', async () => {
         const { scheduler, scan, redisClient } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru, b.bitrix24.ru',
+            dbPortals: [
+                { portalId: 1, domain: 'a.bitrix24.ru' },
+                { portalId: 2, domain: 'b.bitrix24.ru' },
+            ],
             scanError: ['a.bitrix24.ru'],
         });
         await scheduler.tick();
         expect(scan.execute).toHaveBeenCalledTimes(2);
-        expect(scan.execute).toHaveBeenCalledWith(
-            'b.bitrix24.ru',
-            expect.objectContaining({
-                allowedUserIds: undefined,
-                createSmartItem: true,
-            }),
-        );
         expect(redisClient.del).toHaveBeenCalled();
     });
 
-    it('демо-режим: суффикс domain:222|323 передаёт allowedUserIds в скан', async () => {
+    it('портал, выключенный между выборкой и сканом, пропускается', async () => {
         const { scheduler, scan } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru:222|323, b.bitrix24.ru',
-        });
-        await scheduler.tick();
-        expect(scan.execute).toHaveBeenCalledWith(
-            'a.bitrix24.ru',
-            expect.objectContaining({ allowedUserIds: [222, 323] }),
-        );
-        expect(scan.execute).toHaveBeenCalledWith(
-            'b.bitrix24.ru',
-            expect.objectContaining({ allowedUserIds: undefined }),
-        );
-    });
-
-    it('демо-список из настроек портала главнее env-суффикса', async () => {
-        const { scheduler, scan } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru:222',
-            settingsByDomain: {
-                'a.bitrix24.ru': { allowedUserIds: [999] },
-            },
-        });
-        await scheduler.tick();
-        expect(scan.execute).toHaveBeenCalledWith(
-            'a.bitrix24.ru',
-            expect.objectContaining({ allowedUserIds: [999] }),
-        );
-    });
-
-    it('портал с enabled=true в БД сканируется даже без env-списка', async () => {
-        const { scheduler, scan, portalAiSettings } = makeDeps({
-            enabled: '1',
-            domains: '',
-            dbPortals: [{ portalId: 5, domain: 'db.bitrix24.ru' }],
-        });
-        await scheduler.tick();
-        expect(scan.execute).toHaveBeenCalledWith(
-            'db.bitrix24.ru',
-            expect.anything(),
-        );
-        // После успешного скана планировщик отмечает lastScanAt портала.
-        expect(portalAiSettings.markScanned).toHaveBeenCalledWith(5);
-    });
-
-    it('enabled=false в настройках портала выключает его скан', async () => {
-        const { scheduler, scan } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru, b.bitrix24.ru',
+            dbPortals: [{ portalId: 1, domain: 'a.bitrix24.ru' }],
             settingsByDomain: { 'a.bitrix24.ru': { enabled: false } },
         });
         await scheduler.tick();
-        expect(scan.execute).toHaveBeenCalledTimes(1);
-        expect(scan.execute).toHaveBeenCalledWith(
-            'b.bitrix24.ru',
-            expect.anything(),
-        );
+        expect(scan.execute).not.toHaveBeenCalled();
     });
 
     it('scanIntervalMinutes: свежий lastScanAt пропускает портал, старый — нет', async () => {
         const { scheduler, scan } = makeDeps({
-            enabled: '1',
-            domains: 'fresh.bitrix24.ru, stale.bitrix24.ru',
+            dbPortals: [
+                { portalId: 1, domain: 'fresh.bitrix24.ru' },
+                { portalId: 2, domain: 'stale.bitrix24.ru' },
+            ],
             settingsByDomain: {
                 'fresh.bitrix24.ru': {
                     scanIntervalMinutes: 120,
@@ -214,47 +180,9 @@ describe('CallReportScheduler', () => {
         );
     });
 
-    it('пороги портала (длительность/окно/лимит) уезжают в скан', async () => {
-        const { scheduler, scan } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru',
-            settingsByDomain: {
-                'a.bitrix24.ru': {
-                    minDurationSec: 60,
-                    windowHours: 48,
-                    maxPerRun: 3,
-                    createSmartEnabled: false,
-                },
-            },
-        });
-        await scheduler.tick();
-        expect(scan.execute).toHaveBeenCalledWith('a.bitrix24.ru', {
-            minDurationSec: 60,
-            windowHours: 48,
-            maxPerRun: 3,
-            allowedUserIds: undefined,
-            createSmartItem: false,
-            salesOnly: true,
-        });
-    });
-
-    it('недоступная БД настроек не срывает тик — обходятся env-домены', async () => {
-        const { scheduler, scan, portalAiSettings } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru',
-        });
-        portalAiSettings.findEnabled.mockRejectedValue(new Error('db down'));
-        await scheduler.tick();
-        expect(scan.execute).toHaveBeenCalledWith(
-            'a.bitrix24.ru',
-            expect.anything(),
-        );
-    });
-
     it('перед сканом выполняется реанимация зависших processing', async () => {
         const { scheduler, store } = makeDeps({
-            enabled: '1',
-            domains: 'a.bitrix24.ru',
+            dbPortals: [{ portalId: 1, domain: 'a.bitrix24.ru' }],
         });
         await scheduler.tick();
         expect(store.reanimateStaleProcessing).toHaveBeenCalledWith(

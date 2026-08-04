@@ -1,24 +1,13 @@
 import { CallRevisionScheduler } from '../cron/call-revision.scheduler';
 
 const makeDeps = (options: {
-    enabled?: string;
-    domains?: { domain: string }[];
+    domains?: { domain: string; portalId: number }[];
     lockTaken?: boolean;
-    windowHours?: string;
-    maxEntities?: string;
+    /** revisorEnabled по доменам (дефолт false — как в настройках). */
+    revisorOn?: string[];
     disabledDomains?: string[];
     reviseError?: string[];
 }) => {
-    const config = {
-        get: jest.fn((key: string) => {
-            if (key === 'CALL_REPORT_REVISOR_ENABLED') return options.enabled;
-            if (key === 'CALL_REPORT_REVISOR_WINDOW_HOURS')
-                return options.windowHours;
-            if (key === 'CALL_REPORT_REVISOR_MAX_ENTITIES')
-                return options.maxEntities;
-            return undefined;
-        }),
-    };
     const redisClient = {
         set: jest.fn().mockResolvedValue(options.lockTaken ? null : 'OK'),
         del: jest.fn().mockResolvedValue(1),
@@ -30,9 +19,8 @@ const makeDeps = (options: {
     const settingsService = {
         resolve: jest.fn((domain: string) =>
             Promise.resolve({
-                enabled: options.disabledDomains?.includes(domain)
-                    ? false
-                    : null,
+                enabled: !options.disabledDomains?.includes(domain),
+                revisorEnabled: options.revisorOn?.includes(domain) ?? false,
             }),
         ),
     };
@@ -49,7 +37,6 @@ const makeDeps = (options: {
         ),
     };
     const scheduler = new CallRevisionScheduler(
-        config as never,
         redisService as never,
         roster as never,
         settingsService as never,
@@ -58,55 +45,52 @@ const makeDeps = (options: {
     return { scheduler, revisionService, redisClient };
 };
 
-describe('CallRevisionScheduler (ночной ревизор)', () => {
+describe('CallRevisionScheduler (ночной ревизор, тумблер в БД)', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('по умолчанию выключен: без CALL_REPORT_REVISOR_ENABLED=1 тик молчит', async () => {
+    it('ревизор по умолчанию выключен: без revisorEnabled портал пропускается', async () => {
         const { scheduler, revisionService } = makeDeps({
-            domains: [{ domain: 'a.bitrix24.ru' }],
+            domains: [{ domain: 'a.bitrix24.ru', portalId: 1 }],
         });
         await scheduler.tick();
         expect(revisionService.runForDomain).not.toHaveBeenCalled();
     });
 
+    it('revisorEnabled=true в настройках портала включает ревизию', async () => {
+        const { scheduler, revisionService } = makeDeps({
+            domains: [{ domain: 'a.bitrix24.ru', portalId: 1 }],
+            revisorOn: ['a.bitrix24.ru'],
+        });
+        await scheduler.tick();
+        expect(revisionService.runForDomain).toHaveBeenCalledWith(
+            'a.bitrix24.ru',
+            expect.any(Date),
+            expect.any(Date),
+            20,
+        );
+    });
+
     it('занятый Redis-лок пропускает тик', async () => {
         const { scheduler, revisionService } = makeDeps({
-            enabled: '1',
-            domains: [{ domain: 'a.bitrix24.ru' }],
+            domains: [{ domain: 'a.bitrix24.ru', portalId: 1 }],
+            revisorOn: ['a.bitrix24.ru'],
             lockTaken: true,
         });
         await scheduler.tick();
         expect(revisionService.runForDomain).not.toHaveBeenCalled();
     });
 
-    it('окно и лимит из env уезжают в ревизию каждого домена', async () => {
-        const { scheduler, revisionService } = makeDeps({
-            enabled: '1',
-            domains: [{ domain: 'a.bitrix24.ru' }],
-            windowHours: '48',
-            maxEntities: '5',
-        });
-        await scheduler.tick();
-        const call = revisionService.runForDomain.mock.calls[0] as unknown as [
-            string,
-            Date,
-            Date,
-            number,
-        ];
-        expect(call[0]).toBe('a.bitrix24.ru');
-        expect(call[3]).toBe(5);
-        expect((call[2].getTime() - call[1].getTime()) / 3_600_000).toBeCloseTo(
-            48,
-        );
-    });
-
-    it('портал с enabled=false пропускается, ошибка домена не роняет обход', async () => {
+    it('выключенный портал пропускается, ошибка домена не роняет обход', async () => {
         const { scheduler, revisionService, redisClient } = makeDeps({
-            enabled: '1',
             domains: [
-                { domain: 'off.bitrix24.ru' },
-                { domain: 'fail.bitrix24.ru' },
-                { domain: 'ok.bitrix24.ru' },
+                { domain: 'off.bitrix24.ru', portalId: 1 },
+                { domain: 'fail.bitrix24.ru', portalId: 2 },
+                { domain: 'ok.bitrix24.ru', portalId: 3 },
+            ],
+            revisorOn: [
+                'off.bitrix24.ru',
+                'fail.bitrix24.ru',
+                'ok.bitrix24.ru',
             ],
             disabledDomains: ['off.bitrix24.ru'],
             reviseError: ['fail.bitrix24.ru'],

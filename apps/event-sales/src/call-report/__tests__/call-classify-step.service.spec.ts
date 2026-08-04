@@ -14,7 +14,6 @@ const CLASSIFICATION = {
 };
 
 const makeDeps = (overrides?: {
-    env?: Record<string, string>;
     vibecodeError?: boolean;
     confidence?: number;
 }) => {
@@ -51,16 +50,12 @@ const makeDeps = (overrides?: {
         }),
     };
     const aiService = { create: jest.fn().mockResolvedValue({ id: '1' }) };
-    const config = {
-        get: jest.fn((key: string) => overrides?.env?.[key]),
-    };
     const service = new CallClassifyStepService(
         vibecode as never,
         keyResolver as never,
         instruction as never,
         typeRegistry as never,
         aiService as never,
-        config as never,
     );
     return {
         service,
@@ -124,26 +119,14 @@ describe('CallClassifyStepService', () => {
         );
     });
 
-    it('порог эскалации настраивается env-ом', async () => {
-        const { service, aiService } = makeDeps({
-            env: { CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE: '0.95' },
-        });
-        await service.run('текст', PAYLOAD as never, '42');
-        // confidence 0.9 < порога 0.95 → эскалация.
-        expect(aiService.create).toHaveBeenCalledWith(
-            expect.objectContaining({
-                user_result: expect.objectContaining({
-                    needsEscalation: true,
-                }) as object,
-            }),
+    it('enabledOverride=false из настроек портала пропускает шаг', async () => {
+        const { service, vibecode } = makeDeps();
+        const result = await service.run(
+            'текст',
+            PAYLOAD as never,
+            '42',
+            false,
         );
-    });
-
-    it('CALL_REPORT_CLASSIFY_ENABLED=0 — шаг пропускается', async () => {
-        const { service, vibecode } = makeDeps({
-            env: { CALL_REPORT_CLASSIFY_ENABLED: '0' },
-        });
-        const result = await service.run('текст', PAYLOAD as never, '42');
         expect(result).toBeNull();
         expect(vibecode.classifyCall).not.toHaveBeenCalled();
     });

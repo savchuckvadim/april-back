@@ -116,6 +116,14 @@ export class CallReportProcessor {
                     `provider ${result.provider}, callType=${result.callType ?? '—'}, ` +
                     `resume=${result.resumeSaved}, recomendation=${result.recomendationSaved}`,
             );
+            // Гейт нерелевантности: чужой/посторонний разговор — смарт и
+            // глубокий разбор не делаем (классификация уже в ais).
+            if (result.irrelevant) {
+                this.logger.log(
+                    `Звонок ${result.transcriptionId} нерелевантен — смарт-элемент и глубокий разбор пропущены`,
+                );
+                return;
+            }
             if (job.data.createSmartItem) {
                 await this.createSmartItem(
                     result.transcriptionId,
@@ -180,22 +188,25 @@ export class CallReportProcessor {
             // Режим разбора: focus — три фокус-вызова + синтез (Фаза 2 плана
             // v2, глубже и точнее, ×1.5 вызовов); иначе — цельный разбор.
             const model = settings.deepAnalysisModel ?? undefined;
+            // Штатный режим — многослойный фокус-разбор (Фаза 2 плана v2:
+            // глубже и точнее). Цельный CallDeepAnalysisService — страховка:
+            // если фокус-разбор не собрался (выжило <2 проходов), звонок
+            // всё равно получает разбор одним вызовом.
             const analysis =
-                process.env.CALL_REPORT_ANALYSIS_MODE === 'focus'
-                    ? await this.focusAnalysis.run(
-                          payload.domain,
-                          row.text,
-                          callType,
-                          passportBlock,
-                          { model },
-                      )
-                    : await this.deepAnalysis.run(
-                          payload.domain,
-                          row.text,
-                          callType,
-                          passportBlock,
-                          { model },
-                      );
+                (await this.focusAnalysis.run(
+                    payload.domain,
+                    row.text,
+                    callType,
+                    passportBlock,
+                    { model },
+                )) ??
+                (await this.deepAnalysis.run(
+                    payload.domain,
+                    row.text,
+                    callType,
+                    passportBlock,
+                    { model },
+                ));
             if (!analysis) return;
 
             const written = await this.analysisIntake.intake(

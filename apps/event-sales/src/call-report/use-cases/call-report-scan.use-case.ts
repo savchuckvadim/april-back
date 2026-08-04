@@ -83,9 +83,8 @@ export class CallReportScanUseCase {
         domain: string,
         salesOnlyOverride?: boolean,
     ): Promise<Set<number> | null> {
-        const salesOnly =
-            salesOnlyOverride ??
-            this.configService.get<string>('CALL_REPORT_SALES_ONLY') !== '0';
+        // Дефолт кода: только отдел продаж; per-portal — из настроек админки.
+        const salesOnly = salesOnlyOverride ?? true;
         if (!salesOnly) {
             return null;
         }
@@ -118,14 +117,11 @@ export class CallReportScanUseCase {
         domain: string,
         options?: CallReportScanOptions,
     ): Promise<CallReportScanResult> {
-        const minDurationSec =
-            options?.minDurationSec ??
-            this.envNumber('CALL_REPORT_MIN_DURATION_SEC', 300);
-        const windowHours =
-            options?.windowHours ??
-            this.envNumber('CALL_REPORT_WINDOW_HOURS', 25);
-        const maxPerRun =
-            options?.maxPerRun ?? this.envNumber('CALL_REPORT_MAX_PER_RUN', 10);
+        // Дефолты кода: штатный вызов идёт из планировщика с настройками
+        // портала (админка); env-слоя нет.
+        const minDurationSec = options?.minDurationSec ?? 300;
+        const windowHours = options?.windowHours ?? 25;
+        const maxPerRun = options?.maxPerRun ?? 10;
         const jobTimeoutMs = this.envNumber(
             'CALL_REPORT_JOB_TIMEOUT_MS',
             45 * 60_000,

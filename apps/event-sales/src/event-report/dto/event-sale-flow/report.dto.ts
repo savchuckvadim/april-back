@@ -11,7 +11,6 @@ import {
     IsBoolean,
     IsEnum,
     IsIn,
-    IsNotEmpty,
     IsNumber,
     IsObject,
     IsOptional,
@@ -250,15 +249,19 @@ export class FailReasonDto {
 }
 
 export class ReportDto {
-    @ApiProperty({
+    @ApiPropertyOptional({
         description:
-            'Итоговый статус результата события (`result` / `noresult` / `expired` / `new` / `cancel`).',
+            'Итоговый статус результата события (`result` / `noresult` / `expired` / `new` / `cancel`). ' +
+            '`null`, когда отчёт отправлен из списка мимо меню результата — ' +
+            'недозвон и возврат в ТМЦ (legacy-контракт: фронт шлёт то, что лежит ' +
+            'в eventItemMenu, а там ничего не выбирали).',
         enum: EnumEventItemResultType,
+        nullable: true,
         example: EnumEventItemResultType.RESULT,
     })
+    @IsOptional()
     @IsEnum(EnumEventItemResultType)
-    @IsNotEmpty()
-    resultStatus: EnumEventItemResultType;
+    resultStatus: EnumEventItemResultType | null;
 
     @ApiProperty({
         description: 'Текстовое описание/комментарий отчёта по событию.',

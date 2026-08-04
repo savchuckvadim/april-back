@@ -1,45 +1,142 @@
-import { Body, Controller, HttpCode, Logger, Post } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    Body,
+    Controller,
+    Get,
+    HttpCode,
+    Logger,
+    NotFoundException,
+    Param,
+    Post,
+    Query,
+} from '@nestjs/common';
+import {
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    ApiTags,
+} from '@nestjs/swagger';
+import { randomUUID } from 'crypto';
+import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
+import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
+import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
-import { EventSalesFlowResponseDto } from '../dto/response/event-sales-flow-response.dto';
-import { EventReportUseCase } from '../use-cases/event-report.use-case';
+import { EventFlowOperationDto } from '../dto/response/event-flow-operation.dto';
+import { EventFlowJobData } from '../dto/event-flow-job.dto';
+import { EventFlowStatusService } from '../services/status/event-flow-status.service';
 
 @ApiTags('Event Sales')
 @Controller('event-sales')
 export class EventSalesController {
     private readonly logger = new Logger(EventSalesController.name);
 
-    constructor(private readonly eventReportUseCase: EventReportUseCase) {}
+    constructor(
+        private readonly queue: QueueDispatcherService,
+        private readonly status: EventFlowStatusService,
+    ) {}
 
     /**
-     * Обработка события фронта event-sales: формирование отчёта и
-     * планирование звонка. Принимает полный flow-DTO, прогоняет его через
-     * {@link EventReportUseCase} и возвращает сводку отправленных в Bitrix команд.
-     * Работает на очередях
+     * Приём отчёта менеджера из приложения «Звонки».
+     *
+     * Контроллер только принимает и ставит в очередь: сам flow (batch Битрикса
+     * на десятки команд) выполняет {@link EventFlowProcessor}. Раньше всё это
+     * крутилось внутри HTTP-запроса, и менеджер ждал ответа минутами.
+     *
+     * Отчёт — команда, а не запрос, поэтому у операции есть id: повторный POST
+     * с тем же `operationId` не выполнит её второй раз, а вернёт текущий статус.
+     * Это же спасает при обрыве связи — клиент повторяет запрос, а не рискует
+     * записать отчёт дважды.
      */
-
     @ApiOperation({
-        summary: 'Event sales flow',
+        summary: 'Event sales flow: принять отчёт в обработку',
         description:
-            'Обработка события фронта event-sales — отчёт и планирование звонка. ' +
-            'Принимает flow-DTO, оркестрирует batch-команды Bitrix и отправляет их одним HTTP-вызовом.',
+            'Ставит отправку отчёта в очередь и отвечает сразу. Исход приходит ' +
+            'по WS-событию `event-sales-flow:done` / `event-sales-flow:error` на ' +
+            'переданный `socketId`, а также доступен поллингом ' +
+            '`GET /event-sales/flow/status/{operationId}`. Повторный вызов с тем ' +
+            'же `operationId` возвращает статус уже принятой операции и НЕ ' +
+            'выполняет flow второй раз.',
     })
-    @ApiBody({
-        type: EventSalesFlowDto,
-    })
+    @ApiBody({ type: EventSalesFlowDto })
     @ApiOkResponse({
-        description:
-            'Flow выполнен: команды сформированы и отправлены в Bitrix.',
-        type: EventSalesFlowResponseDto,
+        description: 'Операция принята (или уже была принята ранее).',
+        type: EventFlowOperationDto,
     })
     @Post('flow')
     @HttpCode(200)
     async getFlow(
         @Body() dto: EventSalesFlowDto,
-    ): Promise<EventSalesFlowResponseDto> {
+    ): Promise<EventFlowOperationDto> {
+        const operationId = dto.operationId || randomUUID();
+
+        const existing = await this.status.get(dto.domain, operationId);
+        if (existing) {
+            this.logger.log(
+                `event-sales/flow: operation ${operationId} уже принята ` +
+                    `(${existing.status}) — повторно не выполняем`,
+            );
+            return existing;
+        }
+
         this.logger.log(
-            `event-sales/flow: domain=${dto.domain}, plan=${dto.plan?.type?.current?.code}, report=${dto.report?.resultStatus}`,
+            `event-sales/flow: domain=${dto.domain}, operationId=${operationId}, ` +
+                `plan=${dto.plan?.type?.current?.code}, report=${dto.report?.resultStatus}`,
         );
-        return this.eventReportUseCase.execute(dto);
+
+        const operation = await this.status.setQueued(
+            dto.domain,
+            operationId,
+            new Date().toISOString(),
+        );
+
+        const jobData: EventFlowJobData = {
+            operationId,
+            domain: dto.domain,
+            socketId: dto.socketId,
+            dto,
+        };
+        // jobId = operationId: два одинаковых запроса не породят два прогона.
+        await this.queue.dispatch(
+            QueueNames.EVENT_SALES_FLOW,
+            JobNames.EVENT_SALES_FLOW,
+            jobData,
+            operationId,
+            { removeOnComplete: true, removeOnFail: true },
+        );
+
+        return operation;
+    }
+
+    /**
+     * Статус операции. Фолбэк к WS: сокета может не быть (другая реплика,
+     * оборванное соединение, перезагруженный фрейм), а исход знать надо.
+     */
+    @ApiOperation({
+        summary: 'Статус операции отправки отчёта',
+        description:
+            'Возвращает состояние операции: `queued`, `running`, `done` или ' +
+            '`failed`. Статус живёт час после завершения.',
+    })
+    @ApiParam({ name: 'operationId', description: 'Идентификатор операции.' })
+    @ApiQuery({
+        name: 'domain',
+        description:
+            'Домен портала — в его пространстве живёт статус операции.',
+    })
+    @ApiOkResponse({ type: EventFlowOperationDto })
+    @Get('flow/status/:operationId')
+    async getFlowStatus(
+        @Param('operationId') operationId: string,
+        @Query('domain') domain: string,
+    ): Promise<EventFlowOperationDto> {
+        const operation = await this.status.get(domain, operationId);
+        if (!operation) {
+            throw new NotFoundException(
+                `Операция ${operationId} не найдена: статус живёт час после ` +
+                    `завершения, либо домен указан неверно.`,
+            );
+        }
+        return operation;
     }
 }

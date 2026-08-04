@@ -52,6 +52,20 @@ export interface PortalAiSettingsRecord {
 
     /** ДЕМО-режим: bitrix-id сотрудников, чьи звонки анализируем. */
     allowedUserIds: number[] | null;
+
+    // --- Параметры из JSON-колонки `settings` (добавляются без миграции) ---
+
+    /**
+     * Порог уверенности гейта нерелевантности (0..1): классификатор счёл
+     * разговор посторонним с confidence >= порога → анализ останавливается
+     * после дешёвой классификации. NULL — дефолт кода (0.7).
+     */
+    irrelevantConfidence: number | null;
+    /**
+     * Ночной РЕВИЗОР (свод по сделкам/лидам за день). NULL — выключен:
+     * ревизия удваивает LLM-расход и включается сознательно.
+     */
+    revisorEnabled: boolean | null;
 }
 
 /**
@@ -63,7 +77,7 @@ export type PortalAiSettingsUpdate = Partial<
     Omit<PortalAiSettingsRecord, 'lastScanAt'>
 >;
 
-/** Пустой набор: ни одна настройка не задана — портал живёт на глобальных. */
+/** Пустой набор: ни одна настройка не задана — действуют дефолты кода. */
 export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     enabled: null,
     deepAnalysisEnabled: null,
@@ -82,6 +96,8 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     nightEndHour: null,
     lastScanAt: null,
     allowedUserIds: null,
+    irrelevantConfidence: null,
+    revisorEnabled: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

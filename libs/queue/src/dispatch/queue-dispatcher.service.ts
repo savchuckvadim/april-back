@@ -41,6 +41,9 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL)
         private readonly eventSalesColdCallQueue: Queue,
 
+        @InjectQueue(QueueNames.EVENT_SALES_FLOW)
+        private readonly eventSalesFlowQueue: Queue,
+
         //очепедь для ожидания данных в тишине
         @InjectQueue(QueueNames.EVENT_SILENT)
         private readonly eventSilentQueue: Queue,
@@ -112,6 +115,9 @@ export class QueueDispatcherService {
 
             case QueueNames.EVENT_SALES_COLD_CALL:
                 return this.eventSalesColdCallQueue;
+
+            case QueueNames.EVENT_SALES_FLOW:
+                return this.eventSalesFlowQueue;
 
             case QueueNames.EVENT_SILENT:
                 return this.eventSilentQueue;

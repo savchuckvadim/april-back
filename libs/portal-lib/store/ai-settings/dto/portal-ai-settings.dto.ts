@@ -3,6 +3,7 @@ import {
     IsArray,
     IsBoolean,
     IsInt,
+    IsNumber,
     IsOptional,
     IsString,
     Max,
@@ -38,6 +39,8 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.nightEndHour = source.nightEndHour ?? null;
         this.lastScanAt = source.lastScanAt ?? null;
         this.allowedUserIds = source.allowedUserIds ?? null;
+        this.irrelevantConfidence = source.irrelevantConfidence ?? null;
+        this.revisorEnabled = source.revisorEnabled ?? null;
     }
 
     @ApiProperty({
@@ -210,6 +213,30 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     allowedUserIds: number[] | null;
+
+    @ApiProperty({
+        description:
+            'Порог уверенности гейта нерелевантности (0..1): классификатор ' +
+            'счёл разговор посторонним (сотрудник сам звонил в стороннюю ' +
+            'организацию, личный, ошибочный) с уверенностью не ниже порога — ' +
+            'анализ останавливается после дешёвой классификации, дорогие шаги ' +
+            'не тратятся. Выше порог — гейт осторожнее. Пусто — 0.7.',
+        example: 0.7,
+        type: Number,
+        nullable: true,
+    })
+    irrelevantConfidence: number | null;
+
+    @ApiProperty({
+        description:
+            'Ночной РЕВИЗОР: раз в сутки сводит картину по каждой сделке/лиду ' +
+            'с дневными разборами (невыполненные обещания, рекомендации по ' +
+            'сделке, риски). Удваивает LLM-расход. Пусто — выключен.',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    revisorEnabled: boolean | null;
 }
 
 /**
@@ -406,4 +433,29 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsInt({ each: true })
     @Min(1, { each: true })
     allowedUserIds?: number[] | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Порог уверенности гейта нерелевантности, 0..1 (null — дефолт 0.7).',
+        example: 0.7,
+        type: Number,
+        minimum: 0.05,
+        maximum: 1,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0.05)
+    @Max(1)
+    irrelevantConfidence?: number | null;
+
+    @ApiPropertyOptional({
+        description: 'Ночной ревизор: свод по сущностям раз в сутки.',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    revisorEnabled?: boolean | null;
 }

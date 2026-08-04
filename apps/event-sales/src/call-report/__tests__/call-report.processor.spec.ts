@@ -83,6 +83,7 @@ const makeDeps = () => {
         dispatcher,
         baseItem,
         deepAnalysis,
+        focusAnalysis,
         contextBuilder,
         analysisIntake,
         transcriptionStore,
@@ -156,20 +157,22 @@ describe('CallReportProcessor (стадии)', () => {
         expect(baseItem.createBaseItem).toHaveBeenCalledWith('42', 'cold');
     });
 
-    it('глубокий разбор считается и записывается через intake', async () => {
-        const { processor, deepAnalysis, analysisIntake } = makeDeps();
+    it('фокус-разбор считается и записывается через intake (deep не нужен)', async () => {
+        const { processor, focusAnalysis, deepAnalysis, analysisIntake } =
+            makeDeps();
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
         // Четвёртый аргумент — «паспорт звонка» слоя 0 (контекст CRM),
         // пятый — модель из настроек портала (не переопределена).
-        expect(deepAnalysis.run).toHaveBeenCalledWith(
+        expect(focusAnalysis.run).toHaveBeenCalledWith(
             'test.bitrix24.ru',
             'алло, здравствуйте',
             'cold',
             'КОНТЕКСТ ИЗ CRM: тест',
             { model: undefined },
         );
+        expect(deepAnalysis.run).not.toHaveBeenCalled();
         expect(analysisIntake.intake).toHaveBeenCalledWith(
             '42',
             'call-report-analyzer',
@@ -177,9 +180,46 @@ describe('CallReportProcessor (стадии)', () => {
         );
     });
 
-    it('deepAnalysisEnabled=false в настройках портала пропускает разбор', async () => {
-        const { processor, deepAnalysis, analysisIntake, settingsService } =
+    it('фокус-разбор не собрался (null) — страховочный цельный разбор', async () => {
+        const { processor, focusAnalysis, deepAnalysis, analysisIntake } =
             makeDeps();
+        focusAnalysis.run.mockResolvedValue(null);
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(deepAnalysis.run).toHaveBeenCalled();
+        expect(analysisIntake.intake).toHaveBeenCalled();
+    });
+
+    it('нерелевантный звонок (гейт) — без смарт-элемента и глубокого разбора', async () => {
+        const { processor, pipeline, baseItem, deepAnalysis } = makeDeps();
+        pipeline.executeAnalyze.mockResolvedValue({
+            transcriptionId: '42',
+            provider: 'yandex',
+            resumeSaved: false,
+            recomendationSaved: false,
+            callType: 'irrelevant',
+            irrelevant: true,
+        });
+        await processor.handleAnalyze(
+            makeJob({
+                ...PAYLOAD,
+                transcriptionId: '42',
+                createSmartItem: true,
+            }),
+        );
+        expect(baseItem.createBaseItem).not.toHaveBeenCalled();
+        expect(deepAnalysis.run).not.toHaveBeenCalled();
+    });
+
+    it('deepAnalysisEnabled=false в настройках портала пропускает разбор', async () => {
+        const {
+            processor,
+            focusAnalysis,
+            deepAnalysis,
+            analysisIntake,
+            settingsService,
+        } = makeDeps();
         settingsService.resolve.mockResolvedValue({
             deepAnalysisEnabled: false,
             deepAnalysisModel: null,
@@ -187,12 +227,13 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
+        expect(focusAnalysis.run).not.toHaveBeenCalled();
         expect(deepAnalysis.run).not.toHaveBeenCalled();
         expect(analysisIntake.intake).not.toHaveBeenCalled();
     });
 
     it('deepAnalysisModel из настроек портала уезжает в разбор', async () => {
-        const { processor, deepAnalysis, settingsService } = makeDeps();
+        const { processor, focusAnalysis, settingsService } = makeDeps();
         settingsService.resolve.mockResolvedValue({
             deepAnalysisEnabled: true,
             deepAnalysisModel: 'bitrix/custom-model',
@@ -200,7 +241,7 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
-        expect(deepAnalysis.run).toHaveBeenCalledWith(
+        expect(focusAnalysis.run).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
             expect.anything(),
@@ -223,8 +264,10 @@ describe('CallReportProcessor (стадии)', () => {
         expect(analysisIntake.intake).not.toHaveBeenCalled();
     });
 
-    it('разбор не удался (null) — intake не вызывается, джоб успешен', async () => {
-        const { processor, deepAnalysis, analysisIntake } = makeDeps();
+    it('оба разбора не удались (null) — intake не вызывается, джоб успешен', async () => {
+        const { processor, focusAnalysis, deepAnalysis, analysisIntake } =
+            makeDeps();
+        focusAnalysis.run.mockResolvedValue(null);
         deepAnalysis.run.mockResolvedValue(null);
         await expect(
             processor.handleAnalyze(

@@ -5,6 +5,13 @@ import {
     ContactMultifieldDto,
 } from '../dto/event-sale-flow/contact.dto';
 import { ReturnToTmcDto } from '../dto/event-sale-flow/event-sales-flow.dto';
+import { PlanTypeDto } from '../dto/event-sale-flow/plan.dto';
+import { ReportDto } from '../dto/event-sale-flow/report.dto';
+import {
+    EnumEventItemResultType,
+    EnumWorkStatusCode,
+    EnumWorkStatusName,
+} from '../types/report-types';
 
 describe('ContactDto', () => {
     it('валиден при полностью пустом контакте (нет даже ID и имени)', async () => {
@@ -66,6 +73,87 @@ describe('ReturnToTmcDto', () => {
 
     it('невалиден, если isActive не boolean', async () => {
         const dto = plainToInstance(ReturnToTmcDto, { isActive: 'yes' });
+        const errors = await validate(dto);
+        expect(errors.length).toBeGreaterThan(0);
+    });
+});
+
+describe('PlanTypeDto', () => {
+    it('валиден, когда тип не выбран (current: null) — недозвон без плана', async () => {
+        const dto = plainToInstance(PlanTypeDto, { current: null });
+        const errors = await validate(dto);
+        expect(errors).toHaveLength(0);
+    });
+
+    it('невалиден, если у выбранного типа неизвестный code', async () => {
+        const dto = plainToInstance(PlanTypeDto, {
+            current: { id: 1, code: 'unknown', name: 'Что-то' },
+        });
+        const errors = await validate(dto);
+        expect(errors.length).toBeGreaterThan(0);
+    });
+});
+
+describe('ReportDto', () => {
+    const noCallReport = {
+        resultStatus: null,
+        description: 'Перенос - не было времени',
+        workStatus: {
+            current: {
+                id: 0,
+                code: EnumWorkStatusCode.inJob,
+                name: EnumWorkStatusName.inJob,
+                isActive: true,
+            },
+        },
+        noresultReason: {
+            current: {
+                id: 4,
+                code: 'noresult_notime',
+                name: 'Перенос - не было времени',
+                isActive: true,
+            },
+        },
+        failType: {
+            current: {
+                id: 2,
+                code: 'garant',
+                name: 'Гарант/Запрет',
+                isActive: true,
+            },
+        },
+        failReason: {
+            current: {
+                id: 0,
+                code: 'fail_notime',
+                name: 'Не было времени',
+                isActive: true,
+            },
+        },
+        isNoCall: true,
+    };
+
+    it('валиден при resultStatus: null — отправка недозвона из списка', async () => {
+        const dto = plainToInstance(ReportDto, noCallReport);
+        const errors = await validate(dto);
+        expect(errors).toHaveLength(0);
+    });
+
+    it('валиден при заполненном resultStatus', async () => {
+        const dto = plainToInstance(ReportDto, {
+            ...noCallReport,
+            resultStatus: EnumEventItemResultType.RESULT,
+            isNoCall: false,
+        });
+        const errors = await validate(dto);
+        expect(errors).toHaveLength(0);
+    });
+
+    it('невалиден, если resultStatus не из перечисления', async () => {
+        const dto = plainToInstance(ReportDto, {
+            ...noCallReport,
+            resultStatus: 'done',
+        });
         const errors = await validate(dto);
         expect(errors.length).toBeGreaterThan(0);
     });

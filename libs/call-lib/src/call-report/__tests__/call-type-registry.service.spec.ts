@@ -49,6 +49,7 @@ describe('CallTypeRegistryService', () => {
             'decision',
             'payment',
             'other',
+            'irrelevant',
         ]);
         expect(registry.types.cold.knowledgeKind).toBe('call-analysis-cold');
         expect(registry.types.cold.title).toContain('Холодный');
@@ -121,7 +122,7 @@ describe('CallTypeRegistryService', () => {
         const { service } = makeService({ readError: true });
         const registry = await service.resolve(DOMAIN);
         expect(registry.source).toBe('builtin');
-        expect(registry.codes).toHaveLength(6);
+        expect(registry.codes).toHaveLength(7);
     });
 
     it('кэш: одно чтение на серию вызовов; invalidate сбрасывает', async () => {

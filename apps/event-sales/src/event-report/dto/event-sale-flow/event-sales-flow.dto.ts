@@ -91,6 +91,29 @@ export class EventSalesFlowDto {
     domain: string;
 
     @ApiPropertyOptional({
+        description:
+            'Идентификатор операции, сгенерированный клиентом (UUID). Отчёт — ' +
+            'команда: повторный POST с тем же id не выполнит её второй раз, а ' +
+            'вернёт статус уже принятой операции. Не передан — сервер выдаст свой.',
+        type: String,
+        example: '0f2b7d0e-2a1e-4a63-9a0a-9f1f2a3b4c5d',
+    })
+    @IsOptional()
+    @IsString()
+    operationId?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'socket.io-идентификатор клиента: на него уйдёт push с исходом ' +
+            'операции. Не передан — клиент узнает результат поллингом статуса.',
+        type: String,
+        example: 'kM3xM0Ib9v0nQz1TAAAB',
+    })
+    @IsOptional()
+    @IsString()
+    socketId?: string;
+
+    @ApiPropertyOptional({
         description: 'План звонка: тип, ответственный, дедлайн, контакт.',
         type: PlanDto,
     })

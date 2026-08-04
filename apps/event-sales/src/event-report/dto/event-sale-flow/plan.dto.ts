@@ -42,13 +42,19 @@ export class EventPlanCallDto {
 }
 
 export class PlanTypeDto {
-    @ApiProperty({
-        description: 'Текущий выбранный тип планируемого звонка.',
+    @ApiPropertyOptional({
+        description:
+            'Текущий выбранный тип планируемого звонка. `null`, когда менеджер ' +
+            'ничего не планировал: недозвон, возврат в ТМЦ, отчёт без плана. ' +
+            'Ветку `plan` фронт присылает всегда (legacy-контракт), поэтому ' +
+            'пустой тип — штатная ситуация, а не ошибка.',
         type: EventPlanCallDto,
+        nullable: true,
     })
+    @IsOptional()
     @ValidateNested()
     @Type(() => EventPlanCallDto)
-    current: EventPlanCallDto;
+    current: EventPlanCallDto | null;
 }
 
 export class PlanDto {

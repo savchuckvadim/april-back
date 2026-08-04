@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Prisma } from 'generated/prisma';
-import { envEnabledByDefault, envFloat } from '@lib/shared';
 import {
     AiService,
     CALL_CLASSIFY_TYPE,
@@ -35,14 +33,13 @@ const APP_NAME = 'call-report';
  * Ошибка шага НЕ роняет конвейер (возврат null) — классификация
  * опциональна, транскрипт и LLM-анализ важнее.
  *
- * Env: CALL_REPORT_CLASSIFY_ENABLED (0 — выключить),
- * CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE (default 0.6).
+ * Включённость приходит из настроек портала (админка); env-настроек нет.
  */
 @Injectable()
 export class CallClassifyStepService {
     private readonly logger = new Logger(CallClassifyStepService.name);
-    private readonly enabled: boolean;
-    private readonly escalationConfidence: number;
+    /** Порог эскалации: ниже — тип обязан перепроверить ночной агент. */
+    private readonly escalationConfidence = 0.6;
 
     constructor(
         private readonly vibeCodeClient: VibeCodeClient,
@@ -50,31 +47,16 @@ export class CallClassifyStepService {
         private readonly instructionService: CallClassifyInstructionService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly aiService: AiService,
-        configService: ConfigService,
-    ) {
-        this.enabled = envEnabledByDefault(
-            configService.get<string>('CALL_REPORT_CLASSIFY_ENABLED'),
-        );
-        this.escalationConfidence = envFloat(
-            configService.get<string>(
-                'CALL_REPORT_CLASSIFY_ESCALATION_CONFIDENCE',
-            ),
-            0.6,
-            { min: 0, max: 1 },
-        );
-    }
+    ) {}
 
-    /**
-     * enabledOverride — включённость из настроек портала (склейка портал →
-     * env уже сделана CallReportSettingsService); без него — глобальный env.
-     */
+    /** enabledOverride — включённость из настроек портала (дефолт: включено). */
     async run(
         text: string,
         payload: CallReportJobPayload,
         transcriptionId: string,
         enabledOverride?: boolean,
     ): Promise<CallClassificationResultDto | null> {
-        if (!(enabledOverride ?? this.enabled)) return null;
+        if (!(enabledOverride ?? true)) return null;
         try {
             // Реестр типов (встроенные + общие/клиентские из базы знаний):
             // enum схемы и каталог типов в промпте строятся из него.

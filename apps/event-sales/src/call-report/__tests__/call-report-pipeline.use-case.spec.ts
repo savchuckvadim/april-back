@@ -19,9 +19,10 @@ const makeDeps = (overrides?: {
     llmError?: boolean;
     noAudio?: boolean;
     classifyFailed?: boolean;
-    combinedDisabled?: boolean;
-    /** llmModel из настроек портала (склейка портал → env → дефолт). */
+    /** llmModel из настроек портала (портал → дефолт кода). */
     portalLlmModel?: string;
+    /** Ответ классификатора вместо дефолтного CLASSIFICATION. */
+    classification?: Record<string, unknown>;
 }) => {
     const bitrix = {
         activity: {
@@ -92,16 +93,10 @@ const makeDeps = (overrides?: {
         run: jest
             .fn()
             .mockResolvedValue(
-                overrides?.classifyFailed ? null : CLASSIFICATION,
+                overrides?.classifyFailed
+                    ? null
+                    : (overrides?.classification ?? CLASSIFICATION),
             ),
-    };
-    const config = {
-        get: jest.fn((key: string) =>
-            overrides?.combinedDisabled &&
-            key === 'CALL_REPORT_COMBINED_ANALYSIS'
-                ? '0'
-                : undefined,
-        ),
     };
     // Паспорт звонка (слой 0) для первичного анализа — свой спек у
     // call-context-builder; здесь только префикс к тексту LLM.
@@ -109,11 +104,12 @@ const makeDeps = (overrides?: {
         build: jest.fn().mockResolvedValue({ certainty: 'rich' }),
         renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ: тест'),
     };
-    // Настройки портала: дефолты «как глобально» (свой спек у settings).
+    // Настройки портала (единственный источник конфигурации — БД).
     const settingsService = {
         resolve: jest.fn().mockResolvedValue({
             classifyEnabled: true,
             llmModel: overrides?.portalLlmModel ?? 'gigachat',
+            irrelevantConfidence: 0.7,
         }),
     };
     global.fetch = jest.fn().mockResolvedValue({
@@ -130,7 +126,6 @@ const makeDeps = (overrides?: {
         classifyStep as never,
         contextBuilder as never,
         settingsService as never,
-        config as never,
     );
     return {
         useCase,
@@ -200,6 +195,42 @@ describe('CallReportPipelineUseCase', () => {
         );
     });
 
+    it('гейт нерелевантности: уверенный irrelevant останавливает анализ до LLM', async () => {
+        const { useCase, llm, aiService, bitrix } = makeDeps({
+            classification: {
+                callType: 'irrelevant',
+                interlocutorRole: 'other',
+                confidence: 0.92,
+                reason: 'Сотрудник звонил в транспортную компанию как клиент',
+            },
+        });
+        const result = await useCase.execute(PAYLOAD);
+
+        expect(result.irrelevant).toBe(true);
+        expect(result.callType).toBe('irrelevant');
+        expect(result.resumeSaved).toBe(false);
+        expect(llm.analyzeCall).not.toHaveBeenCalled();
+        expect(llm.resume).not.toHaveBeenCalled();
+        // ais-записи resume/recomendation не создаются, таймлайн молчит.
+        expect(aiService.create).not.toHaveBeenCalled();
+        expect(bitrix.timeline.addTimelineComment).not.toHaveBeenCalled();
+    });
+
+    it('неуверенный irrelevant (ниже порога) идёт полным путём', async () => {
+        const { useCase, llm } = makeDeps({
+            classification: {
+                callType: 'irrelevant',
+                interlocutorRole: 'other',
+                confidence: 0.5,
+                reason: 'Похоже на посторонний разговор, но не уверен',
+            },
+        });
+        const result = await useCase.execute(PAYLOAD);
+
+        expect(result.irrelevant).toBeUndefined();
+        expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
+    });
+
     it('llmModel из настроек портала уезжает в объединённый вызов', async () => {
         const { useCase, llm } = makeDeps({ portalLlmModel: 'cloudru' });
         await useCase.execute(PAYLOAD);
@@ -234,14 +265,6 @@ describe('CallReportPipelineUseCase', () => {
         const result = await useCase.execute(PAYLOAD);
         expect(result.resumeSaved).toBe(true);
         expect((llm.analyzeCall.mock.calls[0] as string[])[1]).toBe('текст');
-    });
-
-    it('CALL_REPORT_COMBINED_ANALYSIS=0 возвращает два раздельных вызова', async () => {
-        const { useCase, llm } = makeDeps({ combinedDisabled: true });
-        await useCase.execute(PAYLOAD);
-        expect(llm.analyzeCall).not.toHaveBeenCalled();
-        expect(llm.resume).toHaveBeenCalledTimes(1);
-        expect(llm.recomendation).toHaveBeenCalledTimes(1);
     });
 
     it('провал классификации (null от шага) не роняет конвейер', async () => {

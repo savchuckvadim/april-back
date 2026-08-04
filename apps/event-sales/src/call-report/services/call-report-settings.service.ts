@@ -1,29 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { envEnabledByDefault, envInt } from '@lib/shared';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { PortalAiSettingsRecord } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 
-/** Дефолты кода — последний рубеж, когда нет ни настройки портала, ни env. */
+/**
+ * Дефолты кода — действуют, пока настройка не задана на портале.
+ * Env-слоя БОЛЬШЕ НЕТ (решение владельца 2026-08-04): весь конвейер
+ * управляется из админки (portal_ai_settings), деплой для смены настроек
+ * не нужен. Единственный «выключатель» — enabled портала в БД.
+ */
 const DEFAULTS = {
+    /** Портал обрабатывается только при ЯВНОМ включении в админке. */
+    enabled: false,
+    deepAnalysisEnabled: true,
+    createSmartEnabled: true,
+    classifyEnabled: true,
+    salesOnly: true,
     minDurationSec: 300,
     windowHours: 25,
     maxPerRun: 10,
     staleMinutes: 90,
     llmModel: 'gigachat',
+    /** Порог гейта нерелевантности (см. CallReportPipelineUseCase). */
+    irrelevantConfidence: 0.7,
+    /** Ночной ревизор удваивает LLM-расход — включается сознательно. */
+    revisorEnabled: false,
 } as const;
 
 /**
- * Эффективные настройки конвейера для конкретного портала: ни одного null,
- * всё готово к использованию.
+ * Эффективные настройки конвейера для конкретного портала: ни одного null
+ * в обязательных полях, всё готово к использованию.
  */
 export interface EffectiveCallReportSettings {
-    /**
-     * Главный выключатель портала из БД: false — админ явно выключил
-     * конвейер, true — явно включил (портал сканируется даже без env-списка),
-     * null — в БД не задано (портал живёт по env CALL_REPORT_DOMAINS).
-     */
-    enabled: boolean | null;
+    /** Обрабатывать ли звонки портала (false, пока админ не включил). */
+    enabled: boolean;
     deepAnalysisEnabled: boolean;
     createSmartEnabled: boolean;
     classifyEnabled: boolean;
@@ -43,29 +52,26 @@ export interface EffectiveCallReportSettings {
     lastScanAt: Date | null;
     /** null — анализируется весь отдел продаж. */
     allowedUserIds: number[] | null;
+    /** Порог гейта нерелевантности 0..1. */
+    irrelevantConfidence: number;
+    /** Ночной ревизор (свод по сущностям). */
+    revisorEnabled: boolean;
     /** Откуда взялись значения — для диагностики в логах. */
-    source: 'portal' | 'global';
+    source: 'portal' | 'default';
 }
 
 /**
- * Склейка настроек конвейера: **портал → env → дефолт кода**.
+ * Склейка настроек конвейера: **портал → дефолт кода** (без env).
  *
- * Живёт в приложении, а не в portal-lib, намеренно: имена переменных
- * CALL_REPORT_* — специфика event-sales, а библиотека хранилища должна
- * оставаться нейтральной и отдавать сырые значения с null'ами.
- *
- * Настройки портала опциональны: пока клиенту ничего не задали, он работает
- * ровно так же, как работал до появления таблицы. Это позволяет выкатывать
- * функциональность без миграции поведения.
+ * Настройки портала опциональны: незаданное поле работает на дефолте кода.
+ * Недоступность БД не роняет конвейер — но без строки настроек портал
+ * просто не обрабатывается (enabled=false по умолчанию).
  */
 @Injectable()
 export class CallReportSettingsService {
     private readonly logger = new Logger(CallReportSettingsService.name);
 
-    constructor(
-        private readonly portalAiSettings: PortalAiSettingsService,
-        private readonly configService: ConfigService,
-    ) {}
+    constructor(private readonly portalAiSettings: PortalAiSettingsService) {}
 
     /** Эффективные настройки домена. Недоступность БД не роняет конвейер. */
     async resolve(domain: string): Promise<EffectiveCallReportSettings> {
@@ -73,14 +79,14 @@ export class CallReportSettingsService {
             .getByDomain(domain)
             .catch((error: Error) => {
                 this.logger.warn(
-                    `Настройки портала ${domain} не прочитаны (${error.message}) — работаю на глобальных`,
+                    `Настройки портала ${domain} не прочитаны (${error.message}) — работаю на дефолтах`,
                 );
                 return null;
             });
         return this.merge(portal);
     }
 
-    /** Глобальные настройки без обращения к БД — для диагностики при старте. */
+    /** Дефолты кода без обращения к БД — для глобальных процедур и логов. */
     globals(): EffectiveCallReportSettings {
         return this.merge(null);
     }
@@ -89,45 +95,19 @@ export class CallReportSettingsService {
         portal: PortalAiSettingsRecord | null,
     ): EffectiveCallReportSettings {
         return {
-            enabled: portal?.enabled ?? null,
+            enabled: portal?.enabled ?? DEFAULTS.enabled,
             deepAnalysisEnabled:
-                portal?.deepAnalysisEnabled ??
-                this.envFlag('CALL_REPORT_DEEP_ANALYSIS_ENABLED'),
+                portal?.deepAnalysisEnabled ?? DEFAULTS.deepAnalysisEnabled,
             createSmartEnabled:
-                portal?.createSmartEnabled ??
-                this.envFlag('CALL_REPORT_CRON_CREATE_SMART'),
+                portal?.createSmartEnabled ?? DEFAULTS.createSmartEnabled,
             classifyEnabled:
-                portal?.classifyEnabled ??
-                this.envFlag('CALL_REPORT_CLASSIFY_ENABLED'),
-            salesOnly:
-                portal?.salesOnly ?? this.envFlag('CALL_REPORT_SALES_ONLY'),
-            minDurationSec:
-                portal?.minDurationSec ??
-                this.envNumber(
-                    'CALL_REPORT_MIN_DURATION_SEC',
-                    DEFAULTS.minDurationSec,
-                ),
-            windowHours:
-                portal?.windowHours ??
-                this.envNumber(
-                    'CALL_REPORT_WINDOW_HOURS',
-                    DEFAULTS.windowHours,
-                ),
-            maxPerRun:
-                portal?.maxPerRun ??
-                this.envNumber('CALL_REPORT_MAX_PER_RUN', DEFAULTS.maxPerRun),
-            staleMinutes:
-                portal?.staleMinutes ??
-                this.envNumber(
-                    'CALL_REPORT_STALE_MINUTES',
-                    DEFAULTS.staleMinutes,
-                ),
-            llmModel:
-                portal?.llmModel ??
-                this.configService.get<string>('CALL_REPORT_LLM_MODEL') ??
-                DEFAULTS.llmModel,
-            // Ниже — параметры, у которых глобального аналога нет: они
-            // появились вместе с таблицей и вне портала не задаются.
+                portal?.classifyEnabled ?? DEFAULTS.classifyEnabled,
+            salesOnly: portal?.salesOnly ?? DEFAULTS.salesOnly,
+            minDurationSec: portal?.minDurationSec ?? DEFAULTS.minDurationSec,
+            windowHours: portal?.windowHours ?? DEFAULTS.windowHours,
+            maxPerRun: portal?.maxPerRun ?? DEFAULTS.maxPerRun,
+            staleMinutes: portal?.staleMinutes ?? DEFAULTS.staleMinutes,
+            llmModel: portal?.llmModel ?? DEFAULTS.llmModel,
             deepAnalysisModel: portal?.deepAnalysisModel ?? null,
             scanIntervalMinutes: portal?.scanIntervalMinutes ?? null,
             nightScanIntervalMinutes: portal?.nightScanIntervalMinutes ?? null,
@@ -135,18 +115,10 @@ export class CallReportSettingsService {
             nightEndHour: portal?.nightEndHour ?? null,
             lastScanAt: portal?.lastScanAt ?? null,
             allowedUserIds: portal?.allowedUserIds ?? null,
-            source: portal ? 'portal' : 'global',
+            irrelevantConfidence:
+                portal?.irrelevantConfidence ?? DEFAULTS.irrelevantConfidence,
+            revisorEnabled: portal?.revisorEnabled ?? DEFAULTS.revisorEnabled,
+            source: portal ? 'portal' : 'default',
         };
-    }
-
-    /** Конвенция kill-switch'ей конвейера: включено, выключается «0». */
-    private envFlag(key: string): boolean {
-        return envEnabledByDefault(this.configService.get<string>(key));
-    }
-
-    private envNumber(key: string, fallback: number): number {
-        return envInt(this.configService.get<string>(key), fallback, {
-            min: 1,
-        });
     }
 }

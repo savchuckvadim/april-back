@@ -1,6 +1,7 @@
 export enum JobNames {
     //event sales
     EVENT_COLD_CALL = 'cold-call',
+    EVENT_SALES_FLOW = 'event-sales-flow',
 
     //mail
     MAIL_SEND_AUTH = 'mail-send-auth',

@@ -14,6 +14,8 @@ export enum QueueNames {
 
     //event sales
     EVENT_SALES_COLD_CALL = 'event-sales-cold-call',
+    /** Отчёт менеджера из приложения «Звонки»: batch Битрикса уходит в воркер */
+    EVENT_SALES_FLOW = 'event-sales-flow',
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',

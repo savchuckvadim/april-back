@@ -62,12 +62,12 @@ Bitrix телефония ──► cron 30 мин ──► сканер voximp
 
 Шаг за шагом, с «зачем»:
 
-1. **Cron каждые 30 минут** (`CallReportScheduler`). Kill-switch
-   `CALL_REPORT_CRON_ENABLED=1`. Домены — ростер
-   (`CallReportDomainRosterService`, с 03.08.2026): env `CALL_REPORT_DOMAINS`
-   (пилоты/аварийный fallback) ∪ порталы с `enabled=true` в
-   `portal_ai_settings` — штатное включение клиента делается из админки, без
-   деплоя. Параметры каждого домена — склейка **портал → env → дефолт**
+1. **Cron каждые 30 минут** (`CallReportScheduler`). ENV-НАСТРОЕК НЕТ
+   (с 04.08.2026): единственный источник конфигурации — админка (карточка
+   портала → вкладка AI, таблица `portal_ai_settings`; склейка
+   портал → дефолт кода в `CallReportSettingsService`). Обрабатываются
+   ТОЛЬКО порталы с `enabled=true`; нет включённых — тик no-op (отдельного
+   kill-switch нет). Изменения применяются со следующего тика без деплоя. Параметры каждого домена — склейка **портал → env → дефолт**
    (`CallReportSettingsService`): пороги скана, демо-список
    `allowedUserIds`, `createSmartEnabled`, интервалы (`scanIntervalMinutes`
    + ночное окно `nightStartHour..nightEndHour` с ночным интервалом; портал

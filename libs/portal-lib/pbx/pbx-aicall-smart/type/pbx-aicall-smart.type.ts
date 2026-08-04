@@ -76,6 +76,10 @@ export const CALL_REPORT_CALL_TYPE_CODES = [
     'decision',
     'payment',
     'other',
+    // Гейт нерелевантности: разговор вообще не про работу менеджера
+    // (звонок в стороннюю организацию, личный, ошибочный) — конвейер
+    // останавливается после дешёвой классификации, дорогие шаги не идут.
+    'irrelevant',
 ] as const;
 
 export type CallReportCallTypeCode =
@@ -88,6 +92,7 @@ export const CALL_REPORT_CALL_TYPE_ITEMS = [
     { CODE: 'decision', VALUE: 'Звонок по решению', SORT: 400 },
     { CODE: 'payment', VALUE: 'Звонок по оплате', SORT: 500 },
     { CODE: 'other', VALUE: 'Другое', SORT: 600 },
+    { CODE: 'irrelevant', VALUE: 'Нерелевантный (не наш разговор)', SORT: 700 },
 ] as const satisfies readonly (CallReportSmartEnumItem & {
     CODE: CallReportCallTypeCode;
 })[];
@@ -211,6 +216,24 @@ export const CALL_REPORT_TYPE_PROFILES: Record<
             PRICE: 50,
             CLOSING: 50,
             REFUSAL: 50,
+        },
+        talkRatioNorm: null,
+        questionsNorm: null,
+        knowledgeKind: 'call-analysis-other',
+    },
+    // До этого профиля конвейер в норме не доходит: гейт останавливает
+    // обработку после классификации (см. CallReportPipelineUseCase).
+    // Профиль нужен на случай ручного разбора нерелевантного звонка.
+    irrelevant: {
+        focus: 'Разговор не относится к продажам/сопровождению продуктов компании — техника продаж не оценивается.',
+        sectionRelevance: {
+            GREETING: 0,
+            NEEDS: 0,
+            PRESENTATION: 0,
+            OBJECTIONS: 0,
+            PRICE: 0,
+            CLOSING: 0,
+            REFUSAL: 0,
         },
         talkRatioNorm: null,
         questionsNorm: null,

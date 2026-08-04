@@ -78,7 +78,11 @@ export class PortalAiSettingsPrismaRepository
         domain: string,
         update: PortalAiSettingsUpdate,
     ): Promise<PortalAiSettingsRecord> {
-        const data = this.toPrismaData(update);
+        // Текущая строка нужна для слияния JSON-колонки `settings`.
+        const current = await this.prisma.portalAiSettings.findUnique({
+            where: { portal_id: BigInt(portalId) },
+        });
+        const data = this.toPrismaData(update, current);
         const row = await this.prisma.portalAiSettings.upsert({
             where: { portal_id: BigInt(portalId) },
             create: {
@@ -103,11 +107,16 @@ export class PortalAiSettingsPrismaRepository
 
     /**
      * Только явно переданные поля: отсутствие ключа = «не трогать»,
-     * явный null = «сбросить на глобальное значение». Поэтому проверка
-     * именно на `undefined`, а не на falsy.
+     * явный null = «сбросить на дефолт». Поэтому проверка именно на
+     * `undefined`, а не на falsy.
+     *
+     * upsert() при записи JSON-параметров передаёт сюда текущую строку
+     * (для слияния колонки `settings` — частичный апдейт не должен
+     * терять другие ключи JSON).
      */
     private toPrismaData(
         update: PortalAiSettingsUpdate,
+        current: PortalAiSettings | null,
     ): PortalAiSettingsColumns {
         const data: PortalAiSettingsColumns = {};
         for (const field of EDITABLE_FIELDS) {
@@ -119,7 +128,45 @@ export class PortalAiSettingsPrismaRepository
         if (update.allowedUserIds !== undefined) {
             data.allowedUserIds = update.allowedUserIds ?? Prisma.DbNull;
         }
+        if (
+            update.irrelevantConfidence !== undefined ||
+            update.revisorEnabled !== undefined
+        ) {
+            const json = this.toJsonSettings(current?.settings);
+            if (update.irrelevantConfidence !== undefined) {
+                json.irrelevantConfidence =
+                    update.irrelevantConfidence ?? undefined;
+            }
+            if (update.revisorEnabled !== undefined) {
+                json.revisorEnabled = update.revisorEnabled ?? undefined;
+            }
+            data.settings = JSON.parse(
+                JSON.stringify(json),
+            ) as Prisma.InputJsonValue;
+        }
         return data;
+    }
+
+    /** JSON-колонка `settings` → объект (мусор из БД не роняет чтение). */
+    private toJsonSettings(value: Prisma.JsonValue | undefined): {
+        irrelevantConfidence?: number;
+        revisorEnabled?: boolean;
+    } {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return {};
+        }
+        const raw = value as Record<string, unknown>;
+        const confidence = Number(raw.irrelevantConfidence);
+        return {
+            irrelevantConfidence:
+                Number.isFinite(confidence) && confidence > 0 && confidence <= 1
+                    ? confidence
+                    : undefined,
+            revisorEnabled:
+                typeof raw.revisorEnabled === 'boolean'
+                    ? raw.revisorEnabled
+                    : undefined,
+        };
     }
 
     /** Строка Prisma → доменный тип; Json-колонка приводится к number[]. */
@@ -142,6 +189,10 @@ export class PortalAiSettingsPrismaRepository
             nightEndHour: row.nightEndHour,
             lastScanAt: row.lastScanAt,
             allowedUserIds: this.toUserIds(row.allowedUserIds),
+            irrelevantConfidence:
+                this.toJsonSettings(row.settings).irrelevantConfidence ?? null,
+            revisorEnabled:
+                this.toJsonSettings(row.settings).revisorEnabled ?? null,
         };
     }
 
