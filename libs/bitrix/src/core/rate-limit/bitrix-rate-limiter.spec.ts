@@ -1,6 +1,6 @@
 import { BitrixRateLimiterService } from './bitrix-rate-limiter.service';
 import { ConfigService } from '@nestjs/config';
-import { RedisService } from '../../../../core/redis/redis.service';
+import { RedisService } from '@/core/redis/redis.service';
 
 const makeRedis = (evalResult: number | (() => number)): RedisService => {
     const evalFn =

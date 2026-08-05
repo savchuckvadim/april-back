@@ -209,6 +209,11 @@ export class CallReportProcessor {
                 ));
             if (!analysis) return;
 
+            // Версия аналитика в поле смарта «Версия скилла агента»: раньше
+            // заполнялась только внешним агентом и у внутреннего пути была
+            // вечно пустой.
+            analysis.agentVersion ??= 'internal-focus-v2';
+
             const written = await this.analysisIntake.intake(
                 transcriptionId,
                 CallReportProcessor.ANALYZER_NAME,

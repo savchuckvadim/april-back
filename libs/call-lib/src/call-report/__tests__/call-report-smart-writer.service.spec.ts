@@ -224,4 +224,63 @@ describe('CallReportSmartWriterService', () => {
             'не вернул id',
         );
     });
+
+    it('Row size too large: ретрай без транскрипта, затем с обрезкой текстов', async () => {
+        const bitrix = makeBitrix();
+        const rowSize = new Error(
+            'Mysql query error: (1118) Row size too large (> 8126)',
+        );
+        // Первые две попытки падают по лимиту строки, третья проходит.
+        bitrix.item.add
+            .mockRejectedValueOnce(rowSize)
+            .mockRejectedValueOnce(rowSize)
+            .mockResolvedValue({ result: { item: { id: 7 } } });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const longText = 'х'.repeat(5000);
+        const itemId = await writer.addItem({
+            activityId: '101',
+            transcript: 'т'.repeat(100_000),
+            scoreExplanation: longText,
+            score: 8,
+        });
+
+        expect(itemId).toBe(7);
+        expect(bitrix.item.add).toHaveBeenCalledTimes(3);
+        const first = (bitrix.item.add.mock.calls[0] as unknown[])[1] as Record<
+            string,
+            unknown
+        >;
+        const second = (
+            bitrix.item.add.mock.calls[1] as unknown[]
+        )[1] as Record<string, unknown>;
+        const third = (bitrix.item.add.mock.calls[2] as unknown[])[1] as Record<
+            string,
+            unknown
+        >;
+        // 1-я попытка — с транскриптом; 2-я — без него; 3-я — тексты обрезаны.
+        expect(first.ufCrm128Transcript1).toBeDefined();
+        expect(second.ufCrm128Transcript1).toBeUndefined();
+        expect(String(third.ufCrm128ScoreExplanation)).toContain('обрезано');
+        expect(String(third.ufCrm128ScoreExplanation).length).toBeLessThan(
+            1100,
+        );
+        // Короткие значения не трогаются ни в одном варианте.
+        expect(third.ufCrm128Score).toBe(8);
+    });
+
+    it('иная ошибка Bitrix пробрасывается без деградационных ретраев', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.add.mockRejectedValue(new Error('ACCESS_DENIED'));
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await expect(writer.addItem({ activityId: '101' })).rejects.toThrow(
+            'ACCESS_DENIED',
+        );
+        expect(bitrix.item.add).toHaveBeenCalledTimes(1);
+    });
 });

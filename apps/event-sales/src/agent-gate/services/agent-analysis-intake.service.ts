@@ -7,7 +7,10 @@ import {
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
-import { CALL_REPORT_SECTIONS } from '@lib/call-lib';
+import {
+    CALL_REPORT_CALL_TYPE_ITEMS,
+    CALL_REPORT_SECTIONS,
+} from '@lib/call-lib';
 import { CallAnalysisBitrixService } from '@lib/call-lib/call-analysis/services/call-analysis-bitrix.service';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
@@ -153,7 +156,7 @@ export class AgentAnalysisIntakeService {
             );
         }
 
-        await this.duplicateToTimeline(row, agentName, dto).catch(error =>
+        await this.duplicateToTimeline(row, dto).catch(error =>
             this.logger.warn(
                 `Дубль анализа в таймлайн не записан: ${(error as Error).message}`,
             ),
@@ -745,7 +748,6 @@ export class AgentAnalysisIntakeService {
      */
     private async duplicateToTimeline(
         row: TranscriptionPipelineView,
-        agentName: string,
         dto: AgentCallAnalysisDto,
     ): Promise<void> {
         if (!row.domain || !row.entityId) return;
@@ -755,18 +757,27 @@ export class AgentAnalysisIntakeService {
             ? await this.loadLeadContext(bitrix.api, row.entityId)
             : await this.loadDealContext(bitrix.api, row.entityId);
 
+        // В таймлайне — ТОЛЬКО русские названия: внутренние коды (GREETING,
+        // cold, call-report-analyzer) читателю ничего не говорят.
         const sectionLines = (dto.sections ?? [])
             .filter(section => section.relevance > 0)
             .map(section => {
                 const score =
                     section.score !== undefined ? `${section.score}/10` : '—';
-                return `• ${section.section}: ${score} (актуальность ${section.relevance}%)`;
+                const title =
+                    CALL_REPORT_SECTIONS.find(
+                        item => item.code === section.section,
+                    )?.title ?? section.section;
+                return `• ${title}: ${score} (актуальность ${section.relevance}%)`;
             })
             .join('\n');
+        const callTypeLabel =
+            CALL_REPORT_CALL_TYPE_ITEMS.find(item => item.CODE === dto.callType)
+                ?.VALUE ?? dto.callType;
 
         const comment =
-            `🤖 [b]Глубокий AI-анализ звонка[/b] (активность #${row.activityId ?? '?'}, агент ${agentName})\n\n` +
-            `[b]Тип:[/b] ${dto.callType}\n` +
+            `🤖 [b]Глубокий AI-анализ звонка[/b] (активность #${row.activityId ?? '?'})\n\n` +
+            `[b]Тип:[/b] ${callTypeLabel}\n` +
             (dto.score !== undefined
                 ? `[b]Оценка:[/b] ${dto.score}/10${dto.scoreExplanation ? ` — ${dto.scoreExplanation.slice(0, 500)}` : ''}\n`
                 : '') +

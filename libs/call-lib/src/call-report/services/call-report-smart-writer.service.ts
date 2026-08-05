@@ -129,17 +129,23 @@ export class CallReportSmartWriterService {
                 // Upsert: существующий элемент ДОПОЛНЯЕТСЯ переданными полями
                 // (частичный update) — базовый элемент из smoke-прогона
                 // конвейера потом обогащается глубоким анализом агента.
-                await this.bitrix.item
-                    .update(
-                        existingId,
-                        this.smartInfo.entityTypeId as never,
-                        this.buildFields(input),
-                    )
-                    .catch((error: Error) =>
-                        this.logger.warn(
-                            `Элемент #${existingId} не обновлён (${xmlId}): ${error.message}`,
+                await this.writeWithDegradation(
+                    this.buildFields(input),
+                    fields =>
+                        this.bitrix.item.update(
+                            existingId,
+                            this.smartInfo.entityTypeId as never,
+                            fields as Partial<IBXItem>,
                         ),
-                    );
+                ).catch((error: Error) =>
+                    // Не фатально: транскрипт и ais уже в БД, разбор
+                    // дольётся повторным прогоном. { telegram: true } —
+                    // алерт, иначе пустые поля ищут неделями.
+                    this.logger.error(
+                        `Элемент #${existingId} не обновлён (${xmlId}): ${error.message}`,
+                        { telegram: true, itemId: existingId },
+                    ),
+                );
                 this.logger.log(
                     `Элемент смарта уже существует: #${existingId} (${xmlId}) — обновил поля, дубль не создаю`,
                 );
@@ -149,13 +155,15 @@ export class CallReportSmartWriterService {
 
         const fields = this.buildFields(input);
         if (xmlId) fields.xmlId = xmlId;
-        const response = await this.bitrix.item.add(
-            String(this.smartInfo.entityTypeId),
-            fields,
-        );
-        const itemId = Number(
-            (response?.result as { item?: { id?: number } })?.item?.id,
-        );
+        const response = (await this.writeWithDegradation(
+            fields as Record<string, unknown>,
+            degraded =>
+                this.bitrix.item.add(
+                    String(this.smartInfo.entityTypeId),
+                    degraded as Partial<IBXItem>,
+                ),
+        )) as { result?: { item?: { id?: number } } } | undefined;
+        const itemId = Number(response?.result?.item?.id);
         if (!itemId) {
             throw new Error(
                 `crm.item.add не вернул id элемента (activity ${input.activityId})`,
@@ -165,6 +173,73 @@ export class CallReportSmartWriterService {
             `Создан элемент смарта #${itemId} (activity ${input.activityId})`,
         );
         return itemId;
+    }
+
+    /**
+     * Запись с деградацией под лимит строки MySQL Битрикса.
+     *
+     * Прод-инцидент 05.08.2026: crm.item.update падал с «Mysql query error:
+     * (1118) Row size too large (> 8126)» — строка таблицы смарта не
+     * вмещает все длинные текстовые поля разом (транскрипт 4×40к + разборы
+     * разделов), и Bitrix отбрасывал ВЕСЬ разбор: карточка оставалась с
+     * пустыми полями. Стратегия:
+     *   1) все поля как есть;
+     *   2) без TRANSCRIPT_N (текст есть в БД и в таймлайне диалогом);
+     *   3) дополнительно все длинные строки обрезаются до 1024 символов.
+     * Что выброшено/обрезано — в логе; иная ошибка пробрасывается сразу.
+     */
+    private async writeWithDegradation(
+        fields: Record<string, unknown>,
+        write: (fields: Record<string, unknown>) => Promise<unknown>,
+    ): Promise<unknown> {
+        const variants = this.degradationVariants(fields);
+        for (let i = 0; i < variants.length; i++) {
+            const variant = variants[i];
+            try {
+                return await write(variant.fields);
+            } catch (error) {
+                const message = (error as Error).message ?? '';
+                const isRowSize = message.includes('Row size too large');
+                const hasNext = i + 1 < variants.length;
+                if (!isRowSize || !hasNext) throw error;
+                this.logger.warn(
+                    `Строка смарта не влезла в лимит Bitrix (${variant.label}) — ` +
+                        `повторяю: ${variants[i + 1].label}`,
+                );
+            }
+        }
+        // Недостижимо: последний вариант либо вернулся, либо бросил.
+        throw new Error('writeWithDegradation: нет вариантов записи');
+    }
+
+    /** Варианты записи от полного к минимальному (для row size лимита). */
+    private degradationVariants(
+        fields: Record<string, unknown>,
+    ): { label: string; fields: Record<string, unknown> }[] {
+        const transcriptKeys = [1, 2, 3, 4].map(index =>
+            this.ufName(`TRANSCRIPT_${index}`),
+        );
+        const withoutTranscript = Object.fromEntries(
+            Object.entries(fields).filter(
+                ([key]) => !transcriptKeys.includes(key),
+            ),
+        );
+        const trimmed = Object.fromEntries(
+            Object.entries(withoutTranscript).map(([key, value]) => [
+                key,
+                typeof value === 'string' && value.length > 1024
+                    ? `${value.slice(0, 1024)}… [обрезано: лимит строки Bitrix]`
+                    : value,
+            ]),
+        );
+        return [
+            { label: 'все поля', fields },
+            { label: 'без транскрипта', fields: withoutTranscript },
+            {
+                label: 'без транскрипта, длинные тексты обрезаны до 1024',
+                fields: trimmed,
+            },
+        ];
     }
 
     /**

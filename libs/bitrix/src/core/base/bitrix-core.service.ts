@@ -130,15 +130,27 @@ export class BitrixCore {
             ? ` | response: ${this.stringifyResponse(responseText)}` +
               ` | request: ${this.stringifyResponse(data)}`
             : '';
-        this.logger.error(
-            `Error calling Bitrix [${method}]` +
-                (status ? ` (HTTP ${status})` : '') +
-                `: ${message}` +
-                payload,
+        // Идемпотентные «ошибки»-подтверждения (повторная привязка уже
+        // привязанной активности при upsert-ретраях) — штатная ситуация:
+        // вызывающий код трактует их как успех, алертить админов нечем.
+        const isBenign = JSON.stringify(responseText ?? '').includes(
+            'ACTIVITY_IS_ALREADY_BOUND',
         );
-        await this.telegramBot.sendMessageAdminError(
-            `Bitrix API error (${method}): ${JSON.stringify(responseText)}`,
-        );
+        if (isBenign) {
+            this.logger.warn(
+                `Bitrix [${method}]: ACTIVITY_IS_ALREADY_BOUND (идемпотентный повтор) — без алерта`,
+            );
+        } else {
+            this.logger.error(
+                `Error calling Bitrix [${method}]` +
+                    (status ? ` (HTTP ${status})` : '') +
+                    `: ${message}` +
+                    payload,
+            );
+            await this.telegramBot.sendMessageAdminError(
+                `Bitrix API error (${method}): ${JSON.stringify(responseText)}`,
+            );
+        }
 
         // Retry для таймаута
         if (

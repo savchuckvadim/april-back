@@ -84,7 +84,9 @@ export class CallReportBaseItemService {
             transcript: row.text ?? undefined,
             resumeGigachat: gigachat.resume,
             recomendationGigachat: gigachat.recomendation,
-            summary: gigachat.resume,
+            // SUMMARY («Резюме звонка») намеренно НЕ заполняется: это поле
+            // глубокого разбора (intake запишет dto.summary). Суррогат из
+            // gigachat давал в карточке два одинаковых резюме подряд.
         });
 
         // Родная запись звонка (плеер) в таймлайне элемента — fail-open.
