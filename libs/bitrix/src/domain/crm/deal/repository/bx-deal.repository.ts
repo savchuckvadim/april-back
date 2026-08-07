@@ -203,6 +203,44 @@ export class BxDealRepository {
         );
     }
 
+    async contactItemsGet(dealId: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.CONTACT_ITEMS_GET,
+            { id: dealId },
+        );
+    }
+
+    contactItemsGetBtch(cmdCode: string, dealId: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.CONTACT_ITEMS_GET,
+            { id: dealId },
+        );
+    }
+
+    async contactItemsDelete(dealId: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.CONTACT_ITEMS_DELETE,
+            { id: dealId },
+        );
+    }
+
+    contactItemsDeleteBtch(cmdCode: string, dealId: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.CONTACT_ITEMS_DELETE,
+            { id: dealId },
+        );
+    }
+
     async setField(fields: Partial<IBXField>) {
         return await this.bxApi.callType(
             EBxNamespace.CRM,

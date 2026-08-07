@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx/pbx.service';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { EventReportInitService } from '../services/init/event-report-init.service';
-import { EventReportContext } from '../services/context/event-report.context';
+import {
+    EEventReportFlowStrategy,
+    EventReportContext,
+} from '../services/context/event-report.context';
 import { EventReportEntityFlowService } from '../services/entity/event-report-entity-flow.service';
 import { EventReportDealFlowService } from '../services/deal/event-report-deal-flow.service';
 import { EventReportTaskFlowService } from '../services/task/event-report-task-flow.service';
@@ -65,6 +68,8 @@ export class EventReportUseCase {
         // По факту мы тут одна группа = весь endpoint; вся работа упадёт в один HTTP.
         const buffer = new ColdHookBatchGroupBuffer(bitrix);
 
+        // dealFlow сам выключается для leadOnly (ctx.isDealFlow), возврат в
+        // ТМЦ — тоже про движение сделок, поэтому гейтится стратегией явно.
         entityFlow.queue(ctx);
         const deals = dealFlow.queue(ctx);
         taskFlow.queue(ctx, deals);
@@ -72,7 +77,9 @@ export class EventReportUseCase {
         presentationList.queue(ctx, deals);
         postFail.queue(ctx);
         leadRelation.queue(ctx);
-        returnToTmc.queue(ctx);
+        if (ctx.strategy !== EEventReportFlowStrategy.LEAD_ONLY) {
+            returnToTmc.queue(ctx);
+        }
         history.queue(ctx);
 
         // Коммитим KPI группу + flush'им буфер. Также отправляем всё, что
@@ -88,7 +95,7 @@ export class EventReportUseCase {
             ) + buffer.getResults().length;
 
         this.logger.log(
-            `event-report executed: entity=${ctx.entityType}:${ctx.entityId}, commands=${commandsCount}`,
+            `event-report executed: entity=${ctx.entityType}:${ctx.entityId}, strategy=${ctx.strategy}, commands=${commandsCount}`,
         );
         return {
             success: true,

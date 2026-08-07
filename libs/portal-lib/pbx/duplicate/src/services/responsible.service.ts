@@ -31,7 +31,9 @@ export class ResponsibleService {
         userIds: number[],
     ): Promise<Map<number, ResponsibleUser>> {
         const result = new Map<number, ResponsibleUser>();
-        const ids = [...new Set(userIds.filter(id => Number.isFinite(id) && id > 0))];
+        const ids = [
+            ...new Set(userIds.filter(id => Number.isFinite(id) && id > 0)),
+        ];
         if (!ids.length) return result;
 
         const users = await this.fetchUsers(bitrix, ids);
@@ -58,7 +60,9 @@ export class ResponsibleService {
 
         for (const [id, user] of users) {
             const headId = this.headIdFor(user, departments);
-            const headRow = headId ? (users.get(headId) ?? heads.get(headId)) : undefined;
+            const headRow = headId
+                ? (users.get(headId) ?? heads.get(headId))
+                : undefined;
 
             result.set(id, {
                 id,
@@ -68,7 +72,9 @@ export class ResponsibleService {
                     headId && headRow
                         ? {
                               id: headId,
-                              name: this.fullName(headRow) || `Сотрудник ${headId}`,
+                              name:
+                                  this.fullName(headRow) ||
+                                  `Сотрудник ${headId}`,
                           }
                         : undefined,
             });
@@ -95,7 +101,9 @@ export class ResponsibleService {
                 const rows = (chunk?.result ?? {}) as Record<string, unknown>;
                 for (const value of Object.values(rows)) {
                     // user.get отдаёт массив даже при выборке по ID.
-                    const user = Array.isArray(value) ? value[0] : value;
+                    const user: unknown = Array.isArray(value)
+                        ? (value as unknown[])[0]
+                        : value;
                     if (!user || typeof user !== 'object') continue;
                     const id = Number((user as BxRow).ID);
                     if (Number.isFinite(id)) map.set(id, user as BxRow);
@@ -189,7 +197,11 @@ export class ResponsibleService {
 
             while (current && guard++ < 5) {
                 const headId = Number(current.UF_HEAD);
-                if (Number.isFinite(headId) && headId > 0 && headId !== userId) {
+                if (
+                    Number.isFinite(headId) &&
+                    headId > 0 &&
+                    headId !== userId
+                ) {
                     return headId;
                 }
                 const parentId = Number(current.PARENT);
@@ -214,15 +226,21 @@ export class ResponsibleService {
 
     private fullName(user: BxRow): string {
         return [user.LAST_NAME, user.NAME, user.SECOND_NAME]
-            .map(part => (part ? String(part).trim() : ''))
+            .map(part => this.text(part) ?? '')
             .filter(Boolean)
             .join(' ');
     }
 
+    /** Скаляр → строка; объекты не сериализуем ('[object Object]'-защита). */
     private text(raw: unknown): string | undefined {
-        if (raw === null || raw === undefined) return undefined;
-        const value = String(raw).trim();
-        return value || undefined;
+        if (typeof raw === 'string') {
+            const value = raw.trim();
+            return value || undefined;
+        }
+        if (typeof raw === 'number' || typeof raw === 'bigint') {
+            return String(raw);
+        }
+        return undefined;
     }
 
     private errorText(error: unknown): string {

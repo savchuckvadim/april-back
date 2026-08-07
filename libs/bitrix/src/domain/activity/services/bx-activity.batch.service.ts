@@ -30,4 +30,33 @@ export class BxActivityBatchService {
     delete(cmdCode: string, activityId: number | string) {
         return this.repo.deleteBtch(cmdCode, activityId);
     }
+
+    /** Привязка активности к ещё одной CRM-сущности (merge/transfer дел). */
+    addBinding(
+        cmdCode: string,
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ) {
+        return this.repo.addBindingBtch(
+            cmdCode,
+            activityId,
+            entityTypeId,
+            entityId,
+        );
+    }
+
+    deleteBinding(
+        cmdCode: string,
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ) {
+        return this.repo.deleteBindingBtch(
+            cmdCode,
+            activityId,
+            entityTypeId,
+            entityId,
+        );
+    }
 }

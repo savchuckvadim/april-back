@@ -9,9 +9,26 @@ import {
     GSIRK_DOMAIN,
 } from '../../types/event-report.event-codes';
 import {
+    EEventReportEntityType,
     EventReportEntityType,
     IEventReportInitContext,
 } from '../init/event-report-init.types';
+
+/**
+ * Стратегия flow по типу владельца события:
+ *  - `COMPANY` — полный flow: воронки сделок, задачи, списки (как исторически);
+ *  - `DEAL` — владелец — сделка без компании: воронки работают, привязки `D_`;
+ *  - `LEAD_ONLY` — чистый лид: сделки НЕ создаются и НЕ двигаются, событие
+ *    живёт в полях лида, его стадии и списках с привязкой `L_`.
+ */
+export const EEventReportFlowStrategy = {
+    COMPANY: 'company',
+    DEAL: 'deal',
+    LEAD_ONLY: 'leadOnly',
+} as const;
+
+export type EventReportFlowStrategy =
+    (typeof EEventReportFlowStrategy)[keyof typeof EEventReportFlowStrategy];
 
 /**
  * Состояние event-report flow: входной DTO + загруженные сущности + все
@@ -41,6 +58,15 @@ export class EventReportContext {
     get entityType(): EventReportEntityType {
         return this.init.entityType;
     }
+    get strategy(): EventReportFlowStrategy {
+        if (this.entityType === EEventReportEntityType.COMPANY) {
+            return EEventReportFlowStrategy.COMPANY;
+        }
+        if (this.entityType === EEventReportEntityType.DEAL) {
+            return EEventReportFlowStrategy.DEAL;
+        }
+        return EEventReportFlowStrategy.LEAD_ONLY;
+    }
 
     // === Resolved entities (короткие алиасы для flow-сервисов) ===
     get company(): IBXCompany | null {
@@ -48,6 +74,9 @@ export class EventReportContext {
     }
     get lead(): IBXLead | null {
         return this.init.lead;
+    }
+    get ownerDeal(): IBXDeal | null {
+        return this.init.ownerDeal;
     }
     get currentBaseDeal(): IBXDeal | null {
         return this.init.currentBaseDeal;
@@ -165,7 +194,30 @@ export class EventReportContext {
     get isNeedReturnToTmc(): boolean {
         return Boolean(this.dto.returnToTmc?.isActive);
     }
+    /**
+     * Поля привязки создаваемой/обновляемой сделки к владельцу контекста.
+     * Для владельца-сделки новые связанные сделки наследуют её лид: своей
+     * компании у неё по определению нет, а лид-первоисточник — есть часто.
+     */
+    get ownerLinkFields(): Record<string, string> {
+        if (this.entityType === EEventReportEntityType.COMPANY) {
+            return { COMPANY_ID: String(this.entityId) };
+        }
+        if (this.entityType === EEventReportEntityType.LEAD) {
+            return { LEAD_ID: String(this.entityId) };
+        }
+        const ownerLeadId = Number(
+            (this.ownerDeal as Record<string, unknown> | null)?.['LEAD_ID'] ??
+                0,
+        );
+        return ownerLeadId > 0 ? { LEAD_ID: String(ownerLeadId) } : {};
+    }
+
     get isDealFlow(): boolean {
+        // leadOnly: сделки не создаём и не двигаем — событие живёт в самом
+        // лиде (поля, стадия, списки). Осознанное изменение поведения
+        // лид-встроек: раньше отчёт от лида создавал базовую сделку.
+        if (this.strategy === EEventReportFlowStrategy.LEAD_ONLY) return false;
         // sales_base сделка нужна если есть тип события (хоть какой-то план/отчёт)
         return Boolean(this.planEventType || this.reportEventType);
     }

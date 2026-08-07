@@ -16,6 +16,12 @@ export enum QueueNames {
     EVENT_SALES_COLD_CALL = 'event-sales-cold-call',
     /** Отчёт менеджера из приложения «Звонки»: batch Битрикса уходит в воркер */
     EVENT_SALES_FLOW = 'event-sales-flow',
+    /**
+     * Операции sales-хуков (лид в работу, merge, передача, буфер отказников):
+     * единая очередь исполнения для обоих путей — робот (после окна тишины
+     * event-silent) и кнопка фрейма. Джобы различаются JobNames.SALES_HOOK_*.
+     */
+    EVENT_SALES_HOOK_OPS = 'event-sales-hook-ops',
     //event service
     SERVICE_DEALS_SCHEDULE = 'service-deals-schedule',
     SERVICE_DEALS = 'service-deals',

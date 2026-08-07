@@ -13,10 +13,21 @@ export interface IBXField {
     EDIT_IN_LIST: 'Y' | 'N';
     IS_SEARCHABLE: 'Y' | 'N';
     SETTINGS: {
-        DISPLAY: string;
-        LIST_HEIGHT: number;
-        CAPTION_NO_VALUE: string;
-        SHOW_NO_VALUE: 'Y' | 'N';
+        DISPLAY?: string;
+        LIST_HEIGHT?: number;
+        CAPTION_NO_VALUE?: string;
+        SHOW_NO_VALUE?: 'Y' | 'N';
+        /**
+         * Привязки crm-типа (USER_TYPE_ID='crm'): какие сущности можно
+         * хранить в поле. БЕЗ них значения вида `L_123` Битрикс молча
+         * не сохраняет.
+         */
+        LEAD?: 'Y' | 'N';
+        CONTACT?: 'Y' | 'N';
+        COMPANY?: 'Y' | 'N';
+        DEAL?: 'Y' | 'N';
+        /** textarea-поля (ROWS) и прочие типоспецифичные настройки. */
+        ROWS?: number;
     };
     EDIT_FORM_LABEL: BitrixLangMap;
     LIST_COLUMN_LABEL: BitrixLangMap;

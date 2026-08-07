@@ -139,6 +139,46 @@ export class PortalModel {
         return this.portal.deals[0];
     }
 
+    // === Стадии лида ===
+    //
+    // ВАЖНО: STATUS_ID лида — ПЛОСКАЯ строка ('NEW', 'PBX_COMPANY_WORK'),
+    // в отличие от сделок, где стадия собирается как `C{categoryId}:{stageId}`.
+    // Код, скопированный из deal-резолверов, молча сломает лид.
+
+    getLeadCategories(): IPCategory[] {
+        return this.portal.lead?.categories ?? [];
+    }
+
+    getLeadCategoryByGroup(group: string): IPCategory | undefined {
+        return this.getLeadCategories().find(
+            category => category.group === group,
+        );
+    }
+
+    /** Стадия лида по pbx-коду (например 'lead_company_work'). */
+    getLeadStageByCode(code: string): IStage | undefined {
+        for (const category of this.getLeadCategories()) {
+            const stage = category.stages.find(st => st.code === code);
+            if (stage) return stage;
+        }
+        return undefined;
+    }
+
+    /** STATUS_ID Битрикса по pbx-коду стадии лида (плоский, без C{n}:). */
+    getLeadStatusIdByCode(code: string): string | undefined {
+        return this.getLeadStageByCode(code)?.bitrixId || undefined;
+    }
+
+    /** Обратный резолв: pbx-код стадии лида по STATUS_ID Битрикса. */
+    getLeadStageCodeByStatusId(statusId: string): string | undefined {
+        if (!statusId) return undefined;
+        for (const category of this.getLeadCategories()) {
+            const stage = category.stages.find(st => st.bitrixId === statusId);
+            if (stage) return stage.code;
+        }
+        return undefined;
+    }
+
     getDealCategories(): IPCategory[] {
         return this.portal.deals[0].categories;
     }

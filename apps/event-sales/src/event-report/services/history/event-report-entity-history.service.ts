@@ -1,18 +1,18 @@
 import dayjs from 'dayjs';
-import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 
 /**
- * История изменений компании (timeline-запись) — gsirk only.
+ * История изменений сущности-владельца (timeline-запись) — gsirk only.
  *
- * Добавляет комментарий в crm.timeline через bitrix.batch.timeline.add.
- * Если таймлайн-схема портала специфическая — расширить fields.
+ * Добавляет комментарий в таймлайн владельца события (company / lead / сделка
+ * без компании) через bitrix.batch.timeline.addTimelineComment
+ * (crm.timeline.comment.add) — значения `EEventReportEntityType` совпадают с
+ * ENTITY_TYPE этого API. Команда копится в batch-инстансе и уходит общим
+ * callBatchWithConcurrency в конце event-report use-case.
  */
 export class EventReportEntityHistoryService {
-    private readonly logger = new Logger(EventReportEntityHistoryService.name);
-
     constructor(
         private readonly bitrix: BitrixService,
         private readonly portal: PortalModel,
@@ -20,48 +20,21 @@ export class EventReportEntityHistoryService {
 
     queue(ctx: EventReportContext): void {
         if (!ctx.isGsirk) return;
-        if (ctx.entityType !== 'company') return;
         if (!ctx.entityId) return;
 
         const tz = this.portal.getTimezone();
         const stamp = dayjs(ctx.nowDate).tz(tz).format('DD.MM.YYYY HH:mm:ss');
         const comment = this.buildComment(ctx);
 
-        // Используем crm.timeline.comment.add — это стабильное API для записи
-        // в таймлайн любой CRM-сущности.
+        // crm.timeline.comment.add — стабильное API записи в таймлайн любой
+        // CRM-сущности. Репозиторий сам оборачивает payload в { fields },
+        // поэтому передаём поля плоско (двойной { fields } ломает запись).
         const cmd = `add_history_${ctx.entityId}`;
-        // Прямая batch-команда — обходимся без выделенного wrapper'а.
-        // (BitrixService.api напрямую позволяет добавлять произвольную команду
-        // через batch — но проще закинуть через bitrix.batch.deal/contact?
-        // Используем bitrix.timeline.add если есть, иначе мягко логируем.)
-
-        const timelineApi = (
-            this.bitrix as unknown as {
-                batch?: {
-                    timeline?: {
-                        addComment?: (
-                            cmd: string,
-                            payload: Record<string, unknown>,
-                        ) => void;
-                    };
-                };
-            }
-        ).batch?.timeline?.addComment;
-
-        if (typeof timelineApi === 'function') {
-            timelineApi(cmd, {
-                fields: {
-                    ENTITY_TYPE: 'company',
-                    ENTITY_ID: ctx.entityId,
-                    COMMENT: `${stamp}\n${comment}`,
-                },
-            });
-            return;
-        }
-
-        this.logger.warn(
-            'history-service: timeline.addComment not available on bitrix.batch — пропускаем (требуется расширение библиотеки)',
-        );
+        this.bitrix.batch.timeline.addTimelineComment(cmd, {
+            ENTITY_TYPE: ctx.entityType,
+            ENTITY_ID: ctx.entityId,
+            COMMENT: `${stamp}\n${comment}`,
+        });
     }
 
     private buildComment(ctx: EventReportContext): string {

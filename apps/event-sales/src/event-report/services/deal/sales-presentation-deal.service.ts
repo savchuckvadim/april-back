@@ -3,7 +3,11 @@ import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventReportContext } from '../context/event-report.context';
-import { EventReportEntityFieldsModel } from '../entity/event-report-entity-fields.model';
+import { EEventReportEntityType } from '../init/event-report-init.types';
+import {
+    EDealRole,
+    EventReportEntityFieldsModel,
+} from '../entity/event-report-entity-fields.model';
 import {
     composeStageId,
     getPresentationTargetStageCode,
@@ -110,16 +114,12 @@ export class SalesPresentationDealService {
                 );
                 const fields: Partial<IBXDeal> = {
                     ...(entityFields as Partial<IBXDeal>),
+                    ...ctx.ownerLinkFields,
                     TITLE: `Презентация ${ctx.planEventName}`,
                     CATEGORY_ID: String(categoryId),
                     STAGE_ID: composeStageId(categoryId, stage),
                     ASSIGNED_BY_ID: String(ctx.planResponsibleId),
                 };
-                if (ctx.entityType === 'company') {
-                    (fields as Record<string, unknown>).COMPANY_ID = String(
-                        ctx.entityId,
-                    );
-                }
                 if (ctx.currentTmcDeal) {
                     (fields as Record<string, unknown>).UF_CRM_TO_BASE_TMC =
                         String(ctx.currentTmcDeal.ID);
@@ -145,16 +145,12 @@ export class SalesPresentationDealService {
                 );
                 const fields: Partial<IBXDeal> = {
                     ...(entityFields as Partial<IBXDeal>),
+                    ...ctx.ownerLinkFields,
                     TITLE: 'Презентация (незапланированная)',
                     CATEGORY_ID: String(categoryId),
                     STAGE_ID: composeStageId(categoryId, stage),
                     ASSIGNED_BY_ID: String(ctx.planResponsibleId),
                 };
-                if (ctx.entityType === 'company') {
-                    (fields as Record<string, unknown>).COMPANY_ID = String(
-                        ctx.entityId,
-                    );
-                }
                 this.bitrix.batch.deal.set(cmd, fields);
                 result.newUnplannedPresDealId = `$result[${cmd}]`;
             }
@@ -185,11 +181,16 @@ export class SalesPresentationDealService {
         deal: Record<string, unknown> | null,
         baseDealId: string | null,
     ): Record<string, unknown> {
-        return new EventReportEntityFieldsModel(this.portal, ctx, 'deal', {
-            deal,
-            role: 'presentation',
-            baseDealId,
-        }).toFields();
+        return new EventReportEntityFieldsModel(
+            this.portal,
+            ctx,
+            EEventReportEntityType.DEAL,
+            {
+                deal,
+                role: EDealRole.PRESENTATION,
+                baseDealId,
+            },
+        ).toFields();
     }
 
     private deriveReportAction(

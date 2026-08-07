@@ -84,6 +84,21 @@ export function normalizeInn(raw: string | null | undefined): string | null {
     return isValidInn(digits) ? digits : null;
 }
 
+/**
+ * Все валидные ИНН из значения поля.
+ *
+ * Легаси-поля хранят СПИСКИ — «7707083893, 500100732259», через слэш,
+ * с префиксами «ИНН». Одиночный normalizeInn склеивал все цифры в одну
+ * строку и молча терял оба значения. Сначала пробуем как одиночный
+ * (обычный случай, дешевле), затем — извлечение всех валидных из текста.
+ */
+export function normalizeInnList(raw: string | null | undefined): string[] {
+    if (!raw) return [];
+    const single = normalizeInn(raw);
+    if (single) return [single];
+    return extractInnFromText(String(raw));
+}
+
 /** Контрольная сумма ИНН: 10 знаков — юрлицо, 12 — физлицо/ИП. */
 export function isValidInn(digits: string): boolean {
     if (!/^\d+$/.test(digits)) return false;

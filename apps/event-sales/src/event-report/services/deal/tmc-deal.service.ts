@@ -3,7 +3,11 @@ import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventReportContext } from '../context/event-report.context';
-import { EventReportEntityFieldsModel } from '../entity/event-report-entity-fields.model';
+import { EEventReportEntityType } from '../init/event-report-init.types';
+import {
+    EDealRole,
+    EventReportEntityFieldsModel,
+} from '../entity/event-report-entity-fields.model';
 import {
     composeStageId,
     detectEventFromTmcStage,
@@ -47,10 +51,10 @@ export class TmcDealService {
             const entityFields = new EventReportEntityFieldsModel(
                 this.portal,
                 ctx,
-                'deal',
+                EEventReportEntityType.DEAL,
                 {
                     deal: ctx.currentTmcDeal as Record<string, unknown>,
-                    role: 'tmc',
+                    role: EDealRole.TMC,
                 },
             ).toFields();
             const fields: Partial<IBXDeal> = {
@@ -104,10 +108,10 @@ export class TmcDealService {
                 const entityFields = new EventReportEntityFieldsModel(
                     this.portal,
                     ctx,
-                    'deal',
+                    EEventReportEntityType.DEAL,
                     {
                         deal: closeTarget as Record<string, unknown>,
-                        role: 'tmc',
+                        role: EDealRole.TMC,
                     },
                 ).toFields();
                 const cmd = `close_tmc_${closeTarget.ID}`;

@@ -52,6 +52,7 @@ export class ParseFieldsService {
                 order,
                 isNeedUpdate,
                 multiple,
+                crmEntitiesRaw,
             ] = fieldValues;
 
             //TODO: переделать на использование одного enum PbxFieldTypeEnum
@@ -74,6 +75,7 @@ export class ParseFieldsService {
                     smart,
                 );
             if (targetFieldCodeByEntityType) {
+                const crmEntities = this.parseCrmEntities(crmEntitiesRaw);
                 const field: Field = {
                     name,
                     appType,
@@ -85,6 +87,7 @@ export class ParseFieldsService {
                     // Ячейки Excel приходят как boolean / 'true' / 1 / пусто — нормализуем все варианты.
                     isNeedUpdate: coerceExcelBool(isNeedUpdate),
                     isMultiple: coerceExcelBool(multiple),
+                    ...(crmEntities ? { crmEntities } : {}),
                 };
 
                 fields.push(field);
@@ -92,6 +95,22 @@ export class ParseFieldsService {
         });
 
         return fields;
+    }
+
+    /**
+     * Привязки crm-полей из 15-й колонки: CSV `LEAD,DEAL` (регистр любой).
+     * Пусто/мусор → undefined = инсталлер разрешит все четыре сущности.
+     */
+    private parseCrmEntities(raw: unknown): Field['crmEntities'] | undefined {
+        if (typeof raw !== 'string' || !raw.trim()) return undefined;
+        const allowed = ['LEAD', 'DEAL', 'CONTACT', 'COMPANY'] as const;
+        const parsed = raw
+            .split(',')
+            .map(value => value.trim().toUpperCase())
+            .filter((value): value is (typeof allowed)[number] =>
+                (allowed as readonly string[]).includes(value),
+            );
+        return parsed.length ? parsed : undefined;
     }
 
     private getListItems(

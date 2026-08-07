@@ -2,11 +2,16 @@ import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
-import { EventReportEntityFieldsModel } from './event-report-entity-fields.model';
+import {
+    EDealRole,
+    EventReportEntityFieldsModel,
+} from './event-report-entity-fields.model';
+import { EEventReportEntityType } from '../init/event-report-init.types';
 
 /**
- * Ставит в batch одну команду `update` (company или lead) с уже собранными
- * UF_CRM_*-полями из {@link EventReportEntityFieldsModel}.
+ * Ставит в batch одну команду `update` сущности-владельца (company / lead /
+ * сделка без компании) с уже собранными UF_CRM_*-полями из
+ * {@link EventReportEntityFieldsModel}.
  *
  * Не @Injectable — создаётся через `new` рядом с конкретным {@link BitrixService}
  * (см. CLAUDE.md, race condition).
@@ -24,12 +29,16 @@ export class EventReportEntityFlowService {
             this.logger.warn('entity-flow: skipped — no entityId');
             return;
         }
-        if (ctx.entityType === 'company' && !ctx.company) {
+        if (ctx.entityType === EEventReportEntityType.COMPANY && !ctx.company) {
             this.logger.warn('entity-flow: company entity not loaded');
             return;
         }
-        if (ctx.entityType === 'lead' && !ctx.lead) {
+        if (ctx.entityType === EEventReportEntityType.LEAD && !ctx.lead) {
             this.logger.warn('entity-flow: lead entity not loaded');
+            return;
+        }
+        if (ctx.entityType === EEventReportEntityType.DEAL && !ctx.ownerDeal) {
+            this.logger.warn('entity-flow: owner deal not loaded');
             return;
         }
 
@@ -37,6 +46,14 @@ export class EventReportEntityFlowService {
             this.portal,
             ctx,
             ctx.entityType,
+            // Владелец-сделка читает свои текущие multiple-поля из себя же;
+            // роль base — это «корневая» сделка контекста.
+            ctx.entityType === EEventReportEntityType.DEAL
+                ? {
+                      deal: ctx.ownerDeal as Record<string, unknown> | null,
+                      role: EDealRole.BASE,
+                  }
+                : null,
         );
         const fields = model.toFields();
         if (Object.keys(fields).length === 0) {
@@ -46,12 +63,20 @@ export class EventReportEntityFlowService {
         const cmd = `update_entity_${ctx.entityType}_${ctx.entityId}`;
         // UF_CRM_* поля динамические по порталу — типы IBXCompany/IBXLead их
         // не описывают, поэтому маппинг приводится к unknown.
-        if (ctx.entityType === 'company') {
+        if (ctx.entityType === EEventReportEntityType.COMPANY) {
             this.bitrix.batch.company.update(
                 cmd,
                 ctx.entityId,
                 fields as unknown as Parameters<
                     typeof this.bitrix.batch.company.update
+                >[2],
+            );
+        } else if (ctx.entityType === EEventReportEntityType.DEAL) {
+            this.bitrix.batch.deal.update(
+                cmd,
+                ctx.entityId,
+                fields as unknown as Parameters<
+                    typeof this.bitrix.batch.deal.update
                 >[2],
             );
         } else {

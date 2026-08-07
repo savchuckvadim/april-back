@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { BtxStageRepository } from '@lib/portal-lib/pbx-domain';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import {
     MapLeadStageItemDto,
     MapLeadStagesDto,
@@ -22,6 +23,8 @@ export interface LeadStageMapResult {
     leadId: number;
     categoryId: number;
     upserted: LeadStageUpsertResult[];
+    /** Коды шаблонных стадий, чьё сопоставление снято (строки удалены). */
+    removed: string[];
 }
 
 /**
@@ -36,6 +39,7 @@ export class MapLeadStagesUseCase {
     constructor(
         private readonly ensureLeadCategory: EnsureLeadCategoryService,
         private readonly stageRepository: BtxStageRepository,
+        private readonly portalCache: PortalOnlineCacheService,
     ) {}
 
     async apply(dto: MapLeadStagesDto): Promise<LeadStageMapResult> {
@@ -79,7 +83,32 @@ export class MapLeadStagesUseCase {
             }
         }
 
-        return { leadId, categoryId, upserted };
+        // Сироты: строка кода шаблона есть в БД, но админ снял сопоставление —
+        // удаляем, иначе рантайм резолвит стадию по устаревшему bitrixId.
+        // Исключение: install-стадии (installMode='create') живут через
+        // /install/ и снятием сопоставления не удаляются. Чужие коды
+        // (не из шаблона) не трогаем.
+        const mappedCodes = new Set(
+            dto.mappings.map(mapping => mapping.templateStageCode),
+        );
+        const removableCodes = new Set(
+            template
+                .filter(tpl => tpl.installMode !== 'create')
+                .map(tpl => tpl.code),
+        );
+        const removed: string[] = [];
+        for (const stage of existing) {
+            if (!removableCodes.has(stage.code)) continue;
+            if (mappedCodes.has(stage.code)) continue;
+            await this.stageRepository.delete(stage.id);
+            removed.push(stage.code);
+        }
+
+        // Рантайм-портал кэширован на 10 часов — без сброса сопоставление
+        // «не работает» до истечения TTL.
+        await this.portalCache.invalidate(dto.domain);
+
+        return { leadId, categoryId, upserted, removed };
     }
 
     /** Проверка «один-к-одному»: коды шаблона существуют и не дублируются; статусы Bitrix не дублируются. */

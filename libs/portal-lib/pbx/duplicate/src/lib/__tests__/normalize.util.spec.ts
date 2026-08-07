@@ -5,6 +5,7 @@ import {
     isValidInn,
     normalizeEmail,
     normalizeInn,
+    normalizeInnList,
     normalizePhone,
     normalizeTitle,
     signalsCacheKey,
@@ -72,6 +73,28 @@ describe('isValidInn / normalizeInn', () => {
         expect(normalizeInn(` ${INN_10} `)).toBe(INN_10);
         expect(normalizeInn('ИНН: 7707083893')).toBe(INN_10);
         expect(normalizeInn('9991234567')).toBeNull();
+    });
+});
+
+describe('normalizeInnList', () => {
+    it('одиночный ИНН — как раньше', () => {
+        expect(normalizeInnList(`ИНН ${INN_10}`)).toEqual([INN_10]);
+    });
+
+    it('легаси-строка с несколькими ИНН больше не теряется', () => {
+        expect(normalizeInnList(`${INN_10}, ${INN_12}`)).toEqual([
+            INN_10,
+            INN_12,
+        ]);
+        expect(normalizeInnList(`ИНН ${INN_10} / ИНН ${INN_12}`)).toEqual([
+            INN_10,
+            INN_12,
+        ]);
+    });
+
+    it('мусор и пустота — пустой список', () => {
+        expect(normalizeInnList('нет данных')).toEqual([]);
+        expect(normalizeInnList(null)).toEqual([]);
     });
 });
 

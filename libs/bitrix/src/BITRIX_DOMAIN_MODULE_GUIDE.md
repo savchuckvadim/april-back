@@ -135,6 +135,23 @@ export class SomeRepository {
   - `BxImV2EventService`
   - `BxImV2EventBatchService`
 
+Домены sales-хуков (2026-08):
+
+- `crm.entity.mergeBatch` — `BxCrmEntityService` (`bitrix.crmEntity`).
+  **Осознанное отступление от гайда: batch-сервиса НЕТ.** Метод разрушающий
+  (сущности-жертвы удаляются) и медленный (~2 с) — в HTTP-batch упирается в
+  OPERATION_TIME_LIMIT, а частичный отказ внутри батча нельзя корректно
+  разобрать. Только последовательные одиночные вызовы.
+- `crm.duplicate.findbycomm` — `BxDuplicateService` / `BxDuplicateBatchService`.
+- `crm.requisite.link.*` — `BxRequisiteLinkService` / `BxRequisiteLinkBatchService`.
+- Связи items: `lead.contactItems{Get,Set,Delete}`, `company.contactItems*`,
+  `contact.companyItems*`, `deal.contactItems{Get,Delete}` (+ batch-варианты).
+- `crm.timeline.comment.list` — `timeline.getTimelineComments`.
+- `crm.activity.binding.add/delete` batch — `batch.activity.addBinding/deleteBinding`
+  (сырой addCmdBatch: параметры ПЛОСКИЕ, обёртка fields ломает метод — боевой лог 2026-07-27).
+- Привязки задач `UF_CRM_TASK` — util `taskCrmBinding/parseTaskCrmBinding/mergeTaskCrmBindings`
+  (`domain/tasks/task/lib/task-crm-binding.util.ts`) вместо magic strings `'CO_' + id`.
+
 ## 6) Как использовать в командах
 
 ### Bridge (IM)

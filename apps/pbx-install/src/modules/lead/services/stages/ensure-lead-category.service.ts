@@ -26,7 +26,15 @@ export class EnsureLeadCategoryService {
         private readonly categoryService: BtxCategoryService,
     ) {}
 
-    /** Найти/создать лид-якорь и его единственную категорию. */
+    /**
+     * Найти/создать лид-якорь и категорию ЕГО ГРУППЫ.
+     *
+     * Раньше бралась existing[0] без учёта группы — маппинги SALES и
+     * SERVICE (у них одинаковые коды стадий) затирали друг друга.
+     * Теперь: ищем по group, затем по code `lead_{group}`; единственную
+     * legacy-строку без группы «усыновляем» (проставляем group/code);
+     * иначе создаём новую категорию группы.
+     */
     async ensure(
         domain: string,
         group: PbxEntityGroupEnum,
@@ -37,8 +45,19 @@ export class EnsureLeadCategoryService {
             PbxEntityType.LEAD,
             leadId,
         );
-        if (existing.length > 0) {
-            return { leadId, categoryId: existing[0].id };
+        const matched = this.matchByGroup(existing, group);
+        if (matched) {
+            return { leadId, categoryId: matched.id };
+        }
+
+        const orphan =
+            existing.length === 1 && !existing[0].group ? existing[0] : null;
+        if (orphan) {
+            await this.categoryService.update(orphan.id, {
+                group,
+                code: `lead_${group}`,
+            });
+            return { leadId, categoryId: orphan.id };
         }
 
         const created = await this.categoryService.create({
@@ -57,8 +76,11 @@ export class EnsureLeadCategoryService {
         return { leadId, categoryId: created.id };
     }
 
-    /** Найти лид-якорь и его категорию без создания (для мониторинга). */
-    async find(domain: string): Promise<LeadCategoryAnchor | null> {
+    /** Найти лид-якорь и категорию группы без создания (для мониторинга). */
+    async find(
+        domain: string,
+        group?: PbxEntityGroupEnum,
+    ): Promise<LeadCategoryAnchor | null> {
         const portal = await this.portalService.getPortalByDomain(domain);
         if (!portal) {
             return null;
@@ -76,7 +98,26 @@ export class EnsureLeadCategoryService {
         if (cats.length === 0) {
             return null;
         }
-        return { leadId: lead.id, categoryId: cats[0].id };
+        if (!group) {
+            return { leadId: lead.id, categoryId: cats[0].id };
+        }
+        const matched = this.matchByGroup(cats, group);
+        // Fallback на единственную legacy-строку без группы — чтобы
+        // мониторинг видел старое сопоставление до первого ensure().
+        const fallback =
+            !matched && cats.length === 1 && !cats[0].group ? cats[0] : null;
+        const target = matched ?? fallback;
+        return target ? { leadId: lead.id, categoryId: target.id } : null;
+    }
+
+    private matchByGroup<T extends { group: string; code: string }>(
+        categories: T[],
+        group: PbxEntityGroupEnum,
+    ): T | undefined {
+        return (
+            categories.find(category => category.group === (group as string)) ??
+            categories.find(category => category.code === `lead_${group}`)
+        );
     }
 
     private async ensureLead(domain: string): Promise<number> {

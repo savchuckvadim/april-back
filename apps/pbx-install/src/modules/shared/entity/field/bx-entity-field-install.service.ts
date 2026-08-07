@@ -94,7 +94,32 @@ export class BxEntityFieldsInstallService {
         this.domain = domain;
         this.entity = entity;
         this.pbxService = pbxService;
-        this.parseFields = parseFields;
+        this.parseFields = parseFields.map(field =>
+            this.normalizeParseField(field),
+        );
+    }
+
+    /**
+     * Шаблоны приходят из Excel/ручного ввода с хвостовыми пробелами —
+     * `FIELD_NAME: "UF_CRM_X "` Bitrix отвергает, и весь батч падал в
+     * «не удалось изменить ни одного поля». Нормализуем на входе один раз:
+     * дальше эти же объекты уходят и в Bitrix, и в синк с PortalDB.
+     */
+    private normalizeParseField(field: Field): Field {
+        return {
+            ...field,
+            code: field.code?.trim(),
+            bxFieldName: field.bxFieldName?.trim(),
+            name: field.name?.trim(),
+            list: field.list?.map(item => ({
+                ...item,
+                CODE: item.CODE?.trim(),
+                VALUE:
+                    typeof item.VALUE === 'string'
+                        ? item.VALUE.trim()
+                        : item.VALUE,
+            })),
+        } as Field;
     }
     private async init() {
         const { bitrix } = await this.pbxService.init(this.domain);
@@ -296,6 +321,23 @@ export class BxEntityFieldsInstallService {
                 parseField.list || [],
                 bitrixField?.LIST || [],
             );
+        }
+
+        // crm-поля БЕЗ привязок молча не сохраняют значения (`L_123` уходит
+        // в пустоту). Привязки берутся из 15-й колонки Excel (crmEntities,
+        // CSV `LEAD,DEAL`); колонка пуста/нет — все четыре типа (безопасный
+        // максимум). Update существующего поля допишет привязки полям,
+        // установленным до этого фикса (isNeedUpdate).
+        if (parseField.type === 'crm') {
+            const allowed = parseField.crmEntities?.length
+                ? parseField.crmEntities
+                : (['LEAD', 'CONTACT', 'COMPANY', 'DEAL'] as const);
+            fieldData.SETTINGS = {
+                LEAD: allowed.includes('LEAD') ? 'Y' : 'N',
+                CONTACT: allowed.includes('CONTACT') ? 'Y' : 'N',
+                COMPANY: allowed.includes('COMPANY') ? 'Y' : 'N',
+                DEAL: allowed.includes('DEAL') ? 'Y' : 'N',
+            };
         }
         return fieldData;
     }

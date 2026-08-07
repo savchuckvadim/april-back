@@ -11,6 +11,9 @@ import { BitrixItemDomainModule } from './item/bx-item.module';
 import { BxTimelineModule } from './timeline/bx-timeline.module';
 import { BitrixSmartTypeDomainModule } from './smart-type/bx-smart-type-domain.module';
 import { BitrixActivityTodoDomainModule } from './activity-todo/bx-activity-todo.module';
+import { BitrixRequisiteLinkDomainModule } from './requisite-link/bx-requisite-link.module';
+import { BitrixCrmEntityDomainModule } from './entity/bx-crm-entity.module';
+import { BitrixDuplicateDomainModule } from './duplicate/bx-duplicate.module';
 @Module({
     imports: [
         BitrixDealDomainModule,
@@ -24,6 +27,9 @@ import { BitrixActivityTodoDomainModule } from './activity-todo/bx-activity-todo
         BxTimelineModule,
         BitrixSmartTypeDomainModule,
         BitrixActivityTodoDomainModule,
+        BitrixRequisiteLinkDomainModule,
+        BitrixCrmEntityDomainModule,
+        BitrixDuplicateDomainModule,
     ],
     providers: [BxFieldService],
     exports: [
@@ -39,6 +45,9 @@ import { BitrixActivityTodoDomainModule } from './activity-todo/bx-activity-todo
         BxFieldService,
         BitrixSmartTypeDomainModule,
         BitrixActivityTodoDomainModule,
+        BitrixRequisiteLinkDomainModule,
+        BitrixCrmEntityDomainModule,
+        BitrixDuplicateDomainModule,
     ],
 })
 export class BxCrmDomainModule {}

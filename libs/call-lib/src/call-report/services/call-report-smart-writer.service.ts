@@ -198,10 +198,8 @@ export class CallReportSmartWriterService {
             try {
                 return await write(variant.fields);
             } catch (error) {
-                const message = (error as Error).message ?? '';
-                const isRowSize = message.includes('Row size too large');
                 const hasNext = i + 1 < variants.length;
-                if (!isRowSize || !hasNext) throw error;
+                if (!this.isRowSizeError(error) || !hasNext) throw error;
                 this.logger.warn(
                     `Строка смарта не влезла в лимит Bitrix (${variant.label}) — ` +
                         `повторяю: ${variants[i + 1].label}`,
@@ -210,6 +208,29 @@ export class CallReportSmartWriterService {
         }
         // Недостижимо: последний вариант либо вернулся, либо бросил.
         throw new Error('writeWithDegradation: нет вариантов записи');
+    }
+
+    /**
+     * Детект «Row size too large» и в message, и в теле ответа Bitrix:
+     * AxiosError.message — это «Request failed with status code 400», сам
+     * текст MySQL-ошибки лежит в response.data.error_description
+     * (прод-урок 06.08.2026: детект только по message деградацию не включал).
+     */
+    private isRowSizeError(error: unknown): boolean {
+        const axiosLike = error as {
+            message?: string;
+            response?: { data?: unknown };
+        };
+        let responseText = '';
+        try {
+            responseText = JSON.stringify(axiosLike?.response?.data ?? '');
+        } catch {
+            // Циклическая структура в data — детектим только по message.
+            responseText = '';
+        }
+        return `${axiosLike?.message ?? ''} ${responseText}`.includes(
+            'Row size too large',
+        );
     }
 
     /** Варианты записи от полного к минимальному (для row size лимита). */

@@ -8,6 +8,7 @@ import {
     DuplicateMatchReason,
     DuplicateRawHit,
     DuplicateSignalKind,
+    SEARCH_VIA,
 } from '../type/duplicate.type';
 
 /** Сущности, которые исключаем из выдачи (источник поиска и его связи). */
@@ -97,10 +98,16 @@ export class DuplicateScoreService {
      */
     private weightOf(hit: DuplicateRawHit): number {
         if (hit.kind === DuplicateSignalKind.INN) {
-            if (hit.via === 'RQ_INN') {
+            if (hit.via === SEARCH_VIA.RQ_INN) {
                 return DUPLICATE_MATCH_WEIGHTS.innRequisite;
             }
-            if (hit.via === 'TITLE' || hit.via === 'COMPANY_TITLE') {
+            // Механизмы сравниваем через SEARCH_VIA: builder эмитит ключи
+            // фильтра Битрикса (`%TITLE`), и литерал 'TITLE' здесь молча
+            // давал бы ИНН-из-названия вес точного поля (100 вместо 40).
+            if (
+                hit.via === SEARCH_VIA.TITLE ||
+                hit.via === SEARCH_VIA.COMPANY_TITLE
+            ) {
                 return DUPLICATE_MATCH_WEIGHTS.innInTitle;
             }
             return DUPLICATE_MATCH_WEIGHTS.innField;

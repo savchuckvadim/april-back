@@ -25,4 +25,31 @@ export class BxTimelineRepository {
             { fields: data },
         );
     }
+
+    /** Список комментариев таймлайна сущности (фильтр по ENTITY_TYPE/ENTITY_ID). */
+    async getTimelineComments(
+        filter: Partial<IBXTimelineComment>,
+        select?: string[],
+    ) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.TIMELINE_COMMENT,
+            EBxMethod.LIST,
+            { filter, select, start: -1 },
+        );
+    }
+
+    getTimelineCommentsBtch(
+        cmd: string,
+        filter: Partial<IBXTimelineComment>,
+        select?: string[],
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmd,
+            EBxNamespace.CRM,
+            EBXEntity.TIMELINE_COMMENT,
+            EBxMethod.LIST,
+            { filter, select, start: -1 },
+        );
+    }
 }

@@ -1,7 +1,7 @@
 import { BXUserDto } from './bx-user.dto';
 import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
 
@@ -95,11 +95,14 @@ export class BxDepartmentDto implements IBXDepartment {
     USERS: BXUserDto[];
 
     @ApiProperty({
-        description: 'Department head',
-        example: 1,
-        required: true,
+        description:
+            'Руководитель отдела (user id). Битрикс отдаёт строкой/числом — ' +
+            'сервис нормализует к числу; 0/пусто → null.',
+        type: Number,
+        nullable: true,
+        example: 447,
     })
-    UF_HEAD?: number | undefined;
+    UF_HEAD?: number | null;
 }
 export class BxDepartmentDataDto {
     @ApiProperty({
@@ -124,6 +127,14 @@ export class BxDepartmentDataDto {
         type: [BxDepartmentDto],
     })
     childrenDepartments: BxDepartmentDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Родительские отделы базового (климб по PARENT до 3 уровней, ' +
+            'с сотрудниками) — для честного «вышестоящего» без хардкода bossId.',
+        type: [BxDepartmentDto],
+    })
+    parentDepartments?: BxDepartmentDto[];
 
     @ApiProperty({
         description: 'All users',

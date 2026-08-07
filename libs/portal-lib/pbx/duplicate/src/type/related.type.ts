@@ -42,6 +42,8 @@ export interface RelatedDeal {
     /** Закрыта ли сделка (`CLOSED = Y`). */
     closed: boolean;
     dateCreate?: string;
+    /** Лид-первоисточник сделки (стандартный `LEAD_ID`), если проставлен. */
+    leadId?: number;
 }
 
 export interface RelatedLead {
@@ -52,6 +54,29 @@ export interface RelatedLead {
     statusSemanticId?: string;
     responsible?: ResponsibleUser;
     dateCreate?: string;
+    /** Стандартный источник Битрикса (WEB/WEBFORM/CALL/...). */
+    sourceId?: string;
+    /** URL опросника «Оценка» (UF_CRM_LEAD_QUEST_URL) — заполнен у заявок с сайта. */
+    questUrl?: string;
+    /** «Код партнёра» (UF_CRM_REG_NUMBER) — заполнен у заявок с сайта. */
+    regNumber?: string;
+    /**
+     * Сырое значение UF-поля `op_source_select` (bitrixId item'а) — фронт
+     * резолвит его в код по слепку портала («Заявка с сайта» и т.п.).
+     * Семантика намеренно не считается на бэке.
+     */
+    opSourceRaw?: string;
+}
+
+/** Контакт контрагента (из crm.*.contact.items.get + crm.contact.list). */
+export interface RelatedContact {
+    id: number;
+    name?: string;
+    lastName?: string;
+    /** Должность (POST). */
+    post?: string;
+    phones?: string[];
+    responsible?: ResponsibleUser;
 }
 
 /** Что мы знаем о найденном контрагенте помимо самого факта совпадения. */
@@ -61,6 +86,8 @@ export interface RelatedEntitiesResult {
     responsible?: ResponsibleUser;
     deals: RelatedDeal[];
     leads: RelatedLead[];
+    /** Контакты владельца: у сделки — её contact items, у компании — её. */
+    contacts: RelatedContact[];
     /** Сколько HTTP-запросов ушло на портал. */
     batchRequests: number;
     warnings: string[];

@@ -50,6 +50,46 @@ export class BxActivityRepository {
         });
     }
 
+    /**
+     * Batch-вариант binding.add — для переносов десятков дел (merge/transfer).
+     * Сырой addCmdBatch, зеркально боевому `call` выше: параметры ПЛОСКИЕ,
+     * с обёрткой fields Bitrix отвечает «Could not find value for parameter».
+     */
+    addBindingBtch(
+        cmdCode: string,
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ) {
+        return this.bitrixService.addCmdBatch(
+            cmdCode,
+            'crm.activity.binding.add',
+            {
+                activityId: Number(activityId),
+                entityTypeId,
+                entityId: Number(entityId),
+            },
+        );
+    }
+
+    /** Batch-вариант binding.delete. */
+    deleteBindingBtch(
+        cmdCode: string,
+        activityId: number | string,
+        entityTypeId: number,
+        entityId: number | string,
+    ) {
+        return this.bitrixService.addCmdBatch(
+            cmdCode,
+            'crm.activity.binding.delete',
+            {
+                activityId: Number(activityId),
+                entityTypeId,
+                entityId: Number(entityId),
+            },
+        );
+    }
+
     async get(id: number) {
         return this.bitrixService.callType(
             EBxNamespace.CRM,

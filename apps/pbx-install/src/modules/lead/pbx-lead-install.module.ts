@@ -21,7 +21,9 @@ import { PbxLeadFieldBitrixUseCase } from './use-cases/field/pbx-lead-field-bitr
 
 import { EnsureLeadCategoryService } from './services/stages/ensure-lead-category.service';
 import { PbxLeadStageMonitoringService } from './services/stages/pbx-lead-stage-monitoring.service';
+import { InstallLeadStageSyncService } from './services/stages/install-lead-stage-sync.service';
 import { MapLeadStagesUseCase } from './use-cases/stage/map-lead-stages.use-case';
+import { InstallLeadStagesUseCase } from './use-cases/stage/install-lead-stages.use-case';
 import { PbxLeadStageInstallController } from './controllers/pbx-lead-stage-install.controller';
 import { PbxLeadStageInstallMonitoringController } from './controllers/pbx-lead-stage-install-monitoring.controller';
 
@@ -51,7 +53,9 @@ import { PbxLeadStageInstallMonitoringController } from './controllers/pbx-lead-
         PbxLeadFieldManageUseCase,
         EnsureLeadCategoryService,
         PbxLeadStageMonitoringService,
+        InstallLeadStageSyncService,
         MapLeadStagesUseCase,
+        InstallLeadStagesUseCase,
     ],
     // экспорт для воркера marketplace-provision
     exports: [PbxLeadFieldInstallByParseUseCase],

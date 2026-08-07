@@ -14,8 +14,13 @@ import {
     EventReportEventType,
 } from '../../types/event-report.event-codes';
 import { EventReportContext } from '../context/event-report.context';
+import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
+
 import { EnumWorkStatusCode } from '../../types/report-types';
+
+/** План-элементы KPI пишутся на секунду позже отчётных (см. assemble). */
+const PLAN_EVENT_DATE_OFFSET_SEC = 1;
 
 /**
  * KPI-сценарии (см. event-report-service-map.md «Блок 4»):
@@ -214,6 +219,7 @@ export class EventReportKpiPayloadBuilder {
             action: 'plan',
             dateForName: ctx.nowDate,
             crm: this.crmLinks(),
+            eventDateOffsetSec: PLAN_EVENT_DATE_OFFSET_SEC,
         });
     }
 
@@ -243,6 +249,7 @@ export class EventReportKpiPayloadBuilder {
             action: ctx.isExpired ? 'pound' : 'plan',
             dateForName: this.parseDeadline(ctx.planDeadline) ?? ctx.nowDate,
             crm: this.crmLinks(),
+            eventDateOffsetSec: PLAN_EVENT_DATE_OFFSET_SEC,
         });
     }
 
@@ -274,15 +281,26 @@ export class EventReportKpiPayloadBuilder {
         action: EventActionCode;
         dateForName: Date;
         crm: Record<string, string>;
+        /**
+         * Смещение event_date в секундах. План-элементы пишутся на +1 c от
+         * отчёта: события приходят в один момент, но хронологически сначала
+         * происходит то, о чём отчитались, потом — что запланировали
+         * (как в legacy PHP). Без смещения сортировка по дате перемешивает
+         * логическую последовательность.
+         */
+        eventDateOffsetSec?: number;
     }): KpiEventPayload {
         const ctx = this.ctx;
         const tz = this.portal.getTimezone();
         const failTypeCode = ctx.dto.report?.failType?.current?.code;
+        const eventDate = input.eventDateOffsetSec
+            ? new Date(ctx.nowDate.getTime() + input.eventDateOffsetSec * 1000)
+            : ctx.nowDate;
 
         return {
             name: input.name,
             values: {
-                event_date: this.formatCrm(ctx.nowDate),
+                event_date: this.formatCrm(eventDate),
                 event_title: input.name,
                 plan_date: ctx.planDeadline
                     ? toCrmDateTime(ctx.planDeadline, tz)
@@ -292,7 +310,8 @@ export class EventReportKpiPayloadBuilder {
                 su: ctx.planResponsibleId,
                 crm: input.crm,
                 crm_company:
-                    ctx.entityType === 'company' && ctx.entityId
+                    ctx.entityType === EEventReportEntityType.COMPANY &&
+                    ctx.entityId
                         ? { n0: `CO_${ctx.entityId}` }
                         : undefined,
                 crm_contact: ctx.dto.report?.contact?.ID
@@ -323,13 +342,30 @@ export class EventReportKpiPayloadBuilder {
         const push = (v: string) => {
             links[`n${i++}`] = v;
         };
-        if (this.ctx.entityType === 'company' && this.ctx.entityId) {
+        if (
+            this.ctx.entityType === EEventReportEntityType.COMPANY &&
+            this.ctx.entityId
+        ) {
             push(`CO_${this.ctx.entityId}`);
         }
-        if (this.ctx.entityType === 'lead' && this.ctx.entityId) {
+        if (
+            this.ctx.entityType === EEventReportEntityType.LEAD &&
+            this.ctx.entityId
+        ) {
             push(`L_${this.ctx.entityId}`);
         }
-        if (this.deals.baseDealId) {
+        // Владелец-сделка: запись истории/KPI обязана ссылаться на сделку —
+        // по этой привязке история потом и читается.
+        if (
+            this.ctx.entityType === EEventReportEntityType.DEAL &&
+            this.ctx.entityId
+        ) {
+            push(`D_${this.ctx.entityId}`);
+        }
+        if (
+            this.deals.baseDealId &&
+            String(this.deals.baseDealId) !== String(this.ctx.entityId)
+        ) {
             push(`D_${this.deals.baseDealId}`);
         }
         if (this.deals.newPlanPresDealId) {

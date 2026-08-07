@@ -12,9 +12,46 @@ import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitr
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
 import {
+    EEventReportEntityType,
     EventReportEntityType,
     IEventReportInitContext,
 } from './event-report-init.types';
+
+/** SELECT сделок init-батча (общий для list_deals и list_deals_by_lead). */
+const DEAL_LIST_SELECT = [
+    'ID',
+    'TITLE',
+    'CATEGORY_ID',
+    'STAGE_ID',
+    'CLOSED',
+    'COMPANY_ID',
+    'CONTACT_ID',
+    'LEAD_ID',
+    'ASSIGNED_BY_ID',
+    'UF_CRM_TO_BASE_SALES',
+    'UF_CRM_TO_PRESENTATION_SALES',
+    'UF_CRM_TO_BASE_TMC',
+];
+
+/**
+ * Коды pbx-полей сделки со связанными лидами (тот же набор, что в
+ * pbx-duplicate/related-entities): стандартный LEAD_ID читается всегда,
+ * эти — по слепку портала, когда проинсталлены.
+ */
+const DEAL_LEAD_LINK_FIELD_CODES = [
+    'deal_from_lead_id',
+    'deal_joined_leads',
+    'op_smart_lid',
+    'op_smart_lids',
+] as const;
+
+/** UF-ключи to_*-ссылок владельца на сделки других воронок (install-конвенция). */
+const OWNER_DEAL_LINK_KEYS = [
+    'UF_CRM_TO_BASE_SALES',
+    'UF_CRM_TO_XO_SALES',
+    'UF_CRM_TO_PRESENTATION_SALES',
+    'UF_CRM_TO_BASE_TMC',
+] as const;
 
 /**
  * Загружает все нужные event-report flow сущности одним HTTP-batch:
@@ -42,21 +79,51 @@ export class EventReportInitService {
         const { entityId, entityType } = this.resolveEntity(dto);
         if (!entityId) {
             throw new Error(
-                'EventReportInit: cannot resolve entityId from placement/lead/contact',
+                'EventReportInit: cannot resolve entityId from context/placement/lead',
             );
         }
 
-        // === Фаза 1: company/lead + active deals + task + DTO lead ===
-        if (entityType === 'company') {
-            bitrix.batch.company.get('get_company', entityId);
-            this.queueActiveDealsLoad(bitrix, entityId, 'company');
-        } else {
-            bitrix.batch.lead.get('get_lead_entity', entityId);
-            this.queueActiveDealsLoad(bitrix, entityId, 'lead');
-        }
+        // Владелец-сделка читается ДО общего батча: из её полей строится
+        // остальная загрузка — лиды (LEAD_ID + deal_from_lead_id +
+        // deal_joined_leads), связанные воронки (to_*-ссылки) и сделки тех
+        // же лидов (там живёт ХО без компании).
+        const ownerDeal =
+            entityType === EEventReportEntityType.DEAL
+                ? await this.fetchOwnerDeal(bitrix, entityId)
+                : null;
+        const ownerLeadIds = this.collectOwnerLeadIds(ownerDeal, portal);
 
         const dtoLeadId = dto.lead?.ID ? Number(dto.lead.ID) : null;
-        if (dtoLeadId && entityType !== 'lead') {
+
+        // === Фаза 1: владелец (company/lead/deal) + active deals + task + DTO lead ===
+        if (entityType === EEventReportEntityType.COMPANY) {
+            bitrix.batch.company.get('get_company', entityId);
+            this.queueActiveDealsLoad(bitrix, entityId, entityType);
+        } else if (entityType === EEventReportEntityType.DEAL) {
+            // У владельца-сделки нет «всех сделок компании» — добираем по
+            // D_-ссылкам задачи (pres/tmc), to_*-ссылкам самой сделки и по
+            // общим лидам, иначе отчёт создал бы дубли вместо обновления.
+            this.queueActiveDealsLoad(bitrix, entityId, entityType, [
+                ...this.extractTaskDealIds(dto),
+                ...this.collectOwnerLinkedDealIds(ownerDeal),
+            ]);
+            if (ownerLeadIds.length) {
+                bitrix.batch.deal.getList(
+                    'list_deals_by_lead',
+                    { LEAD_ID: ownerLeadIds } as never,
+                    DEAL_LIST_SELECT,
+                );
+            }
+            const primaryLeadId = ownerLeadIds[0];
+            if (primaryLeadId && primaryLeadId !== dtoLeadId) {
+                bitrix.batch.lead.get('get_owner_lead', primaryLeadId);
+            }
+        } else {
+            bitrix.batch.lead.get('get_lead_entity', entityId);
+            this.queueActiveDealsLoad(bitrix, entityId, entityType);
+        }
+
+        if (dtoLeadId && entityType !== EEventReportEntityType.LEAD) {
             bitrix.batch.lead.get('get_dto_lead', dtoLeadId);
         }
 
@@ -79,19 +146,23 @@ export class EventReportInitService {
         const flat = this.flattenResults(batchResults);
 
         const company =
-            entityType === 'company'
+            entityType === EEventReportEntityType.COMPANY
                 ? this.pick<IBXCompany>(flat, 'get_company')
                 : null;
         const entityLead =
-            entityType === 'lead'
+            entityType === EEventReportEntityType.LEAD
                 ? this.pick<IBXLead>(flat, 'get_lead_entity')
                 : null;
         const dtoLead = dtoLeadId
             ? this.pick<IBXLead>(flat, 'get_dto_lead')
             : null;
-        const lead = entityLead ?? dtoLead;
+        const ownerDealLead = this.pick<IBXLead>(flat, 'get_owner_lead');
+        const lead = entityLead ?? dtoLead ?? ownerDealLead;
 
-        const dealsRaw = this.pick<IBXDeal[]>(flat, 'list_deals') ?? [];
+        const dealsRaw = this.dedupeDealsById([
+            ...(this.pick<IBXDeal[]>(flat, 'list_deals') ?? []),
+            ...(this.pick<IBXDeal[]>(flat, 'list_deals_by_lead') ?? []),
+        ]);
 
         const currentTask = (dto.currentTask ??
             null) as unknown as IBXTask | null;
@@ -129,6 +200,7 @@ export class EventReportInitService {
             entityType,
             company,
             lead,
+            ownerDeal,
             currentBaseDeal,
             currentXoDeal,
             currentPresDeal,
@@ -144,57 +216,179 @@ export class EventReportInitService {
         entityId: number;
         entityType: EventReportEntityType;
     } {
+        // Приоритет — честный контекст. Компания остаётся самым широким
+        // контекстом (даже когда открылись из сделки или задачи), сделка без
+        // компании — легальный владелец, чистый лид — последним.
+        const ctx = dto.context;
+        if (ctx) {
+            const companyId = this.toId(ctx.companyId);
+            if (companyId) {
+                return {
+                    entityId: companyId,
+                    entityType: EEventReportEntityType.COMPANY,
+                };
+            }
+            const dealId = this.toId(ctx.dealId);
+            if (dealId) {
+                return {
+                    entityId: dealId,
+                    entityType: EEventReportEntityType.DEAL,
+                };
+            }
+            const leadId = this.toId(ctx.leadId);
+            if (leadId) {
+                return {
+                    entityId: leadId,
+                    entityType: EEventReportEntityType.LEAD,
+                };
+            }
+            // context прислан пустым — падаем в legacy-ветку, не в ошибку.
+        }
+
+        // Legacy-фолбэк: старые клиенты шлют placement, причём для
+        // deal/task/call_card он подделан под CRM_COMPANY_DETAIL_TAB с
+        // companyId в options.ID — поэтому «не LEAD → company».
         const placement = dto.placement?.placement ?? '';
         const placementOptId = dto.placement?.options?.ID
             ? Number(dto.placement.options.ID)
             : null;
 
-        // CALL_CARD → company по CRM_BINDINGS (placement.options.ID); если нет — lead из DTO
         if (placement.includes('LEAD')) {
             const leadId = dto.lead?.ID ? Number(dto.lead.ID) : placementOptId;
-            return { entityId: leadId ?? 0, entityType: 'lead' };
+            return {
+                entityId: leadId ?? 0,
+                entityType: EEventReportEntityType.LEAD,
+            };
         }
 
         const companyId = placementOptId ?? null;
         if (companyId) {
-            return { entityId: companyId, entityType: 'company' };
+            return {
+                entityId: companyId,
+                entityType: EEventReportEntityType.COMPANY,
+            };
         }
         // fallback на lead
         const leadId = dto.lead?.ID ? Number(dto.lead.ID) : 0;
-        return { entityId: leadId, entityType: 'lead' };
+        return { entityId: leadId, entityType: EEventReportEntityType.LEAD };
+    }
+
+    private toId(value: number | undefined): number | null {
+        const id = Number(value);
+        return Number.isFinite(id) && id > 0 ? id : null;
     }
 
     /**
-     * Грузит все активные сделки по entity. Фильтр '!=STAGE_ID' с массивом
-     * стадий-конечников — для базовой воронки sales_base WON/LOSE; для других
-     * категорий полагаемся на потребителя (мы фильтруем по category после).
+     * Сделка-владелец читается до общего батча: из её полей строится
+     * остальная загрузка. Ошибка не роняет отчёт — контекст соберётся из
+     * DTO (warning в лог, сущность недогружена).
+     */
+    private async fetchOwnerDeal(
+        bitrix: BitrixService,
+        dealId: number,
+    ): Promise<IBXDeal | null> {
+        try {
+            // callType отдаёт обёртку IBitrixResponse — сущность в .result.
+            const response = await bitrix.deal.get(dealId);
+            return response?.result ?? null;
+        } catch (error) {
+            this.logger.warn(
+                `owner deal load failed: deal ${dealId}: ${String(error)}`,
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Все лиды сделки-владельца: стандартный `LEAD_ID` + наши поля связей
+     * (`deal_from_lead_id`, `deal_joined_leads`, legacy `op_smart_lid(s)`),
+     * резолвленные по слепку портала. Значения принимаются и как `L_12`,
+     * и как голый id; поле не проинсталлено — просто пропускается.
+     */
+    private collectOwnerLeadIds(
+        ownerDeal: IBXDeal | null,
+        portal: PortalModel,
+    ): number[] {
+        if (!ownerDeal) return [];
+        const raw = ownerDeal as unknown as Record<string, unknown>;
+        const ids = new Set<number>();
+        const primary = this.toId(Number(raw['LEAD_ID']));
+        if (primary) ids.add(primary);
+
+        for (const code of DEAL_LEAD_LINK_FIELD_CODES) {
+            const field = portal.getEntityFieldByCode('deal', code);
+            if (!field?.bitrixId) continue;
+            const value = raw[`UF_CRM_${field.bitrixId}`];
+            const values = Array.isArray(value)
+                ? value
+                : value !== null && value !== undefined
+                  ? [value]
+                  : [];
+            for (const item of values) {
+                const text = String(item ?? '').trim();
+                const id = this.toId(
+                    Number(/^L_/i.test(text) ? text.slice(2) : text),
+                );
+                if (id) ids.add(id);
+            }
+        }
+        return [...ids];
+    }
+
+    /** Сделки, на которые владелец ссылается через to_*-поля воронок. */
+    private collectOwnerLinkedDealIds(ownerDeal: IBXDeal | null): number[] {
+        if (!ownerDeal) return [];
+        const raw = ownerDeal as unknown as Record<string, unknown>;
+        const ids = new Set<number>();
+        for (const key of OWNER_DEAL_LINK_KEYS) {
+            const id = this.toId(Number(raw[key]));
+            if (id) ids.add(id);
+        }
+        return [...ids];
+    }
+
+    private dedupeDealsById(deals: IBXDeal[]): IBXDeal[] {
+        const seen = new Set<string>();
+        return deals.filter(deal => {
+            const id = String(deal?.ID ?? '');
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        });
+    }
+
+    /** ID сделок из D_-ссылок задачи DTO (для владельца-сделки). */
+    private extractTaskDealIds(dto: EventSalesFlowDto): number[] {
+        return this.extractTaskCrmLinks(dto)
+            .filter(value => value.startsWith('D_'))
+            .map(value => Number(value.slice(2)))
+            .filter(id => Number.isFinite(id) && id > 0);
+    }
+
+    /**
+     * Грузит все активные сделки по entity: company — все сделки компании,
+     * deal — владелец + переданные extraDealIds (ссылки задачи и to_*-полей),
+     * lead — сделки лида. Закрытые отсекает `filterActiveDeals` после.
      */
     private queueActiveDealsLoad(
         bitrix: BitrixService,
         entityId: number,
         entityType: EventReportEntityType,
+        extraDealIds: number[] = [],
     ): void {
-        const select = [
-            'ID',
-            'TITLE',
-            'CATEGORY_ID',
-            'STAGE_ID',
-            'CLOSED',
-            'COMPANY_ID',
-            'CONTACT_ID',
-            'LEAD_ID',
-            'ASSIGNED_BY_ID',
-            'UF_CRM_TO_BASE_SALES',
-            'UF_CRM_TO_PRESENTATION_SALES',
-            'UF_CRM_TO_BASE_TMC',
-        ];
         const filter: Partial<IBXDeal> = {};
-        if (entityType === 'company') {
+        if (entityType === EEventReportEntityType.COMPANY) {
             (filter as Record<string, unknown>).COMPANY_ID = entityId;
+        } else if (entityType === EEventReportEntityType.DEAL) {
+            // Массив в значении фильтра = IN.
+            (filter as Record<string, unknown>).ID = [
+                entityId,
+                ...extraDealIds.filter(id => id !== entityId),
+            ];
         } else {
             (filter as Record<string, unknown>).LEAD_ID = entityId;
         }
-        bitrix.batch.deal.getList('list_deals', filter, select);
+        bitrix.batch.deal.getList('list_deals', filter, DEAL_LIST_SELECT);
     }
 
     private flattenResults(

@@ -79,4 +79,14 @@ export class BxDealService {
     ) {
         return await this.repo.contactItemsSet(dealId, contactIds);
     }
+
+    /** Все контакты сделки (множественная связь). */
+    async contactItemsGet(dealId: number | string) {
+        return await this.repo.contactItemsGet(dealId);
+    }
+
+    /** Очищает набор контактов сделки. */
+    async contactItemsDelete(dealId: number | string) {
+        return await this.repo.contactItemsDelete(dealId);
+    }
 }

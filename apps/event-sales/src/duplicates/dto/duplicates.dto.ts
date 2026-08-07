@@ -374,6 +374,13 @@ export class RelatedDealDto {
 
     @ApiPropertyOptional({ description: 'Дата создания.', example: '2026-07-01T10:00:00+03:00' })
     dateCreate?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Лид-первоисточник сделки (стандартный LEAD_ID), если проставлен.',
+        example: 318051,
+    })
+    leadId?: number;
 }
 
 export class RelatedLeadDto {
@@ -397,6 +404,58 @@ export class RelatedLeadDto {
 
     @ApiPropertyOptional({ description: 'Дата создания.' })
     dateCreate?: string;
+
+    @ApiPropertyOptional({
+        description: 'Стандартный источник Битрикса (WEB/WEBFORM/CALL/...).',
+        example: 'WEB',
+    })
+    sourceId?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Сырое значение UF-поля op_source_select (bitrixId item’а); ' +
+            'семантику («Заявка с сайта») фронт резолвит по слепку портала.',
+        example: '1247',
+    })
+    opSourceRaw?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'URL опросника «Оценка» (UF_CRM_LEAD_QUEST_URL) — заполнен у заявок с сайта.',
+        example: 'https://www.garant.ru/services/aero/lead/?order_num=3168436',
+    })
+    questUrl?: string;
+
+    @ApiPropertyOptional({
+        description:
+            '«Код партнёра» (UF_CRM_REG_NUMBER) — заполнен у заявок с сайта; по нему распределение между отделами.',
+        example: '78-00751',
+    })
+    regNumber?: string;
+}
+
+export class RelatedContactDto {
+    @ApiProperty({ description: 'Идентификатор контакта.', example: 917 })
+    id: number;
+
+    @ApiPropertyOptional({ description: 'Имя.', example: 'Мария' })
+    name?: string;
+
+    @ApiPropertyOptional({ description: 'Фамилия.', example: 'Сидорова' })
+    lastName?: string;
+
+    @ApiPropertyOptional({ description: 'Должность (POST).', example: 'Главный бухгалтер' })
+    post?: string;
+
+    @ApiPropertyOptional({
+        type: [String],
+        description: 'Телефоны контакта.',
+        example: ['+7 900 000-00-00'],
+    })
+    phones?: string[];
+
+    @ApiPropertyOptional({ type: ResponsibleUserDto, description: 'Ответственный.' })
+    responsible?: ResponsibleUserDto;
 }
 
 export class DuplicateDetailsResponseDto {
@@ -420,6 +479,13 @@ export class DuplicateDetailsResponseDto {
 
     @ApiProperty({ type: [RelatedLeadDto], description: 'Связанные лиды.' })
     leads: RelatedLeadDto[];
+
+    @ApiProperty({
+        type: [RelatedContactDto],
+        description:
+            'Контакты владельца: у сделки-якоря — её contact items, у компании — её.',
+    })
+    contacts: RelatedContactDto[];
 
     @ApiProperty({ description: 'Сколько HTTP-запросов ушло на портал.', example: 3 })
     batchRequests: number;

@@ -75,4 +75,22 @@ export class BxContactService {
         }
         return contacts;
     }
+
+    /** Все компании контакта (множественная связь). */
+    async companyItemsGet(contactId: number | string) {
+        return await this.repo.companyItemsGet(contactId);
+    }
+
+    /** Полностью заменяет набор компаний контакта. */
+    async companyItemsSet(
+        contactId: number | string,
+        companyIds: (number | string)[],
+    ) {
+        return await this.repo.companyItemsSet(contactId, companyIds);
+    }
+
+    /** Очищает набор компаний контакта. */
+    async companyItemsDelete(contactId: number | string) {
+        return await this.repo.companyItemsDelete(contactId);
+    }
 }

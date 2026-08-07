@@ -3,7 +3,11 @@ import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventReportContext } from '../context/event-report.context';
-import { EventReportEntityFieldsModel } from '../entity/event-report-entity-fields.model';
+import { EEventReportEntityType } from '../init/event-report-init.types';
+import {
+    EDealRole,
+    EventReportEntityFieldsModel,
+} from '../entity/event-report-entity-fields.model';
 import {
     composeStageId,
     detectEventFromBaseStage,
@@ -55,28 +59,20 @@ export class SalesBaseDealService {
         const entityFields = new EventReportEntityFieldsModel(
             this.portal,
             ctx,
-            'deal',
+            EEventReportEntityType.DEAL,
             {
                 deal: ctx.currentBaseDeal as Record<string, unknown> | null,
-                role: 'base',
+                role: EDealRole.BASE,
             },
         ).toFields();
 
         const baseFields: Partial<IBXDeal> = {
             ...(entityFields as Partial<IBXDeal>),
+            ...ctx.ownerLinkFields,
             CATEGORY_ID: String(category.bitrixId),
             STAGE_ID: composeStageId(category.bitrixId, targetStage),
             ASSIGNED_BY_ID: String(ctx.planResponsibleId),
         };
-        if (ctx.entityType === 'company') {
-            (baseFields as Record<string, unknown>).COMPANY_ID = String(
-                ctx.entityId,
-            );
-        } else {
-            (baseFields as Record<string, unknown>).LEAD_ID = String(
-                ctx.entityId,
-            );
-        }
 
         if (ctx.currentBaseDeal) {
             const cmd = `update_base_deal_${ctx.currentBaseDeal.ID}`;

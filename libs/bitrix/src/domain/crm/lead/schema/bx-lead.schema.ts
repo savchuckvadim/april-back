@@ -7,6 +7,7 @@ import {
 } from '../../type/crm-request.type';
 import { IBXLead } from '../interface/bx-lead.interface';
 import { IBXField } from '../../fields/bx-field.interface';
+import { IBXContactItem } from '../../type/crm-relation-items.type';
 
 export type LeadSchema = {
     [EBxMethod.GET]: {
@@ -46,6 +47,19 @@ export type LeadSchema = {
         response: boolean;
     };
     [EBxMethod.USER_FIELD_DELETE]: {
+        request: { id: number | string };
+        response: boolean;
+    };
+    // Множественные контакты лида (crm.lead.contact.items.*)
+    [EBxMethod.CONTACT_ITEMS_GET]: {
+        request: { id: number | string };
+        response: IBXContactItem[];
+    };
+    [EBxMethod.CONTACT_ITEMS_SET]: {
+        request: { id: number | string; items: IBXContactItem[] };
+        response: boolean;
+    };
+    [EBxMethod.CONTACT_ITEMS_DELETE]: {
         request: { id: number | string };
         response: boolean;
     };

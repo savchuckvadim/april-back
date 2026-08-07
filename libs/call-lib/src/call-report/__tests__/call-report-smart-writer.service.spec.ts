@@ -225,6 +225,41 @@ describe('CallReportSmartWriterService', () => {
         );
     });
 
+    it('Row size в БОЕВОЙ форме AxiosError (текст в response.data) включает деградацию', async () => {
+        const bitrix = makeBitrix();
+        // Прод 06.08.2026: message = «Request failed…», MySQL-текст — в data.
+        const axiosError = Object.assign(
+            new Error('Request failed with status code 400'),
+            {
+                response: {
+                    status: 400,
+                    data: {
+                        error: '400',
+                        error_description:
+                            'Mysql query error: (1118) Row size too large (> 8126). Changing some columns to TEXT or BLOB…',
+                    },
+                },
+            },
+        );
+        bitrix.item.add
+            .mockRejectedValueOnce(axiosError)
+            .mockResolvedValue({ result: { item: { id: 7 } } });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const itemId = await writer.addItem({
+            activityId: '101',
+            transcript: 'т'.repeat(100_000),
+        });
+        expect(itemId).toBe(7);
+        expect(bitrix.item.add).toHaveBeenCalledTimes(2);
+        const second = (
+            bitrix.item.add.mock.calls[1] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(second.ufCrm128Transcript1).toBeUndefined();
+    });
+
     it('Row size too large: ретрай без транскрипта, затем с обрезкой текстов', async () => {
         const bitrix = makeBitrix();
         const rowSize = new Error(

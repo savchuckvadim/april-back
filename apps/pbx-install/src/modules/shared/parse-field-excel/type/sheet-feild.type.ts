@@ -14,6 +14,9 @@ export type FieldImportSheetRow = readonly [
     number, //order
     string, //isNeedUpdate 'true' | 'false'
     string, //isMultiple 'true' | 'false'
+    //15-я колонка ОПЦИОНАЛЬНА: привязки crm-типа CSV ('LEAD,DEAL').
+    //Пусто/нет колонки → все четыре сущности (безопасный максимум).
+    string?,
 ];
 
 /** Fields sheet row after slice(1) and unwrapping formula cells */

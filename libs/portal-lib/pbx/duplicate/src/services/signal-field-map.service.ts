@@ -10,7 +10,11 @@ import {
     PortalLeadService,
 } from '@lib/portal-lib/pbx-domain';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
-import { fieldTitle, isInnLikeCode, isInnLikeField } from '../lib/inn-field.matcher';
+import {
+    fieldTitle,
+    isInnLikeCode,
+    isInnLikeField,
+} from '../lib/inn-field.matcher';
 import {
     DuplicateEntityType,
     DuplicateSignalKind,
@@ -33,7 +37,9 @@ const OVERRIDES_KEY = 'field-map-overrides:v1';
  * Держим списком здесь, а не импортом константы: либе дублей не нужна вся
  * таблица полей, а совпадение по коду — единственное, что от неё требуется.
  */
-const TEMPLATE_INN_FIELD_CODES = ['op_inn'];
+// op_inn_pool — multiple-«склад» кандидатов ИНН (легаси-поля, связи):
+// участвует в поиске наравне с текущим ИНН.
+const TEMPLATE_INN_FIELD_CODES = ['op_inn', 'op_inn_pool'];
 
 /** Штатное поле реквизитов Битрикса, где лежит ИНН у контакта и компании. */
 export const REQUISITE_INN_FIELD = 'RQ_INN';
@@ -123,8 +129,12 @@ export class SignalFieldMapService {
         return this.getFieldMap(domain);
     }
 
-    /** Только включённые ИНН-поля нужной сущности — то, чем пользуется поиск. */
-    async getInnFields(
+    /**
+     * ИНН-поля САМОЙ сущности (UF_*) — для плана поиска: по ним можно
+     * фильтровать crm.{entity}.list. Реквизитные поля здесь исключены
+     * намеренно — у crm.company.list нет поля RQ_INN.
+     */
+    async getInnEntityFields(
         domain: string,
         entityType: DuplicateEntityType,
     ): Promise<SignalFieldRef[]> {
@@ -136,6 +146,36 @@ export class SignalFieldMapService {
                 f.enabled &&
                 f.source !== SignalFieldSource.REQUISITE,
         );
+    }
+
+    /** @deprecated Используйте getInnEntityFields (расщепление 2026-08). */
+    getInnFields(
+        domain: string,
+        entityType: DuplicateEntityType,
+    ): Promise<SignalFieldRef[]> {
+        return this.getInnEntityFields(domain, entityType);
+    }
+
+    /**
+     * ИНН-поля РЕКВИЗИТОВ (RQ_INN + UF-поля реквизитов) — для извлечения
+     * сигналов из строк crm.requisite.list и для L2-поиска по реквизитам.
+     */
+    async getInnRequisiteFields(domain: string): Promise<SignalFieldRef[]> {
+        const map = await this.getFieldMap(domain);
+        const seen = new Set<string>();
+        return map.fields.filter(f => {
+            if (
+                f.kind !== DuplicateSignalKind.INN ||
+                !f.enabled ||
+                f.source !== SignalFieldSource.REQUISITE
+            ) {
+                return false;
+            }
+            // Реквизиты общие для контакта/компании — поле берём один раз.
+            if (seen.has(f.fieldName)) return false;
+            seen.add(f.fieldName);
+            return true;
+        });
     }
 
     /* ------------------------------------------------------------------ *
@@ -158,6 +198,7 @@ export class SignalFieldMapService {
         }
         fields.push(...(await this.scanLiveBitrix(domain, warnings)));
         fields.push(...this.requisiteFields());
+        fields.push(...(await this.scanRequisiteUserFields(domain, warnings)));
 
         return {
             domain,
@@ -172,39 +213,41 @@ export class SignalFieldMapService {
         portalId: number,
         warnings: string[],
     ): Promise<SignalFieldRef[]> {
-        const loaders: [DuplicateEntityType, () => Promise<PbxFieldEntityDto[]>][] =
+        const loaders: [
+            DuplicateEntityType,
+            () => Promise<PbxFieldEntityDto[]>,
+        ][] = [
             [
-                [
-                    DuplicateEntityType.LEAD,
-                    async () =>
-                        (await this.portalLead.findWithFieldsByPortalId(portalId))
-                            ?.fields ?? [],
-                ],
-                [
-                    DuplicateEntityType.CONTACT,
-                    async () =>
-                        (
-                            await this.portalContact.findWithFieldsByPortalId(
-                                portalId,
-                            )
-                        )?.fields ?? [],
-                ],
-                [
-                    DuplicateEntityType.COMPANY,
-                    async () =>
-                        (
-                            await this.portalCompany.findWithFieldsByPortalId(
-                                portalId,
-                            )
-                        )?.fields ?? [],
-                ],
-                [
-                    DuplicateEntityType.DEAL,
-                    async () =>
-                        (await this.portalDeal.findWithFieldsByPortalId(portalId))
-                            ?.fields ?? [],
-                ],
-            ];
+                DuplicateEntityType.LEAD,
+                async () =>
+                    (await this.portalLead.findWithFieldsByPortalId(portalId))
+                        ?.fields ?? [],
+            ],
+            [
+                DuplicateEntityType.CONTACT,
+                async () =>
+                    (
+                        await this.portalContact.findWithFieldsByPortalId(
+                            portalId,
+                        )
+                    )?.fields ?? [],
+            ],
+            [
+                DuplicateEntityType.COMPANY,
+                async () =>
+                    (
+                        await this.portalCompany.findWithFieldsByPortalId(
+                            portalId,
+                        )
+                    )?.fields ?? [],
+            ],
+            [
+                DuplicateEntityType.DEAL,
+                async () =>
+                    (await this.portalDeal.findWithFieldsByPortalId(portalId))
+                        ?.fields ?? [],
+            ],
+        ];
 
         const refs: SignalFieldRef[] = [];
         for (const [entityType, load] of loaders) {
@@ -246,19 +289,15 @@ export class SignalFieldMapService {
             return [];
         }
 
-        const loaders: [DuplicateEntityType, () => Promise<{ result: IBXField[] }>][] =
-            [
-                [DuplicateEntityType.LEAD, () => bitrix.lead.getFieldsList()],
-                [
-                    DuplicateEntityType.CONTACT,
-                    () => bitrix.contact.getFieldsList(),
-                ],
-                [
-                    DuplicateEntityType.COMPANY,
-                    () => bitrix.company.getFieldsList(),
-                ],
-                [DuplicateEntityType.DEAL, () => bitrix.deal.getFieldsList()],
-            ];
+        const loaders: [
+            DuplicateEntityType,
+            () => Promise<{ result: IBXField[] }>,
+        ][] = [
+            [DuplicateEntityType.LEAD, () => bitrix.lead.getFieldsList()],
+            [DuplicateEntityType.CONTACT, () => bitrix.contact.getFieldsList()],
+            [DuplicateEntityType.COMPANY, () => bitrix.company.getFieldsList()],
+            [DuplicateEntityType.DEAL, () => bitrix.deal.getFieldsList()],
+        ];
 
         const refs: SignalFieldRef[] = [];
         for (const [entityType, load] of loaders) {
@@ -276,9 +315,7 @@ export class SignalFieldMapService {
                     });
                 }
             } catch (error) {
-                warnings.push(
-                    `Bitrix ${entityType}: ${this.errorText(error)}`,
-                );
+                warnings.push(`Bitrix ${entityType}: ${this.errorText(error)}`);
             }
         }
         return refs;
@@ -296,6 +333,44 @@ export class SignalFieldMapService {
                 enabled: true,
             }),
         );
+    }
+
+    /**
+     * UF-поля самих реквизитов (crm.requisite.userfield.list): портал мог
+     * завести «ИНН контрагента» именно там. Эвристика та же, что для
+     * UF-полей сущностей.
+     */
+    private async scanRequisiteUserFields(
+        domain: string,
+        warnings: string[],
+    ): Promise<SignalFieldRef[]> {
+        try {
+            const { bitrix } = await this.pbx.init(domain);
+            const response = await bitrix.requisite.getFieldsList({});
+            const refs: SignalFieldRef[] = [];
+            for (const field of response?.result ?? []) {
+                if (!isInnLikeField(field)) continue;
+                for (const entityType of [
+                    DuplicateEntityType.CONTACT,
+                    DuplicateEntityType.COMPANY,
+                ]) {
+                    refs.push({
+                        entityType,
+                        kind: DuplicateSignalKind.INN,
+                        fieldName: field.FIELD_NAME,
+                        title: fieldTitle(field),
+                        source: SignalFieldSource.REQUISITE,
+                        enabled: true,
+                    });
+                }
+            }
+            return refs;
+        } catch (error) {
+            warnings.push(
+                `Requisite userfields ${domain}: ${this.errorText(error)}`,
+            );
+            return [];
+        }
     }
 
     private looksLikeInnPortalField(field: PbxFieldEntityDto): boolean {

@@ -3,6 +3,7 @@ import { BitrixService } from '@/modules/bitrix';
 import { ETaskPriority } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
+import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 
 /**
@@ -129,8 +130,8 @@ export class EventReportTaskFlowService {
 
     /**
      * Порядок ссылок в `UF_CRM_TASK` повторяет legacy:
-     *   L_<lead> → C_<planContact> → D_<base> → D_<plannedPres> →
-     *   D_<unplannedPres> → CO_<company>.
+     *   L_<lead> → C_<planContact> → D_<владелец> → D_<base> →
+     *   D_<plannedPres> → D_<unplannedPres> → CO_<company>.
      */
     private buildCrmTaskLinks(
         ctx: EventReportContext,
@@ -138,7 +139,7 @@ export class EventReportTaskFlowService {
     ): string[] {
         const links: string[] = [];
 
-        if (ctx.entityType === 'lead' && ctx.entityId) {
+        if (ctx.entityType === EEventReportEntityType.LEAD && ctx.entityId) {
             links.push(`L_${ctx.entityId}`);
         }
 
@@ -147,7 +148,13 @@ export class EventReportTaskFlowService {
             links.push(`C_${planContactId}`);
         }
 
-        if (deals.baseDealId) {
+        // Владелец-сделка: задача обязана ссылаться на неё — иначе кейс
+        // «сделка без компании» оставит задачу вообще без CRM-привязки.
+        if (ctx.entityType === EEventReportEntityType.DEAL && ctx.entityId) {
+            links.push(`D_${ctx.entityId}`);
+        }
+
+        if (deals.baseDealId && String(deals.baseDealId) !== String(ctx.entityId)) {
             links.push(`D_${deals.baseDealId}`);
         }
         if (deals.newPlanPresDealId) {
@@ -157,7 +164,7 @@ export class EventReportTaskFlowService {
             links.push(`D_${deals.newUnplannedPresDealId}`);
         }
 
-        if (ctx.entityType === 'company' && ctx.entityId) {
+        if (ctx.entityType === EEventReportEntityType.COMPANY && ctx.entityId) {
             links.push(`CO_${ctx.entityId}`);
         }
 

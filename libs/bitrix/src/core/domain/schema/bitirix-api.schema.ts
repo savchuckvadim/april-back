@@ -26,6 +26,9 @@ import {
     RequisitePresetSchema,
     ActivityTodoSchema,
 } from 'src/modules/bitrix';
+import { RequisiteLinkSchema } from '../../../domain/crm/requisite-link/schema/bx-requisite-link.schema';
+import { BxCrmEntitySchema } from '../../../domain/crm/entity/schema/bx-crm-entity.schema';
+import { BxDuplicateSchema } from '../../../domain/crm/duplicate/schema/bx-duplicate.schema';
 
 import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
 import { ChecklistItemSchema } from 'src/modules/bitrix/domain/tasks/checklist-item/schema/bx-checklist-item.schema';
@@ -77,6 +80,9 @@ export type BXApiSchema = {
         [EBXEntity.TYPE]: BxSmartTypeSchema;
         [EBXEntity.REQUISITE]: RequisiteSchema;
         [EBXEntity.REQUISITE_PRESET]: RequisitePresetSchema;
+        [EBXEntity.REQUISITE_LINK]: RequisiteLinkSchema;
+        [EBXEntity.CRM_ENTITY]: BxCrmEntitySchema;
+        [EBXEntity.DUPLICATE]: BxDuplicateSchema;
         [EBXEntity.ACTIVITY_TODO]: ActivityTodoSchema;
     };
     [EBxNamespace.RPA]: {

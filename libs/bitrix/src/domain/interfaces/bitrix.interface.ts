@@ -3,7 +3,8 @@ export interface IBXDepartment {
     NAME: string;
     PARENT: string; // "1"
     SORT: number;
-    UF_HEAD?: number; // "1"
+    /** Битрикс отдаёт строкой ("1"); bx-department нормализует к number|null. */
+    UF_HEAD?: number | null;
     USERS?: IBXUser[] | null;
 }
 

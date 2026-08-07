@@ -1,20 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
-import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
+import {
+    IBXDepartment,
+    IBXUser,
+} from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BxDepartmentResponseDto } from '../dto/bx-department.dto';
 
-// C:\Projects\April-KP\april-next\back\src\modules\bitrix\endpoints\department\services\department-resolver-bitrxi.service.ts
-
 const CACHE_TTL_SECONDS = 86400;
+
+/**
+ * Версия формы ответа в ключе кэша: parentDepartments и нормализованный
+ * UF_HEAD не должны ждать полуночи, пока протухнет вчерашний JSON.
+ */
+const CACHE_SHAPE_VERSION = 'v2';
+
+/** Предохранитель климба вверх по PARENT: выше трёх уровней не поднимаемся. */
+const PARENT_CLIMB_LIMIT = 3;
 
 @Injectable()
 export class BxDepartmentService {
+    private readonly logger = new Logger(BxDepartmentService.name);
     private readonly redis: Redis;
 
     constructor(
@@ -38,7 +49,7 @@ export class BxDepartmentService {
             PortalModel,
         );
         const day = dayjs().format('MMDD');
-        const sessionKey = `department_${domain}_${day}_${targetGroup}`;
+        const sessionKey = `department_${domain}_${day}_${targetGroup}_${CACHE_SHAPE_VERSION}`;
 
         if (!resetCache) {
             const fromCache = await this.redis.get(sessionKey);
@@ -56,10 +67,16 @@ export class BxDepartmentService {
             PARENT: baseDepartmentBitrixId,
         });
 
-        const generalWithUsers =
-            await departmentService.enrichWithUsers(general);
-        const childrenWithUsers =
-            await departmentService.enrichWithUsers(children);
+        const generalWithUsers = this.normalizeHeads(
+            await departmentService.enrichWithUsers(general),
+        );
+        const childrenWithUsers = this.normalizeHeads(
+            await departmentService.enrichWithUsers(children),
+        );
+        const parentDepartments = await this.fetchParentDepartments(
+            departmentService,
+            generalWithUsers,
+        );
 
         const allUsers: IBXUser[] = [];
         const allDepartments = [...generalWithUsers, ...childrenWithUsers];
@@ -76,9 +93,10 @@ export class BxDepartmentService {
                 department: baseDepartmentBitrixId,
                 generalDepartment: generalWithUsers,
                 childrenDepartments: childrenWithUsers,
+                parentDepartments,
                 allUsers,
             },
-        };
+        } as BxDepartmentResponseDto;
 
         await this.redis.set(
             sessionKey,
@@ -86,14 +104,68 @@ export class BxDepartmentService {
             'EX',
             CACHE_TTL_SECONDS,
         );
-        return {
-            department: {
-                department: baseDepartmentBitrixId,
-                generalDepartment: generalWithUsers,
-                childrenDepartments: childrenWithUsers,
-                allUsers,
-            },
-        } as BxDepartmentResponseDto;
+        return result;
+    }
+
+    /**
+     * Родители базового отдела: климб по `PARENT` до {@link PARENT_CLIMB_LIMIT}
+     * уровней (порт паттерна `fetchDepartmentTree` из pbx-duplicate
+     * responsible.service). Нужны для честного «вышестоящего»: руководитель
+     * базового отдела сам сидит в родительском.
+     */
+    private async fetchParentDepartments(
+        departmentService: DepartmentBitrixService,
+        baseDepartments: IBXDepartment[],
+    ): Promise<IBXDepartment[]> {
+        const parents: IBXDepartment[] = [];
+        const seen = new Set<number>(
+            baseDepartments.map(dep => Number(dep.ID)),
+        );
+        let parentId = Number(baseDepartments[0]?.PARENT ?? 0);
+
+        try {
+            for (
+                let level = 0;
+                level < PARENT_CLIMB_LIMIT && parentId > 0;
+                level++
+            ) {
+                if (seen.has(parentId)) break;
+                seen.add(parentId);
+
+                const found = await departmentService.getDepartments({
+                    ID: parentId,
+                });
+                const parent = found[0];
+                if (!parent) break;
+
+                const [enriched] = this.normalizeHeads(
+                    await departmentService.enrichWithUsers([parent]),
+                );
+                if (enriched) parents.push(enriched);
+                parentId = Number(parent.PARENT ?? 0);
+            }
+        } catch (error) {
+            // Родители — обогащение для ролей, не повод ронять весь отдел.
+            this.logger.warn(
+                `parent departments climb failed: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+        }
+        return parents;
+    }
+
+    /** Битрикс отдаёт UF_HEAD строкой/числом/пустым — наружу только number|null. */
+    private normalizeHeads(departments: IBXDepartment[]): IBXDepartment[] {
+        return departments.map(dep => {
+            const raw = (dep as unknown as Record<string, unknown>)['UF_HEAD'];
+            const scalar = Array.isArray(raw) ? raw[0] : raw;
+            const head = Number(scalar);
+            return {
+                ...dep,
+                UF_HEAD: Number.isFinite(head) && head > 0 ? head : null,
+            };
+        });
     }
 
     private getBaseDepartmentIdByGroup(

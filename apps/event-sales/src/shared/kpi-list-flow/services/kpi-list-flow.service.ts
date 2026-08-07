@@ -33,12 +33,14 @@ export class KpiListFlowService {
      * пропускается; ошибки портала не валят весь батч.
      *
      * @param payload  логические значения события (см. {@link KpiEventPayload})
-     * @param companyId  ID компании-владельца (для уникальности кода элемента)
+     * @param entityId  ID сущности-владельца — company/lead/deal (для
+     *                  уникальности кода элемента; формат кода исторический,
+     *                  менять нельзя — сломается идемпотентность элементов)
      * @param buffer  батч-буфер cold-hook group
      */
     flow(
         payload: KpiEventPayload,
-        companyId: string | number,
+        entityId: string | number,
         buffer: ColdHookBatchGroupBuffer,
     ): void {
         const lists = this.collectLists();
@@ -51,8 +53,8 @@ export class KpiListFlowService {
 
         lists.forEach(list => {
             const fields = new KpiEventItemModel(list, payload).toFields();
-            const cmdCode = `add_list_item_${list.type}_${companyId}_${uniqueSuffix}`;
-            const elementCode = `${list.type}_${companyId}_${uniqueSuffix}`;
+            const cmdCode = `add_list_item_${list.type}_${entityId}_${uniqueSuffix}`;
+            const elementCode = `${list.type}_${entityId}_${uniqueSuffix}`;
 
             buffer.queue(() =>
                 this.bitrix.batch.listItem.add(cmdCode, {

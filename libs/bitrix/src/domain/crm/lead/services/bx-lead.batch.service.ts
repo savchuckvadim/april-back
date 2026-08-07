@@ -68,4 +68,20 @@ export class BxLeadBatchService {
     deleteField(cmdCode: string, id: number | string) {
         return this.repo.deleteFieldBtch(cmdCode, id);
     }
+
+    contactItemsGet(cmdCode: string, leadId: number | string) {
+        return this.repo.contactItemsGetBtch(cmdCode, leadId);
+    }
+
+    contactItemsSet(
+        cmdCode: string,
+        leadId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return this.repo.contactItemsSetBtch(cmdCode, leadId, contactIds);
+    }
+
+    contactItemsDelete(cmdCode: string, leadId: number | string) {
+        return this.repo.contactItemsDeleteBtch(cmdCode, leadId);
+    }
 }

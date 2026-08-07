@@ -13,6 +13,7 @@ import { PlanDto } from './plan.dto';
 import { ReportDto } from './report.dto';
 import { EventTaskDto } from './task.dto';
 import { PlacementDto } from './placement.dto';
+import { EvFlowContextDto } from './flow-context.dto';
 import { ContactDto } from './contact.dto';
 import { SaleDto } from './sale.dto';
 import { DepartamentDto } from './department.dto';
@@ -144,8 +145,25 @@ export class EventSalesFlowDto {
 
     @ApiPropertyOptional({
         description:
-            'Контекст встройки Bitrix (placement), из которой пришло событие.',
+            'Честный контекст встройки: тип + id сущностей. Приоритетный ' +
+            'источник владельца события; `placement` остаётся только как ' +
+            'фолбэк для старых клиентов.',
+        type: EvFlowContextDto,
+    })
+    @IsOptional()
+    @IsObject()
+    @ValidateNested()
+    @Type(() => EvFlowContextDto)
+    context?: EvFlowContextDto;
+
+    /** @deprecated Владельца события описывает `context`; поле держим для BC. */
+    @ApiPropertyOptional({
+        description:
+            'Контекст встройки Bitrix (placement), из которой пришло событие. ' +
+            'Deprecated: старые клиенты подделывали здесь CRM_COMPANY_DETAIL_TAB; ' +
+            'новые шлют реальный placement и `context`.',
         type: PlacementDto,
+        deprecated: true,
     })
     @IsOptional()
     @ValidateNested()

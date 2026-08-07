@@ -1,4 +1,5 @@
 import {
+    IsEnum,
     IsNotEmpty,
     IsObject,
     IsOptional,
@@ -9,6 +10,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IBXCompany, IBXDeal } from '@/modules/bitrix';
 import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
+import { EEvFlowFrom } from '../../event-report/dto/event-sale-flow/flow-context.dto';
 
 /**
  * Инициализация контекста «новая задача»: сделки для связи,
@@ -47,11 +49,11 @@ export class NewTaskInitRequestDto {
     @ApiProperty({
         description:
             'Источник инициализации (из какого контекста открыт виджет).',
-        type: String,
-        example: 'company',
+        enum: EEvFlowFrom,
+        example: EEvFlowFrom.COMPANY,
     })
-    @IsString()
-    from: string;
+    @IsEnum(EEvFlowFrom)
+    from: EEvFlowFrom;
 
     @ApiPropertyOptional({
         description:

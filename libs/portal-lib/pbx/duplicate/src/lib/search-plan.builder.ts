@@ -4,6 +4,7 @@ import {
     DuplicateSignalKind,
     DuplicateSignals,
     FIND_BY_COMM_ENTITY_TYPES,
+    SEARCH_VIA,
     SignalFieldRef,
 } from '../type/duplicate.type';
 
@@ -80,6 +81,12 @@ export interface SearchPlanInput {
     innFieldsByEntity: Map<DuplicateEntityType, SignalFieldRef[]>;
     /** Ограничение по типам; пусто — все четыре. */
     targetTypes: DuplicateEntityType[];
+    /**
+     * CATEGORY_ID наших воронок (resolveDuplicateDealCategories): все
+     * deal-команды фильтруются по ним. ПУСТОЙ массив = сделки полностью
+     * исключаются из плана — фолбэка «на все воронки» нет сознательно.
+     */
+    dealCategoryBitrixIds: number[];
 }
 
 /**
@@ -90,18 +97,32 @@ export interface SearchPlanInput {
  * продом.
  */
 export function buildSearchPlan(input: SearchPlanInput): SearchCommand[] {
-    const { signals, level, innFieldsByEntity, targetTypes } = input;
+    const { signals, level, innFieldsByEntity, dealCategoryBitrixIds } = input;
+    // Сделки без сконфигурированных воронок из плана выпадают целиком.
+    const targetTypes = input.targetTypes.filter(
+        entityType =>
+            entityType !== DuplicateEntityType.DEAL ||
+            dealCategoryBitrixIds.length > 0,
+    );
     const commands: SearchCommand[] = [];
     let seq = 0;
     const next = () => `c${seq++}`;
+
+    /** Фильтр команды с учётом ограничения воронок для сделок. */
+    const listFilter = (
+        entityType: DuplicateEntityType,
+        filter: Record<string, unknown>,
+    ): Record<string, unknown> =>
+        entityType === DuplicateEntityType.DEAL
+            ? { ...filter, CATEGORY_ID: dealCategoryBitrixIds }
+            : filter;
 
     // --- L1: телефоны и email штатным findbycomm ---
     for (const [kind, values, type] of [
         [DuplicateSignalKind.PHONE, signals.phones, 'PHONE'],
         [DuplicateSignalKind.EMAIL, signals.emails, 'EMAIL'],
     ] as const) {
-        const chunkSize =
-            values.length <= COMM_PRECISE_LIMIT ? 1 : COMM_CHUNK;
+        const chunkSize = values.length <= COMM_PRECISE_LIMIT ? 1 : COMM_CHUNK;
         for (const chunk of chunked(values, chunkSize)) {
             commands.push({
                 cmd: next(),
@@ -110,7 +131,7 @@ export function buildSearchPlan(input: SearchPlanInput): SearchCommand[] {
                 meta: {
                     shape: 'findbycomm',
                     kind,
-                    via: 'findbycomm',
+                    via: SEARCH_VIA.FINDBYCOMM,
                     values: chunk,
                 },
             });
@@ -127,7 +148,9 @@ export function buildSearchPlan(input: SearchPlanInput): SearchCommand[] {
                     cmd: next(),
                     method: LIST_METHOD[entityType],
                     params: {
-                        filter: { [field.fieldName]: signals.inns },
+                        filter: listFilter(entityType, {
+                            [field.fieldName]: signals.inns,
+                        }),
                         select: LIST_SELECT[entityType],
                         start: -1,
                     },
@@ -151,17 +174,52 @@ export function buildSearchPlan(input: SearchPlanInput): SearchCommand[] {
             cmd: next(),
             method: 'crm.requisite.list',
             params: {
-                filter: { RQ_INN: signals.inns },
+                filter: { [SEARCH_VIA.RQ_INN]: signals.inns },
                 select: ['ID', 'ENTITY_TYPE_ID', 'ENTITY_ID', 'RQ_INN', 'NAME'],
                 start: -1,
             },
             meta: {
                 shape: 'requisiteList',
                 kind: DuplicateSignalKind.INN,
-                via: 'RQ_INN',
+                via: SEARCH_VIA.RQ_INN,
                 values: signals.inns,
             },
         });
+    }
+
+    // --- L2: ИНН как подстрока в названии ---
+    // Кейс ТЗ: ИНН из реквизита контакта источника вписан в название
+    // компании-дубля или сделки. Вес такого попадания — innInTitle (40),
+    // рассинхрон via с builder'ом закрыт константой SEARCH_VIA.
+    for (const inn of signals.inns) {
+        for (const [entityType, fields] of [
+            [DuplicateEntityType.COMPANY, [SEARCH_VIA.TITLE]],
+            [
+                DuplicateEntityType.LEAD,
+                [SEARCH_VIA.TITLE, SEARCH_VIA.COMPANY_TITLE],
+            ],
+            [DuplicateEntityType.DEAL, [SEARCH_VIA.TITLE]],
+        ] as const) {
+            if (!targetTypes.includes(entityType)) continue;
+            for (const field of fields) {
+                commands.push({
+                    cmd: next(),
+                    method: LIST_METHOD[entityType],
+                    params: {
+                        filter: listFilter(entityType, { [field]: inn }),
+                        select: LIST_SELECT[entityType],
+                        start: -1,
+                    },
+                    meta: {
+                        shape: 'entityList',
+                        kind: DuplicateSignalKind.INN,
+                        entityType,
+                        via: field,
+                        values: [inn],
+                    },
+                });
+            }
+        }
     }
 
     // --- L2: подстрочный поиск по названию ---
@@ -169,8 +227,11 @@ export function buildSearchPlan(input: SearchPlanInput): SearchCommand[] {
     // поискового поля нет, а по ФИО подстрока даёт слишком много шума.
     for (const title of signals.titles) {
         for (const [entityType, fields] of [
-            [DuplicateEntityType.COMPANY, ['%TITLE']],
-            [DuplicateEntityType.LEAD, ['%TITLE', '%COMPANY_TITLE']],
+            [DuplicateEntityType.COMPANY, [SEARCH_VIA.TITLE]],
+            [
+                DuplicateEntityType.LEAD,
+                [SEARCH_VIA.TITLE, SEARCH_VIA.COMPANY_TITLE],
+            ],
         ] as const) {
             if (!targetTypes.includes(entityType)) continue;
             for (const field of fields) {

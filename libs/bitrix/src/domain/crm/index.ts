@@ -66,6 +66,18 @@ export * from './requisite/services/bx-requisite.batch.service';
 //crm.requisite.preset
 export * from './requisite-preset';
 
+//crm.requisite.link
+export * from './requisite-link';
+
+//crm.entity (mergeBatch)
+export * from './entity';
+
+//crm.duplicate (findbycomm)
+export * from './duplicate';
+
+//общие типы связей contact/company items
+export * from './type/crm-relation-items.type';
+
 //crm.timeline
 export * from './timeline/interface/bx-timeline.interface';
 export * from './timeline/schema/bx-timeline.schema';

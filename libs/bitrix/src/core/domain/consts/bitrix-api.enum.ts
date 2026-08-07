@@ -45,6 +45,17 @@ export enum EBxMethod {
     CONTACT_ITEMS_GET = 'contact.items.get',
     CONTACT_ITEMS_DELETE = 'contact.items.delete',
 
+    // crm.contact.company.items.* (компании контакта)
+    COMPANY_ITEMS_SET = 'company.items.set',
+    COMPANY_ITEMS_GET = 'company.items.get',
+    COMPANY_ITEMS_DELETE = 'company.items.delete',
+
+    // crm.entity.mergeBatch — объединение однотипных CRM-сущностей
+    MERGE_BATCH = 'mergeBatch',
+
+    // crm.duplicate.findbycomm — поиск по телефону/email
+    FIND_BY_COMM = 'findbycomm',
+
     FIELD_GET = 'field.get',
     FIELDS = 'fields',
     GET_BY_ENTITY_TYPE_ID = 'getByEntityTypeId',

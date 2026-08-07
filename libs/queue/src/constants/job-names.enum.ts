@@ -3,6 +3,15 @@ export enum JobNames {
     EVENT_COLD_CALL = 'cold-call',
     EVENT_SALES_FLOW = 'event-sales-flow',
 
+    //sales-хуки: одно и то же имя служит и именем silence-события
+    //(silence:<job> в event-silent), и именем джобы в EVENT_SALES_HOOK_OPS
+    SALES_HOOK_LEAD_TO_WORK = 'sales-hook-lead-to-work',
+    SALES_HOOK_MERGE_DUPLICATES = 'sales-hook-merge-duplicates',
+    SALES_HOOK_TRANSFER_WORK = 'sales-hook-transfer-work',
+    SALES_HOOK_REJECT_BUFFER = 'sales-hook-reject-buffer',
+    //нормализатор ручной конвертации: onCrmDealAdd → self-healing графа связей
+    SALES_HOOK_CONVERT_NORMALIZER = 'sales-hook-convert-normalizer',
+
     //mail
     MAIL_SEND_AUTH = 'mail-send-auth',
 

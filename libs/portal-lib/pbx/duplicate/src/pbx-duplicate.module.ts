@@ -10,6 +10,7 @@ import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { DuplicateScoreService } from './services/duplicate-score.service';
 import { DuplicateSearchService } from './services/duplicate-search.service';
 import { DuplicateSignalExtractService } from './services/duplicate-signal-extract.service';
+import { DuplicateSourceGraphService } from './services/duplicate-source-graph.service';
 import { RelatedEntitiesService } from './services/related-entities.service';
 import { ResponsibleService } from './services/responsible.service';
 import { SignalFieldMapService } from './services/signal-field-map.service';
@@ -33,6 +34,7 @@ import { SignalFieldMapService } from './services/signal-field-map.service';
     ],
     providers: [
         SignalFieldMapService,
+        DuplicateSourceGraphService,
         DuplicateSignalExtractService,
         DuplicateSearchService,
         DuplicateScoreService,
@@ -41,6 +43,7 @@ import { SignalFieldMapService } from './services/signal-field-map.service';
     ],
     exports: [
         SignalFieldMapService,
+        DuplicateSourceGraphService,
         DuplicateSignalExtractService,
         DuplicateSearchService,
         DuplicateScoreService,

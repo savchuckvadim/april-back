@@ -55,4 +55,20 @@ export class BxCompanyBatchService {
     deleteField(cmdCode: string, id: number | string) {
         return this.repo.deleteFieldBtch(cmdCode, id);
     }
+
+    contactItemsGet(cmdCode: string, companyId: number | string) {
+        return this.repo.contactItemsGetBtch(cmdCode, companyId);
+    }
+
+    contactItemsSet(
+        cmdCode: string,
+        companyId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return this.repo.contactItemsSetBtch(cmdCode, companyId, contactIds);
+    }
+
+    contactItemsDelete(cmdCode: string, companyId: number | string) {
+        return this.repo.contactItemsDeleteBtch(cmdCode, companyId);
+    }
 }

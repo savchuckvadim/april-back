@@ -6,6 +6,7 @@ import {
     CrmUpdateRequestType,
     CrmListRequestType,
 } from '../../type/crm-request.type';
+import { IBXCompanyItem } from '../../type/crm-relation-items.type';
 import { IBXContact } from '../interface/bx-contact.interface';
 
 export type ContactSchema = {
@@ -42,6 +43,19 @@ export type ContactSchema = {
         response: boolean;
     };
     [EBxMethod.USER_FIELD_DELETE]: {
+        request: { id: number | string };
+        response: boolean;
+    };
+    // Компании контакта (crm.contact.company.items.*)
+    [EBxMethod.COMPANY_ITEMS_GET]: {
+        request: { id: number | string };
+        response: IBXCompanyItem[];
+    };
+    [EBxMethod.COMPANY_ITEMS_SET]: {
+        request: { id: number | string; items: IBXCompanyItem[] };
+        response: boolean;
+    };
+    [EBxMethod.COMPANY_ITEMS_DELETE]: {
         request: { id: number | string };
         response: boolean;
     };

@@ -117,9 +117,65 @@ export interface DuplicateSignalOrigin {
 /** Сигналы + откуда они пришли. */
 export interface ExtractedSignals extends DuplicateSignals {
     origins: DuplicateSignalOrigin[];
-    /** Сущности, которые НЕ считаем дублями (сам источник и его связи). */
+    /** Сущности, которые НЕ считаем дублями (сам источник и его граф связей). */
     excluded: { entityType: DuplicateEntityType; id: number }[];
+    /** Предупреждения обхода (бюджеты, несконфигурированные воронки). */
+    warnings?: string[];
 }
+
+/**
+ * Бюджеты обхода графа источника. Держат стоимость: одна волна обхода —
+ * один HTTP-batch, поэтому число HTTP = O(глубины), а не O(узлов).
+ */
+export interface SourceGraphLimits {
+    /** Волн обхода: FAST — 2 (root + связи), DEEP — 3 (+ окружение сделок). */
+    maxDepth: number;
+    /** Всего узлов графа. */
+    maxNodes: number;
+    /** Пер-типовые квоты узлов. */
+    quotas: Partial<Record<DuplicateEntityType, number>>;
+    /** Команд в одной волне (запас до лимита батча 50, чтобы он не резался). */
+    maxCommandsPerWave: number;
+}
+
+export const SOURCE_GRAPH_LIMITS_FAST: SourceGraphLimits = {
+    maxDepth: 2,
+    maxNodes: 60,
+    quotas: {
+        [DuplicateEntityType.CONTACT]: 10,
+        [DuplicateEntityType.COMPANY]: 5,
+        [DuplicateEntityType.DEAL]: 20,
+        [DuplicateEntityType.LEAD]: 5,
+    },
+    maxCommandsPerWave: 45,
+};
+
+export const SOURCE_GRAPH_LIMITS_DEEP: SourceGraphLimits = {
+    ...SOURCE_GRAPH_LIMITS_FAST,
+    maxDepth: 3,
+};
+
+/**
+ * Известные механизмы находки (`via`) — единый словарь для builder и scorer.
+ *
+ * `via` в командах/попаданиях может быть и динамическим именем UF-поля
+ * (`UF_CRM_OP_INN`), поэтому тип остаётся string, но фиксированные механизмы
+ * обязаны браться отсюда: рассинхрон строк между построением плана и
+ * скорингом молча ломает веса (например, ИНН из названия получил бы вес
+ * точного поля).
+ */
+export const SEARCH_VIA = {
+    /** Штатный crm.duplicate.findbycomm (телефон/email). */
+    FINDBYCOMM: 'findbycomm',
+    /** ИНН в реквизитах (crm.requisite.list). */
+    RQ_INN: 'RQ_INN',
+    /** Подстрочный фильтр по названию — он же ключ фильтра Битрикса. */
+    TITLE: '%TITLE',
+    /** Подстрочный фильтр по названию компании лида. */
+    COMPANY_TITLE: '%COMPANY_TITLE',
+} as const;
+
+export type KnownSearchVia = (typeof SEARCH_VIA)[keyof typeof SEARCH_VIA];
 
 /** Причина, по которой кандидат считается дублем. */
 export interface DuplicateMatchReason {

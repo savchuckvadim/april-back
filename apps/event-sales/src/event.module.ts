@@ -4,6 +4,7 @@ import { LeadHookModule } from './lead-hook/lead-hook.module';
 import { EventReportModule } from './event-report/event-report.module';
 import { EventSupportModule } from './event-support/event-support.module';
 import { EventSalesBxRecordsModule } from './bx-records/bx-records.module';
+import { SalesHooksModule } from './sales-hooks/sales-hooks.module';
 
 @Module({
     imports: [
@@ -12,6 +13,8 @@ import { EventSalesBxRecordsModule } from './bx-records/bx-records.module';
         EventReportModule,
         EventSupportModule,
         EventSalesBxRecordsModule,
+        // Новое семейство sales-хуков: silence + очередь операций + WS
+        SalesHooksModule,
     ],
     exports: [
         ColdHookModule,
@@ -19,6 +22,7 @@ import { EventSalesBxRecordsModule } from './bx-records/bx-records.module';
         EventReportModule,
         EventSupportModule,
         EventSalesBxRecordsModule,
+        SalesHooksModule,
     ],
 })
 export class EventModule {}

@@ -18,4 +18,12 @@ export class BxTimelineService {
     async addTimelineComment(data: IBXTimelineComment) {
         return await this.repo.addTimelineComment(data);
     }
+
+    /** Комментарии таймлайна сущности — например, для проверки «уже писали». */
+    async getTimelineComments(
+        filter: Partial<IBXTimelineComment>,
+        select?: string[],
+    ) {
+        return await this.repo.getTimelineComments(filter, select);
+    }
 }

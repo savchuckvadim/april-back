@@ -76,4 +76,22 @@ export class BxLeadService {
     async deleteField(id: number | string) {
         return await this.repo.deleteField(id);
     }
+
+    /** Все контакты лида (множественная связь), не только CONTACT_ID. */
+    async contactItemsGet(leadId: number | string) {
+        return await this.repo.contactItemsGet(leadId);
+    }
+
+    /** Полностью заменяет набор контактов лида. */
+    async contactItemsSet(
+        leadId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return await this.repo.contactItemsSet(leadId, contactIds);
+    }
+
+    /** Очищает набор контактов лида. */
+    async contactItemsDelete(leadId: number | string) {
+        return await this.repo.contactItemsDelete(leadId);
+    }
 }

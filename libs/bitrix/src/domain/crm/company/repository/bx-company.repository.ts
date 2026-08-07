@@ -227,4 +227,76 @@ export class BxCompanyRepository {
             { id },
         );
     }
+
+    // === Контакты компании (crm.company.contact.items.*) ===
+
+    async contactItemsGet(companyId: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.CONTACT_ITEMS_GET,
+            { id: companyId },
+        );
+    }
+
+    contactItemsGetBtch(cmdCode: string, companyId: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.CONTACT_ITEMS_GET,
+            { id: companyId },
+        );
+    }
+
+    async contactItemsSet(
+        companyId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.CONTACT_ITEMS_SET,
+            {
+                id: companyId,
+                items: contactIds.map(id => ({ CONTACT_ID: id })),
+            },
+        );
+    }
+
+    contactItemsSetBtch(
+        cmdCode: string,
+        companyId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.CONTACT_ITEMS_SET,
+            {
+                id: companyId,
+                items: contactIds.map(id => ({ CONTACT_ID: id })),
+            },
+        );
+    }
+
+    async contactItemsDelete(companyId: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.CONTACT_ITEMS_DELETE,
+            { id: companyId },
+        );
+    }
+
+    contactItemsDeleteBtch(cmdCode: string, companyId: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.COMPANY,
+            EBxMethod.CONTACT_ITEMS_DELETE,
+            { id: companyId },
+        );
+    }
 }

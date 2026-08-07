@@ -75,4 +75,22 @@ export class BxCompanyService {
     async deleteField(id: number | string) {
         return await this.repo.deleteField(id);
     }
+
+    /** Все контакты компании (SORT/ROLE_ID/IS_PRIMARY). */
+    async contactItemsGet(companyId: number | string) {
+        return await this.repo.contactItemsGet(companyId);
+    }
+
+    /** Полностью заменяет набор контактов компании. */
+    async contactItemsSet(
+        companyId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return await this.repo.contactItemsSet(companyId, contactIds);
+    }
+
+    /** Очищает набор контактов компании. */
+    async contactItemsDelete(companyId: number | string) {
+        return await this.repo.contactItemsDelete(companyId);
+    }
 }

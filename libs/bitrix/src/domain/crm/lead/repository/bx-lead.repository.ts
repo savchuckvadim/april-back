@@ -240,4 +240,76 @@ export class BxLeadRepository {
             { id },
         );
     }
+
+    // === Множественные контакты лида (crm.lead.contact.items.*) ===
+
+    async contactItemsGet(leadId: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.LEAD,
+            EBxMethod.CONTACT_ITEMS_GET,
+            { id: leadId },
+        );
+    }
+
+    contactItemsGetBtch(cmdCode: string, leadId: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.LEAD,
+            EBxMethod.CONTACT_ITEMS_GET,
+            { id: leadId },
+        );
+    }
+
+    async contactItemsSet(
+        leadId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.LEAD,
+            EBxMethod.CONTACT_ITEMS_SET,
+            {
+                id: leadId,
+                items: contactIds.map(id => ({ CONTACT_ID: id })),
+            },
+        );
+    }
+
+    contactItemsSetBtch(
+        cmdCode: string,
+        leadId: number | string,
+        contactIds: (number | string)[],
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.LEAD,
+            EBxMethod.CONTACT_ITEMS_SET,
+            {
+                id: leadId,
+                items: contactIds.map(id => ({ CONTACT_ID: id })),
+            },
+        );
+    }
+
+    async contactItemsDelete(leadId: number | string) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.LEAD,
+            EBxMethod.CONTACT_ITEMS_DELETE,
+            { id: leadId },
+        );
+    }
+
+    contactItemsDeleteBtch(cmdCode: string, leadId: number | string) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.LEAD,
+            EBxMethod.CONTACT_ITEMS_DELETE,
+            { id: leadId },
+        );
+    }
 }

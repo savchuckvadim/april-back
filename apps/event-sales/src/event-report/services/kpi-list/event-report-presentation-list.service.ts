@@ -4,6 +4,7 @@ import { BitrixService } from '@/modules/bitrix';
 import { IBXListItemFields } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
+import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 
 type PresentationAction = 'plan' | 'done' | 'expired' | 'fail';
@@ -126,8 +127,16 @@ export class EventReportPresentationListService {
         const pushCrm = (v: string) => {
             crm[`n${i++}`] = v;
         };
-        if (ctx.entityType === 'company' && ctx.entityId) {
+        // Привязка к владельцу: раньше писалась только компания, и записи
+        // лид-контекста оставались без хозяина — их нельзя было найти.
+        if (ctx.entityType === EEventReportEntityType.COMPANY && ctx.entityId) {
             pushCrm(`CO_${ctx.entityId}`);
+        }
+        if (ctx.entityType === EEventReportEntityType.LEAD && ctx.entityId) {
+            pushCrm(`L_${ctx.entityId}`);
+        }
+        if (ctx.entityType === EEventReportEntityType.DEAL && ctx.entityId) {
+            pushCrm(`D_${ctx.entityId}`);
         }
         if (deals.newPlanPresDealId) {
             pushCrm(`D_${deals.newPlanPresDealId}`);

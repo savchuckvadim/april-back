@@ -7,6 +7,10 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 import { GSIRK_DOMAIN } from '../../types/event-report.event-codes';
 import { EnumWorkStatusCode } from '../../types/report-types';
+import {
+    EEventReportEntityType,
+    EventReportEntityType,
+} from '../init/event-report-init.types';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;
@@ -16,14 +20,21 @@ type EntityFieldsMap = Record<string, EntityFieldValue>;
  * Логика portal-полей одинакова для всех — отличается только источник «текущих»
  * значений (для multiple-полей вроде op_mhistory).
  */
-export type EntityFieldsTargetType = 'company' | 'lead' | 'deal';
+export type EntityFieldsTargetType = EventReportEntityType;
 
 /**
  * Роль сделки (только для `entityType='deal'`). Нужна, чтобы понять, надо ли
  * добавлять `to_base_sales` (связь с корневой sales_base) и как обнулять
  * `pres_count`.
  */
-export type DealRole = 'base' | 'presentation' | 'xo' | 'tmc';
+export const EDealRole = {
+    BASE: 'base',
+    PRESENTATION: 'presentation',
+    XO: 'xo',
+    TMC: 'tmc',
+} as const;
+
+export type DealRole = (typeof EDealRole)[keyof typeof EDealRole];
 
 /**
  * Лимиты на multiple-поля (исторически выставлены в legacy `EventReportService`).
@@ -173,14 +184,21 @@ export class EventReportEntityFieldsModel {
         this.appendHistory(out);
 
         // ===== entity-specific =====
-        if (this.entityType === 'company' && this.ctx.planResponsibleId) {
+        // Ответственный переносится на сущность-владельца: и на компанию, и на
+        // лид (раньше лид оставался без ASSIGNED_BY_ID — дыра lead-flow).
+        // Для сделок не ставим — deal-сервисы делают это сами в base-полях.
+        if (
+            (this.entityType === EEventReportEntityType.COMPANY ||
+                this.entityType === EEventReportEntityType.LEAD) &&
+            this.ctx.planResponsibleId
+        ) {
             out['ASSIGNED_BY_ID'] = this.ctx.planResponsibleId;
         }
 
         // ===== Deal-only: связь pres-сделки с корневой sales_base =====
         if (
-            this.entityType === 'deal' &&
-            this.dealOptions?.role === 'presentation' &&
+            this.entityType === EEventReportEntityType.DEAL &&
+            this.dealOptions?.role === EDealRole.PRESENTATION &&
             this.dealOptions.baseDealId
         ) {
             this.setScalar(out, 'to_base_sales', this.dealOptions.baseDealId);
@@ -346,8 +364,8 @@ export class EventReportEntityFieldsModel {
         // — потому что для НОВОЙ pres-сделки счётчик не наследуем.
         let current = this.readNumber(this.entityRecord(), field);
         if (
-            this.entityType === 'deal' &&
-            this.dealOptions?.role === 'presentation'
+            this.entityType === EEventReportEntityType.DEAL &&
+            this.dealOptions?.role === EDealRole.PRESENTATION
         ) {
             const role = this.deriveDealEventAction();
             current = role === 'plan' || role === 'fail' ? -1 : 0;
@@ -431,10 +449,10 @@ export class EventReportEntityFieldsModel {
     }
 
     private entityRecord(): Record<string, unknown> | null {
-        if (this.entityType === 'deal') {
+        if (this.entityType === EEventReportEntityType.DEAL) {
             return this.dealOptions?.deal ?? null;
         }
-        if (this.entityType === 'company') {
+        if (this.entityType === EEventReportEntityType.COMPANY) {
             return this.ctx.company as unknown as Record<
                 string,
                 unknown

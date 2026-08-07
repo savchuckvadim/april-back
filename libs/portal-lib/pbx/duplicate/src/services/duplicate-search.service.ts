@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
 import { PBXService } from '@lib/pbx';
 import { signalsCacheKey } from '../lib/normalize.util';
+import { resolveDuplicateDealCategories } from '../lib/deal-category.filter';
 import {
     SearchCommand,
     SearchCommandMeta,
@@ -22,7 +23,10 @@ import {
 } from '../type/duplicate.type';
 import { DuplicateScoreService } from './duplicate-score.service';
 import { DuplicateSignalExtractService } from './duplicate-signal-extract.service';
-import { DUPLICATE_CACHE_APP, SignalFieldMapService } from './signal-field-map.service';
+import {
+    DUPLICATE_CACHE_APP,
+    SignalFieldMapService,
+} from './signal-field-map.service';
 
 /** Битрикс режет батч по 50 команд — из этого считается цена поиска в HTTP. */
 const BATCH_CHUNK = 50;
@@ -86,16 +90,24 @@ export class DuplicateSearchService {
             if (cached) return { ...cached, fromCache: true };
         }
 
+        const { bitrix, PortalModel: portalModel } =
+            await this.pbx.init(domain);
+        const warnings: string[] = [...(signals.warnings ?? [])];
+
+        // Сделки ищем ТОЛЬКО в наших воронках (ОП Основная); презентации и
+        // ХО исключены. Несконфигурированная воронка = сделки выпадают,
+        // никакого фолбэка «на все воронки».
+        const categories = resolveDuplicateDealCategories(portalModel);
+        warnings.push(...categories.warnings);
+
         const innFieldsByEntity = await this.loadInnFields(domain, targetTypes);
         const commands = buildSearchPlan({
             signals,
             level,
             innFieldsByEntity,
             targetTypes,
+            dealCategoryBitrixIds: categories.allowedBitrixIds,
         });
-
-        const { bitrix } = await this.pbx.init(domain);
-        const warnings: string[] = [];
 
         const responses = await this.runCommands(bitrix, commands);
         let requests = this.requestsFor(commands.length);
@@ -153,6 +165,7 @@ export class DuplicateSearchService {
                     domain,
                     input.entityType,
                     input.entityId,
+                    input.level ?? DuplicateSearchLevel.FAST,
                 ),
             );
         }
@@ -170,6 +183,7 @@ export class DuplicateSearchService {
             titles: [...new Set([...acc.titles, ...part.titles])],
             origins: [...acc.origins, ...part.origins],
             excluded: [...acc.excluded, ...part.excluded],
+            warnings: [...(acc.warnings ?? []), ...(part.warnings ?? [])],
         }));
     }
 
@@ -190,7 +204,7 @@ export class DuplicateSearchService {
         for (const entityType of targetTypes) {
             map.set(
                 entityType,
-                await this.fieldMap.getInnFields(domain, entityType),
+                await this.fieldMap.getInnEntityFields(domain, entityType),
             );
         }
         return map;
@@ -287,7 +301,7 @@ export class DuplicateSearchService {
                     id,
                     kind: DuplicateSignalKind.INN,
                     via: meta.via,
-                    value: String(row.RQ_INN ?? value),
+                    value: this.textOf(row.RQ_INN) || value,
                 });
             }
             return hits;
@@ -321,7 +335,8 @@ export class DuplicateSearchService {
         if (Array.isArray(raw)) return raw as BxRow[];
         if (raw && typeof raw === 'object') {
             const container = raw as { items?: unknown; result?: unknown };
-            if (Array.isArray(container.items)) return container.items as BxRow[];
+            if (Array.isArray(container.items))
+                return container.items as BxRow[];
             if (Array.isArray(container.result)) {
                 return container.result as BxRow[];
             }
@@ -414,13 +429,21 @@ export class DuplicateSearchService {
     ): string | undefined {
         if (entityType === DuplicateEntityType.CONTACT) {
             const name = [row.LAST_NAME, row.NAME, row.SECOND_NAME]
-                .map(part => (part ? String(part).trim() : ''))
+                .map(part => this.textOf(part))
                 .filter(Boolean)
                 .join(' ');
             return name || undefined;
         }
-        const title = row.TITLE ? String(row.TITLE).trim() : '';
-        return title || undefined;
+        return this.textOf(row.TITLE) || undefined;
+    }
+
+    /** Скаляр → строка; объекты не сериализуем ('[object Object]'-защита). */
+    private textOf(raw: unknown): string {
+        if (typeof raw === 'string') return raw.trim();
+        if (typeof raw === 'number' || typeof raw === 'bigint') {
+            return String(raw);
+        }
+        return '';
     }
 
     private numberOrUndefined(raw: unknown): number | undefined {

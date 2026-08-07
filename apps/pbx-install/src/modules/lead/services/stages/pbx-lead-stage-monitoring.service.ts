@@ -46,7 +46,7 @@ export class PbxLeadStageMonitoringService {
         const bitrixStatuses = normalizeStatusListResult(list.result);
         const templateStages = getLeadStageTemplate(group);
 
-        const anchor = await this.ensureLeadCategory.find(domain);
+        const anchor = await this.ensureLeadCategory.find(domain, group);
         const portalStages =
             anchor != null
                 ? ((await this.stageRepository.findByCategoryId(

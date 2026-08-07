@@ -3,9 +3,21 @@ import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.inter
 
 /**
  * Тип сущности-«хозяина» события.
- * Определяется по `placement` (CALL_CARD → company/lead, LEAD_* → lead, иначе company).
+ * Приоритетный источник — `dto.context` (companyId → company, dealId → deal,
+ * leadId → lead); legacy-фолбэк — по `placement` (LEAD_* → lead, иначе company).
+ * `DEAL` — сделка без компании: владелец события — сама сделка.
+ *
+ * `as const`-объект, не TS-enum: значения остаются литеральными типами и
+ * без кастов совместимы с `PbxEntityType` portal-либы.
  */
-export type EventReportEntityType = 'company' | 'lead';
+export const EEventReportEntityType = {
+    COMPANY: 'company',
+    LEAD: 'lead',
+    DEAL: 'deal',
+} as const;
+
+export type EventReportEntityType =
+    (typeof EEventReportEntityType)[keyof typeof EEventReportEntityType];
 
 /**
  * Снимок всех нужных flow-сервисам Bitrix-сущностей, загруженных одним init-batch'ем.
@@ -20,6 +32,12 @@ export interface IEventReportInitContext {
 
     company: IBXCompany | null;
     lead: IBXLead | null;
+
+    /**
+     * Сделка-владелец события (entityType='deal'): встройка открыта из сделки,
+     * у которой нет компании. Для company/lead-владельцев всегда null.
+     */
+    ownerDeal: IBXDeal | null;
 
     /** Базовая сделка ОП (категория sales_base), активная (≠ WON/LOSE) */
     currentBaseDeal: IBXDeal | null;

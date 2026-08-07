@@ -17,4 +17,12 @@ export class BxTimelineBatchService {
     addTimelineComment(cmd: string, data: IBXTimelineComment) {
         return this.repo.addTimelineCommentBtch(cmd, data);
     }
+
+    getTimelineComments(
+        cmd: string,
+        filter: Partial<IBXTimelineComment>,
+        select?: string[],
+    ) {
+        return this.repo.getTimelineCommentsBtch(cmd, filter, select);
+    }
 }

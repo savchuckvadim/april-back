@@ -24,6 +24,11 @@ export enum EBXEntity {
     RPA = 'rpa',
     REQUISITE = 'requisite',
     REQUISITE_PRESET = 'requisite.preset',
+    REQUISITE_LINK = 'requisite.link',
+    /** crm.entity.* — операции над «любой» CRM-сущностью (mergeBatch). */
+    CRM_ENTITY = 'entity',
+    /** crm.duplicate.* — штатный поиск дублей (findbycomm). */
+    DUPLICATE = 'duplicate',
     RECENT = 'recent',
     MESSAGE = 'message',
     DIALOG_MESSAGES = 'dialog.messages',

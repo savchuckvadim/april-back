@@ -23,6 +23,11 @@ import {
     BxRequisiteBatchService,
     BxRequisitePresetService,
     BxRequisitePresetBatchService,
+    BxRequisiteLinkService,
+    BxRequisiteLinkBatchService,
+    BxCrmEntityService,
+    BxDuplicateService,
+    BxDuplicateBatchService,
 } from './domain/crm/';
 
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
@@ -112,6 +117,10 @@ export class BitrixService {
     public timeline: BxTimelineService;
     public requisite: BxRequisiteService;
     public requisitePreset: BxRequisitePresetService;
+    public requisiteLink: BxRequisiteLinkService;
+    /** crm.entity.mergeBatch — разрушающее объединение; batch-варианта нет сознательно. */
+    public crmEntity: BxCrmEntityService;
+    public duplicate: BxDuplicateService;
     public list: BxListService;
     public listItem: BxListItemService;
     public product: BxProductService;
@@ -163,6 +172,8 @@ export class BitrixService {
         measure: null as unknown as BxMeasureBatchService,
         requisite: null as unknown as BxRequisiteBatchService,
         requisitePreset: null as unknown as BxRequisitePresetBatchService,
+        requisiteLink: null as unknown as BxRequisiteLinkBatchService,
+        duplicate: null as unknown as BxDuplicateBatchService,
         item: null as unknown as BxItemBatchService,
         timeline: null as unknown as BxTimelineBatchService,
         list: null as unknown as BxListBatchService,
@@ -218,6 +229,9 @@ export class BitrixService {
         this.initTimeline();
         this.initRequisite();
         this.initRequisitePreset();
+        this.initRequisiteLink();
+        this.initCrmEntity();
+        this.initDuplicate();
         this.initList();
         this.initListItem();
         this.initProduct();
@@ -321,6 +335,31 @@ export class BitrixService {
         );
         this.batch.requisitePreset = this.cloner.clone(
             BxRequisitePresetBatchService,
+            this.api,
+        );
+    }
+
+    private initRequisiteLink() {
+        this.requisiteLink = this.cloner.clone(
+            BxRequisiteLinkService,
+            this.api,
+        );
+        this.batch.requisiteLink = this.cloner.clone(
+            BxRequisiteLinkBatchService,
+            this.api,
+        );
+    }
+
+    private initCrmEntity() {
+        // Только обычный сервис: mergeBatch разрушающий и медленный,
+        // batch-варианта у домена нет сознательно (см. bx-crm-entity.repository.ts).
+        this.crmEntity = this.cloner.clone(BxCrmEntityService, this.api);
+    }
+
+    private initDuplicate() {
+        this.duplicate = this.cloner.clone(BxDuplicateService, this.api);
+        this.batch.duplicate = this.cloner.clone(
+            BxDuplicateBatchService,
             this.api,
         );
     }
