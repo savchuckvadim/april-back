@@ -151,3 +151,35 @@ pbx-install нажать переустановку полей сделки и �
   (seen-маркер 300 с) — это защита от дублей робота, не ошибка.
 - Redis общий между dev-инстансами — silence-каналы и очередь один на всех
   (см. раздел изоляции в `libs/core/src/event-silence/EVENT_SILENCE_GUIDE.md`).
+
+
+
+#### установил поля
+ИНН все связанные	document		string		op_inn_pool	OP_INN_POOL	OP_INN_POOL		OP_INN_POOL	OP_INN_POOL	551	ИСТИНА	ИСТИНА
+
+
+
+
+Лид из которого была создана сделка 	lead		crm		deal_from_lead_id				DEAL_FROM_LEAD_ID		660	ИСТИНА	ЛОЖЬ	lead
+Лиды присоединенные к сделке	lead		crm		deal_joined_leads				DEAL_JOINED_LEADS		660	ИСТИНА	ИСТИНА	lead
+Статус Лида	lead		enumeration		op_lead_status	OP_LEAD_STATUS					660	ИСТИНА	ЛОЖЬ
+Статус Заявки	lead		enumeration		op_lead_site_status	OP_LEAD_SITE_STATUS					660	ИСТИНА	ЛОЖЬ
+Стадия Заявки	lead		enumeration		op_lead_site_stage	OP_LEAD_SITE_STAGE					660	ИСТИНА	ЛОЖЬ
+Стадия Связанной сделки	lead		enumeration		op_leads_related_base_stage	OP_LEADS_RELATED_BASE_STAGE					660	ИСТИНА	ЛОЖЬ
+НЕ ЦА ТИП	lead		enumeration		op_lead_not_ca_type	OP_LEAD_NOT_CA_TYPE					660	ИСТИНА	ЛОЖЬ
+Статус не звонить никогда	lead		boolean		op_lead_is_black_short	OP_LEAD_IS_BLACK_SHORT					660	ИСТИНА	ЛОЖЬ
+Причина	lead		string		op_lead_black_short_reason	OP_LEAD_BLACK_SHORT_REASON					660	ИСТИНА	ЛОЖЬ
+Время обработки заяки	lead		integer		op_lead_firstprepare_long	OP_LEAD_FIRSTPREPARE_LONG					660	ИСТИНА	ЛОЖЬ
+История Обработки заяки	lead		multiple		op_lead_firstprepare_history	OP_LEAD_FIRSTPREPARE_HISTORY					660	ИСТИНА	ЛОЖЬ
+Установлена комания	lead		boolean		op_lead_is_company	OP_LEAD_IS_COMPANY					660	ИСТИНА	ЛОЖЬ
+Отправлен Отчет в НПП	lead		boolean		op_lead_is_npp_repoted	OP_LEAD_IS_NPP_REPOTED					660	ИСТИНА	ЛОЖЬ
+Проверено на дубли (установлен ИНН)	lead		boolean		op_lead_is_duplicate_check	OP_LEAD_IS_DUPLICATE_CHECK					660	ИСТИНА	ЛОЖЬ
+Найдены дубли	lead		boolean		op_lead_is_duplicate	OP_LEAD_IS_DUPLICATE					660	ИСТИНА	ЛОЖЬ
+Присоеденнен к существующей работе	lead		boolean		op_lead_is_merged_by_exist	OP_LEAD_IS_MERGED_BY_EXIST					660	ИСТИНА	ЛОЖЬ
+Повлиял на продажу	lead		boolean		op_lead_is_boost_sale	OP_LEAD_IS_BOOST_SALE					660	ИСТИНА	ЛОЖЬ
+Хвост	presentation		string		op_presentation_xvost	OP_PRESENTATION_XVOST
+Пять К	presentation		string		op_presentation_5k	OP_PRESENTATION_5K
+
+
+
+Связанная продажа	only_deals		crm		to_sale_deal	TO_SALE_DEAL	TO_SALE_DEAL		TO_SALE_DEAL	TO_SALE_DEAL	576	ИСТИНА	ЛОЖЬ	deal

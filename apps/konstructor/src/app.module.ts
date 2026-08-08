@@ -9,6 +9,11 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 import { KonstructorModule } from './konstructor.module';
 import { OfferWordModule } from './offer-word/offer-word.module';
 import { DocumentSupplyReportModule } from './document-supply-report/document-supply-report.module';
+// Слои доставки konstructor-роутов: контроллеры вынесены из сервисных
+// модулей, чтобы не утекать в Swagger других приложений
+// (ai/rules/app-api-surface.md), поэтому подключаются здесь явно.
+import { ProviderPublicModule } from '@lib/portal-lib/konstructor/provider';
+import { TemplateBasePublicModule } from '@lib/portal-lib/konstructor/template-base';
 
 /**
  * Корневой модуль приложения konstructor (конструктор документов).
@@ -46,6 +51,8 @@ import { DocumentSupplyReportModule } from './document-supply-report/document-su
         KonstructorModule,
         OfferWordModule,
         DocumentSupplyReportModule,
+        ProviderPublicModule,
+        TemplateBasePublicModule,
     ],
     providers: [GlobalExceptionFilter],
 })

@@ -20,7 +20,19 @@ import { AdminGarantComplectModule } from './garant/complect/admin-garant-comple
 import { AdminGarantSupplyModule } from './garant/supply/admin-garant-supply.module';
 import { AdminGarantInfogroupModule } from './garant/info-group/admin-garant-infogroup.module';
 import { AdminGarantInfoblockModule } from './garant/infoblock/admin-garant-infoblock.module';
-import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category';
+import {
+    PortalCategoryModule,
+    PortalCategoryAdminModule,
+} from '@lib/portal-lib/pbx-domain/category';
+// Админ-слои PBX-сущностей PortalDB: контроллеры живут ТОЛЬКО здесь,
+// чтобы не торчать в Swagger event-sales и других приложений
+// (ai/rules/app-api-surface.md).
+import { PortalLeadAdminModule } from '@lib/portal-lib/pbx-domain/portal-lead';
+import { PortalContactAdminModule } from '@lib/portal-lib/pbx-domain/portal-contact';
+import { PortalCompanyAdminModule } from '@lib/portal-lib/pbx-domain/portal-company';
+import { PortalDealAdminModule } from '@lib/portal-lib/pbx-domain/portal-deal';
+import { PortalSmartAdminModule } from '@lib/portal-lib/pbx-domain/portal-smart';
+import { PortalStoreAdminModule } from '@lib/portal-lib/store/portal-store.admin.module';
 import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
 import { AiRagAdminModule } from '@lib/ai-rag';
 import { AdminGarantPackageModule } from '@lib/garant/package';
@@ -46,6 +58,13 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         BxRqModule,
         TimezoneModule,
         PortalCategoryModule,
+        PortalCategoryAdminModule,
+        PortalLeadAdminModule,
+        PortalContactAdminModule,
+        PortalCompanyAdminModule,
+        PortalDealAdminModule,
+        PortalSmartAdminModule,
+        PortalStoreAdminModule,
         ContractModule,
         MeasureModule,
         PortalMeasureModule,

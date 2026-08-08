@@ -3,3 +3,4 @@ export * from './services/portal-lead.service';
 export * from './entity/portal-lead.entity';
 export * from './entity/portal-lead-with-fields.entity';
 export * from './stages/const/pbx-lead-stages.const';
+export * from './portal-lead.admin.module';

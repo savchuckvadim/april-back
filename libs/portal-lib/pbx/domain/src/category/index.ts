@@ -1,4 +1,5 @@
 export { PortalCategoryModule } from './category.module';
+export { PortalCategoryAdminModule } from './category.admin.module';
 export { BtxCategoryService } from './services/btx-category.service';
 export { BtxCategoryRepository } from './repositories/btx-category.repository';
 export { PortalCategoryEntity } from './entity/portal-category.entity';

@@ -2,15 +2,14 @@ import { Module } from '@nestjs/common';
 import { ProviderService } from './provider.service';
 import { ProviderRepository } from './provider.repository';
 import { ProviderPrismaRepository } from './provider.prisma.repository';
-import { ProviderController } from './provider.controller';
 
 /**
- * Сервисный модуль поставщиков: провайдеры + целевой ProviderController.
- * Админ-контроллер вынесен в {@link ProviderAdminModule}, чтобы приложения
- * (konstructor), импортящие модуль ради ProviderService, не тащили админ-роуты.
+ * Сервисный модуль поставщиков — БЕЗ контроллеров.
+ * Публичные роуты — {@link ProviderPublicModule} (подключает konstructor),
+ * админские — {@link ProviderAdminModule} (подключает админка).
+ * См. ai/rules/app-api-surface.md.
  */
 @Module({
-    controllers: [ProviderController],
     providers: [
         ProviderService,
         {

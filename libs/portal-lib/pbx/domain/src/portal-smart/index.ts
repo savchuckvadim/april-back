@@ -7,3 +7,4 @@ export { CreatePortalSmartDto } from './dto/create-portal-smart.dto';
 export { UpdatePortalSmartDto } from './dto/update-portal-smart.dto';
 export { PortalSmartRowResponseDto } from './dto/portal-smart-row-response.dto';
 export { PortalSmartsListResponseDto } from './dto/portal-smarts-list-response.dto';
+export * from './portal-smart.admin.module';

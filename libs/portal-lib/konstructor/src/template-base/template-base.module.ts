@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TemplateBasePrismaRepository } from './template-base.prisma.repository';
 import { TemplateBaseRepository } from './template-base.repository';
-import { TemplateBaseController } from './template-base.controller';
 import { TemplateBaseService } from './template-base.service';
 
+/**
+ * Сервисный модуль шаблонов-баз. Контроллер вынесен в
+ * {@link TemplateBaseAdminModule} — см. ai/rules/app-api-surface.md.
+ */
 @Module({
-    controllers: [TemplateBaseController],
     providers: [
         {
             provide: TemplateBaseRepository,

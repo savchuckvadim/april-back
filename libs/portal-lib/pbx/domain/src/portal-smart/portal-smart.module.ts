@@ -3,11 +3,13 @@ import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-kons
 import { PortalCategoryModule } from '@lib/portal-lib/pbx-domain/category/category.module';
 import { PbxFieldModule } from '@lib/portal-lib/pbx-domain/field/pbx-field.module';
 import { PortalSmartService } from './portal-smart.service';
-import { PortalSmartController } from './controllers/portal-smart.controller';
 
+/**
+ * Сервисный модуль смарт-процессов PortalDB. Контроллер вынесен в
+ * {@link PortalSmartAdminModule} — см. ai/rules/app-api-surface.md.
+ */
 @Module({
     imports: [PortalKonstructorModule, PortalCategoryModule, PbxFieldModule],
-    controllers: [PortalSmartController],
     providers: [PortalSmartService],
     exports: [PortalSmartService],
 })

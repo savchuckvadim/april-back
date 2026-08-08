@@ -4,8 +4,11 @@ import { PortalStageModule } from '@lib/portal-lib/pbx-domain/stage';
 import { BtxCategoryService } from './services/btx-category.service';
 import { BtxCategoryRepository } from './repositories/btx-category.repository';
 import { BtxCategoryPrismaRepository } from './repositories/btx-category.prisma.repository';
-import { PortalCategoryAdminController } from './controllers/portal-category.admin.controller';
 
+/**
+ * Сервисный модуль категорий PortalDB. Контроллер вынесен в
+ * {@link PortalCategoryAdminModule} — см. ai/rules/app-api-surface.md.
+ */
 @Module({
     imports: [PrismaModule, PortalStageModule],
     providers: [
@@ -15,7 +18,6 @@ import { PortalCategoryAdminController } from './controllers/portal-category.adm
             useClass: BtxCategoryPrismaRepository,
         },
     ],
-    controllers: [PortalCategoryAdminController],
     exports: [BtxCategoryService, BtxCategoryRepository, PortalStageModule],
 })
 export class PortalCategoryModule {}
