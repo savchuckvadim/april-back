@@ -52,8 +52,13 @@ function mapEventType(type: EventReportEventType | null): EventTypeCode | null {
             return 'call_in_money';
         case 'document':
         case 'supply':
+            // Своих кодов в KPI у них нет; по смыслу это разговор с клиентом.
+            return 'call';
         default:
-            return null;
+            // Дефолт вместо null — как в легаси (bx-event-flow.service):
+            // неизвестный код не должен УНИЧТОЖАТЬ запись, иначе продажа и
+            // отказ молча пропадают из отчётности.
+            return 'call';
     }
 }
 
@@ -193,6 +198,13 @@ export class EventReportKpiPayloadBuilder {
         const ctx = this.ctx;
         if (ctx.isNew || ctx.isExpired) return null;
         if (ctx.reportEventType === 'presentation') return null;
+        /*
+         * Продажа и отказ пишутся ФИНАЛЬНОЙ записью (buildFinal). Раньше
+         * отчётная запись создавалась и тут, с тем же event_type и
+         * action='done' — отчёт считает по паре тип+действие, и каждая
+         * продажа/отказ удваивала «*_done».
+         */
+        if (ctx.isSuccessSale || ctx.isFail) return null;
 
         const eventType = mapEventType(ctx.reportEventType);
         if (!eventType) return null;
@@ -256,10 +268,14 @@ export class EventReportKpiPayloadBuilder {
     private buildFinal(): KpiEventPayload | null {
         const ctx = this.ctx;
         if (!ctx.isSuccessSale && !ctx.isFail) return null;
-        const eventType = mapEventType(
-            ctx.reportEventType ?? ctx.planEventType,
-        );
-        if (!eventType) return null;
+        /*
+         * Тип события влияет на разрез отчёта, но НЕ на факт записи: продажа
+         * и отказ обязаны фиксироваться всегда. Раньше здесь стоял ранний
+         * выход по нерезолвнутому типу — и отчёт по «Решению»/«Оплате» не
+         * оставлял в KPI ничего.
+         */
+        const eventType =
+            mapEventType(ctx.reportEventType ?? ctx.planEventType) ?? 'call';
         return this.assemble({
             scenario: 'final',
             name: ctx.isSuccessSale

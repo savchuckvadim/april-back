@@ -37,6 +37,27 @@ export type EventReportFlowStrategy =
  * Класс держит ссылки, но не имеет инстанса Bitrix — он передаётся отдельно
  * в каждый flow-сервис. Это соответствует CLAUDE.md (никакого `this.bitrix`).
  */
+/**
+ * Коды типа события → внутренний алфавит EventReportEventType.
+ *
+ * Фронт с 08.08.2026 шлёт уже согласованные коды (hot/moneyAwait), но карта
+ * остаётся: она закрывает legacy-значения старых сборок фрейма
+ * (in_progress/money_await), фронтовые состояния без аналога на бэке
+ * (event — тип задачи не распознан, ss — сервисный сигнал; оба по смыслу
+ * разговор с клиентом) и историческое cold.
+ *
+ * Раньше несогласованный код проезжал сюда как есть и обнулял mapEventType —
+ * отчёт уходил успешно, а в KPI не появлялось НИ ОДНОЙ записи, включая
+ * продажу и отказ.
+ */
+const NORMALIZED_EVENT_TYPE: Record<string, string> = {
+    cold: 'xo',
+    in_progress: 'hot',
+    money_await: 'moneyAwait',
+    event: 'warm',
+    ss: 'warm',
+};
+
 export class EventReportContext {
     constructor(
         public readonly dto: EventSalesFlowDto,
@@ -218,6 +239,13 @@ export class EventReportContext {
         // лиде (поля, стадия, списки). Осознанное изменение поведения
         // лид-встроек: раньше отчёт от лида создавал базовую сделку.
         if (this.strategy === EEventReportFlowStrategy.LEAD_ONLY) return false;
+        /*
+         * Продажа и отказ двигают воронку САМИ ПО СЕБЕ: их итоговая стадия
+         * (sales_success / sales_fail) не зависит от типа события. Раньше
+         * гейт по типу выключал deal-flow целиком, и отчёт «продажа» без
+         * задачи и без плана не менял ни одной сделки.
+         */
+        if (this.isSuccessSale || this.isFail) return true;
         // sales_base сделка нужна если есть тип события (хоть какой-то план/отчёт)
         return Boolean(this.planEventType || this.reportEventType);
     }
@@ -261,7 +289,6 @@ export class EventReportContext {
      * периоды до и после будет некорректно: делать отдельной задачей.
      */
     private normalizeEventType(raw: string): string {
-        if (raw === 'cold') return 'xo';
-        return raw;
+        return NORMALIZED_EVENT_TYPE[raw] ?? raw;
     }
 }
