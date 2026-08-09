@@ -22,13 +22,35 @@ type BxRow = Record<string, unknown>;
 /**
  * Хук «лид → работа» — не обнуляющее преобразование лида в работу ОП.
  *
- * Один лид = одна группа буфера (company → deal → xo → lead → задачи).
- * После всех групп use-case сам делает flush(), чтобы вернуть клиенту
- * РЕАЛЬНЫЕ id созданных сущностей (финальный flush runner'а станет no-op).
+ * ПОРЯДОК РАБОТЫ (по шагам, они же помечены в коде execute()):
  *
- * Доменная идемпотентность: перед записью читается состояние Битрикса
- * (to_base_sales лида + сделки конвертации) — повтор доводит связи,
- * а не плодит вторые сделки. Ошибка одного лида не валит пачку.
+ *   Шаг 0. Создаём доменные сервисы на инстансе Битрикса ЭТОГО портала
+ *          (ctx.bitrix). В поля класса их не кладём — @Injectable живёт
+ *          в единственном экземпляре на все домены (CLAUDE.md).
+ *   Шаг 1. Для КАЖДОГО лида пачки (кнопка = 1, робот = N):
+ *     1.1  читаем состояние портала: сам лид, его компания, наша уже
+ *          существующая сделка (обратная ссылка to_base_sales), сделки
+ *          штатной конвертации, открытые задачи — 2 HTTP-волны;
+ *     1.2  считаем целевые стадии: воронка/стадия сделки, стадия ХО,
+ *          статус лида. Всё graceful: чего нет на портале — пропускаем
+ *          с warning, кроме отсутствующей воронки ОП (это ошибка лида);
+ *     1.3  ставим команды записи в ОДНУ группу буфера
+ *          (company → deal → xo → lead → задачи) — они уедут одним
+ *          HTTP-batch'ем, поэтому внутри работают ссылки $result[cmd];
+ *     1.4  endGroup() закрывает группу этого лида: следующий лид пойдёт
+ *          своей группой, ссылки между лидами не перепутаются;
+ *     1.5  ошибка одного лида не валит пачку — пишем её в его warnings
+ *          и продолжаем с остальными.
+ *   Шаг 2. flush() отправляет накопленные группы в Битрикс. Делаем это
+ *          ЗДЕСЬ, а не в runner'е, чтобы получить ответы команд: только
+ *          после отправки становятся известны РЕАЛЬНЫЕ id созданных
+ *          сущностей. Повторный flush() в runner'е будет no-op.
+ *   Шаг 3. Разбираем ответы батча в плоскую карту `cmdKey → ответ`.
+ *   Шаг 4. Сшиваем результат: план команд каждого лида + реальные id из
+ *          карты → items[] с baseDealId/xoDealId/companyId и warnings.
+ *
+ * Доменная идемпотентность (шаг 1.1): повтор по тому же лиду доводит
+ * связи существующей сделки (reuse), а не создаёт вторую.
  */
 @Injectable()
 export class LeadToWorkUseCase
@@ -41,12 +63,18 @@ export class LeadToWorkUseCase
         ctx: SalesHookExecutionContext,
         items: ILeadToWorkItem[],
     ): Promise<LeadToWorkResultDto> {
+        // ── Шаг 0. Доменные сервисы на инстансе Битрикса этого портала.
+        // Живут только внутри вызова: инстанс приходит в ctx, в this его
+        // класть нельзя (race condition между доменами).
         const contextService = new LeadToWorkContextService(
             ctx.bitrix,
             ctx.portal,
         );
         const flowService = new LeadToWorkFlowService(ctx.bitrix, ctx.portal);
 
+        // Накопитель: что запланировали по каждому лиду. Реальные id
+        // появятся только после отправки батча (шаг 2), поэтому пока
+        // храним ключи команд (dealCmd/xoCmd/companyCmd) и найденное чтением.
         const queued: {
             item: ILeadToWorkItem;
             plan?: LeadToWorkQueuedPlan;
@@ -56,9 +84,17 @@ export class LeadToWorkUseCase
             warnings: string[];
         }[] = [];
 
+        // ── Шаг 1. Обрабатываем лиды пачки по одному.
         for (const item of items) {
             try {
+                // 1.1 Читаем портал: лид + компания + наша сделка (если лид
+                //     уже в работе) + сделки конвертации + открытые задачи.
                 const leadContext = await contextService.load(item.leadId);
+
+                // 1.2 Считаем целевые стадии от ТЕКУЩЕГО статуса лида:
+                //     зеркало стадии («Презентация» лида → sales_pres),
+                //     статус лида, стадия ХО. Отсутствующее на портале
+                //     превращается в warning, а не в падение.
                 const resolver = new LeadToWorkStageResolver(
                     ctx.portal,
                 ).withCurrentLeadStatus(
@@ -70,12 +106,19 @@ export class LeadToWorkUseCase
                     leadContext.isConverted,
                 );
 
+                // 1.3 Ставим команды записи в буфер. Пока НИЧЕГО не уходит
+                //     в Битрикс — команды копятся, чтобы уехать одним
+                //     батчем и уметь ссылаться друг на друга ($result).
                 const plan = flowService.queue(
                     item,
                     leadContext,
                     stagePlan,
                     ctx.buffer,
                 );
+
+                // 1.4 Закрываем группу этого лида: гарантия, что все его
+                //     команды попадут в один HTTP-batch (иначе ссылки
+                //     $result[…] на соседние команды не разрешатся).
                 await ctx.buffer.endGroup();
 
                 queued.push({
@@ -94,6 +137,9 @@ export class LeadToWorkUseCase
                     ],
                 });
             } catch (error) {
+                // 1.5 Ошибка одного лида не валит пачку: записываем её в
+                //     его результат и идём к следующему (робот мог прислать
+                //     10 лидов, из которых один удалён на портале).
                 const { message } = getErrorDetails(error);
                 this.logger.warn(
                     `lead-to-work: лид ${item.leadId} пропущен — ${message}`,
@@ -108,10 +154,15 @@ export class LeadToWorkUseCase
             }
         }
 
-        // Отправляем всё и разбираем реальные id по cmd-ключам.
+        // ── Шаг 2. Отправляем накопленные группы в Битрикс. Именно здесь,
+        // а не в runner'е: только после отправки известны реальные id
+        // созданных сущностей, а их надо вернуть клиенту.
         await ctx.buffer.flush();
+
+        // ── Шаг 3. Ответы батча → плоская карта `cmdKey → ответ`.
         const byCmd = this.flattenResults(ctx.buffer.getResults());
 
+        // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.
         const results = queued.map(entry => this.toItemResult(entry, byCmd));
         const created = results.filter(
             r => r.baseDealId && !r.reused && !r.warnings.includes('__failed'),
@@ -126,6 +177,13 @@ export class LeadToWorkUseCase
         };
     }
 
+    /**
+     * Шаг 4 для одного лида: план команд + карта ответов → итог для клиента.
+     *
+     * Приоритет id: сначала то, что ПРОЧИТАЛИ до записи (существующая
+     * сделка при reuse, компания лида), потом то, что СОЗДАЛИ (ответ
+     * команды по её cmdKey). Если команды не было — в поле null.
+     */
     private toItemResult(
         entry: {
             item: ILeadToWorkItem;
@@ -161,6 +219,11 @@ export class LeadToWorkUseCase
         };
     }
 
+    /**
+     * Шаг 3: батч возвращает массив чанков, в каждом — словарь
+     * `cmdKey → ответ команды`. Схлопываем в одну карту, чтобы искать
+     * ответ по ключу команды, который мы сами задали при постановке.
+     */
     private flattenResults(
         chunks: { result?: Record<string, unknown> }[],
     ): Map<string, unknown> {
@@ -173,7 +236,10 @@ export class LeadToWorkUseCase
         return byCmd;
     }
 
-    /** id из ответа set/add: число, {task:{id}}, строка. */
+    /**
+     * id из ответа команды. Битрикс отвечает по-разному: crm.*.add — голым
+     * числом, tasks.task.add — объектом `{task: {id}}`, иногда строкой.
+     */
     private entityIdOf(raw: unknown): number | null {
         if (raw == null) return null;
         if (typeof raw === 'number') return raw;

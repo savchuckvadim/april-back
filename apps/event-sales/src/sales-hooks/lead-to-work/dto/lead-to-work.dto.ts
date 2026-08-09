@@ -30,14 +30,26 @@ export class LeadToWorkWebhookQueryDto {
     @Min(1)
     leadId: number;
 
+    /**
+     * ВНИМАНИЕ: тип поля обязан быть `string`, хотя в рантайме сюда
+     * приезжает число.
+     *
+     * Робот шлёт `user_447`; `@IsBxHookUserId()` трансформирует строку в
+     * 447 и валидирует как число. Но глобальный ValidationPipe работает с
+     * `enableImplicitConversion: true`: при объявленном типе `number`
+     * class-transformer приводит `'user_447'` → NaN ДО нашей трансформации,
+     * и запрос падает валидацией. Поэтому здесь `string`, а к числу
+     * значение приводит `buildLeadToWorkItem()`.
+     */
     @ApiProperty({
         description:
-            'Ответственный менеджер. Робот присылает в формате `user_123` — ' +
-            'значение нормализуется до числового id.',
-        example: 123,
+            'Ответственный за звонок — идентификатор пользователя Bitrix ' +
+            'в формате hook (user_<id>).',
+        example: 'user_123',
+        type: String,
     })
     @IsBxHookUserId()
-    responsible: number;
+    responsible: string;
 
     @ApiPropertyOptional({
         description:
@@ -225,7 +237,7 @@ export interface ILeadToWorkItem {
 /** Сборка элемента с дефолтами флагов. */
 export function buildLeadToWorkItem(input: {
     leadId: number;
-    responsible: number;
+    responsible: string | number;
     createCompany?: LeadToWorkFlag;
     stageMode?: LeadToWorkStageMode;
     taskMode?: LeadToWorkTaskMode;
@@ -235,7 +247,7 @@ export function buildLeadToWorkItem(input: {
 }): ILeadToWorkItem {
     return {
         leadId: input.leadId,
-        responsible: input.responsible,
+        responsible: Number(input.responsible),
         createCompany: input.createCompany ?? 'N',
         stageMode: input.stageMode ?? 'from_lead',
         taskMode: input.taskMode ?? 'move',
