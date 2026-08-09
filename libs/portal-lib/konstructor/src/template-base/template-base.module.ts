@@ -5,7 +5,7 @@ import { TemplateBaseService } from './template-base.service';
 
 /**
  * Сервисный модуль шаблонов-баз. Контроллер вынесен в
- * {@link TemplateBaseAdminModule} — см. ai/rules/app-api-surface.md.
+ * {@link TemplateBasePublicModule} — см. ai/rules/app-api-surface.md.
  */
 @Module({
     providers: [
@@ -15,6 +15,6 @@ import { TemplateBaseService } from './template-base.service';
         },
         TemplateBaseService,
     ],
-    exports: [TemplateBaseRepository],
+    exports: [TemplateBaseRepository, TemplateBaseService],
 })
 export class TemplateBaseModule {}

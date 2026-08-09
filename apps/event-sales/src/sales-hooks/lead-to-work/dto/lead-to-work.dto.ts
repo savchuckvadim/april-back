@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { IsBxHookUserId } from '@/core/decorators/dto/bx-hook-user-id.decorator';
+import { ApiBxHookUserId } from '@/core/decorators/dto/api-bx-hook-user-id.decorator';
 import { SalesHookRunRequestBaseDto } from '../../core/dto/sales-hook-run-request.dto';
 
 /** Y/N-флаги хука в формате, который шлёт робот Битрикса. */
@@ -31,24 +31,16 @@ export class LeadToWorkWebhookQueryDto {
     leadId: number;
 
     /**
-     * ВНИМАНИЕ: тип поля обязан быть `string`, хотя в рантайме сюда
-     * приезжает число.
-     *
-     * Робот шлёт `user_447`; `@IsBxHookUserId()` трансформирует строку в
-     * 447 и валидирует как число. Но глобальный ValidationPipe работает с
-     * `enableImplicitConversion: true`: при объявленном типе `number`
-     * class-transformer приводит `'user_447'` → NaN ДО нашей трансформации,
-     * и запрос падает валидацией. Поэтому здесь `string`, а к числу
-     * значение приводит `buildLeadToWorkItem()`.
+     * Тип поля — `string` (в рантайме декоратор отдаёт число): при
+     * объявленном `number` глобальный ValidationPipe с implicit conversion
+     * превратит `'user_447'` в NaN до трансформации. Подробности — в
+     * JSDoc `ApiBxHookUserId`. К числу приводит `buildLeadToWorkItem()`.
      */
-    @ApiProperty({
+    @ApiBxHookUserId({
         description:
-            'Ответственный за звонок — идентификатор пользователя Bitrix ' +
-            'в формате hook (user_<id>).',
-        example: 'user_123',
-        type: String,
+            'Ответственный менеджер — идентификатор пользователя Bitrix ' +
+            'в формате хука (user_<id>).',
     })
-    @IsBxHookUserId()
     responsible: string;
 
     @ApiPropertyOptional({

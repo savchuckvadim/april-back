@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PbxFieldModule } from '@lib/portal-lib/pbx-domain/field/pbx-field.module';
 import { PortalLeadModule } from './portal-lead.module';
 import { PortalLeadController } from './controllers/portal-lead.controller';
 import { PortalLeadFieldController } from './controllers/portal-lead-field.controller';
@@ -10,7 +11,7 @@ import { PortalLeadFieldController } from './controllers/portal-lead-field.contr
  * см. ai/rules/app-api-surface.md.
  */
 @Module({
-    imports: [PortalLeadModule],
+    imports: [PortalLeadModule, PbxFieldModule],
     controllers: [PortalLeadController, PortalLeadFieldController],
 })
 export class PortalLeadAdminModule {}

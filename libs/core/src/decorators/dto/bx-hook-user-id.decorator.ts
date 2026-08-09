@@ -8,13 +8,22 @@ import {
 } from 'class-validator';
 
 /**
- * Декоратор для валидации Bitrix Hook User ID
- * Ожидает формат: "user_123" и извлекает число 123
+ * Декоратор для валидации Bitrix Hook User ID.
+ * Ожидает формат `user_123` и извлекает из него число 123.
+ *
+ * ⚠️ ПОЛЕ DTO ОБЪЯВЛЯЙТЕ КАК `string` (и `type: String` в Swagger).
+ * Глобальный ValidationPipe работает с `enableImplicitConversion: true`:
+ * при объявленном `number` class-transformer приведёт `'user_447'` к NaN
+ * ЕЩЁ ДО этой трансформации, и запрос упадёт валидацией. К числу значение
+ * приводится уже в доменном слое (сборка item'а хука).
+ *
+ * В новых DTO предпочтительнее готовая композиция `ApiBxHookUserId()` —
+ * она задаёт и документацию, и валидацию одной строкой.
  *
  * @param validationOptions - Опции валидации, включая кастомное сообщение
  * @example
  * @IsBxHookUserId({ message: 'Поле должно быть в формате user_123' })
- * userId: number;
+ * responsible: string;
  */
 export function IsBxHookUserId(validationOptions?: ValidationOptions) {
     return applyDecorators(
