@@ -5,13 +5,17 @@ import {
     ISalesHookUseCase,
     SalesHookExecutionContext,
 } from '../../core/contracts/sales-hook-use-case.contract';
-import { ILeadToWorkItem } from '../dto/lead-to-work.dto';
+import {
+    ILeadToWorkItem,
+    ResolvedLeadToWorkItem,
+} from '../dto/lead-to-work.dto';
 import {
     LeadToWorkItemResultDto,
     LeadToWorkResultDto,
 } from '../dto/lead-to-work-result.dto';
 import { LeadToWorkContextService } from '../services/lead-to-work-context.service';
 import { LeadToWorkStageResolver } from '../services/lead-to-work-stage.resolver';
+import { LeadToWorkAssigneeService } from '../services/lead-to-work-assignee.service';
 import {
     LeadToWorkFlowService,
     LeadToWorkQueuedPlan,
@@ -59,6 +63,8 @@ export class LeadToWorkUseCase
     readonly hook = EnumSalesHookCode.LEAD_TO_WORK;
     private readonly logger = new Logger(LeadToWorkUseCase.name);
 
+    constructor(private readonly assignee: LeadToWorkAssigneeService) {}
+
     async execute(
         ctx: SalesHookExecutionContext,
         items: ILeadToWorkItem[],
@@ -80,6 +86,9 @@ export class LeadToWorkUseCase
             plan?: LeadToWorkQueuedPlan;
             companyId: number | null;
             existingDealId: number | null;
+            existingXoDealId: number | null;
+            responsible?: number;
+            assigneeSource?: 'explicit' | 'round-robin';
             error?: string;
             warnings: string[];
         }[] = [];
@@ -87,8 +96,29 @@ export class LeadToWorkUseCase
         // ── Шаг 1. Обрабатываем лиды пачки по одному.
         for (const item of items) {
             try {
+                // 1.0 Ответственный: пришёл в хуке — берём его; не пришёл —
+                //     round-robin из отдела продаж (намёк — item.department,
+                //     курсор — в app-cache). Без кандидатов лид пропускается.
+                const assignee = await this.assignee.resolve(ctx.domain, item);
+                if (!assignee.responsible) {
+                    queued.push({
+                        item,
+                        companyId: null,
+                        existingDealId: null,
+                        existingXoDealId: null,
+                        error: 'Не удалось определить ответственного (responsible не передан, отдел пуст/не найден)',
+                        warnings: assignee.warnings,
+                    });
+                    continue;
+                }
+                const resolvedItem: ResolvedLeadToWorkItem = {
+                    ...item,
+                    responsible: assignee.responsible,
+                };
+
                 // 1.1 Читаем портал: лид + компания + наша сделка (если лид
-                //     уже в работе) + сделки конвертации + открытые задачи.
+                //     уже в работе) + ХО-сделка + сделки конвертации +
+                //     открытые задачи.
                 const leadContext = await contextService.load(item.leadId);
 
                 // 1.2 Считаем целевые стадии от ТЕКУЩЕГО статуса лида:
@@ -101,7 +131,7 @@ export class LeadToWorkUseCase
                     this.text((leadContext.lead as unknown as BxRow).STATUS_ID),
                 );
                 const stagePlan = resolver.resolve(
-                    item,
+                    resolvedItem,
                     !!leadContext.company,
                     leadContext.isConverted,
                 );
@@ -109,11 +139,13 @@ export class LeadToWorkUseCase
                 // 1.3 Ставим команды записи в буфер. Пока НИЧЕГО не уходит
                 //     в Битрикс — команды копятся, чтобы уехать одним
                 //     батчем и уметь ссылаться друг на друга ($result).
+                //     Инициатор операции идёт автором KPI-событий ХО-ветки.
                 const plan = flowService.queue(
-                    item,
+                    resolvedItem,
                     leadContext,
                     stagePlan,
                     ctx.buffer,
+                    ctx.initiatorUserId ?? null,
                 );
 
                 // 1.4 Закрываем группу этого лида: гарантия, что все его
@@ -130,7 +162,13 @@ export class LeadToWorkUseCase
                     existingDealId: leadContext.existingOurDeal
                         ? Number(leadContext.existingOurDeal.ID)
                         : null,
+                    existingXoDealId: leadContext.existingXoDeal
+                        ? Number(leadContext.existingXoDeal.ID)
+                        : null,
+                    responsible: assignee.responsible,
+                    assigneeSource: assignee.source,
                     warnings: [
+                        ...assignee.warnings,
                         ...leadContext.warnings,
                         ...stagePlan.warnings,
                         ...plan.warnings,
@@ -148,6 +186,7 @@ export class LeadToWorkUseCase
                     item,
                     companyId: null,
                     existingDealId: null,
+                    existingXoDealId: null,
                     error: message,
                     warnings: [],
                 });
@@ -190,6 +229,9 @@ export class LeadToWorkUseCase
             plan?: LeadToWorkQueuedPlan;
             companyId: number | null;
             existingDealId: number | null;
+            existingXoDealId: number | null;
+            responsible?: number;
+            assigneeSource?: 'explicit' | 'round-robin';
             error?: string;
             warnings: string[];
         },
@@ -210,11 +252,18 @@ export class LeadToWorkUseCase
             leadId: item.leadId,
             reused: plan?.reused ?? false,
             baseDealId: entry.existingDealId ?? idOf(plan?.dealCmd),
-            xoDealId: idOf(plan?.xoCmd),
+            // Повторный ХО обновляет СУЩЕСТВУЮЩУЮ ХО-сделку — её id известен
+            // из чтения (to_xo_sales), ответ deal.update его не содержит.
+            xoDealId: entry.existingXoDealId ?? idOf(plan?.xoCmd),
             companyId: entry.companyId ?? idOf(plan?.companyCmd),
             tasksMoved: plan?.tasksMoved ?? 0,
             tasksClosed: plan?.tasksClosed ?? 0,
             taskCreated: !!plan?.taskAddCmd,
+            responsible: entry.responsible ?? null,
+            assigneeSource: entry.assigneeSource ?? null,
+            isRequest: plan?.isRequest ?? false,
+            kpiPlanned: plan?.kpiPlanned ?? false,
+            kpiNotHeld: plan?.kpiNotHeld ?? false,
             warnings,
         };
     }

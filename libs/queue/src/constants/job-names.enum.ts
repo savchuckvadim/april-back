@@ -11,6 +11,8 @@ export enum JobNames {
     SALES_HOOK_REJECT_BUFFER = 'sales-hook-reject-buffer',
     //нормализатор ручной конвертации: onCrmDealAdd → self-healing графа связей
     SALES_HOOK_CONVERT_NORMALIZER = 'sales-hook-convert-normalizer',
+    //глубокая проверка дублей из сущности + красивый итог в её timeline
+    SALES_HOOK_DUPLICATE_CHECK = 'sales-hook-duplicate-check',
 
     //mail
     MAIL_SEND_AUTH = 'mail-send-auth',

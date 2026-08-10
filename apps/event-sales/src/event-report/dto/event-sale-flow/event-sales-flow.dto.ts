@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
     IsBoolean,
+    IsIn,
     IsNumber,
     IsObject,
     IsOptional,
@@ -8,6 +9,10 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    EnumLeadNotCaTypeCode,
+    LEAD_NOT_CA_TYPE_CODES,
+} from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { IBXDeal } from 'src/modules/bitrix';
 import { PlanDto } from './plan.dto';
 import { ReportDto } from './report.dto';
@@ -55,6 +60,37 @@ export class TmcDealForReturnDto {
     @IsOptional()
     @IsObject()
     presDeal?: IBXDeal | null;
+}
+
+/**
+ * Синхронизация связанной заявки/лида при финальном событии (отказ или
+ * продажа): фронт испрашивает у менеджера недостающие статусы («не ЦА» —
+ * при отказе) и передаёт их сюда; бэк двигает op_lead_site_* / op_lead_status
+ * связанных лидов и дописывает историю обработки заявки.
+ */
+export class LeadRequestSyncDto {
+    @ApiPropertyOptional({
+        description:
+            'Тип «не ЦА» — обязателен, когда менеджер квалифицирует отказ ' +
+            'как «не ЦА». Пустой при обычном отказе или продаже.',
+        type: String,
+        enum: LEAD_NOT_CA_TYPE_CODES,
+        example: EnumLeadNotCaTypeCode.noSpecialists,
+    })
+    @IsOptional()
+    @IsIn(LEAD_NOT_CA_TYPE_CODES)
+    notCaTypeCode?: EnumLeadNotCaTypeCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Произвольная заметка менеджера — попадёт строкой в историю ' +
+            'обработки заявки (op_lead_firstprepare_history).',
+        type: String,
+        example: 'Клиент просил не звонить до сентября',
+    })
+    @IsOptional()
+    @IsString()
+    note?: string;
 }
 
 /** Возврат сущности в ТМЦ. */
@@ -239,4 +275,15 @@ export class EventSalesFlowDto {
     @ValidateNested()
     @Type(() => PresentationDto)
     presentation: PresentationDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Синхронизация связанной заявки при финале (отказ/продажа): ' +
+            'тип «не ЦА», заметка в историю обработки.',
+        type: LeadRequestSyncDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => LeadRequestSyncDto)
+    leadSync?: LeadRequestSyncDto;
 }

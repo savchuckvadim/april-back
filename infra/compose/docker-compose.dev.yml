@@ -181,6 +181,13 @@ services:
       dockerfile: infra/docker/Dockerfile
       args: { APP: konstructor }
     container_name: app-konstructor
+    # Топология конвертации — здесь, а не в .env: размер пула равен числу
+    # реплик gotenberg и меняется одним GOTENBERG_REPLICAS.
+    environment:
+      <<: *app-env
+      LIBREOFFICE_MODE: http
+      LIBREOFFICE_HTTP_URL: http://gotenberg:3000
+      LIBREOFFICE_DISCOVERY: dns
     env_file:
       - path: ../../.env
         required: true
@@ -329,15 +336,30 @@ services:
       timeout: 5s
       retries: 5
 
-  # Конвертация Office -> PDF (LibreOffice внутри). Nest ходит на http://gotenberg:3000
+  # Конвертация Office -> PDF (LibreOffice внутри). LibreOffice не умеет
+  # параллельные конверсии: одна реплика = один документ за раз, поэтому
+  # реплик несколько, а приложение резолвит имя сервиса во все их адреса
+  # (LIBREOFFICE_DISCOVERY=dns у konstructor). Подробности и правило выбора
+  # числа реплик — в docker-compose.prod.yml над этим же блоком.
+  # На dev-машине по умолчанию 2: она слабее прода.
   gotenberg:
     image: gotenberg/gotenberg:8
-    container_name: gotenberg
-    ports: ['${GOTENBERG_HOST_PORT}:3000']
+    deploy:
+      replicas: ${GOTENBERG_REPLICAS:-2}
     networks:
       - app-network
     restart: unless-stopped
     logging: *default-logging
+    command:
+      - gotenberg
+      - --api-timeout=300s
+      - --libreoffice-auto-start=true
+      - --libreoffice-restart-after=50
+    healthcheck:
+      test: ['CMD-SHELL', 'curl --silent --fail http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Метрики приложений: скрейпит /api/metrics всех apps (@lib/metrics).
   prometheus:

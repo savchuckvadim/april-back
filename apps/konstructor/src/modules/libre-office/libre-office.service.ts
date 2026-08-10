@@ -1,111 +1,85 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { basename, dirname, join } from 'path';
+import { Inject, Injectable } from '@nestjs/common';
+import { dirname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import {
+    LIBRE_OFFICE_CONFIG,
+    LibreOfficeConfig,
+} from './config/libre-office.config';
+import { libreOfficeErrorReason } from './errors/libre-office.errors';
+import { LibreOfficeExecConverter } from './services/libre-office-exec.converter';
+import { LibreOfficeHttpConverter } from './services/libre-office-http.converter';
+import { LibreOfficeMetricsService } from './services/libre-office-metrics.service';
+import {
+    LibreOfficeEndpointPool,
+    LibreOfficePoolStats,
+} from './services/libre-office-endpoint-pool.service';
 
-const execAsync = promisify(exec);
-
-/** Локальный soffice или HTTP-сервис (например Gotenberg с LibreOffice внутри). */
-export type LibreOfficeMode = 'exec' | 'http';
-
+/**
+ * Фасад конвертации DOCX → PDF: выбирает стратегию по LIBREOFFICE_MODE,
+ * готовит выходную папку и снимает метрики. Вся логика параллелизма,
+ * таймаутов и ретраев — в конвертерах, чтобы вызывающий код о них не знал.
+ */
 @Injectable()
 export class LibreOfficeService {
-    private readonly logger = new Logger(LibreOfficeService.name);
-    private readonly mode: LibreOfficeMode;
-    private readonly httpBaseUrl: string;
+    constructor(
+        @Inject(LIBRE_OFFICE_CONFIG) private readonly config: LibreOfficeConfig,
+        private readonly httpConverter: LibreOfficeHttpConverter,
+        private readonly execConverter: LibreOfficeExecConverter,
+        private readonly pool: LibreOfficeEndpointPool,
+        private readonly metrics: LibreOfficeMetricsService,
+    ) {}
 
-    constructor(private readonly configService: ConfigService) {
-        const mode = this.configService
-            .get<string>('LIBREOFFICE_MODE', 'exec')
-            .toLowerCase()
-            ?.trim();
-        this.mode = mode === 'http' ? 'http' : 'exec';
-        this.httpBaseUrl = this.configService
-            .get<string>('LIBREOFFICE_HTTP_URL', 'http://127.0.0.1:33030')
-            .replace(/\/$/, '');
+    /** Загруженность пула — для диагностики (в метриках то же самое). */
+    poolStats(): LibreOfficePoolStats {
+        return this.pool.stats();
     }
 
     /**
-     * DOCX → PDF.
-     * - exec: локальный `soffice` (как в контейнере API с установленным LibreOffice).
-     * - http: POST на Gotenberg `/forms/libreoffice/convert` (см. docker-compose-dev.yml).
+     * @param signal прерывает конвертацию при отмене операции — слот пула
+     * освобождается сразу, а не через таймаут.
      */
-    async convertToPdf(inputPath: string, outputDir?: string): Promise<string> {
+    async convertToPdf(
+        inputPath: string,
+        outputDir?: string,
+        signal?: AbortSignal,
+    ): Promise<string> {
         if (!existsSync(inputPath)) {
             throw new Error(`Input file not found: ${inputPath}`);
         }
-
-        if (this.mode === 'http') {
-            return this.convertToPdfViaHttp(inputPath, outputDir);
-        }
-
-        return this.convertToPdfViaExec(inputPath, outputDir);
-    }
-
-    private async convertToPdfViaExec(
-        inputPath: string,
-        outputDir?: string,
-    ): Promise<string> {
         const outputFolder = outputDir || dirname(inputPath);
         if (!existsSync(outputFolder)) {
             mkdirSync(outputFolder, { recursive: true });
         }
 
-        const command = `soffice --headless --convert-to pdf --outdir "${outputFolder}" "${inputPath}"`;
-
-        this.logger.log(`Executing command: ${command}`);
+        const startedAt = Date.now();
         try {
-            await execAsync(command);
-            const outputFilePath = join(
-                outputFolder,
-                this.replaceExtension(basename(inputPath), '.pdf'),
-            );
-            if (!existsSync(outputFilePath)) {
-                throw new Error('Conversion failed: PDF not found');
-            }
-            return outputFilePath;
+            const result =
+                this.config.mode === 'http'
+                    ? await this.httpConverter.convert(
+                          inputPath,
+                          outputFolder,
+                          signal,
+                      )
+                    : await this.execConverter.convert(
+                          inputPath,
+                          outputFolder,
+                          signal,
+                      );
+            this.metrics.observeConversion(this.secondsSince(startedAt), 'ok');
+            return result;
         } catch (error) {
-            this.logger.error('LibreOffice conversion error', error);
-            throw error;
-        }
-    }
-
-    private async convertToPdfViaHttp(
-        inputPath: string,
-        outputDir?: string,
-    ): Promise<string> {
-        const outputFolder = outputDir || dirname(inputPath);
-        if (!existsSync(outputFolder)) {
-            mkdirSync(outputFolder, { recursive: true });
-        }
-
-        const name = basename(inputPath);
-        const docxBuf = await readFile(inputPath);
-        const form = new FormData();
-        form.append('files', new Blob([new Uint8Array(docxBuf)]), name);
-
-        const url = `${this.httpBaseUrl}/forms/libreoffice/convert`;
-        this.logger.log(`POST ${url} (${name})`);
-
-        const res = await fetch(url, { method: 'POST', body: form });
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(
-                `LibreOffice HTTP convert failed (${res.status}): ${text.slice(0, 500)}`,
+            this.metrics.observeConversion(
+                this.secondsSince(startedAt),
+                'error',
             );
+            this.metrics.countError(libreOfficeErrorReason(error));
+            throw error;
+        } finally {
+            this.metrics.syncPool(this.pool.stats());
         }
-
-        const pdfBuf = Buffer.from(await res.arrayBuffer());
-        const pdfName = this.replaceExtension(name, '.pdf');
-        const outputFilePath = join(outputFolder, pdfName);
-        await writeFile(outputFilePath, pdfBuf);
-        return outputFilePath;
     }
 
-    private replaceExtension(filePath: string, newExt: string): string {
-        return filePath.replace(/\.[^/.]+$/, newExt);
+    private secondsSince(startedAt: number): number {
+        return (Date.now() - startedAt) / 1000;
     }
 }

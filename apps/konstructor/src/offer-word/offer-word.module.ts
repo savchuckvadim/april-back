@@ -25,6 +25,7 @@ import { OfferRenderRecipientService } from './services/render-data-services/off
 import { OfferRenderManagerService } from './services/render-data-services/offer-render-manager.service';
 import { OfferWordEphemeralPdfProcessor } from './queue/offer-word-ephemeral-pdf.processor';
 import { OfferWordEphemeralPdfQueueService } from './services/queue/offer-word-ephemeral-pdf-queue.service';
+import { OfferWordCancelWatcher } from './services/queue/offer-word-cancel-watcher.service';
 import { OfferGenerateQueueService } from './services/queue/offer-generate-queue.service';
 import { InvoiceWordCoreGenerateService } from './services/invoice-word-core/invoice-word-core-generate.service';
 import { InvoiceRenderDataService } from './services/render-data-services/invoice-render-data.service';
@@ -71,6 +72,7 @@ import { OfferRenderGeneralProductService } from './services/render-data-service
         OfferWordEphemeralPdfProcessor,
         OfferGenerateProcessor,
         OfferWordEphemeralPdfQueueService,
+        OfferWordCancelWatcher,
         OfferGenerateQueueService,
         InvoiceWordCoreGenerateService,
         InvoiceRenderDataService,

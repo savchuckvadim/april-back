@@ -2,7 +2,7 @@ import { BitrixService } from '@/modules/bitrix';
 import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
-import { ColdHookBatchGroupBuffer } from '../../../cold-hook/services/batch/cold-hook-batch-group-buffer';
+import { IBatchGroupBuffer } from '../../batch/batch-group-buffer.interface';
 import { KpiEventItemModel } from '../models/kpi-event-item.model';
 import { KpiEventPayload } from '../type/kpi-event-payload.type';
 
@@ -36,12 +36,13 @@ export class KpiListFlowService {
      * @param entityId  ID сущности-владельца — company/lead/deal (для
      *                  уникальности кода элемента; формат кода исторический,
      *                  менять нельзя — сломается идемпотентность элементов)
-     * @param buffer  батч-буфер cold-hook group
+     * @param buffer  групповой batch-буфер (структурный контракт; подходит
+     *                и ColdHookBatchGroupBuffer, и любой его аналог)
      */
     flow(
         payload: KpiEventPayload,
         entityId: string | number,
-        buffer: ColdHookBatchGroupBuffer,
+        buffer: IBatchGroupBuffer,
     ): void {
         const lists = this.collectLists();
         if (lists.length === 0) {

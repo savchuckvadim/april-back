@@ -11,6 +11,8 @@ export interface LeadToWorkContext {
     company: IBXCompany | null;
     /** Наша основная сделка по обратной ссылке лида to_base_sales. */
     existingOurDeal: IBXDeal | null;
+    /** Наша ХО-сделка по обратной ссылке лида to_xo_sales (повторный ХО). */
+    existingXoDeal: IBXDeal | null;
     /** Сделки, рождённые штатной конвертацией (deal.LEAD_ID = лид). */
     convertedDeals: IBXDeal[];
     openTasks: IBXTask[];
@@ -52,6 +54,12 @@ export class LeadToWorkContextService {
                 PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
             ),
         );
+        const xoDealId = this.parseDealRef(
+            this.leadFieldValue(
+                lead as BxRow,
+                PBX_SALES_EVENT_FIELD_CODES.to_xo_sales,
+            ),
+        );
 
         // === Волна 2: окружение одним batch ===
         if (companyId) {
@@ -59,6 +67,11 @@ export class LeadToWorkContextService {
         }
         if (ourDealId) {
             this.bitrix.batch.deal.get('ctx_our_deal', ourDealId);
+        }
+        if (xoDealId) {
+            // Повторный ХО: существующая ХО-сделка нужна для передачи
+            // ответственного и KPI «не состоялся» прежнему менеджеру.
+            this.bitrix.batch.deal.get('ctx_our_xo_deal', xoDealId);
         }
         // Штатная конвертация: гейт против сделки-дубля.
         this.bitrix.batch.deal.getList(
@@ -97,6 +110,9 @@ export class LeadToWorkContextService {
         const existingOurDeal = ourDealId
             ? ((flat.get('ctx_our_deal') as IBXDeal | undefined) ?? null)
             : null;
+        const existingXoDeal = xoDealId
+            ? ((flat.get('ctx_our_xo_deal') as IBXDeal | undefined) ?? null)
+            : null;
         const convertedDeals = this.rowsOf(
             flat.get('ctx_converted_deals'),
         ) as unknown as IBXDeal[];
@@ -127,6 +143,7 @@ export class LeadToWorkContextService {
             lead,
             company,
             existingOurDeal,
+            existingXoDeal,
             convertedDeals,
             openTasks,
             isConverted,

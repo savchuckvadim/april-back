@@ -73,7 +73,10 @@ services:
       timeout: 3s
       retries: 10
 
-  # Конвертация Office -> PDF (LibreOffice внутри). Nest ходит на http://gotenberg:3000
+  # Конвертация Office -> PDF (LibreOffice внутри). Приложение запускается
+  # ЛОКАЛЬНО -> LIBREOFFICE_HTTP_URL=http://localhost:33030.
+  # Локально хватает одного инстанса; в dev/prod их несколько, потому что
+  # LibreOffice не умеет параллельные конверсии (см. docker-compose.prod.yml).
   gotenberg:
     image: gotenberg/gotenberg:8
     container_name: gotenberg
@@ -82,6 +85,12 @@ services:
       - app-network
     restart: unless-stopped
     logging: *default-logging
+    # --api-timeout: дефолт 30s, из-за него тяжёлые документы падают с 503.
+    command:
+      - gotenberg
+      - --api-timeout=300s
+      - --libreoffice-auto-start=true
+      - --libreoffice-restart-after=50
 
   # Хранилище логов (@lib/logger -> ClickHouse). Схема (logs.app_logs, TTL 30 дней)
   # создаётся сама при первом старте из infra/clickhouse/init.

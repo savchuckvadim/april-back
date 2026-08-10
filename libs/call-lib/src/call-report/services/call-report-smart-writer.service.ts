@@ -3,11 +3,21 @@ import { BitrixService, BitrixOwnerTypeId } from '@lib/bitrix';
 import { IBXItem } from '@lib/bitrix/domain/crm/item/interface/item.interface';
 import {
     buildCallReportItemFieldName,
+    CALL_REPORT_SECTION_CODES,
+    CALL_REPORT_SMART_FIELDS,
     CALL_REPORT_SMART_TITLE,
     CallReportLinkStatusCode,
     CallReportSectionCode,
     splitTranscriptForSmart,
 } from '../config/call-report-smart.config';
+
+/** Поле, не поместившееся в строку элемента (уходит в таймлайн). */
+interface DroppedField {
+    /** UF-ключ поля (camelCase). */
+    key: string;
+    /** Полное значение. */
+    value: string;
+}
 import { CallReportSmartInfo } from './call-report-smart-resolver.service';
 
 /** Разбор одного раздела разговора для записи в смарт. */
@@ -129,23 +139,26 @@ export class CallReportSmartWriterService {
                 // Upsert: существующий элемент ДОПОЛНЯЕТСЯ переданными полями
                 // (частичный update) — базовый элемент из smoke-прогона
                 // конвейера потом обогащается глубоким анализом агента.
-                await this.writeWithDegradation(
-                    this.buildFields(input),
-                    fields =>
-                        this.bitrix.item.update(
-                            existingId,
-                            this.smartInfo.entityTypeId as never,
-                            fields as Partial<IBXItem>,
-                        ),
-                ).catch((error: Error) =>
+                try {
+                    const { dropped } = await this.writeWithDegradation(
+                        this.buildFields(input),
+                        fields =>
+                            this.bitrix.item.update(
+                                existingId,
+                                this.smartInfo.entityTypeId as never,
+                                fields as Partial<IBXItem>,
+                            ),
+                    );
+                    await this.postDroppedToTimeline(existingId, dropped);
+                } catch (error) {
                     // Не фатально: транскрипт и ais уже в БД, разбор
                     // дольётся повторным прогоном. { telegram: true } —
                     // алерт, иначе пустые поля ищут неделями.
                     this.logger.error(
-                        `Элемент #${existingId} не обновлён (${xmlId}): ${error.message}`,
+                        `Элемент #${existingId} не обновлён (${xmlId}): ${(error as Error).message}`,
                         { telegram: true, itemId: existingId },
-                    ),
-                );
+                    );
+                }
                 this.logger.log(
                     `Элемент смарта уже существует: #${existingId} (${xmlId}) — обновил поля, дубль не создаю`,
                 );
@@ -155,20 +168,24 @@ export class CallReportSmartWriterService {
 
         const fields = this.buildFields(input);
         if (xmlId) fields.xmlId = xmlId;
-        const response = (await this.writeWithDegradation(
+        const { response, dropped } = await this.writeWithDegradation(
             fields as Record<string, unknown>,
             degraded =>
                 this.bitrix.item.add(
                     String(this.smartInfo.entityTypeId),
                     degraded as Partial<IBXItem>,
                 ),
-        )) as { result?: { item?: { id?: number } } } | undefined;
-        const itemId = Number(response?.result?.item?.id);
+        );
+        const itemId = Number(
+            (response as { result?: { item?: { id?: number } } } | undefined)
+                ?.result?.item?.id,
+        );
         if (!itemId) {
             throw new Error(
                 `crm.item.add не вернул id элемента (activity ${input.activityId})`,
             );
         }
+        await this.postDroppedToTimeline(itemId, dropped);
         this.logger.log(
             `Создан элемент смарта #${itemId} (activity ${input.activityId})`,
         );
@@ -178,25 +195,34 @@ export class CallReportSmartWriterService {
     /**
      * Запись с деградацией под лимит строки MySQL Битрикса.
      *
-     * Прод-инцидент 05.08.2026: crm.item.update падал с «Mysql query error:
-     * (1118) Row size too large (> 8126)» — строка таблицы смарта не
-     * вмещает все длинные текстовые поля разом (транскрипт 4×40к + разборы
-     * разделов), и Bitrix отбрасывал ВЕСЬ разбор: карточка оставалась с
-     * пустыми полями. Стратегия:
+     * ФИЗИКА ЛИМИТА (прод-уроки 05–10.08.2026, зафиксировано скиллом
+     * .claude/skills/bitrix-field-limits): UF-поля смарта — колонки одной
+     * строки таблицы b_crm_dynamic_items_{typeId}; InnoDB даёт ~8126 байт
+     * на строку. Каждое текстовое поле ДЛИННЕЕ ~768 байт занимает в строке
+     * фиксированный 768-байтовый префикс НЕЗАВИСИМО от длины — поэтому
+     * обрезка длинного текста до 1-2к символов НЕ помогает (проверено:
+     * 10.08 все три старых варианта упали подряд). Помогает только
+     * УМЕНЬШЕНИЕ ЧИСЛА длинных полей либо укорачивание до <700 байт.
+     *
+     * Стратегия (что выброшено — постится полным текстом в таймлайн
+     * элемента, см. postDroppedToTimeline):
      *   1) все поля как есть;
-     *   2) без TRANSCRIPT_N (текст есть в БД и в таймлайне диалогом);
-     *   3) дополнительно все длинные строки обрезаются до 1024 символов.
-     * Что выброшено/обрезано — в логе; иная ошибка пробрасывается сразу.
+     *   2) без TRANSCRIPT_N (−4 длинных поля; текст есть в БД и таймлайне);
+     *   3) остаются только приоритетные тексты, ужатые до <700 байт,
+     *      остальные длинные — в таймлайн;
+     *   4) только числа/enum/связи + SUMMARY <700 байт.
+     * Иная ошибка (не row size) пробрасывается сразу.
      */
     private async writeWithDegradation(
         fields: Record<string, unknown>,
         write: (fields: Record<string, unknown>) => Promise<unknown>,
-    ): Promise<unknown> {
+    ): Promise<{ response: unknown; dropped: DroppedField[] }> {
         const variants = this.degradationVariants(fields);
         for (let i = 0; i < variants.length; i++) {
             const variant = variants[i];
             try {
-                return await write(variant.fields);
+                const response = await write(variant.fields);
+                return { response, dropped: variant.dropped };
             } catch (error) {
                 const hasNext = i + 1 < variants.length;
                 if (!this.isRowSizeError(error) || !hasNext) throw error;
@@ -233,34 +259,208 @@ export class CallReportSmartWriterService {
         );
     }
 
+    /** Байтовый порог «длинного» поля: длиннее — платит 768-байт префикс. */
+    private static readonly LONG_FIELD_BYTES = 700;
+
+    /**
+     * Коды текстовых полей, которые важнее всего оставить В ПОЛЯХ элемента
+     * (для фильтров/списков); остальные длинные тексты при деградации
+     * уезжают полным текстом в таймлайн.
+     */
+    private static readonly PRIORITY_TEXT_CODES = [
+        'SUMMARY',
+        'SCORE_EXPLANATION',
+        'RECOMMENDATIONS',
+        'EMPLOYEE_RECOMMENDATIONS',
+        'NEEDS',
+        'PRODUCTS_OFFERED',
+        'OBJECTIONS',
+        'NEXT_STEP',
+    ];
+
     /** Варианты записи от полного к минимальному (для row size лимита). */
-    private degradationVariants(
-        fields: Record<string, unknown>,
-    ): { label: string; fields: Record<string, unknown> }[] {
+    private degradationVariants(fields: Record<string, unknown>): {
+        label: string;
+        fields: Record<string, unknown>;
+        dropped: DroppedField[];
+    }[] {
         const transcriptKeys = [1, 2, 3, 4].map(index =>
             this.ufName(`TRANSCRIPT_${index}`),
         );
-        const withoutTranscript = Object.fromEntries(
-            Object.entries(fields).filter(
-                ([key]) => !transcriptKeys.includes(key),
-            ),
-        );
-        const trimmed = Object.fromEntries(
-            Object.entries(withoutTranscript).map(([key, value]) => [
-                key,
-                typeof value === 'string' && value.length > 1024
-                    ? `${value.slice(0, 1024)}… [обрезано: лимит строки Bitrix]`
-                    : value,
-            ]),
-        );
+        const priorityKeys =
+            CallReportSmartWriterService.PRIORITY_TEXT_CODES.map(code =>
+                this.ufName(code),
+            );
+        const byteLength = (value: string): number =>
+            Buffer.byteLength(value, 'utf8');
+        /** Обрезка строки до лимита БАЙТ по границе символов. */
+        const shrink = (value: string): string => {
+            let result = value;
+            while (
+                byteLength(result) >
+                CallReportSmartWriterService.LONG_FIELD_BYTES - 2
+            ) {
+                result = result.slice(
+                    0,
+                    Math.floor(
+                        (result.length *
+                            (CallReportSmartWriterService.LONG_FIELD_BYTES -
+                                2)) /
+                            byteLength(result),
+                    ),
+                );
+            }
+            return `${result}…`;
+        };
+        const isLongText = (value: unknown): value is string =>
+            typeof value === 'string' &&
+            byteLength(value) > CallReportSmartWriterService.LONG_FIELD_BYTES;
+
+        const withoutTranscript: Record<string, unknown> = {};
+        const droppedTranscript: DroppedField[] = [];
+        for (const [key, value] of Object.entries(fields)) {
+            if (transcriptKeys.includes(key)) {
+                droppedTranscript.push({ key, value: String(value) });
+            } else {
+                withoutTranscript[key] = value;
+            }
+        }
+
+        const prioritized: Record<string, unknown> = {};
+        const droppedPrioritized: DroppedField[] = [...droppedTranscript];
+        for (const [key, value] of Object.entries(withoutTranscript)) {
+            if (!isLongText(value)) {
+                prioritized[key] = value;
+                continue;
+            }
+            // Длинный текст: приоритетный — ужимается до <700 байт (полный
+            // уходит в таймлайн), остальные — целиком в таймлайн.
+            droppedPrioritized.push({ key, value });
+            if (priorityKeys.includes(key)) {
+                prioritized[key] = shrink(value);
+            }
+        }
+
+        const summaryKey = this.ufName('SUMMARY');
+        const minimal: Record<string, unknown> = {};
+        const droppedMinimal: DroppedField[] = [...droppedTranscript];
+        for (const [key, value] of Object.entries(withoutTranscript)) {
+            if (typeof value !== 'string' || byteLength(value) <= 255) {
+                minimal[key] = value;
+                continue;
+            }
+            droppedMinimal.push({ key, value });
+            if (key === summaryKey) {
+                minimal[key] = shrink(value);
+            }
+        }
+
         return [
-            { label: 'все поля', fields },
-            { label: 'без транскрипта', fields: withoutTranscript },
+            { label: 'все поля', fields, dropped: [] },
             {
-                label: 'без транскрипта, длинные тексты обрезаны до 1024',
-                fields: trimmed,
+                label: 'без транскрипта',
+                fields: withoutTranscript,
+                dropped: droppedTranscript,
+            },
+            {
+                label: 'приоритетные тексты <700 байт, остальное — в таймлайн',
+                fields: prioritized,
+                dropped: droppedPrioritized,
+            },
+            {
+                label: 'минимум: числа/enum + краткое резюме',
+                fields: minimal,
+                dropped: droppedMinimal,
             },
         ];
+    }
+
+    /**
+     * Не поместившееся в поля — полным текстом в таймлайн элемента
+     * (порядок владельца 10.08.2026: резюме GigaChat → рекомендации →
+     * остальное). Транскрипт не постится: он уже в таймлайне диалогом и в
+     * БД. Разборы разделов (*_ANALYSIS/_ADVICE) не постятся: intake пишет
+     * их в таймлайн отдельными комментами всегда. Fail-open.
+     */
+    private async postDroppedToTimeline(
+        itemId: number,
+        dropped: DroppedField[],
+    ): Promise<void> {
+        if (!dropped.length) return;
+        // Не постим: транскрипт (уже в таймлайне диалогом и в БД) и разборы
+        // разделов GREETING_ANALYSIS/…_ADVICE (intake постит их всегда).
+        const sectionKeys = new Set(
+            CALL_REPORT_SECTION_CODES.flatMap(section => [
+                this.ufName(`${section}_ANALYSIS`),
+                this.ufName(`${section}_ADVICE`),
+            ]),
+        );
+        const transcriptKeys = new Set(
+            [1, 2, 3, 4].map(index => this.ufName(`TRANSCRIPT_${index}`)),
+        );
+        const skip = (key: string): boolean =>
+            transcriptKeys.has(key) || sectionKeys.has(key);
+        const order = [
+            'RESUME_GIGACHAT',
+            'RECOMENDATION_GIGACHAT',
+            'SUMMARY',
+            'SCORE_EXPLANATION',
+            'RECOMMENDATIONS',
+            'EMPLOYEE_RECOMMENDATIONS',
+            'SPEECH_ANALYSIS',
+        ].map(code => this.ufName(code));
+        const rank = (key: string): number => {
+            const index = order.indexOf(key);
+            return index === -1 ? order.length : index;
+        };
+        const postable = dropped
+            .filter(field => !skip(field.key))
+            .sort((a, b) => rank(a.key) - rank(b.key));
+
+        for (const field of postable) {
+            const title = this.fieldTitleByKey(field.key);
+            const parts = this.splitForComment(field.value);
+            for (let i = 0; i < parts.length; i++) {
+                const partLabel =
+                    parts.length > 1 ? ` (часть ${i + 1}/${parts.length})` : '';
+                await this.bitrix.timeline
+                    .addTimelineComment({
+                        ENTITY_ID: itemId,
+                        ENTITY_TYPE: `DYNAMIC_${this.smartInfo.entityTypeId}`,
+                        COMMENT: `📎 [b]${title}[/b]${partLabel} — полностью (в поле элемента не поместилось):\n\n${parts[i]}`,
+                        AUTHOR_ID: '1',
+                    })
+                    .catch((error: Error) =>
+                        this.logger.warn(
+                            `Полный текст «${title}» не запощен в таймлайн #${itemId}: ${error.message}`,
+                        ),
+                    );
+            }
+        }
+        this.logger.log(
+            `Элемент #${itemId}: ${postable.length} полей ушли полным текстом в таймлайн (row size лимит)`,
+        );
+    }
+
+    /** Русское название поля по его UF-ключу (для заголовка коммента). */
+    private fieldTitleByKey(key: string): string {
+        const code = Object.keys(this.smartInfo.ufKeyByCode ?? {}).find(
+            fieldCode => this.ufName(fieldCode) === key,
+        );
+        const byConfig = CALL_REPORT_SMART_FIELDS.find(
+            field => this.ufName(field.code) === key || field.code === code,
+        );
+        return byConfig?.name ?? code ?? key;
+    }
+
+    /** Длинный текст → части для комментов таймлайна. */
+    private splitForComment(value: string, partSize = 8000): string[] {
+        if (value.length <= partSize) return [value];
+        const parts: string[] = [];
+        for (let i = 0; i < value.length; i += partSize) {
+            parts.push(value.slice(i, i + partSize));
+        }
+        return parts;
     }
 
     /**

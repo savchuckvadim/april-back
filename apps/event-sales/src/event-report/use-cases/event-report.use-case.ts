@@ -13,6 +13,7 @@ import { EventReportKpiFlowService } from '../services/kpi-list/event-report-kpi
 import { EventReportPresentationListService } from '../services/kpi-list/event-report-presentation-list.service';
 import { EventReportPostFailService } from '../services/post-fail/event-report-post-fail.service';
 import { EventReportLeadRelationService } from '../services/lead/event-report-lead-relation.service';
+import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
 import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-report-return-to-tmc.service';
 import { EventReportEntityHistoryService } from '../services/history/event-report-entity-history.service';
 import { ColdHookBatchGroupBuffer } from '../../cold-hook/services/batch/cold-hook-batch-group-buffer';
@@ -87,6 +88,15 @@ export class EventReportUseCase {
         await buffer.endGroup();
         await buffer.flush();
         const results = await bitrix.api.callBatchWithConcurrency(1);
+
+        // Финал (продажа/отказ) двигает статусы связанных заявок/лидов и
+        // дописывает историю обработки — отдельными волнами ПОСЛЕ основного
+        // батча (multiple-история требует свежих значений лида).
+        const leadRequestSync = new EventReportLeadRequestSyncService(
+            bitrix,
+            portal,
+        );
+        await leadRequestSync.run(ctx);
 
         const commandsCount =
             results.reduce(

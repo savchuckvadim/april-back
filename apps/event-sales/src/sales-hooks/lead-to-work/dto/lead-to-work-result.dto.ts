@@ -86,6 +86,59 @@ export class LeadToWorkItemResultDto {
     @IsBoolean()
     taskCreated: boolean;
 
+    @ApiPropertyOptional({
+        description:
+            'Итоговый ответственный (пришёл в хуке или выбран round-robin).',
+        example: 447,
+        type: Number,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsInt()
+    responsible: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Как выбран ответственный: explicit — передан в хук, ' +
+            'round-robin — по курсору отдела продаж.',
+        example: 'explicit',
+        type: String,
+        enum: ['explicit', 'round-robin'],
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    assigneeSource: 'explicit' | 'round-robin' | null;
+
+    @ApiProperty({
+        description:
+            'Лид распознан как заявка (op_lead_site_* или поля лидогена) — ' +
+            'названия события/задачи получили «. Заявка.».',
+        example: false,
+        type: Boolean,
+    })
+    @IsBoolean()
+    isRequest: boolean;
+
+    @ApiProperty({
+        description:
+            'Записано KPI-событие «Холодный звонок Запланирован» (ХО-ветка).',
+        example: false,
+        type: Boolean,
+    })
+    @IsBoolean()
+    kpiPlanned: boolean;
+
+    @ApiProperty({
+        description:
+            'Записано KPI-событие «Не состоялся» прежнему ответственному ' +
+            '(передача обзвона).',
+        example: false,
+        type: Boolean,
+    })
+    @IsBoolean()
+    kpiNotHeld: boolean;
+
     @ApiProperty({
         description:
             'Предупреждения graceful degradation: несопоставленные стадии, ' +

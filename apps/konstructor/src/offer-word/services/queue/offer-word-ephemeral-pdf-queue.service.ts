@@ -12,6 +12,7 @@ import {
 } from '../../dto/offer-word-ephemeral-pdf.dto';
 import {
     OFFER_WORD_EPHEMERAL_PDF_CANCEL_TTL_SEC,
+    OFFER_WORD_EPHEMERAL_PDF_JOB_OPTIONS,
     offerWordEphemeralPdfCancelRedisKey,
     offerWordEphemeralPdfResultRedisKey,
 } from '../../constants/offer-word-ephemeral-pdf.constants';
@@ -34,6 +35,7 @@ export class OfferWordEphemeralPdfQueueService {
             JobNames.OFFER_WORD_EPHEMERAL_PDF_GENERATE,
             { dto, operationId },
             operationId,
+            OFFER_WORD_EPHEMERAL_PDF_JOB_OPTIONS,
         );
         return operationId;
     }

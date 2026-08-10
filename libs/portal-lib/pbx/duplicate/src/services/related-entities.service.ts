@@ -95,8 +95,8 @@ const LEAD_OP_SOURCE_FIELD_CODE = 'op_source_select';
  * Поле не проинсталлено → просто пропускается.
  */
 const LEAD_TO_DEAL_LINK_FIELD_CODES = [
-    'to_base_sales',
-    'to_sale_deal',
+    'to_base_sales', // связб со сделкой Основной ОП
+    'to_sale_deal', // связь со сделкой по которой прошла продажа в следствие данной заявки
 ] as const;
 
 const CONTACT_SELECT = [

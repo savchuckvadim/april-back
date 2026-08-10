@@ -26,9 +26,18 @@ export class OfferWordPdfExportService {
     /**
      * Только конвертация DOCX → PDF на диске (рядом с исходником).
      * Публичные ссылки не создаются.
+     *
+     * @param signal прерывает конвертацию при отмене операции клиентом.
      */
-    async convertDocxToPdfPath(docxAbsolutePath: string): Promise<string> {
-        return this.libreOfficeService.convertToPdf(docxAbsolutePath);
+    async convertDocxToPdfPath(
+        docxAbsolutePath: string,
+        signal?: AbortSignal,
+    ): Promise<string> {
+        return this.libreOfficeService.convertToPdf(
+            docxAbsolutePath,
+            undefined,
+            signal,
+        );
     }
 
     async buildPublicPdfLink(

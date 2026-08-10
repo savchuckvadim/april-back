@@ -23,6 +23,9 @@ const makeBitrix = () => ({
         list: jest.fn().mockResolvedValue({ result: { items: [] } }),
         update: jest.fn().mockResolvedValue({ result: {} }),
     },
+    timeline: {
+        addTimelineComment: jest.fn().mockResolvedValue({}),
+    },
 });
 
 describe('CallReportSmartWriterService', () => {
@@ -260,7 +263,7 @@ describe('CallReportSmartWriterService', () => {
         expect(second.ufCrm128Transcript1).toBeUndefined();
     });
 
-    it('Row size too large: ретрай без транскрипта, затем с обрезкой текстов', async () => {
+    it('Row size: ретрай без транскрипта, затем приоритетные тексты <700 байт, остальное — в таймлайн', async () => {
         const bitrix = makeBitrix();
         const rowSize = new Error(
             'Mysql query error: (1118) Row size too large (> 8126)',
@@ -278,7 +281,8 @@ describe('CallReportSmartWriterService', () => {
         const itemId = await writer.addItem({
             activityId: '101',
             transcript: 'т'.repeat(100_000),
-            scoreExplanation: longText,
+            scoreExplanation: longText, // приоритетное — ужмётся
+            speechAnalysis: longText, // неприоритетное — уедет в таймлайн
             score: 8,
         });
 
@@ -295,15 +299,30 @@ describe('CallReportSmartWriterService', () => {
             string,
             unknown
         >;
-        // 1-я попытка — с транскриптом; 2-я — без него; 3-я — тексты обрезаны.
+        // 1-я попытка — с транскриптом; 2-я — без него.
         expect(first.ufCrm128Transcript1).toBeDefined();
         expect(second.ufCrm128Transcript1).toBeUndefined();
-        expect(String(third.ufCrm128ScoreExplanation)).toContain('обрезано');
-        expect(String(third.ufCrm128ScoreExplanation).length).toBeLessThan(
-            1100,
+        // 3-я: приоритетный текст ужат до <700 байт, неприоритетный удалён.
+        const explanation = String(third.ufCrm128ScoreExplanation);
+        expect(explanation.endsWith('…')).toBe(true);
+        expect(Buffer.byteLength(explanation, 'utf8')).toBeLessThanOrEqual(
+            700 + 3,
         );
+        expect(third.ufCrm128SpeechAnalysis).toBeUndefined();
         // Короткие значения не трогаются ни в одном варианте.
         expect(third.ufCrm128Score).toBe(8);
+        // Выброшенные тексты ушли полным текстом в таймлайн элемента
+        // (транскрипт — нет: он уже в таймлайне диалогом).
+        const comments = bitrix.timeline.addTimelineComment.mock.calls.map(
+            call => (call as { COMMENT: string }[])[0].COMMENT,
+        );
+        expect(
+            comments.some(comment => comment.includes('Анализ речи менеджера')),
+        ).toBe(true);
+        expect(
+            comments.some(comment => comment.includes('Объяснение оценки')),
+        ).toBe(true);
+        expect(comments.some(comment => comment.includes('ттттт'))).toBe(false);
     });
 
     it('иная ошибка Bitrix пробрасывается без деградационных ретраев', async () => {

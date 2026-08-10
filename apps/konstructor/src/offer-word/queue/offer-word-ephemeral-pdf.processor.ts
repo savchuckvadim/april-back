@@ -5,7 +5,9 @@ import type { Redis } from 'ioredis';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { RedisService } from '@lib/core/redis/redis.service';
+import { LibreOfficeBusyError } from '@app/konstructor/modules/libre-office';
 import { OfferWordEphemeralPdfDocumentService } from '../services/preview-generate/offer-word-ephemeral-pdf-document.service';
+import { OfferWordCancelWatcher } from '../services/queue/offer-word-cancel-watcher.service';
 import {
     OFFER_WORD_EPHEMERAL_PDF_REDIS_TTL_SEC,
     offerWordEphemeralPdfCancelRedisKey,
@@ -26,6 +28,7 @@ export class OfferWordEphemeralPdfProcessor {
     constructor(
         private readonly offerWordEphemeralPdfDocumentService: OfferWordEphemeralPdfDocumentService,
         private readonly redisService: RedisService,
+        private readonly cancelWatcher: OfferWordCancelWatcher,
     ) {}
 
     private async throwIfCancelled(
@@ -44,6 +47,9 @@ export class OfferWordEphemeralPdfProcessor {
         const { dto, operationId } = job.data;
         const redis = this.redisService.getClient();
         const key = offerWordEphemeralPdfResultRedisKey(operationId);
+        // Наблюдаем за отменой всю генерацию: иначе отменённая операция
+        // держит слот конвертации до конца и не пускает туда живые задачи.
+        const cancelWatch = this.cancelWatcher.watch(operationId);
 
         try {
             await this.throwIfCancelled(redis, operationId);
@@ -51,6 +57,7 @@ export class OfferWordEphemeralPdfProcessor {
             const { pdfBuffer, pdfFileName } =
                 await this.offerWordEphemeralPdfDocumentService.buildPdfBufferRemovingFiles(
                     dto,
+                    cancelWatch.signal,
                 );
             await this.throwIfCancelled(redis, operationId);
             // 2. Упаковываем PDF в JSON для Redis; polling может вызываться несколько раз до истечения TTL.
@@ -67,12 +74,21 @@ export class OfferWordEphemeralPdfProcessor {
                 OFFER_WORD_EPHEMERAL_PDF_REDIS_TTL_SEC,
             );
         } catch (err) {
-            // 4. Пробрасываем ошибку в Bull: job перейдёт в failed, polling вернёт status failed + причина.
+            // 4. Повтор помогает только при перегрузе пула: он пройдёт сам,
+            // когда освободятся слоты. Отмена, битый шаблон и таймаут от
+            // повтора не исправятся — снимаем job с ретраев, чтобы не жечь
+            // конвертацию трижды.
+            if (!(err instanceof LibreOfficeBusyError)) {
+                await job.discard();
+            }
+            // 5. Пробрасываем ошибку в Bull: job перейдёт в failed, polling вернёт status failed + причина.
             this.logger.error(
                 `OfferWord ephemeral PDF job ${operationId} failed`,
                 err,
             );
             throw err;
+        } finally {
+            cancelWatch.stop();
         }
     }
 }

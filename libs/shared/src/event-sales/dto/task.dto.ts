@@ -13,11 +13,27 @@ import { Type } from 'class-transformer';
 import { IsNumeric } from '@lib/core/decorators/dto/string-to-number-transform-validate.decorator';
 import { EBXTaskMark } from '@lib/bitrix/domain/tasks/task';
 
+/**
+ * Тип события задачи, приходящий с фронта.
+ *
+ * С 08.08.2026 фрейм шлёт коды в алфавите отчётности (`hot`, `moneyAwait`) —
+ * раньше он присылал свои (`in_progress`, `money_await`), и они не
+ * резолвились в KPI: отчёт уходил успешно, а записи продажи и отказа молча
+ * пропадали. Старые значения оставляем принимаемыми: пока у клиентов может
+ * быть открыт фрейм предыдущей сборки, а нормализация всё равно сводит их
+ * к одному алфавиту (`EventReportContext.normalizeEventType`).
+ */
 export enum EnumTaskEventType {
     XO = 'xo',
     WARM = 'warm',
     PRESENTATION = 'presentation',
+    HOT = 'hot',
+    MONEY_AWAIT_NEW = 'moneyAwait',
+    /** Сервисный сигнал: своего кода в отчётности нет, считается звонком. */
+    SS = 'ss',
+    /** @deprecated коды старых сборок фрейма — принимаем ради совместимости. */
     IN_PROGRESS = 'in_progress',
+    /** @deprecated см. IN_PROGRESS. */
     MONEY_AWAIT = 'money_await',
     EVENT = 'event',
     SUPPLY = 'supply',

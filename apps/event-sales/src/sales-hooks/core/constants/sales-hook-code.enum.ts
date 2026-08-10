@@ -12,6 +12,8 @@ export enum EnumSalesHookCode {
     REJECT_BUFFER = 'reject-buffer',
     /** Self-healing графа связей при ручной конвертации лида (onCrmDealAdd). */
     CONVERT_NORMALIZER = 'convert-normalizer',
+    /** Глубокая проверка дублей из сущности + итог в её timeline. */
+    DUPLICATE_CHECK = 'duplicate-check',
 }
 
 /**
@@ -25,6 +27,7 @@ export const SALES_HOOK_JOB_NAMES: Record<EnumSalesHookCode, JobNames> = {
     [EnumSalesHookCode.REJECT_BUFFER]: JobNames.SALES_HOOK_REJECT_BUFFER,
     [EnumSalesHookCode.CONVERT_NORMALIZER]:
         JobNames.SALES_HOOK_CONVERT_NORMALIZER,
+    [EnumSalesHookCode.DUPLICATE_CHECK]: JobNames.SALES_HOOK_DUPLICATE_CHECK,
 };
 
 /** Runtime-массив кодов — для @IsIn и Swagger enum. */

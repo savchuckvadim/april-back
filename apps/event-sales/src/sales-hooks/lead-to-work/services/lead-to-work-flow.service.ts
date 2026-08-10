@@ -8,9 +8,25 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { PortalDeadline } from '@lib/shared/lib/date';
 import { IBatchGroupBuffer } from '../../../shared/batch/batch-group-buffer.interface';
-import { ILeadToWorkItem } from '../dto/lead-to-work.dto';
+import { ResolvedLeadToWorkItem } from '../dto/lead-to-work.dto';
 import { LeadToWorkContext } from './lead-to-work-context.service';
 import { LeadToWorkStagePlan } from './lead-to-work-stage.resolver';
+import {
+    LeadRequestDetection,
+    LeadRequestDetectorService,
+} from './lead-request-detector.service';
+import {
+    ILeadToWorkKpiRefs,
+    LeadToWorkKpiService,
+} from './lead-to-work-kpi.service';
+import {
+    EnumLeadSiteStageCode,
+    EnumLeadSiteStatusCode,
+} from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
+import {
+    appendLeadRequestHistory,
+    buildLeadRequestHistoryEntry,
+} from '../../../shared/lead-request/lead-request-history.util';
 
 /** Префиксы задач; проверка идемпотентна — «Звонок Звонок…» не бывает. */
 export const CALL_TASK_PREFIX = 'Звонок';
@@ -28,6 +44,12 @@ export interface LeadToWorkQueuedPlan {
     reused: boolean;
     tasksMoved: number;
     tasksClosed: number;
+    /** Лид распознан как заявка (лидоген/сайт) — см. LeadRequestDetector. */
+    isRequest: boolean;
+    /** KPI «Холодный звонок Запланирован» поставлен в группу (ХО-ветка). */
+    kpiPlanned: boolean;
+    /** KPI «Не состоялся» прежнему ответственному (передача обзвона). */
+    kpiNotHeld: boolean;
     warnings: string[];
 }
 
@@ -35,30 +57,50 @@ type BxRow = Record<string, unknown>;
 
 /**
  * Запись «лид → работа» одной группой буфера: company → deal → xo → lead →
- * задачи. Ссылки между командами — `$result[cmd]` (работает и как подстрока).
+ * задачи → KPI. Ссылки между командами — `$result[cmd]` (работает и как
+ * подстрока).
  *
  * Правила пользователя: компания из лида, если есть; иначе сделка (и ХО)
- * называются названием лида; KPI/списки не трогаем ни в одной ветке.
+ * называются названием лида. Связи графа пишутся ВСЕГДА и на ВСЕ сделки:
+ * лид получает to_base_sales/to_xo_sales, каждая наша сделка (основная И
+ * ХО) — deal_from_lead_id + deal_joined_leads.
+ *
+ * KPI: в ХО-ветке (isXo=Y) пишется «Холодный звонок Запланирован», при
+ * передаче обзвона другому менеджеру — прежнему пишется «Не состоялся».
+ * Прошлые элементы списков НИКОГДА не редактируются (README §6).
+ *
  * НЕ @Injectable: new LeadToWorkFlowService(bitrix, portal).
  */
 export class LeadToWorkFlowService {
     private readonly logger = new Logger(LeadToWorkFlowService.name);
+    private readonly detector: LeadRequestDetectorService;
+    private readonly kpi: LeadToWorkKpiService;
 
     constructor(
         private readonly bitrix: BitrixService,
         private readonly portal: PortalModel,
-    ) {}
+    ) {
+        this.detector = new LeadRequestDetectorService(portal);
+        this.kpi = new LeadToWorkKpiService(bitrix, portal);
+    }
 
     queue(
-        item: ILeadToWorkItem,
+        item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         plan: LeadToWorkStagePlan,
         buffer: IBatchGroupBuffer,
+        /** Инициатор операции — автор KPI-событий; нет — ответственный. */
+        authorId: number | null = null,
     ): LeadToWorkQueuedPlan {
+        // Заявка или просто лид: влияет на названия задачи и KPI-события.
+        const detection = this.detector.detect(ctx.lead as unknown as BxRow);
         const result: LeadToWorkQueuedPlan = {
             reused: !!ctx.existingOurDeal,
             tasksMoved: 0,
             tasksClosed: 0,
+            isRequest: detection.isRequest,
+            kpiPlanned: false,
+            kpiNotHeld: false,
             warnings: [],
         };
         const eventName = this.eventName(item, ctx.lead);
@@ -82,20 +124,44 @@ export class LeadToWorkFlowService {
             item,
             ctx,
             plan,
-            eventName,
+            this.xoTitle(eventName, detection),
             companyRef,
             buffer,
             result,
         );
 
         // === Лид: статус (если можно) + обратные ссылки + маркеры.
-        this.queueLeadUpdate(item, ctx, plan, dealRef, xoRef, buffer, result);
+        this.queueLeadUpdate(
+            item,
+            ctx,
+            plan,
+            dealRef,
+            xoRef,
+            detection,
+            buffer,
+            result,
+        );
 
         // === Задачи.
         this.queueTasks(
             item,
             ctx,
             eventName,
+            detection,
+            companyRef,
+            dealRef,
+            xoRef,
+            buffer,
+            result,
+        );
+
+        // === KPI/History (только ХО-ветка) — в ТУ ЖЕ группу, до endGroup().
+        this.queueKpi(
+            item,
+            ctx,
+            eventName,
+            detection,
+            authorId,
             companyRef,
             dealRef,
             xoRef,
@@ -109,13 +175,24 @@ export class LeadToWorkFlowService {
     /* ------------------------------------------------------------------ */
 
     private queueCompany(
-        item: ILeadToWorkItem,
+        item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): string | null {
         if (ctx.company) {
-            return String(ctx.company.ID);
+            const companyId = String(ctx.company.ID);
+            // ХО-ветка «передаёт работу»: компания переходит новому
+            // ответственному (как в классическом ХО-хуке).
+            if (item.isXo === 'Y') {
+                const cmd = `lw_company_upd_${item.leadId}`;
+                buffer.queue(() =>
+                    this.bitrix.batch.company.update(cmd, Number(companyId), {
+                        ASSIGNED_BY_ID: String(item.responsible),
+                    } as never),
+                );
+            }
+            return companyId;
         }
         if (item.createCompany !== 'Y') return null;
 
@@ -135,7 +212,7 @@ export class LeadToWorkFlowService {
     }
 
     private queueBaseDeal(
-        item: ILeadToWorkItem,
+        item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         plan: LeadToWorkStagePlan,
         eventName: string,
@@ -148,13 +225,20 @@ export class LeadToWorkFlowService {
             const dealId = String(ctx.existingOurDeal.ID);
             const cmd = `lw_deal_upd_${item.leadId}`;
             const fields: BxRow = {
-                ...this.dealLinkFields(item.leadId, ctx),
+                ...this.dealLinkFields(
+                    item.leadId,
+                    ctx.existingOurDeal as unknown as BxRow,
+                ),
             };
             if (
                 companyRef &&
                 !this.text((ctx.existingOurDeal as unknown as BxRow).COMPANY_ID)
             ) {
                 fields.COMPANY_ID = companyRef;
+            }
+            // Повторный ХО передаёт работу: сделка — новому ответственному.
+            if (item.isXo === 'Y') {
+                fields.ASSIGNED_BY_ID = String(item.responsible);
             }
             buffer.queue(() =>
                 this.bitrix.batch.deal.update(
@@ -172,7 +256,7 @@ export class LeadToWorkFlowService {
             TITLE: eventName,
             CATEGORY_ID: plan.dealCategoryId,
             ASSIGNED_BY_ID: String(item.responsible),
-            ...this.dealLinkFields(item.leadId, ctx),
+            ...this.dealLinkFields(item.leadId, null),
         };
         if (plan.dealStageId) fields.STAGE_ID = plan.dealStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
@@ -184,8 +268,12 @@ export class LeadToWorkFlowService {
         return `$result[${cmd}]`;
     }
 
-    /** Наши поля-связи сделки; отсутствующие на портале — warning + скип. */
-    private dealLinkFields(leadId: number, ctx: LeadToWorkContext): BxRow {
+    /**
+     * Наши поля-связи, обязательные для ЛЮБОЙ связанной сделки (основной И
+     * ХО): deal_from_lead_id = лид-первоисточник, deal_joined_leads = union
+     * с текущим значением сделки. Отсутствующее на портале поле — скип.
+     */
+    private dealLinkFields(leadId: number, existingRow: BxRow | null): BxRow {
         const fields: BxRow = {};
         const fromLeadName = this.dealFieldName(
             PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
@@ -197,10 +285,8 @@ export class LeadToWorkFlowService {
             PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
         );
         if (joinedName) {
-            const current = ctx.existingOurDeal
-                ? this.refList(
-                      (ctx.existingOurDeal as unknown as BxRow)[joinedName],
-                  )
+            const current = existingRow
+                ? this.refList(existingRow[joinedName])
                 : [];
             fields[joinedName] = mergeTaskCrmBindings(current, [`L_${leadId}`]);
         }
@@ -208,24 +294,48 @@ export class LeadToWorkFlowService {
     }
 
     private queueXoDeal(
-        item: ILeadToWorkItem,
+        item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         plan: LeadToWorkStagePlan,
-        eventName: string,
+        xoTitle: string,
         companyRef: string | null,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): string | null {
-        if (item.isXo !== 'Y' || !plan.xoCategoryId) return null;
-        if (ctx.existingOurDeal) {
-            // Reuse-режим ХО-сделку не плодит.
-            return null;
+        if (item.isXo !== 'Y') return null;
+
+        // Повторный ХО: существующая ХО-сделка не плодится, а ПЕРЕДАЁТСЯ
+        // новому ответственному; связи графа доводятся.
+        if (ctx.existingXoDeal) {
+            const xoId = String(ctx.existingXoDeal.ID);
+            const cmd = `lw_xo_upd_${item.leadId}`;
+            const fields: BxRow = {
+                ASSIGNED_BY_ID: String(item.responsible),
+                ...this.dealLinkFields(
+                    item.leadId,
+                    ctx.existingXoDeal as unknown as BxRow,
+                ),
+            };
+            buffer.queue(() =>
+                this.bitrix.batch.deal.update(
+                    cmd,
+                    Number(xoId),
+                    fields as never,
+                ),
+            );
+            result.xoCmd = cmd;
+            return xoId;
         }
+
+        if (!plan.xoCategoryId) return null;
         const cmd = `lw_xo_${item.leadId}`;
         const fields: BxRow = {
-            TITLE: `${XO_TASK_PREFIX} ${eventName}`,
+            TITLE: xoTitle,
             CATEGORY_ID: plan.xoCategoryId,
             ASSIGNED_BY_ID: String(item.responsible),
+            // Связи графа пишутся и на ХО-сделку (правило пользователя:
+            // «у любой связанной сделки — создана из лида/присоединён лид»).
+            ...this.dealLinkFields(item.leadId, null),
         };
         if (plan.xoStageId) fields.STAGE_ID = plan.xoStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
@@ -235,16 +345,21 @@ export class LeadToWorkFlowService {
     }
 
     private queueLeadUpdate(
-        item: ILeadToWorkItem,
+        item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         plan: LeadToWorkStagePlan,
         dealRef: string,
         xoRef: string | null,
+        detection: LeadRequestDetection,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): void {
         const fields: BxRow = {};
         if (plan.leadStatusId) fields.STATUS_ID = plan.leadStatusId;
+        // ХО-ветка передаёт работу целиком — лид тоже новому ответственному.
+        if (item.isXo === 'Y') {
+            fields.ASSIGNED_BY_ID = String(item.responsible);
+        }
 
         const toBase = this.leadFieldName(
             PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
@@ -279,6 +394,18 @@ export class LeadToWorkFlowService {
             }
         }
 
+        // Заявка, взятая в ХО впервые: первичное проставление op_lead_site_*
+        // (только пустые поля — историю заявки не переписываем).
+        if (item.isXo === 'Y' && detection.isRequest) {
+            this.appendSiteMarks(ctx, fields);
+        }
+
+        // История обработки заявки: назначение/передача ХО — новая запись
+        // (append от ТЕКУЩЕГО значения лида; multiple перезаписывается целиком).
+        if (item.isXo === 'Y') {
+            this.appendRequestHistory(item, ctx, fields);
+        }
+
         if (Object.keys(fields).length === 0) return;
         const cmd = `lw_lead_${item.leadId}`;
         buffer.queue(() =>
@@ -286,10 +413,65 @@ export class LeadToWorkFlowService {
         );
     }
 
+    /**
+     * История обработки заявки (op_lead_firstprepare_history, multiple):
+     * «ХО назначен: {id}» либо «ХО передан: {prev} → {new}». Поле не
+     * установлено — молчаливый скип, как остальной граф.
+     */
+    private appendRequestHistory(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        fields: BxRow,
+    ): void {
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            PBX_SALES_EVENT_FIELD_CODES.op_lead_firstprepare_history,
+        );
+        if (!field) return;
+        const bitrixId = this.portal.getFieldBitrixId(field);
+
+        const prev = this.prevResponsible(ctx);
+        const text =
+            prev && prev !== item.responsible
+                ? `ХО передан: ${prev} → ${item.responsible}`
+                : `ХО назначен: ${item.responsible}`;
+        fields[bitrixId] = appendLeadRequestHistory(
+            (ctx.lead as unknown as BxRow)[bitrixId],
+            buildLeadRequestHistoryEntry(text, this.portal.getTimezone()),
+        );
+    }
+
+    /**
+     * op_lead_site_status → «Взята в работу», op_lead_site_stage →
+     * «Запланирован звонок» — только если поле установлено и ПУСТО.
+     */
+    private appendSiteMarks(ctx: LeadToWorkContext, fields: BxRow): void {
+        const marks: [code: string, itemCode: string][] = [
+            [
+                PBX_SALES_EVENT_FIELD_CODES.op_lead_site_status,
+                EnumLeadSiteStatusCode.taken,
+            ],
+            [
+                PBX_SALES_EVENT_FIELD_CODES.op_lead_site_stage,
+                EnumLeadSiteStageCode.callPlanned,
+            ],
+        ];
+        const lead = ctx.lead as unknown as BxRow;
+        for (const [code, itemCode] of marks) {
+            const field = this.portal.getEntityFieldByCode('lead', code);
+            if (!field) continue;
+            const bitrixId = this.portal.getFieldBitrixId(field);
+            if (this.text(lead[bitrixId])) continue; // уже заполнено
+            const listItem = field.items.find(it => it.code === itemCode);
+            if (listItem) fields[bitrixId] = listItem.bitrixId;
+        }
+    }
+
     private queueTasks(
-        item: ILeadToWorkItem,
+        item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         eventName: string,
+        detection: LeadRequestDetection,
         companyRef: string | null,
         dealRef: string,
         xoRef: string | null,
@@ -360,10 +542,13 @@ export class LeadToWorkFlowService {
         const needNewTask = closeAll || ctx.openTasks.length === 0;
         if (!needNewTask) return;
 
-        const prefix = item.isXo === 'Y' ? XO_TASK_PREFIX : CALL_TASK_PREFIX;
+        const title =
+            item.isXo === 'Y'
+                ? this.xoTitle(eventName, detection)
+                : `${CALL_TASK_PREFIX} ${eventName}`;
         const cmd = `lw_task_add_${item.leadId}`;
         const payload: BxRow = {
-            TITLE: `${prefix} ${eventName}`,
+            TITLE: title,
             RESPONSIBLE_ID: item.responsible,
             UF_CRM_TASK: bindings,
             ...(groupId ? { GROUP_ID: groupId } : {}),
@@ -378,10 +563,104 @@ export class LeadToWorkFlowService {
         result.taskAddCmd = cmd;
     }
 
+    /**
+     * KPI/History ХО-ветки — в ту же batch-группу лида (ссылки $result
+     * на создаваемые сделки валидны только до endGroup()).
+     *
+     * Передача обзвона: прежнему ответственному пишется «Не состоялся»,
+     * новому — «Запланирован». Старые элементы списков не трогаются.
+     */
+    private queueKpi(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        eventName: string,
+        detection: LeadRequestDetection,
+        authorId: number | null,
+        companyRef: string | null,
+        dealRef: string,
+        xoRef: string | null,
+        buffer: IBatchGroupBuffer,
+        result: LeadToWorkQueuedPlan,
+    ): void {
+        if (item.isXo !== 'Y') return;
+
+        const refs: ILeadToWorkKpiRefs = {
+            leadId: item.leadId,
+            companyRef,
+            baseDealRef: dealRef,
+            xoDealRef: xoRef,
+            companyId: ctx.company ? Number(ctx.company.ID) : null,
+        };
+        const deadline = item.deadline
+            ? PortalDeadline.fromPortalInput(
+                  item.deadline,
+                  this.portal.getTimezone(),
+              )
+            : null;
+
+        const prev = this.prevResponsible(ctx);
+        if (prev && prev !== item.responsible) {
+            this.kpi.queueNotHeld(
+                {
+                    refs,
+                    name: eventName,
+                    isRequest: detection.isRequest,
+                    prevResponsibleId: prev,
+                    authorId,
+                },
+                buffer,
+            );
+            result.kpiNotHeld = true;
+        }
+
+        this.kpi.queuePlanned(
+            {
+                refs,
+                name: eventName,
+                isRequest: detection.isRequest,
+                responsibleId: item.responsible,
+                authorId,
+                deadline,
+            },
+            buffer,
+        );
+        result.kpiPlanned = true;
+    }
+
+    /**
+     * Прежний ответственный за обзвон: открытая задача «Холодный обзвон…»
+     * → ответственный существующей ХО-сделки → null (первый ХО по лиду).
+     */
+    private prevResponsible(ctx: LeadToWorkContext): number | null {
+        for (const task of ctx.openTasks) {
+            const row = task as unknown as BxRow;
+            const title = this.text(row.title) ?? this.text(row.TITLE) ?? '';
+            if (!title.startsWith(XO_TASK_PREFIX)) continue;
+            const id = Number(row.responsibleId ?? row.RESPONSIBLE_ID);
+            if (Number.isFinite(id) && id > 0) return id;
+        }
+        const xo = ctx.existingXoDeal as unknown as BxRow | null;
+        if (xo) {
+            const id = Number(xo.ASSIGNED_BY_ID);
+            if (Number.isFinite(id) && id > 0) return id;
+        }
+        return null;
+    }
+
     /* ------------------------------------------------------------------ */
 
+    /** «Холодный обзвон. Заявка. {name}» либо «Холодный обзвон {name}». */
+    private xoTitle(
+        eventName: string,
+        detection: LeadRequestDetection,
+    ): string {
+        return detection.isRequest
+            ? `${XO_TASK_PREFIX}. Заявка. ${eventName}`
+            : `${XO_TASK_PREFIX} ${eventName}`;
+    }
+
     /** Название события: имя из хука → название компании → название лида. */
-    private eventName(item: ILeadToWorkItem, lead: IBXLead): string {
+    private eventName(item: ResolvedLeadToWorkItem, lead: IBXLead): string {
         const row = lead as unknown as BxRow;
         return (
             this.text(item.name) ??

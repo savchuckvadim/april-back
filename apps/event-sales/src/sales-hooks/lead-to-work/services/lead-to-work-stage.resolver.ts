@@ -21,6 +21,8 @@ export interface LeadToWorkStagePlan {
 const DEFAULT_FROM_LEAD_STAGE = 'sales_warm';
 /** Стадия ОП для stageMode='cold' (как классический ХО). */
 const COLD_BASE_STAGE = 'sales_cold';
+/** Стадия ОП для stageMode='new' — заявка стартует с начала воронки. */
+const NEW_BASE_STAGE = 'sales_new';
 /** Стадия ХО-сделки. */
 const XO_PLAN_STAGE = 'cold_plan';
 
@@ -94,6 +96,7 @@ export class LeadToWorkStageResolver {
         warnings: string[],
     ): string {
         if (item.stageMode === 'cold') return COLD_BASE_STAGE;
+        if (item.stageMode === 'new') return NEW_BASE_STAGE;
 
         // from_lead: зеркало стадии лида (lead_pres → sales_pres и т.п.).
         const leadStageCode = this.portal.getLeadStageCodeByStatusId(

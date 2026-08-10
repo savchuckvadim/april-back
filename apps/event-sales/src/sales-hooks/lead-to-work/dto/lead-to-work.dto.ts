@@ -7,8 +7,12 @@ import { SalesHookRunRequestBaseDto } from '../../core/dto/sales-hook-run-reques
 export const LEAD_TO_WORK_FLAG_VALUES = ['Y', 'N'] as const;
 export type LeadToWorkFlag = (typeof LEAD_TO_WORK_FLAG_VALUES)[number];
 
-/** Режим стадии создаваемой сделки ОП. */
-export const LEAD_TO_WORK_STAGE_MODES = ['from_lead', 'cold'] as const;
+/**
+ * Режим стадии создаваемой сделки ОП: from_lead — зеркало стадии лида,
+ * cold — «Холодная» (классический ХО), new — «Новая» (заявка, по которой
+ * работа стартует с начала воронки, а не с холодного цикла).
+ */
+export const LEAD_TO_WORK_STAGE_MODES = ['from_lead', 'cold', 'new'] as const;
 export type LeadToWorkStageMode = (typeof LEAD_TO_WORK_STAGE_MODES)[number];
 
 /** Что делать с открытыми задачами лида. */
@@ -35,13 +39,32 @@ export class LeadToWorkWebhookQueryDto {
      * объявленном `number` глобальный ValidationPipe с implicit conversion
      * превратит `'user_447'` в NaN до трансформации. Подробности — в
      * JSDoc `ApiBxHookUserId`. К числу приводит `buildLeadToWorkItem()`.
+     *
+     * Поле необязательное: без него ответственный выбирается round-robin
+     * из отдела продаж (см. `department` и LeadToWorkAssigneeService).
      */
     @ApiBxHookUserId({
         description:
             'Ответственный менеджер — идентификатор пользователя Bitrix ' +
-            'в формате хука (user_<id>).',
+            'в формате хука (user_<id>). Не передан — выбирается ' +
+            'round-robin из отдела продаж (намёк — параметр department).',
+        optional: true,
     })
-    responsible: string;
+    responsible?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Намёк на отдел продаж для round-robin выбора ответственного ' +
+            '(портал с несколькими ОП). Формат от робота пока не ' +
+            'зафиксирован — принимаем сырую строку (id отдела, «123», ' +
+            '«D_123»…), логируем и извлекаем цифры. Игнорируется, если ' +
+            'передан responsible.',
+        example: '15',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    department?: string;
 
     @ApiPropertyOptional({
         description:
@@ -60,7 +83,8 @@ export class LeadToWorkWebhookQueryDto {
     @ApiPropertyOptional({
         description:
             'Режим стадии сделки ОП: from_lead — по зеркалу стадии лида, ' +
-            'cold — как холодный обзвон.',
+            'cold — «Холодная» (как холодный обзвон), new — «Новая» ' +
+            '(заявка стартует с начала воронки).',
         example: 'from_lead',
         type: String,
         enum: LEAD_TO_WORK_STAGE_MODES,
@@ -134,15 +158,29 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
     @Min(1)
     leadId: number;
 
-    @ApiProperty({
-        description: 'Идентификатор ответственного менеджера.',
+    @ApiPropertyOptional({
+        description:
+            'Идентификатор ответственного менеджера. Не передан — ' +
+            'выбирается round-robin из отдела продаж (намёк — department).',
         example: 123,
         type: Number,
         minimum: 1,
     })
+    @IsOptional()
     @IsInt()
     @Min(1)
-    responsible: number;
+    responsible?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Намёк на отдел продаж для round-robin выбора ответственного ' +
+            '(id отдела). Игнорируется, если передан responsible.',
+        example: '15',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    department?: string;
 
     @ApiPropertyOptional({
         description: 'Создать компанию, если у лида её нет.',
@@ -215,7 +253,10 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
 /** Элемент пачки — внутренний контракт между транспортом и use-case. */
 export interface ILeadToWorkItem {
     leadId: number;
-    responsible: number;
+    /** Отсутствует — ответственный выбирается round-robin из отдела. */
+    responsible?: number;
+    /** Сырой намёк на отдел ОП для round-robin (формат тестируется). */
+    department?: string;
     createCompany: LeadToWorkFlag;
     stageMode: LeadToWorkStageMode;
     taskMode: LeadToWorkTaskMode;
@@ -226,10 +267,17 @@ export interface ILeadToWorkItem {
     name?: string;
 }
 
+/**
+ * Элемент после резолва ответственного (LeadToWorkAssigneeService):
+ * flow-слой работает только с гарантированным responsible.
+ */
+export type ResolvedLeadToWorkItem = ILeadToWorkItem & { responsible: number };
+
 /** Сборка элемента с дефолтами флагов. */
 export function buildLeadToWorkItem(input: {
     leadId: number;
-    responsible: string | number;
+    responsible?: string | number;
+    department?: string;
     createCompany?: LeadToWorkFlag;
     stageMode?: LeadToWorkStageMode;
     taskMode?: LeadToWorkTaskMode;
@@ -237,9 +285,17 @@ export function buildLeadToWorkItem(input: {
     deadline?: string;
     name?: string;
 }): ILeadToWorkItem {
+    const responsible =
+        input.responsible === undefined || input.responsible === ''
+            ? undefined
+            : Number(input.responsible);
     return {
         leadId: input.leadId,
-        responsible: Number(input.responsible),
+        responsible:
+            responsible !== undefined && Number.isFinite(responsible)
+                ? responsible
+                : undefined,
+        department: input.department,
         createCompany: input.createCompany ?? 'N',
         stageMode: input.stageMode ?? 'from_lead',
         taskMode: input.taskMode ?? 'move',

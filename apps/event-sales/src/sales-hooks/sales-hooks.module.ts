@@ -5,10 +5,11 @@ import { MergeDuplicatesHookModule } from './merge-duplicates/merge-duplicates.m
 import { TransferWorkHookModule } from './transfer-work/transfer-work.module';
 import { RejectBufferHookModule } from './reject-buffer/reject-buffer.module';
 import { ConvertNormalizerHookModule } from './convert-normalizer/convert-normalizer.module';
+import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.module';
 
 /**
  * Семейство sales-хуков: ядро (silence + очередь операций + статусы + WS)
- * и пять хуков. Как добавить новый — см. SALES_HOOKS_GUIDE.md.
+ * и шесть хуков. Как добавить новый — см. SALES_HOOKS_GUIDE.md.
  */
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { ConvertNormalizerHookModule } from './convert-normalizer/convert-normal
         TransferWorkHookModule,
         RejectBufferHookModule,
         ConvertNormalizerHookModule,
+        DuplicateCheckHookModule,
     ],
 })
 export class SalesHooksModule {}

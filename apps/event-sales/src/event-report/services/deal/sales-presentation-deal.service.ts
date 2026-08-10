@@ -136,6 +136,13 @@ export class SalesPresentationDealService {
                 eventAction: 'done',
                 isResult: ctx.isResult,
             });
+            if (!stage) {
+                // Молчаливый скип здесь уже прятал потерю события —
+                // несопоставленная стадия обязана быть видна в логах.
+                this.logger.warn(
+                    'unplanned presentation: стадия done не сопоставлена в sales_presentation — сделка не создана',
+                );
+            }
             if (stage) {
                 const cmd = 'set_unplanned_pres_deal';
                 const entityFields = this.buildEntityFields(

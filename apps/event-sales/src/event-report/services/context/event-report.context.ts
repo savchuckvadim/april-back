@@ -200,9 +200,16 @@ export class EventReportContext {
         return Boolean(this.dto.presentation?.isPresentationDone);
     }
     get isUnplannedPresentation(): boolean {
-        return (
-            this.isPresentationDone && this.reportEventType !== 'presentation'
-        );
+        if (!this.isPresentationDone) return false;
+        if (this.reportEventType !== 'presentation') return true;
+        /*
+         * Fallback: отчёт «презентация», но живой pres-сделки нет (удалили,
+         * либо работа началась ХО-хуком из лида и презентаций ещё не было).
+         * Раньше ветка «update текущей pres-сделки» молча глотала событие —
+         * ни сделки, ни KPI. Факт «презентация проведена» обязан
+         * фиксироваться всегда → трактуем как незапланированную.
+         */
+        return !this.currentPresDeal;
     }
     get isPresentationCanceled(): boolean {
         return Boolean(this.dto.currentTask?.isPresentationCanceled);

@@ -46,4 +46,9 @@ export class SalesHookOpsProcessor {
     handleConvertNormalizer(job: Job<SalesHookJobData>) {
         return this.runner.run(job.data);
     }
+
+    @Process({ name: JobNames.SALES_HOOK_DUPLICATE_CHECK, concurrency: 2 })
+    handleDuplicateCheck(job: Job<SalesHookJobData>) {
+        return this.runner.run(job.data);
+    }
 }

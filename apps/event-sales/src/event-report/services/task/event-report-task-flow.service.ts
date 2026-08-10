@@ -1,7 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { ETaskPriority } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
+import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { EventReportContext } from '../context/event-report.context';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
@@ -143,6 +145,12 @@ export class EventReportTaskFlowService {
             links.push(`L_${ctx.entityId}`);
         }
 
+        // Лид не должен теряться при работе из сделки/компании: следующая
+        // задача наследует L_* текущей задачи и лиды-первоисточники сделки
+        // (deal_from_lead_id / deal_joined_leads / LEAD_ID) — из лида видно,
+        // что происходит с работой.
+        links.push(...this.collectInheritedLeadLinks(ctx));
+
         const planContactId = ctx.dto.plan?.contact?.ID;
         if (planContactId) {
             links.push(`C_${planContactId}`);
@@ -154,7 +162,10 @@ export class EventReportTaskFlowService {
             links.push(`D_${ctx.entityId}`);
         }
 
-        if (deals.baseDealId && String(deals.baseDealId) !== String(ctx.entityId)) {
+        if (
+            deals.baseDealId &&
+            String(deals.baseDealId) !== String(ctx.entityId)
+        ) {
             links.push(`D_${deals.baseDealId}`);
         }
         if (deals.newPlanPresDealId) {
@@ -168,6 +179,55 @@ export class EventReportTaskFlowService {
             links.push(`CO_${ctx.entityId}`);
         }
 
-        return links;
+        // Дедуп с сохранением порядка первого вхождения (legacy-порядок цел).
+        return mergeTaskCrmBindings(links, []);
+    }
+
+    /**
+     * `L_*`-привязки, которые новая задача обязана унаследовать:
+     *  1) из текущей задачи (UF_CRM_TASK) — лид уже был в цепочке;
+     *  2) из сделки-владельца: deal_from_lead_id, deal_joined_leads (наши
+     *     поля графа) и штатный LEAD_ID — работа началась ХО-хуком из лида.
+     */
+    private collectInheritedLeadLinks(ctx: EventReportContext): string[] {
+        const leads: string[] = [];
+        const push = (raw: unknown): void => {
+            const values = Array.isArray(raw) ? raw : [raw];
+            for (const value of values) {
+                if (value == null) continue;
+                const match = /^(?:L_)?(\d+)$/.exec(String(value).trim());
+                if (match && Number(match[1]) > 0) {
+                    leads.push(`L_${match[1]}`);
+                }
+            }
+        };
+
+        const task = ctx.currentTask as unknown as Record<
+            string,
+            unknown
+        > | null;
+        const taskBindings = task?.ufCrmTask ?? task?.UF_CRM_TASK;
+        if (Array.isArray(taskBindings)) {
+            for (const binding of taskBindings) {
+                if (typeof binding === 'string' && binding.startsWith('L_')) {
+                    push(binding);
+                }
+            }
+        }
+
+        const deal = ctx.ownerDeal as unknown as Record<string, unknown> | null;
+        if (deal) {
+            push(deal.LEAD_ID);
+            for (const code of [
+                PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
+                PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
+            ]) {
+                const field = this.portal.getEntityFieldByCode('deal', code);
+                if (!field) continue;
+                push(deal[this.portal.getFieldBitrixId(field)]);
+            }
+        }
+
+        return leads;
     }
 }

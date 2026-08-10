@@ -147,6 +147,14 @@ services:
     <<: *app-service
     image: ghcr.io/${GHCR_OWNER}/april-konstructor:${IMAGE_TAG:-latest}
     container_name: app-konstructor
+    # Топология конвертации живёт здесь, а не в .env: имя сервиса gotenberg
+    # резолвится во все его реплики, поэтому размер пула = GOTENBERG_REPLICAS
+    # и меняется в одном месте. environment перекрывает env_file.
+    environment:
+      <<: *app-env
+      LIBREOFFICE_MODE: http
+      LIBREOFFICE_HTTP_URL: http://gotenberg:3000
+      LIBREOFFICE_DISCOVERY: dns
     env_file:
       - path: ../../.env
         required: true
@@ -233,14 +241,50 @@ services:
     volumes:
       - redis_data:/data
 
+  # Конвертация Office -> PDF (LibreOffice внутри).
+  #
+  # ВАЖНО про масштабирование: LibreOffice физически не умеет параллельные
+  # конверсии — один инстанс обрабатывает ОДИН документ за раз, остальные
+  # ждут внутри Gotenberg и сгорают по --api-timeout. Поэтому N инстансов
+  # + пул на стороне приложения (LIBREOFFICE_HTTP_URL перечисляет все).
+  #
+  # Масштабирование — одним числом GOTENBERG_REPLICAS: приложение само
+  # резолвит имя сервиса `gotenberg` во все адреса реплик
+  # (LIBREOFFICE_DISCOVERY=dns у konstructor) и держит по одному слоту на
+  # реплику. Ни env приложения, ни код при этом не меняются.
+  #   docker compose ... up -d --scale gotenberg=6 gotenberg
+  #
+  # Число реплик подбирается по ЯДРАМ CPU (конверсия однопоточная и
+  # CPU-bound), а НЕ по числу пользователей: при ~4 с на документ одна
+  # реплика даёт ~900 документов в час. Реплик больше, чем свободных
+  # ядер, — они начнут драться за CPU, и станет медленнее.
+  #
+  # container_name здесь быть НЕ может: он требует уникального имени и
+  # запрещает реплики. Порт наружу тоже не публикуется — и из-за реплик,
+  # и потому что Gotenberg без авторизации, а его chromium-роуты умеют
+  # ходить по произвольным URL (SSRF во внутреннюю сеть).
   gotenberg:
     image: gotenberg/gotenberg:8
-    container_name: mono-gotenberg
-    ports: ['${GOTENBERG_HOST_PORT}:3000']
+    deploy:
+      replicas: ${GOTENBERG_REPLICAS:-4}
     networks:
       - app-network
     restart: unless-stopped
     logging: *default-logging
+    # --api-timeout: дефолт 30s — прямая причина 503 "request exceeded the
+    #   time limit": отсчёт идёт вместе с ожиданием в очереди LibreOffice.
+    # --libreoffice-auto-start: держать LO прогретым (иначе +2..5 с на первой).
+    # --libreoffice-restart-after: дефолт 10 — перезапуск слишком частый.
+    command:
+      - gotenberg
+      - --api-timeout=300s
+      - --libreoffice-auto-start=true
+      - --libreoffice-restart-after=50
+    healthcheck:
+      test: ['CMD-SHELL', 'curl --silent --fail http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Хранилище логов всех приложений (@lib/logger -> ClickHouse, HTTP :8123).
   # Схема (logs.app_logs, TTL 30 дней — старые логи удаляются сами) создаётся

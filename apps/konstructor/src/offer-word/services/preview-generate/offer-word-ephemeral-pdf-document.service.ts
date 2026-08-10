@@ -18,8 +18,13 @@ export class OfferWordEphemeralPdfDocumentService {
         private readonly innerDealService: InnerDealService,
     ) {}
 
+    /**
+     * @param signal прерывает конвертацию, если клиент отменил операцию:
+     * слот пула освобождается сразу, файлы всё равно вычищаются.
+     */
     async buildPdfBufferRemovingFiles(
         dto: OfferWordByTemplateGenerateDto,
+        signal?: AbortSignal,
     ): Promise<{ pdfBuffer: Buffer; pdfFileName: string }> {
         const dealId = Number(dto.dealId);
         const domain = dto.domain;
@@ -34,6 +39,7 @@ export class OfferWordEphemeralPdfDocumentService {
         try {
             pdfPath = await this.offerWordPdfExportService.convertDocxToPdfPath(
                 core.docxPath,
+                signal,
             );
         } finally {
             await this.safeUnlink(core.docxPath);
