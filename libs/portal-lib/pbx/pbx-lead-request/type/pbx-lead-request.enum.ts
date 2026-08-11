@@ -119,6 +119,31 @@ export enum EnumLeadNotCaTypeCode {
     noSpecialists = 'op_lead_not_ca_type4',
 }
 
+/**
+ * ОФИЦИАЛЬНЫЙ статус заявки в ТПС Гаранта (op_lead_tps_status) —
+ * внешний словарь из «Правил оценки заявок» (docs/newfields.md):
+ * коды семантические, завязаны на документ. Партнёр обязан оценить
+ * заявку за 4 рабочих дня, иначе она ротируется другому партнёру.
+ */
+export enum EnumLeadTpsStatusCode {
+    /** Чужой клиент (финальный; ИНН/телефон найден в базе ПОиСК). */
+    alienClient = 'tps_alien_client',
+    /** Чужая территория (финальный; заявка уйдёт партнёру региона). */
+    alienTerritory = 'tps_alien_territory',
+    /** Обслуживаемый клиент (финальный; наш действующий клиент). */
+    servedClient = 'tps_served_client',
+    /** Продажа (финальный; на втором шаге заполняются данные продажи). */
+    sale = 'tps_sale',
+    /** Отказ (финальный; заявка уходит в повторную ротацию). */
+    refuse = 'tps_refuse',
+    /** Телефон не отвечает (редактируемый; таймер 90 раб. дней). */
+    noAnswer = 'tps_no_answer',
+    /** В работе (редактируемый; квота 50%, ротация после 90 раб. дней). */
+    inWork = 'tps_in_work',
+    /** Бронь (редактируемый; 1 раз; меняется только на Отказ/Продажу). */
+    reserve = 'tps_reserve',
+}
+
 /** Стадия связанной сделки (op_leads_related_base_stage). */
 export enum EnumLeadRelatedBaseStageCode {
     cold = 'op_leads_related_base_stage1',
@@ -143,6 +168,7 @@ export const LEAD_NOT_CA_TYPE_CODES = Object.values(EnumLeadNotCaTypeCode);
 export const LEAD_RELATED_BASE_STAGE_CODES = Object.values(
     EnumLeadRelatedBaseStageCode,
 );
+export const LEAD_TPS_STATUS_CODES = Object.values(EnumLeadTpsStatusCode);
 
 /* ------------------------------------------------------------------ *
  * Compile-time стражи: enum ⊆ коды PBX_SALES_EVENT_FIELDS.
@@ -174,4 +200,8 @@ export type _LeadNotCaTypeCodesAreValid = AssertSubset<
 export type _LeadRelatedBaseStageCodesAreValid = AssertSubset<
     `${EnumLeadRelatedBaseStageCode}`,
     PbxSalesEventFieldItemCode<'op_leads_related_base_stage'>
+>;
+export type _LeadTpsStatusCodesAreValid = AssertSubset<
+    `${EnumLeadTpsStatusCode}`,
+    PbxSalesEventFieldItemCode<'op_lead_tps_status'>
 >;

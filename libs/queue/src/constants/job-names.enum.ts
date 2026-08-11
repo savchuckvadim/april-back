@@ -13,6 +13,8 @@ export enum JobNames {
     SALES_HOOK_CONVERT_NORMALIZER = 'sales-hook-convert-normalizer',
     //глубокая проверка дублей из сущности + красивый итог в её timeline
     SALES_HOOK_DUPLICATE_CHECK = 'sales-hook-duplicate-check',
+    //принятие заявки менеджером (вебхук робота — через silence от бурстов)
+    SALES_HOOK_LEAD_ACCEPT = 'sales-hook-lead-accept',
 
     //mail
     MAIL_SEND_AUTH = 'mail-send-auth',
@@ -62,4 +64,7 @@ export enum JobNames {
     //звонка N+1 шла параллельно с анализом звонка N
     CALL_REPORT_TRANSCRIBE = 'call-report-transcribe',
     CALL_REPORT_ANALYZE = 'call-report-analyze',
+
+    /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
+    SKAP_IMPORT_RUN = 'skap-import-run',
 }

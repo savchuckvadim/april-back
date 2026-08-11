@@ -30,6 +30,8 @@ export enum EBXEntity {
     /** crm.duplicate.* — штатный поиск дублей (findbycomm). */
     DUPLICATE = 'duplicate',
     RECENT = 'recent',
+    /** im.notify.system.* — системные уведомления пользователю. */
+    NOTIFY_SYSTEM = 'notify.system',
     MESSAGE = 'message',
     DIALOG_MESSAGES = 'dialog.messages',
     EVENT = 'Event',
@@ -54,5 +56,6 @@ export enum EBXEntity {
     // imopenlines
     BOT_SESSION = 'bot.session',
     // sonet_group — entity-less методы: sonet_group.create / update / get / delete
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- намеренно '' как у BOT_LIFECYCLE (entity-less)
     SONET_GROUP = '',
 }

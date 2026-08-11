@@ -8,11 +8,14 @@ import { LibreOfficeService } from '../libre-office.service';
 import { LibreOfficeEndpointPool } from '../services/libre-office-endpoint-pool.service';
 import { LibreOfficeExecConverter } from '../services/libre-office-exec.converter';
 import { LibreOfficeHttpConverter } from '../services/libre-office-http.converter';
+import { LibreOfficePdfCacheService } from '../services/libre-office-pdf-cache.service';
 import {
     MetricsStub,
+    PdfCacheStub,
     asMetrics,
     libreOfficeConfig,
     stubMetrics,
+    stubPdfCache,
     stubResolver,
 } from './libre-office.fixtures';
 
@@ -22,6 +25,7 @@ describe('LibreOfficeService', () => {
     let http: { convert: jest.Mock };
     let exec: { convert: jest.Mock };
     let metrics: MetricsStub;
+    let cache: PdfCacheStub;
 
     beforeEach(async () => {
         dir = await mkdtemp(join(tmpdir(), 'libre-office-facade-'));
@@ -30,6 +34,7 @@ describe('LibreOfficeService', () => {
         http = { convert: jest.fn().mockResolvedValue('http.pdf') };
         exec = { convert: jest.fn().mockResolvedValue('exec.pdf') };
         metrics = stubMetrics();
+        cache = stubPdfCache();
     });
 
     afterEach(async () => {
@@ -50,6 +55,7 @@ describe('LibreOfficeService', () => {
                 stubResolver(() => Promise.resolve(config.endpoints)),
             ),
             asMetrics(metrics),
+            cache as unknown as LibreOfficePdfCacheService,
         );
     }
 
@@ -113,6 +119,46 @@ describe('LibreOfficeService', () => {
             active: 0,
             pending: 0,
             cooling: 0,
+        });
+    });
+
+    describe('кэш готовых PDF', () => {
+        it('при попадании конвертация не запускается вообще', async () => {
+            cache.get.mockResolvedValue(true);
+
+            const result = await build('http').convertToPdf(docxPath);
+
+            expect(result).toBe(join(dir, 'offer.pdf'));
+            expect(http.convert).not.toHaveBeenCalled();
+            expect(metrics.countCache).toHaveBeenCalledWith('hit');
+        });
+
+        it('при промахе конвертирует и складывает результат в кэш', async () => {
+            await build('http').convertToPdf(docxPath);
+
+            expect(http.convert).toHaveBeenCalled();
+            expect(metrics.countCache).toHaveBeenCalledWith('miss');
+            expect(cache.put).toHaveBeenCalledWith('cache-key', 'http.pdf');
+        });
+
+        it('с выключенным кэшем не читает и не пишет его', async () => {
+            cache.keyFor.mockResolvedValue(null);
+
+            await build('http').convertToPdf(docxPath);
+
+            expect(cache.get).not.toHaveBeenCalled();
+            expect(cache.put).not.toHaveBeenCalled();
+            expect(metrics.countCache).not.toHaveBeenCalled();
+            expect(http.convert).toHaveBeenCalled();
+        });
+
+        it('упавшую конвертацию в кэш не кладёт', async () => {
+            http.convert.mockRejectedValue(new Error('boom'));
+
+            await expect(build('http').convertToPdf(docxPath)).rejects.toThrow(
+                'boom',
+            );
+            expect(cache.put).not.toHaveBeenCalled();
         });
     });
 

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { PBXModule } from '@lib/pbx/pbx.module';
 import { CallReportSmartModule } from '@lib/call-lib';
+import { SkapInstallModule } from '@lib/skap-lib';
 import { SmartService } from './services/smart.service';
 import { SmartDetailsService } from './services/smart-details.service';
 import { ConstSmartInstallerResolver } from './services/const-smart-installer.service';
@@ -10,10 +11,15 @@ import { SmartPrismaRepository } from './repositories/smart.prisma.repository';
 import { SmartController } from './controllers/smart.controller';
 
 @Module({
-    // CallReportSmartModule — переиспользуемая установка смарта
-    // «AI-анализ звонков» (@lib/call-lib): admin даёт свой контроллер
-    // поверх того же use-case, что и event-sales.
-    imports: [PrismaModule, PBXModule, CallReportSmartModule],
+    // CallReportSmartModule / SkapInstallModule — переиспользуемые
+    // установки const-смартов (aicall из @lib/call-lib, skap из
+    // @lib/skap-lib): admin даёт свой контроллер поверх тех же use-case.
+    imports: [
+        PrismaModule,
+        PBXModule,
+        CallReportSmartModule,
+        SkapInstallModule,
+    ],
     providers: [
         SmartService,
         SmartDetailsService,

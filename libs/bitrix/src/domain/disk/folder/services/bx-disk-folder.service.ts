@@ -1,9 +1,11 @@
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
+import { DISK_GETCHILDREN_MAX_PAGES } from '../../disk.constants';
 import { BxDiskFolderRepository } from '../repository/bx-disk-folder.repository';
 import {
     IBXDiskFolderAddSubfolderRequest,
     IBXDiskFolderDeleteTreeRequest,
     IBXDiskFolderGetChildrenRequest,
+    IBXDiskFolderItem,
     IBXDiskFolderGetExternalLinkRequest,
     IBXDiskFolderGetRequest,
     IBXDiskFolderMarkDeletedRequest,
@@ -33,6 +35,26 @@ export class BxDiskFolderService {
 
     async getchildren(data: IBXDiskFolderGetChildrenRequest) {
         return await this.repo.getchildren(data);
+    }
+
+    /**
+     * Все страницы `disk.folder.getchildren` (Bitrix отдаёт по 50):
+     * крутит `start` по `next` из ответа, пока страницы не кончатся.
+     */
+    async getchildrenAll(
+        data: Omit<IBXDiskFolderGetChildrenRequest, 'start'>,
+    ): Promise<IBXDiskFolderItem[]> {
+        const out: IBXDiskFolderItem[] = [];
+        let start = 0;
+        for (let page = 0; page < DISK_GETCHILDREN_MAX_PAGES; page++) {
+            const res = await this.repo.getchildren({ ...data, start });
+            out.push(...(res.result ?? []));
+            if (res.next === undefined || res.next === null) {
+                break;
+            }
+            start = res.next;
+        }
+        return out;
     }
 
     async getfields() {

@@ -53,6 +53,12 @@ export type LibreOfficeConfig = {
     retries: number;
     /** Максимум задач, ждущих слот. Сверх лимита — сразу отказ, без ожидания. */
     maxQueue: number;
+    /**
+     * Кэш готовых PDF по содержимому DOCX. Главный выигрыш — превью и
+     * последующая генерация того же документа конвертируются один раз.
+     */
+    cacheEnabled: boolean;
+    cacheTtlHours: number;
     pdf: LibreOfficePdfOptions;
 };
 
@@ -66,6 +72,7 @@ export const LIBRE_OFFICE_DEFAULTS = {
     maxQueue: 20,
     discoveryTtlMs: 30_000,
     failureCooldownMs: 15_000,
+    cacheTtlHours: 168,
 } as const;
 
 type EnvReader = { get<T>(key: string): T | undefined };
@@ -147,6 +154,14 @@ export function buildLibreOfficeConfig(env: EnvReader): LibreOfficeConfig {
         maxQueue: parseIntOrDefault(
             env.get<string>('LIBREOFFICE_MAX_QUEUE'),
             LIBRE_OFFICE_DEFAULTS.maxQueue,
+            1,
+        ),
+        // Кэш включён по умолчанию: он не меняет результат, только экономит
+        // повторную конвертацию того же документа.
+        cacheEnabled: env.get<string>('LIBREOFFICE_CACHE_ENABLED') !== 'false',
+        cacheTtlHours: parseIntOrDefault(
+            env.get<string>('LIBREOFFICE_CACHE_TTL_HOURS'),
+            LIBRE_OFFICE_DEFAULTS.cacheTtlHours,
             1,
         ),
         pdf: buildPdfOptions(env),

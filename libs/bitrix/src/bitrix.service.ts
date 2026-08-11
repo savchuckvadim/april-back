@@ -31,6 +31,7 @@ import {
 } from './domain/crm/';
 
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
+import { BxImNotifyService } from './domain/im/notify/services/bx-im-notify.service';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
 import { BxProductBatchService, BxProductService } from './domain/catalog';
 import { BxListBatchService, BxListService } from './domain/list';
@@ -120,6 +121,8 @@ export class BitrixService {
     public requisiteLink: BxRequisiteLinkService;
     /** crm.entity.mergeBatch — разрушающее объединение; batch-варианта нет сознательно. */
     public crmEntity: BxCrmEntityService;
+    /** im.notify.system.add — системные уведомления (SLA-алерты руководителю). */
+    public imNotify: BxImNotifyService;
     public duplicate: BxDuplicateService;
     public list: BxListService;
     public listItem: BxListItemService;
@@ -231,6 +234,7 @@ export class BitrixService {
         this.initRequisitePreset();
         this.initRequisiteLink();
         this.initCrmEntity();
+        this.initImNotify();
         this.initDuplicate();
         this.initList();
         this.initListItem();
@@ -354,6 +358,11 @@ export class BitrixService {
         // Только обычный сервис: mergeBatch разрушающий и медленный,
         // batch-варианта у домена нет сознательно (см. bx-crm-entity.repository.ts).
         this.crmEntity = this.cloner.clone(BxCrmEntityService, this.api);
+    }
+
+    private initImNotify() {
+        // Только обычный сервис: уведомления штучные (SLA-алерты), батчить нечего.
+        this.imNotify = this.cloner.clone(BxImNotifyService, this.api);
     }
 
     private initDuplicate() {

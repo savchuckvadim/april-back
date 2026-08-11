@@ -1,8 +1,10 @@
 import { BitrixBaseApi } from '@/modules/bitrix/core/base/bitrix-base-api';
+import { DISK_GETCHILDREN_MAX_PAGES } from '../../disk.constants';
 import { BxDiskStorageRepository } from '../repository/bx-disk-storage.repository';
 import {
     IBXDiskStorage,
     IBXDiskStorageAddFolderRequest,
+    IBXDiskStorageChildItem,
     IBXDiskStorageGetChildrenRequest,
     IBXDiskStorageGetRequest,
     IBXDiskStorageUploadFileRequest,
@@ -43,5 +45,25 @@ export class BxDiskStorageService {
 
     async getchildren(data: IBXDiskStorageGetChildrenRequest) {
         return await this.repo.getchildren(data);
+    }
+
+    /**
+     * Все страницы `disk.storage.getchildren` (Bitrix отдаёт по 50):
+     * крутит `start` по `next` из ответа, пока страницы не кончатся.
+     */
+    async getchildrenAll(
+        data: Omit<IBXDiskStorageGetChildrenRequest, 'start'>,
+    ): Promise<IBXDiskStorageChildItem[]> {
+        const out: IBXDiskStorageChildItem[] = [];
+        let start = 0;
+        for (let page = 0; page < DISK_GETCHILDREN_MAX_PAGES; page++) {
+            const res = await this.repo.getchildren({ ...data, start });
+            out.push(...(res.result ?? []));
+            if (res.next === undefined || res.next === null) {
+                break;
+            }
+            start = res.next;
+        }
+        return out;
     }
 }

@@ -143,6 +143,45 @@ describe('LeadToWorkStageResolver — graceful degradation', () => {
         expect(plan.warnings.some(w => w.includes('CONVERTED'))).toBe(true);
     });
 
+    it('isXo=Y: лид идёт в «Назначена менеджеру» (назначение ≠ принятие)', () => {
+        const resolver = new LeadToWorkStageResolver(
+            makePortal({
+                salesBase: {
+                    stages: [{ code: 'sales_cold', bitrixId: 'COLD' }],
+                },
+                leadStatusByCode: {
+                    lead_assigned: 'PBX_ASSIGNED',
+                    lead_taken_in_work: 'PBX_TAKEN_IN_WORK',
+                },
+            }) as never,
+        ).withCurrentLeadStatus('NEW');
+
+        const plan = resolver.resolve(
+            item({ leadId: 1, responsible: 5, isXo: 'Y', stageMode: 'cold' }),
+            false,
+            false,
+        );
+        expect(plan.leadStatusId).toBe('PBX_ASSIGNED');
+    });
+
+    it('isXo=Y без стадии «Назначена»: graceful откат на «Взята в работу»', () => {
+        const resolver = new LeadToWorkStageResolver(
+            makePortal({
+                salesBase: {
+                    stages: [{ code: 'sales_cold', bitrixId: 'COLD' }],
+                },
+                leadStatusByCode: { lead_taken_in_work: 'PBX_TAKEN_IN_WORK' },
+            }) as never,
+        ).withCurrentLeadStatus('NEW');
+
+        const plan = resolver.resolve(
+            item({ leadId: 1, responsible: 5, isXo: 'Y', stageMode: 'cold' }),
+            false,
+            false,
+        );
+        expect(plan.leadStatusId).toBe('PBX_TAKEN_IN_WORK');
+    });
+
     it('isXo=Y без воронки ХО: warning, xo-план пуст, операция живёт', () => {
         const resolver = new LeadToWorkStageResolver(
             makePortal({

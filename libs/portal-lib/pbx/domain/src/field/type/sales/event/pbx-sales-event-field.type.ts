@@ -1622,6 +1622,82 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    /*
+     * ОФИЦИАЛЬНЫЙ статус заявки в ТПС Гаранта (docs/newfields.md, «Правила
+     * оценки заявок»). Это ВНЕШНИЙ словарь — коды семантические, завязаны
+     * на документ (не op_..._1..N): партнёр обязан проставить статус в ТПС
+     * за 4 рабочих дня, иначе заявка ротируется другому партнёру.
+     */
+    {
+        name: 'Статус заявки ТПС (Гарант)',
+        appType: 'lead',
+        type: 'enumeration',
+        items: [
+            { code: 'tps_alien_client', name: 'Чужой клиент' },
+            { code: 'tps_alien_territory', name: 'Чужая территория' },
+            { code: 'tps_served_client', name: 'Обслуживаемый клиент' },
+            { code: 'tps_sale', name: 'Продажа' },
+            { code: 'tps_refuse', name: 'Отказ' },
+            { code: 'tps_no_answer', name: 'Телефон не отвечает' },
+            { code: 'tps_in_work', name: 'В работе' },
+            { code: 'tps_reserve', name: 'Бронь' },
+        ],
+        code: 'op_lead_tps_status',
+        lead: 'OP_LEAD_TPS_STATUS',
+        company: '',
+        deal: '',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 662,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    // Анкета оценки ТПС, вопрос 1: потребность в СПС в целом.
+    {
+        name: 'ТПС анкета: потребность в СПС',
+        appType: 'lead',
+        type: 'enumeration',
+        items: [
+            { code: 'tps_quest_yes', name: 'Да' },
+            { code: 'tps_quest_no', name: 'Нет' },
+            { code: 'tps_quest_no_info', name: 'Нет информации' },
+        ],
+        code: 'op_lead_tps_quest_need',
+        lead: 'OP_LEAD_TPS_QUEST_NEED',
+        company: '',
+        deal: '',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 663,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    // Анкета оценки ТПС, вопрос 2: заявка оформлена корректно.
+    {
+        name: 'ТПС анкета: заявка оформлена корректно',
+        appType: 'lead',
+        type: 'enumeration',
+        items: [
+            { code: 'tps_quest2_yes', name: 'Да' },
+            { code: 'tps_quest2_no', name: 'Нет' },
+            { code: 'tps_quest2_no_info', name: 'Нет информации' },
+        ],
+        code: 'op_lead_tps_quest_valid',
+        lead: 'OP_LEAD_TPS_QUEST_VALID',
+        company: '',
+        deal: '',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 664,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
 ] as const;
 
 export type PbxSalesEventField = (typeof PBX_SALES_EVENT_FIELDS)[number];

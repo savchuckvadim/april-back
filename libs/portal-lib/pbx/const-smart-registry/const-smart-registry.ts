@@ -1,4 +1,5 @@
 import { AICALL_SMART_DESCRIPTOR } from '../pbx-aicall-smart/type/pbx-aicall-smart.descriptor';
+import { SKAP_SMART_DESCRIPTOR } from '../pbx-skap-smart/type/pbx-skap-smart.descriptor';
 import { ConstSmartDescriptor } from './type/const-smart-descriptor.type';
 
 /**
@@ -11,6 +12,7 @@ import { ConstSmartDescriptor } from './type/const-smart-descriptor.type';
  */
 export const CONST_SMART_REGISTRY = [
     AICALL_SMART_DESCRIPTOR,
+    SKAP_SMART_DESCRIPTOR,
 ] as const satisfies readonly ConstSmartDescriptor[];
 
 export type ConstSmartKind = (typeof CONST_SMART_REGISTRY)[number]['kind'];

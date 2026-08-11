@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { basename, join } from 'path';
+import { basename } from 'path';
 import { readFile, writeFile } from 'fs/promises';
 import {
     LIBRE_OFFICE_CONFIG,
@@ -14,7 +14,7 @@ import {
     isRetryableStatus,
 } from '../errors/libre-office.errors';
 import { LibreOfficeEndpointPool } from './libre-office-endpoint-pool.service';
-import { replaceExtension } from '../utils/replace-extension.util';
+import { pdfPathFor } from '../utils/replace-extension.util';
 
 const BACKOFF_BASE_MS = 500;
 const BACKOFF_MAX_MS = 5_000;
@@ -45,10 +45,7 @@ export class LibreOfficeHttpConverter {
         const name = basename(inputPath);
         const docxBuffer = await readFile(inputPath);
         const pdfBuffer = await this.convertWithRetry(name, docxBuffer, signal);
-        const outputFilePath = join(
-            outputFolder,
-            replaceExtension(name, '.pdf'),
-        );
+        const outputFilePath = pdfPathFor(inputPath, outputFolder);
         await writeFile(outputFilePath, pdfBuffer);
         return outputFilePath;
     }

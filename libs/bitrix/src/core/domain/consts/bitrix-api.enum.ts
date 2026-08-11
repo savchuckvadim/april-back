@@ -20,6 +20,8 @@ export enum EBxNamespace {
 
 export enum EBxMethod {
     ADD = 'add',
+    // sonet_group: метода `sonet_group.add` в REST нет, создание — `sonet_group.create`
+    CREATE = 'create',
     SUBSCRIBE = 'subscribe',
     SET = 'set',
     UPDATE = 'update',

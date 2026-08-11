@@ -16,7 +16,7 @@ import {
     LibreOfficeConvertError,
     LibreOfficeTimeoutError,
 } from '../errors/libre-office.errors';
-import { replaceExtension } from '../utils/replace-extension.util';
+import { pdfPathFor } from '../utils/replace-extension.util';
 import { Semaphore } from '@lib/shared';
 
 const execAsync = promisify(exec);
@@ -95,10 +95,7 @@ export class LibreOfficeExecConverter {
             );
         }
 
-        const outputFilePath = join(
-            outputFolder,
-            replaceExtension(basename(inputPath), '.pdf'),
-        );
+        const outputFilePath = pdfPathFor(inputPath, outputFolder);
         if (!existsSync(outputFilePath)) {
             throw new LibreOfficeConvertError('Конвертация не создала PDF');
         }

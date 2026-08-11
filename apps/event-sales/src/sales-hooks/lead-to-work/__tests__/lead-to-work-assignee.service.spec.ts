@@ -55,8 +55,14 @@ const makeAppCache = () => {
     };
 };
 
-const item = (over: { responsible?: number; department?: string } = {}) =>
-    buildLeadToWorkItem({ leadId: 42, ...over });
+const item = (
+    over: {
+        responsible?: number;
+        department?: string;
+        excludeResponsible?: number;
+        transferredBy?: number;
+    } = {},
+) => buildLeadToWorkItem({ leadId: 42, ...over });
 
 describe('LeadToWorkAssigneeService', () => {
     it('явный responsible проходит без обращения к структуре', async () => {
@@ -98,6 +104,31 @@ describe('LeadToWorkAssigneeService', () => {
         expect(first.departmentKey).toBe('op_15');
     });
 
+    it('намёк НАЗВАНИЕМ отдела («оп 1») матчит ОП без цифр', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'ОП 1' }),
+        );
+        expect(result.departmentKey).toBe('op_15');
+        expect([3, 5]).toContain(result.responsible);
+    });
+
+    it('намёк названием группы («Группа А») матчит группу', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'группа а' }),
+        );
+        expect(result.departmentKey).toBe('group_16');
+    });
+
     it('намёк «D_16» матчит группу внутри ОП', async () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
@@ -124,6 +155,39 @@ describe('LeadToWorkAssigneeService', () => {
         expect(result.departmentKey).toBe('all');
         // 9 неактивен — только 3 и 5.
         expect([3, 5]).toContain(result.responsible);
+    });
+
+    it('передача: excludeResponsible не выбирается (заявка не возвращается)', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        // В ОП 15 кандидаты [3, 5]; исключаем 3 → всегда 5.
+        const first = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15', excludeResponsible: 3 }),
+        );
+        const second = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15', excludeResponsible: 3 }),
+        );
+        expect(first.responsible).toBe(5);
+        expect(second.responsible).toBe(5);
+    });
+
+    it('самопередача без намёка: отдел берётся у передающего сотрудника', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        // Пользователь 5 из ОП 15: без department отдел найден по нему,
+        // а сам он исключён → достаётся 3.
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ transferredBy: 5, excludeResponsible: 5 }),
+        );
+        expect(result.departmentKey).toBe('op_15');
+        expect(result.responsible).toBe(3);
     });
 
     it('пустой отдел → responsible null + warning', async () => {

@@ -18,12 +18,12 @@ describe('BxSonetGroupRepository', () => {
         repo = new BxSonetGroupRepository(api);
     });
 
-    it('add: вызывает sonet_group + пустая entity + add c полями', async () => {
+    it('add: вызывает sonet_group + пустая entity + create c полями', async () => {
         await repo.add({ NAME: 'ОП Звонки' });
         expect(callType).toHaveBeenCalledWith(
             EBxNamespace.SONET_GROUP,
             EBXEntity.SONET_GROUP,
-            EBxMethod.ADD,
+            EBxMethod.CREATE,
             { NAME: 'ОП Звонки' },
         );
     });
@@ -64,7 +64,7 @@ describe('BxSonetGroupRepository', () => {
             'cmd1',
             EBxNamespace.SONET_GROUP,
             EBXEntity.SONET_GROUP,
-            EBxMethod.ADD,
+            EBxMethod.CREATE,
             { NAME: 'ОП Звонки' },
         );
     });

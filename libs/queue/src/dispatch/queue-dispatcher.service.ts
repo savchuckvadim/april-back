@@ -59,6 +59,9 @@ export class QueueDispatcherService {
 
         @InjectQueue(QueueNames.MARKETPLACE_PROVISION)
         private readonly marketplaceProvisionQueue: Queue,
+
+        @InjectQueue(QueueNames.SKAP_IMPORT)
+        private readonly skapImportQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -136,6 +139,9 @@ export class QueueDispatcherService {
 
             case QueueNames.MARKETPLACE_PROVISION:
                 return this.marketplaceProvisionQueue;
+
+            case QueueNames.SKAP_IMPORT:
+                return this.skapImportQueue;
 
             default: {
                 const error = `Unknown queue name: ${name}`;

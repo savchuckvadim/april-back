@@ -224,6 +224,13 @@ export class EventReportKpiPayloadBuilder {
     private buildUnplannedPresentationPlan(): KpiEventPayload | null {
         const ctx = this.ctx;
         if (!ctx.isUnplannedPresentation || ctx.isExpired) return null;
+        /*
+         * Незапланированная презентация даёт ПАРУ записей с читаемой
+         * хронологией: сначала «запланирована» (эта запись, без смещения),
+         * через +1 с — «состоялась» (buildPresentationDone). Раньше offset
+         * стоял наоборот, и в сортировке по дате презентация «проводилась»
+         * раньше, чем планировалась.
+         */
         return this.assemble({
             scenario: 'unplanned_presentation_plan',
             name: `Незапланированная презентация ${this.nowFormatted()}`,
@@ -231,7 +238,6 @@ export class EventReportKpiPayloadBuilder {
             action: 'plan',
             dateForName: ctx.nowDate,
             crm: this.crmLinks(),
-            eventDateOffsetSec: PLAN_EVENT_DATE_OFFSET_SEC,
         });
     }
 
@@ -245,6 +251,11 @@ export class EventReportKpiPayloadBuilder {
             action: 'done',
             dateForName: ctx.nowDate,
             crm: this.crmLinks(),
+            // Пара к «Незапланированной презентации»: факт проведения — на
+            // секунду ПОЗЖЕ факта планирования (см. комментарий выше).
+            eventDateOffsetSec: this.ctx.isUnplannedPresentation
+                ? PLAN_EVENT_DATE_OFFSET_SEC
+                : undefined,
         });
     }
 

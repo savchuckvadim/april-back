@@ -40,4 +40,7 @@ export enum QueueNames {
 
     /** Provisioning pbx-сущностей маркетплейс-продуктов (воркер в pbx-install) */
     MARKETPLACE_PROVISION = 'marketplace-provision',
+
+    /** Импорт статистики СКАП с Диска в смарт (воркер в event-service) */
+    SKAP_IMPORT = 'skap-import',
 }

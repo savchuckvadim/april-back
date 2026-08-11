@@ -639,6 +639,114 @@ exports.Prisma.PortalAiSettingsScalarFieldEnum = {
   settings: 'settings'
 };
 
+exports.Prisma.PortalAppSettingsScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  appCode: 'appCode',
+  settings: 'settings',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SkapImportFileScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  diskFileId: 'diskFileId',
+  fileName: 'fileName',
+  diskUpdatedAt: 'diskUpdatedAt',
+  size: 'size',
+  status: 'status',
+  formatVersion: 'formatVersion',
+  error: 'error',
+  stats: 'stats',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SkapImportItemScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  dedupKey: 'dedupKey',
+  clientCard: 'clientCard',
+  regList: 'regList',
+  login: 'login',
+  period: 'period',
+  status: 'status',
+  bitrixItemId: 'bitrixItemId',
+  companyId: 'companyId',
+  dealId: 'dealId',
+  contactId: 'contactId',
+  warning: 'warning',
+  sessionCount: 'sessionCount',
+  timeTotalMin: 'timeTotalMin',
+  ipCount: 'ipCount',
+  fileId: 'fileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SkapSessionScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  dedupKey: 'dedupKey',
+  itemId: 'itemId',
+  clientCard: 'clientCard',
+  regList: 'regList',
+  login: 'login',
+  complectArmId: 'complectArmId',
+  complectType: 'complectType',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  durationSec: 'durationSec',
+  ip: 'ip',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SkapSubscriptionScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  dedupKey: 'dedupKey',
+  itemId: 'itemId',
+  clientCard: 'clientCard',
+  regList: 'regList',
+  complectArmId: 'complectArmId',
+  complectName: 'complectName',
+  supplyKind: 'supplyKind',
+  city: 'city',
+  region: 'region',
+  version: 'version',
+  content: 'content',
+  managerName: 'managerName',
+  managerEmail: 'managerEmail',
+  mailingName: 'mailingName',
+  mailingEmail: 'mailingEmail',
+  isActive: 'isActive',
+  period: 'period',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SkapImportRunScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  status: 'status',
+  stopReason: 'stopReason',
+  stats: 'stats',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.Price_row_cellsScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
@@ -1900,6 +2008,74 @@ exports.Prisma.PortalAiSettingsOrderByRelevanceFieldEnum = {
   deepAnalysisModel: 'deepAnalysisModel'
 };
 
+exports.Prisma.PortalAppSettingsOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  appCode: 'appCode'
+};
+
+exports.Prisma.SkapImportFileOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  diskFileId: 'diskFileId',
+  fileName: 'fileName',
+  status: 'status',
+  formatVersion: 'formatVersion',
+  error: 'error'
+};
+
+exports.Prisma.SkapImportItemOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  dedupKey: 'dedupKey',
+  clientCard: 'clientCard',
+  regList: 'regList',
+  login: 'login',
+  status: 'status',
+  warning: 'warning',
+  fileId: 'fileId'
+};
+
+exports.Prisma.SkapSessionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  dedupKey: 'dedupKey',
+  itemId: 'itemId',
+  clientCard: 'clientCard',
+  regList: 'regList',
+  login: 'login',
+  complectArmId: 'complectArmId',
+  complectType: 'complectType',
+  ip: 'ip'
+};
+
+exports.Prisma.SkapSubscriptionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  dedupKey: 'dedupKey',
+  itemId: 'itemId',
+  clientCard: 'clientCard',
+  regList: 'regList',
+  complectArmId: 'complectArmId',
+  complectName: 'complectName',
+  supplyKind: 'supplyKind',
+  city: 'city',
+  region: 'region',
+  version: 'version',
+  content: 'content',
+  managerName: 'managerName',
+  managerEmail: 'managerEmail',
+  mailingName: 'mailingName',
+  mailingEmail: 'mailingEmail'
+};
+
+exports.Prisma.SkapImportRunOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  status: 'status',
+  stopReason: 'stopReason'
+};
+
 exports.Prisma.price_row_cellsOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code',
@@ -2559,6 +2735,12 @@ exports.Prisma.ModelName = {
   portal_measure: 'portal_measure',
   Portal: 'Portal',
   PortalAiSettings: 'PortalAiSettings',
+  PortalAppSettings: 'PortalAppSettings',
+  SkapImportFile: 'SkapImportFile',
+  SkapImportItem: 'SkapImportItem',
+  SkapSession: 'SkapSession',
+  SkapSubscription: 'SkapSubscription',
+  SkapImportRun: 'SkapImportRun',
   price_row_cells: 'price_row_cells',
   rq_counter: 'rq_counter',
   rqs: 'rqs',

@@ -75,12 +75,18 @@ export class LeadToWorkAssigneeService {
                 `департамент-намёк: "${item.department ?? ''}"`,
         );
 
-        const hintedId = this.parseDepartmentHint(item.department);
-        const { candidates, departmentKey } = await this.collectCandidates(
-            domain,
-            hintedId,
-            warnings,
-        );
+        const hint = this.parseDepartmentHint(item.department);
+        const { candidates: allCandidates, departmentKey } =
+            await this.collectCandidates(domain, hint, item, warnings);
+
+        // Передача: прежний ответственный исключается — заявка не должна
+        // вернуться ему же (если он не единственный в отделе).
+        const excluded = item.excludeResponsible ?? null;
+        const candidates =
+            excluded && allCandidates.length > 1
+                ? allCandidates.filter(id => id !== excluded)
+                : allCandidates;
+
         if (candidates.length === 0) {
             warnings.push(
                 'Не удалось выбрать ответственного: в отделе продаж нет активных сотрудников',
@@ -105,21 +111,49 @@ export class LeadToWorkAssigneeService {
         return { responsible, source: 'round-robin', departmentKey, warnings };
     }
 
-    /** «15», «D_15», «department_15» → 15; мусор/пусто → null. */
-    private parseDepartmentHint(raw: string | undefined): number | null {
-        const match = /(\d+)/.exec(raw ?? '');
-        if (!match) return null;
-        const id = Number(match[1]);
-        return Number.isFinite(id) && id > 0 ? id : null;
+    /**
+     * Намёк отдела: «15»/«D_15» → id 15; «ОП Центр» → поиск по названию.
+     * Битрикс-робот может слать и id, и название отдела — поддержаны оба.
+     */
+    private parseDepartmentHint(raw: string | undefined): {
+        id: number | null;
+        name: string | null;
+    } {
+        const text = (raw ?? '').trim();
+        if (!text) return { id: null, name: null };
+        // Строка целиком «числовая» (возможно с префиксом) → это id.
+        const idMatch = /^(?:[A-Za-z_]*_)?(\d+)$/.exec(text);
+        if (idMatch) {
+            const id = Number(idMatch[1]);
+            return Number.isFinite(id) && id > 0
+                ? { id, name: null }
+                : { id: null, name: null };
+        }
+        return { id: null, name: this.normalizeName(text) };
+    }
+
+    /** Нормализация названия отдела для нестрогого сравнения. */
+    private normalizeName(raw: string): string {
+        return raw.trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    /** Совпадение названий: равенство либо вхождение в любую сторону. */
+    private nameMatches(candidate: string | undefined, hint: string): boolean {
+        const normalized = this.normalizeName(candidate ?? '');
+        if (!normalized) return false;
+        return normalized.includes(hint) || hint.includes(normalized);
     }
 
     /**
-     * Кандидаты: сотрудники отдела/группы по намёку, иначе все сотрудники
-     * всех ОП. Отсортированы по ID — курсор детерминирован.
+     * Кандидаты: сотрудники отдела/группы по намёку; без намёка при
+     * самопередаче — отдел передающего (заявка остаётся в его ОП);
+     * иначе все сотрудники всех ОП. Отсортированы по ID — курсор
+     * детерминирован.
      */
     private async collectCandidates(
         domain: string,
-        hintedId: number | null,
+        hint: { id: number | null; name: string | null },
+        item: ILeadToWorkItem,
         warnings: string[],
     ): Promise<{ candidates: number[]; departmentKey: string }> {
         // userId=0: пользовательская часть структуры здесь не нужна.
@@ -132,25 +166,45 @@ export class LeadToWorkAssigneeService {
         let users: ICandidateUser[] | null = null;
         let departmentKey = 'all';
 
-        if (hintedId !== null) {
+        // Самопередача без явного намёка: отдел — у передающего сотрудника.
+        if (hint.id === null && hint.name === null && item.transferredBy) {
             for (const sales of data.salesDepartments ?? []) {
-                if (Number(sales.department?.ID) === hintedId) {
+                const hasUser = (sales.allUsers ?? []).some(
+                    user => Number(user?.ID) === item.transferredBy,
+                );
+                if (hasUser) {
                     users = sales.allUsers ?? [];
-                    departmentKey = `op_${hintedId}`;
+                    departmentKey = `op_${Number(sales.department?.ID)}`;
                     break;
                 }
-                const group = (sales.groups ?? []).find(
-                    g => Number(g.ID) === hintedId,
+            }
+        }
+
+        if (!users && (hint.id !== null || hint.name !== null)) {
+            for (const sales of data.salesDepartments ?? []) {
+                const opMatched =
+                    hint.id !== null
+                        ? Number(sales.department?.ID) === hint.id
+                        : this.nameMatches(sales.department?.NAME, hint.name!);
+                if (opMatched) {
+                    users = sales.allUsers ?? [];
+                    departmentKey = `op_${Number(sales.department?.ID)}`;
+                    break;
+                }
+                const group = (sales.groups ?? []).find(g =>
+                    hint.id !== null
+                        ? Number(g.ID) === hint.id
+                        : this.nameMatches(g.NAME, hint.name!),
                 );
                 if (group) {
                     users = group.USERS ?? [];
-                    departmentKey = `group_${hintedId}`;
+                    departmentKey = `group_${Number(group.ID)}`;
                     break;
                 }
             }
             if (!users) {
                 warnings.push(
-                    `Отдел «${hintedId}» из намёка не найден среди ОП — ответственный выбран по всем отделам продаж`,
+                    `Отдел «${hint.id ?? hint.name}» из намёка не найден среди ОП — ответственный выбран по всем отделам продаж`,
                 );
             }
         }

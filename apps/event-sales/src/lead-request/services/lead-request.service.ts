@@ -19,6 +19,7 @@ import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/servi
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
+    getLeadRequestAcceptState,
 } from '../../shared/lead-request/lead-request-history.util';
 import { LeadRequestCardDto } from '../dto/lead-request-card.dto';
 import {
@@ -145,9 +146,12 @@ export class LeadRequestService {
                 lead,
                 PBX_SALES_EVENT_FIELD_CODES.to_xo_sales,
             ),
+            isAccepted: true,
+            assignedById: this.numeric(lead.ASSIGNED_BY_ID),
             saleReadiness: { ready: false, missing: [] },
             warnings,
         };
+        card.isAccepted = this.isAccepted(portal, lead, card);
         card.saleReadiness = this.saleReadiness(card);
         return card;
     }
@@ -329,6 +333,33 @@ export class LeadRequestService {
         if (history.length) fields[bitrixId] = history;
     }
 
+    /**
+     * «Принята ли заявка» (назначение ≠ принятие): истина — история
+     * (принятие после ПОСЛЕДНЕГО назначения); истории нет — по стадии
+     * заявки (назначена → не принята; дальше — принята); ничего не
+     * установлено → true (кнопку не показываем, механика недоступна).
+     */
+    private isAccepted(
+        portal: PortalModel,
+        lead: BxRow,
+        card: LeadRequestCardDto,
+    ): boolean {
+        const state = getLeadRequestAcceptState(
+            this.fieldRaw(
+                portal,
+                lead,
+                EnumLeadRequestFieldCode.op_lead_firstprepare_history,
+            ),
+            portal.getTimezone(),
+        );
+        if (state.acceptedAfterAssign !== null) {
+            return state.acceptedAfterAssign;
+        }
+        const stage = card.siteStage.currentCode;
+        if (stage === null) return true;
+        return stage !== EnumLeadSiteStageCode.assigned;
+    }
+
     /** Готовность к продаже: что обязано быть отмечено (правило пользователя). */
     private saleReadiness(
         card: LeadRequestCardDto,
@@ -434,6 +465,11 @@ export class LeadRequestService {
             if (match) return Number(match[1]);
         }
         return null;
+    }
+
+    private numeric(raw: unknown): number | null {
+        const value = Number(raw);
+        return Number.isFinite(value) && value > 0 ? value : null;
     }
 
     private text(raw: unknown): string | null {

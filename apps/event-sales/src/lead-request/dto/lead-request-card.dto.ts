@@ -321,6 +321,31 @@ export class LeadRequestCardDto {
     xoDealId: number | null;
 
     @ApiProperty({
+        description:
+            'Заявка принята менеджером после последнего назначения ' +
+            '(назначение ≠ принятие). false — показать кнопку «Принять ' +
+            'в работу».',
+        example: true,
+        type: Boolean,
+    })
+    @IsBoolean()
+    isAccepted: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Кому назначен лид (ASSIGNED_BY_ID). Фронт сравнивает с ' +
+            'текущим пользователем: непринятая ЧУЖАЯ заявка — кнопки ' +
+            'принятия не показываются (после передачи принимает новый ' +
+            'ответственный, а не прежний).',
+        type: Number,
+        nullable: true,
+        example: 447,
+    })
+    @IsOptional()
+    @IsInt()
+    assignedById: number | null;
+
+    @ApiProperty({
         description: 'Готовность к фиксации продажи (что ещё не отмечено).',
         type: LeadRequestSaleReadinessDto,
     })

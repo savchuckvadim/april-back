@@ -4,6 +4,7 @@ export const LIBREOFFICE_CONVERSION_DURATION_SECONDS =
 export const LIBREOFFICE_CONVERSION_ERRORS_TOTAL =
     'libreoffice_conversion_errors_total';
 export const LIBREOFFICE_POOL_SLOTS = 'libreoffice_pool_slots';
+export const LIBREOFFICE_PDF_CACHE_TOTAL = 'libreoffice_pdf_cache_total';
 
 /**
  * Бакеты под реальную конвертацию DOCX → PDF: простой оффер — единицы

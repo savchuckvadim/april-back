@@ -51,4 +51,9 @@ export class SalesHookOpsProcessor {
     handleDuplicateCheck(job: Job<SalesHookJobData>) {
         return this.runner.run(job.data);
     }
+
+    @Process({ name: JobNames.SALES_HOOK_LEAD_ACCEPT, concurrency: 2 })
+    handleLeadAccept(job: Job<SalesHookJobData>) {
+        return this.runner.run(job.data);
+    }
 }

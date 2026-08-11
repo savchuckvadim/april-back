@@ -4,6 +4,7 @@ import { Counter, Gauge, Histogram } from 'prom-client';
 import {
     LIBREOFFICE_CONVERSION_DURATION_SECONDS,
     LIBREOFFICE_CONVERSION_ERRORS_TOTAL,
+    LIBREOFFICE_PDF_CACHE_TOTAL,
     LIBREOFFICE_POOL_SLOTS,
 } from '../config/libre-office.metrics';
 import { LibreOfficeErrorReason } from '../errors/libre-office.errors';
@@ -27,7 +28,17 @@ export class LibreOfficeMetricsService {
         private readonly errors: Counter<string>,
         @InjectMetric(LIBREOFFICE_POOL_SLOTS)
         private readonly poolSlots: Gauge<string>,
+        @InjectMetric(LIBREOFFICE_PDF_CACHE_TOTAL)
+        private readonly cache: Counter<string>,
     ) {}
+
+    /**
+     * Попадания в кэш готовых PDF. Доля hit — прямая метрика того, сколько
+     * тяжёлых конвертаций мы вообще не выполняли.
+     */
+    countCache(result: 'hit' | 'miss'): void {
+        this.cache.labels(result).inc();
+    }
 
     observeConversion(seconds: number, outcome: 'ok' | 'error'): void {
         this.duration.labels(outcome).observe(seconds);

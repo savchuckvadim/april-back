@@ -14,8 +14,10 @@ import {
     LIBREOFFICE_CONVERSION_DURATION_SECONDS,
     LIBREOFFICE_CONVERSION_ERRORS_TOTAL,
     LIBREOFFICE_DURATION_BUCKETS,
+    LIBREOFFICE_PDF_CACHE_TOTAL,
     LIBREOFFICE_POOL_SLOTS,
 } from './config/libre-office.metrics';
+import { LibreOfficePdfCacheService } from './services/libre-office-pdf-cache.service';
 import { LibreOfficeEndpointPool } from './services/libre-office-endpoint-pool.service';
 import { LibreOfficeEndpointResolver } from './services/libre-office-endpoint-resolver.service';
 import { LibreOfficeHttpConverter } from './services/libre-office-http.converter';
@@ -50,7 +52,13 @@ import { LibreOfficeMetricsService } from './services/libre-office-metrics.servi
             help: 'Состояние пула инстансов конвертации (capacity/active/pending/cooling)',
             labelNames: ['state'],
         }),
+        makeCounterProvider({
+            name: LIBREOFFICE_PDF_CACHE_TOTAL,
+            help: 'Обращения к кэшу готовых PDF (hit/miss)',
+            labelNames: ['result'],
+        }),
         LibreOfficeMetricsService,
+        LibreOfficePdfCacheService,
         LibreOfficeEndpointResolver,
         LibreOfficeEndpointPool,
         LibreOfficeHttpConverter,

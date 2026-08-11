@@ -14,6 +14,7 @@ import {
     IPDeal,
     IStage,
     IPSmart,
+    IPCallingTasksGroup,
 } from '../interfaces/portal.interface';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import {
@@ -290,6 +291,7 @@ export class PortalModel {
     }
 
     getRpaFieldBitrixIdByCode(
+        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 'supply' в союзе оставлен как подсказка автокомплита
         rpaCode: 'supply' | string,
         code: string,
     ): string | undefined {
@@ -375,6 +377,18 @@ export class PortalModel {
     ): IFieldItem | undefined {
         return field.items.find(item => item.code === itemCode);
     }
+
+    /**
+     * Рабочая группа звонков из PortalDB (таблица callings → IPortal):
+     * типизированная замена доменных хардкодов getServiceTaskGroupId.
+     * undefined — группа не установлена (ставится каноном pbx-install,
+     * PbxGroupInstallUseCase).
+     */
+    getCallingGroupByCode = (
+        group: IPCallingTasksGroup['group'],
+    ): IPCallingTasksGroup | undefined => {
+        return this.portal.callingGroups?.find(item => item.group === group);
+    };
 
     getSalesTaskGroupId = (): number => {
         let result = 41;

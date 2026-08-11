@@ -12,8 +12,20 @@ describe('ConstSmartInstallerResolver', () => {
                 fieldsFailed: [],
             }),
         };
-        const resolver = new ConstSmartInstallerResolver(aicall as never);
-        return { resolver, aicall };
+        const skap = {
+            execute: jest.fn().mockResolvedValue({
+                entityTypeId: 156,
+                created: true,
+                fieldsAdded: ['UF_CRM_130_LOGIN'],
+                fieldsExisting: [],
+                fieldsFailed: [],
+            }),
+        };
+        const resolver = new ConstSmartInstallerResolver(
+            aicall as never,
+            skap as never,
+        );
+        return { resolver, aicall, skap };
     };
 
     it('resolve(aicall) проксирует execute(domain)', async () => {
@@ -23,6 +35,15 @@ describe('ConstSmartInstallerResolver', () => {
             .execute('gsr.bitrix24.ru');
         expect(aicall.execute).toHaveBeenCalledWith('gsr.bitrix24.ru');
         expect(result.entityTypeId).toBe(128);
+    });
+
+    it('resolve(skap) проксирует execute(domain)', async () => {
+        const { resolver, skap } = makeResolver();
+        const result = await resolver
+            .resolve('skap')
+            .execute('april.bitrix24.ru');
+        expect(skap.execute).toHaveBeenCalledWith('april.bitrix24.ru');
+        expect(result.created).toBe(true);
     });
 
     it('неизвестный kind — BadRequest со списком доступных', () => {

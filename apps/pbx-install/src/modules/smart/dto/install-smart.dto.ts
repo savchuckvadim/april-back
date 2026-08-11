@@ -4,6 +4,8 @@ export enum SmartNameEnum {
     COLD = 'cold',
     /** Const-смарт «AI-анализ звонков»: шаблон из констант, не из Excel. */
     AICALL = 'aicall',
+    /** Const-смарт «СКАП» (логин×месяц): шаблон из констант, не из Excel. */
+    SKAP = 'skap',
 }
 
 export enum SmartGroupEnum {

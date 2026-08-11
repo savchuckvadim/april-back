@@ -161,17 +161,31 @@ export class LeadToWorkStageResolver {
             if (template?.dealStageCode) return;
         }
 
-        const targetCode = hasCompany
-            ? 'lead_company_work'
-            : 'lead_taken_in_work';
-        const statusId = this.portal.getLeadStatusIdByCode(targetCode);
-        if (statusId) {
-            plan.leadStatusId = statusId;
-        } else {
-            warnings.push(
-                `Стадия лида «${targetCode}» не установлена/не сопоставлена — статус лида не изменяется`,
-            );
+        /*
+         * ХО-вход: назначение ≠ принятие. Хук ставит «Назначена менеджеру»
+         * (lead_assigned), а «Взята в работу» происходит только при
+         * подтверждении менеджером (/lead-request/accept) — от разницы
+         * считается время первичной обработки. Стадия не установлена —
+         * graceful откат на прежнее поведение.
+         */
+        const targetCodes =
+            item.isXo === 'Y'
+                ? [
+                      'lead_assigned',
+                      hasCompany ? 'lead_company_work' : 'lead_taken_in_work',
+                  ]
+                : [hasCompany ? 'lead_company_work' : 'lead_taken_in_work'];
+
+        for (const targetCode of targetCodes) {
+            const statusId = this.portal.getLeadStatusIdByCode(targetCode);
+            if (statusId) {
+                plan.leadStatusId = statusId;
+                return;
+            }
         }
+        warnings.push(
+            `Стадия лида «${targetCodes[0]}» не установлена/не сопоставлена — статус лида не изменяется`,
+        );
     }
 
     /** Текущий STATUS_ID лида — проставляется вызывающим перед resolve(). */

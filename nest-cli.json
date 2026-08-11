@@ -190,6 +190,15 @@
         "tsConfigPath": "libs/call-lib/tsconfig.lib.json"
       }
     },
+    "skap-lib": {
+      "type": "library",
+      "root": "libs/skap-lib",
+      "entryFile": "index",
+      "sourceRoot": "libs/skap-lib/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/skap-lib/tsconfig.lib.json"
+      }
+    },
     "bitrix-auth": {
       "type": "library",
       "root": "libs/bitrix-auth",

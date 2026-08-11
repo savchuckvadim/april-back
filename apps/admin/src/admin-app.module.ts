@@ -9,6 +9,7 @@ import { BtxContactModule } from './portal/btx-contacts/btx-contact.module';
 import { BtxRpaModule } from './portal/btx-rpas/btx-rpa.module';
 import { BitrixFieldModule } from './portal/bitrixfields/bitrixfield.module';
 import { SmartModule } from './portal/smarts/smart.module';
+import { SkapImportAdminModule } from './skap/skap-import-admin.module';
 import { BxRqModule } from './portal/bx-rqs/bx-rq.module';
 import { TimezoneModule } from './portal/timezones/timezone.module';
 import { ContractModule } from './garant/contracts/contract.module';
@@ -40,6 +41,7 @@ import { AdminGarantProfPriceModule } from '@lib/garant/price';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
 import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
+import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.admin.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 
@@ -55,6 +57,7 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         BtxRpaModule,
         BitrixFieldModule,
         SmartModule,
+        SkapImportAdminModule,
         BxRqModule,
         TimezoneModule,
         PortalCategoryModule,
@@ -90,6 +93,7 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         // Настройки AI-конвейера на портал (пороги, модели, расписание).
         // Незаданные значения падают в глобальные env приложения.
         PortalAiSettingsAdminModule,
+        PortalAppSettingsAdminModule,
         // Маркетплейс «Менеджер Гарант»: модерация заявок на подключение
         // (approve/block, прогресс установки) — этап 3 онбординга.
         MarketplaceModerationModule,

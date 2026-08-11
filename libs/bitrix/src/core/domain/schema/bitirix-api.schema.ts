@@ -29,6 +29,7 @@ import {
 import { RequisiteLinkSchema } from '../../../domain/crm/requisite-link/schema/bx-requisite-link.schema';
 import { BxCrmEntitySchema } from '../../../domain/crm/entity/schema/bx-crm-entity.schema';
 import { BxDuplicateSchema } from '../../../domain/crm/duplicate/schema/bx-duplicate.schema';
+import { BxImNotifySchema } from '../../../domain/im/notify/schema/bx-im-notify.schema';
 
 import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
 import { ChecklistItemSchema } from 'src/modules/bitrix/domain/tasks/checklist-item/schema/bx-checklist-item.schema';
@@ -122,6 +123,7 @@ export type BXApiSchema = {
         [EBXEntity.CHAT]: DialogSchema;
         [EBXEntity.DIALOG]: DialogSchema;
         [EBXEntity.DIALOG_MESSAGES]: DialogMessageSchema;
+        [EBXEntity.NOTIFY_SYSTEM]: BxImNotifySchema;
     };
     [EBxNamespace.IMV2]: {
         [EBXEntity.EVENT]: ImV2EventSchema;

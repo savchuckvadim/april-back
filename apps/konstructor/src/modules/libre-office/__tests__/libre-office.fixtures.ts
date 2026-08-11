@@ -16,7 +16,27 @@ export function libreOfficeConfig(
         timeoutMs: 5_000,
         retries: 1,
         maxQueue: 10,
+        cacheEnabled: true,
+        cacheTtlHours: 168,
         pdf: { reduceImageResolution: false },
+        ...overrides,
+    };
+}
+
+export type PdfCacheStub = {
+    keyFor: jest.Mock;
+    get: jest.Mock;
+    put: jest.Mock;
+};
+
+/** По умолчанию — кэш работает, но всегда промахивается. */
+export function stubPdfCache(
+    overrides: Partial<PdfCacheStub> = {},
+): PdfCacheStub {
+    return {
+        keyFor: jest.fn().mockResolvedValue('cache-key'),
+        get: jest.fn().mockResolvedValue(false),
+        put: jest.fn().mockResolvedValue(undefined),
         ...overrides,
     };
 }
@@ -30,6 +50,7 @@ export function stubResolver(
 export type MetricsStub = {
     observeConversion: jest.Mock;
     countError: jest.Mock;
+    countCache: jest.Mock;
     syncPool: jest.Mock;
 };
 
@@ -37,6 +58,7 @@ export function stubMetrics(): MetricsStub {
     return {
         observeConversion: jest.fn(),
         countError: jest.fn(),
+        countCache: jest.fn(),
         syncPool: jest.fn(),
     };
 }

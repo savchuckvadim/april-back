@@ -26,6 +26,7 @@ import {
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
+    LEAD_REQUEST_HISTORY_TEXT,
 } from '../../../shared/lead-request/lead-request-history.util';
 
 /** Префиксы задач; проверка идемпотентна — «Звонок Звонок…» не бывает. */
@@ -431,10 +432,15 @@ export class LeadToWorkFlowService {
         const bitrixId = this.portal.getFieldBitrixId(field);
 
         const prev = this.prevResponsible(ctx);
-        const text =
-            prev && prev !== item.responsible
-                ? `ХО передан: ${prev} → ${item.responsible}`
-                : `ХО назначен: ${item.responsible}`;
+        // Самопередача подсвечивается отдельно: сотрудник сам отдал заявку.
+        const text = item.transferredBy
+            ? LEAD_REQUEST_HISTORY_TEXT.selfTransferred(
+                  item.transferredBy,
+                  item.responsible,
+              )
+            : prev && prev !== item.responsible
+              ? LEAD_REQUEST_HISTORY_TEXT.transferred(prev, item.responsible)
+              : LEAD_REQUEST_HISTORY_TEXT.assigned(item.responsible);
         fields[bitrixId] = appendLeadRequestHistory(
             (ctx.lead as unknown as BxRow)[bitrixId],
             buildLeadRequestHistoryEntry(text, this.portal.getTimezone()),
@@ -442,18 +448,20 @@ export class LeadToWorkFlowService {
     }
 
     /**
-     * op_lead_site_status → «Взята в работу», op_lead_site_stage →
-     * «Запланирован звонок» — только если поле установлено и ПУСТО.
+     * Первичные метки заявки при НАЗНАЧЕНИИ ХО: op_lead_site_status →
+     * «Появилась», op_lead_site_stage → «Назначена менеджеру» — только
+     * если поле установлено и ПУСТО. «Взята в работу» здесь НЕ ставится:
+     * это факт ПРИНЯТИЯ, его фиксирует /lead-request/accept.
      */
     private appendSiteMarks(ctx: LeadToWorkContext, fields: BxRow): void {
         const marks: [code: string, itemCode: string][] = [
             [
                 PBX_SALES_EVENT_FIELD_CODES.op_lead_site_status,
-                EnumLeadSiteStatusCode.taken,
+                EnumLeadSiteStatusCode.appeared,
             ],
             [
                 PBX_SALES_EVENT_FIELD_CODES.op_lead_site_stage,
-                EnumLeadSiteStageCode.callPlanned,
+                EnumLeadSiteStageCode.assigned,
             ],
         ];
         const lead = ctx.lead as unknown as BxRow;

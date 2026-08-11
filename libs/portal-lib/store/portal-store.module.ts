@@ -13,6 +13,7 @@ import { PortalKeyCryptoService } from './keys/portal-key-crypto.service';
 import { PortalAiSettingsRepository } from './ai-settings/portal-ai-settings.repository';
 import { PortalAiSettingsPrismaRepository } from './ai-settings/portal-ai-settings.prisma.repository';
 import { PortalAiSettingsService } from './ai-settings/portal-ai-settings.service';
+import { PortalAppSettingsModule } from './app-settings/portal-app-settings.module';
 
 /**
  * Сервисный модуль хранилища портала — БЕЗ контроллеров.
@@ -25,7 +26,12 @@ import { PortalAiSettingsService } from './ai-settings/portal-ai-settings.servic
  * (см. ai/rules/app-api-surface.md). Сервисы экспортируются админ-модулям.
  */
 @Module({
-    imports: [OnlineAdminModule, OnlineModule, RedisModule],
+    imports: [
+        OnlineAdminModule,
+        OnlineModule,
+        RedisModule,
+        PortalAppSettingsModule,
+    ],
     providers: [
         {
             provide: PortalRepository,
@@ -53,6 +59,7 @@ import { PortalAiSettingsService } from './ai-settings/portal-ai-settings.servic
         PortalOuterService,
         PortalKeysService,
         PortalAiSettingsService,
+        PortalAppSettingsModule,
     ],
 })
 export class PortalStoreModule {}

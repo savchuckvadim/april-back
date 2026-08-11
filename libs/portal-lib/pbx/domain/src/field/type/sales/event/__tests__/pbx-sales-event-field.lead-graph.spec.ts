@@ -49,6 +49,42 @@ describe('PBX_SALES_EVENT_FIELDS — граф лид↔сделка и op_lead_*
         }
     });
 
+    it('ТПС-словарь Гаранта: 8 семантических статусов по официальному документу', () => {
+        const tps = findPbxSalesEventField('op_lead_tps_status');
+        expect(tps?.type).toBe('enumeration');
+        expect(tps?.lead).toBe('OP_LEAD_TPS_STATUS');
+        const items: readonly { code: string; name: string }[] =
+            tps?.items ?? [];
+        expect(items.map(item => item.code)).toEqual([
+            'tps_alien_client',
+            'tps_alien_territory',
+            'tps_served_client',
+            'tps_sale',
+            'tps_refuse',
+            'tps_no_answer',
+            'tps_in_work',
+            'tps_reserve',
+        ]);
+    });
+
+    it('ТПС-анкета: два вопроса с вариантами Да/Нет/Нет информации', () => {
+        for (const code of [
+            'op_lead_tps_quest_need',
+            'op_lead_tps_quest_valid',
+        ] as const) {
+            const field = findPbxSalesEventField(code);
+            expect(field?.type).toBe('enumeration');
+            expect(field?.lead).toBeTruthy();
+            const items: readonly { code: string; name: string }[] =
+                field?.items ?? [];
+            expect(items.map(item => item.name)).toEqual([
+                'Да',
+                'Нет',
+                'Нет информации',
+            ]);
+        }
+    });
+
     it('булевы маркеры процессов установлены на лид', () => {
         for (const code of [
             'op_lead_is_duplicate_check',

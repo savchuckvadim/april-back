@@ -3,6 +3,7 @@ import {
     InstallCallReportSmartResult,
     InstallCallReportSmartUseCase,
 } from '@lib/call-lib';
+import { InstallSkapSmartUseCase } from '@lib/skap-lib';
 import { CONST_SMART_REGISTRY } from '@lib/portal-lib/pbx/const-smart-registry';
 
 /** Общий контракт установщика const-смарта. */
@@ -19,9 +20,13 @@ export interface ConstSmartInstaller {
 export class ConstSmartInstallerResolver {
     private readonly byKind: Record<string, ConstSmartInstaller>;
 
-    constructor(aicallInstaller: InstallCallReportSmartUseCase) {
+    constructor(
+        aicallInstaller: InstallCallReportSmartUseCase,
+        skapInstaller: InstallSkapSmartUseCase,
+    ) {
         this.byKind = {
             aicall: aicallInstaller,
+            skap: skapInstaller,
         };
     }
 

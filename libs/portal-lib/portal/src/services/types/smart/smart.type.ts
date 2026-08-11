@@ -3,4 +3,5 @@ export type SmartType =
     | 'service_month'
     | 'presentation'
     | 'service_act'
-    | 'aicall';
+    | 'aicall'
+    | 'skap';

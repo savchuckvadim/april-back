@@ -12,7 +12,7 @@ import {
  * Группа — entity-less метод (`sonet_group.create`/`update`/`get`/`delete`).
  */
 export type SonetGroupSchema = {
-    [EBxMethod.ADD]: {
+    [EBxMethod.CREATE]: {
         request: IBXSonetGroupCreateFields;
         response: number;
     };

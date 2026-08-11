@@ -120,6 +120,7 @@
         "reflect-metadata": "^0.2.2",
         "russian-nouns-js": "^2.2.0",
         "rxjs": "^7.8.1",
+        "sharp": "^0.35.3",
         "telegraf": "^4.16.3",
         "winston": "^3.17.0"
     },
@@ -193,6 +194,7 @@
             "^@lib/metrics(|/.*)$": "<rootDir>/libs/metrics/src/$1",
             "^@lib/mail(|/.*)$": "<rootDir>/libs/mail/src/$1",
             "^@lib/call-lib(|/.*)$": "<rootDir>/libs/call-lib/src/$1",
+            "^@lib/skap-lib(|/.*)$": "<rootDir>/libs/skap-lib/src/$1",
             "^@lib/vibecode(|/.*)$": "<rootDir>/libs/vibecode/src/$1",
             "^@lib/pbx-user-fields(|/.*)$": "<rootDir>/libs/pbx-user-fields/src/$1",
             "^@lib/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$1",

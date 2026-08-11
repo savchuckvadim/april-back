@@ -1,12 +1,14 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { ETimeZone } from '@lib/shared/lib/date';
 
 // Плагины idempotent: extend() повторно — no-op. Без явной регистрации
 // util зависел бы от порядка импортов (plugин ставит parse-portal-input).
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 
 /**
  * История обработки заявки — поле лида `op_lead_firstprepare_history`
@@ -60,4 +62,90 @@ export function appendLeadRequestHistory(
 function tail(entry: string): string {
     const index = entry.indexOf('—');
     return index >= 0 ? entry.slice(index + 1).trim() : entry.trim();
+}
+
+/* ------------------------------------------------------------------ *
+ * Канонические тексты событий пути заявки. История — источник истины
+ * для «назначена → принята» (от разницы считается firstprepare_long),
+ * поэтому тексты живут здесь, а не размазаны по сервисам.
+ * ------------------------------------------------------------------ */
+
+export const LEAD_REQUEST_HISTORY_TEXT = {
+    assigned: (responsibleId: number): string =>
+        `ХО назначен: ${responsibleId}`,
+    transferred: (fromId: number, toId: number): string =>
+        `ХО передан: ${fromId} → ${toId}`,
+    /** Сотрудник САМ отдал заявку (кнопка «Передать другому») — подсветка. */
+    selfTransferred: (fromId: number, toId: number): string =>
+        `⚠ Сотрудник ${fromId} сам передал заявку → ${toId}`,
+    accepted: (userId: number | null): string =>
+        userId
+            ? `Заявка принята в работу: ${userId}`
+            : 'Заявка принята в работу',
+} as const;
+
+/** Запись — назначение/передача ХО (точка отсчёта firstprepare). */
+export function isAssignHistoryEntry(entry: string): boolean {
+    return (
+        /ХО (назначен|передан)/.test(entry) ||
+        entry.includes('сам передал заявку')
+    );
+}
+
+/** Запись — принятие заявки менеджером. */
+export function isAcceptHistoryEntry(entry: string): boolean {
+    return entry.includes('Заявка принята в работу');
+}
+
+/** «10.08.2026 12:40 — …» → Date в TZ портала; не распарсилось — null. */
+export function parseHistoryEntryDate(
+    entry: string,
+    portalTz: ETimeZone,
+): Date | null {
+    const match = /^(\d{2}\.\d{2}\.\d{4} \d{2}:\d{2})\s*—/.exec(entry);
+    if (!match) return null;
+    const parsed = dayjs.tz(match[1], 'DD.MM.YYYY HH:mm', portalTz);
+    return parsed.isValid() ? parsed.toDate() : null;
+}
+
+/** Состояние принятия по истории заявки. */
+export interface LeadRequestAcceptState {
+    /** Момент последнего назначения/передачи ХО. */
+    lastAssignedAt: Date | null;
+    /** Принята ли заявка ПОСЛЕ последнего назначения. */
+    acceptedAfterAssign: boolean | null;
+}
+
+/**
+ * «Принята ли заявка»: ищем последние записи назначения и принятия.
+ * Принятие валидно, только если оно ПОЗЖЕ последнего назначения
+ * (после передачи другому менеджеру заявку надо принимать заново).
+ * Записей нет вовсе → null (истина неизвестна, решает вызывающий).
+ */
+export function getLeadRequestAcceptState(
+    currentRaw: unknown,
+    portalTz: ETimeZone,
+): LeadRequestAcceptState {
+    const entries = (Array.isArray(currentRaw) ? currentRaw : [])
+        .map(value => (typeof value === 'string' ? value : ''))
+        .filter(Boolean);
+
+    let lastAssignIndex = -1;
+    let lastAcceptIndex = -1;
+    let lastAssignedAt: Date | null = null;
+    entries.forEach((entry, index) => {
+        if (isAssignHistoryEntry(entry)) {
+            lastAssignIndex = index;
+            lastAssignedAt = parseHistoryEntryDate(entry, portalTz);
+        }
+        if (isAcceptHistoryEntry(entry)) lastAcceptIndex = index;
+    });
+
+    if (lastAssignIndex === -1 && lastAcceptIndex === -1) {
+        return { lastAssignedAt: null, acceptedAfterAssign: null };
+    }
+    return {
+        lastAssignedAt,
+        acceptedAfterAssign: lastAcceptIndex > lastAssignIndex,
+    };
 }

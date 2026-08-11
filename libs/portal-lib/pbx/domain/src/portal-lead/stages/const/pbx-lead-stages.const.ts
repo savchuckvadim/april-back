@@ -78,6 +78,20 @@ const SALES_LEAD_STAGES = [
         installMode: 'map-only',
     },
     {
+        // ХО-вход: назначение ≠ принятие. Хук ставит лид сюда, «Взята в
+        // работу» происходит только при подтверждении менеджером
+        // (POST /lead-request/accept) — от разницы считается firstprepare.
+        code: 'lead_assigned',
+        name: 'assigned',
+        title: 'Назначена менеджеру',
+        color: '#8FBCF6',
+        order: 21,
+        isActive: true,
+        bitrixStatusId: 'PBX_ASSIGNED',
+        semantics: '',
+        installMode: 'create',
+    },
+    {
         code: 'lead_taken_in_work',
         name: 'taken_in_work',
         title: 'Взята в работу',

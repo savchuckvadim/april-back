@@ -19,6 +19,7 @@ import { BitrixProxyModule } from './bitrix-proxy/bitrix-proxy.module';
 import { MergeDealsModule } from './merge-deals/merge-deals.module';
 import { DuplicatesModule } from './duplicates/duplicates.module';
 import { AppCacheServiceModule } from '@lib/app-cache';
+import { EventSalesAppSettingsModule } from './app-settings/app-settings.module';
 
 @Module({
     imports: [
@@ -55,6 +56,8 @@ import { AppCacheServiceModule } from '@lib/app-cache';
         AppCacheServiceModule,
         // Поиск дублей клиента для фрейма отдела продаж
         DuplicatesModule,
+        // Чтение настроек приложений фронтами (замена хардкода domain-config)
+        EventSalesAppSettingsModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

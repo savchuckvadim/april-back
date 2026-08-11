@@ -9,15 +9,17 @@ import { libreOfficeErrorReason } from './errors/libre-office.errors';
 import { LibreOfficeExecConverter } from './services/libre-office-exec.converter';
 import { LibreOfficeHttpConverter } from './services/libre-office-http.converter';
 import { LibreOfficeMetricsService } from './services/libre-office-metrics.service';
+import { LibreOfficePdfCacheService } from './services/libre-office-pdf-cache.service';
 import {
     LibreOfficeEndpointPool,
     LibreOfficePoolStats,
 } from './services/libre-office-endpoint-pool.service';
+import { pdfPathFor } from './utils/replace-extension.util';
 
 /**
- * Фасад конвертации DOCX → PDF: выбирает стратегию по LIBREOFFICE_MODE,
- * готовит выходную папку и снимает метрики. Вся логика параллелизма,
- * таймаутов и ретраев — в конвертерах, чтобы вызывающий код о них не знал.
+ * Фасад конвертации DOCX → PDF: кэш по содержимому, выбор стратегии по
+ * LIBREOFFICE_MODE, выходная папка и метрики. Логика параллелизма, таймаутов
+ * и ретраев — в конвертерах, чтобы вызывающий код о них не знал.
  */
 @Injectable()
 export class LibreOfficeService {
@@ -27,6 +29,7 @@ export class LibreOfficeService {
         private readonly execConverter: LibreOfficeExecConverter,
         private readonly pool: LibreOfficeEndpointPool,
         private readonly metrics: LibreOfficeMetricsService,
+        private readonly cache: LibreOfficePdfCacheService,
     ) {}
 
     /** Загруженность пула — для диагностики (в метриках то же самое). */
@@ -51,21 +54,38 @@ export class LibreOfficeService {
             mkdirSync(outputFolder, { recursive: true });
         }
 
+        // Тот же документ мог быть сконвертирован раньше (превью → отправка):
+        // одинаковые байты DOCX означают одинаковый PDF.
+        const cacheKey = await this.cache.keyFor(inputPath);
+        const outputFilePath = pdfPathFor(inputPath, outputFolder);
+        if (cacheKey && (await this.cache.get(cacheKey, outputFilePath))) {
+            this.metrics.countCache('hit');
+            return outputFilePath;
+        }
+        if (cacheKey) {
+            this.metrics.countCache('miss');
+        }
+
+        return this.convertAndCache(inputPath, outputFolder, cacheKey, signal);
+    }
+
+    private async convertAndCache(
+        inputPath: string,
+        outputFolder: string,
+        cacheKey: string | null,
+        signal?: AbortSignal,
+    ): Promise<string> {
         const startedAt = Date.now();
         try {
-            const result =
-                this.config.mode === 'http'
-                    ? await this.httpConverter.convert(
-                          inputPath,
-                          outputFolder,
-                          signal,
-                      )
-                    : await this.execConverter.convert(
-                          inputPath,
-                          outputFolder,
-                          signal,
-                      );
+            const result = await this.convertWith(
+                inputPath,
+                outputFolder,
+                signal,
+            );
             this.metrics.observeConversion(this.secondsSince(startedAt), 'ok');
+            if (cacheKey) {
+                await this.cache.put(cacheKey, result);
+            }
             return result;
         } catch (error) {
             this.metrics.observeConversion(
@@ -77,6 +97,16 @@ export class LibreOfficeService {
         } finally {
             this.metrics.syncPool(this.pool.stats());
         }
+    }
+
+    private convertWith(
+        inputPath: string,
+        outputFolder: string,
+        signal?: AbortSignal,
+    ): Promise<string> {
+        return this.config.mode === 'http'
+            ? this.httpConverter.convert(inputPath, outputFolder, signal)
+            : this.execConverter.convert(inputPath, outputFolder, signal);
     }
 
     private secondsSince(startedAt: number): number {

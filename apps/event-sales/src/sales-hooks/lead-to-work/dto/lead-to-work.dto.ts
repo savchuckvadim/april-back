@@ -55,10 +55,9 @@ export class LeadToWorkWebhookQueryDto {
     @ApiPropertyOptional({
         description:
             'Намёк на отдел продаж для round-robin выбора ответственного ' +
-            '(портал с несколькими ОП). Формат от робота пока не ' +
-            'зафиксирован — принимаем сырую строку (id отдела, «123», ' +
-            '«D_123»…), логируем и извлекаем цифры. Игнорируется, если ' +
-            'передан responsible.',
+            '(портал с несколькими ОП). Принимает id («15», «D_15») ЛИБО ' +
+            'название отдела/группы («ОП Центр») — матчинг нестрогий. ' +
+            'Игнорируется, если передан responsible.',
         example: '15',
         type: String,
     })
@@ -183,6 +182,32 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
     department?: string;
 
     @ApiPropertyOptional({
+        description:
+            'Кого round-robin не должен выбрать (кнопка «Передать другому»: ' +
+            'заявка не возвращается прежнему ответственному).',
+        example: 447,
+        type: Number,
+        minimum: 1,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    excludeResponsible?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Сотрудник, который САМ передал заявку: подсвеченная запись в ' +
+            'истории обработки, отдел для round-robin — его отдел.',
+        example: 447,
+        type: Number,
+        minimum: 1,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    transferredBy?: number;
+
+    @ApiPropertyOptional({
         description: 'Создать компанию, если у лида её нет.',
         example: 'N',
         type: String,
@@ -257,6 +282,16 @@ export interface ILeadToWorkItem {
     responsible?: number;
     /** Сырой намёк на отдел ОП для round-robin (формат тестируется). */
     department?: string;
+    /**
+     * Кого round-robin НЕ должен выбрать (передача/SLA: заявка не должна
+     * вернуться прежнему; игнорируется при явном responsible).
+     */
+    excludeResponsible?: number;
+    /**
+     * Сотрудник САМ передал заявку (кнопка «Передать другому»): история
+     * получает подсвеченную запись, отдел для round-robin — его отдел.
+     */
+    transferredBy?: number;
     createCompany: LeadToWorkFlag;
     stageMode: LeadToWorkStageMode;
     taskMode: LeadToWorkTaskMode;
@@ -278,6 +313,8 @@ export function buildLeadToWorkItem(input: {
     leadId: number;
     responsible?: string | number;
     department?: string;
+    excludeResponsible?: number;
+    transferredBy?: number;
     createCompany?: LeadToWorkFlag;
     stageMode?: LeadToWorkStageMode;
     taskMode?: LeadToWorkTaskMode;
@@ -296,6 +333,8 @@ export function buildLeadToWorkItem(input: {
                 ? responsible
                 : undefined,
         department: input.department,
+        excludeResponsible: input.excludeResponsible,
+        transferredBy: input.transferredBy,
         createCompany: input.createCompany ?? 'N',
         stageMode: input.stageMode ?? 'from_lead',
         taskMode: input.taskMode ?? 'move',

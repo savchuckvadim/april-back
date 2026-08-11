@@ -6,10 +6,11 @@ import { TransferWorkHookModule } from './transfer-work/transfer-work.module';
 import { RejectBufferHookModule } from './reject-buffer/reject-buffer.module';
 import { ConvertNormalizerHookModule } from './convert-normalizer/convert-normalizer.module';
 import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.module';
+import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
 
 /**
  * Семейство sales-хуков: ядро (silence + очередь операций + статусы + WS)
- * и шесть хуков. Как добавить новый — см. SALES_HOOKS_GUIDE.md.
+ * и семь хуков. Как добавить новый — см. SALES_HOOKS_GUIDE.md.
  */
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.modu
         RejectBufferHookModule,
         ConvertNormalizerHookModule,
         DuplicateCheckHookModule,
+        LeadAcceptHookModule,
     ],
 })
 export class SalesHooksModule {}

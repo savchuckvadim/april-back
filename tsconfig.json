@@ -62,6 +62,8 @@
       "@lib/mail/*": ["libs/mail/src/*"],
       "@lib/call-lib": ["libs/call-lib/src"],
       "@lib/call-lib/*": ["libs/call-lib/src/*"],
+      "@lib/skap-lib": ["libs/skap-lib/src"],
+      "@lib/skap-lib/*": ["libs/skap-lib/src/*"],
       "@lib/vibecode": ["libs/vibecode/src"],
       "@lib/vibecode/*": ["libs/vibecode/src/*"],
       "@lib/pbx-user-fields": ["libs/pbx-user-fields/src"],

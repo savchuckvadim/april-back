@@ -37,4 +37,10 @@ describe('CONST_SMART_REGISTRY', () => {
         expect(findConstSmartByTypeGroup('aicall', 'report')).toBeUndefined();
         expect(findConstSmartDescriptor('unknown')).toBeUndefined();
     });
+
+    it('skap находится по kind и по (type, group)', () => {
+        expect(findConstSmartDescriptor('skap')?.type).toBe('skap');
+        expect(findConstSmartByTypeGroup('skap', 'service')?.kind).toBe('skap');
+        expect(findConstSmartByTypeGroup('skap', 'sales')).toBeUndefined();
+    });
 });

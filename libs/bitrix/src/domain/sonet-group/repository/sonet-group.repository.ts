@@ -25,7 +25,7 @@ export class BxSonetGroupRepository {
         return this.bxApi.callType(
             EBxNamespace.SONET_GROUP,
             EBXEntity.SONET_GROUP,
-            EBxMethod.ADD,
+            EBxMethod.CREATE,
             fields,
         );
     }
@@ -38,7 +38,7 @@ export class BxSonetGroupRepository {
             cmdCode,
             EBxNamespace.SONET_GROUP,
             EBXEntity.SONET_GROUP,
-            EBxMethod.ADD,
+            EBxMethod.CREATE,
             fields,
         );
     }

@@ -192,6 +192,43 @@ export type Portal = $Result.DefaultSelection<Prisma.$PortalPayload>
  */
 export type PortalAiSettings = $Result.DefaultSelection<Prisma.$PortalAiSettingsPayload>
 /**
+ * Model PortalAppSettings
+ * Универсальные настройки placement-приложений на портал: строка =
+ * (портал, приложение), параметры — в JSON `settings`. app_code — строка
+ * (расширяется кодом); реестр допустимых кодов/ключей и дефолты — в
+ * libs/portal-lib/store/app-settings (PORTAL_APP_SETTINGS_SCHEMA).
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_08_11_100000_create_portal_app_settings_table.php
+ */
+export type PortalAppSettings = $Result.DefaultSelection<Prisma.$PortalAppSettingsPayload>
+/**
+ * Model SkapImportFile
+ * СКАП: журнал файлов выгрузок с Диска Битрикс (модуль импорта СКАП).
+ * Таблицы skap_* добавлены ручной правкой (db pull запрещён) — миграции
+ * пишутся в Laravel-проекте online; план: ai/tasks/skap-import-pipeline-plan.md §6.
+ */
+export type SkapImportFile = $Result.DefaultSelection<Prisma.$SkapImportFilePayload>
+/**
+ * Model SkapImportItem
+ * СКАП: единица записи — логин клиента за отчётный месяц (строка Online.csv).
+ */
+export type SkapImportItem = $Result.DefaultSelection<Prisma.$SkapImportItemPayload>
+/**
+ * Model SkapSession
+ * СКАП: сессия из Online_detail.csv (полный съём «вся инфа что есть»).
+ */
+export type SkapSession = $Result.DefaultSelection<Prisma.$SkapSessionPayload>
+/**
+ * Model SkapSubscription
+ * СКАП: комплект × рассылка из Prime_lent.csv (месячный снапшот подписок).
+ */
+export type SkapSubscription = $Result.DefaultSelection<Prisma.$SkapSubscriptionPayload>
+/**
+ * Model SkapImportRun
+ * СКАП: журнал прогонов импорта (один run = один домен за тик крона).
+ */
+export type SkapImportRun = $Result.DefaultSelection<Prisma.$SkapImportRunPayload>
+/**
  * Model price_row_cells
  * 
  */
@@ -1071,6 +1108,66 @@ export class PrismaClient<
     * ```
     */
   get portalAiSettings(): Prisma.PortalAiSettingsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portalAppSettings`: Exposes CRUD operations for the **PortalAppSettings** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PortalAppSettings
+    * const portalAppSettings = await prisma.portalAppSettings.findMany()
+    * ```
+    */
+  get portalAppSettings(): Prisma.PortalAppSettingsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.skapImportFile`: Exposes CRUD operations for the **SkapImportFile** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SkapImportFiles
+    * const skapImportFiles = await prisma.skapImportFile.findMany()
+    * ```
+    */
+  get skapImportFile(): Prisma.SkapImportFileDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.skapImportItem`: Exposes CRUD operations for the **SkapImportItem** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SkapImportItems
+    * const skapImportItems = await prisma.skapImportItem.findMany()
+    * ```
+    */
+  get skapImportItem(): Prisma.SkapImportItemDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.skapSession`: Exposes CRUD operations for the **SkapSession** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SkapSessions
+    * const skapSessions = await prisma.skapSession.findMany()
+    * ```
+    */
+  get skapSession(): Prisma.SkapSessionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.skapSubscription`: Exposes CRUD operations for the **SkapSubscription** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SkapSubscriptions
+    * const skapSubscriptions = await prisma.skapSubscription.findMany()
+    * ```
+    */
+  get skapSubscription(): Prisma.SkapSubscriptionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.skapImportRun`: Exposes CRUD operations for the **SkapImportRun** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SkapImportRuns
+    * const skapImportRuns = await prisma.skapImportRun.findMany()
+    * ```
+    */
+  get skapImportRun(): Prisma.SkapImportRunDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.price_row_cells`: Exposes CRUD operations for the **price_row_cells** model.
@@ -2086,6 +2183,12 @@ export namespace Prisma {
     portal_measure: 'portal_measure',
     Portal: 'Portal',
     PortalAiSettings: 'PortalAiSettings',
+    PortalAppSettings: 'PortalAppSettings',
+    SkapImportFile: 'SkapImportFile',
+    SkapImportItem: 'SkapImportItem',
+    SkapSession: 'SkapSession',
+    SkapSubscription: 'SkapSubscription',
+    SkapImportRun: 'SkapImportRun',
     price_row_cells: 'price_row_cells',
     rq_counter: 'rq_counter',
     rqs: 'rqs',
@@ -2158,7 +2261,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4469,6 +4572,402 @@ export namespace Prisma {
           count: {
             args: Prisma.PortalAiSettingsCountArgs<ExtArgs>
             result: $Utils.Optional<PortalAiSettingsCountAggregateOutputType> | number
+          }
+        }
+      }
+      PortalAppSettings: {
+        payload: Prisma.$PortalAppSettingsPayload<ExtArgs>
+        fields: Prisma.PortalAppSettingsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PortalAppSettingsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PortalAppSettingsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>
+          }
+          findFirst: {
+            args: Prisma.PortalAppSettingsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PortalAppSettingsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>
+          }
+          findMany: {
+            args: Prisma.PortalAppSettingsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>[]
+          }
+          create: {
+            args: Prisma.PortalAppSettingsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>
+          }
+          createMany: {
+            args: Prisma.PortalAppSettingsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PortalAppSettingsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>
+          }
+          update: {
+            args: Prisma.PortalAppSettingsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>
+          }
+          deleteMany: {
+            args: Prisma.PortalAppSettingsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PortalAppSettingsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PortalAppSettingsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalAppSettingsPayload>
+          }
+          aggregate: {
+            args: Prisma.PortalAppSettingsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortalAppSettings>
+          }
+          groupBy: {
+            args: Prisma.PortalAppSettingsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PortalAppSettingsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PortalAppSettingsCountArgs<ExtArgs>
+            result: $Utils.Optional<PortalAppSettingsCountAggregateOutputType> | number
+          }
+        }
+      }
+      SkapImportFile: {
+        payload: Prisma.$SkapImportFilePayload<ExtArgs>
+        fields: Prisma.SkapImportFileFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SkapImportFileFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SkapImportFileFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>
+          }
+          findFirst: {
+            args: Prisma.SkapImportFileFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SkapImportFileFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>
+          }
+          findMany: {
+            args: Prisma.SkapImportFileFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>[]
+          }
+          create: {
+            args: Prisma.SkapImportFileCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>
+          }
+          createMany: {
+            args: Prisma.SkapImportFileCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SkapImportFileDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>
+          }
+          update: {
+            args: Prisma.SkapImportFileUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>
+          }
+          deleteMany: {
+            args: Prisma.SkapImportFileDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SkapImportFileUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SkapImportFileUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportFilePayload>
+          }
+          aggregate: {
+            args: Prisma.SkapImportFileAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSkapImportFile>
+          }
+          groupBy: {
+            args: Prisma.SkapImportFileGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SkapImportFileGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SkapImportFileCountArgs<ExtArgs>
+            result: $Utils.Optional<SkapImportFileCountAggregateOutputType> | number
+          }
+        }
+      }
+      SkapImportItem: {
+        payload: Prisma.$SkapImportItemPayload<ExtArgs>
+        fields: Prisma.SkapImportItemFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SkapImportItemFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SkapImportItemFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>
+          }
+          findFirst: {
+            args: Prisma.SkapImportItemFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SkapImportItemFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>
+          }
+          findMany: {
+            args: Prisma.SkapImportItemFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>[]
+          }
+          create: {
+            args: Prisma.SkapImportItemCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>
+          }
+          createMany: {
+            args: Prisma.SkapImportItemCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SkapImportItemDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>
+          }
+          update: {
+            args: Prisma.SkapImportItemUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>
+          }
+          deleteMany: {
+            args: Prisma.SkapImportItemDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SkapImportItemUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SkapImportItemUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportItemPayload>
+          }
+          aggregate: {
+            args: Prisma.SkapImportItemAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSkapImportItem>
+          }
+          groupBy: {
+            args: Prisma.SkapImportItemGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SkapImportItemGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SkapImportItemCountArgs<ExtArgs>
+            result: $Utils.Optional<SkapImportItemCountAggregateOutputType> | number
+          }
+        }
+      }
+      SkapSession: {
+        payload: Prisma.$SkapSessionPayload<ExtArgs>
+        fields: Prisma.SkapSessionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SkapSessionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SkapSessionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>
+          }
+          findFirst: {
+            args: Prisma.SkapSessionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SkapSessionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>
+          }
+          findMany: {
+            args: Prisma.SkapSessionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>[]
+          }
+          create: {
+            args: Prisma.SkapSessionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>
+          }
+          createMany: {
+            args: Prisma.SkapSessionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SkapSessionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>
+          }
+          update: {
+            args: Prisma.SkapSessionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>
+          }
+          deleteMany: {
+            args: Prisma.SkapSessionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SkapSessionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SkapSessionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSessionPayload>
+          }
+          aggregate: {
+            args: Prisma.SkapSessionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSkapSession>
+          }
+          groupBy: {
+            args: Prisma.SkapSessionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SkapSessionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SkapSessionCountArgs<ExtArgs>
+            result: $Utils.Optional<SkapSessionCountAggregateOutputType> | number
+          }
+        }
+      }
+      SkapSubscription: {
+        payload: Prisma.$SkapSubscriptionPayload<ExtArgs>
+        fields: Prisma.SkapSubscriptionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SkapSubscriptionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SkapSubscriptionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>
+          }
+          findFirst: {
+            args: Prisma.SkapSubscriptionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SkapSubscriptionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>
+          }
+          findMany: {
+            args: Prisma.SkapSubscriptionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>[]
+          }
+          create: {
+            args: Prisma.SkapSubscriptionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>
+          }
+          createMany: {
+            args: Prisma.SkapSubscriptionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SkapSubscriptionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>
+          }
+          update: {
+            args: Prisma.SkapSubscriptionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>
+          }
+          deleteMany: {
+            args: Prisma.SkapSubscriptionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SkapSubscriptionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SkapSubscriptionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapSubscriptionPayload>
+          }
+          aggregate: {
+            args: Prisma.SkapSubscriptionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSkapSubscription>
+          }
+          groupBy: {
+            args: Prisma.SkapSubscriptionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SkapSubscriptionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SkapSubscriptionCountArgs<ExtArgs>
+            result: $Utils.Optional<SkapSubscriptionCountAggregateOutputType> | number
+          }
+        }
+      }
+      SkapImportRun: {
+        payload: Prisma.$SkapImportRunPayload<ExtArgs>
+        fields: Prisma.SkapImportRunFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SkapImportRunFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SkapImportRunFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>
+          }
+          findFirst: {
+            args: Prisma.SkapImportRunFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SkapImportRunFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>
+          }
+          findMany: {
+            args: Prisma.SkapImportRunFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>[]
+          }
+          create: {
+            args: Prisma.SkapImportRunCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>
+          }
+          createMany: {
+            args: Prisma.SkapImportRunCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SkapImportRunDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>
+          }
+          update: {
+            args: Prisma.SkapImportRunUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>
+          }
+          deleteMany: {
+            args: Prisma.SkapImportRunDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SkapImportRunUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SkapImportRunUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkapImportRunPayload>
+          }
+          aggregate: {
+            args: Prisma.SkapImportRunAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSkapImportRun>
+          }
+          groupBy: {
+            args: Prisma.SkapImportRunGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SkapImportRunGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SkapImportRunCountArgs<ExtArgs>
+            result: $Utils.Optional<SkapImportRunCountAggregateOutputType> | number
           }
         }
       }
@@ -8167,6 +8666,12 @@ export namespace Prisma {
     portal_measure?: portal_measureOmit
     portal?: PortalOmit
     portalAiSettings?: PortalAiSettingsOmit
+    portalAppSettings?: PortalAppSettingsOmit
+    skapImportFile?: SkapImportFileOmit
+    skapImportItem?: SkapImportItemOmit
+    skapSession?: SkapSessionOmit
+    skapSubscription?: SkapSubscriptionOmit
+    skapImportRun?: SkapImportRunOmit
     price_row_cells?: price_row_cellsOmit
     rq_counter?: rq_counterOmit
     rqs?: rqsOmit
@@ -8837,6 +9342,12 @@ export namespace Prisma {
     portal_invites: number
     appCaches: number
     shareLinks: number
+    appSettings: number
+    skapImportFiles: number
+    skapImportItems: number
+    skapSessions: number
+    skapSubscriptions: number
+    skapImportRuns: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8869,6 +9380,12 @@ export namespace Prisma {
     portal_invites?: boolean | PortalCountOutputTypeCountPortal_invitesArgs
     appCaches?: boolean | PortalCountOutputTypeCountAppCachesArgs
     shareLinks?: boolean | PortalCountOutputTypeCountShareLinksArgs
+    appSettings?: boolean | PortalCountOutputTypeCountAppSettingsArgs
+    skapImportFiles?: boolean | PortalCountOutputTypeCountSkapImportFilesArgs
+    skapImportItems?: boolean | PortalCountOutputTypeCountSkapImportItemsArgs
+    skapSessions?: boolean | PortalCountOutputTypeCountSkapSessionsArgs
+    skapSubscriptions?: boolean | PortalCountOutputTypeCountSkapSubscriptionsArgs
+    skapImportRuns?: boolean | PortalCountOutputTypeCountSkapImportRunsArgs
   }
 
   // Custom InputTypes
@@ -9083,6 +9600,119 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountShareLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ShareLinkWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountAppSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalAppSettingsWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountSkapImportFilesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportFileWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountSkapImportItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportItemWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountSkapSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapSessionWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountSkapSubscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapSubscriptionWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountSkapImportRunsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportRunWhereInput
+  }
+
+
+  /**
+   * Count Type SkapImportFileCountOutputType
+   */
+
+  export type SkapImportFileCountOutputType = {
+    items: number
+  }
+
+  export type SkapImportFileCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    items?: boolean | SkapImportFileCountOutputTypeCountItemsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SkapImportFileCountOutputType without action
+   */
+  export type SkapImportFileCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFileCountOutputType
+     */
+    select?: SkapImportFileCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SkapImportFileCountOutputType without action
+   */
+  export type SkapImportFileCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportItemWhereInput
+  }
+
+
+  /**
+   * Count Type SkapImportItemCountOutputType
+   */
+
+  export type SkapImportItemCountOutputType = {
+    sessions: number
+    subscriptions: number
+  }
+
+  export type SkapImportItemCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    sessions?: boolean | SkapImportItemCountOutputTypeCountSessionsArgs
+    subscriptions?: boolean | SkapImportItemCountOutputTypeCountSubscriptionsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SkapImportItemCountOutputType without action
+   */
+  export type SkapImportItemCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItemCountOutputType
+     */
+    select?: SkapImportItemCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SkapImportItemCountOutputType without action
+   */
+  export type SkapImportItemCountOutputTypeCountSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapSessionWhereInput
+  }
+
+  /**
+   * SkapImportItemCountOutputType without action
+   */
+  export type SkapImportItemCountOutputTypeCountSubscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapSubscriptionWhereInput
   }
 
 
@@ -44566,6 +45196,12 @@ export namespace Prisma {
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
     aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
+    appSettings?: boolean | Portal$appSettingsArgs<ExtArgs>
+    skapImportFiles?: boolean | Portal$skapImportFilesArgs<ExtArgs>
+    skapImportItems?: boolean | Portal$skapImportItemsArgs<ExtArgs>
+    skapSessions?: boolean | Portal$skapSessionsArgs<ExtArgs>
+    skapSubscriptions?: boolean | Portal$skapSubscriptionsArgs<ExtArgs>
+    skapImportRuns?: boolean | Portal$skapImportRunsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -44633,6 +45269,12 @@ export namespace Prisma {
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
     aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
+    appSettings?: boolean | Portal$appSettingsArgs<ExtArgs>
+    skapImportFiles?: boolean | Portal$skapImportFilesArgs<ExtArgs>
+    skapImportItems?: boolean | Portal$skapImportItemsArgs<ExtArgs>
+    skapSessions?: boolean | Portal$skapSessionsArgs<ExtArgs>
+    skapSubscriptions?: boolean | Portal$skapSubscriptionsArgs<ExtArgs>
+    skapImportRuns?: boolean | Portal$skapImportRunsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -44670,6 +45312,12 @@ export namespace Prisma {
       appCaches: Prisma.$AppCachePayload<ExtArgs>[]
       shareLinks: Prisma.$ShareLinkPayload<ExtArgs>[]
       aiSettings: Prisma.$PortalAiSettingsPayload<ExtArgs> | null
+      appSettings: Prisma.$PortalAppSettingsPayload<ExtArgs>[]
+      skapImportFiles: Prisma.$SkapImportFilePayload<ExtArgs>[]
+      skapImportItems: Prisma.$SkapImportItemPayload<ExtArgs>[]
+      skapSessions: Prisma.$SkapSessionPayload<ExtArgs>[]
+      skapSubscriptions: Prisma.$SkapSubscriptionPayload<ExtArgs>[]
+      skapImportRuns: Prisma.$SkapImportRunPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -45069,6 +45717,12 @@ export namespace Prisma {
     appCaches<T extends Portal$appCachesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appCachesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     shareLinks<T extends Portal$shareLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$shareLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     aiSettings<T extends Portal$aiSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$aiSettingsArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    appSettings<T extends Portal$appSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    skapImportFiles<T extends Portal$skapImportFilesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportFilesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    skapImportItems<T extends Portal$skapImportItemsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    skapSessions<T extends Portal$skapSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    skapSubscriptions<T extends Portal$skapSubscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapSubscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    skapImportRuns<T extends Portal$skapImportRunsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportRunsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -46198,6 +46852,150 @@ export namespace Prisma {
      */
     include?: PortalAiSettingsInclude<ExtArgs> | null
     where?: PortalAiSettingsWhereInput
+  }
+
+  /**
+   * Portal.appSettings
+   */
+  export type Portal$appSettingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    where?: PortalAppSettingsWhereInput
+    orderBy?: PortalAppSettingsOrderByWithRelationInput | PortalAppSettingsOrderByWithRelationInput[]
+    cursor?: PortalAppSettingsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalAppSettingsScalarFieldEnum | PortalAppSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.skapImportFiles
+   */
+  export type Portal$skapImportFilesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    where?: SkapImportFileWhereInput
+    orderBy?: SkapImportFileOrderByWithRelationInput | SkapImportFileOrderByWithRelationInput[]
+    cursor?: SkapImportFileWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapImportFileScalarFieldEnum | SkapImportFileScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.skapImportItems
+   */
+  export type Portal$skapImportItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    where?: SkapImportItemWhereInput
+    orderBy?: SkapImportItemOrderByWithRelationInput | SkapImportItemOrderByWithRelationInput[]
+    cursor?: SkapImportItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapImportItemScalarFieldEnum | SkapImportItemScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.skapSessions
+   */
+  export type Portal$skapSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    where?: SkapSessionWhereInput
+    orderBy?: SkapSessionOrderByWithRelationInput | SkapSessionOrderByWithRelationInput[]
+    cursor?: SkapSessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapSessionScalarFieldEnum | SkapSessionScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.skapSubscriptions
+   */
+  export type Portal$skapSubscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    where?: SkapSubscriptionWhereInput
+    orderBy?: SkapSubscriptionOrderByWithRelationInput | SkapSubscriptionOrderByWithRelationInput[]
+    cursor?: SkapSubscriptionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapSubscriptionScalarFieldEnum | SkapSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.skapImportRuns
+   */
+  export type Portal$skapImportRunsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    where?: SkapImportRunWhereInput
+    orderBy?: SkapImportRunOrderByWithRelationInput | SkapImportRunOrderByWithRelationInput[]
+    cursor?: SkapImportRunWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapImportRunScalarFieldEnum | SkapImportRunScalarFieldEnum[]
   }
 
   /**
@@ -47407,6 +48205,6665 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PortalAiSettingsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PortalAppSettings
+   */
+
+  export type AggregatePortalAppSettings = {
+    _count: PortalAppSettingsCountAggregateOutputType | null
+    _avg: PortalAppSettingsAvgAggregateOutputType | null
+    _sum: PortalAppSettingsSumAggregateOutputType | null
+    _min: PortalAppSettingsMinAggregateOutputType | null
+    _max: PortalAppSettingsMaxAggregateOutputType | null
+  }
+
+  export type PortalAppSettingsAvgAggregateOutputType = {
+    portal_id: number | null
+  }
+
+  export type PortalAppSettingsSumAggregateOutputType = {
+    portal_id: bigint | null
+  }
+
+  export type PortalAppSettingsMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    appCode: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalAppSettingsMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    appCode: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalAppSettingsCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    appCode: number
+    settings: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PortalAppSettingsAvgAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type PortalAppSettingsSumAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type PortalAppSettingsMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    appCode?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalAppSettingsMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    appCode?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalAppSettingsCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    appCode?: true
+    settings?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PortalAppSettingsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalAppSettings to aggregate.
+     */
+    where?: PortalAppSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAppSettings to fetch.
+     */
+    orderBy?: PortalAppSettingsOrderByWithRelationInput | PortalAppSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PortalAppSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAppSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAppSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PortalAppSettings
+    **/
+    _count?: true | PortalAppSettingsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PortalAppSettingsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PortalAppSettingsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PortalAppSettingsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PortalAppSettingsMaxAggregateInputType
+  }
+
+  export type GetPortalAppSettingsAggregateType<T extends PortalAppSettingsAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortalAppSettings]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortalAppSettings[P]>
+      : GetScalarType<T[P], AggregatePortalAppSettings[P]>
+  }
+
+
+
+
+  export type PortalAppSettingsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalAppSettingsWhereInput
+    orderBy?: PortalAppSettingsOrderByWithAggregationInput | PortalAppSettingsOrderByWithAggregationInput[]
+    by: PortalAppSettingsScalarFieldEnum[] | PortalAppSettingsScalarFieldEnum
+    having?: PortalAppSettingsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PortalAppSettingsCountAggregateInputType | true
+    _avg?: PortalAppSettingsAvgAggregateInputType
+    _sum?: PortalAppSettingsSumAggregateInputType
+    _min?: PortalAppSettingsMinAggregateInputType
+    _max?: PortalAppSettingsMaxAggregateInputType
+  }
+
+  export type PortalAppSettingsGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    appCode: string
+    settings: JsonValue | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: PortalAppSettingsCountAggregateOutputType | null
+    _avg: PortalAppSettingsAvgAggregateOutputType | null
+    _sum: PortalAppSettingsSumAggregateOutputType | null
+    _min: PortalAppSettingsMinAggregateOutputType | null
+    _max: PortalAppSettingsMaxAggregateOutputType | null
+  }
+
+  type GetPortalAppSettingsGroupByPayload<T extends PortalAppSettingsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PortalAppSettingsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PortalAppSettingsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PortalAppSettingsGroupByOutputType[P]>
+            : GetScalarType<T[P], PortalAppSettingsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PortalAppSettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    appCode?: boolean
+    settings?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portalAppSettings"]>
+
+
+
+  export type PortalAppSettingsSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    appCode?: boolean
+    settings?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PortalAppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "appCode" | "settings" | "createdAt" | "updatedAt", ExtArgs["result"]["portalAppSettings"]>
+  export type PortalAppSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $PortalAppSettingsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PortalAppSettings"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      appCode: string
+      settings: Prisma.JsonValue | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["portalAppSettings"]>
+    composites: {}
+  }
+
+  type PortalAppSettingsGetPayload<S extends boolean | null | undefined | PortalAppSettingsDefaultArgs> = $Result.GetResult<Prisma.$PortalAppSettingsPayload, S>
+
+  type PortalAppSettingsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PortalAppSettingsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PortalAppSettingsCountAggregateInputType | true
+    }
+
+  export interface PortalAppSettingsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PortalAppSettings'], meta: { name: 'PortalAppSettings' } }
+    /**
+     * Find zero or one PortalAppSettings that matches the filter.
+     * @param {PortalAppSettingsFindUniqueArgs} args - Arguments to find a PortalAppSettings
+     * @example
+     * // Get one PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PortalAppSettingsFindUniqueArgs>(args: SelectSubset<T, PortalAppSettingsFindUniqueArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PortalAppSettings that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PortalAppSettingsFindUniqueOrThrowArgs} args - Arguments to find a PortalAppSettings
+     * @example
+     * // Get one PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PortalAppSettingsFindUniqueOrThrowArgs>(args: SelectSubset<T, PortalAppSettingsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalAppSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsFindFirstArgs} args - Arguments to find a PortalAppSettings
+     * @example
+     * // Get one PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PortalAppSettingsFindFirstArgs>(args?: SelectSubset<T, PortalAppSettingsFindFirstArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalAppSettings that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsFindFirstOrThrowArgs} args - Arguments to find a PortalAppSettings
+     * @example
+     * // Get one PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PortalAppSettingsFindFirstOrThrowArgs>(args?: SelectSubset<T, PortalAppSettingsFindFirstOrThrowArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PortalAppSettings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.findMany()
+     * 
+     * // Get first 10 PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portalAppSettingsWithIdOnly = await prisma.portalAppSettings.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PortalAppSettingsFindManyArgs>(args?: SelectSubset<T, PortalAppSettingsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PortalAppSettings.
+     * @param {PortalAppSettingsCreateArgs} args - Arguments to create a PortalAppSettings.
+     * @example
+     * // Create one PortalAppSettings
+     * const PortalAppSettings = await prisma.portalAppSettings.create({
+     *   data: {
+     *     // ... data to create a PortalAppSettings
+     *   }
+     * })
+     * 
+     */
+    create<T extends PortalAppSettingsCreateArgs>(args: SelectSubset<T, PortalAppSettingsCreateArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PortalAppSettings.
+     * @param {PortalAppSettingsCreateManyArgs} args - Arguments to create many PortalAppSettings.
+     * @example
+     * // Create many PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PortalAppSettingsCreateManyArgs>(args?: SelectSubset<T, PortalAppSettingsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PortalAppSettings.
+     * @param {PortalAppSettingsDeleteArgs} args - Arguments to delete one PortalAppSettings.
+     * @example
+     * // Delete one PortalAppSettings
+     * const PortalAppSettings = await prisma.portalAppSettings.delete({
+     *   where: {
+     *     // ... filter to delete one PortalAppSettings
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PortalAppSettingsDeleteArgs>(args: SelectSubset<T, PortalAppSettingsDeleteArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PortalAppSettings.
+     * @param {PortalAppSettingsUpdateArgs} args - Arguments to update one PortalAppSettings.
+     * @example
+     * // Update one PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PortalAppSettingsUpdateArgs>(args: SelectSubset<T, PortalAppSettingsUpdateArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PortalAppSettings.
+     * @param {PortalAppSettingsDeleteManyArgs} args - Arguments to filter PortalAppSettings to delete.
+     * @example
+     * // Delete a few PortalAppSettings
+     * const { count } = await prisma.portalAppSettings.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PortalAppSettingsDeleteManyArgs>(args?: SelectSubset<T, PortalAppSettingsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PortalAppSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PortalAppSettingsUpdateManyArgs>(args: SelectSubset<T, PortalAppSettingsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PortalAppSettings.
+     * @param {PortalAppSettingsUpsertArgs} args - Arguments to update or create a PortalAppSettings.
+     * @example
+     * // Update or create a PortalAppSettings
+     * const portalAppSettings = await prisma.portalAppSettings.upsert({
+     *   create: {
+     *     // ... data to create a PortalAppSettings
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PortalAppSettings we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PortalAppSettingsUpsertArgs>(args: SelectSubset<T, PortalAppSettingsUpsertArgs<ExtArgs>>): Prisma__PortalAppSettingsClient<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PortalAppSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsCountArgs} args - Arguments to filter PortalAppSettings to count.
+     * @example
+     * // Count the number of PortalAppSettings
+     * const count = await prisma.portalAppSettings.count({
+     *   where: {
+     *     // ... the filter for the PortalAppSettings we want to count
+     *   }
+     * })
+    **/
+    count<T extends PortalAppSettingsCountArgs>(
+      args?: Subset<T, PortalAppSettingsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PortalAppSettingsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PortalAppSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PortalAppSettingsAggregateArgs>(args: Subset<T, PortalAppSettingsAggregateArgs>): Prisma.PrismaPromise<GetPortalAppSettingsAggregateType<T>>
+
+    /**
+     * Group by PortalAppSettings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalAppSettingsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PortalAppSettingsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PortalAppSettingsGroupByArgs['orderBy'] }
+        : { orderBy?: PortalAppSettingsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PortalAppSettingsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortalAppSettingsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PortalAppSettings model
+   */
+  readonly fields: PortalAppSettingsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PortalAppSettings.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PortalAppSettingsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PortalAppSettings model
+   */
+  interface PortalAppSettingsFieldRefs {
+    readonly id: FieldRef<"PortalAppSettings", 'String'>
+    readonly portal_id: FieldRef<"PortalAppSettings", 'BigInt'>
+    readonly domain: FieldRef<"PortalAppSettings", 'String'>
+    readonly appCode: FieldRef<"PortalAppSettings", 'String'>
+    readonly settings: FieldRef<"PortalAppSettings", 'Json'>
+    readonly createdAt: FieldRef<"PortalAppSettings", 'DateTime'>
+    readonly updatedAt: FieldRef<"PortalAppSettings", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PortalAppSettings findUnique
+   */
+  export type PortalAppSettingsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAppSettings to fetch.
+     */
+    where: PortalAppSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAppSettings findUniqueOrThrow
+   */
+  export type PortalAppSettingsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAppSettings to fetch.
+     */
+    where: PortalAppSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAppSettings findFirst
+   */
+  export type PortalAppSettingsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAppSettings to fetch.
+     */
+    where?: PortalAppSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAppSettings to fetch.
+     */
+    orderBy?: PortalAppSettingsOrderByWithRelationInput | PortalAppSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalAppSettings.
+     */
+    cursor?: PortalAppSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAppSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAppSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalAppSettings.
+     */
+    distinct?: PortalAppSettingsScalarFieldEnum | PortalAppSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PortalAppSettings findFirstOrThrow
+   */
+  export type PortalAppSettingsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAppSettings to fetch.
+     */
+    where?: PortalAppSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAppSettings to fetch.
+     */
+    orderBy?: PortalAppSettingsOrderByWithRelationInput | PortalAppSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalAppSettings.
+     */
+    cursor?: PortalAppSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAppSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAppSettings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalAppSettings.
+     */
+    distinct?: PortalAppSettingsScalarFieldEnum | PortalAppSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PortalAppSettings findMany
+   */
+  export type PortalAppSettingsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalAppSettings to fetch.
+     */
+    where?: PortalAppSettingsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalAppSettings to fetch.
+     */
+    orderBy?: PortalAppSettingsOrderByWithRelationInput | PortalAppSettingsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PortalAppSettings.
+     */
+    cursor?: PortalAppSettingsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalAppSettings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalAppSettings.
+     */
+    skip?: number
+    distinct?: PortalAppSettingsScalarFieldEnum | PortalAppSettingsScalarFieldEnum[]
+  }
+
+  /**
+   * PortalAppSettings create
+   */
+  export type PortalAppSettingsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PortalAppSettings.
+     */
+    data: XOR<PortalAppSettingsCreateInput, PortalAppSettingsUncheckedCreateInput>
+  }
+
+  /**
+   * PortalAppSettings createMany
+   */
+  export type PortalAppSettingsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PortalAppSettings.
+     */
+    data: PortalAppSettingsCreateManyInput | PortalAppSettingsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PortalAppSettings update
+   */
+  export type PortalAppSettingsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PortalAppSettings.
+     */
+    data: XOR<PortalAppSettingsUpdateInput, PortalAppSettingsUncheckedUpdateInput>
+    /**
+     * Choose, which PortalAppSettings to update.
+     */
+    where: PortalAppSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAppSettings updateMany
+   */
+  export type PortalAppSettingsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PortalAppSettings.
+     */
+    data: XOR<PortalAppSettingsUpdateManyMutationInput, PortalAppSettingsUncheckedUpdateManyInput>
+    /**
+     * Filter which PortalAppSettings to update
+     */
+    where?: PortalAppSettingsWhereInput
+    /**
+     * Limit how many PortalAppSettings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalAppSettings upsert
+   */
+  export type PortalAppSettingsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PortalAppSettings to update in case it exists.
+     */
+    where: PortalAppSettingsWhereUniqueInput
+    /**
+     * In case the PortalAppSettings found by the `where` argument doesn't exist, create a new PortalAppSettings with this data.
+     */
+    create: XOR<PortalAppSettingsCreateInput, PortalAppSettingsUncheckedCreateInput>
+    /**
+     * In case the PortalAppSettings was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PortalAppSettingsUpdateInput, PortalAppSettingsUncheckedUpdateInput>
+  }
+
+  /**
+   * PortalAppSettings delete
+   */
+  export type PortalAppSettingsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+    /**
+     * Filter which PortalAppSettings to delete.
+     */
+    where: PortalAppSettingsWhereUniqueInput
+  }
+
+  /**
+   * PortalAppSettings deleteMany
+   */
+  export type PortalAppSettingsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalAppSettings to delete
+     */
+    where?: PortalAppSettingsWhereInput
+    /**
+     * Limit how many PortalAppSettings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalAppSettings without action
+   */
+  export type PortalAppSettingsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalAppSettings
+     */
+    select?: PortalAppSettingsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalAppSettings
+     */
+    omit?: PortalAppSettingsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalAppSettingsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SkapImportFile
+   */
+
+  export type AggregateSkapImportFile = {
+    _count: SkapImportFileCountAggregateOutputType | null
+    _avg: SkapImportFileAvgAggregateOutputType | null
+    _sum: SkapImportFileSumAggregateOutputType | null
+    _min: SkapImportFileMinAggregateOutputType | null
+    _max: SkapImportFileMaxAggregateOutputType | null
+  }
+
+  export type SkapImportFileAvgAggregateOutputType = {
+    portal_id: number | null
+    size: number | null
+  }
+
+  export type SkapImportFileSumAggregateOutputType = {
+    portal_id: bigint | null
+    size: bigint | null
+  }
+
+  export type SkapImportFileMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    diskFileId: string | null
+    fileName: string | null
+    diskUpdatedAt: Date | null
+    size: bigint | null
+    status: string | null
+    formatVersion: string | null
+    error: string | null
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapImportFileMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    diskFileId: string | null
+    fileName: string | null
+    diskUpdatedAt: Date | null
+    size: bigint | null
+    status: string | null
+    formatVersion: string | null
+    error: string | null
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapImportFileCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    diskFileId: number
+    fileName: number
+    diskUpdatedAt: number
+    size: number
+    status: number
+    formatVersion: number
+    error: number
+    stats: number
+    startedAt: number
+    finishedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SkapImportFileAvgAggregateInputType = {
+    portal_id?: true
+    size?: true
+  }
+
+  export type SkapImportFileSumAggregateInputType = {
+    portal_id?: true
+    size?: true
+  }
+
+  export type SkapImportFileMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    diskFileId?: true
+    fileName?: true
+    diskUpdatedAt?: true
+    size?: true
+    status?: true
+    formatVersion?: true
+    error?: true
+    startedAt?: true
+    finishedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapImportFileMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    diskFileId?: true
+    fileName?: true
+    diskUpdatedAt?: true
+    size?: true
+    status?: true
+    formatVersion?: true
+    error?: true
+    startedAt?: true
+    finishedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapImportFileCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    diskFileId?: true
+    fileName?: true
+    diskUpdatedAt?: true
+    size?: true
+    status?: true
+    formatVersion?: true
+    error?: true
+    stats?: true
+    startedAt?: true
+    finishedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SkapImportFileAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapImportFile to aggregate.
+     */
+    where?: SkapImportFileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportFiles to fetch.
+     */
+    orderBy?: SkapImportFileOrderByWithRelationInput | SkapImportFileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SkapImportFileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportFiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportFiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SkapImportFiles
+    **/
+    _count?: true | SkapImportFileCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SkapImportFileAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SkapImportFileSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SkapImportFileMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SkapImportFileMaxAggregateInputType
+  }
+
+  export type GetSkapImportFileAggregateType<T extends SkapImportFileAggregateArgs> = {
+        [P in keyof T & keyof AggregateSkapImportFile]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSkapImportFile[P]>
+      : GetScalarType<T[P], AggregateSkapImportFile[P]>
+  }
+
+
+
+
+  export type SkapImportFileGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportFileWhereInput
+    orderBy?: SkapImportFileOrderByWithAggregationInput | SkapImportFileOrderByWithAggregationInput[]
+    by: SkapImportFileScalarFieldEnum[] | SkapImportFileScalarFieldEnum
+    having?: SkapImportFileScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SkapImportFileCountAggregateInputType | true
+    _avg?: SkapImportFileAvgAggregateInputType
+    _sum?: SkapImportFileSumAggregateInputType
+    _min?: SkapImportFileMinAggregateInputType
+    _max?: SkapImportFileMaxAggregateInputType
+  }
+
+  export type SkapImportFileGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt: Date | null
+    size: bigint | null
+    status: string
+    formatVersion: string | null
+    error: string | null
+    stats: JsonValue | null
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: SkapImportFileCountAggregateOutputType | null
+    _avg: SkapImportFileAvgAggregateOutputType | null
+    _sum: SkapImportFileSumAggregateOutputType | null
+    _min: SkapImportFileMinAggregateOutputType | null
+    _max: SkapImportFileMaxAggregateOutputType | null
+  }
+
+  type GetSkapImportFileGroupByPayload<T extends SkapImportFileGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SkapImportFileGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SkapImportFileGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SkapImportFileGroupByOutputType[P]>
+            : GetScalarType<T[P], SkapImportFileGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SkapImportFileSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    diskFileId?: boolean
+    fileName?: boolean
+    diskUpdatedAt?: boolean
+    size?: boolean
+    status?: boolean
+    formatVersion?: boolean
+    error?: boolean
+    stats?: boolean
+    startedAt?: boolean
+    finishedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    items?: boolean | SkapImportFile$itemsArgs<ExtArgs>
+    _count?: boolean | SkapImportFileCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["skapImportFile"]>
+
+
+
+  export type SkapImportFileSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    diskFileId?: boolean
+    fileName?: boolean
+    diskUpdatedAt?: boolean
+    size?: boolean
+    status?: boolean
+    formatVersion?: boolean
+    error?: boolean
+    stats?: boolean
+    startedAt?: boolean
+    finishedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SkapImportFileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "diskFileId" | "fileName" | "diskUpdatedAt" | "size" | "status" | "formatVersion" | "error" | "stats" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["skapImportFile"]>
+  export type SkapImportFileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    items?: boolean | SkapImportFile$itemsArgs<ExtArgs>
+    _count?: boolean | SkapImportFileCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SkapImportFilePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SkapImportFile"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      items: Prisma.$SkapImportItemPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      diskFileId: string
+      fileName: string
+      /**
+       * UPDATE_TIME файла на Диске — детект перезаливки (сброс в pending)
+       */
+      diskUpdatedAt: Date | null
+      size: bigint | null
+      /**
+       * pending / processing / done / error / error_format / skipped
+       */
+      status: string
+      formatVersion: string | null
+      error: string | null
+      /**
+       * rowsParsed, itemsCreated/Updated/Skipped, warnings[]
+       */
+      stats: Prisma.JsonValue | null
+      startedAt: Date | null
+      finishedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["skapImportFile"]>
+    composites: {}
+  }
+
+  type SkapImportFileGetPayload<S extends boolean | null | undefined | SkapImportFileDefaultArgs> = $Result.GetResult<Prisma.$SkapImportFilePayload, S>
+
+  type SkapImportFileCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SkapImportFileFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SkapImportFileCountAggregateInputType | true
+    }
+
+  export interface SkapImportFileDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SkapImportFile'], meta: { name: 'SkapImportFile' } }
+    /**
+     * Find zero or one SkapImportFile that matches the filter.
+     * @param {SkapImportFileFindUniqueArgs} args - Arguments to find a SkapImportFile
+     * @example
+     * // Get one SkapImportFile
+     * const skapImportFile = await prisma.skapImportFile.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SkapImportFileFindUniqueArgs>(args: SelectSubset<T, SkapImportFileFindUniqueArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SkapImportFile that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SkapImportFileFindUniqueOrThrowArgs} args - Arguments to find a SkapImportFile
+     * @example
+     * // Get one SkapImportFile
+     * const skapImportFile = await prisma.skapImportFile.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SkapImportFileFindUniqueOrThrowArgs>(args: SelectSubset<T, SkapImportFileFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapImportFile that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileFindFirstArgs} args - Arguments to find a SkapImportFile
+     * @example
+     * // Get one SkapImportFile
+     * const skapImportFile = await prisma.skapImportFile.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SkapImportFileFindFirstArgs>(args?: SelectSubset<T, SkapImportFileFindFirstArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapImportFile that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileFindFirstOrThrowArgs} args - Arguments to find a SkapImportFile
+     * @example
+     * // Get one SkapImportFile
+     * const skapImportFile = await prisma.skapImportFile.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SkapImportFileFindFirstOrThrowArgs>(args?: SelectSubset<T, SkapImportFileFindFirstOrThrowArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SkapImportFiles that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SkapImportFiles
+     * const skapImportFiles = await prisma.skapImportFile.findMany()
+     * 
+     * // Get first 10 SkapImportFiles
+     * const skapImportFiles = await prisma.skapImportFile.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const skapImportFileWithIdOnly = await prisma.skapImportFile.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SkapImportFileFindManyArgs>(args?: SelectSubset<T, SkapImportFileFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SkapImportFile.
+     * @param {SkapImportFileCreateArgs} args - Arguments to create a SkapImportFile.
+     * @example
+     * // Create one SkapImportFile
+     * const SkapImportFile = await prisma.skapImportFile.create({
+     *   data: {
+     *     // ... data to create a SkapImportFile
+     *   }
+     * })
+     * 
+     */
+    create<T extends SkapImportFileCreateArgs>(args: SelectSubset<T, SkapImportFileCreateArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SkapImportFiles.
+     * @param {SkapImportFileCreateManyArgs} args - Arguments to create many SkapImportFiles.
+     * @example
+     * // Create many SkapImportFiles
+     * const skapImportFile = await prisma.skapImportFile.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SkapImportFileCreateManyArgs>(args?: SelectSubset<T, SkapImportFileCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SkapImportFile.
+     * @param {SkapImportFileDeleteArgs} args - Arguments to delete one SkapImportFile.
+     * @example
+     * // Delete one SkapImportFile
+     * const SkapImportFile = await prisma.skapImportFile.delete({
+     *   where: {
+     *     // ... filter to delete one SkapImportFile
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SkapImportFileDeleteArgs>(args: SelectSubset<T, SkapImportFileDeleteArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SkapImportFile.
+     * @param {SkapImportFileUpdateArgs} args - Arguments to update one SkapImportFile.
+     * @example
+     * // Update one SkapImportFile
+     * const skapImportFile = await prisma.skapImportFile.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SkapImportFileUpdateArgs>(args: SelectSubset<T, SkapImportFileUpdateArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SkapImportFiles.
+     * @param {SkapImportFileDeleteManyArgs} args - Arguments to filter SkapImportFiles to delete.
+     * @example
+     * // Delete a few SkapImportFiles
+     * const { count } = await prisma.skapImportFile.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SkapImportFileDeleteManyArgs>(args?: SelectSubset<T, SkapImportFileDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SkapImportFiles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SkapImportFiles
+     * const skapImportFile = await prisma.skapImportFile.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SkapImportFileUpdateManyArgs>(args: SelectSubset<T, SkapImportFileUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SkapImportFile.
+     * @param {SkapImportFileUpsertArgs} args - Arguments to update or create a SkapImportFile.
+     * @example
+     * // Update or create a SkapImportFile
+     * const skapImportFile = await prisma.skapImportFile.upsert({
+     *   create: {
+     *     // ... data to create a SkapImportFile
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SkapImportFile we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SkapImportFileUpsertArgs>(args: SelectSubset<T, SkapImportFileUpsertArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SkapImportFiles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileCountArgs} args - Arguments to filter SkapImportFiles to count.
+     * @example
+     * // Count the number of SkapImportFiles
+     * const count = await prisma.skapImportFile.count({
+     *   where: {
+     *     // ... the filter for the SkapImportFiles we want to count
+     *   }
+     * })
+    **/
+    count<T extends SkapImportFileCountArgs>(
+      args?: Subset<T, SkapImportFileCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SkapImportFileCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SkapImportFile.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SkapImportFileAggregateArgs>(args: Subset<T, SkapImportFileAggregateArgs>): Prisma.PrismaPromise<GetSkapImportFileAggregateType<T>>
+
+    /**
+     * Group by SkapImportFile.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportFileGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SkapImportFileGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SkapImportFileGroupByArgs['orderBy'] }
+        : { orderBy?: SkapImportFileGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SkapImportFileGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkapImportFileGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SkapImportFile model
+   */
+  readonly fields: SkapImportFileFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SkapImportFile.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SkapImportFileClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    items<T extends SkapImportFile$itemsArgs<ExtArgs> = {}>(args?: Subset<T, SkapImportFile$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SkapImportFile model
+   */
+  interface SkapImportFileFieldRefs {
+    readonly id: FieldRef<"SkapImportFile", 'String'>
+    readonly portal_id: FieldRef<"SkapImportFile", 'BigInt'>
+    readonly domain: FieldRef<"SkapImportFile", 'String'>
+    readonly diskFileId: FieldRef<"SkapImportFile", 'String'>
+    readonly fileName: FieldRef<"SkapImportFile", 'String'>
+    readonly diskUpdatedAt: FieldRef<"SkapImportFile", 'DateTime'>
+    readonly size: FieldRef<"SkapImportFile", 'BigInt'>
+    readonly status: FieldRef<"SkapImportFile", 'String'>
+    readonly formatVersion: FieldRef<"SkapImportFile", 'String'>
+    readonly error: FieldRef<"SkapImportFile", 'String'>
+    readonly stats: FieldRef<"SkapImportFile", 'Json'>
+    readonly startedAt: FieldRef<"SkapImportFile", 'DateTime'>
+    readonly finishedAt: FieldRef<"SkapImportFile", 'DateTime'>
+    readonly createdAt: FieldRef<"SkapImportFile", 'DateTime'>
+    readonly updatedAt: FieldRef<"SkapImportFile", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SkapImportFile findUnique
+   */
+  export type SkapImportFileFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportFile to fetch.
+     */
+    where: SkapImportFileWhereUniqueInput
+  }
+
+  /**
+   * SkapImportFile findUniqueOrThrow
+   */
+  export type SkapImportFileFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportFile to fetch.
+     */
+    where: SkapImportFileWhereUniqueInput
+  }
+
+  /**
+   * SkapImportFile findFirst
+   */
+  export type SkapImportFileFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportFile to fetch.
+     */
+    where?: SkapImportFileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportFiles to fetch.
+     */
+    orderBy?: SkapImportFileOrderByWithRelationInput | SkapImportFileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapImportFiles.
+     */
+    cursor?: SkapImportFileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportFiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportFiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapImportFiles.
+     */
+    distinct?: SkapImportFileScalarFieldEnum | SkapImportFileScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportFile findFirstOrThrow
+   */
+  export type SkapImportFileFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportFile to fetch.
+     */
+    where?: SkapImportFileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportFiles to fetch.
+     */
+    orderBy?: SkapImportFileOrderByWithRelationInput | SkapImportFileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapImportFiles.
+     */
+    cursor?: SkapImportFileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportFiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportFiles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapImportFiles.
+     */
+    distinct?: SkapImportFileScalarFieldEnum | SkapImportFileScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportFile findMany
+   */
+  export type SkapImportFileFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportFiles to fetch.
+     */
+    where?: SkapImportFileWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportFiles to fetch.
+     */
+    orderBy?: SkapImportFileOrderByWithRelationInput | SkapImportFileOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SkapImportFiles.
+     */
+    cursor?: SkapImportFileWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportFiles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportFiles.
+     */
+    skip?: number
+    distinct?: SkapImportFileScalarFieldEnum | SkapImportFileScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportFile create
+   */
+  export type SkapImportFileCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SkapImportFile.
+     */
+    data: XOR<SkapImportFileCreateInput, SkapImportFileUncheckedCreateInput>
+  }
+
+  /**
+   * SkapImportFile createMany
+   */
+  export type SkapImportFileCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SkapImportFiles.
+     */
+    data: SkapImportFileCreateManyInput | SkapImportFileCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SkapImportFile update
+   */
+  export type SkapImportFileUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SkapImportFile.
+     */
+    data: XOR<SkapImportFileUpdateInput, SkapImportFileUncheckedUpdateInput>
+    /**
+     * Choose, which SkapImportFile to update.
+     */
+    where: SkapImportFileWhereUniqueInput
+  }
+
+  /**
+   * SkapImportFile updateMany
+   */
+  export type SkapImportFileUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SkapImportFiles.
+     */
+    data: XOR<SkapImportFileUpdateManyMutationInput, SkapImportFileUncheckedUpdateManyInput>
+    /**
+     * Filter which SkapImportFiles to update
+     */
+    where?: SkapImportFileWhereInput
+    /**
+     * Limit how many SkapImportFiles to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapImportFile upsert
+   */
+  export type SkapImportFileUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SkapImportFile to update in case it exists.
+     */
+    where: SkapImportFileWhereUniqueInput
+    /**
+     * In case the SkapImportFile found by the `where` argument doesn't exist, create a new SkapImportFile with this data.
+     */
+    create: XOR<SkapImportFileCreateInput, SkapImportFileUncheckedCreateInput>
+    /**
+     * In case the SkapImportFile was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SkapImportFileUpdateInput, SkapImportFileUncheckedUpdateInput>
+  }
+
+  /**
+   * SkapImportFile delete
+   */
+  export type SkapImportFileDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    /**
+     * Filter which SkapImportFile to delete.
+     */
+    where: SkapImportFileWhereUniqueInput
+  }
+
+  /**
+   * SkapImportFile deleteMany
+   */
+  export type SkapImportFileDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapImportFiles to delete
+     */
+    where?: SkapImportFileWhereInput
+    /**
+     * Limit how many SkapImportFiles to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapImportFile.items
+   */
+  export type SkapImportFile$itemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    where?: SkapImportItemWhereInput
+    orderBy?: SkapImportItemOrderByWithRelationInput | SkapImportItemOrderByWithRelationInput[]
+    cursor?: SkapImportItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapImportItemScalarFieldEnum | SkapImportItemScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportFile without action
+   */
+  export type SkapImportFileDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SkapImportItem
+   */
+
+  export type AggregateSkapImportItem = {
+    _count: SkapImportItemCountAggregateOutputType | null
+    _avg: SkapImportItemAvgAggregateOutputType | null
+    _sum: SkapImportItemSumAggregateOutputType | null
+    _min: SkapImportItemMinAggregateOutputType | null
+    _max: SkapImportItemMaxAggregateOutputType | null
+  }
+
+  export type SkapImportItemAvgAggregateOutputType = {
+    portal_id: number | null
+    bitrixItemId: number | null
+    companyId: number | null
+    dealId: number | null
+    contactId: number | null
+    sessionCount: number | null
+    timeTotalMin: number | null
+    ipCount: number | null
+  }
+
+  export type SkapImportItemSumAggregateOutputType = {
+    portal_id: bigint | null
+    bitrixItemId: number | null
+    companyId: number | null
+    dealId: number | null
+    contactId: number | null
+    sessionCount: number | null
+    timeTotalMin: number | null
+    ipCount: number | null
+  }
+
+  export type SkapImportItemMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    dedupKey: string | null
+    clientCard: string | null
+    regList: string | null
+    login: string | null
+    period: Date | null
+    status: string | null
+    bitrixItemId: number | null
+    companyId: number | null
+    dealId: number | null
+    contactId: number | null
+    warning: string | null
+    sessionCount: number | null
+    timeTotalMin: number | null
+    ipCount: number | null
+    fileId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapImportItemMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    dedupKey: string | null
+    clientCard: string | null
+    regList: string | null
+    login: string | null
+    period: Date | null
+    status: string | null
+    bitrixItemId: number | null
+    companyId: number | null
+    dealId: number | null
+    contactId: number | null
+    warning: string | null
+    sessionCount: number | null
+    timeTotalMin: number | null
+    ipCount: number | null
+    fileId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapImportItemCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    dedupKey: number
+    clientCard: number
+    regList: number
+    login: number
+    period: number
+    status: number
+    bitrixItemId: number
+    companyId: number
+    dealId: number
+    contactId: number
+    warning: number
+    sessionCount: number
+    timeTotalMin: number
+    ipCount: number
+    fileId: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SkapImportItemAvgAggregateInputType = {
+    portal_id?: true
+    bitrixItemId?: true
+    companyId?: true
+    dealId?: true
+    contactId?: true
+    sessionCount?: true
+    timeTotalMin?: true
+    ipCount?: true
+  }
+
+  export type SkapImportItemSumAggregateInputType = {
+    portal_id?: true
+    bitrixItemId?: true
+    companyId?: true
+    dealId?: true
+    contactId?: true
+    sessionCount?: true
+    timeTotalMin?: true
+    ipCount?: true
+  }
+
+  export type SkapImportItemMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    clientCard?: true
+    regList?: true
+    login?: true
+    period?: true
+    status?: true
+    bitrixItemId?: true
+    companyId?: true
+    dealId?: true
+    contactId?: true
+    warning?: true
+    sessionCount?: true
+    timeTotalMin?: true
+    ipCount?: true
+    fileId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapImportItemMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    clientCard?: true
+    regList?: true
+    login?: true
+    period?: true
+    status?: true
+    bitrixItemId?: true
+    companyId?: true
+    dealId?: true
+    contactId?: true
+    warning?: true
+    sessionCount?: true
+    timeTotalMin?: true
+    ipCount?: true
+    fileId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapImportItemCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    clientCard?: true
+    regList?: true
+    login?: true
+    period?: true
+    status?: true
+    bitrixItemId?: true
+    companyId?: true
+    dealId?: true
+    contactId?: true
+    warning?: true
+    sessionCount?: true
+    timeTotalMin?: true
+    ipCount?: true
+    fileId?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SkapImportItemAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapImportItem to aggregate.
+     */
+    where?: SkapImportItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportItems to fetch.
+     */
+    orderBy?: SkapImportItemOrderByWithRelationInput | SkapImportItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SkapImportItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SkapImportItems
+    **/
+    _count?: true | SkapImportItemCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SkapImportItemAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SkapImportItemSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SkapImportItemMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SkapImportItemMaxAggregateInputType
+  }
+
+  export type GetSkapImportItemAggregateType<T extends SkapImportItemAggregateArgs> = {
+        [P in keyof T & keyof AggregateSkapImportItem]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSkapImportItem[P]>
+      : GetScalarType<T[P], AggregateSkapImportItem[P]>
+  }
+
+
+
+
+  export type SkapImportItemGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportItemWhereInput
+    orderBy?: SkapImportItemOrderByWithAggregationInput | SkapImportItemOrderByWithAggregationInput[]
+    by: SkapImportItemScalarFieldEnum[] | SkapImportItemScalarFieldEnum
+    having?: SkapImportItemScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SkapImportItemCountAggregateInputType | true
+    _avg?: SkapImportItemAvgAggregateInputType
+    _sum?: SkapImportItemSumAggregateInputType
+    _min?: SkapImportItemMinAggregateInputType
+    _max?: SkapImportItemMaxAggregateInputType
+  }
+
+  export type SkapImportItemGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date
+    status: string
+    bitrixItemId: number | null
+    companyId: number | null
+    dealId: number | null
+    contactId: number | null
+    warning: string | null
+    sessionCount: number | null
+    timeTotalMin: number | null
+    ipCount: number | null
+    fileId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: SkapImportItemCountAggregateOutputType | null
+    _avg: SkapImportItemAvgAggregateOutputType | null
+    _sum: SkapImportItemSumAggregateOutputType | null
+    _min: SkapImportItemMinAggregateOutputType | null
+    _max: SkapImportItemMaxAggregateOutputType | null
+  }
+
+  type GetSkapImportItemGroupByPayload<T extends SkapImportItemGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SkapImportItemGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SkapImportItemGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SkapImportItemGroupByOutputType[P]>
+            : GetScalarType<T[P], SkapImportItemGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SkapImportItemSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    dedupKey?: boolean
+    clientCard?: boolean
+    regList?: boolean
+    login?: boolean
+    period?: boolean
+    status?: boolean
+    bitrixItemId?: boolean
+    companyId?: boolean
+    dealId?: boolean
+    contactId?: boolean
+    warning?: boolean
+    sessionCount?: boolean
+    timeTotalMin?: boolean
+    ipCount?: boolean
+    fileId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    file?: boolean | SkapImportItem$fileArgs<ExtArgs>
+    sessions?: boolean | SkapImportItem$sessionsArgs<ExtArgs>
+    subscriptions?: boolean | SkapImportItem$subscriptionsArgs<ExtArgs>
+    _count?: boolean | SkapImportItemCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["skapImportItem"]>
+
+
+
+  export type SkapImportItemSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    dedupKey?: boolean
+    clientCard?: boolean
+    regList?: boolean
+    login?: boolean
+    period?: boolean
+    status?: boolean
+    bitrixItemId?: boolean
+    companyId?: boolean
+    dealId?: boolean
+    contactId?: boolean
+    warning?: boolean
+    sessionCount?: boolean
+    timeTotalMin?: boolean
+    ipCount?: boolean
+    fileId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SkapImportItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "dedupKey" | "clientCard" | "regList" | "login" | "period" | "status" | "bitrixItemId" | "companyId" | "dealId" | "contactId" | "warning" | "sessionCount" | "timeTotalMin" | "ipCount" | "fileId" | "createdAt" | "updatedAt", ExtArgs["result"]["skapImportItem"]>
+  export type SkapImportItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    file?: boolean | SkapImportItem$fileArgs<ExtArgs>
+    sessions?: boolean | SkapImportItem$sessionsArgs<ExtArgs>
+    subscriptions?: boolean | SkapImportItem$subscriptionsArgs<ExtArgs>
+    _count?: boolean | SkapImportItemCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SkapImportItemPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SkapImportItem"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      file: Prisma.$SkapImportFilePayload<ExtArgs> | null
+      sessions: Prisma.$SkapSessionPayload<ExtArgs>[]
+      subscriptions: Prisma.$SkapSubscriptionPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      /**
+       * Ключ идемпотентности автоконвейера: {domain}:{clientCard}:{login}:{YYYY-MM} (login lowercase)
+       */
+      dedupKey: string
+      clientCard: string
+      regList: string
+      login: string
+      /**
+       * 1-е число отчётного месяца
+       */
+      period: Date
+      /**
+       * created / updated / skipped_no_company / skipped_too_old / error
+       */
+      status: string
+      bitrixItemId: number | null
+      companyId: number | null
+      dealId: number | null
+      contactId: number | null
+      warning: string | null
+      /**
+       * Статистика месяца (дубль полей смарта — для событий growth/drop и
+       * отчётов из БД без похода в Bitrix)
+       */
+      sessionCount: number | null
+      timeTotalMin: number | null
+      ipCount: number | null
+      fileId: string | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["skapImportItem"]>
+    composites: {}
+  }
+
+  type SkapImportItemGetPayload<S extends boolean | null | undefined | SkapImportItemDefaultArgs> = $Result.GetResult<Prisma.$SkapImportItemPayload, S>
+
+  type SkapImportItemCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SkapImportItemFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SkapImportItemCountAggregateInputType | true
+    }
+
+  export interface SkapImportItemDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SkapImportItem'], meta: { name: 'SkapImportItem' } }
+    /**
+     * Find zero or one SkapImportItem that matches the filter.
+     * @param {SkapImportItemFindUniqueArgs} args - Arguments to find a SkapImportItem
+     * @example
+     * // Get one SkapImportItem
+     * const skapImportItem = await prisma.skapImportItem.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SkapImportItemFindUniqueArgs>(args: SelectSubset<T, SkapImportItemFindUniqueArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SkapImportItem that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SkapImportItemFindUniqueOrThrowArgs} args - Arguments to find a SkapImportItem
+     * @example
+     * // Get one SkapImportItem
+     * const skapImportItem = await prisma.skapImportItem.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SkapImportItemFindUniqueOrThrowArgs>(args: SelectSubset<T, SkapImportItemFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapImportItem that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemFindFirstArgs} args - Arguments to find a SkapImportItem
+     * @example
+     * // Get one SkapImportItem
+     * const skapImportItem = await prisma.skapImportItem.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SkapImportItemFindFirstArgs>(args?: SelectSubset<T, SkapImportItemFindFirstArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapImportItem that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemFindFirstOrThrowArgs} args - Arguments to find a SkapImportItem
+     * @example
+     * // Get one SkapImportItem
+     * const skapImportItem = await prisma.skapImportItem.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SkapImportItemFindFirstOrThrowArgs>(args?: SelectSubset<T, SkapImportItemFindFirstOrThrowArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SkapImportItems that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SkapImportItems
+     * const skapImportItems = await prisma.skapImportItem.findMany()
+     * 
+     * // Get first 10 SkapImportItems
+     * const skapImportItems = await prisma.skapImportItem.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const skapImportItemWithIdOnly = await prisma.skapImportItem.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SkapImportItemFindManyArgs>(args?: SelectSubset<T, SkapImportItemFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SkapImportItem.
+     * @param {SkapImportItemCreateArgs} args - Arguments to create a SkapImportItem.
+     * @example
+     * // Create one SkapImportItem
+     * const SkapImportItem = await prisma.skapImportItem.create({
+     *   data: {
+     *     // ... data to create a SkapImportItem
+     *   }
+     * })
+     * 
+     */
+    create<T extends SkapImportItemCreateArgs>(args: SelectSubset<T, SkapImportItemCreateArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SkapImportItems.
+     * @param {SkapImportItemCreateManyArgs} args - Arguments to create many SkapImportItems.
+     * @example
+     * // Create many SkapImportItems
+     * const skapImportItem = await prisma.skapImportItem.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SkapImportItemCreateManyArgs>(args?: SelectSubset<T, SkapImportItemCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SkapImportItem.
+     * @param {SkapImportItemDeleteArgs} args - Arguments to delete one SkapImportItem.
+     * @example
+     * // Delete one SkapImportItem
+     * const SkapImportItem = await prisma.skapImportItem.delete({
+     *   where: {
+     *     // ... filter to delete one SkapImportItem
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SkapImportItemDeleteArgs>(args: SelectSubset<T, SkapImportItemDeleteArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SkapImportItem.
+     * @param {SkapImportItemUpdateArgs} args - Arguments to update one SkapImportItem.
+     * @example
+     * // Update one SkapImportItem
+     * const skapImportItem = await prisma.skapImportItem.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SkapImportItemUpdateArgs>(args: SelectSubset<T, SkapImportItemUpdateArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SkapImportItems.
+     * @param {SkapImportItemDeleteManyArgs} args - Arguments to filter SkapImportItems to delete.
+     * @example
+     * // Delete a few SkapImportItems
+     * const { count } = await prisma.skapImportItem.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SkapImportItemDeleteManyArgs>(args?: SelectSubset<T, SkapImportItemDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SkapImportItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SkapImportItems
+     * const skapImportItem = await prisma.skapImportItem.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SkapImportItemUpdateManyArgs>(args: SelectSubset<T, SkapImportItemUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SkapImportItem.
+     * @param {SkapImportItemUpsertArgs} args - Arguments to update or create a SkapImportItem.
+     * @example
+     * // Update or create a SkapImportItem
+     * const skapImportItem = await prisma.skapImportItem.upsert({
+     *   create: {
+     *     // ... data to create a SkapImportItem
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SkapImportItem we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SkapImportItemUpsertArgs>(args: SelectSubset<T, SkapImportItemUpsertArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SkapImportItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemCountArgs} args - Arguments to filter SkapImportItems to count.
+     * @example
+     * // Count the number of SkapImportItems
+     * const count = await prisma.skapImportItem.count({
+     *   where: {
+     *     // ... the filter for the SkapImportItems we want to count
+     *   }
+     * })
+    **/
+    count<T extends SkapImportItemCountArgs>(
+      args?: Subset<T, SkapImportItemCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SkapImportItemCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SkapImportItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SkapImportItemAggregateArgs>(args: Subset<T, SkapImportItemAggregateArgs>): Prisma.PrismaPromise<GetSkapImportItemAggregateType<T>>
+
+    /**
+     * Group by SkapImportItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportItemGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SkapImportItemGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SkapImportItemGroupByArgs['orderBy'] }
+        : { orderBy?: SkapImportItemGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SkapImportItemGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkapImportItemGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SkapImportItem model
+   */
+  readonly fields: SkapImportItemFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SkapImportItem.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SkapImportItemClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    file<T extends SkapImportItem$fileArgs<ExtArgs> = {}>(args?: Subset<T, SkapImportItem$fileArgs<ExtArgs>>): Prisma__SkapImportFileClient<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    sessions<T extends SkapImportItem$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, SkapImportItem$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    subscriptions<T extends SkapImportItem$subscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, SkapImportItem$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SkapImportItem model
+   */
+  interface SkapImportItemFieldRefs {
+    readonly id: FieldRef<"SkapImportItem", 'String'>
+    readonly portal_id: FieldRef<"SkapImportItem", 'BigInt'>
+    readonly domain: FieldRef<"SkapImportItem", 'String'>
+    readonly dedupKey: FieldRef<"SkapImportItem", 'String'>
+    readonly clientCard: FieldRef<"SkapImportItem", 'String'>
+    readonly regList: FieldRef<"SkapImportItem", 'String'>
+    readonly login: FieldRef<"SkapImportItem", 'String'>
+    readonly period: FieldRef<"SkapImportItem", 'DateTime'>
+    readonly status: FieldRef<"SkapImportItem", 'String'>
+    readonly bitrixItemId: FieldRef<"SkapImportItem", 'Int'>
+    readonly companyId: FieldRef<"SkapImportItem", 'Int'>
+    readonly dealId: FieldRef<"SkapImportItem", 'Int'>
+    readonly contactId: FieldRef<"SkapImportItem", 'Int'>
+    readonly warning: FieldRef<"SkapImportItem", 'String'>
+    readonly sessionCount: FieldRef<"SkapImportItem", 'Int'>
+    readonly timeTotalMin: FieldRef<"SkapImportItem", 'Int'>
+    readonly ipCount: FieldRef<"SkapImportItem", 'Int'>
+    readonly fileId: FieldRef<"SkapImportItem", 'String'>
+    readonly createdAt: FieldRef<"SkapImportItem", 'DateTime'>
+    readonly updatedAt: FieldRef<"SkapImportItem", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SkapImportItem findUnique
+   */
+  export type SkapImportItemFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportItem to fetch.
+     */
+    where: SkapImportItemWhereUniqueInput
+  }
+
+  /**
+   * SkapImportItem findUniqueOrThrow
+   */
+  export type SkapImportItemFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportItem to fetch.
+     */
+    where: SkapImportItemWhereUniqueInput
+  }
+
+  /**
+   * SkapImportItem findFirst
+   */
+  export type SkapImportItemFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportItem to fetch.
+     */
+    where?: SkapImportItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportItems to fetch.
+     */
+    orderBy?: SkapImportItemOrderByWithRelationInput | SkapImportItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapImportItems.
+     */
+    cursor?: SkapImportItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapImportItems.
+     */
+    distinct?: SkapImportItemScalarFieldEnum | SkapImportItemScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportItem findFirstOrThrow
+   */
+  export type SkapImportItemFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportItem to fetch.
+     */
+    where?: SkapImportItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportItems to fetch.
+     */
+    orderBy?: SkapImportItemOrderByWithRelationInput | SkapImportItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapImportItems.
+     */
+    cursor?: SkapImportItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapImportItems.
+     */
+    distinct?: SkapImportItemScalarFieldEnum | SkapImportItemScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportItem findMany
+   */
+  export type SkapImportItemFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportItems to fetch.
+     */
+    where?: SkapImportItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportItems to fetch.
+     */
+    orderBy?: SkapImportItemOrderByWithRelationInput | SkapImportItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SkapImportItems.
+     */
+    cursor?: SkapImportItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportItems.
+     */
+    skip?: number
+    distinct?: SkapImportItemScalarFieldEnum | SkapImportItemScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportItem create
+   */
+  export type SkapImportItemCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SkapImportItem.
+     */
+    data: XOR<SkapImportItemCreateInput, SkapImportItemUncheckedCreateInput>
+  }
+
+  /**
+   * SkapImportItem createMany
+   */
+  export type SkapImportItemCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SkapImportItems.
+     */
+    data: SkapImportItemCreateManyInput | SkapImportItemCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SkapImportItem update
+   */
+  export type SkapImportItemUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SkapImportItem.
+     */
+    data: XOR<SkapImportItemUpdateInput, SkapImportItemUncheckedUpdateInput>
+    /**
+     * Choose, which SkapImportItem to update.
+     */
+    where: SkapImportItemWhereUniqueInput
+  }
+
+  /**
+   * SkapImportItem updateMany
+   */
+  export type SkapImportItemUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SkapImportItems.
+     */
+    data: XOR<SkapImportItemUpdateManyMutationInput, SkapImportItemUncheckedUpdateManyInput>
+    /**
+     * Filter which SkapImportItems to update
+     */
+    where?: SkapImportItemWhereInput
+    /**
+     * Limit how many SkapImportItems to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapImportItem upsert
+   */
+  export type SkapImportItemUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SkapImportItem to update in case it exists.
+     */
+    where: SkapImportItemWhereUniqueInput
+    /**
+     * In case the SkapImportItem found by the `where` argument doesn't exist, create a new SkapImportItem with this data.
+     */
+    create: XOR<SkapImportItemCreateInput, SkapImportItemUncheckedCreateInput>
+    /**
+     * In case the SkapImportItem was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SkapImportItemUpdateInput, SkapImportItemUncheckedUpdateInput>
+  }
+
+  /**
+   * SkapImportItem delete
+   */
+  export type SkapImportItemDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    /**
+     * Filter which SkapImportItem to delete.
+     */
+    where: SkapImportItemWhereUniqueInput
+  }
+
+  /**
+   * SkapImportItem deleteMany
+   */
+  export type SkapImportItemDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapImportItems to delete
+     */
+    where?: SkapImportItemWhereInput
+    /**
+     * Limit how many SkapImportItems to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapImportItem.file
+   */
+  export type SkapImportItem$fileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportFile
+     */
+    select?: SkapImportFileSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportFile
+     */
+    omit?: SkapImportFileOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportFileInclude<ExtArgs> | null
+    where?: SkapImportFileWhereInput
+  }
+
+  /**
+   * SkapImportItem.sessions
+   */
+  export type SkapImportItem$sessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    where?: SkapSessionWhereInput
+    orderBy?: SkapSessionOrderByWithRelationInput | SkapSessionOrderByWithRelationInput[]
+    cursor?: SkapSessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapSessionScalarFieldEnum | SkapSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportItem.subscriptions
+   */
+  export type SkapImportItem$subscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    where?: SkapSubscriptionWhereInput
+    orderBy?: SkapSubscriptionOrderByWithRelationInput | SkapSubscriptionOrderByWithRelationInput[]
+    cursor?: SkapSubscriptionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SkapSubscriptionScalarFieldEnum | SkapSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportItem without action
+   */
+  export type SkapImportItemDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SkapSession
+   */
+
+  export type AggregateSkapSession = {
+    _count: SkapSessionCountAggregateOutputType | null
+    _avg: SkapSessionAvgAggregateOutputType | null
+    _sum: SkapSessionSumAggregateOutputType | null
+    _min: SkapSessionMinAggregateOutputType | null
+    _max: SkapSessionMaxAggregateOutputType | null
+  }
+
+  export type SkapSessionAvgAggregateOutputType = {
+    portal_id: number | null
+    durationSec: number | null
+  }
+
+  export type SkapSessionSumAggregateOutputType = {
+    portal_id: bigint | null
+    durationSec: number | null
+  }
+
+  export type SkapSessionMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    dedupKey: string | null
+    itemId: string | null
+    clientCard: string | null
+    regList: string | null
+    login: string | null
+    complectArmId: string | null
+    complectType: string | null
+    startedAt: Date | null
+    endedAt: Date | null
+    durationSec: number | null
+    ip: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapSessionMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    dedupKey: string | null
+    itemId: string | null
+    clientCard: string | null
+    regList: string | null
+    login: string | null
+    complectArmId: string | null
+    complectType: string | null
+    startedAt: Date | null
+    endedAt: Date | null
+    durationSec: number | null
+    ip: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapSessionCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    dedupKey: number
+    itemId: number
+    clientCard: number
+    regList: number
+    login: number
+    complectArmId: number
+    complectType: number
+    startedAt: number
+    endedAt: number
+    durationSec: number
+    ip: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SkapSessionAvgAggregateInputType = {
+    portal_id?: true
+    durationSec?: true
+  }
+
+  export type SkapSessionSumAggregateInputType = {
+    portal_id?: true
+    durationSec?: true
+  }
+
+  export type SkapSessionMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    itemId?: true
+    clientCard?: true
+    regList?: true
+    login?: true
+    complectArmId?: true
+    complectType?: true
+    startedAt?: true
+    endedAt?: true
+    durationSec?: true
+    ip?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapSessionMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    itemId?: true
+    clientCard?: true
+    regList?: true
+    login?: true
+    complectArmId?: true
+    complectType?: true
+    startedAt?: true
+    endedAt?: true
+    durationSec?: true
+    ip?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapSessionCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    itemId?: true
+    clientCard?: true
+    regList?: true
+    login?: true
+    complectArmId?: true
+    complectType?: true
+    startedAt?: true
+    endedAt?: true
+    durationSec?: true
+    ip?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SkapSessionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapSession to aggregate.
+     */
+    where?: SkapSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSessions to fetch.
+     */
+    orderBy?: SkapSessionOrderByWithRelationInput | SkapSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SkapSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SkapSessions
+    **/
+    _count?: true | SkapSessionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SkapSessionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SkapSessionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SkapSessionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SkapSessionMaxAggregateInputType
+  }
+
+  export type GetSkapSessionAggregateType<T extends SkapSessionAggregateArgs> = {
+        [P in keyof T & keyof AggregateSkapSession]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSkapSession[P]>
+      : GetScalarType<T[P], AggregateSkapSession[P]>
+  }
+
+
+
+
+  export type SkapSessionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapSessionWhereInput
+    orderBy?: SkapSessionOrderByWithAggregationInput | SkapSessionOrderByWithAggregationInput[]
+    by: SkapSessionScalarFieldEnum[] | SkapSessionScalarFieldEnum
+    having?: SkapSessionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SkapSessionCountAggregateInputType | true
+    _avg?: SkapSessionAvgAggregateInputType
+    _sum?: SkapSessionSumAggregateInputType
+    _min?: SkapSessionMinAggregateInputType
+    _max?: SkapSessionMaxAggregateInputType
+  }
+
+  export type SkapSessionGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    dedupKey: string
+    itemId: string | null
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId: string | null
+    complectType: string | null
+    startedAt: Date
+    endedAt: Date | null
+    durationSec: number
+    ip: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: SkapSessionCountAggregateOutputType | null
+    _avg: SkapSessionAvgAggregateOutputType | null
+    _sum: SkapSessionSumAggregateOutputType | null
+    _min: SkapSessionMinAggregateOutputType | null
+    _max: SkapSessionMaxAggregateOutputType | null
+  }
+
+  type GetSkapSessionGroupByPayload<T extends SkapSessionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SkapSessionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SkapSessionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SkapSessionGroupByOutputType[P]>
+            : GetScalarType<T[P], SkapSessionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SkapSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    dedupKey?: boolean
+    itemId?: boolean
+    clientCard?: boolean
+    regList?: boolean
+    login?: boolean
+    complectArmId?: boolean
+    complectType?: boolean
+    startedAt?: boolean
+    endedAt?: boolean
+    durationSec?: boolean
+    ip?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    item?: boolean | SkapSession$itemArgs<ExtArgs>
+  }, ExtArgs["result"]["skapSession"]>
+
+
+
+  export type SkapSessionSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    dedupKey?: boolean
+    itemId?: boolean
+    clientCard?: boolean
+    regList?: boolean
+    login?: boolean
+    complectArmId?: boolean
+    complectType?: boolean
+    startedAt?: boolean
+    endedAt?: boolean
+    durationSec?: boolean
+    ip?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SkapSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "dedupKey" | "itemId" | "clientCard" | "regList" | "login" | "complectArmId" | "complectType" | "startedAt" | "endedAt" | "durationSec" | "ip" | "createdAt" | "updatedAt", ExtArgs["result"]["skapSession"]>
+  export type SkapSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    item?: boolean | SkapSession$itemArgs<ExtArgs>
+  }
+
+  export type $SkapSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SkapSession"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      item: Prisma.$SkapImportItemPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      /**
+       * {domain}:{clientCard}:{login}:{startedAt ISO}
+       */
+      dedupKey: string
+      itemId: string | null
+      clientCard: string
+      regList: string
+      login: string
+      complectArmId: string | null
+      complectType: string | null
+      startedAt: Date
+      endedAt: Date | null
+      durationSec: number
+      ip: string | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["skapSession"]>
+    composites: {}
+  }
+
+  type SkapSessionGetPayload<S extends boolean | null | undefined | SkapSessionDefaultArgs> = $Result.GetResult<Prisma.$SkapSessionPayload, S>
+
+  type SkapSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SkapSessionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SkapSessionCountAggregateInputType | true
+    }
+
+  export interface SkapSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SkapSession'], meta: { name: 'SkapSession' } }
+    /**
+     * Find zero or one SkapSession that matches the filter.
+     * @param {SkapSessionFindUniqueArgs} args - Arguments to find a SkapSession
+     * @example
+     * // Get one SkapSession
+     * const skapSession = await prisma.skapSession.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SkapSessionFindUniqueArgs>(args: SelectSubset<T, SkapSessionFindUniqueArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SkapSession that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SkapSessionFindUniqueOrThrowArgs} args - Arguments to find a SkapSession
+     * @example
+     * // Get one SkapSession
+     * const skapSession = await prisma.skapSession.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SkapSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, SkapSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapSession that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionFindFirstArgs} args - Arguments to find a SkapSession
+     * @example
+     * // Get one SkapSession
+     * const skapSession = await prisma.skapSession.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SkapSessionFindFirstArgs>(args?: SelectSubset<T, SkapSessionFindFirstArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapSession that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionFindFirstOrThrowArgs} args - Arguments to find a SkapSession
+     * @example
+     * // Get one SkapSession
+     * const skapSession = await prisma.skapSession.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SkapSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, SkapSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SkapSessions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SkapSessions
+     * const skapSessions = await prisma.skapSession.findMany()
+     * 
+     * // Get first 10 SkapSessions
+     * const skapSessions = await prisma.skapSession.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const skapSessionWithIdOnly = await prisma.skapSession.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SkapSessionFindManyArgs>(args?: SelectSubset<T, SkapSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SkapSession.
+     * @param {SkapSessionCreateArgs} args - Arguments to create a SkapSession.
+     * @example
+     * // Create one SkapSession
+     * const SkapSession = await prisma.skapSession.create({
+     *   data: {
+     *     // ... data to create a SkapSession
+     *   }
+     * })
+     * 
+     */
+    create<T extends SkapSessionCreateArgs>(args: SelectSubset<T, SkapSessionCreateArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SkapSessions.
+     * @param {SkapSessionCreateManyArgs} args - Arguments to create many SkapSessions.
+     * @example
+     * // Create many SkapSessions
+     * const skapSession = await prisma.skapSession.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SkapSessionCreateManyArgs>(args?: SelectSubset<T, SkapSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SkapSession.
+     * @param {SkapSessionDeleteArgs} args - Arguments to delete one SkapSession.
+     * @example
+     * // Delete one SkapSession
+     * const SkapSession = await prisma.skapSession.delete({
+     *   where: {
+     *     // ... filter to delete one SkapSession
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SkapSessionDeleteArgs>(args: SelectSubset<T, SkapSessionDeleteArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SkapSession.
+     * @param {SkapSessionUpdateArgs} args - Arguments to update one SkapSession.
+     * @example
+     * // Update one SkapSession
+     * const skapSession = await prisma.skapSession.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SkapSessionUpdateArgs>(args: SelectSubset<T, SkapSessionUpdateArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SkapSessions.
+     * @param {SkapSessionDeleteManyArgs} args - Arguments to filter SkapSessions to delete.
+     * @example
+     * // Delete a few SkapSessions
+     * const { count } = await prisma.skapSession.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SkapSessionDeleteManyArgs>(args?: SelectSubset<T, SkapSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SkapSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SkapSessions
+     * const skapSession = await prisma.skapSession.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SkapSessionUpdateManyArgs>(args: SelectSubset<T, SkapSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SkapSession.
+     * @param {SkapSessionUpsertArgs} args - Arguments to update or create a SkapSession.
+     * @example
+     * // Update or create a SkapSession
+     * const skapSession = await prisma.skapSession.upsert({
+     *   create: {
+     *     // ... data to create a SkapSession
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SkapSession we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SkapSessionUpsertArgs>(args: SelectSubset<T, SkapSessionUpsertArgs<ExtArgs>>): Prisma__SkapSessionClient<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SkapSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionCountArgs} args - Arguments to filter SkapSessions to count.
+     * @example
+     * // Count the number of SkapSessions
+     * const count = await prisma.skapSession.count({
+     *   where: {
+     *     // ... the filter for the SkapSessions we want to count
+     *   }
+     * })
+    **/
+    count<T extends SkapSessionCountArgs>(
+      args?: Subset<T, SkapSessionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SkapSessionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SkapSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SkapSessionAggregateArgs>(args: Subset<T, SkapSessionAggregateArgs>): Prisma.PrismaPromise<GetSkapSessionAggregateType<T>>
+
+    /**
+     * Group by SkapSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSessionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SkapSessionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SkapSessionGroupByArgs['orderBy'] }
+        : { orderBy?: SkapSessionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SkapSessionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkapSessionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SkapSession model
+   */
+  readonly fields: SkapSessionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SkapSession.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SkapSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    item<T extends SkapSession$itemArgs<ExtArgs> = {}>(args?: Subset<T, SkapSession$itemArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SkapSession model
+   */
+  interface SkapSessionFieldRefs {
+    readonly id: FieldRef<"SkapSession", 'String'>
+    readonly portal_id: FieldRef<"SkapSession", 'BigInt'>
+    readonly domain: FieldRef<"SkapSession", 'String'>
+    readonly dedupKey: FieldRef<"SkapSession", 'String'>
+    readonly itemId: FieldRef<"SkapSession", 'String'>
+    readonly clientCard: FieldRef<"SkapSession", 'String'>
+    readonly regList: FieldRef<"SkapSession", 'String'>
+    readonly login: FieldRef<"SkapSession", 'String'>
+    readonly complectArmId: FieldRef<"SkapSession", 'String'>
+    readonly complectType: FieldRef<"SkapSession", 'String'>
+    readonly startedAt: FieldRef<"SkapSession", 'DateTime'>
+    readonly endedAt: FieldRef<"SkapSession", 'DateTime'>
+    readonly durationSec: FieldRef<"SkapSession", 'Int'>
+    readonly ip: FieldRef<"SkapSession", 'String'>
+    readonly createdAt: FieldRef<"SkapSession", 'DateTime'>
+    readonly updatedAt: FieldRef<"SkapSession", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SkapSession findUnique
+   */
+  export type SkapSessionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSession to fetch.
+     */
+    where: SkapSessionWhereUniqueInput
+  }
+
+  /**
+   * SkapSession findUniqueOrThrow
+   */
+  export type SkapSessionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSession to fetch.
+     */
+    where: SkapSessionWhereUniqueInput
+  }
+
+  /**
+   * SkapSession findFirst
+   */
+  export type SkapSessionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSession to fetch.
+     */
+    where?: SkapSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSessions to fetch.
+     */
+    orderBy?: SkapSessionOrderByWithRelationInput | SkapSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapSessions.
+     */
+    cursor?: SkapSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapSessions.
+     */
+    distinct?: SkapSessionScalarFieldEnum | SkapSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapSession findFirstOrThrow
+   */
+  export type SkapSessionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSession to fetch.
+     */
+    where?: SkapSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSessions to fetch.
+     */
+    orderBy?: SkapSessionOrderByWithRelationInput | SkapSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapSessions.
+     */
+    cursor?: SkapSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapSessions.
+     */
+    distinct?: SkapSessionScalarFieldEnum | SkapSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapSession findMany
+   */
+  export type SkapSessionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSessions to fetch.
+     */
+    where?: SkapSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSessions to fetch.
+     */
+    orderBy?: SkapSessionOrderByWithRelationInput | SkapSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SkapSessions.
+     */
+    cursor?: SkapSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSessions.
+     */
+    skip?: number
+    distinct?: SkapSessionScalarFieldEnum | SkapSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapSession create
+   */
+  export type SkapSessionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SkapSession.
+     */
+    data: XOR<SkapSessionCreateInput, SkapSessionUncheckedCreateInput>
+  }
+
+  /**
+   * SkapSession createMany
+   */
+  export type SkapSessionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SkapSessions.
+     */
+    data: SkapSessionCreateManyInput | SkapSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SkapSession update
+   */
+  export type SkapSessionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SkapSession.
+     */
+    data: XOR<SkapSessionUpdateInput, SkapSessionUncheckedUpdateInput>
+    /**
+     * Choose, which SkapSession to update.
+     */
+    where: SkapSessionWhereUniqueInput
+  }
+
+  /**
+   * SkapSession updateMany
+   */
+  export type SkapSessionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SkapSessions.
+     */
+    data: XOR<SkapSessionUpdateManyMutationInput, SkapSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which SkapSessions to update
+     */
+    where?: SkapSessionWhereInput
+    /**
+     * Limit how many SkapSessions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapSession upsert
+   */
+  export type SkapSessionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SkapSession to update in case it exists.
+     */
+    where: SkapSessionWhereUniqueInput
+    /**
+     * In case the SkapSession found by the `where` argument doesn't exist, create a new SkapSession with this data.
+     */
+    create: XOR<SkapSessionCreateInput, SkapSessionUncheckedCreateInput>
+    /**
+     * In case the SkapSession was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SkapSessionUpdateInput, SkapSessionUncheckedUpdateInput>
+  }
+
+  /**
+   * SkapSession delete
+   */
+  export type SkapSessionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+    /**
+     * Filter which SkapSession to delete.
+     */
+    where: SkapSessionWhereUniqueInput
+  }
+
+  /**
+   * SkapSession deleteMany
+   */
+  export type SkapSessionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapSessions to delete
+     */
+    where?: SkapSessionWhereInput
+    /**
+     * Limit how many SkapSessions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapSession.item
+   */
+  export type SkapSession$itemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    where?: SkapImportItemWhereInput
+  }
+
+  /**
+   * SkapSession without action
+   */
+  export type SkapSessionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSession
+     */
+    select?: SkapSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSession
+     */
+    omit?: SkapSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSessionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SkapSubscription
+   */
+
+  export type AggregateSkapSubscription = {
+    _count: SkapSubscriptionCountAggregateOutputType | null
+    _avg: SkapSubscriptionAvgAggregateOutputType | null
+    _sum: SkapSubscriptionSumAggregateOutputType | null
+    _min: SkapSubscriptionMinAggregateOutputType | null
+    _max: SkapSubscriptionMaxAggregateOutputType | null
+  }
+
+  export type SkapSubscriptionAvgAggregateOutputType = {
+    portal_id: number | null
+  }
+
+  export type SkapSubscriptionSumAggregateOutputType = {
+    portal_id: bigint | null
+  }
+
+  export type SkapSubscriptionMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    dedupKey: string | null
+    itemId: string | null
+    clientCard: string | null
+    regList: string | null
+    complectArmId: string | null
+    complectName: string | null
+    supplyKind: string | null
+    city: string | null
+    region: string | null
+    version: string | null
+    content: string | null
+    managerName: string | null
+    managerEmail: string | null
+    mailingName: string | null
+    mailingEmail: string | null
+    isActive: boolean | null
+    period: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapSubscriptionMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    dedupKey: string | null
+    itemId: string | null
+    clientCard: string | null
+    regList: string | null
+    complectArmId: string | null
+    complectName: string | null
+    supplyKind: string | null
+    city: string | null
+    region: string | null
+    version: string | null
+    content: string | null
+    managerName: string | null
+    managerEmail: string | null
+    mailingName: string | null
+    mailingEmail: string | null
+    isActive: boolean | null
+    period: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapSubscriptionCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    dedupKey: number
+    itemId: number
+    clientCard: number
+    regList: number
+    complectArmId: number
+    complectName: number
+    supplyKind: number
+    city: number
+    region: number
+    version: number
+    content: number
+    managerName: number
+    managerEmail: number
+    mailingName: number
+    mailingEmail: number
+    isActive: number
+    period: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SkapSubscriptionAvgAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type SkapSubscriptionSumAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type SkapSubscriptionMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    itemId?: true
+    clientCard?: true
+    regList?: true
+    complectArmId?: true
+    complectName?: true
+    supplyKind?: true
+    city?: true
+    region?: true
+    version?: true
+    content?: true
+    managerName?: true
+    managerEmail?: true
+    mailingName?: true
+    mailingEmail?: true
+    isActive?: true
+    period?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapSubscriptionMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    itemId?: true
+    clientCard?: true
+    regList?: true
+    complectArmId?: true
+    complectName?: true
+    supplyKind?: true
+    city?: true
+    region?: true
+    version?: true
+    content?: true
+    managerName?: true
+    managerEmail?: true
+    mailingName?: true
+    mailingEmail?: true
+    isActive?: true
+    period?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapSubscriptionCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    dedupKey?: true
+    itemId?: true
+    clientCard?: true
+    regList?: true
+    complectArmId?: true
+    complectName?: true
+    supplyKind?: true
+    city?: true
+    region?: true
+    version?: true
+    content?: true
+    managerName?: true
+    managerEmail?: true
+    mailingName?: true
+    mailingEmail?: true
+    isActive?: true
+    period?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SkapSubscriptionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapSubscription to aggregate.
+     */
+    where?: SkapSubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSubscriptions to fetch.
+     */
+    orderBy?: SkapSubscriptionOrderByWithRelationInput | SkapSubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SkapSubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSubscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SkapSubscriptions
+    **/
+    _count?: true | SkapSubscriptionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SkapSubscriptionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SkapSubscriptionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SkapSubscriptionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SkapSubscriptionMaxAggregateInputType
+  }
+
+  export type GetSkapSubscriptionAggregateType<T extends SkapSubscriptionAggregateArgs> = {
+        [P in keyof T & keyof AggregateSkapSubscription]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSkapSubscription[P]>
+      : GetScalarType<T[P], AggregateSkapSubscription[P]>
+  }
+
+
+
+
+  export type SkapSubscriptionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapSubscriptionWhereInput
+    orderBy?: SkapSubscriptionOrderByWithAggregationInput | SkapSubscriptionOrderByWithAggregationInput[]
+    by: SkapSubscriptionScalarFieldEnum[] | SkapSubscriptionScalarFieldEnum
+    having?: SkapSubscriptionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SkapSubscriptionCountAggregateInputType | true
+    _avg?: SkapSubscriptionAvgAggregateInputType
+    _sum?: SkapSubscriptionSumAggregateInputType
+    _min?: SkapSubscriptionMinAggregateInputType
+    _max?: SkapSubscriptionMaxAggregateInputType
+  }
+
+  export type SkapSubscriptionGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    dedupKey: string
+    itemId: string | null
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName: string | null
+    supplyKind: string | null
+    city: string | null
+    region: string | null
+    version: string | null
+    content: string | null
+    managerName: string | null
+    managerEmail: string | null
+    mailingName: string | null
+    mailingEmail: string | null
+    isActive: boolean
+    period: Date
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: SkapSubscriptionCountAggregateOutputType | null
+    _avg: SkapSubscriptionAvgAggregateOutputType | null
+    _sum: SkapSubscriptionSumAggregateOutputType | null
+    _min: SkapSubscriptionMinAggregateOutputType | null
+    _max: SkapSubscriptionMaxAggregateOutputType | null
+  }
+
+  type GetSkapSubscriptionGroupByPayload<T extends SkapSubscriptionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SkapSubscriptionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SkapSubscriptionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SkapSubscriptionGroupByOutputType[P]>
+            : GetScalarType<T[P], SkapSubscriptionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SkapSubscriptionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    dedupKey?: boolean
+    itemId?: boolean
+    clientCard?: boolean
+    regList?: boolean
+    complectArmId?: boolean
+    complectName?: boolean
+    supplyKind?: boolean
+    city?: boolean
+    region?: boolean
+    version?: boolean
+    content?: boolean
+    managerName?: boolean
+    managerEmail?: boolean
+    mailingName?: boolean
+    mailingEmail?: boolean
+    isActive?: boolean
+    period?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    item?: boolean | SkapSubscription$itemArgs<ExtArgs>
+  }, ExtArgs["result"]["skapSubscription"]>
+
+
+
+  export type SkapSubscriptionSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    dedupKey?: boolean
+    itemId?: boolean
+    clientCard?: boolean
+    regList?: boolean
+    complectArmId?: boolean
+    complectName?: boolean
+    supplyKind?: boolean
+    city?: boolean
+    region?: boolean
+    version?: boolean
+    content?: boolean
+    managerName?: boolean
+    managerEmail?: boolean
+    mailingName?: boolean
+    mailingEmail?: boolean
+    isActive?: boolean
+    period?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SkapSubscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "dedupKey" | "itemId" | "clientCard" | "regList" | "complectArmId" | "complectName" | "supplyKind" | "city" | "region" | "version" | "content" | "managerName" | "managerEmail" | "mailingName" | "mailingEmail" | "isActive" | "period" | "createdAt" | "updatedAt", ExtArgs["result"]["skapSubscription"]>
+  export type SkapSubscriptionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    item?: boolean | SkapSubscription$itemArgs<ExtArgs>
+  }
+
+  export type $SkapSubscriptionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SkapSubscription"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      item: Prisma.$SkapImportItemPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      /**
+       * {domain}:{clientCard}:{complectArmId}:{mailingEmail}:{YYYY-MM}
+       */
+      dedupKey: string
+      itemId: string | null
+      clientCard: string
+      regList: string
+      complectArmId: string
+      complectName: string | null
+      supplyKind: string | null
+      city: string | null
+      region: string | null
+      version: string | null
+      /**
+       * «Наполнение комплекта» (список кодов блоков)
+       */
+      content: string | null
+      managerName: string | null
+      managerEmail: string | null
+      mailingName: string | null
+      mailingEmail: string | null
+      isActive: boolean
+      /**
+       * 1-е число месяца снапшота
+       */
+      period: Date
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["skapSubscription"]>
+    composites: {}
+  }
+
+  type SkapSubscriptionGetPayload<S extends boolean | null | undefined | SkapSubscriptionDefaultArgs> = $Result.GetResult<Prisma.$SkapSubscriptionPayload, S>
+
+  type SkapSubscriptionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SkapSubscriptionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SkapSubscriptionCountAggregateInputType | true
+    }
+
+  export interface SkapSubscriptionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SkapSubscription'], meta: { name: 'SkapSubscription' } }
+    /**
+     * Find zero or one SkapSubscription that matches the filter.
+     * @param {SkapSubscriptionFindUniqueArgs} args - Arguments to find a SkapSubscription
+     * @example
+     * // Get one SkapSubscription
+     * const skapSubscription = await prisma.skapSubscription.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SkapSubscriptionFindUniqueArgs>(args: SelectSubset<T, SkapSubscriptionFindUniqueArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SkapSubscription that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SkapSubscriptionFindUniqueOrThrowArgs} args - Arguments to find a SkapSubscription
+     * @example
+     * // Get one SkapSubscription
+     * const skapSubscription = await prisma.skapSubscription.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SkapSubscriptionFindUniqueOrThrowArgs>(args: SelectSubset<T, SkapSubscriptionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapSubscription that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionFindFirstArgs} args - Arguments to find a SkapSubscription
+     * @example
+     * // Get one SkapSubscription
+     * const skapSubscription = await prisma.skapSubscription.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SkapSubscriptionFindFirstArgs>(args?: SelectSubset<T, SkapSubscriptionFindFirstArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapSubscription that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionFindFirstOrThrowArgs} args - Arguments to find a SkapSubscription
+     * @example
+     * // Get one SkapSubscription
+     * const skapSubscription = await prisma.skapSubscription.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SkapSubscriptionFindFirstOrThrowArgs>(args?: SelectSubset<T, SkapSubscriptionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SkapSubscriptions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SkapSubscriptions
+     * const skapSubscriptions = await prisma.skapSubscription.findMany()
+     * 
+     * // Get first 10 SkapSubscriptions
+     * const skapSubscriptions = await prisma.skapSubscription.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const skapSubscriptionWithIdOnly = await prisma.skapSubscription.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SkapSubscriptionFindManyArgs>(args?: SelectSubset<T, SkapSubscriptionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SkapSubscription.
+     * @param {SkapSubscriptionCreateArgs} args - Arguments to create a SkapSubscription.
+     * @example
+     * // Create one SkapSubscription
+     * const SkapSubscription = await prisma.skapSubscription.create({
+     *   data: {
+     *     // ... data to create a SkapSubscription
+     *   }
+     * })
+     * 
+     */
+    create<T extends SkapSubscriptionCreateArgs>(args: SelectSubset<T, SkapSubscriptionCreateArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SkapSubscriptions.
+     * @param {SkapSubscriptionCreateManyArgs} args - Arguments to create many SkapSubscriptions.
+     * @example
+     * // Create many SkapSubscriptions
+     * const skapSubscription = await prisma.skapSubscription.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SkapSubscriptionCreateManyArgs>(args?: SelectSubset<T, SkapSubscriptionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SkapSubscription.
+     * @param {SkapSubscriptionDeleteArgs} args - Arguments to delete one SkapSubscription.
+     * @example
+     * // Delete one SkapSubscription
+     * const SkapSubscription = await prisma.skapSubscription.delete({
+     *   where: {
+     *     // ... filter to delete one SkapSubscription
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SkapSubscriptionDeleteArgs>(args: SelectSubset<T, SkapSubscriptionDeleteArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SkapSubscription.
+     * @param {SkapSubscriptionUpdateArgs} args - Arguments to update one SkapSubscription.
+     * @example
+     * // Update one SkapSubscription
+     * const skapSubscription = await prisma.skapSubscription.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SkapSubscriptionUpdateArgs>(args: SelectSubset<T, SkapSubscriptionUpdateArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SkapSubscriptions.
+     * @param {SkapSubscriptionDeleteManyArgs} args - Arguments to filter SkapSubscriptions to delete.
+     * @example
+     * // Delete a few SkapSubscriptions
+     * const { count } = await prisma.skapSubscription.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SkapSubscriptionDeleteManyArgs>(args?: SelectSubset<T, SkapSubscriptionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SkapSubscriptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SkapSubscriptions
+     * const skapSubscription = await prisma.skapSubscription.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SkapSubscriptionUpdateManyArgs>(args: SelectSubset<T, SkapSubscriptionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SkapSubscription.
+     * @param {SkapSubscriptionUpsertArgs} args - Arguments to update or create a SkapSubscription.
+     * @example
+     * // Update or create a SkapSubscription
+     * const skapSubscription = await prisma.skapSubscription.upsert({
+     *   create: {
+     *     // ... data to create a SkapSubscription
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SkapSubscription we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SkapSubscriptionUpsertArgs>(args: SelectSubset<T, SkapSubscriptionUpsertArgs<ExtArgs>>): Prisma__SkapSubscriptionClient<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SkapSubscriptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionCountArgs} args - Arguments to filter SkapSubscriptions to count.
+     * @example
+     * // Count the number of SkapSubscriptions
+     * const count = await prisma.skapSubscription.count({
+     *   where: {
+     *     // ... the filter for the SkapSubscriptions we want to count
+     *   }
+     * })
+    **/
+    count<T extends SkapSubscriptionCountArgs>(
+      args?: Subset<T, SkapSubscriptionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SkapSubscriptionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SkapSubscription.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SkapSubscriptionAggregateArgs>(args: Subset<T, SkapSubscriptionAggregateArgs>): Prisma.PrismaPromise<GetSkapSubscriptionAggregateType<T>>
+
+    /**
+     * Group by SkapSubscription.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapSubscriptionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SkapSubscriptionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SkapSubscriptionGroupByArgs['orderBy'] }
+        : { orderBy?: SkapSubscriptionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SkapSubscriptionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkapSubscriptionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SkapSubscription model
+   */
+  readonly fields: SkapSubscriptionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SkapSubscription.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SkapSubscriptionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    item<T extends SkapSubscription$itemArgs<ExtArgs> = {}>(args?: Subset<T, SkapSubscription$itemArgs<ExtArgs>>): Prisma__SkapImportItemClient<$Result.GetResult<Prisma.$SkapImportItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SkapSubscription model
+   */
+  interface SkapSubscriptionFieldRefs {
+    readonly id: FieldRef<"SkapSubscription", 'String'>
+    readonly portal_id: FieldRef<"SkapSubscription", 'BigInt'>
+    readonly domain: FieldRef<"SkapSubscription", 'String'>
+    readonly dedupKey: FieldRef<"SkapSubscription", 'String'>
+    readonly itemId: FieldRef<"SkapSubscription", 'String'>
+    readonly clientCard: FieldRef<"SkapSubscription", 'String'>
+    readonly regList: FieldRef<"SkapSubscription", 'String'>
+    readonly complectArmId: FieldRef<"SkapSubscription", 'String'>
+    readonly complectName: FieldRef<"SkapSubscription", 'String'>
+    readonly supplyKind: FieldRef<"SkapSubscription", 'String'>
+    readonly city: FieldRef<"SkapSubscription", 'String'>
+    readonly region: FieldRef<"SkapSubscription", 'String'>
+    readonly version: FieldRef<"SkapSubscription", 'String'>
+    readonly content: FieldRef<"SkapSubscription", 'String'>
+    readonly managerName: FieldRef<"SkapSubscription", 'String'>
+    readonly managerEmail: FieldRef<"SkapSubscription", 'String'>
+    readonly mailingName: FieldRef<"SkapSubscription", 'String'>
+    readonly mailingEmail: FieldRef<"SkapSubscription", 'String'>
+    readonly isActive: FieldRef<"SkapSubscription", 'Boolean'>
+    readonly period: FieldRef<"SkapSubscription", 'DateTime'>
+    readonly createdAt: FieldRef<"SkapSubscription", 'DateTime'>
+    readonly updatedAt: FieldRef<"SkapSubscription", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SkapSubscription findUnique
+   */
+  export type SkapSubscriptionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSubscription to fetch.
+     */
+    where: SkapSubscriptionWhereUniqueInput
+  }
+
+  /**
+   * SkapSubscription findUniqueOrThrow
+   */
+  export type SkapSubscriptionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSubscription to fetch.
+     */
+    where: SkapSubscriptionWhereUniqueInput
+  }
+
+  /**
+   * SkapSubscription findFirst
+   */
+  export type SkapSubscriptionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSubscription to fetch.
+     */
+    where?: SkapSubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSubscriptions to fetch.
+     */
+    orderBy?: SkapSubscriptionOrderByWithRelationInput | SkapSubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapSubscriptions.
+     */
+    cursor?: SkapSubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSubscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapSubscriptions.
+     */
+    distinct?: SkapSubscriptionScalarFieldEnum | SkapSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapSubscription findFirstOrThrow
+   */
+  export type SkapSubscriptionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSubscription to fetch.
+     */
+    where?: SkapSubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSubscriptions to fetch.
+     */
+    orderBy?: SkapSubscriptionOrderByWithRelationInput | SkapSubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapSubscriptions.
+     */
+    cursor?: SkapSubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSubscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapSubscriptions.
+     */
+    distinct?: SkapSubscriptionScalarFieldEnum | SkapSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapSubscription findMany
+   */
+  export type SkapSubscriptionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapSubscriptions to fetch.
+     */
+    where?: SkapSubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapSubscriptions to fetch.
+     */
+    orderBy?: SkapSubscriptionOrderByWithRelationInput | SkapSubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SkapSubscriptions.
+     */
+    cursor?: SkapSubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapSubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapSubscriptions.
+     */
+    skip?: number
+    distinct?: SkapSubscriptionScalarFieldEnum | SkapSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * SkapSubscription create
+   */
+  export type SkapSubscriptionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SkapSubscription.
+     */
+    data: XOR<SkapSubscriptionCreateInput, SkapSubscriptionUncheckedCreateInput>
+  }
+
+  /**
+   * SkapSubscription createMany
+   */
+  export type SkapSubscriptionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SkapSubscriptions.
+     */
+    data: SkapSubscriptionCreateManyInput | SkapSubscriptionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SkapSubscription update
+   */
+  export type SkapSubscriptionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SkapSubscription.
+     */
+    data: XOR<SkapSubscriptionUpdateInput, SkapSubscriptionUncheckedUpdateInput>
+    /**
+     * Choose, which SkapSubscription to update.
+     */
+    where: SkapSubscriptionWhereUniqueInput
+  }
+
+  /**
+   * SkapSubscription updateMany
+   */
+  export type SkapSubscriptionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SkapSubscriptions.
+     */
+    data: XOR<SkapSubscriptionUpdateManyMutationInput, SkapSubscriptionUncheckedUpdateManyInput>
+    /**
+     * Filter which SkapSubscriptions to update
+     */
+    where?: SkapSubscriptionWhereInput
+    /**
+     * Limit how many SkapSubscriptions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapSubscription upsert
+   */
+  export type SkapSubscriptionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SkapSubscription to update in case it exists.
+     */
+    where: SkapSubscriptionWhereUniqueInput
+    /**
+     * In case the SkapSubscription found by the `where` argument doesn't exist, create a new SkapSubscription with this data.
+     */
+    create: XOR<SkapSubscriptionCreateInput, SkapSubscriptionUncheckedCreateInput>
+    /**
+     * In case the SkapSubscription was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SkapSubscriptionUpdateInput, SkapSubscriptionUncheckedUpdateInput>
+  }
+
+  /**
+   * SkapSubscription delete
+   */
+  export type SkapSubscriptionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter which SkapSubscription to delete.
+     */
+    where: SkapSubscriptionWhereUniqueInput
+  }
+
+  /**
+   * SkapSubscription deleteMany
+   */
+  export type SkapSubscriptionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapSubscriptions to delete
+     */
+    where?: SkapSubscriptionWhereInput
+    /**
+     * Limit how many SkapSubscriptions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapSubscription.item
+   */
+  export type SkapSubscription$itemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportItem
+     */
+    select?: SkapImportItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportItem
+     */
+    omit?: SkapImportItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportItemInclude<ExtArgs> | null
+    where?: SkapImportItemWhereInput
+  }
+
+  /**
+   * SkapSubscription without action
+   */
+  export type SkapSubscriptionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapSubscription
+     */
+    select?: SkapSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapSubscription
+     */
+    omit?: SkapSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapSubscriptionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SkapImportRun
+   */
+
+  export type AggregateSkapImportRun = {
+    _count: SkapImportRunCountAggregateOutputType | null
+    _avg: SkapImportRunAvgAggregateOutputType | null
+    _sum: SkapImportRunSumAggregateOutputType | null
+    _min: SkapImportRunMinAggregateOutputType | null
+    _max: SkapImportRunMaxAggregateOutputType | null
+  }
+
+  export type SkapImportRunAvgAggregateOutputType = {
+    portal_id: number | null
+  }
+
+  export type SkapImportRunSumAggregateOutputType = {
+    portal_id: bigint | null
+  }
+
+  export type SkapImportRunMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    status: string | null
+    stopReason: string | null
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapImportRunMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    status: string | null
+    stopReason: string | null
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SkapImportRunCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    status: number
+    stopReason: number
+    stats: number
+    startedAt: number
+    finishedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SkapImportRunAvgAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type SkapImportRunSumAggregateInputType = {
+    portal_id?: true
+  }
+
+  export type SkapImportRunMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    status?: true
+    stopReason?: true
+    startedAt?: true
+    finishedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapImportRunMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    status?: true
+    stopReason?: true
+    startedAt?: true
+    finishedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SkapImportRunCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    status?: true
+    stopReason?: true
+    stats?: true
+    startedAt?: true
+    finishedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SkapImportRunAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapImportRun to aggregate.
+     */
+    where?: SkapImportRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportRuns to fetch.
+     */
+    orderBy?: SkapImportRunOrderByWithRelationInput | SkapImportRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SkapImportRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SkapImportRuns
+    **/
+    _count?: true | SkapImportRunCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SkapImportRunAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SkapImportRunSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SkapImportRunMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SkapImportRunMaxAggregateInputType
+  }
+
+  export type GetSkapImportRunAggregateType<T extends SkapImportRunAggregateArgs> = {
+        [P in keyof T & keyof AggregateSkapImportRun]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSkapImportRun[P]>
+      : GetScalarType<T[P], AggregateSkapImportRun[P]>
+  }
+
+
+
+
+  export type SkapImportRunGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkapImportRunWhereInput
+    orderBy?: SkapImportRunOrderByWithAggregationInput | SkapImportRunOrderByWithAggregationInput[]
+    by: SkapImportRunScalarFieldEnum[] | SkapImportRunScalarFieldEnum
+    having?: SkapImportRunScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SkapImportRunCountAggregateInputType | true
+    _avg?: SkapImportRunAvgAggregateInputType
+    _sum?: SkapImportRunSumAggregateInputType
+    _min?: SkapImportRunMinAggregateInputType
+    _max?: SkapImportRunMaxAggregateInputType
+  }
+
+  export type SkapImportRunGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    status: string
+    stopReason: string | null
+    stats: JsonValue | null
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: SkapImportRunCountAggregateOutputType | null
+    _avg: SkapImportRunAvgAggregateOutputType | null
+    _sum: SkapImportRunSumAggregateOutputType | null
+    _min: SkapImportRunMinAggregateOutputType | null
+    _max: SkapImportRunMaxAggregateOutputType | null
+  }
+
+  type GetSkapImportRunGroupByPayload<T extends SkapImportRunGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SkapImportRunGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SkapImportRunGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SkapImportRunGroupByOutputType[P]>
+            : GetScalarType<T[P], SkapImportRunGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SkapImportRunSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    status?: boolean
+    stopReason?: boolean
+    stats?: boolean
+    startedAt?: boolean
+    finishedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["skapImportRun"]>
+
+
+
+  export type SkapImportRunSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    status?: boolean
+    stopReason?: boolean
+    stats?: boolean
+    startedAt?: boolean
+    finishedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SkapImportRunOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "status" | "stopReason" | "stats" | "startedAt" | "finishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["skapImportRun"]>
+  export type SkapImportRunInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $SkapImportRunPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SkapImportRun"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      /**
+       * running / done / stopped_time_budget / error
+       */
+      status: string
+      stopReason: string | null
+      /**
+       * filesFound/Processed, itemsCreated/Updated/Skipped, sessionsSaved, warnings[]
+       */
+      stats: Prisma.JsonValue | null
+      startedAt: Date | null
+      finishedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["skapImportRun"]>
+    composites: {}
+  }
+
+  type SkapImportRunGetPayload<S extends boolean | null | undefined | SkapImportRunDefaultArgs> = $Result.GetResult<Prisma.$SkapImportRunPayload, S>
+
+  type SkapImportRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SkapImportRunFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SkapImportRunCountAggregateInputType | true
+    }
+
+  export interface SkapImportRunDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SkapImportRun'], meta: { name: 'SkapImportRun' } }
+    /**
+     * Find zero or one SkapImportRun that matches the filter.
+     * @param {SkapImportRunFindUniqueArgs} args - Arguments to find a SkapImportRun
+     * @example
+     * // Get one SkapImportRun
+     * const skapImportRun = await prisma.skapImportRun.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SkapImportRunFindUniqueArgs>(args: SelectSubset<T, SkapImportRunFindUniqueArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SkapImportRun that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SkapImportRunFindUniqueOrThrowArgs} args - Arguments to find a SkapImportRun
+     * @example
+     * // Get one SkapImportRun
+     * const skapImportRun = await prisma.skapImportRun.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SkapImportRunFindUniqueOrThrowArgs>(args: SelectSubset<T, SkapImportRunFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapImportRun that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunFindFirstArgs} args - Arguments to find a SkapImportRun
+     * @example
+     * // Get one SkapImportRun
+     * const skapImportRun = await prisma.skapImportRun.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SkapImportRunFindFirstArgs>(args?: SelectSubset<T, SkapImportRunFindFirstArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SkapImportRun that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunFindFirstOrThrowArgs} args - Arguments to find a SkapImportRun
+     * @example
+     * // Get one SkapImportRun
+     * const skapImportRun = await prisma.skapImportRun.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SkapImportRunFindFirstOrThrowArgs>(args?: SelectSubset<T, SkapImportRunFindFirstOrThrowArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SkapImportRuns that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SkapImportRuns
+     * const skapImportRuns = await prisma.skapImportRun.findMany()
+     * 
+     * // Get first 10 SkapImportRuns
+     * const skapImportRuns = await prisma.skapImportRun.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const skapImportRunWithIdOnly = await prisma.skapImportRun.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SkapImportRunFindManyArgs>(args?: SelectSubset<T, SkapImportRunFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SkapImportRun.
+     * @param {SkapImportRunCreateArgs} args - Arguments to create a SkapImportRun.
+     * @example
+     * // Create one SkapImportRun
+     * const SkapImportRun = await prisma.skapImportRun.create({
+     *   data: {
+     *     // ... data to create a SkapImportRun
+     *   }
+     * })
+     * 
+     */
+    create<T extends SkapImportRunCreateArgs>(args: SelectSubset<T, SkapImportRunCreateArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SkapImportRuns.
+     * @param {SkapImportRunCreateManyArgs} args - Arguments to create many SkapImportRuns.
+     * @example
+     * // Create many SkapImportRuns
+     * const skapImportRun = await prisma.skapImportRun.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SkapImportRunCreateManyArgs>(args?: SelectSubset<T, SkapImportRunCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SkapImportRun.
+     * @param {SkapImportRunDeleteArgs} args - Arguments to delete one SkapImportRun.
+     * @example
+     * // Delete one SkapImportRun
+     * const SkapImportRun = await prisma.skapImportRun.delete({
+     *   where: {
+     *     // ... filter to delete one SkapImportRun
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SkapImportRunDeleteArgs>(args: SelectSubset<T, SkapImportRunDeleteArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SkapImportRun.
+     * @param {SkapImportRunUpdateArgs} args - Arguments to update one SkapImportRun.
+     * @example
+     * // Update one SkapImportRun
+     * const skapImportRun = await prisma.skapImportRun.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SkapImportRunUpdateArgs>(args: SelectSubset<T, SkapImportRunUpdateArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SkapImportRuns.
+     * @param {SkapImportRunDeleteManyArgs} args - Arguments to filter SkapImportRuns to delete.
+     * @example
+     * // Delete a few SkapImportRuns
+     * const { count } = await prisma.skapImportRun.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SkapImportRunDeleteManyArgs>(args?: SelectSubset<T, SkapImportRunDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SkapImportRuns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SkapImportRuns
+     * const skapImportRun = await prisma.skapImportRun.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SkapImportRunUpdateManyArgs>(args: SelectSubset<T, SkapImportRunUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SkapImportRun.
+     * @param {SkapImportRunUpsertArgs} args - Arguments to update or create a SkapImportRun.
+     * @example
+     * // Update or create a SkapImportRun
+     * const skapImportRun = await prisma.skapImportRun.upsert({
+     *   create: {
+     *     // ... data to create a SkapImportRun
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SkapImportRun we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SkapImportRunUpsertArgs>(args: SelectSubset<T, SkapImportRunUpsertArgs<ExtArgs>>): Prisma__SkapImportRunClient<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SkapImportRuns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunCountArgs} args - Arguments to filter SkapImportRuns to count.
+     * @example
+     * // Count the number of SkapImportRuns
+     * const count = await prisma.skapImportRun.count({
+     *   where: {
+     *     // ... the filter for the SkapImportRuns we want to count
+     *   }
+     * })
+    **/
+    count<T extends SkapImportRunCountArgs>(
+      args?: Subset<T, SkapImportRunCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SkapImportRunCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SkapImportRun.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SkapImportRunAggregateArgs>(args: Subset<T, SkapImportRunAggregateArgs>): Prisma.PrismaPromise<GetSkapImportRunAggregateType<T>>
+
+    /**
+     * Group by SkapImportRun.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SkapImportRunGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SkapImportRunGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SkapImportRunGroupByArgs['orderBy'] }
+        : { orderBy?: SkapImportRunGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SkapImportRunGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkapImportRunGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SkapImportRun model
+   */
+  readonly fields: SkapImportRunFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SkapImportRun.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SkapImportRunClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SkapImportRun model
+   */
+  interface SkapImportRunFieldRefs {
+    readonly id: FieldRef<"SkapImportRun", 'String'>
+    readonly portal_id: FieldRef<"SkapImportRun", 'BigInt'>
+    readonly domain: FieldRef<"SkapImportRun", 'String'>
+    readonly status: FieldRef<"SkapImportRun", 'String'>
+    readonly stopReason: FieldRef<"SkapImportRun", 'String'>
+    readonly stats: FieldRef<"SkapImportRun", 'Json'>
+    readonly startedAt: FieldRef<"SkapImportRun", 'DateTime'>
+    readonly finishedAt: FieldRef<"SkapImportRun", 'DateTime'>
+    readonly createdAt: FieldRef<"SkapImportRun", 'DateTime'>
+    readonly updatedAt: FieldRef<"SkapImportRun", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SkapImportRun findUnique
+   */
+  export type SkapImportRunFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportRun to fetch.
+     */
+    where: SkapImportRunWhereUniqueInput
+  }
+
+  /**
+   * SkapImportRun findUniqueOrThrow
+   */
+  export type SkapImportRunFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportRun to fetch.
+     */
+    where: SkapImportRunWhereUniqueInput
+  }
+
+  /**
+   * SkapImportRun findFirst
+   */
+  export type SkapImportRunFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportRun to fetch.
+     */
+    where?: SkapImportRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportRuns to fetch.
+     */
+    orderBy?: SkapImportRunOrderByWithRelationInput | SkapImportRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapImportRuns.
+     */
+    cursor?: SkapImportRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapImportRuns.
+     */
+    distinct?: SkapImportRunScalarFieldEnum | SkapImportRunScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportRun findFirstOrThrow
+   */
+  export type SkapImportRunFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportRun to fetch.
+     */
+    where?: SkapImportRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportRuns to fetch.
+     */
+    orderBy?: SkapImportRunOrderByWithRelationInput | SkapImportRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SkapImportRuns.
+     */
+    cursor?: SkapImportRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SkapImportRuns.
+     */
+    distinct?: SkapImportRunScalarFieldEnum | SkapImportRunScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportRun findMany
+   */
+  export type SkapImportRunFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * Filter, which SkapImportRuns to fetch.
+     */
+    where?: SkapImportRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SkapImportRuns to fetch.
+     */
+    orderBy?: SkapImportRunOrderByWithRelationInput | SkapImportRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SkapImportRuns.
+     */
+    cursor?: SkapImportRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SkapImportRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SkapImportRuns.
+     */
+    skip?: number
+    distinct?: SkapImportRunScalarFieldEnum | SkapImportRunScalarFieldEnum[]
+  }
+
+  /**
+   * SkapImportRun create
+   */
+  export type SkapImportRunCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SkapImportRun.
+     */
+    data: XOR<SkapImportRunCreateInput, SkapImportRunUncheckedCreateInput>
+  }
+
+  /**
+   * SkapImportRun createMany
+   */
+  export type SkapImportRunCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SkapImportRuns.
+     */
+    data: SkapImportRunCreateManyInput | SkapImportRunCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SkapImportRun update
+   */
+  export type SkapImportRunUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SkapImportRun.
+     */
+    data: XOR<SkapImportRunUpdateInput, SkapImportRunUncheckedUpdateInput>
+    /**
+     * Choose, which SkapImportRun to update.
+     */
+    where: SkapImportRunWhereUniqueInput
+  }
+
+  /**
+   * SkapImportRun updateMany
+   */
+  export type SkapImportRunUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SkapImportRuns.
+     */
+    data: XOR<SkapImportRunUpdateManyMutationInput, SkapImportRunUncheckedUpdateManyInput>
+    /**
+     * Filter which SkapImportRuns to update
+     */
+    where?: SkapImportRunWhereInput
+    /**
+     * Limit how many SkapImportRuns to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapImportRun upsert
+   */
+  export type SkapImportRunUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SkapImportRun to update in case it exists.
+     */
+    where: SkapImportRunWhereUniqueInput
+    /**
+     * In case the SkapImportRun found by the `where` argument doesn't exist, create a new SkapImportRun with this data.
+     */
+    create: XOR<SkapImportRunCreateInput, SkapImportRunUncheckedCreateInput>
+    /**
+     * In case the SkapImportRun was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SkapImportRunUpdateInput, SkapImportRunUncheckedUpdateInput>
+  }
+
+  /**
+   * SkapImportRun delete
+   */
+  export type SkapImportRunDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
+    /**
+     * Filter which SkapImportRun to delete.
+     */
+    where: SkapImportRunWhereUniqueInput
+  }
+
+  /**
+   * SkapImportRun deleteMany
+   */
+  export type SkapImportRunDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SkapImportRuns to delete
+     */
+    where?: SkapImportRunWhereInput
+    /**
+     * Limit how many SkapImportRuns to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SkapImportRun without action
+   */
+  export type SkapImportRunDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SkapImportRun
+     */
+    select?: SkapImportRunSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SkapImportRun
+     */
+    omit?: SkapImportRunOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SkapImportRunInclude<ExtArgs> | null
   }
 
 
@@ -106263,6 +113720,132 @@ export namespace Prisma {
   export type PortalAiSettingsScalarFieldEnum = (typeof PortalAiSettingsScalarFieldEnum)[keyof typeof PortalAiSettingsScalarFieldEnum]
 
 
+  export const PortalAppSettingsScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    appCode: 'appCode',
+    settings: 'settings',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PortalAppSettingsScalarFieldEnum = (typeof PortalAppSettingsScalarFieldEnum)[keyof typeof PortalAppSettingsScalarFieldEnum]
+
+
+  export const SkapImportFileScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    diskFileId: 'diskFileId',
+    fileName: 'fileName',
+    diskUpdatedAt: 'diskUpdatedAt',
+    size: 'size',
+    status: 'status',
+    formatVersion: 'formatVersion',
+    error: 'error',
+    stats: 'stats',
+    startedAt: 'startedAt',
+    finishedAt: 'finishedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SkapImportFileScalarFieldEnum = (typeof SkapImportFileScalarFieldEnum)[keyof typeof SkapImportFileScalarFieldEnum]
+
+
+  export const SkapImportItemScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    dedupKey: 'dedupKey',
+    clientCard: 'clientCard',
+    regList: 'regList',
+    login: 'login',
+    period: 'period',
+    status: 'status',
+    bitrixItemId: 'bitrixItemId',
+    companyId: 'companyId',
+    dealId: 'dealId',
+    contactId: 'contactId',
+    warning: 'warning',
+    sessionCount: 'sessionCount',
+    timeTotalMin: 'timeTotalMin',
+    ipCount: 'ipCount',
+    fileId: 'fileId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SkapImportItemScalarFieldEnum = (typeof SkapImportItemScalarFieldEnum)[keyof typeof SkapImportItemScalarFieldEnum]
+
+
+  export const SkapSessionScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    dedupKey: 'dedupKey',
+    itemId: 'itemId',
+    clientCard: 'clientCard',
+    regList: 'regList',
+    login: 'login',
+    complectArmId: 'complectArmId',
+    complectType: 'complectType',
+    startedAt: 'startedAt',
+    endedAt: 'endedAt',
+    durationSec: 'durationSec',
+    ip: 'ip',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SkapSessionScalarFieldEnum = (typeof SkapSessionScalarFieldEnum)[keyof typeof SkapSessionScalarFieldEnum]
+
+
+  export const SkapSubscriptionScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    dedupKey: 'dedupKey',
+    itemId: 'itemId',
+    clientCard: 'clientCard',
+    regList: 'regList',
+    complectArmId: 'complectArmId',
+    complectName: 'complectName',
+    supplyKind: 'supplyKind',
+    city: 'city',
+    region: 'region',
+    version: 'version',
+    content: 'content',
+    managerName: 'managerName',
+    managerEmail: 'managerEmail',
+    mailingName: 'mailingName',
+    mailingEmail: 'mailingEmail',
+    isActive: 'isActive',
+    period: 'period',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SkapSubscriptionScalarFieldEnum = (typeof SkapSubscriptionScalarFieldEnum)[keyof typeof SkapSubscriptionScalarFieldEnum]
+
+
+  export const SkapImportRunScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    status: 'status',
+    stopReason: 'stopReason',
+    stats: 'stats',
+    startedAt: 'startedAt',
+    finishedAt: 'finishedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SkapImportRunScalarFieldEnum = (typeof SkapImportRunScalarFieldEnum)[keyof typeof SkapImportRunScalarFieldEnum]
+
+
   export const Price_row_cellsScalarFieldEnum: {
     id: 'id',
     created_at: 'created_at',
@@ -107801,6 +115384,92 @@ export namespace Prisma {
   };
 
   export type PortalAiSettingsOrderByRelevanceFieldEnum = (typeof PortalAiSettingsOrderByRelevanceFieldEnum)[keyof typeof PortalAiSettingsOrderByRelevanceFieldEnum]
+
+
+  export const PortalAppSettingsOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    appCode: 'appCode'
+  };
+
+  export type PortalAppSettingsOrderByRelevanceFieldEnum = (typeof PortalAppSettingsOrderByRelevanceFieldEnum)[keyof typeof PortalAppSettingsOrderByRelevanceFieldEnum]
+
+
+  export const SkapImportFileOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    diskFileId: 'diskFileId',
+    fileName: 'fileName',
+    status: 'status',
+    formatVersion: 'formatVersion',
+    error: 'error'
+  };
+
+  export type SkapImportFileOrderByRelevanceFieldEnum = (typeof SkapImportFileOrderByRelevanceFieldEnum)[keyof typeof SkapImportFileOrderByRelevanceFieldEnum]
+
+
+  export const SkapImportItemOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    dedupKey: 'dedupKey',
+    clientCard: 'clientCard',
+    regList: 'regList',
+    login: 'login',
+    status: 'status',
+    warning: 'warning',
+    fileId: 'fileId'
+  };
+
+  export type SkapImportItemOrderByRelevanceFieldEnum = (typeof SkapImportItemOrderByRelevanceFieldEnum)[keyof typeof SkapImportItemOrderByRelevanceFieldEnum]
+
+
+  export const SkapSessionOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    dedupKey: 'dedupKey',
+    itemId: 'itemId',
+    clientCard: 'clientCard',
+    regList: 'regList',
+    login: 'login',
+    complectArmId: 'complectArmId',
+    complectType: 'complectType',
+    ip: 'ip'
+  };
+
+  export type SkapSessionOrderByRelevanceFieldEnum = (typeof SkapSessionOrderByRelevanceFieldEnum)[keyof typeof SkapSessionOrderByRelevanceFieldEnum]
+
+
+  export const SkapSubscriptionOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    dedupKey: 'dedupKey',
+    itemId: 'itemId',
+    clientCard: 'clientCard',
+    regList: 'regList',
+    complectArmId: 'complectArmId',
+    complectName: 'complectName',
+    supplyKind: 'supplyKind',
+    city: 'city',
+    region: 'region',
+    version: 'version',
+    content: 'content',
+    managerName: 'managerName',
+    managerEmail: 'managerEmail',
+    mailingName: 'mailingName',
+    mailingEmail: 'mailingEmail'
+  };
+
+  export type SkapSubscriptionOrderByRelevanceFieldEnum = (typeof SkapSubscriptionOrderByRelevanceFieldEnum)[keyof typeof SkapSubscriptionOrderByRelevanceFieldEnum]
+
+
+  export const SkapImportRunOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    status: 'status',
+    stopReason: 'stopReason'
+  };
+
+  export type SkapImportRunOrderByRelevanceFieldEnum = (typeof SkapImportRunOrderByRelevanceFieldEnum)[keyof typeof SkapImportRunOrderByRelevanceFieldEnum]
 
 
   export const price_row_cellsOrderByRelevanceFieldEnum: {
@@ -111644,6 +119313,12 @@ export namespace Prisma {
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
     aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
+    appSettings?: PortalAppSettingsListRelationFilter
+    skapImportFiles?: SkapImportFileListRelationFilter
+    skapImportItems?: SkapImportItemListRelationFilter
+    skapSessions?: SkapSessionListRelationFilter
+    skapSubscriptions?: SkapSubscriptionListRelationFilter
+    skapImportRuns?: SkapImportRunListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -111704,6 +119379,12 @@ export namespace Prisma {
     appCaches?: AppCacheOrderByRelationAggregateInput
     shareLinks?: ShareLinkOrderByRelationAggregateInput
     aiSettings?: PortalAiSettingsOrderByWithRelationInput
+    appSettings?: PortalAppSettingsOrderByRelationAggregateInput
+    skapImportFiles?: SkapImportFileOrderByRelationAggregateInput
+    skapImportItems?: SkapImportItemOrderByRelationAggregateInput
+    skapSessions?: SkapSessionOrderByRelationAggregateInput
+    skapSubscriptions?: SkapSubscriptionOrderByRelationAggregateInput
+    skapImportRuns?: SkapImportRunOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -111768,6 +119449,12 @@ export namespace Prisma {
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
     aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
+    appSettings?: PortalAppSettingsListRelationFilter
+    skapImportFiles?: SkapImportFileListRelationFilter
+    skapImportItems?: SkapImportItemListRelationFilter
+    skapSessions?: SkapSessionListRelationFilter
+    skapSubscriptions?: SkapSubscriptionListRelationFilter
+    skapImportRuns?: SkapImportRunListRelationFilter
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -111982,6 +119669,674 @@ export namespace Prisma {
     lastScanAt?: DateTimeNullableWithAggregatesFilter<"PortalAiSettings"> | Date | string | null
     allowedUserIds?: JsonNullableWithAggregatesFilter<"PortalAiSettings">
     settings?: JsonNullableWithAggregatesFilter<"PortalAiSettings">
+  }
+
+  export type PortalAppSettingsWhereInput = {
+    AND?: PortalAppSettingsWhereInput | PortalAppSettingsWhereInput[]
+    OR?: PortalAppSettingsWhereInput[]
+    NOT?: PortalAppSettingsWhereInput | PortalAppSettingsWhereInput[]
+    id?: StringFilter<"PortalAppSettings"> | string
+    portal_id?: BigIntFilter<"PortalAppSettings"> | bigint | number
+    domain?: StringFilter<"PortalAppSettings"> | string
+    appCode?: StringFilter<"PortalAppSettings"> | string
+    settings?: JsonNullableFilter<"PortalAppSettings">
+    createdAt?: DateTimeNullableFilter<"PortalAppSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalAppSettings"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type PortalAppSettingsOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    settings?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: PortalAppSettingsOrderByRelevanceInput
+  }
+
+  export type PortalAppSettingsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id_appCode?: PortalAppSettingsPortal_idAppCodeCompoundUniqueInput
+    AND?: PortalAppSettingsWhereInput | PortalAppSettingsWhereInput[]
+    OR?: PortalAppSettingsWhereInput[]
+    NOT?: PortalAppSettingsWhereInput | PortalAppSettingsWhereInput[]
+    portal_id?: BigIntFilter<"PortalAppSettings"> | bigint | number
+    domain?: StringFilter<"PortalAppSettings"> | string
+    appCode?: StringFilter<"PortalAppSettings"> | string
+    settings?: JsonNullableFilter<"PortalAppSettings">
+    createdAt?: DateTimeNullableFilter<"PortalAppSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalAppSettings"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "portal_id_appCode">
+
+  export type PortalAppSettingsOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    settings?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: PortalAppSettingsCountOrderByAggregateInput
+    _avg?: PortalAppSettingsAvgOrderByAggregateInput
+    _max?: PortalAppSettingsMaxOrderByAggregateInput
+    _min?: PortalAppSettingsMinOrderByAggregateInput
+    _sum?: PortalAppSettingsSumOrderByAggregateInput
+  }
+
+  export type PortalAppSettingsScalarWhereWithAggregatesInput = {
+    AND?: PortalAppSettingsScalarWhereWithAggregatesInput | PortalAppSettingsScalarWhereWithAggregatesInput[]
+    OR?: PortalAppSettingsScalarWhereWithAggregatesInput[]
+    NOT?: PortalAppSettingsScalarWhereWithAggregatesInput | PortalAppSettingsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PortalAppSettings"> | string
+    portal_id?: BigIntWithAggregatesFilter<"PortalAppSettings"> | bigint | number
+    domain?: StringWithAggregatesFilter<"PortalAppSettings"> | string
+    appCode?: StringWithAggregatesFilter<"PortalAppSettings"> | string
+    settings?: JsonNullableWithAggregatesFilter<"PortalAppSettings">
+    createdAt?: DateTimeNullableWithAggregatesFilter<"PortalAppSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalAppSettings"> | Date | string | null
+  }
+
+  export type SkapImportFileWhereInput = {
+    AND?: SkapImportFileWhereInput | SkapImportFileWhereInput[]
+    OR?: SkapImportFileWhereInput[]
+    NOT?: SkapImportFileWhereInput | SkapImportFileWhereInput[]
+    id?: StringFilter<"SkapImportFile"> | string
+    portal_id?: BigIntFilter<"SkapImportFile"> | bigint | number
+    domain?: StringFilter<"SkapImportFile"> | string
+    diskFileId?: StringFilter<"SkapImportFile"> | string
+    fileName?: StringFilter<"SkapImportFile"> | string
+    diskUpdatedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    size?: BigIntNullableFilter<"SkapImportFile"> | bigint | number | null
+    status?: StringFilter<"SkapImportFile"> | string
+    formatVersion?: StringNullableFilter<"SkapImportFile"> | string | null
+    error?: StringNullableFilter<"SkapImportFile"> | string | null
+    stats?: JsonNullableFilter<"SkapImportFile">
+    startedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    finishedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    items?: SkapImportItemListRelationFilter
+  }
+
+  export type SkapImportFileOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    diskFileId?: SortOrder
+    fileName?: SortOrder
+    diskUpdatedAt?: SortOrderInput | SortOrder
+    size?: SortOrderInput | SortOrder
+    status?: SortOrder
+    formatVersion?: SortOrderInput | SortOrder
+    error?: SortOrderInput | SortOrder
+    stats?: SortOrderInput | SortOrder
+    startedAt?: SortOrderInput | SortOrder
+    finishedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    items?: SkapImportItemOrderByRelationAggregateInput
+    _relevance?: SkapImportFileOrderByRelevanceInput
+  }
+
+  export type SkapImportFileWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id_diskFileId?: SkapImportFilePortal_idDiskFileIdCompoundUniqueInput
+    AND?: SkapImportFileWhereInput | SkapImportFileWhereInput[]
+    OR?: SkapImportFileWhereInput[]
+    NOT?: SkapImportFileWhereInput | SkapImportFileWhereInput[]
+    portal_id?: BigIntFilter<"SkapImportFile"> | bigint | number
+    domain?: StringFilter<"SkapImportFile"> | string
+    diskFileId?: StringFilter<"SkapImportFile"> | string
+    fileName?: StringFilter<"SkapImportFile"> | string
+    diskUpdatedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    size?: BigIntNullableFilter<"SkapImportFile"> | bigint | number | null
+    status?: StringFilter<"SkapImportFile"> | string
+    formatVersion?: StringNullableFilter<"SkapImportFile"> | string | null
+    error?: StringNullableFilter<"SkapImportFile"> | string | null
+    stats?: JsonNullableFilter<"SkapImportFile">
+    startedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    finishedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    items?: SkapImportItemListRelationFilter
+  }, "id" | "portal_id_diskFileId">
+
+  export type SkapImportFileOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    diskFileId?: SortOrder
+    fileName?: SortOrder
+    diskUpdatedAt?: SortOrderInput | SortOrder
+    size?: SortOrderInput | SortOrder
+    status?: SortOrder
+    formatVersion?: SortOrderInput | SortOrder
+    error?: SortOrderInput | SortOrder
+    stats?: SortOrderInput | SortOrder
+    startedAt?: SortOrderInput | SortOrder
+    finishedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: SkapImportFileCountOrderByAggregateInput
+    _avg?: SkapImportFileAvgOrderByAggregateInput
+    _max?: SkapImportFileMaxOrderByAggregateInput
+    _min?: SkapImportFileMinOrderByAggregateInput
+    _sum?: SkapImportFileSumOrderByAggregateInput
+  }
+
+  export type SkapImportFileScalarWhereWithAggregatesInput = {
+    AND?: SkapImportFileScalarWhereWithAggregatesInput | SkapImportFileScalarWhereWithAggregatesInput[]
+    OR?: SkapImportFileScalarWhereWithAggregatesInput[]
+    NOT?: SkapImportFileScalarWhereWithAggregatesInput | SkapImportFileScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SkapImportFile"> | string
+    portal_id?: BigIntWithAggregatesFilter<"SkapImportFile"> | bigint | number
+    domain?: StringWithAggregatesFilter<"SkapImportFile"> | string
+    diskFileId?: StringWithAggregatesFilter<"SkapImportFile"> | string
+    fileName?: StringWithAggregatesFilter<"SkapImportFile"> | string
+    diskUpdatedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportFile"> | Date | string | null
+    size?: BigIntNullableWithAggregatesFilter<"SkapImportFile"> | bigint | number | null
+    status?: StringWithAggregatesFilter<"SkapImportFile"> | string
+    formatVersion?: StringNullableWithAggregatesFilter<"SkapImportFile"> | string | null
+    error?: StringNullableWithAggregatesFilter<"SkapImportFile"> | string | null
+    stats?: JsonNullableWithAggregatesFilter<"SkapImportFile">
+    startedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportFile"> | Date | string | null
+    finishedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportFile"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SkapImportFile"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportFile"> | Date | string | null
+  }
+
+  export type SkapImportItemWhereInput = {
+    AND?: SkapImportItemWhereInput | SkapImportItemWhereInput[]
+    OR?: SkapImportItemWhereInput[]
+    NOT?: SkapImportItemWhereInput | SkapImportItemWhereInput[]
+    id?: StringFilter<"SkapImportItem"> | string
+    portal_id?: BigIntFilter<"SkapImportItem"> | bigint | number
+    domain?: StringFilter<"SkapImportItem"> | string
+    dedupKey?: StringFilter<"SkapImportItem"> | string
+    clientCard?: StringFilter<"SkapImportItem"> | string
+    regList?: StringFilter<"SkapImportItem"> | string
+    login?: StringFilter<"SkapImportItem"> | string
+    period?: DateTimeFilter<"SkapImportItem"> | Date | string
+    status?: StringFilter<"SkapImportItem"> | string
+    bitrixItemId?: IntNullableFilter<"SkapImportItem"> | number | null
+    companyId?: IntNullableFilter<"SkapImportItem"> | number | null
+    dealId?: IntNullableFilter<"SkapImportItem"> | number | null
+    contactId?: IntNullableFilter<"SkapImportItem"> | number | null
+    warning?: StringNullableFilter<"SkapImportItem"> | string | null
+    sessionCount?: IntNullableFilter<"SkapImportItem"> | number | null
+    timeTotalMin?: IntNullableFilter<"SkapImportItem"> | number | null
+    ipCount?: IntNullableFilter<"SkapImportItem"> | number | null
+    fileId?: StringNullableFilter<"SkapImportItem"> | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportItem"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportItem"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    file?: XOR<SkapImportFileNullableScalarRelationFilter, SkapImportFileWhereInput> | null
+    sessions?: SkapSessionListRelationFilter
+    subscriptions?: SkapSubscriptionListRelationFilter
+  }
+
+  export type SkapImportItemOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    period?: SortOrder
+    status?: SortOrder
+    bitrixItemId?: SortOrderInput | SortOrder
+    companyId?: SortOrderInput | SortOrder
+    dealId?: SortOrderInput | SortOrder
+    contactId?: SortOrderInput | SortOrder
+    warning?: SortOrderInput | SortOrder
+    sessionCount?: SortOrderInput | SortOrder
+    timeTotalMin?: SortOrderInput | SortOrder
+    ipCount?: SortOrderInput | SortOrder
+    fileId?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    file?: SkapImportFileOrderByWithRelationInput
+    sessions?: SkapSessionOrderByRelationAggregateInput
+    subscriptions?: SkapSubscriptionOrderByRelationAggregateInput
+    _relevance?: SkapImportItemOrderByRelevanceInput
+  }
+
+  export type SkapImportItemWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    dedupKey?: string
+    AND?: SkapImportItemWhereInput | SkapImportItemWhereInput[]
+    OR?: SkapImportItemWhereInput[]
+    NOT?: SkapImportItemWhereInput | SkapImportItemWhereInput[]
+    portal_id?: BigIntFilter<"SkapImportItem"> | bigint | number
+    domain?: StringFilter<"SkapImportItem"> | string
+    clientCard?: StringFilter<"SkapImportItem"> | string
+    regList?: StringFilter<"SkapImportItem"> | string
+    login?: StringFilter<"SkapImportItem"> | string
+    period?: DateTimeFilter<"SkapImportItem"> | Date | string
+    status?: StringFilter<"SkapImportItem"> | string
+    bitrixItemId?: IntNullableFilter<"SkapImportItem"> | number | null
+    companyId?: IntNullableFilter<"SkapImportItem"> | number | null
+    dealId?: IntNullableFilter<"SkapImportItem"> | number | null
+    contactId?: IntNullableFilter<"SkapImportItem"> | number | null
+    warning?: StringNullableFilter<"SkapImportItem"> | string | null
+    sessionCount?: IntNullableFilter<"SkapImportItem"> | number | null
+    timeTotalMin?: IntNullableFilter<"SkapImportItem"> | number | null
+    ipCount?: IntNullableFilter<"SkapImportItem"> | number | null
+    fileId?: StringNullableFilter<"SkapImportItem"> | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportItem"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportItem"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    file?: XOR<SkapImportFileNullableScalarRelationFilter, SkapImportFileWhereInput> | null
+    sessions?: SkapSessionListRelationFilter
+    subscriptions?: SkapSubscriptionListRelationFilter
+  }, "id" | "dedupKey">
+
+  export type SkapImportItemOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    period?: SortOrder
+    status?: SortOrder
+    bitrixItemId?: SortOrderInput | SortOrder
+    companyId?: SortOrderInput | SortOrder
+    dealId?: SortOrderInput | SortOrder
+    contactId?: SortOrderInput | SortOrder
+    warning?: SortOrderInput | SortOrder
+    sessionCount?: SortOrderInput | SortOrder
+    timeTotalMin?: SortOrderInput | SortOrder
+    ipCount?: SortOrderInput | SortOrder
+    fileId?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: SkapImportItemCountOrderByAggregateInput
+    _avg?: SkapImportItemAvgOrderByAggregateInput
+    _max?: SkapImportItemMaxOrderByAggregateInput
+    _min?: SkapImportItemMinOrderByAggregateInput
+    _sum?: SkapImportItemSumOrderByAggregateInput
+  }
+
+  export type SkapImportItemScalarWhereWithAggregatesInput = {
+    AND?: SkapImportItemScalarWhereWithAggregatesInput | SkapImportItemScalarWhereWithAggregatesInput[]
+    OR?: SkapImportItemScalarWhereWithAggregatesInput[]
+    NOT?: SkapImportItemScalarWhereWithAggregatesInput | SkapImportItemScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    portal_id?: BigIntWithAggregatesFilter<"SkapImportItem"> | bigint | number
+    domain?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    dedupKey?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    clientCard?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    regList?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    login?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    period?: DateTimeWithAggregatesFilter<"SkapImportItem"> | Date | string
+    status?: StringWithAggregatesFilter<"SkapImportItem"> | string
+    bitrixItemId?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    companyId?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    dealId?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    contactId?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    warning?: StringNullableWithAggregatesFilter<"SkapImportItem"> | string | null
+    sessionCount?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    timeTotalMin?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    ipCount?: IntNullableWithAggregatesFilter<"SkapImportItem"> | number | null
+    fileId?: StringNullableWithAggregatesFilter<"SkapImportItem"> | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SkapImportItem"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportItem"> | Date | string | null
+  }
+
+  export type SkapSessionWhereInput = {
+    AND?: SkapSessionWhereInput | SkapSessionWhereInput[]
+    OR?: SkapSessionWhereInput[]
+    NOT?: SkapSessionWhereInput | SkapSessionWhereInput[]
+    id?: StringFilter<"SkapSession"> | string
+    portal_id?: BigIntFilter<"SkapSession"> | bigint | number
+    domain?: StringFilter<"SkapSession"> | string
+    dedupKey?: StringFilter<"SkapSession"> | string
+    itemId?: StringNullableFilter<"SkapSession"> | string | null
+    clientCard?: StringFilter<"SkapSession"> | string
+    regList?: StringFilter<"SkapSession"> | string
+    login?: StringFilter<"SkapSession"> | string
+    complectArmId?: StringNullableFilter<"SkapSession"> | string | null
+    complectType?: StringNullableFilter<"SkapSession"> | string | null
+    startedAt?: DateTimeFilter<"SkapSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    durationSec?: IntFilter<"SkapSession"> | number
+    ip?: StringNullableFilter<"SkapSession"> | string | null
+    createdAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    item?: XOR<SkapImportItemNullableScalarRelationFilter, SkapImportItemWhereInput> | null
+  }
+
+  export type SkapSessionOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrderInput | SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    complectArmId?: SortOrderInput | SortOrder
+    complectType?: SortOrderInput | SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrderInput | SortOrder
+    durationSec?: SortOrder
+    ip?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    item?: SkapImportItemOrderByWithRelationInput
+    _relevance?: SkapSessionOrderByRelevanceInput
+  }
+
+  export type SkapSessionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    dedupKey?: string
+    AND?: SkapSessionWhereInput | SkapSessionWhereInput[]
+    OR?: SkapSessionWhereInput[]
+    NOT?: SkapSessionWhereInput | SkapSessionWhereInput[]
+    portal_id?: BigIntFilter<"SkapSession"> | bigint | number
+    domain?: StringFilter<"SkapSession"> | string
+    itemId?: StringNullableFilter<"SkapSession"> | string | null
+    clientCard?: StringFilter<"SkapSession"> | string
+    regList?: StringFilter<"SkapSession"> | string
+    login?: StringFilter<"SkapSession"> | string
+    complectArmId?: StringNullableFilter<"SkapSession"> | string | null
+    complectType?: StringNullableFilter<"SkapSession"> | string | null
+    startedAt?: DateTimeFilter<"SkapSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    durationSec?: IntFilter<"SkapSession"> | number
+    ip?: StringNullableFilter<"SkapSession"> | string | null
+    createdAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    item?: XOR<SkapImportItemNullableScalarRelationFilter, SkapImportItemWhereInput> | null
+  }, "id" | "dedupKey">
+
+  export type SkapSessionOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrderInput | SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    complectArmId?: SortOrderInput | SortOrder
+    complectType?: SortOrderInput | SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrderInput | SortOrder
+    durationSec?: SortOrder
+    ip?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: SkapSessionCountOrderByAggregateInput
+    _avg?: SkapSessionAvgOrderByAggregateInput
+    _max?: SkapSessionMaxOrderByAggregateInput
+    _min?: SkapSessionMinOrderByAggregateInput
+    _sum?: SkapSessionSumOrderByAggregateInput
+  }
+
+  export type SkapSessionScalarWhereWithAggregatesInput = {
+    AND?: SkapSessionScalarWhereWithAggregatesInput | SkapSessionScalarWhereWithAggregatesInput[]
+    OR?: SkapSessionScalarWhereWithAggregatesInput[]
+    NOT?: SkapSessionScalarWhereWithAggregatesInput | SkapSessionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SkapSession"> | string
+    portal_id?: BigIntWithAggregatesFilter<"SkapSession"> | bigint | number
+    domain?: StringWithAggregatesFilter<"SkapSession"> | string
+    dedupKey?: StringWithAggregatesFilter<"SkapSession"> | string
+    itemId?: StringNullableWithAggregatesFilter<"SkapSession"> | string | null
+    clientCard?: StringWithAggregatesFilter<"SkapSession"> | string
+    regList?: StringWithAggregatesFilter<"SkapSession"> | string
+    login?: StringWithAggregatesFilter<"SkapSession"> | string
+    complectArmId?: StringNullableWithAggregatesFilter<"SkapSession"> | string | null
+    complectType?: StringNullableWithAggregatesFilter<"SkapSession"> | string | null
+    startedAt?: DateTimeWithAggregatesFilter<"SkapSession"> | Date | string
+    endedAt?: DateTimeNullableWithAggregatesFilter<"SkapSession"> | Date | string | null
+    durationSec?: IntWithAggregatesFilter<"SkapSession"> | number
+    ip?: StringNullableWithAggregatesFilter<"SkapSession"> | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SkapSession"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SkapSession"> | Date | string | null
+  }
+
+  export type SkapSubscriptionWhereInput = {
+    AND?: SkapSubscriptionWhereInput | SkapSubscriptionWhereInput[]
+    OR?: SkapSubscriptionWhereInput[]
+    NOT?: SkapSubscriptionWhereInput | SkapSubscriptionWhereInput[]
+    id?: StringFilter<"SkapSubscription"> | string
+    portal_id?: BigIntFilter<"SkapSubscription"> | bigint | number
+    domain?: StringFilter<"SkapSubscription"> | string
+    dedupKey?: StringFilter<"SkapSubscription"> | string
+    itemId?: StringNullableFilter<"SkapSubscription"> | string | null
+    clientCard?: StringFilter<"SkapSubscription"> | string
+    regList?: StringFilter<"SkapSubscription"> | string
+    complectArmId?: StringFilter<"SkapSubscription"> | string
+    complectName?: StringNullableFilter<"SkapSubscription"> | string | null
+    supplyKind?: StringNullableFilter<"SkapSubscription"> | string | null
+    city?: StringNullableFilter<"SkapSubscription"> | string | null
+    region?: StringNullableFilter<"SkapSubscription"> | string | null
+    version?: StringNullableFilter<"SkapSubscription"> | string | null
+    content?: StringNullableFilter<"SkapSubscription"> | string | null
+    managerName?: StringNullableFilter<"SkapSubscription"> | string | null
+    managerEmail?: StringNullableFilter<"SkapSubscription"> | string | null
+    mailingName?: StringNullableFilter<"SkapSubscription"> | string | null
+    mailingEmail?: StringNullableFilter<"SkapSubscription"> | string | null
+    isActive?: BoolFilter<"SkapSubscription"> | boolean
+    period?: DateTimeFilter<"SkapSubscription"> | Date | string
+    createdAt?: DateTimeNullableFilter<"SkapSubscription"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapSubscription"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    item?: XOR<SkapImportItemNullableScalarRelationFilter, SkapImportItemWhereInput> | null
+  }
+
+  export type SkapSubscriptionOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrderInput | SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    complectArmId?: SortOrder
+    complectName?: SortOrderInput | SortOrder
+    supplyKind?: SortOrderInput | SortOrder
+    city?: SortOrderInput | SortOrder
+    region?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    content?: SortOrderInput | SortOrder
+    managerName?: SortOrderInput | SortOrder
+    managerEmail?: SortOrderInput | SortOrder
+    mailingName?: SortOrderInput | SortOrder
+    mailingEmail?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    period?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    item?: SkapImportItemOrderByWithRelationInput
+    _relevance?: SkapSubscriptionOrderByRelevanceInput
+  }
+
+  export type SkapSubscriptionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    dedupKey?: string
+    AND?: SkapSubscriptionWhereInput | SkapSubscriptionWhereInput[]
+    OR?: SkapSubscriptionWhereInput[]
+    NOT?: SkapSubscriptionWhereInput | SkapSubscriptionWhereInput[]
+    portal_id?: BigIntFilter<"SkapSubscription"> | bigint | number
+    domain?: StringFilter<"SkapSubscription"> | string
+    itemId?: StringNullableFilter<"SkapSubscription"> | string | null
+    clientCard?: StringFilter<"SkapSubscription"> | string
+    regList?: StringFilter<"SkapSubscription"> | string
+    complectArmId?: StringFilter<"SkapSubscription"> | string
+    complectName?: StringNullableFilter<"SkapSubscription"> | string | null
+    supplyKind?: StringNullableFilter<"SkapSubscription"> | string | null
+    city?: StringNullableFilter<"SkapSubscription"> | string | null
+    region?: StringNullableFilter<"SkapSubscription"> | string | null
+    version?: StringNullableFilter<"SkapSubscription"> | string | null
+    content?: StringNullableFilter<"SkapSubscription"> | string | null
+    managerName?: StringNullableFilter<"SkapSubscription"> | string | null
+    managerEmail?: StringNullableFilter<"SkapSubscription"> | string | null
+    mailingName?: StringNullableFilter<"SkapSubscription"> | string | null
+    mailingEmail?: StringNullableFilter<"SkapSubscription"> | string | null
+    isActive?: BoolFilter<"SkapSubscription"> | boolean
+    period?: DateTimeFilter<"SkapSubscription"> | Date | string
+    createdAt?: DateTimeNullableFilter<"SkapSubscription"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapSubscription"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    item?: XOR<SkapImportItemNullableScalarRelationFilter, SkapImportItemWhereInput> | null
+  }, "id" | "dedupKey">
+
+  export type SkapSubscriptionOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrderInput | SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    complectArmId?: SortOrder
+    complectName?: SortOrderInput | SortOrder
+    supplyKind?: SortOrderInput | SortOrder
+    city?: SortOrderInput | SortOrder
+    region?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    content?: SortOrderInput | SortOrder
+    managerName?: SortOrderInput | SortOrder
+    managerEmail?: SortOrderInput | SortOrder
+    mailingName?: SortOrderInput | SortOrder
+    mailingEmail?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    period?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: SkapSubscriptionCountOrderByAggregateInput
+    _avg?: SkapSubscriptionAvgOrderByAggregateInput
+    _max?: SkapSubscriptionMaxOrderByAggregateInput
+    _min?: SkapSubscriptionMinOrderByAggregateInput
+    _sum?: SkapSubscriptionSumOrderByAggregateInput
+  }
+
+  export type SkapSubscriptionScalarWhereWithAggregatesInput = {
+    AND?: SkapSubscriptionScalarWhereWithAggregatesInput | SkapSubscriptionScalarWhereWithAggregatesInput[]
+    OR?: SkapSubscriptionScalarWhereWithAggregatesInput[]
+    NOT?: SkapSubscriptionScalarWhereWithAggregatesInput | SkapSubscriptionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SkapSubscription"> | string
+    portal_id?: BigIntWithAggregatesFilter<"SkapSubscription"> | bigint | number
+    domain?: StringWithAggregatesFilter<"SkapSubscription"> | string
+    dedupKey?: StringWithAggregatesFilter<"SkapSubscription"> | string
+    itemId?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    clientCard?: StringWithAggregatesFilter<"SkapSubscription"> | string
+    regList?: StringWithAggregatesFilter<"SkapSubscription"> | string
+    complectArmId?: StringWithAggregatesFilter<"SkapSubscription"> | string
+    complectName?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    supplyKind?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    city?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    region?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    version?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    content?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    managerName?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    managerEmail?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    mailingName?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    mailingEmail?: StringNullableWithAggregatesFilter<"SkapSubscription"> | string | null
+    isActive?: BoolWithAggregatesFilter<"SkapSubscription"> | boolean
+    period?: DateTimeWithAggregatesFilter<"SkapSubscription"> | Date | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SkapSubscription"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SkapSubscription"> | Date | string | null
+  }
+
+  export type SkapImportRunWhereInput = {
+    AND?: SkapImportRunWhereInput | SkapImportRunWhereInput[]
+    OR?: SkapImportRunWhereInput[]
+    NOT?: SkapImportRunWhereInput | SkapImportRunWhereInput[]
+    id?: StringFilter<"SkapImportRun"> | string
+    portal_id?: BigIntFilter<"SkapImportRun"> | bigint | number
+    domain?: StringFilter<"SkapImportRun"> | string
+    status?: StringFilter<"SkapImportRun"> | string
+    stopReason?: StringNullableFilter<"SkapImportRun"> | string | null
+    stats?: JsonNullableFilter<"SkapImportRun">
+    startedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    finishedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type SkapImportRunOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    status?: SortOrder
+    stopReason?: SortOrderInput | SortOrder
+    stats?: SortOrderInput | SortOrder
+    startedAt?: SortOrderInput | SortOrder
+    finishedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: SkapImportRunOrderByRelevanceInput
+  }
+
+  export type SkapImportRunWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SkapImportRunWhereInput | SkapImportRunWhereInput[]
+    OR?: SkapImportRunWhereInput[]
+    NOT?: SkapImportRunWhereInput | SkapImportRunWhereInput[]
+    portal_id?: BigIntFilter<"SkapImportRun"> | bigint | number
+    domain?: StringFilter<"SkapImportRun"> | string
+    status?: StringFilter<"SkapImportRun"> | string
+    stopReason?: StringNullableFilter<"SkapImportRun"> | string | null
+    stats?: JsonNullableFilter<"SkapImportRun">
+    startedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    finishedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id">
+
+  export type SkapImportRunOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    status?: SortOrder
+    stopReason?: SortOrderInput | SortOrder
+    stats?: SortOrderInput | SortOrder
+    startedAt?: SortOrderInput | SortOrder
+    finishedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: SkapImportRunCountOrderByAggregateInput
+    _avg?: SkapImportRunAvgOrderByAggregateInput
+    _max?: SkapImportRunMaxOrderByAggregateInput
+    _min?: SkapImportRunMinOrderByAggregateInput
+    _sum?: SkapImportRunSumOrderByAggregateInput
+  }
+
+  export type SkapImportRunScalarWhereWithAggregatesInput = {
+    AND?: SkapImportRunScalarWhereWithAggregatesInput | SkapImportRunScalarWhereWithAggregatesInput[]
+    OR?: SkapImportRunScalarWhereWithAggregatesInput[]
+    NOT?: SkapImportRunScalarWhereWithAggregatesInput | SkapImportRunScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SkapImportRun"> | string
+    portal_id?: BigIntWithAggregatesFilter<"SkapImportRun"> | bigint | number
+    domain?: StringWithAggregatesFilter<"SkapImportRun"> | string
+    status?: StringWithAggregatesFilter<"SkapImportRun"> | string
+    stopReason?: StringNullableWithAggregatesFilter<"SkapImportRun"> | string | null
+    stats?: JsonNullableWithAggregatesFilter<"SkapImportRun">
+    startedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportRun"> | Date | string | null
+    finishedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportRun"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SkapImportRun"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SkapImportRun"> | Date | string | null
   }
 
   export type price_row_cellsWhereInput = {
@@ -121029,6 +129384,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -121088,6 +129449,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUpdateInput = {
@@ -121147,6 +129514,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -121206,6 +129579,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -121473,6 +129852,765 @@ export namespace Prisma {
     lastScanAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     allowedUserIds?: NullableJsonNullValueInput | InputJsonValue
     settings?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type PortalAppSettingsCreateInput = {
+    id: string
+    domain: string
+    appCode: string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutAppSettingsInput
+  }
+
+  export type PortalAppSettingsUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    appCode: string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalAppSettingsUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutAppSettingsNestedInput
+  }
+
+  export type PortalAppSettingsUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalAppSettingsCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    appCode: string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalAppSettingsUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalAppSettingsUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportFileCreateInput = {
+    id: string
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportFilesInput
+    items?: SkapImportItemCreateNestedManyWithoutFileInput
+  }
+
+  export type SkapImportFileUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    items?: SkapImportItemUncheckedCreateNestedManyWithoutFileInput
+  }
+
+  export type SkapImportFileUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportFilesNestedInput
+    items?: SkapImportItemUpdateManyWithoutFileNestedInput
+  }
+
+  export type SkapImportFileUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: SkapImportItemUncheckedUpdateManyWithoutFileNestedInput
+  }
+
+  export type SkapImportFileCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportFileUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportFileUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportItemCreateInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportItemsInput
+    file?: SkapImportFileCreateNestedOneWithoutItemsInput
+    sessions?: SkapSessionCreateNestedManyWithoutItemInput
+    subscriptions?: SkapSubscriptionCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    fileId?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    sessions?: SkapSessionUncheckedCreateNestedManyWithoutItemInput
+    subscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportItemsNestedInput
+    file?: SkapImportFileUpdateOneWithoutItemsNestedInput
+    sessions?: SkapSessionUpdateManyWithoutItemNestedInput
+    subscriptions?: SkapSubscriptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    fileId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessions?: SkapSessionUncheckedUpdateManyWithoutItemNestedInput
+    subscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    fileId?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportItemUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportItemUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    fileId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionCreateInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapSessionsInput
+    item?: SkapImportItemCreateNestedOneWithoutSessionsInput
+  }
+
+  export type SkapSessionUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSessionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapSessionsNestedInput
+    item?: SkapImportItemUpdateOneWithoutSessionsNestedInput
+  }
+
+  export type SkapSessionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSessionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionCreateInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapSubscriptionsInput
+    item?: SkapImportItemCreateNestedOneWithoutSubscriptionsInput
+  }
+
+  export type SkapSubscriptionUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSubscriptionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapSubscriptionsNestedInput
+    item?: SkapImportItemUpdateOneWithoutSubscriptionsNestedInput
+  }
+
+  export type SkapSubscriptionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSubscriptionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportRunCreateInput = {
+    id: string
+    domain: string
+    status: string
+    stopReason?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportRunsInput
+  }
+
+  export type SkapImportRunUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    status: string
+    stopReason?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportRunUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportRunsNestedInput
+  }
+
+  export type SkapImportRunUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportRunCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    status: string
+    stopReason?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportRunUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportRunUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type price_row_cellsCreateInput = {
@@ -130627,6 +139765,42 @@ export namespace Prisma {
     isNot?: PortalAiSettingsWhereInput | null
   }
 
+  export type PortalAppSettingsListRelationFilter = {
+    every?: PortalAppSettingsWhereInput
+    some?: PortalAppSettingsWhereInput
+    none?: PortalAppSettingsWhereInput
+  }
+
+  export type SkapImportFileListRelationFilter = {
+    every?: SkapImportFileWhereInput
+    some?: SkapImportFileWhereInput
+    none?: SkapImportFileWhereInput
+  }
+
+  export type SkapImportItemListRelationFilter = {
+    every?: SkapImportItemWhereInput
+    some?: SkapImportItemWhereInput
+    none?: SkapImportItemWhereInput
+  }
+
+  export type SkapSessionListRelationFilter = {
+    every?: SkapSessionWhereInput
+    some?: SkapSessionWhereInput
+    none?: SkapSessionWhereInput
+  }
+
+  export type SkapSubscriptionListRelationFilter = {
+    every?: SkapSubscriptionWhereInput
+    some?: SkapSubscriptionWhereInput
+    none?: SkapSubscriptionWhereInput
+  }
+
+  export type SkapImportRunListRelationFilter = {
+    every?: SkapImportRunWhereInput
+    some?: SkapImportRunWhereInput
+    none?: SkapImportRunWhereInput
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -130724,6 +139898,30 @@ export namespace Prisma {
   }
 
   export type ShareLinkOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PortalAppSettingsOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SkapImportFileOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SkapImportItemOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SkapSessionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SkapSubscriptionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SkapImportRunOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -130983,6 +140181,446 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedJsonNullableFilter<$PrismaModel>
     _max?: NestedJsonNullableFilter<$PrismaModel>
+  }
+
+  export type PortalAppSettingsOrderByRelevanceInput = {
+    fields: PortalAppSettingsOrderByRelevanceFieldEnum | PortalAppSettingsOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PortalAppSettingsPortal_idAppCodeCompoundUniqueInput = {
+    portal_id: bigint | number
+    appCode: string
+  }
+
+  export type PortalAppSettingsCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    settings?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalAppSettingsAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type PortalAppSettingsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalAppSettingsMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalAppSettingsSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type SkapImportFileOrderByRelevanceInput = {
+    fields: SkapImportFileOrderByRelevanceFieldEnum | SkapImportFileOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SkapImportFilePortal_idDiskFileIdCompoundUniqueInput = {
+    portal_id: bigint | number
+    diskFileId: string
+  }
+
+  export type SkapImportFileCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    diskFileId?: SortOrder
+    fileName?: SortOrder
+    diskUpdatedAt?: SortOrder
+    size?: SortOrder
+    status?: SortOrder
+    formatVersion?: SortOrder
+    error?: SortOrder
+    stats?: SortOrder
+    startedAt?: SortOrder
+    finishedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportFileAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    size?: SortOrder
+  }
+
+  export type SkapImportFileMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    diskFileId?: SortOrder
+    fileName?: SortOrder
+    diskUpdatedAt?: SortOrder
+    size?: SortOrder
+    status?: SortOrder
+    formatVersion?: SortOrder
+    error?: SortOrder
+    startedAt?: SortOrder
+    finishedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportFileMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    diskFileId?: SortOrder
+    fileName?: SortOrder
+    diskUpdatedAt?: SortOrder
+    size?: SortOrder
+    status?: SortOrder
+    formatVersion?: SortOrder
+    error?: SortOrder
+    startedAt?: SortOrder
+    finishedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportFileSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    size?: SortOrder
+  }
+
+  export type SkapImportFileNullableScalarRelationFilter = {
+    is?: SkapImportFileWhereInput | null
+    isNot?: SkapImportFileWhereInput | null
+  }
+
+  export type SkapImportItemOrderByRelevanceInput = {
+    fields: SkapImportItemOrderByRelevanceFieldEnum | SkapImportItemOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SkapImportItemCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    period?: SortOrder
+    status?: SortOrder
+    bitrixItemId?: SortOrder
+    companyId?: SortOrder
+    dealId?: SortOrder
+    contactId?: SortOrder
+    warning?: SortOrder
+    sessionCount?: SortOrder
+    timeTotalMin?: SortOrder
+    ipCount?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportItemAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    bitrixItemId?: SortOrder
+    companyId?: SortOrder
+    dealId?: SortOrder
+    contactId?: SortOrder
+    sessionCount?: SortOrder
+    timeTotalMin?: SortOrder
+    ipCount?: SortOrder
+  }
+
+  export type SkapImportItemMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    period?: SortOrder
+    status?: SortOrder
+    bitrixItemId?: SortOrder
+    companyId?: SortOrder
+    dealId?: SortOrder
+    contactId?: SortOrder
+    warning?: SortOrder
+    sessionCount?: SortOrder
+    timeTotalMin?: SortOrder
+    ipCount?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportItemMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    period?: SortOrder
+    status?: SortOrder
+    bitrixItemId?: SortOrder
+    companyId?: SortOrder
+    dealId?: SortOrder
+    contactId?: SortOrder
+    warning?: SortOrder
+    sessionCount?: SortOrder
+    timeTotalMin?: SortOrder
+    ipCount?: SortOrder
+    fileId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportItemSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    bitrixItemId?: SortOrder
+    companyId?: SortOrder
+    dealId?: SortOrder
+    contactId?: SortOrder
+    sessionCount?: SortOrder
+    timeTotalMin?: SortOrder
+    ipCount?: SortOrder
+  }
+
+  export type SkapImportItemNullableScalarRelationFilter = {
+    is?: SkapImportItemWhereInput | null
+    isNot?: SkapImportItemWhereInput | null
+  }
+
+  export type SkapSessionOrderByRelevanceInput = {
+    fields: SkapSessionOrderByRelevanceFieldEnum | SkapSessionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SkapSessionCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    complectArmId?: SortOrder
+    complectType?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrder
+    durationSec?: SortOrder
+    ip?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapSessionAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    durationSec?: SortOrder
+  }
+
+  export type SkapSessionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    complectArmId?: SortOrder
+    complectType?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrder
+    durationSec?: SortOrder
+    ip?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapSessionMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    login?: SortOrder
+    complectArmId?: SortOrder
+    complectType?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrder
+    durationSec?: SortOrder
+    ip?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapSessionSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    durationSec?: SortOrder
+  }
+
+  export type SkapSubscriptionOrderByRelevanceInput = {
+    fields: SkapSubscriptionOrderByRelevanceFieldEnum | SkapSubscriptionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SkapSubscriptionCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    complectArmId?: SortOrder
+    complectName?: SortOrder
+    supplyKind?: SortOrder
+    city?: SortOrder
+    region?: SortOrder
+    version?: SortOrder
+    content?: SortOrder
+    managerName?: SortOrder
+    managerEmail?: SortOrder
+    mailingName?: SortOrder
+    mailingEmail?: SortOrder
+    isActive?: SortOrder
+    period?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapSubscriptionAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type SkapSubscriptionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    complectArmId?: SortOrder
+    complectName?: SortOrder
+    supplyKind?: SortOrder
+    city?: SortOrder
+    region?: SortOrder
+    version?: SortOrder
+    content?: SortOrder
+    managerName?: SortOrder
+    managerEmail?: SortOrder
+    mailingName?: SortOrder
+    mailingEmail?: SortOrder
+    isActive?: SortOrder
+    period?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapSubscriptionMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    dedupKey?: SortOrder
+    itemId?: SortOrder
+    clientCard?: SortOrder
+    regList?: SortOrder
+    complectArmId?: SortOrder
+    complectName?: SortOrder
+    supplyKind?: SortOrder
+    city?: SortOrder
+    region?: SortOrder
+    version?: SortOrder
+    content?: SortOrder
+    managerName?: SortOrder
+    managerEmail?: SortOrder
+    mailingName?: SortOrder
+    mailingEmail?: SortOrder
+    isActive?: SortOrder
+    period?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapSubscriptionSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type SkapImportRunOrderByRelevanceInput = {
+    fields: SkapImportRunOrderByRelevanceFieldEnum | SkapImportRunOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SkapImportRunCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    status?: SortOrder
+    stopReason?: SortOrder
+    stats?: SortOrder
+    startedAt?: SortOrder
+    finishedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportRunAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+  }
+
+  export type SkapImportRunMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    status?: SortOrder
+    stopReason?: SortOrder
+    startedAt?: SortOrder
+    finishedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportRunMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    status?: SortOrder
+    stopReason?: SortOrder
+    startedAt?: SortOrder
+    finishedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SkapImportRunSumOrderByAggregateInput = {
+    portal_id?: SortOrder
   }
 
   export type price_row_cellsOrderByRelevanceInput = {
@@ -136910,6 +146548,48 @@ export namespace Prisma {
     connect?: PortalAiSettingsWhereUniqueInput
   }
 
+  export type PortalAppSettingsCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalAppSettingsCreateWithoutPortalInput, PortalAppSettingsUncheckedCreateWithoutPortalInput> | PortalAppSettingsCreateWithoutPortalInput[] | PortalAppSettingsUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalAppSettingsCreateOrConnectWithoutPortalInput | PortalAppSettingsCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalAppSettingsCreateManyPortalInputEnvelope
+    connect?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+  }
+
+  export type SkapImportFileCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapImportFileCreateWithoutPortalInput, SkapImportFileUncheckedCreateWithoutPortalInput> | SkapImportFileCreateWithoutPortalInput[] | SkapImportFileUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportFileCreateOrConnectWithoutPortalInput | SkapImportFileCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapImportFileCreateManyPortalInputEnvelope
+    connect?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+  }
+
+  export type SkapImportItemCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapImportItemCreateWithoutPortalInput, SkapImportItemUncheckedCreateWithoutPortalInput> | SkapImportItemCreateWithoutPortalInput[] | SkapImportItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutPortalInput | SkapImportItemCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapImportItemCreateManyPortalInputEnvelope
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+  }
+
+  export type SkapSessionCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapSessionCreateWithoutPortalInput, SkapSessionUncheckedCreateWithoutPortalInput> | SkapSessionCreateWithoutPortalInput[] | SkapSessionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutPortalInput | SkapSessionCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapSessionCreateManyPortalInputEnvelope
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+  }
+
+  export type SkapSubscriptionCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutPortalInput, SkapSubscriptionUncheckedCreateWithoutPortalInput> | SkapSubscriptionCreateWithoutPortalInput[] | SkapSubscriptionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutPortalInput | SkapSubscriptionCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapSubscriptionCreateManyPortalInputEnvelope
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+  }
+
+  export type SkapImportRunCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapImportRunCreateWithoutPortalInput, SkapImportRunUncheckedCreateWithoutPortalInput> | SkapImportRunCreateWithoutPortalInput[] | SkapImportRunUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportRunCreateOrConnectWithoutPortalInput | SkapImportRunCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapImportRunCreateManyPortalInputEnvelope
+    connect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -137117,6 +146797,48 @@ export namespace Prisma {
     create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
     connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
     connect?: PortalAiSettingsWhereUniqueInput
+  }
+
+  export type PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalAppSettingsCreateWithoutPortalInput, PortalAppSettingsUncheckedCreateWithoutPortalInput> | PortalAppSettingsCreateWithoutPortalInput[] | PortalAppSettingsUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalAppSettingsCreateOrConnectWithoutPortalInput | PortalAppSettingsCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalAppSettingsCreateManyPortalInputEnvelope
+    connect?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+  }
+
+  export type SkapImportFileUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapImportFileCreateWithoutPortalInput, SkapImportFileUncheckedCreateWithoutPortalInput> | SkapImportFileCreateWithoutPortalInput[] | SkapImportFileUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportFileCreateOrConnectWithoutPortalInput | SkapImportFileCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapImportFileCreateManyPortalInputEnvelope
+    connect?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+  }
+
+  export type SkapImportItemUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapImportItemCreateWithoutPortalInput, SkapImportItemUncheckedCreateWithoutPortalInput> | SkapImportItemCreateWithoutPortalInput[] | SkapImportItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutPortalInput | SkapImportItemCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapImportItemCreateManyPortalInputEnvelope
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+  }
+
+  export type SkapSessionUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapSessionCreateWithoutPortalInput, SkapSessionUncheckedCreateWithoutPortalInput> | SkapSessionCreateWithoutPortalInput[] | SkapSessionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutPortalInput | SkapSessionCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapSessionCreateManyPortalInputEnvelope
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+  }
+
+  export type SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutPortalInput, SkapSubscriptionUncheckedCreateWithoutPortalInput> | SkapSubscriptionCreateWithoutPortalInput[] | SkapSubscriptionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutPortalInput | SkapSubscriptionCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapSubscriptionCreateManyPortalInputEnvelope
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+  }
+
+  export type SkapImportRunUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<SkapImportRunCreateWithoutPortalInput, SkapImportRunUncheckedCreateWithoutPortalInput> | SkapImportRunCreateWithoutPortalInput[] | SkapImportRunUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportRunCreateOrConnectWithoutPortalInput | SkapImportRunCreateOrConnectWithoutPortalInput[]
+    createMany?: SkapImportRunCreateManyPortalInputEnvelope
+    connect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -137545,6 +147267,90 @@ export namespace Prisma {
     update?: XOR<XOR<PortalAiSettingsUpdateToOneWithWhereWithoutPortalInput, PortalAiSettingsUpdateWithoutPortalInput>, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
   }
 
+  export type PortalAppSettingsUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalAppSettingsCreateWithoutPortalInput, PortalAppSettingsUncheckedCreateWithoutPortalInput> | PortalAppSettingsCreateWithoutPortalInput[] | PortalAppSettingsUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalAppSettingsCreateOrConnectWithoutPortalInput | PortalAppSettingsCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalAppSettingsUpsertWithWhereUniqueWithoutPortalInput | PortalAppSettingsUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalAppSettingsCreateManyPortalInputEnvelope
+    set?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    disconnect?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    delete?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    connect?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    update?: PortalAppSettingsUpdateWithWhereUniqueWithoutPortalInput | PortalAppSettingsUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalAppSettingsUpdateManyWithWhereWithoutPortalInput | PortalAppSettingsUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalAppSettingsScalarWhereInput | PortalAppSettingsScalarWhereInput[]
+  }
+
+  export type SkapImportFileUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapImportFileCreateWithoutPortalInput, SkapImportFileUncheckedCreateWithoutPortalInput> | SkapImportFileCreateWithoutPortalInput[] | SkapImportFileUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportFileCreateOrConnectWithoutPortalInput | SkapImportFileCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapImportFileUpsertWithWhereUniqueWithoutPortalInput | SkapImportFileUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapImportFileCreateManyPortalInputEnvelope
+    set?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    disconnect?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    delete?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    connect?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    update?: SkapImportFileUpdateWithWhereUniqueWithoutPortalInput | SkapImportFileUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapImportFileUpdateManyWithWhereWithoutPortalInput | SkapImportFileUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapImportFileScalarWhereInput | SkapImportFileScalarWhereInput[]
+  }
+
+  export type SkapImportItemUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapImportItemCreateWithoutPortalInput, SkapImportItemUncheckedCreateWithoutPortalInput> | SkapImportItemCreateWithoutPortalInput[] | SkapImportItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutPortalInput | SkapImportItemCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapImportItemUpsertWithWhereUniqueWithoutPortalInput | SkapImportItemUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapImportItemCreateManyPortalInputEnvelope
+    set?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    disconnect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    delete?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    update?: SkapImportItemUpdateWithWhereUniqueWithoutPortalInput | SkapImportItemUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapImportItemUpdateManyWithWhereWithoutPortalInput | SkapImportItemUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapImportItemScalarWhereInput | SkapImportItemScalarWhereInput[]
+  }
+
+  export type SkapSessionUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapSessionCreateWithoutPortalInput, SkapSessionUncheckedCreateWithoutPortalInput> | SkapSessionCreateWithoutPortalInput[] | SkapSessionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutPortalInput | SkapSessionCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapSessionUpsertWithWhereUniqueWithoutPortalInput | SkapSessionUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapSessionCreateManyPortalInputEnvelope
+    set?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    disconnect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    delete?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    update?: SkapSessionUpdateWithWhereUniqueWithoutPortalInput | SkapSessionUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapSessionUpdateManyWithWhereWithoutPortalInput | SkapSessionUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapSessionScalarWhereInput | SkapSessionScalarWhereInput[]
+  }
+
+  export type SkapSubscriptionUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutPortalInput, SkapSubscriptionUncheckedCreateWithoutPortalInput> | SkapSubscriptionCreateWithoutPortalInput[] | SkapSubscriptionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutPortalInput | SkapSubscriptionCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapSubscriptionUpsertWithWhereUniqueWithoutPortalInput | SkapSubscriptionUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapSubscriptionCreateManyPortalInputEnvelope
+    set?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    disconnect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    delete?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    update?: SkapSubscriptionUpdateWithWhereUniqueWithoutPortalInput | SkapSubscriptionUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapSubscriptionUpdateManyWithWhereWithoutPortalInput | SkapSubscriptionUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapSubscriptionScalarWhereInput | SkapSubscriptionScalarWhereInput[]
+  }
+
+  export type SkapImportRunUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapImportRunCreateWithoutPortalInput, SkapImportRunUncheckedCreateWithoutPortalInput> | SkapImportRunCreateWithoutPortalInput[] | SkapImportRunUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportRunCreateOrConnectWithoutPortalInput | SkapImportRunCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapImportRunUpsertWithWhereUniqueWithoutPortalInput | SkapImportRunUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapImportRunCreateManyPortalInputEnvelope
+    set?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    disconnect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    delete?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    connect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    update?: SkapImportRunUpdateWithWhereUniqueWithoutPortalInput | SkapImportRunUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapImportRunUpdateManyWithWhereWithoutPortalInput | SkapImportRunUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapImportRunScalarWhereInput | SkapImportRunScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -137961,6 +147767,90 @@ export namespace Prisma {
     update?: XOR<XOR<PortalAiSettingsUpdateToOneWithWhereWithoutPortalInput, PortalAiSettingsUpdateWithoutPortalInput>, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
   }
 
+  export type PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalAppSettingsCreateWithoutPortalInput, PortalAppSettingsUncheckedCreateWithoutPortalInput> | PortalAppSettingsCreateWithoutPortalInput[] | PortalAppSettingsUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalAppSettingsCreateOrConnectWithoutPortalInput | PortalAppSettingsCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalAppSettingsUpsertWithWhereUniqueWithoutPortalInput | PortalAppSettingsUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalAppSettingsCreateManyPortalInputEnvelope
+    set?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    disconnect?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    delete?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    connect?: PortalAppSettingsWhereUniqueInput | PortalAppSettingsWhereUniqueInput[]
+    update?: PortalAppSettingsUpdateWithWhereUniqueWithoutPortalInput | PortalAppSettingsUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalAppSettingsUpdateManyWithWhereWithoutPortalInput | PortalAppSettingsUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalAppSettingsScalarWhereInput | PortalAppSettingsScalarWhereInput[]
+  }
+
+  export type SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapImportFileCreateWithoutPortalInput, SkapImportFileUncheckedCreateWithoutPortalInput> | SkapImportFileCreateWithoutPortalInput[] | SkapImportFileUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportFileCreateOrConnectWithoutPortalInput | SkapImportFileCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapImportFileUpsertWithWhereUniqueWithoutPortalInput | SkapImportFileUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapImportFileCreateManyPortalInputEnvelope
+    set?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    disconnect?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    delete?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    connect?: SkapImportFileWhereUniqueInput | SkapImportFileWhereUniqueInput[]
+    update?: SkapImportFileUpdateWithWhereUniqueWithoutPortalInput | SkapImportFileUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapImportFileUpdateManyWithWhereWithoutPortalInput | SkapImportFileUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapImportFileScalarWhereInput | SkapImportFileScalarWhereInput[]
+  }
+
+  export type SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapImportItemCreateWithoutPortalInput, SkapImportItemUncheckedCreateWithoutPortalInput> | SkapImportItemCreateWithoutPortalInput[] | SkapImportItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutPortalInput | SkapImportItemCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapImportItemUpsertWithWhereUniqueWithoutPortalInput | SkapImportItemUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapImportItemCreateManyPortalInputEnvelope
+    set?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    disconnect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    delete?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    update?: SkapImportItemUpdateWithWhereUniqueWithoutPortalInput | SkapImportItemUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapImportItemUpdateManyWithWhereWithoutPortalInput | SkapImportItemUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapImportItemScalarWhereInput | SkapImportItemScalarWhereInput[]
+  }
+
+  export type SkapSessionUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapSessionCreateWithoutPortalInput, SkapSessionUncheckedCreateWithoutPortalInput> | SkapSessionCreateWithoutPortalInput[] | SkapSessionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutPortalInput | SkapSessionCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapSessionUpsertWithWhereUniqueWithoutPortalInput | SkapSessionUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapSessionCreateManyPortalInputEnvelope
+    set?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    disconnect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    delete?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    update?: SkapSessionUpdateWithWhereUniqueWithoutPortalInput | SkapSessionUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapSessionUpdateManyWithWhereWithoutPortalInput | SkapSessionUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapSessionScalarWhereInput | SkapSessionScalarWhereInput[]
+  }
+
+  export type SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutPortalInput, SkapSubscriptionUncheckedCreateWithoutPortalInput> | SkapSubscriptionCreateWithoutPortalInput[] | SkapSubscriptionUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutPortalInput | SkapSubscriptionCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapSubscriptionUpsertWithWhereUniqueWithoutPortalInput | SkapSubscriptionUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapSubscriptionCreateManyPortalInputEnvelope
+    set?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    disconnect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    delete?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    update?: SkapSubscriptionUpdateWithWhereUniqueWithoutPortalInput | SkapSubscriptionUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapSubscriptionUpdateManyWithWhereWithoutPortalInput | SkapSubscriptionUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapSubscriptionScalarWhereInput | SkapSubscriptionScalarWhereInput[]
+  }
+
+  export type SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<SkapImportRunCreateWithoutPortalInput, SkapImportRunUncheckedCreateWithoutPortalInput> | SkapImportRunCreateWithoutPortalInput[] | SkapImportRunUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: SkapImportRunCreateOrConnectWithoutPortalInput | SkapImportRunCreateOrConnectWithoutPortalInput[]
+    upsert?: SkapImportRunUpsertWithWhereUniqueWithoutPortalInput | SkapImportRunUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: SkapImportRunCreateManyPortalInputEnvelope
+    set?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    disconnect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    delete?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    connect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+    update?: SkapImportRunUpdateWithWhereUniqueWithoutPortalInput | SkapImportRunUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: SkapImportRunUpdateManyWithWhereWithoutPortalInput | SkapImportRunUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: SkapImportRunScalarWhereInput | SkapImportRunScalarWhereInput[]
+  }
+
   export type PortalCreateNestedOneWithoutAiSettingsInput = {
     create?: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
     connectOrCreate?: PortalCreateOrConnectWithoutAiSettingsInput
@@ -137973,6 +147863,264 @@ export namespace Prisma {
     upsert?: PortalUpsertWithoutAiSettingsInput
     connect?: PortalWhereUniqueInput
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutAiSettingsInput, PortalUpdateWithoutAiSettingsInput>, PortalUncheckedUpdateWithoutAiSettingsInput>
+  }
+
+  export type PortalCreateNestedOneWithoutAppSettingsInput = {
+    create?: XOR<PortalCreateWithoutAppSettingsInput, PortalUncheckedCreateWithoutAppSettingsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutAppSettingsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutAppSettingsNestedInput = {
+    create?: XOR<PortalCreateWithoutAppSettingsInput, PortalUncheckedCreateWithoutAppSettingsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutAppSettingsInput
+    upsert?: PortalUpsertWithoutAppSettingsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutAppSettingsInput, PortalUpdateWithoutAppSettingsInput>, PortalUncheckedUpdateWithoutAppSettingsInput>
+  }
+
+  export type PortalCreateNestedOneWithoutSkapImportFilesInput = {
+    create?: XOR<PortalCreateWithoutSkapImportFilesInput, PortalUncheckedCreateWithoutSkapImportFilesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapImportFilesInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type SkapImportItemCreateNestedManyWithoutFileInput = {
+    create?: XOR<SkapImportItemCreateWithoutFileInput, SkapImportItemUncheckedCreateWithoutFileInput> | SkapImportItemCreateWithoutFileInput[] | SkapImportItemUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutFileInput | SkapImportItemCreateOrConnectWithoutFileInput[]
+    createMany?: SkapImportItemCreateManyFileInputEnvelope
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+  }
+
+  export type SkapImportItemUncheckedCreateNestedManyWithoutFileInput = {
+    create?: XOR<SkapImportItemCreateWithoutFileInput, SkapImportItemUncheckedCreateWithoutFileInput> | SkapImportItemCreateWithoutFileInput[] | SkapImportItemUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutFileInput | SkapImportItemCreateOrConnectWithoutFileInput[]
+    createMany?: SkapImportItemCreateManyFileInputEnvelope
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+  }
+
+  export type PortalUpdateOneRequiredWithoutSkapImportFilesNestedInput = {
+    create?: XOR<PortalCreateWithoutSkapImportFilesInput, PortalUncheckedCreateWithoutSkapImportFilesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapImportFilesInput
+    upsert?: PortalUpsertWithoutSkapImportFilesInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutSkapImportFilesInput, PortalUpdateWithoutSkapImportFilesInput>, PortalUncheckedUpdateWithoutSkapImportFilesInput>
+  }
+
+  export type SkapImportItemUpdateManyWithoutFileNestedInput = {
+    create?: XOR<SkapImportItemCreateWithoutFileInput, SkapImportItemUncheckedCreateWithoutFileInput> | SkapImportItemCreateWithoutFileInput[] | SkapImportItemUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutFileInput | SkapImportItemCreateOrConnectWithoutFileInput[]
+    upsert?: SkapImportItemUpsertWithWhereUniqueWithoutFileInput | SkapImportItemUpsertWithWhereUniqueWithoutFileInput[]
+    createMany?: SkapImportItemCreateManyFileInputEnvelope
+    set?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    disconnect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    delete?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    update?: SkapImportItemUpdateWithWhereUniqueWithoutFileInput | SkapImportItemUpdateWithWhereUniqueWithoutFileInput[]
+    updateMany?: SkapImportItemUpdateManyWithWhereWithoutFileInput | SkapImportItemUpdateManyWithWhereWithoutFileInput[]
+    deleteMany?: SkapImportItemScalarWhereInput | SkapImportItemScalarWhereInput[]
+  }
+
+  export type SkapImportItemUncheckedUpdateManyWithoutFileNestedInput = {
+    create?: XOR<SkapImportItemCreateWithoutFileInput, SkapImportItemUncheckedCreateWithoutFileInput> | SkapImportItemCreateWithoutFileInput[] | SkapImportItemUncheckedCreateWithoutFileInput[]
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutFileInput | SkapImportItemCreateOrConnectWithoutFileInput[]
+    upsert?: SkapImportItemUpsertWithWhereUniqueWithoutFileInput | SkapImportItemUpsertWithWhereUniqueWithoutFileInput[]
+    createMany?: SkapImportItemCreateManyFileInputEnvelope
+    set?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    disconnect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    delete?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    connect?: SkapImportItemWhereUniqueInput | SkapImportItemWhereUniqueInput[]
+    update?: SkapImportItemUpdateWithWhereUniqueWithoutFileInput | SkapImportItemUpdateWithWhereUniqueWithoutFileInput[]
+    updateMany?: SkapImportItemUpdateManyWithWhereWithoutFileInput | SkapImportItemUpdateManyWithWhereWithoutFileInput[]
+    deleteMany?: SkapImportItemScalarWhereInput | SkapImportItemScalarWhereInput[]
+  }
+
+  export type PortalCreateNestedOneWithoutSkapImportItemsInput = {
+    create?: XOR<PortalCreateWithoutSkapImportItemsInput, PortalUncheckedCreateWithoutSkapImportItemsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapImportItemsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type SkapImportFileCreateNestedOneWithoutItemsInput = {
+    create?: XOR<SkapImportFileCreateWithoutItemsInput, SkapImportFileUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: SkapImportFileCreateOrConnectWithoutItemsInput
+    connect?: SkapImportFileWhereUniqueInput
+  }
+
+  export type SkapSessionCreateNestedManyWithoutItemInput = {
+    create?: XOR<SkapSessionCreateWithoutItemInput, SkapSessionUncheckedCreateWithoutItemInput> | SkapSessionCreateWithoutItemInput[] | SkapSessionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutItemInput | SkapSessionCreateOrConnectWithoutItemInput[]
+    createMany?: SkapSessionCreateManyItemInputEnvelope
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+  }
+
+  export type SkapSubscriptionCreateNestedManyWithoutItemInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutItemInput, SkapSubscriptionUncheckedCreateWithoutItemInput> | SkapSubscriptionCreateWithoutItemInput[] | SkapSubscriptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutItemInput | SkapSubscriptionCreateOrConnectWithoutItemInput[]
+    createMany?: SkapSubscriptionCreateManyItemInputEnvelope
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+  }
+
+  export type SkapSessionUncheckedCreateNestedManyWithoutItemInput = {
+    create?: XOR<SkapSessionCreateWithoutItemInput, SkapSessionUncheckedCreateWithoutItemInput> | SkapSessionCreateWithoutItemInput[] | SkapSessionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutItemInput | SkapSessionCreateOrConnectWithoutItemInput[]
+    createMany?: SkapSessionCreateManyItemInputEnvelope
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+  }
+
+  export type SkapSubscriptionUncheckedCreateNestedManyWithoutItemInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutItemInput, SkapSubscriptionUncheckedCreateWithoutItemInput> | SkapSubscriptionCreateWithoutItemInput[] | SkapSubscriptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutItemInput | SkapSubscriptionCreateOrConnectWithoutItemInput[]
+    createMany?: SkapSubscriptionCreateManyItemInputEnvelope
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+  }
+
+  export type PortalUpdateOneRequiredWithoutSkapImportItemsNestedInput = {
+    create?: XOR<PortalCreateWithoutSkapImportItemsInput, PortalUncheckedCreateWithoutSkapImportItemsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapImportItemsInput
+    upsert?: PortalUpsertWithoutSkapImportItemsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutSkapImportItemsInput, PortalUpdateWithoutSkapImportItemsInput>, PortalUncheckedUpdateWithoutSkapImportItemsInput>
+  }
+
+  export type SkapImportFileUpdateOneWithoutItemsNestedInput = {
+    create?: XOR<SkapImportFileCreateWithoutItemsInput, SkapImportFileUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: SkapImportFileCreateOrConnectWithoutItemsInput
+    upsert?: SkapImportFileUpsertWithoutItemsInput
+    disconnect?: SkapImportFileWhereInput | boolean
+    delete?: SkapImportFileWhereInput | boolean
+    connect?: SkapImportFileWhereUniqueInput
+    update?: XOR<XOR<SkapImportFileUpdateToOneWithWhereWithoutItemsInput, SkapImportFileUpdateWithoutItemsInput>, SkapImportFileUncheckedUpdateWithoutItemsInput>
+  }
+
+  export type SkapSessionUpdateManyWithoutItemNestedInput = {
+    create?: XOR<SkapSessionCreateWithoutItemInput, SkapSessionUncheckedCreateWithoutItemInput> | SkapSessionCreateWithoutItemInput[] | SkapSessionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutItemInput | SkapSessionCreateOrConnectWithoutItemInput[]
+    upsert?: SkapSessionUpsertWithWhereUniqueWithoutItemInput | SkapSessionUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: SkapSessionCreateManyItemInputEnvelope
+    set?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    disconnect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    delete?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    update?: SkapSessionUpdateWithWhereUniqueWithoutItemInput | SkapSessionUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: SkapSessionUpdateManyWithWhereWithoutItemInput | SkapSessionUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: SkapSessionScalarWhereInput | SkapSessionScalarWhereInput[]
+  }
+
+  export type SkapSubscriptionUpdateManyWithoutItemNestedInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutItemInput, SkapSubscriptionUncheckedCreateWithoutItemInput> | SkapSubscriptionCreateWithoutItemInput[] | SkapSubscriptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutItemInput | SkapSubscriptionCreateOrConnectWithoutItemInput[]
+    upsert?: SkapSubscriptionUpsertWithWhereUniqueWithoutItemInput | SkapSubscriptionUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: SkapSubscriptionCreateManyItemInputEnvelope
+    set?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    disconnect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    delete?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    update?: SkapSubscriptionUpdateWithWhereUniqueWithoutItemInput | SkapSubscriptionUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: SkapSubscriptionUpdateManyWithWhereWithoutItemInput | SkapSubscriptionUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: SkapSubscriptionScalarWhereInput | SkapSubscriptionScalarWhereInput[]
+  }
+
+  export type SkapSessionUncheckedUpdateManyWithoutItemNestedInput = {
+    create?: XOR<SkapSessionCreateWithoutItemInput, SkapSessionUncheckedCreateWithoutItemInput> | SkapSessionCreateWithoutItemInput[] | SkapSessionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSessionCreateOrConnectWithoutItemInput | SkapSessionCreateOrConnectWithoutItemInput[]
+    upsert?: SkapSessionUpsertWithWhereUniqueWithoutItemInput | SkapSessionUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: SkapSessionCreateManyItemInputEnvelope
+    set?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    disconnect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    delete?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    connect?: SkapSessionWhereUniqueInput | SkapSessionWhereUniqueInput[]
+    update?: SkapSessionUpdateWithWhereUniqueWithoutItemInput | SkapSessionUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: SkapSessionUpdateManyWithWhereWithoutItemInput | SkapSessionUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: SkapSessionScalarWhereInput | SkapSessionScalarWhereInput[]
+  }
+
+  export type SkapSubscriptionUncheckedUpdateManyWithoutItemNestedInput = {
+    create?: XOR<SkapSubscriptionCreateWithoutItemInput, SkapSubscriptionUncheckedCreateWithoutItemInput> | SkapSubscriptionCreateWithoutItemInput[] | SkapSubscriptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: SkapSubscriptionCreateOrConnectWithoutItemInput | SkapSubscriptionCreateOrConnectWithoutItemInput[]
+    upsert?: SkapSubscriptionUpsertWithWhereUniqueWithoutItemInput | SkapSubscriptionUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: SkapSubscriptionCreateManyItemInputEnvelope
+    set?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    disconnect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    delete?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    connect?: SkapSubscriptionWhereUniqueInput | SkapSubscriptionWhereUniqueInput[]
+    update?: SkapSubscriptionUpdateWithWhereUniqueWithoutItemInput | SkapSubscriptionUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: SkapSubscriptionUpdateManyWithWhereWithoutItemInput | SkapSubscriptionUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: SkapSubscriptionScalarWhereInput | SkapSubscriptionScalarWhereInput[]
+  }
+
+  export type PortalCreateNestedOneWithoutSkapSessionsInput = {
+    create?: XOR<PortalCreateWithoutSkapSessionsInput, PortalUncheckedCreateWithoutSkapSessionsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapSessionsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type SkapImportItemCreateNestedOneWithoutSessionsInput = {
+    create?: XOR<SkapImportItemCreateWithoutSessionsInput, SkapImportItemUncheckedCreateWithoutSessionsInput>
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutSessionsInput
+    connect?: SkapImportItemWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutSkapSessionsNestedInput = {
+    create?: XOR<PortalCreateWithoutSkapSessionsInput, PortalUncheckedCreateWithoutSkapSessionsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapSessionsInput
+    upsert?: PortalUpsertWithoutSkapSessionsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutSkapSessionsInput, PortalUpdateWithoutSkapSessionsInput>, PortalUncheckedUpdateWithoutSkapSessionsInput>
+  }
+
+  export type SkapImportItemUpdateOneWithoutSessionsNestedInput = {
+    create?: XOR<SkapImportItemCreateWithoutSessionsInput, SkapImportItemUncheckedCreateWithoutSessionsInput>
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutSessionsInput
+    upsert?: SkapImportItemUpsertWithoutSessionsInput
+    disconnect?: SkapImportItemWhereInput | boolean
+    delete?: SkapImportItemWhereInput | boolean
+    connect?: SkapImportItemWhereUniqueInput
+    update?: XOR<XOR<SkapImportItemUpdateToOneWithWhereWithoutSessionsInput, SkapImportItemUpdateWithoutSessionsInput>, SkapImportItemUncheckedUpdateWithoutSessionsInput>
+  }
+
+  export type PortalCreateNestedOneWithoutSkapSubscriptionsInput = {
+    create?: XOR<PortalCreateWithoutSkapSubscriptionsInput, PortalUncheckedCreateWithoutSkapSubscriptionsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapSubscriptionsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type SkapImportItemCreateNestedOneWithoutSubscriptionsInput = {
+    create?: XOR<SkapImportItemCreateWithoutSubscriptionsInput, SkapImportItemUncheckedCreateWithoutSubscriptionsInput>
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutSubscriptionsInput
+    connect?: SkapImportItemWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutSkapSubscriptionsNestedInput = {
+    create?: XOR<PortalCreateWithoutSkapSubscriptionsInput, PortalUncheckedCreateWithoutSkapSubscriptionsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapSubscriptionsInput
+    upsert?: PortalUpsertWithoutSkapSubscriptionsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutSkapSubscriptionsInput, PortalUpdateWithoutSkapSubscriptionsInput>, PortalUncheckedUpdateWithoutSkapSubscriptionsInput>
+  }
+
+  export type SkapImportItemUpdateOneWithoutSubscriptionsNestedInput = {
+    create?: XOR<SkapImportItemCreateWithoutSubscriptionsInput, SkapImportItemUncheckedCreateWithoutSubscriptionsInput>
+    connectOrCreate?: SkapImportItemCreateOrConnectWithoutSubscriptionsInput
+    upsert?: SkapImportItemUpsertWithoutSubscriptionsInput
+    disconnect?: SkapImportItemWhereInput | boolean
+    delete?: SkapImportItemWhereInput | boolean
+    connect?: SkapImportItemWhereUniqueInput
+    update?: XOR<XOR<SkapImportItemUpdateToOneWithWhereWithoutSubscriptionsInput, SkapImportItemUpdateWithoutSubscriptionsInput>, SkapImportItemUncheckedUpdateWithoutSubscriptionsInput>
+  }
+
+  export type PortalCreateNestedOneWithoutSkapImportRunsInput = {
+    create?: XOR<PortalCreateWithoutSkapImportRunsInput, PortalUncheckedCreateWithoutSkapImportRunsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapImportRunsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutSkapImportRunsNestedInput = {
+    create?: XOR<PortalCreateWithoutSkapImportRunsInput, PortalUncheckedCreateWithoutSkapImportRunsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutSkapImportRunsInput
+    upsert?: PortalUpsertWithoutSkapImportRunsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutSkapImportRunsInput, PortalUpdateWithoutSkapImportRunsInput>, PortalUncheckedUpdateWithoutSkapImportRunsInput>
   }
 
   export type countersCreateNestedOneWithoutRq_counterInput = {
@@ -140306,6 +150454,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -140364,6 +150518,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -140583,6 +150743,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -140641,6 +150807,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -141050,6 +151222,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -141108,6 +151286,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -141182,6 +151366,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -141240,6 +151430,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -141364,6 +151560,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -141422,6 +151624,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -141496,6 +151704,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -141554,6 +151768,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -141612,6 +151832,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -141670,6 +151896,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -141744,6 +151976,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -141802,6 +152040,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -141860,6 +152104,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -141918,6 +152168,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -141992,6 +152248,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -142050,6 +152312,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -142108,6 +152376,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -142166,6 +152440,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -142240,6 +152520,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -142298,6 +152584,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -142440,6 +152732,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -142498,6 +152796,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -142572,6 +152876,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -142630,6 +152940,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -142688,6 +153004,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -142746,6 +153068,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -143222,6 +153550,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -143280,6 +153614,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -143354,6 +153694,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -143412,6 +153758,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -145555,6 +155907,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -145613,6 +155971,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -145808,6 +156172,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -145866,6 +156236,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -146024,6 +156400,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -146082,6 +156464,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -146205,6 +156593,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -146263,6 +156657,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -147489,6 +157889,276 @@ export namespace Prisma {
     create: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
   }
 
+  export type PortalAppSettingsCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    appCode: string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalAppSettingsUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    appCode: string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalAppSettingsCreateOrConnectWithoutPortalInput = {
+    where: PortalAppSettingsWhereUniqueInput
+    create: XOR<PortalAppSettingsCreateWithoutPortalInput, PortalAppSettingsUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalAppSettingsCreateManyPortalInputEnvelope = {
+    data: PortalAppSettingsCreateManyPortalInput | PortalAppSettingsCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SkapImportFileCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    items?: SkapImportItemCreateNestedManyWithoutFileInput
+  }
+
+  export type SkapImportFileUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    items?: SkapImportItemUncheckedCreateNestedManyWithoutFileInput
+  }
+
+  export type SkapImportFileCreateOrConnectWithoutPortalInput = {
+    where: SkapImportFileWhereUniqueInput
+    create: XOR<SkapImportFileCreateWithoutPortalInput, SkapImportFileUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapImportFileCreateManyPortalInputEnvelope = {
+    data: SkapImportFileCreateManyPortalInput | SkapImportFileCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SkapImportItemCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    file?: SkapImportFileCreateNestedOneWithoutItemsInput
+    sessions?: SkapSessionCreateNestedManyWithoutItemInput
+    subscriptions?: SkapSubscriptionCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    fileId?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    sessions?: SkapSessionUncheckedCreateNestedManyWithoutItemInput
+    subscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemCreateOrConnectWithoutPortalInput = {
+    where: SkapImportItemWhereUniqueInput
+    create: XOR<SkapImportItemCreateWithoutPortalInput, SkapImportItemUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapImportItemCreateManyPortalInputEnvelope = {
+    data: SkapImportItemCreateManyPortalInput | SkapImportItemCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SkapSessionCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    item?: SkapImportItemCreateNestedOneWithoutSessionsInput
+  }
+
+  export type SkapSessionUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSessionCreateOrConnectWithoutPortalInput = {
+    where: SkapSessionWhereUniqueInput
+    create: XOR<SkapSessionCreateWithoutPortalInput, SkapSessionUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapSessionCreateManyPortalInputEnvelope = {
+    data: SkapSessionCreateManyPortalInput | SkapSessionCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SkapSubscriptionCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    item?: SkapImportItemCreateNestedOneWithoutSubscriptionsInput
+  }
+
+  export type SkapSubscriptionUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSubscriptionCreateOrConnectWithoutPortalInput = {
+    where: SkapSubscriptionWhereUniqueInput
+    create: XOR<SkapSubscriptionCreateWithoutPortalInput, SkapSubscriptionUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapSubscriptionCreateManyPortalInputEnvelope = {
+    data: SkapSubscriptionCreateManyPortalInput | SkapSubscriptionCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SkapImportRunCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    status: string
+    stopReason?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportRunUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    status: string
+    stopReason?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportRunCreateOrConnectWithoutPortalInput = {
+    where: SkapImportRunWhereUniqueInput
+    create: XOR<SkapImportRunCreateWithoutPortalInput, SkapImportRunUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapImportRunCreateManyPortalInputEnvelope = {
+    data: SkapImportRunCreateManyPortalInput | SkapImportRunCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -148498,6 +159168,228 @@ export namespace Prisma {
     settings?: NullableJsonNullValueInput | InputJsonValue
   }
 
+  export type PortalAppSettingsUpsertWithWhereUniqueWithoutPortalInput = {
+    where: PortalAppSettingsWhereUniqueInput
+    update: XOR<PortalAppSettingsUpdateWithoutPortalInput, PortalAppSettingsUncheckedUpdateWithoutPortalInput>
+    create: XOR<PortalAppSettingsCreateWithoutPortalInput, PortalAppSettingsUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalAppSettingsUpdateWithWhereUniqueWithoutPortalInput = {
+    where: PortalAppSettingsWhereUniqueInput
+    data: XOR<PortalAppSettingsUpdateWithoutPortalInput, PortalAppSettingsUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type PortalAppSettingsUpdateManyWithWhereWithoutPortalInput = {
+    where: PortalAppSettingsScalarWhereInput
+    data: XOR<PortalAppSettingsUpdateManyMutationInput, PortalAppSettingsUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type PortalAppSettingsScalarWhereInput = {
+    AND?: PortalAppSettingsScalarWhereInput | PortalAppSettingsScalarWhereInput[]
+    OR?: PortalAppSettingsScalarWhereInput[]
+    NOT?: PortalAppSettingsScalarWhereInput | PortalAppSettingsScalarWhereInput[]
+    id?: StringFilter<"PortalAppSettings"> | string
+    portal_id?: BigIntFilter<"PortalAppSettings"> | bigint | number
+    domain?: StringFilter<"PortalAppSettings"> | string
+    appCode?: StringFilter<"PortalAppSettings"> | string
+    settings?: JsonNullableFilter<"PortalAppSettings">
+    createdAt?: DateTimeNullableFilter<"PortalAppSettings"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalAppSettings"> | Date | string | null
+  }
+
+  export type SkapImportFileUpsertWithWhereUniqueWithoutPortalInput = {
+    where: SkapImportFileWhereUniqueInput
+    update: XOR<SkapImportFileUpdateWithoutPortalInput, SkapImportFileUncheckedUpdateWithoutPortalInput>
+    create: XOR<SkapImportFileCreateWithoutPortalInput, SkapImportFileUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapImportFileUpdateWithWhereUniqueWithoutPortalInput = {
+    where: SkapImportFileWhereUniqueInput
+    data: XOR<SkapImportFileUpdateWithoutPortalInput, SkapImportFileUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type SkapImportFileUpdateManyWithWhereWithoutPortalInput = {
+    where: SkapImportFileScalarWhereInput
+    data: XOR<SkapImportFileUpdateManyMutationInput, SkapImportFileUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type SkapImportFileScalarWhereInput = {
+    AND?: SkapImportFileScalarWhereInput | SkapImportFileScalarWhereInput[]
+    OR?: SkapImportFileScalarWhereInput[]
+    NOT?: SkapImportFileScalarWhereInput | SkapImportFileScalarWhereInput[]
+    id?: StringFilter<"SkapImportFile"> | string
+    portal_id?: BigIntFilter<"SkapImportFile"> | bigint | number
+    domain?: StringFilter<"SkapImportFile"> | string
+    diskFileId?: StringFilter<"SkapImportFile"> | string
+    fileName?: StringFilter<"SkapImportFile"> | string
+    diskUpdatedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    size?: BigIntNullableFilter<"SkapImportFile"> | bigint | number | null
+    status?: StringFilter<"SkapImportFile"> | string
+    formatVersion?: StringNullableFilter<"SkapImportFile"> | string | null
+    error?: StringNullableFilter<"SkapImportFile"> | string | null
+    stats?: JsonNullableFilter<"SkapImportFile">
+    startedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    finishedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportFile"> | Date | string | null
+  }
+
+  export type SkapImportItemUpsertWithWhereUniqueWithoutPortalInput = {
+    where: SkapImportItemWhereUniqueInput
+    update: XOR<SkapImportItemUpdateWithoutPortalInput, SkapImportItemUncheckedUpdateWithoutPortalInput>
+    create: XOR<SkapImportItemCreateWithoutPortalInput, SkapImportItemUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapImportItemUpdateWithWhereUniqueWithoutPortalInput = {
+    where: SkapImportItemWhereUniqueInput
+    data: XOR<SkapImportItemUpdateWithoutPortalInput, SkapImportItemUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type SkapImportItemUpdateManyWithWhereWithoutPortalInput = {
+    where: SkapImportItemScalarWhereInput
+    data: XOR<SkapImportItemUpdateManyMutationInput, SkapImportItemUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type SkapImportItemScalarWhereInput = {
+    AND?: SkapImportItemScalarWhereInput | SkapImportItemScalarWhereInput[]
+    OR?: SkapImportItemScalarWhereInput[]
+    NOT?: SkapImportItemScalarWhereInput | SkapImportItemScalarWhereInput[]
+    id?: StringFilter<"SkapImportItem"> | string
+    portal_id?: BigIntFilter<"SkapImportItem"> | bigint | number
+    domain?: StringFilter<"SkapImportItem"> | string
+    dedupKey?: StringFilter<"SkapImportItem"> | string
+    clientCard?: StringFilter<"SkapImportItem"> | string
+    regList?: StringFilter<"SkapImportItem"> | string
+    login?: StringFilter<"SkapImportItem"> | string
+    period?: DateTimeFilter<"SkapImportItem"> | Date | string
+    status?: StringFilter<"SkapImportItem"> | string
+    bitrixItemId?: IntNullableFilter<"SkapImportItem"> | number | null
+    companyId?: IntNullableFilter<"SkapImportItem"> | number | null
+    dealId?: IntNullableFilter<"SkapImportItem"> | number | null
+    contactId?: IntNullableFilter<"SkapImportItem"> | number | null
+    warning?: StringNullableFilter<"SkapImportItem"> | string | null
+    sessionCount?: IntNullableFilter<"SkapImportItem"> | number | null
+    timeTotalMin?: IntNullableFilter<"SkapImportItem"> | number | null
+    ipCount?: IntNullableFilter<"SkapImportItem"> | number | null
+    fileId?: StringNullableFilter<"SkapImportItem"> | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportItem"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportItem"> | Date | string | null
+  }
+
+  export type SkapSessionUpsertWithWhereUniqueWithoutPortalInput = {
+    where: SkapSessionWhereUniqueInput
+    update: XOR<SkapSessionUpdateWithoutPortalInput, SkapSessionUncheckedUpdateWithoutPortalInput>
+    create: XOR<SkapSessionCreateWithoutPortalInput, SkapSessionUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapSessionUpdateWithWhereUniqueWithoutPortalInput = {
+    where: SkapSessionWhereUniqueInput
+    data: XOR<SkapSessionUpdateWithoutPortalInput, SkapSessionUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type SkapSessionUpdateManyWithWhereWithoutPortalInput = {
+    where: SkapSessionScalarWhereInput
+    data: XOR<SkapSessionUpdateManyMutationInput, SkapSessionUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type SkapSessionScalarWhereInput = {
+    AND?: SkapSessionScalarWhereInput | SkapSessionScalarWhereInput[]
+    OR?: SkapSessionScalarWhereInput[]
+    NOT?: SkapSessionScalarWhereInput | SkapSessionScalarWhereInput[]
+    id?: StringFilter<"SkapSession"> | string
+    portal_id?: BigIntFilter<"SkapSession"> | bigint | number
+    domain?: StringFilter<"SkapSession"> | string
+    dedupKey?: StringFilter<"SkapSession"> | string
+    itemId?: StringNullableFilter<"SkapSession"> | string | null
+    clientCard?: StringFilter<"SkapSession"> | string
+    regList?: StringFilter<"SkapSession"> | string
+    login?: StringFilter<"SkapSession"> | string
+    complectArmId?: StringNullableFilter<"SkapSession"> | string | null
+    complectType?: StringNullableFilter<"SkapSession"> | string | null
+    startedAt?: DateTimeFilter<"SkapSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    durationSec?: IntFilter<"SkapSession"> | number
+    ip?: StringNullableFilter<"SkapSession"> | string | null
+    createdAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapSession"> | Date | string | null
+  }
+
+  export type SkapSubscriptionUpsertWithWhereUniqueWithoutPortalInput = {
+    where: SkapSubscriptionWhereUniqueInput
+    update: XOR<SkapSubscriptionUpdateWithoutPortalInput, SkapSubscriptionUncheckedUpdateWithoutPortalInput>
+    create: XOR<SkapSubscriptionCreateWithoutPortalInput, SkapSubscriptionUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapSubscriptionUpdateWithWhereUniqueWithoutPortalInput = {
+    where: SkapSubscriptionWhereUniqueInput
+    data: XOR<SkapSubscriptionUpdateWithoutPortalInput, SkapSubscriptionUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type SkapSubscriptionUpdateManyWithWhereWithoutPortalInput = {
+    where: SkapSubscriptionScalarWhereInput
+    data: XOR<SkapSubscriptionUpdateManyMutationInput, SkapSubscriptionUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type SkapSubscriptionScalarWhereInput = {
+    AND?: SkapSubscriptionScalarWhereInput | SkapSubscriptionScalarWhereInput[]
+    OR?: SkapSubscriptionScalarWhereInput[]
+    NOT?: SkapSubscriptionScalarWhereInput | SkapSubscriptionScalarWhereInput[]
+    id?: StringFilter<"SkapSubscription"> | string
+    portal_id?: BigIntFilter<"SkapSubscription"> | bigint | number
+    domain?: StringFilter<"SkapSubscription"> | string
+    dedupKey?: StringFilter<"SkapSubscription"> | string
+    itemId?: StringNullableFilter<"SkapSubscription"> | string | null
+    clientCard?: StringFilter<"SkapSubscription"> | string
+    regList?: StringFilter<"SkapSubscription"> | string
+    complectArmId?: StringFilter<"SkapSubscription"> | string
+    complectName?: StringNullableFilter<"SkapSubscription"> | string | null
+    supplyKind?: StringNullableFilter<"SkapSubscription"> | string | null
+    city?: StringNullableFilter<"SkapSubscription"> | string | null
+    region?: StringNullableFilter<"SkapSubscription"> | string | null
+    version?: StringNullableFilter<"SkapSubscription"> | string | null
+    content?: StringNullableFilter<"SkapSubscription"> | string | null
+    managerName?: StringNullableFilter<"SkapSubscription"> | string | null
+    managerEmail?: StringNullableFilter<"SkapSubscription"> | string | null
+    mailingName?: StringNullableFilter<"SkapSubscription"> | string | null
+    mailingEmail?: StringNullableFilter<"SkapSubscription"> | string | null
+    isActive?: BoolFilter<"SkapSubscription"> | boolean
+    period?: DateTimeFilter<"SkapSubscription"> | Date | string
+    createdAt?: DateTimeNullableFilter<"SkapSubscription"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapSubscription"> | Date | string | null
+  }
+
+  export type SkapImportRunUpsertWithWhereUniqueWithoutPortalInput = {
+    where: SkapImportRunWhereUniqueInput
+    update: XOR<SkapImportRunUpdateWithoutPortalInput, SkapImportRunUncheckedUpdateWithoutPortalInput>
+    create: XOR<SkapImportRunCreateWithoutPortalInput, SkapImportRunUncheckedCreateWithoutPortalInput>
+  }
+
+  export type SkapImportRunUpdateWithWhereUniqueWithoutPortalInput = {
+    where: SkapImportRunWhereUniqueInput
+    data: XOR<SkapImportRunUpdateWithoutPortalInput, SkapImportRunUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type SkapImportRunUpdateManyWithWhereWithoutPortalInput = {
+    where: SkapImportRunScalarWhereInput
+    data: XOR<SkapImportRunUpdateManyMutationInput, SkapImportRunUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type SkapImportRunScalarWhereInput = {
+    AND?: SkapImportRunScalarWhereInput | SkapImportRunScalarWhereInput[]
+    OR?: SkapImportRunScalarWhereInput[]
+    NOT?: SkapImportRunScalarWhereInput | SkapImportRunScalarWhereInput[]
+    id?: StringFilter<"SkapImportRun"> | string
+    portal_id?: BigIntFilter<"SkapImportRun"> | bigint | number
+    domain?: StringFilter<"SkapImportRun"> | string
+    status?: StringFilter<"SkapImportRun"> | string
+    stopReason?: StringNullableFilter<"SkapImportRun"> | string | null
+    stats?: JsonNullableFilter<"SkapImportRun">
+    startedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    finishedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
+  }
+
   export type PortalCreateWithoutAiSettingsInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -148554,6 +159446,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAiSettingsInput = {
@@ -148612,6 +159510,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAiSettingsInput = {
@@ -148686,6 +159590,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAiSettingsInput = {
@@ -148744,6 +159654,2166 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutAppSettingsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutAppSettingsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutAppSettingsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutAppSettingsInput, PortalUncheckedCreateWithoutAppSettingsInput>
+  }
+
+  export type PortalUpsertWithoutAppSettingsInput = {
+    update: XOR<PortalUpdateWithoutAppSettingsInput, PortalUncheckedUpdateWithoutAppSettingsInput>
+    create: XOR<PortalCreateWithoutAppSettingsInput, PortalUncheckedCreateWithoutAppSettingsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutAppSettingsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutAppSettingsInput, PortalUncheckedUpdateWithoutAppSettingsInput>
+  }
+
+  export type PortalUpdateWithoutAppSettingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutAppSettingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutSkapImportFilesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutSkapImportFilesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutSkapImportFilesInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutSkapImportFilesInput, PortalUncheckedCreateWithoutSkapImportFilesInput>
+  }
+
+  export type SkapImportItemCreateWithoutFileInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportItemsInput
+    sessions?: SkapSessionCreateNestedManyWithoutItemInput
+    subscriptions?: SkapSubscriptionCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemUncheckedCreateWithoutFileInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    sessions?: SkapSessionUncheckedCreateNestedManyWithoutItemInput
+    subscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemCreateOrConnectWithoutFileInput = {
+    where: SkapImportItemWhereUniqueInput
+    create: XOR<SkapImportItemCreateWithoutFileInput, SkapImportItemUncheckedCreateWithoutFileInput>
+  }
+
+  export type SkapImportItemCreateManyFileInputEnvelope = {
+    data: SkapImportItemCreateManyFileInput | SkapImportItemCreateManyFileInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PortalUpsertWithoutSkapImportFilesInput = {
+    update: XOR<PortalUpdateWithoutSkapImportFilesInput, PortalUncheckedUpdateWithoutSkapImportFilesInput>
+    create: XOR<PortalCreateWithoutSkapImportFilesInput, PortalUncheckedCreateWithoutSkapImportFilesInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutSkapImportFilesInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutSkapImportFilesInput, PortalUncheckedUpdateWithoutSkapImportFilesInput>
+  }
+
+  export type PortalUpdateWithoutSkapImportFilesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutSkapImportFilesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type SkapImportItemUpsertWithWhereUniqueWithoutFileInput = {
+    where: SkapImportItemWhereUniqueInput
+    update: XOR<SkapImportItemUpdateWithoutFileInput, SkapImportItemUncheckedUpdateWithoutFileInput>
+    create: XOR<SkapImportItemCreateWithoutFileInput, SkapImportItemUncheckedCreateWithoutFileInput>
+  }
+
+  export type SkapImportItemUpdateWithWhereUniqueWithoutFileInput = {
+    where: SkapImportItemWhereUniqueInput
+    data: XOR<SkapImportItemUpdateWithoutFileInput, SkapImportItemUncheckedUpdateWithoutFileInput>
+  }
+
+  export type SkapImportItemUpdateManyWithWhereWithoutFileInput = {
+    where: SkapImportItemScalarWhereInput
+    data: XOR<SkapImportItemUpdateManyMutationInput, SkapImportItemUncheckedUpdateManyWithoutFileInput>
+  }
+
+  export type PortalCreateWithoutSkapImportItemsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutSkapImportItemsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutSkapImportItemsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutSkapImportItemsInput, PortalUncheckedCreateWithoutSkapImportItemsInput>
+  }
+
+  export type SkapImportFileCreateWithoutItemsInput = {
+    id: string
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportFilesInput
+  }
+
+  export type SkapImportFileUncheckedCreateWithoutItemsInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportFileCreateOrConnectWithoutItemsInput = {
+    where: SkapImportFileWhereUniqueInput
+    create: XOR<SkapImportFileCreateWithoutItemsInput, SkapImportFileUncheckedCreateWithoutItemsInput>
+  }
+
+  export type SkapSessionCreateWithoutItemInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapSessionsInput
+  }
+
+  export type SkapSessionUncheckedCreateWithoutItemInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSessionCreateOrConnectWithoutItemInput = {
+    where: SkapSessionWhereUniqueInput
+    create: XOR<SkapSessionCreateWithoutItemInput, SkapSessionUncheckedCreateWithoutItemInput>
+  }
+
+  export type SkapSessionCreateManyItemInputEnvelope = {
+    data: SkapSessionCreateManyItemInput | SkapSessionCreateManyItemInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SkapSubscriptionCreateWithoutItemInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapSubscriptionsInput
+  }
+
+  export type SkapSubscriptionUncheckedCreateWithoutItemInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSubscriptionCreateOrConnectWithoutItemInput = {
+    where: SkapSubscriptionWhereUniqueInput
+    create: XOR<SkapSubscriptionCreateWithoutItemInput, SkapSubscriptionUncheckedCreateWithoutItemInput>
+  }
+
+  export type SkapSubscriptionCreateManyItemInputEnvelope = {
+    data: SkapSubscriptionCreateManyItemInput | SkapSubscriptionCreateManyItemInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PortalUpsertWithoutSkapImportItemsInput = {
+    update: XOR<PortalUpdateWithoutSkapImportItemsInput, PortalUncheckedUpdateWithoutSkapImportItemsInput>
+    create: XOR<PortalCreateWithoutSkapImportItemsInput, PortalUncheckedCreateWithoutSkapImportItemsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutSkapImportItemsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutSkapImportItemsInput, PortalUncheckedUpdateWithoutSkapImportItemsInput>
+  }
+
+  export type PortalUpdateWithoutSkapImportItemsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutSkapImportItemsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type SkapImportFileUpsertWithoutItemsInput = {
+    update: XOR<SkapImportFileUpdateWithoutItemsInput, SkapImportFileUncheckedUpdateWithoutItemsInput>
+    create: XOR<SkapImportFileCreateWithoutItemsInput, SkapImportFileUncheckedCreateWithoutItemsInput>
+    where?: SkapImportFileWhereInput
+  }
+
+  export type SkapImportFileUpdateToOneWithWhereWithoutItemsInput = {
+    where?: SkapImportFileWhereInput
+    data: XOR<SkapImportFileUpdateWithoutItemsInput, SkapImportFileUncheckedUpdateWithoutItemsInput>
+  }
+
+  export type SkapImportFileUpdateWithoutItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportFilesNestedInput
+  }
+
+  export type SkapImportFileUncheckedUpdateWithoutItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionUpsertWithWhereUniqueWithoutItemInput = {
+    where: SkapSessionWhereUniqueInput
+    update: XOR<SkapSessionUpdateWithoutItemInput, SkapSessionUncheckedUpdateWithoutItemInput>
+    create: XOR<SkapSessionCreateWithoutItemInput, SkapSessionUncheckedCreateWithoutItemInput>
+  }
+
+  export type SkapSessionUpdateWithWhereUniqueWithoutItemInput = {
+    where: SkapSessionWhereUniqueInput
+    data: XOR<SkapSessionUpdateWithoutItemInput, SkapSessionUncheckedUpdateWithoutItemInput>
+  }
+
+  export type SkapSessionUpdateManyWithWhereWithoutItemInput = {
+    where: SkapSessionScalarWhereInput
+    data: XOR<SkapSessionUpdateManyMutationInput, SkapSessionUncheckedUpdateManyWithoutItemInput>
+  }
+
+  export type SkapSubscriptionUpsertWithWhereUniqueWithoutItemInput = {
+    where: SkapSubscriptionWhereUniqueInput
+    update: XOR<SkapSubscriptionUpdateWithoutItemInput, SkapSubscriptionUncheckedUpdateWithoutItemInput>
+    create: XOR<SkapSubscriptionCreateWithoutItemInput, SkapSubscriptionUncheckedCreateWithoutItemInput>
+  }
+
+  export type SkapSubscriptionUpdateWithWhereUniqueWithoutItemInput = {
+    where: SkapSubscriptionWhereUniqueInput
+    data: XOR<SkapSubscriptionUpdateWithoutItemInput, SkapSubscriptionUncheckedUpdateWithoutItemInput>
+  }
+
+  export type SkapSubscriptionUpdateManyWithWhereWithoutItemInput = {
+    where: SkapSubscriptionScalarWhereInput
+    data: XOR<SkapSubscriptionUpdateManyMutationInput, SkapSubscriptionUncheckedUpdateManyWithoutItemInput>
+  }
+
+  export type PortalCreateWithoutSkapSessionsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutSkapSessionsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutSkapSessionsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutSkapSessionsInput, PortalUncheckedCreateWithoutSkapSessionsInput>
+  }
+
+  export type SkapImportItemCreateWithoutSessionsInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportItemsInput
+    file?: SkapImportFileCreateNestedOneWithoutItemsInput
+    subscriptions?: SkapSubscriptionCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemUncheckedCreateWithoutSessionsInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    fileId?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    subscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemCreateOrConnectWithoutSessionsInput = {
+    where: SkapImportItemWhereUniqueInput
+    create: XOR<SkapImportItemCreateWithoutSessionsInput, SkapImportItemUncheckedCreateWithoutSessionsInput>
+  }
+
+  export type PortalUpsertWithoutSkapSessionsInput = {
+    update: XOR<PortalUpdateWithoutSkapSessionsInput, PortalUncheckedUpdateWithoutSkapSessionsInput>
+    create: XOR<PortalCreateWithoutSkapSessionsInput, PortalUncheckedCreateWithoutSkapSessionsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutSkapSessionsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutSkapSessionsInput, PortalUncheckedUpdateWithoutSkapSessionsInput>
+  }
+
+  export type PortalUpdateWithoutSkapSessionsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutSkapSessionsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type SkapImportItemUpsertWithoutSessionsInput = {
+    update: XOR<SkapImportItemUpdateWithoutSessionsInput, SkapImportItemUncheckedUpdateWithoutSessionsInput>
+    create: XOR<SkapImportItemCreateWithoutSessionsInput, SkapImportItemUncheckedCreateWithoutSessionsInput>
+    where?: SkapImportItemWhereInput
+  }
+
+  export type SkapImportItemUpdateToOneWithWhereWithoutSessionsInput = {
+    where?: SkapImportItemWhereInput
+    data: XOR<SkapImportItemUpdateWithoutSessionsInput, SkapImportItemUncheckedUpdateWithoutSessionsInput>
+  }
+
+  export type SkapImportItemUpdateWithoutSessionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportItemsNestedInput
+    file?: SkapImportFileUpdateOneWithoutItemsNestedInput
+    subscriptions?: SkapSubscriptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateWithoutSessionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    fileId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalCreateWithoutSkapSubscriptionsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutSkapSubscriptionsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutSkapSubscriptionsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutSkapSubscriptionsInput, PortalUncheckedCreateWithoutSkapSubscriptionsInput>
+  }
+
+  export type SkapImportItemCreateWithoutSubscriptionsInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutSkapImportItemsInput
+    file?: SkapImportFileCreateNestedOneWithoutItemsInput
+    sessions?: SkapSessionCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemUncheckedCreateWithoutSubscriptionsInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    fileId?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    sessions?: SkapSessionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type SkapImportItemCreateOrConnectWithoutSubscriptionsInput = {
+    where: SkapImportItemWhereUniqueInput
+    create: XOR<SkapImportItemCreateWithoutSubscriptionsInput, SkapImportItemUncheckedCreateWithoutSubscriptionsInput>
+  }
+
+  export type PortalUpsertWithoutSkapSubscriptionsInput = {
+    update: XOR<PortalUpdateWithoutSkapSubscriptionsInput, PortalUncheckedUpdateWithoutSkapSubscriptionsInput>
+    create: XOR<PortalCreateWithoutSkapSubscriptionsInput, PortalUncheckedCreateWithoutSkapSubscriptionsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutSkapSubscriptionsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutSkapSubscriptionsInput, PortalUncheckedUpdateWithoutSkapSubscriptionsInput>
+  }
+
+  export type PortalUpdateWithoutSkapSubscriptionsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutSkapSubscriptionsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type SkapImportItemUpsertWithoutSubscriptionsInput = {
+    update: XOR<SkapImportItemUpdateWithoutSubscriptionsInput, SkapImportItemUncheckedUpdateWithoutSubscriptionsInput>
+    create: XOR<SkapImportItemCreateWithoutSubscriptionsInput, SkapImportItemUncheckedCreateWithoutSubscriptionsInput>
+    where?: SkapImportItemWhereInput
+  }
+
+  export type SkapImportItemUpdateToOneWithWhereWithoutSubscriptionsInput = {
+    where?: SkapImportItemWhereInput
+    data: XOR<SkapImportItemUpdateWithoutSubscriptionsInput, SkapImportItemUncheckedUpdateWithoutSubscriptionsInput>
+  }
+
+  export type SkapImportItemUpdateWithoutSubscriptionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportItemsNestedInput
+    file?: SkapImportFileUpdateOneWithoutItemsNestedInput
+    sessions?: SkapSessionUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateWithoutSubscriptionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    fileId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessions?: SkapSessionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalCreateWithoutSkapImportRunsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutSkapImportRunsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutSkapImportRunsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutSkapImportRunsInput, PortalUncheckedCreateWithoutSkapImportRunsInput>
+  }
+
+  export type PortalUpsertWithoutSkapImportRunsInput = {
+    update: XOR<PortalUpdateWithoutSkapImportRunsInput, PortalUncheckedUpdateWithoutSkapImportRunsInput>
+    create: XOR<PortalCreateWithoutSkapImportRunsInput, PortalUncheckedCreateWithoutSkapImportRunsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutSkapImportRunsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutSkapImportRunsInput, PortalUncheckedUpdateWithoutSkapImportRunsInput>
+  }
+
+  export type PortalUpdateWithoutSkapImportRunsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutSkapImportRunsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type countersCreateWithoutRq_counterInput = {
@@ -149154,6 +162224,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -149212,6 +162288,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -149286,6 +162368,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -149344,6 +162432,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -149836,6 +162930,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -149894,6 +162994,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -150000,6 +163106,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -150058,6 +163170,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -150116,6 +163234,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -150174,6 +163298,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -150248,6 +163378,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -150306,6 +163442,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -150532,6 +163674,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -150590,6 +163738,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -150795,6 +163949,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -150853,6 +164013,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -151028,6 +164194,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -151086,6 +164258,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -151160,6 +164338,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -151218,6 +164402,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -151276,6 +164466,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -151334,6 +164530,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -151408,6 +164610,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -151466,6 +164674,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -153235,6 +166449,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -153293,6 +166513,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -153446,6 +166672,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -153504,6 +166736,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -153818,6 +167056,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -153876,6 +167120,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -153950,6 +167200,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -154008,6 +167264,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -154201,6 +167463,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -154259,6 +167527,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -154412,6 +167686,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -154470,6 +167750,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -154528,6 +167814,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -154586,6 +167878,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -154691,6 +167989,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -154749,6 +168053,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -155036,6 +168346,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -155094,6 +168410,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -155256,6 +168578,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -155314,6 +168642,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -156102,6 +169436,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -156160,6 +169500,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -156234,6 +169580,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -156292,6 +169644,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -156381,6 +169739,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -156439,6 +169803,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -156550,6 +169920,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -156608,6 +169984,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -156737,6 +170119,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -156795,6 +170183,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -156922,6 +170316,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -156980,6 +170380,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -157038,6 +170444,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -157096,6 +170508,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -157170,6 +170588,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -157228,6 +170652,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -157343,6 +170773,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -157401,6 +170837,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -157538,6 +170980,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -157596,6 +171044,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutPortal_invitesInput = {
@@ -157683,6 +171137,12 @@ export namespace Prisma {
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_invitesInput = {
@@ -157741,6 +171201,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_invitesInput = {
@@ -157850,6 +171316,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
@@ -157908,6 +171380,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppCachesInput = {
@@ -157966,6 +171444,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppCachesInput = {
@@ -158024,6 +171508,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppCachesInput = {
@@ -158098,6 +171588,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppCachesInput = {
@@ -158156,6 +171652,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutShareLinksInput = {
@@ -158214,6 +171716,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutShareLinksInput = {
@@ -158272,6 +171780,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutShareLinksInput = {
@@ -158346,6 +171860,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutShareLinksInput = {
@@ -158404,6 +171924,12 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -158754,6 +172280,12 @@ export namespace Prisma {
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -158812,6 +172344,12 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -160823,6 +174361,108 @@ export namespace Prisma {
     lastViewedAt?: Date | string | null
   }
 
+  export type PortalAppSettingsCreateManyPortalInput = {
+    id: string
+    domain: string
+    appCode: string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportFileCreateManyPortalInput = {
+    id: string
+    domain: string
+    diskFileId: string
+    fileName: string
+    diskUpdatedAt?: Date | string | null
+    size?: bigint | number | null
+    status: string
+    formatVersion?: string | null
+    error?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportItemCreateManyPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    fileId?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSessionCreateManyPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSubscriptionCreateManyPortalInput = {
+    id: string
+    domain: string
+    dedupKey: string
+    itemId?: string | null
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportRunCreateManyPortalInput = {
+    id: string
+    domain: string
+    status: string
+    stopReason?: string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: Date | string | null
+    finishedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -162086,6 +175726,578 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     viewCount?: IntFieldUpdateOperationsInput | number
     lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalAppSettingsUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalAppSettingsUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalAppSettingsUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportFileUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: SkapImportItemUpdateManyWithoutFileNestedInput
+  }
+
+  export type SkapImportFileUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: SkapImportItemUncheckedUpdateManyWithoutFileNestedInput
+  }
+
+  export type SkapImportFileUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    diskFileId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    diskUpdatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    size?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    status?: StringFieldUpdateOperationsInput | string
+    formatVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    error?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportItemUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    file?: SkapImportFileUpdateOneWithoutItemsNestedInput
+    sessions?: SkapSessionUpdateManyWithoutItemNestedInput
+    subscriptions?: SkapSubscriptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    fileId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessions?: SkapSessionUncheckedUpdateManyWithoutItemNestedInput
+    subscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    fileId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    item?: SkapImportItemUpdateOneWithoutSessionsNestedInput
+  }
+
+  export type SkapSessionUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    item?: SkapImportItemUpdateOneWithoutSubscriptionsNestedInput
+  }
+
+  export type SkapSubscriptionUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    itemId?: NullableStringFieldUpdateOperationsInput | string | null
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportRunUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportRunUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportRunUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    stopReason?: NullableStringFieldUpdateOperationsInput | string | null
+    stats?: NullableJsonNullValueInput | InputJsonValue
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapImportItemCreateManyFileInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    period: Date | string
+    status: string
+    bitrixItemId?: number | null
+    companyId?: number | null
+    dealId?: number | null
+    contactId?: number | null
+    warning?: string | null
+    sessionCount?: number | null
+    timeTotalMin?: number | null
+    ipCount?: number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapImportItemUpdateWithoutFileInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapImportItemsNestedInput
+    sessions?: SkapSessionUpdateManyWithoutItemNestedInput
+    subscriptions?: SkapSubscriptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateWithoutFileInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessions?: SkapSessionUncheckedUpdateManyWithoutItemNestedInput
+    subscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type SkapImportItemUncheckedUpdateManyWithoutFileInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    bitrixItemId?: NullableIntFieldUpdateOperationsInput | number | null
+    companyId?: NullableIntFieldUpdateOperationsInput | number | null
+    dealId?: NullableIntFieldUpdateOperationsInput | number | null
+    contactId?: NullableIntFieldUpdateOperationsInput | number | null
+    warning?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionCount?: NullableIntFieldUpdateOperationsInput | number | null
+    timeTotalMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ipCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionCreateManyItemInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    login: string
+    complectArmId?: string | null
+    complectType?: string | null
+    startedAt: Date | string
+    endedAt?: Date | string | null
+    durationSec: number
+    ip?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSubscriptionCreateManyItemInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    dedupKey: string
+    clientCard: string
+    regList: string
+    complectArmId: string
+    complectName?: string | null
+    supplyKind?: string | null
+    city?: string | null
+    region?: string | null
+    version?: string | null
+    content?: string | null
+    managerName?: string | null
+    managerEmail?: string | null
+    mailingName?: string | null
+    mailingEmail?: string | null
+    isActive: boolean
+    period: Date | string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SkapSessionUpdateWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapSessionsNestedInput
+  }
+
+  export type SkapSessionUncheckedUpdateWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSessionUncheckedUpdateManyWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    login?: StringFieldUpdateOperationsInput | string
+    complectArmId?: NullableStringFieldUpdateOperationsInput | string | null
+    complectType?: NullableStringFieldUpdateOperationsInput | string | null
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    durationSec?: IntFieldUpdateOperationsInput | number
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionUpdateWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutSkapSubscriptionsNestedInput
+  }
+
+  export type SkapSubscriptionUncheckedUpdateWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SkapSubscriptionUncheckedUpdateManyWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    dedupKey?: StringFieldUpdateOperationsInput | string
+    clientCard?: StringFieldUpdateOperationsInput | string
+    regList?: StringFieldUpdateOperationsInput | string
+    complectArmId?: StringFieldUpdateOperationsInput | string
+    complectName?: NullableStringFieldUpdateOperationsInput | string | null
+    supplyKind?: NullableStringFieldUpdateOperationsInput | string | null
+    city?: NullableStringFieldUpdateOperationsInput | string | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    version?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: NullableStringFieldUpdateOperationsInput | string | null
+    managerName?: NullableStringFieldUpdateOperationsInput | string | null
+    managerEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingName?: NullableStringFieldUpdateOperationsInput | string | null
+    mailingEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    period?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type rq_counterCreateManyRqsInput = {
