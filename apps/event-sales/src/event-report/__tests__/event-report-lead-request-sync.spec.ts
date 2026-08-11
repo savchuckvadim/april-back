@@ -23,16 +23,27 @@ const FIELD_DEFS: Record<
         bitrixId: 'OP_LEAD_SITE_STATUS',
         items: [
             { code: 'op_lead_site_status3', name: 'Не ЦА', bitrixId: 33 },
+            {
+                code: 'op_lead_site_status4',
+                name: 'Ведётся активная работа',
+                bitrixId: 34,
+            },
             { code: 'op_lead_site_status5', name: 'Отказ', bitrixId: 55 },
         ],
     },
     op_lead_site_stage: {
         bitrixId: 'OP_LEAD_SITE_STAGE',
         items: [
+            {
+                code: 'op_lead_site_stage4',
+                name: 'Проведена презентация',
+                bitrixId: 84,
+            },
             { code: 'op_lead_site_stage8', name: 'Отказ', bitrixId: 88 },
             { code: 'op_lead_site_stage9', name: 'Продажа', bitrixId: 99 },
         ],
     },
+    to_presentation_sales: { bitrixId: 'TO_PRESENTATION_SALES' },
     op_lead_not_ca_type: {
         bitrixId: 'OP_LEAD_NOT_CA_TYPE',
         items: [
@@ -190,5 +201,66 @@ describe('EventReportLeadRequestSyncService', () => {
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(55); // Отказ
         expect(fields.UF_CRM_OP_LEAD_STATUS).toBe(9);
         expect(fields.UF_CRM_OP_LEAD_NOT_CA_TYPE).toBeUndefined();
+    });
+
+    it('связь презентации без финала: пишется ТОЛЬКО выбранный лид — статусы менеджера, to_presentation_sales ∪, история', async () => {
+        const { bitrix, updates } = makeBitrix({
+            77: { ID: '77', UF_CRM_TO_PRESENTATION_SALES: ['D_5'] },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        const result = await service.run(
+            makeCtx({
+                isSuccessSale: false,
+                isFail: false,
+                // Контекст компании со своими лидами — они НЕ трогаются.
+                ownerDeal: { ID: '500', UF_CRM_DEAL_FROM_LEAD_ID: 'L_42' },
+                currentPresDeal: { ID: '900' },
+                dto: {
+                    leadSync: {
+                        leadId: 77,
+                        presentationLink: true,
+                        siteStatusCode: 'op_lead_site_status4',
+                        siteStageCode: 'op_lead_site_stage4',
+                    },
+                },
+            }),
+        );
+        expect(result.synced).toBe(1);
+        expect(updates).toHaveLength(1);
+        expect(updates[0].leadId).toBe(77);
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(34);
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+        expect(fields.UF_CRM_TO_PRESENTATION_SALES).toEqual(['D_5', 'D_900']);
+        const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history.join(' ')).toContain('Презентация связана с заявкой');
+    });
+
+    it('связь презентации: сделка презентации создаётся этим же отчётом (currentPresDeal нет) → линк не пишется, статусы пишутся', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            makeCtx({
+                isSuccessSale: false,
+                isFail: false,
+                currentPresDeal: null,
+                dto: {
+                    leadSync: {
+                        leadId: 77,
+                        presentationLink: true,
+                        siteStageCode: 'op_lead_site_stage4',
+                    },
+                },
+            }),
+        );
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_TO_PRESENTATION_SALES).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
     });
 });

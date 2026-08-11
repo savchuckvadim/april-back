@@ -381,6 +381,21 @@ export class EventReportKpiPayloadBuilder {
         ) {
             push(`L_${this.ctx.entityId}`);
         }
+        // Заявка, с которой менеджер связал презентацию (модалка перед
+        // отправкой): из лида должны быть видны KPI-записи этого отчёта.
+        const linkedLead = this.ctx.dto.leadSync?.presentationLink
+            ? Number(this.ctx.dto.leadSync.leadId)
+            : NaN;
+        if (
+            Number.isFinite(linkedLead) &&
+            linkedLead > 0 &&
+            !(
+                this.ctx.entityType === EEventReportEntityType.LEAD &&
+                String(this.ctx.entityId) === String(linkedLead)
+            )
+        ) {
+            push(`L_${linkedLead}`);
+        }
         // Владелец-сделка: запись истории/KPI обязана ссылаться на сделку —
         // по этой привязке история потом и читается.
         if (

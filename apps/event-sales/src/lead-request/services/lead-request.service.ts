@@ -26,6 +26,10 @@ import {
     LeadRequestUpdateDto,
     LeadRequestUpdateResultDto,
 } from '../dto/lead-request-update.dto';
+import {
+    LeadLiveItemNames,
+    LeadRequestLiveNamesService,
+} from './lead-request-live-names.service';
 
 type BxRow = Record<string, unknown>;
 
@@ -40,11 +44,23 @@ const REG_NUMBER_FIELD = 'UF_CRM_REG_NUMBER';
  * и append-историей. Инстанс bitrix/portal берётся через PBXService.init
  * на каждый вызов (в this не хранится — race condition, CLAUDE.md).
  */
+/** Enum-поля карточки, для которых подтягиваются live-названия портала. */
+const CARD_ENUM_FIELD_CODES: EnumLeadRequestFieldCode[] = [
+    EnumLeadRequestFieldCode.op_lead_status,
+    EnumLeadRequestFieldCode.op_lead_site_status,
+    EnumLeadRequestFieldCode.op_lead_site_stage,
+    EnumLeadRequestFieldCode.op_lead_not_ca_type,
+    EnumLeadRequestFieldCode.op_leads_related_base_stage,
+];
+
 @Injectable()
 export class LeadRequestService {
     private readonly logger = new Logger(LeadRequestService.name);
 
-    constructor(private readonly pbx: PBXService) {}
+    constructor(
+        private readonly pbx: PBXService,
+        private readonly liveNames: LeadRequestLiveNamesService,
+    ) {}
 
     async card(domain: string, leadId: number): Promise<LeadRequestCardDto> {
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
@@ -54,6 +70,18 @@ export class LeadRequestService {
         if (!lead) {
             throw new NotFoundException(`Лид ${leadId} не найден на портале`);
         }
+
+        // Живые названия вариантов «как на портале» (кэш 10 мин; ошибка →
+        // названия из DB). Ключи — UF-имена установленных enum-полей.
+        const liveFieldNames = CARD_ENUM_FIELD_CODES.map(code => {
+            const field = portal.getEntityFieldByCode('lead', code);
+            return field ? portal.getFieldBitrixId(field) : null;
+        }).filter((name): name is string => !!name);
+        const live = await this.liveNames.resolve(
+            domain,
+            bitrix,
+            liveFieldNames,
+        );
 
         const warnings: string[] = [];
         const detection = new LeadRequestDetectorService(portal).detect(lead);
@@ -70,30 +98,35 @@ export class LeadRequestService {
                 lead,
                 EnumLeadRequestFieldCode.op_lead_site_status,
                 warnings,
+                live,
             ),
             siteStage: this.enumState<EnumLeadSiteStageCode>(
                 portal,
                 lead,
                 EnumLeadRequestFieldCode.op_lead_site_stage,
                 warnings,
+                live,
             ),
             leadStatus: this.enumState<EnumLeadOpStatusCode>(
                 portal,
                 lead,
                 EnumLeadRequestFieldCode.op_lead_status,
                 warnings,
+                live,
             ),
             notCaType: this.enumState<EnumLeadNotCaTypeCode>(
                 portal,
                 lead,
                 EnumLeadRequestFieldCode.op_lead_not_ca_type,
                 warnings,
+                live,
             ),
             relatedBaseStage: this.enumState<EnumLeadRelatedBaseStageCode>(
                 portal,
                 lead,
                 EnumLeadRequestFieldCode.op_leads_related_base_stage,
                 warnings,
+                live,
             ),
             blackShort: this.bool(
                 portal,
@@ -383,12 +416,14 @@ export class LeadRequestService {
     /**
      * Состояние enum-поля лида. Дженерик фиксирует конкретный enum кода —
      * карточка остаётся тотально типизированной без кастов на вызовах.
+     * Названия вариантов: живые с портала (live) поверх названий из DB.
      */
     private enumState<TCode extends string>(
         portal: PortalModel,
         lead: BxRow,
         code: EnumLeadRequestFieldCode,
         warnings: string[],
+        live: LeadLiveItemNames,
     ): {
         installed: boolean;
         currentCode: TCode | null;
@@ -399,16 +434,18 @@ export class LeadRequestService {
             warnings.push(`Поле ${code} не установлено на портале`);
             return { installed: false, currentCode: null, items: [] };
         }
-        const raw = lead[portal.getFieldBitrixId(field)];
+        const ufName = portal.getFieldBitrixId(field);
+        const raw = lead[ufName];
         const current = field.items.find(
             item => String(item.bitrixId) === String(raw),
         );
+        const liveByItemId = live[ufName] ?? {};
         return {
             installed: true,
             currentCode: (current?.code as TCode | undefined) ?? null,
             items: field.items.map(item => ({
                 code: item.code,
-                name: item.name,
+                name: liveByItemId[String(item.bitrixId)] ?? item.name,
             })),
         };
     }

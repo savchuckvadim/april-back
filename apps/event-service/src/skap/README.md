@@ -70,9 +70,20 @@ Telegram-алерт; нет заголовка — позиционный fallba
    zip годовой структуры (`месяц год/РП/*.csv`) или файлы по месяцам —
    месяц берётся из имени папки («август 2024») или файла («2024-08»).
 
+## Портальная поверхность (фронт kpi-service)
+
+`apps/kpi-report-service` → `POST /skap/run {domain}` (кнопка «пересчитать»,
+джоб в очередь) и `GET /skap/status?domain=` (running / pendingFiles /
+lastRun / **folderUrl** — индикатор обновления + маленькая ссылка
+«Хранилище СКАП» на папку Диска рядом с кнопкой; фронт поллит пока идёт).
+folderUrl кэшируется в настройках при первом прогоне (DETAIL_URL папки).
+Админ-поверхность — `apps/admin` (`admin/skap/*`: runs/files/items, retry,
+reprocess, run).
+
 ## Тесты
 
-- `libs/skap-lib/src/format/__tests__` — формат-гвард на реальных фикстурах
-  из `apps/event-service/src/skap/example/`;
+- `libs/skap-lib/src/format/__tests__` — формат-гвард: синтетика всегда;
+  фикстурные тесты скипаются, если рядом нет живой папки
+  `apps/event-service/src/skap/example/` (в git не хранится);
 - `libs/skap-lib/src/store/__tests__` — синк файлов, dedup;
 - `libs/portal-lib/pbx/pbx-skap-smart/__tests__` — конфиг смарта, ключи.

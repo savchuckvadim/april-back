@@ -125,4 +125,16 @@ export class PlanDto {
     })
     @IsBoolean()
     isActive: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Лиды/заявки, с которыми менеджер связал новую задачу ' +
+            '(чекбоксы при создании задачи из сделки/компании без текущей ' +
+            'задачи) — попадут в UF_CRM_TASK как L_{id}.',
+        type: [Number],
+        example: [42, 77],
+    })
+    @IsOptional()
+    @IsNumber({}, { each: true })
+    relatedLeadIds?: number[];
 }

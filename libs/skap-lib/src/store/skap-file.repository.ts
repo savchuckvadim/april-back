@@ -97,6 +97,13 @@ export class SkapFileRepository {
         });
     }
 
+    /** Необработанные файлы домена (индикатор обновления на фронте). */
+    async countPendingByDomain(domain: string): Promise<number> {
+        return this.prisma.skapImportFile.count({
+            where: { domain, status: { in: ['pending', 'processing'] } },
+        });
+    }
+
     async markProcessing(id: string): Promise<void> {
         await this.prisma.skapImportFile.update({
             where: { id },

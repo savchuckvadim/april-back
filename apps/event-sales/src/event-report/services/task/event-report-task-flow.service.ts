@@ -151,6 +151,24 @@ export class EventReportTaskFlowService {
         // что происходит с работой.
         links.push(...this.collectInheritedLeadLinks(ctx));
 
+        // Заявка, с которой менеджер связал презентацию (модалка перед
+        // отправкой) — следующая задача обязана нести её L_-привязку.
+        const linkedLead = ctx.dto.leadSync?.presentationLink
+            ? Number(ctx.dto.leadSync.leadId)
+            : NaN;
+        if (Number.isFinite(linkedLead) && linkedLead > 0) {
+            links.push(`L_${linkedLead}`);
+        }
+
+        // Лиды, отмеченные менеджером при создании задачи из сделки/компании
+        // без текущей задачи (чекбоксы «связано с этими заявками?»).
+        for (const rawId of ctx.dto.plan?.relatedLeadIds ?? []) {
+            const id = Number(rawId);
+            if (Number.isFinite(id) && id > 0) {
+                links.push(`L_${id}`);
+            }
+        }
+
         const planContactId = ctx.dto.plan?.contact?.ID;
         if (planContactId) {
             links.push(`C_${planContactId}`);

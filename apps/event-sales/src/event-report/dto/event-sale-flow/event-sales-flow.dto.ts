@@ -11,7 +11,11 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     EnumLeadNotCaTypeCode,
+    EnumLeadSiteStageCode,
+    EnumLeadSiteStatusCode,
     LEAD_NOT_CA_TYPE_CODES,
+    LEAD_SITE_STAGE_CODES,
+    LEAD_SITE_STATUS_CODES,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { IBXDeal } from 'src/modules/bitrix';
 import { PlanDto } from './plan.dto';
@@ -63,12 +67,64 @@ export class TmcDealForReturnDto {
 }
 
 /**
- * Синхронизация связанной заявки/лида при финальном событии (отказ или
- * продажа): фронт испрашивает у менеджера недостающие статусы («не ЦА» —
- * при отказе) и передаёт их сюда; бэк двигает op_lead_site_* / op_lead_status
- * связанных лидов и дописывает историю обработки заявки.
+ * Синхронизация связанной заявки/лида из отчёта «Звонков». Два сценария:
+ *  - финал (отказ/продажа): фронт испрашивает недостающие статусы
+ *    («не ЦА» — при отказе), бэк двигает op_lead_site_* / op_lead_status
+ *    связанных лидов и дописывает историю обработки заявки;
+ *  - презентация связана с заявкой (модалка перед отправкой): фронт шлёт
+ *    выбранный лид + обязательные статусы, бэк пишет их выбранному лиду,
+ *    линкует презентацию (to_presentation_sales, L_ в KPI и задачи)
+ *    и дописывает историю.
  */
 export class LeadRequestSyncDto {
+    @ApiPropertyOptional({
+        description:
+            'Лид (заявка), с которым менеджер связал презентацию. ' +
+            'Обязателен при presentationLink=true.',
+        type: Number,
+        example: 42,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    leadId?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Презентация этого отчёта связана с заявкой leadId: бэк ' +
+            'добавит L_лид в KPI-записи и задачи, залинкует сделку ' +
+            'презентации в лид и допишет историю заявки.',
+        type: Boolean,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    presentationLink?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Статус заявки, выбранный менеджером (обязателен в модалке ' +
+            'связи презентации). Применяется выбранному лиду.',
+        type: String,
+        enum: LEAD_SITE_STATUS_CODES,
+        example: EnumLeadSiteStatusCode.active,
+    })
+    @IsOptional()
+    @IsIn(LEAD_SITE_STATUS_CODES)
+    siteStatusCode?: EnumLeadSiteStatusCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Стадия заявки, выбранная менеджером (обязательна в модалке ' +
+            'связи презентации). Применяется выбранному лиду.',
+        type: String,
+        enum: LEAD_SITE_STAGE_CODES,
+        example: EnumLeadSiteStageCode.presentationDone,
+    })
+    @IsOptional()
+    @IsIn(LEAD_SITE_STAGE_CODES)
+    siteStageCode?: EnumLeadSiteStageCode;
+
     @ApiPropertyOptional({
         description:
             'Тип «не ЦА» — обязателен, когда менеджер квалифицирует отказ ' +

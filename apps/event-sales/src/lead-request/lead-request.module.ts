@@ -6,6 +6,7 @@ import { BxDepartmentModule } from 'libs/bx-department';
 import { SalesHookCoreModule } from '../sales-hooks/core/sales-hook-core.module';
 import { LeadRequestService } from './services/lead-request.service';
 import { LeadRequestAcceptService } from './services/lead-request-accept.service';
+import { LeadRequestLiveNamesService } from './services/lead-request-live-names.service';
 import { LeadRequestController } from './controllers/lead-request.controller';
 import { LeadRequestSlaService } from './sla/lead-request-sla.service';
 import { LeadRequestSlaScheduler } from './sla/lead-request-sla.scheduler';
@@ -33,6 +34,7 @@ import { LeadRequestSlaScheduler } from './sla/lead-request-sla.scheduler';
     providers: [
         LeadRequestService,
         LeadRequestAcceptService,
+        LeadRequestLiveNamesService,
         LeadRequestSlaService,
         LeadRequestSlaScheduler,
     ],

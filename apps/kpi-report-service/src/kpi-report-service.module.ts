@@ -9,6 +9,7 @@ import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { TelegramModule } from '@lib/telegram/telegram.module';
 
 import { KpiReportOrkModule } from './kpi-report-ork.module';
+import { SkapPortalModule } from './skap/skap-portal.module';
 
 /**
  * Корневой модуль приложения kpi-report-service (KPI-отчёты ОРК).
@@ -46,6 +47,7 @@ import { KpiReportOrkModule } from './kpi-report-ork.module';
         TelegramModule,
         HealthModule,
         KpiReportOrkModule,
+        SkapPortalModule,
     ],
     providers: [GlobalExceptionFilter],
 })

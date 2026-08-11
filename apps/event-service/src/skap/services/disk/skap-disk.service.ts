@@ -55,12 +55,26 @@ export class SkapDiskService {
      * Папка загрузок «СКАП. Загрузка» в хранилище группы:
      * найти по имени, при отсутствии — создать. Возвращает ID папки
      * (кэшируется в настройках портала вызывающим кодом).
+     *
+     * Кэшированный ID валидируется живым disk.folder.get: если папку на
+     * Диске удалили — кэш отбрасывается и папка ищется/создаётся заново
+     * (иначе прогон падал бы вечно по несуществующему ID).
      */
     async resolveUploadFolderId(
         groupId: number,
         settingsFolderId: number,
     ): Promise<number> {
-        if (settingsFolderId > 0) return settingsFolderId;
+        if (settingsFolderId > 0) {
+            const alive = await this.bitrix.disk.folder
+                .get({ id: settingsFolderId })
+                .then(response => Boolean(response.result?.ID))
+                .catch(() => false);
+            if (alive) return settingsFolderId;
+            this.logger.warn(
+                `Кэшированная папка СКАП ${settingsFolderId} недоступна ` +
+                    '(удалена?) — ищу/создаю заново по имени',
+            );
+        }
 
         const storages = await this.bitrix.disk.storage.getlist({
             ENTITY_TYPE: 'group',
@@ -97,6 +111,28 @@ export class SkapDiskService {
             `Создана папка «${SKAP_DISK_FOLDER_NAME}» (id=${created.result.ID}) в группе ${groupId}`,
         );
         return Number(created.result.ID);
+    }
+
+    /**
+     * URL папки на Диске (ссылка «Хранилище СКАП» на фронте):
+     * DETAIL_URL из disk.folder.get, относительный путь абсолютизируется
+     * доменом портала. Fail-open: null при ошибке.
+     */
+    async getFolderUrl(
+        folderId: number,
+        domain: string,
+    ): Promise<string | null> {
+        try {
+            const folder = await this.bitrix.disk.folder.get({ id: folderId });
+            const url = folder.result?.DETAIL_URL;
+            if (!url) return null;
+            return url.startsWith('/') ? `https://${domain}${url}` : url;
+        } catch (error) {
+            this.logger.warn(
+                `DETAIL_URL папки ${folderId} не получен: ${(error as Error).message}`,
+            );
+            return null;
+        }
     }
 
     /**

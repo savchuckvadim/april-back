@@ -233,6 +233,16 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'number',
             default: 0,
         }),
+        folderUrl: setting({
+            code: 'folder_url',
+            name: 'Ссылка на папку (кэш)',
+            description:
+                'URL папки «СКАП. Загрузка» на Диске — ссылка «Хранилище ' +
+                'СКАП» рядом с кнопкой «пересчитать» на фронте. Заполняется ' +
+                'автоматически при первом прогоне.',
+            type: 'string',
+            default: '',
+        }),
         scanIntervalMinutes: setting({
             code: 'scan_interval_minutes',
             name: 'Интервал скана, мин',

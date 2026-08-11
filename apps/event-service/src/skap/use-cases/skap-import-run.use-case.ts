@@ -104,11 +104,14 @@ export class SkapImportRunUseCase {
                 groupId,
                 settings.folderId,
             );
-            if (folderId !== settings.folderId) {
+            // Кэш папки и её URL (ссылка «Хранилище СКАП» на фронте).
+            if (folderId !== settings.folderId || !settings.folderUrl) {
+                const folderUrl = await disk.getFolderUrl(folderId, domain);
                 await this.settingsService
                     .save(Number(portal.id), EnumPortalAppCode.skap, {
                         groupId,
                         folderId,
+                        ...(folderUrl ? { folderUrl } : {}),
                     })
                     .catch(error =>
                         this.logger.warn(

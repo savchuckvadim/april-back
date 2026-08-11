@@ -24,21 +24,24 @@ export interface LeadRequestSyncResult {
 }
 
 /**
- * Синхронизация связанных заявок/лидов при ФИНАЛЬНОМ событии из «Звонков»
- * (продажа или отказ). Правило пользователя: к финалу все статусы заявки
- * обязаны быть отмечены; «не ЦА» испрашивается фронтом при отказе и
- * приходит в dto.leadSync.notCaTypeCode.
+ * Синхронизация связанных заявок/лидов из отчёта «Звонков». Триггеры:
+ *  - ФИНАЛ (продажа/отказ) — статусы всем связанным лидам;
+ *  - СВЯЗЬ ПРЕЗЕНТАЦИИ (leadSync.presentationLink + leadId из модалки) —
+ *    статусы, выбранные менеджером, только ВЫБРАННОМУ лиду + линк
+ *    to_presentation_sales + история «Презентация связана с заявкой».
  *
- * Что пишется каждому связанному лиду (graceful — нет поля → скип):
+ * Что пишется на финале (graceful — нет поля → скип):
  *  - продажа: op_lead_status=Продажа, стадия заявки=Продажа,
  *    op_lead_is_boost_sale=1 (заявка повлияла на продажу);
  *  - отказ: статус заявки=Отказ (или «Не ЦА» при notCaType),
  *    стадия=Отказ, op_lead_status=Отказ/«Не ца», op_lead_not_ca_type;
  *  - история обработки заявки — новая append-запись.
+ * Явные siteStatusCode/siteStageCode из dto применяются ПОВЕРХ дефолтов
+ * (выбор менеджера главнее вычисленного).
  *
  * Работает ПОСЛЕ основного батча отдельными волнами (чтение лидов →
  * запись): multiple-история требует текущих значений. Стоимость — 2 HTTP
- * и только на финалах.
+ * и только на финалах/связи презентации.
  *
  * НЕ @Injectable: new с per-domain bitrix (правило CLAUDE.md).
  */
@@ -54,9 +57,15 @@ export class EventReportLeadRequestSyncService {
 
     async run(ctx: EventReportContext): Promise<LeadRequestSyncResult> {
         const result: LeadRequestSyncResult = { synced: 0, warnings: [] };
-        if (!ctx.isSuccessSale && !ctx.isFail) return result;
+        const isFinal = ctx.isSuccessSale || ctx.isFail;
+        const presentationLeadId = this.presentationLeadId(ctx);
+        if (!isFinal && !presentationLeadId) return result;
 
-        const leadIds = this.collectLeadIds(ctx);
+        // Связь презентации без финала — пишем ТОЛЬКО выбранному лиду.
+        const leadIds =
+            !isFinal && presentationLeadId
+                ? [presentationLeadId]
+                : this.collectLeadIds(ctx);
         if (leadIds.length === 0) return result;
 
         // Волна 1: текущее состояние лидов (история — multiple, нужен append).
@@ -91,10 +100,23 @@ export class EventReportLeadRequestSyncService {
             await this.bitrix.api.callBatchWithConcurrency(1);
         }
 
+        const reason = ctx.isSuccessSale
+            ? 'продажа'
+            : ctx.isFail
+              ? 'отказ'
+              : 'связь презентации';
         this.logger.log(
-            `lead-request sync: ${ctx.isSuccessSale ? 'продажа' : 'отказ'} → лидов ${result.synced}/${leadIds.length}`,
+            `lead-request sync: ${reason} → лидов ${result.synced}/${leadIds.length}`,
         );
         return result;
+    }
+
+    /** Лид, выбранный менеджером в модалке связи презентации (или null). */
+    private presentationLeadId(ctx: EventReportContext): number | null {
+        const sync = ctx.dto.leadSync;
+        if (!sync?.presentationLink) return null;
+        const leadId = Number(sync.leadId);
+        return Number.isFinite(leadId) && leadId > 0 ? leadId : null;
     }
 
     /** Связанные лиды: сам лид контекста + лиды сделки-владельца. */
@@ -127,7 +149,8 @@ export class EventReportLeadRequestSyncService {
 
     private buildFields(ctx: EventReportContext, lead: BxRow): BxRow {
         const fields: BxRow = {};
-        const notCaType = ctx.dto.leadSync?.notCaTypeCode ?? null;
+        const sync = ctx.dto.leadSync;
+        const notCaType = sync?.notCaTypeCode ?? null;
 
         if (ctx.isSuccessSale) {
             this.setItem(
@@ -145,7 +168,7 @@ export class EventReportLeadRequestSyncService {
                 EnumLeadRequestFieldCode.op_lead_is_boost_sale,
                 true,
             );
-        } else {
+        } else if (ctx.isFail) {
             this.setItem(
                 fields,
                 EnumLeadRequestFieldCode.op_lead_site_status,
@@ -174,11 +197,65 @@ export class EventReportLeadRequestSyncService {
             }
         }
 
+        // Явный выбор менеджера (модалка связи презентации) — поверх
+        // вычисленных дефолтов: его решение главнее.
+        if (sync?.siteStatusCode) {
+            this.setItem(
+                fields,
+                EnumLeadRequestFieldCode.op_lead_site_status,
+                sync.siteStatusCode,
+            );
+        }
+        if (sync?.siteStageCode) {
+            this.setItem(
+                fields,
+                EnumLeadRequestFieldCode.op_lead_site_stage,
+                sync.siteStageCode,
+            );
+        }
+
+        if (this.presentationLeadId(ctx) === Number(lead.ID)) {
+            this.linkPresentationDeal(ctx, lead, fields);
+        }
+
         this.appendHistory(ctx, lead, fields);
         return fields;
     }
 
-    /** Запись в историю обработки заявки: финал + заметка менеджера. */
+    /**
+     * to_presentation_sales лида ∪= D_{сделка презентации}. Линкуем только
+     * УЖЕ СУЩЕСТВУЮЩУЮ сделку (отчёт по запланированной): id созданной этим
+     * же батчем сделки здесь ещё неизвестен — свяжет следующий отчёт.
+     */
+    private linkPresentationDeal(
+        ctx: EventReportContext,
+        lead: BxRow,
+        fields: BxRow,
+    ): void {
+        const presDealId = Number(ctx.currentPresDeal?.ID);
+        if (!Number.isFinite(presDealId) || presDealId <= 0) {
+            this.logger.debug(
+                'связь презентации: сделка презентации создаётся этим же отчётом — to_presentation_sales допишется при следующем',
+            );
+            return;
+        }
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            PBX_SALES_EVENT_FIELD_CODES.to_presentation_sales,
+        );
+        if (!field) return;
+        const bitrixId = this.portal.getFieldBitrixId(field);
+        const raw = lead[bitrixId];
+        const current = (Array.isArray(raw) ? raw : [raw])
+            .map(value => (value == null ? '' : String(value).trim()))
+            .filter(Boolean);
+        const link = `D_${presDealId}`;
+        if (!current.includes(link)) {
+            fields[bitrixId] = [...current, link];
+        }
+    }
+
+    /** Запись в историю обработки заявки: событие + заметка менеджера. */
     private appendHistory(
         ctx: EventReportContext,
         lead: BxRow,
@@ -192,7 +269,11 @@ export class EventReportLeadRequestSyncService {
         const bitrixId = this.portal.getFieldBitrixId(field);
         const tz = this.portal.getTimezone();
 
-        const base = ctx.isSuccessSale ? 'Продажа' : 'Отказ';
+        const base = ctx.isSuccessSale
+            ? 'Продажа'
+            : ctx.isFail
+              ? 'Отказ'
+              : 'Презентация связана с заявкой';
         const notCa = ctx.dto.leadSync?.notCaTypeCode ? ' (не ЦА)' : '';
         let history = appendLeadRequestHistory(
             lead[bitrixId],

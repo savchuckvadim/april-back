@@ -3160,7 +3160,8 @@
                 "sales",
                 "kpi-sales",
                 "event-sales",
-                "konstructor"
+                "konstructor",
+                "skap"
               ],
               "type": "string"
             }
@@ -5279,6 +5280,44 @@
       "LeadRequestSyncDto": {
         "type": "object",
         "properties": {
+          "leadId": {
+            "type": "number",
+            "description": "Лид (заявка), с которым менеджер связал презентацию. Обязателен при presentationLink=true.",
+            "example": 42
+          },
+          "presentationLink": {
+            "type": "boolean",
+            "description": "Презентация этого отчёта связана с заявкой leadId: бэк добавит L_лид в KPI-записи и задачи, залинкует сделку презентации в лид и допишет историю заявки.",
+            "example": true
+          },
+          "siteStatusCode": {
+            "type": "string",
+            "description": "Статус заявки, выбранный менеджером (обязателен в модалке связи презентации). Применяется выбранному лиду.",
+            "enum": [
+              "op_lead_site_status1",
+              "op_lead_site_status2",
+              "op_lead_site_status3",
+              "op_lead_site_status4",
+              "op_lead_site_status5"
+            ],
+            "example": "op_lead_site_status4"
+          },
+          "siteStageCode": {
+            "type": "string",
+            "description": "Стадия заявки, выбранная менеджером (обязательна в модалке связи презентации). Применяется выбранному лиду.",
+            "enum": [
+              "op_lead_site_stage1",
+              "op_lead_site_stage2",
+              "op_lead_site_stage3",
+              "op_lead_site_stage4",
+              "op_lead_site_stage5",
+              "op_lead_site_stage6",
+              "op_lead_site_stage7",
+              "op_lead_site_stage8",
+              "op_lead_site_stage9"
+            ],
+            "example": "op_lead_site_stage4"
+          },
           "notCaTypeCode": {
             "type": "string",
             "description": "Тип «не ЦА» — обязателен, когда менеджер квалифицирует отказ как «не ЦА». Пустой при обычном отказе или продаже.",

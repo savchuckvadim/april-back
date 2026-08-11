@@ -65,4 +65,12 @@ export class SkapRunRepository {
             take,
         });
     }
+
+    /** Последний прогон домена (индикатор обновления на фронте). */
+    async findLatestByDomain(domain: string): Promise<SkapImportRun | null> {
+        return this.prisma.skapImportRun.findFirst({
+            where: { domain },
+            orderBy: { startedAt: 'desc' },
+        });
+    }
 }
