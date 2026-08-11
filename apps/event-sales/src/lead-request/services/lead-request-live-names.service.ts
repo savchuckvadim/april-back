@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
 import { BitrixService } from '@/modules/bitrix';
+import { IBXField } from '@lib/bitrix/domain/crm/fields/bx-field.interface';
 import { getErrorDetails } from '@/shared';
-
-type BxRow = Record<string, unknown>;
 
 /** UF-имя поля → (bitrixId варианта → живое название на портале). */
 export type LeadLiveItemNames = Record<string, Record<string, string>>;
@@ -62,20 +61,15 @@ export class LeadRequestLiveNamesService {
     ): Promise<LeadLiveItemNames> {
         const wanted = new Set(fieldNames);
 
-        // Волна 1: id всех UF-полей лида (лёгкий select).
+        // Волна 1: id всех UF-полей лида (лёгкий select). Ответ типизирован
+        // библиотекой (IBXField[]) — ID и FIELD_NAME читаем без кастов.
         const listResponse = await bitrix.lead.getFieldsList({}, [
             'ID',
             'FIELD_NAME',
         ]);
-        const rows = (listResponse?.result ?? []) as BxRow[];
-        const ids: { id: string; fieldName: string }[] = [];
-        for (const row of rows) {
-            const id = this.scalarText(row.ID);
-            const fieldName = this.scalarText(row.FIELD_NAME);
-            if (id && fieldName && wanted.has(fieldName)) {
-                ids.push({ id, fieldName });
-            }
-        }
+        const ids = (listResponse?.result ?? [])
+            .filter(row => wanted.has(row.FIELD_NAME))
+            .map(row => ({ id: row.ID, fieldName: row.FIELD_NAME }));
         if (!ids.length) return {};
 
         // Волна 2: определения нужных полей одним batch'ем (LIST с названиями).
@@ -91,30 +85,20 @@ export class LeadRequestLiveNamesService {
             )) {
                 const match = /^live_uf_(\d+)$/.exec(cmd);
                 if (!match || !value || typeof value !== 'object') continue;
-                const field = value as BxRow;
-                const fieldName = this.scalarText(field.FIELD_NAME);
-                if (!fieldName || !wanted.has(fieldName)) continue;
-                const items = Array.isArray(field.LIST)
-                    ? (field.LIST as BxRow[])
-                    : [];
-                const byId: Record<string, string> = {};
-                for (const item of items) {
-                    const itemId = this.scalarText(item.ID);
-                    const itemValue = this.scalarText(item.VALUE);
-                    if (itemId && itemValue) byId[itemId] = itemValue;
+                // Единственный каст — на границе batch-ответа (он приходит
+                // unknown по природе batch API); дальше форма IBXField.
+                const field = value as IBXField;
+                if (!field.FIELD_NAME || !wanted.has(field.FIELD_NAME)) {
+                    continue;
                 }
-                if (Object.keys(byId).length) names[fieldName] = byId;
+                const byId: Record<string, string> = {};
+                for (const item of field.LIST ?? []) {
+                    const itemValue = item.VALUE?.trim();
+                    if (item.ID && itemValue) byId[item.ID] = itemValue;
+                }
+                if (Object.keys(byId).length) names[field.FIELD_NAME] = byId;
             }
         }
         return names;
-    }
-
-    /** Строка из скалярного значения Битрикса; объекты/массивы — null. */
-    private scalarText(raw: unknown): string | null {
-        if (typeof raw === 'string') return raw.trim() || null;
-        if (typeof raw === 'number' || typeof raw === 'bigint') {
-            return String(raw);
-        }
-        return null;
     }
 }
