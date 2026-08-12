@@ -130,6 +130,7 @@ export class InstallListUseCase {
                     bigintConvertToNumber(row.id),
                     listKey,
                     clearFields,
+                    domain,
                 );
             fieldsResult = toFieldsInstallResultDto(
                 listKey,

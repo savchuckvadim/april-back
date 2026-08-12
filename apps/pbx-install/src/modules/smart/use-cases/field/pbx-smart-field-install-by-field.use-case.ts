@@ -50,6 +50,7 @@ export class PbxSmartFieldInstallByFieldUseCase {
         const portalFieldEntityInstallResult = await this.portalSync.syncWithDb(
             ctx.owner,
             clearFields,
+            domain,
         );
 
         // Поля изменились — сброс online-кэша portal_${domain} (TTL 10 ч).

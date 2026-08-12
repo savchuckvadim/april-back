@@ -123,3 +123,24 @@ export function formatSkapPeriodCode(period: Date): string {
     const month = String(period.getMonth() + 1).padStart(2, '0');
     return `${period.getFullYear()}-${month}`;
 }
+
+/**
+ * Fallback отчётного месяца из ДАТЫ ВЫГРУЗКИ в имени файла
+ * («2024.09.03.Online.csv»): АРМ выгружает статистику в первые дни
+ * СЛЕДУЮЩЕГО месяца → отчётный месяц = месяц выгрузки минус 1
+ * (проверено на всех 12 месяцах примера, включая декабрь→январь).
+ *
+ * Нужен, когда пользователь загрузил файлы БЕЗ папок месяцев (веб-загрузка
+ * Битрикса расплющивает структуру). Применяется только если месяц не
+ * извлёкся из пути/имени явно — вызывающий код добавляет ворнинг.
+ */
+export function parseSkapPeriodFromUnloadDate(name: string): Date | null {
+    const match = name.match(/(\d{4})\.(\d{2})\.(\d{2})/);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    // месяц выгрузки минус 1 (Date сам переносит январь → декабрь-1 года)
+    return new Date(year, month - 2, 1);
+}

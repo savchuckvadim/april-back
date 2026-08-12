@@ -17,7 +17,7 @@ export interface IDealWithRows {
     productCoefficient: number;
     smartItems: ISmartActItemsByDealResult;
 }
-const assignedById = '221';
+const assignedById = ''; //221
 const TEST_DEALS_COUNT_LIMIT = 10;
 const WITH_DEALS_COUNTLIMIT = false;
 // const assignedById = undefined;

@@ -101,6 +101,7 @@ export class PbxListFieldInstallByParseUseCase {
             bigintConvertToNumber(ctx.listDbId),
             listInfo,
             clearFields,
+            domain,
         );
 
         return toFieldsInstallResultDto(

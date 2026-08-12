@@ -93,6 +93,11 @@ export class SkapRunNotifierService {
             `Элементов: создано ${stats.itemsCreated}, обновлено ${stats.itemsUpdated}`,
             `Сессий сохранено: ${stats.sessionsSaved}, подписок: ${stats.subscriptionsSaved}`,
         ];
+        if (stats.contactsCreated) {
+            lines.push(
+                `👤 Создано контактов из СКАП (задачи ответственным): ${stats.contactsCreated}`,
+            );
+        }
         if (stats.itemsSkippedNoCompany) {
             lines.push(
                 `⚠️ Без компании (рег-лист не найден): ${stats.itemsSkippedNoCompany}`,

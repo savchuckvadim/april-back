@@ -3,6 +3,7 @@ import { BitrixService, IBXCompany, IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { CallEventContext } from '../context/call-event.context';
 import { ServiceCompanyFieldCode } from '../../types/service-company-field.enum';
+import { collectCallingResultWorklist } from '../../types/calling-event.enum';
 import { formatCrmDateTime } from '../smart/utils/date.util';
 
 type FieldValue = string | number | string[];
@@ -113,7 +114,16 @@ export class CompanyDealUpdateService {
                 ) ?? 0,
             ) || 0;
 
-        if (ctx.dto.report.results.presentation) {
+        // спонтанные типы учитываются наравне с легаси-флагами results
+        // (без гарда по текущей задаче — как в legacy updateFieldCompany)
+        const effectiveResults = new Set<string>(
+            (ctx.dto.report.spontaneous ?? []).map(item => item.code),
+        );
+        if (ctx.dto.report.results.presentation)
+            effectiveResults.add('presentation');
+        if (ctx.dto.report.results.edu) effectiveResults.add('edu');
+
+        if (effectiveResults.has('presentation')) {
             presCount += 1;
             this.set(out, ServiceCompanyFieldCode.ork_pres_count, presCount);
             this.set(
@@ -141,7 +151,7 @@ export class CompanyDealUpdateService {
             );
         }
 
-        if (ctx.dto.report.results.edu) {
+        if (effectiveResults.has('edu')) {
             eduCount += 1;
             this.set(out, ServiceCompanyFieldCode.ork_edu_count, eduCount);
             this.set(
@@ -225,14 +235,14 @@ export class CompanyDealUpdateService {
     /** Количество исходящих коммуникаций события (план + результаты). */
     private countEventCommunications(ctx: CallEventContext): number {
         const expired = ctx.planIsExpired || ctx.isNoResult;
-        let count = ctx.planIsActive && !expired ? 1 : 0;
-        const r = ctx.dto.report.results;
-        const currentType = ctx.dto.currentTask?.eventType;
-        if (r.edu && currentType !== 'edu') count += 1;
-        if (r.edu_first && currentType !== 'edu_first') count += 1;
-        if (r.presentation && currentType !== 'presentation') count += 1;
-        if (r.signal && currentType !== 'signal') count += 1;
-        return count;
+        const planCount = ctx.planIsActive && !expired ? 1 : 0;
+        // тот же ворклист, что пишет спонтанные пары в ОРК-историю
+        const resultCount = collectCallingResultWorklist(
+            ctx.dto.report.results,
+            ctx.dto.report.spontaneous,
+            ctx.dto.currentTask?.eventType,
+        ).length;
+        return planCount + resultCount;
     }
 
     private set(

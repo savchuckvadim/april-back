@@ -16,15 +16,10 @@ import {
     IOrkHistoryElementParams,
 } from '../history/ork-history-element.builder';
 import { formatCrmDateTime } from '../smart/utils/date.util';
-import { normalizeCallingEventType } from '../../types/calling-event.enum';
-
-/** Соответствие имени результата → код типа события ОРК-история. */
-const RESULT_TYPE_MAP: Readonly<Record<string, string>> = Object.freeze({
-    Обучение: 'edu',
-    Презентация: 'presentation',
-    'Обучение первичное': 'edu_first',
-    'Сервисный сигнал': 'signal',
-});
+import {
+    collectCallingResultWorklist,
+    normalizeCallingEventType,
+} from '../../types/calling-event.enum';
 
 /**
  * Поток обработки звонка (аналог legacy `EventCalling`): закрытие/перенос
@@ -59,24 +54,26 @@ export class CallingFlowService {
             return;
         }
         const expired = ctx.planIsExpired || ctx.isNoResult;
-        this.handleCurrentTask(ctx, expired);
-        this.recordCompleted(ctx, expired);
+        this.handleCurrentTask(ctx);
+        this.recordCompleted(ctx);
         this.planned(ctx, expired);
         this.recordResultPlanned(ctx);
     }
 
     // ---------- task ops ----------
 
-    private handleCurrentTask(ctx: CallEventContext, expired: boolean): void {
+    private handleCurrentTask(ctx: CallEventContext): void {
         const task = ctx.dto.currentTask;
         if (!task) return;
 
         this.bitrix.batch.task.commentAdd('add_comment_task', task.id, {
-            AUTHOR_ID: ctx.dto.plan.responsibility.ID,
+            AUTHOR_ID: ctx.currentUserId,
             POST_MESSAGE: ctx.dto.report.description,
         });
 
-        if (expired) {
+        // plan.isExpired — НЕ признак нерезультативности: фронт ставит его и при
+        // успешном отчёте, если следующий план дальше 4 месяцев
+        if (ctx.isNoResult) {
             if (ctx.planIsActive) {
                 this.bitrix.batch.task.update('update_task', task.id, {
                     DEADLINE: ctx.dto.plan.deadline,
@@ -85,6 +82,12 @@ export class CallingFlowService {
                 this.bitrix.batch.task.complete('complete_task', task.id);
             }
             this.recordNoresult(ctx);
+        } else if (ctx.planIsExpired && ctx.planIsActive) {
+            // успешный отчёт + далёкий план: planned() задачу не создаст,
+            // поэтому переносим дедлайн текущей вместо завершения
+            this.bitrix.batch.task.update('update_task', task.id, {
+                DEADLINE: ctx.dto.plan.deadline,
+            });
         } else {
             this.bitrix.batch.task.complete('complete_task', task.id);
         }
@@ -119,9 +122,11 @@ export class CallingFlowService {
         });
     }
 
-    private recordCompleted(ctx: CallEventContext, expired: boolean): void {
+    private recordCompleted(ctx: CallEventContext): void {
         const task = ctx.dto.currentTask;
-        if (!task || expired) return;
+        // при noresult запись делает recordNoresult; plan.isExpired запись
+        // «Состоялся» не блокирует (успешный отчёт с далёким планом)
+        if (!task || ctx.isNoResult) return;
         this.addElement({
             name: `${task.type} Состоялся`,
             eventTypeCode: this.eventTypeCode(task.eventType),
@@ -187,31 +192,38 @@ export class CallingFlowService {
     }
 
     private recordResultPlanned(ctx: CallEventContext): void {
-        const results = ctx.dto.report.results;
-        const currentType = ctx.dto.currentTask?.eventType;
-        const names: string[] = [];
-        if (results.edu && currentType !== 'edu') names.push('Обучение');
-        if (results.edu_first && currentType !== 'edu_first')
-            names.push('Обучение первичное');
-        if (results.presentation && currentType !== 'presentation')
-            names.push('Презентация');
-        if (results.signal && currentType !== 'signal')
-            names.push('Сервисный сигнал');
+        const worklist = collectCallingResultWorklist(
+            ctx.dto.report.results,
+            ctx.dto.report.spontaneous,
+            ctx.dto.currentTask?.eventType,
+        );
 
-        for (const name of names) {
-            const typeCode = RESULT_TYPE_MAP[name];
+        for (const { code, name, legacy } of worklist) {
+            // легаси-флаги как раньше (звонок/исходящий), spontaneous — из
+            // report.communication с фолбэком на звонок/исходящий
+            const communicationCode = legacy
+                ? EnumOrkEventCommunication.ec_ork_call
+                : this.communicationCode(
+                      ctx.dto.report.communication?.type?.code,
+                  );
+            const initiativeCode = legacy
+                ? EnumOrkEventInitiative.ei_ork_outgoing
+                : this.initiativeCode(
+                      ctx.dto.report.communication?.initiative?.code,
+                  );
             // index 0 — Запланирован, index 1 — Состоялся (как в legacy)
             for (let index = 0; index < 2; index++) {
                 const done = index === 1;
                 this.addElement({
                     name: `${name}\n ${done ? 'Состоялся' : 'Запланирован'}`,
-                    eventTypeCode: typeCode ? `et_ork_${typeCode}` : undefined,
+                    eventTypeCode: this.eventTypeCode(code),
                     eventActionCode: done
                         ? EnumOrkEventAction.ea_ork_done
                         : EnumOrkEventAction.ea_ork_plan,
-                    communicationCode: EnumOrkEventCommunication.ec_ork_call,
-                    initiativeCode: EnumOrkEventInitiative.ei_ork_outgoing,
-                    responsibleId: ctx.currentUserId,
+                    communicationCode,
+                    initiativeCode,
+                    responsibleId:
+                        ctx.dto.plan?.responsibility?.ID ?? ctx.currentUserId,
                     date: this.nextDate(),
                     planDate: ctx.dto.plan?.deadline ?? '',
                     comment: ctx.dto.report.description,

@@ -1,8 +1,19 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import { IBXCompany } from '@/modules/bitrix';
-import { SKAP_COMPANY_REG_FIELD } from '@lib/portal-lib/pbx/pbx-skap-smart';
-import { normalizeSkapLogin } from '@lib/portal-lib/pbx/pbx-skap-smart';
+import {
+    normalizeSkapLogin,
+    SKAP_COMPANY_REG_FIELD,
+    SKAP_CONTACT_LOGINS_FIELD,
+} from '@lib/portal-lib/pbx/pbx-skap-smart';
+
+/** Контакты компании: ключ (email ИЛИ СКАП-логин) → контакт. */
+export interface SkapCompanyContacts {
+    /** email/СКАП-логин (lowercase) → contactId. */
+    keyToContact: Map<string, number>;
+    /** contactId → текущие значения UF_CRM_SKAP_LOGINS (для дозаписи). */
+    loginsByContact: Map<number, string[]>;
+}
 
 /** Найденная компания по рег-листу. */
 export interface SkapMatchedCompany {
@@ -65,13 +76,15 @@ export class SkapCompanyMatchService {
     }
 
     /**
-     * Контакты компаний с email: companyId → (email lowercase → contactId).
+     * Контакты компаний: companyId → ключи поиска. Ключ — И обычный EMAIL,
+     * И значения спец-поля {@link SKAP_CONTACT_LOGINS_FIELD}: ключ
+     * переживает мердж контактов и смену корпоративного email.
      * Fail-open: ошибка не блокирует импорт (контакт — best-effort).
      */
-    async loadContactEmails(
+    async loadCompanyContacts(
         companyIds: number[],
-    ): Promise<Map<number, Map<string, number>>> {
-        const map = new Map<number, Map<string, number>>();
+    ): Promise<Map<number, SkapCompanyContacts>> {
+        const map = new Map<number, SkapCompanyContacts>();
         const unique = [...new Set(companyIds)];
         for (let i = 0; i < unique.length; i += FILTER_CHUNK) {
             const chunk = unique.slice(i, i + FILTER_CHUNK);
@@ -81,27 +94,38 @@ export class SkapCompanyMatchService {
                         string,
                         unknown
                     >,
-                    ['ID', 'COMPANY_ID', 'EMAIL'],
+                    ['ID', 'COMPANY_ID', 'EMAIL', SKAP_CONTACT_LOGINS_FIELD],
                 );
                 for (const contact of contacts) {
                     const raw = contact as unknown as {
                         ID?: string | number;
                         COMPANY_ID?: string | number;
                         EMAIL?: { VALUE?: string }[];
+                        [key: string]: unknown;
                     };
                     const companyId = Number(raw.COMPANY_ID);
                     const contactId = Number(raw.ID);
                     if (!companyId || !contactId) continue;
+
                     const emails = (raw.EMAIL ?? [])
                         .map(email => normalizeSkapLogin(email.VALUE ?? ''))
                         .filter(Boolean);
-                    if (!emails.length) continue;
-                    const byEmail =
-                        map.get(companyId) ?? new Map<string, number>();
-                    for (const email of emails) {
-                        if (!byEmail.has(email)) byEmail.set(email, contactId);
+                    const skapLogins = this.readSkapLogins(
+                        raw[SKAP_CONTACT_LOGINS_FIELD],
+                    );
+
+                    const entry = map.get(companyId) ?? {
+                        keyToContact: new Map<string, number>(),
+                        loginsByContact: new Map<number, string[]>(),
+                    };
+                    // СКАП-ключи приоритетнее email (явная привязка).
+                    for (const key of [...skapLogins, ...emails]) {
+                        if (!entry.keyToContact.has(key)) {
+                            entry.keyToContact.set(key, contactId);
+                        }
                     }
-                    map.set(companyId, byEmail);
+                    entry.loginsByContact.set(contactId, skapLogins);
+                    map.set(companyId, entry);
                 }
             } catch (error) {
                 this.logger.warn(
@@ -110,5 +134,19 @@ export class SkapCompanyMatchService {
             }
         }
         return map;
+    }
+
+    /** Значение множественного UF (массив/строка/пусто) → lowercase-ключи. */
+    private readSkapLogins(value: unknown): string[] {
+        const rawList = Array.isArray(value)
+            ? value
+            : typeof value === 'string' && value
+              ? [value]
+              : [];
+        return rawList
+            .map(item =>
+                typeof item === 'string' ? normalizeSkapLogin(item) : '',
+            )
+            .filter(Boolean);
     }
 }

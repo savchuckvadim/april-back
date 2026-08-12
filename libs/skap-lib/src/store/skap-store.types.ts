@@ -63,6 +63,8 @@ export interface SkapFileStats {
     itemsError: number;
     sessionsSaved: number;
     subscriptionsSaved: number;
+    /** Автосозданные контакты (ключ СКАП-логина + задача ответственному). */
+    contactsCreated: number;
     warnings: string[];
 }
 
@@ -83,6 +85,7 @@ export function emptySkapFileStats(): SkapFileStats {
         itemsError: 0,
         sessionsSaved: 0,
         subscriptionsSaved: 0,
+        contactsCreated: 0,
         warnings: [],
     };
 }

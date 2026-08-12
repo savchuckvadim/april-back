@@ -145,14 +145,17 @@ export enum EnumOrkFieldCode {
     manager_comment = 'service_ork_history_manager_comment',
     ork_result_status = 'service_ork_history_ork_result_status',
     ork_noresult_reason = 'service_ork_history_ork_noresult_reason',
-    ork_work_status = 'service_ork_work_status',
-    ork_forecast = 'service_ork_forecast',
-    ork_fail_reason = 'service_ork_fail_reason',
-    author = 'service_author',
-    su = 'service_su',
+    // коды полей списка ВСЕ с префиксом service_ork_history_: legacy-python
+    // резолвит их сплитом по `{group}_{type}_` и работает в проде — значит на
+    // порталах префикс есть у каждого поля (короткие коды тут не резолвились)
+    ork_work_status = 'service_ork_history_ork_work_status',
+    ork_forecast = 'service_ork_history_ork_forecast',
+    ork_fail_reason = 'service_ork_history_ork_fail_reason',
+    author = 'service_ork_history_author',
+    su = 'service_ork_history_su',
     crm = 'service_ork_history_crm',
-    ork_crm_contact = 'service_ork_crm_contact',
-    ork_evemt_tag = 'service_ork_evemt_tag',
+    ork_crm_contact = 'service_ork_history_ork_crm_contact',
+    ork_evemt_tag = 'service_ork_history_ork_evemt_tag',
 }
 
 export enum EnumOrkEventType {

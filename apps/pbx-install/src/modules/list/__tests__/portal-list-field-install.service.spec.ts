@@ -58,11 +58,15 @@ describe('PortalListFieldInstallService', () => {
         upsertFields = jest.fn().mockResolvedValue([]);
         findByEntityId = jest.fn().mockResolvedValue([]);
         deleteFieldsByIds = jest.fn().mockResolvedValue(undefined);
-        service = new PortalListFieldInstallService({
-            upsertFields,
-            findByEntityId,
-            deleteFieldsByIds,
-        } as unknown as PbxFieldService);
+        service = new PortalListFieldInstallService(
+            {
+                upsertFields,
+                findByEntityId,
+                deleteFieldsByIds,
+            } as unknown as PbxFieldService,
+            // Сброс слепка портала после установки — здесь не проверяется.
+            { invalidate: jest.fn() } as never,
+        );
     });
 
     it('маппит поле в PbxFieldEntity с адресацией списка', async () => {

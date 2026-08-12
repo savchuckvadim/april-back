@@ -194,6 +194,18 @@ class CallingReportDto {
     results: CallingReportResultsDto;
 
     @ApiPropertyOptional({
+        description:
+            'Спонтанные события любого доступного типа: [{code, name}]. ' +
+            'Дополняет (и дублирует) 4 легаси-флага results.',
+        type: [CallingNameCodeDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => CallingNameCodeDto)
+    spontaneous?: CallingNameCodeDto[];
+
+    @ApiPropertyOptional({
         description: 'Контакт, по которому отчёт',
         type: CallingIdDto,
     })

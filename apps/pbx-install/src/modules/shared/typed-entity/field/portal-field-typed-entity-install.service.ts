@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IUserFieldConfig } from '@/modules/bitrix';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import {
     getPrismaEntityTypeByType,
     PbxEntityType,
@@ -33,11 +34,24 @@ export interface TypedEntityFieldOwner {
  */
 @Injectable()
 export class PortalFieldTypedEntityInstallService {
-    constructor(private readonly pbxFieldService: PbxFieldService) {}
+    private readonly logger = new Logger(
+        PortalFieldTypedEntityInstallService.name,
+    );
 
+    constructor(
+        private readonly pbxFieldService: PbxFieldService,
+        private readonly onlineCache: PortalOnlineCacheService,
+    ) {}
+
+    /**
+     * `domain` НУЖЕН: без сброса слепка `portal_{domain}` (TTL 10 ч) боевые
+     * приложения не увидят установленные поля — они молча остаются
+     * «неустановленными». Не передан — предупреждение, установка не падает.
+     */
     async syncWithDb(
         owner: TypedEntityFieldOwner,
         fields: IPbxTypedFieldInstallData[],
+        domain?: string,
     ): Promise<PbxFieldEntity[]> {
         const prismaEntityType = getPrismaEntityTypeByType(owner.entityType);
         const entities: PbxFieldEntity[] = fields.map(f =>
@@ -48,7 +62,15 @@ export class PortalFieldTypedEntityInstallService {
                 owner.parentType,
             ),
         );
-        return this.pbxFieldService.upsertFields(entities);
+        const saved = await this.pbxFieldService.upsertFields(entities);
+        if (domain) {
+            await this.onlineCache.invalidate(domain);
+        } else {
+            this.logger.warn(
+                `Поля ${owner.parentType} синхронизированы без домена — кэш портала НЕ сброшен`,
+            );
+        }
+        return saved;
     }
 
     private buildEntity(

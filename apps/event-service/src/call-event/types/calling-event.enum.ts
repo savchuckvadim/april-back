@@ -63,3 +63,61 @@ export const CALLING_EVENT_TYPE_ALIASES: Readonly<Record<string, string>> =
 export function normalizeCallingEventType(code: string): string {
     return CALLING_EVENT_TYPE_ALIASES[code] ?? code;
 }
+
+/** Флаги результатов отчёта (легаси-четвёрка). */
+export interface ICallingResultFlags {
+    edu: boolean;
+    edu_first: boolean;
+    presentation: boolean;
+    signal: boolean;
+}
+
+/** Элемент ворклиста спонтанных записей («Запланирован» + «Состоялся»). */
+export interface ICallingResultWorkItem {
+    code: string;
+    name: string;
+    /** true — из легаси-флагов results, false — из report.spontaneous */
+    legacy: boolean;
+}
+
+const LEGACY_RESULT_FLAGS: ReadonlyArray<{
+    flag: keyof ICallingResultFlags;
+    name: string;
+}> = [
+    { flag: 'edu', name: 'Обучение' },
+    { flag: 'edu_first', name: 'Обучение первичное' },
+    { flag: 'presentation', name: 'Презентация' },
+    { flag: 'signal', name: 'Сервисный сигнал' },
+];
+
+/**
+ * Собирает ворклист спонтанных событий: 4 легаси-флага results + элементы
+ * report.spontaneous (любой доступный тип), с дедупом по коду и пропуском
+ * типа текущей задачи. Тип текущей задачи сравнивается и по исходному, и по
+ * ремапнутому коду — legacy record_noresult мутирует eventType на месте.
+ */
+export function collectCallingResultWorklist(
+    results: ICallingResultFlags,
+    spontaneous: Array<{ code: string; name: string }> | undefined,
+    currentTaskEventType: string | undefined,
+): ICallingResultWorkItem[] {
+    const isCurrent = (code: string): boolean =>
+        currentTaskEventType !== undefined &&
+        [code, normalizeCallingEventType(code)].includes(currentTaskEventType);
+
+    const worklist = new Map<string, ICallingResultWorkItem>();
+    for (const { flag, name } of LEGACY_RESULT_FLAGS) {
+        if (results[flag] && !isCurrent(flag)) {
+            worklist.set(flag, { code: flag, name, legacy: true });
+        }
+    }
+    for (const item of spontaneous ?? []) {
+        if (worklist.has(item.code) || isCurrent(item.code)) continue;
+        worklist.set(item.code, {
+            code: item.code,
+            name: item.name,
+            legacy: false,
+        });
+    }
+    return [...worklist.values()];
+}

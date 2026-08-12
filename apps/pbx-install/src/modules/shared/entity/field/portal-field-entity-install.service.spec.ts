@@ -42,9 +42,11 @@ describe('PortalEntityFieldInstallService', () => {
             .mockImplementation((entities: PbxFieldEntity[]) =>
                 Promise.resolve(entities),
             );
-        service = new PortalEntityFieldInstallService({
-            upsertFields,
-        } as unknown as PbxFieldService);
+        service = new PortalEntityFieldInstallService(
+            { upsertFields } as unknown as PbxFieldService,
+            // Сброс слепка портала после установки — здесь не проверяется.
+            { invalidate: jest.fn() } as never,
+        );
     });
 
     it('берёт code элемента из шаблонного CODE при совпадении по VALUE, а не из bx XML_ID-хэша', async () => {

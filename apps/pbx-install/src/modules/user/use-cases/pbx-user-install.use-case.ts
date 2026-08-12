@@ -49,6 +49,7 @@ export class PbxUserInstallUseCase {
                 PbxEntityType.USER,
                 userId,
                 clearFields,
+                domain,
             );
 
         return { bxResult, portalFieldEntityInstallResult };

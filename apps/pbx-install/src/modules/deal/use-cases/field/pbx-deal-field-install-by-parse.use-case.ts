@@ -107,6 +107,7 @@ export class PbxDealFieldInstallByParseUseCase {
                 PbxEntityType.DEAL,
                 dealId,
                 clearFields,
+                domain,
             );
         return {
             bxResult,

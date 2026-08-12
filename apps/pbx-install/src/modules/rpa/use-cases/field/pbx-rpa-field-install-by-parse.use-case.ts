@@ -74,6 +74,7 @@ export class PbxRpaFieldInstallByParseUseCase {
         const portalFieldEntityInstallResult = await this.portalSync.syncWithDb(
             ctx.owner,
             clearFields,
+            domain,
         );
 
         return { bxResult, portalFieldEntityInstallResult };

@@ -3,6 +3,7 @@ import { BitrixService } from '@lib/bitrix';
 import { IBXDeal } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
+import { SKAP_DEAL_COMPLECT_FIELD } from '@lib/portal-lib/pbx/pbx-skap-smart';
 import { getContractPeriodFieldBitrixId } from '../../../smart-act/services/ork-deals/utils/get-contract-period-field.util';
 
 /** Кандидат-сделка воронки Сервис для привязки элемента СКАП. */
@@ -11,6 +12,8 @@ export interface SkapDealCandidate {
     closed: boolean;
     contractStart: Date | null;
     contractEnd: Date | null;
+    /** ID комплектов АРМ сделки (UF_CRM_RPA_ARM_COMPLECT_ID). */
+    complectIds: string[];
 }
 
 export interface SkapDealPick {
@@ -77,6 +80,7 @@ export class SkapDealMatchService {
                     'CATEGORY_ID',
                     startField,
                     endField,
+                    SKAP_DEAL_COMPLECT_FIELD,
                 ],
             );
             for (const deal of deals) {
@@ -89,6 +93,9 @@ export class SkapDealMatchService {
                     closed: raw.CLOSED === 'Y',
                     contractStart: this.parseDate(raw[startField]),
                     contractEnd: this.parseDate(raw[endField]),
+                    complectIds: this.parseComplectIds(
+                        raw[SKAP_DEAL_COMPLECT_FIELD],
+                    ),
                 });
                 map.set(companyId, list);
             }
@@ -97,18 +104,30 @@ export class SkapDealMatchService {
     }
 
     /**
-     * Выбор сделки для отчётного месяца:
-     * 1) месяц ∈ [contract_start, contract_end] → несколько → свежая по ID
-     *    + ворнинг multiple_matching_deals;
-     * 2) по датам никто не подошёл → свежая ОТКРЫТАЯ + ворнинг
-     *    deal_period_mismatch;
-     * 3) сделок нет → null (только компания, без ворнинга).
+     * Выбор сделки для отчётного месяца (приоритеты сверху вниз):
+     * 1) месяц ∈ [contract_start, contract_end] И комплект АРМ сделки
+     *    совпадает с «ID Комплекта» строки СКАП — идеальный матч
+     *    (один комплект живёт в разных сделках на разные периоды —
+     *    период отделяет, комплект решает спорные);
+     * 2) месяц ∈ периода договора (без совпадения комплекта);
+     * 3) период не покрыт, но комплект совпал → ворнинг;
+     * 4) свежая ОТКРЫТАЯ + ворнинг deal_period_mismatch (сделки бывают
+     *    дублями, без дат, вовремя не закрытыми);
+     * 5) все закрыты → последняя + ворнинг;
+     * 6) сделок нет → null (фундамент — компания, запись не блокируется).
      */
     pickDeal(
         candidates: SkapDealCandidate[] | undefined,
         period: Date,
+        complectArmId?: string,
     ): SkapDealPick {
         if (!candidates?.length) return { dealId: null, warning: null };
+
+        const complect = complectArmId?.trim() ?? '';
+        const hasComplect = (deal: SkapDealCandidate): boolean =>
+            complect !== '' && deal.complectIds.includes(complect);
+        const latest = (deals: SkapDealCandidate[]): SkapDealCandidate =>
+            deals.reduce((a, b) => (a.id > b.id ? a : b));
 
         const monthEnd = new Date(
             period.getFullYear(),
@@ -122,8 +141,23 @@ export class SkapDealMatchService {
                 deal.contractStart <= monthEnd &&
                 deal.contractEnd >= period,
         );
+
+        // 1. Период + комплект — идеальный матч.
+        const byPeriodAndComplect = byPeriod.filter(hasComplect);
+        if (byPeriodAndComplect.length) {
+            const picked = latest(byPeriodAndComplect);
+            return {
+                dealId: picked.id,
+                warning:
+                    byPeriodAndComplect.length > 1
+                        ? `multiple_matching_deals: месяц и комплект ${complect} совпадают у ${byPeriodAndComplect.length} сделок, взята #${picked.id}`
+                        : null,
+            };
+        }
+
+        // 2. Только период.
         if (byPeriod.length) {
-            const picked = byPeriod.reduce((a, b) => (a.id > b.id ? a : b));
+            const picked = latest(byPeriod);
             return {
                 dealId: picked.id,
                 warning:
@@ -133,9 +167,25 @@ export class SkapDealMatchService {
             };
         }
 
+        // 3. Период не покрыт — спорная ситуация, решает комплект АРМ.
+        const byComplect = candidates.filter(hasComplect);
+        if (byComplect.length) {
+            const openByComplect = byComplect.filter(deal => !deal.closed);
+            const picked = latest(
+                openByComplect.length ? openByComplect : byComplect,
+            );
+            return {
+                dealId: picked.id,
+                warning:
+                    `deal_period_mismatch: период договора не покрывает месяц, ` +
+                    `взята сделка #${picked.id} по совпадению комплекта АРМ ${complect}`,
+            };
+        }
+
+        // 4. Свежая открытая.
         const open = candidates.filter(deal => !deal.closed);
         if (open.length) {
-            const picked = open.reduce((a, b) => (a.id > b.id ? a : b));
+            const picked = latest(open);
             return {
                 dealId: picked.id,
                 warning:
@@ -144,12 +194,13 @@ export class SkapDealMatchService {
             };
         }
 
-        const latest = candidates.reduce((a, b) => (a.id > b.id ? a : b));
+        // 5. Все закрыты.
+        const last = latest(candidates);
         return {
-            dealId: latest.id,
+            dealId: last.id,
             warning:
                 `deal_period_mismatch: все сделки закрыты и не покрывают ` +
-                `месяц, взята последняя #${latest.id}`,
+                `месяц, взята последняя #${last.id}`,
         };
     }
 
@@ -157,5 +208,17 @@ export class SkapDealMatchService {
         if (!value || typeof value !== 'string') return null;
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    /** UF_CRM_RPA_ARM_COMPLECT_ID: массив/строка/пусто → массив строк. */
+    private parseComplectIds(value: unknown): string[] {
+        const rawList = Array.isArray(value)
+            ? value
+            : typeof value === 'string' && value
+              ? [value]
+              : [];
+        return rawList
+            .map(item => (typeof item === 'string' ? item.trim() : ''))
+            .filter(Boolean);
     }
 }

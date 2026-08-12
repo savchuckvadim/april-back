@@ -124,6 +124,20 @@ export class LeadToWorkWebhookQueryDto {
 
     @ApiPropertyOptional({
         description:
+            'Явный признак «это ЗАЯВКА» от робота: Y — считать заявкой ' +
+            '(названия «…Заявка. {Название}», site-метки), N — просто лид. ' +
+            'Не передан — автодетект по полям лида.',
+        example: 'Y',
+        type: String,
+        enum: LEAD_TO_WORK_FLAG_VALUES,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(LEAD_TO_WORK_FLAG_VALUES as unknown as string[])
+    isRequest?: LeadToWorkFlag;
+
+    @ApiPropertyOptional({
+        description:
             'Дедлайн задачи «Звонок» в локали портала (DD.MM.YYYY HH:mm:ss). ' +
             'Без него новая задача создаётся без дедлайна.',
         example: '15.08.2026 10:00:00',
@@ -257,6 +271,21 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
 
     @ApiPropertyOptional({
         description:
+            'Явный признак «это ЗАЯВКА» от робота (робот воронки заявок ' +
+            'знает это лучше эвристики): Y — считать заявкой, N — считать ' +
+            'просто лидом. Не передан — автодетект по полям лида ' +
+            '(op_lead_site_* / UF_CRM_REG_NUMBER / UF_CRM_LEAD_QUEST_URL).',
+        example: 'Y',
+        type: String,
+        enum: LEAD_TO_WORK_FLAG_VALUES,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(LEAD_TO_WORK_FLAG_VALUES as unknown as string[])
+    isRequest?: LeadToWorkFlag;
+
+    @ApiPropertyOptional({
+        description:
             'Дедлайн задачи «Звонок» в локали портала (DD.MM.YYYY HH:mm:ss).',
         example: '15.08.2026 10:00:00',
         type: String,
@@ -296,6 +325,8 @@ export interface ILeadToWorkItem {
     stageMode: LeadToWorkStageMode;
     taskMode: LeadToWorkTaskMode;
     isXo: LeadToWorkFlag;
+    /** Явный признак заявки от робота; отсутствует — автодетект по полям. */
+    isRequest?: LeadToWorkFlag;
     /** Сырой дедлайн в локали портала; отсутствует — задача без дедлайна. */
     deadline?: string;
     /** Название события; отсутствует — берётся название лида. */
@@ -319,6 +350,7 @@ export function buildLeadToWorkItem(input: {
     stageMode?: LeadToWorkStageMode;
     taskMode?: LeadToWorkTaskMode;
     isXo?: LeadToWorkFlag;
+    isRequest?: LeadToWorkFlag;
     deadline?: string;
     name?: string;
 }): ILeadToWorkItem {
@@ -339,6 +371,7 @@ export function buildLeadToWorkItem(input: {
         stageMode: input.stageMode ?? 'from_lead',
         taskMode: input.taskMode ?? 'move',
         isXo: input.isXo ?? 'N',
+        isRequest: input.isRequest,
         deadline: input.deadline,
         name: input.name,
     };

@@ -89,6 +89,7 @@ export class PbxDealFieldInstallByFieldUseCase {
                 PbxEntityType.DEAL,
                 dealId,
                 clearFields,
+                domain,
             );
         console.log(
             'portalFieldEntityInstallResult',

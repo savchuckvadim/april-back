@@ -65,7 +65,9 @@ export class LeadRequestDetectorService {
         if (signals.length === 0) {
             // Диагностика для подбора имён полей на новом портале: какие
             // UF-поля у лида вообще заполнены (см. комментарий к константе).
-            this.logger.debug(
+            // Уровень log, не debug: на проде debug отключён, а эта строка —
+            // основной инструмент настройки детектора на новом портале.
+            this.logger.log(
                 `лид ${String(lead.ID)} — заявка не распознана; заполненные ` +
                     `UF-поля: ${this.filledUfNames(lead).join(', ') || 'нет'}`,
             );

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IBXDeal } from '@/modules/bitrix';
 import { DealServiceService } from '../services/ork-deals/deal-service.service';
 import { CompanyInfoService } from '../services/company/company-info.service';
@@ -25,9 +25,13 @@ type EmployeeReport = {
 };
 
 type SendMode = 'employee' | 'admin' | 'both';
-const mode: SendMode = 'admin';
+// ВНИМАНИЕ: при mode='admin' сотрудники НЕ получают сообщений — всё уходит
+// только ADMIN_USER_ID. До монорепо-рефакторинга стояло 'both'.
+const mode: SendMode = 'both';
 @Injectable()
 export class SendDealsWarningsUseCase {
+    private readonly logger = new Logger(SendDealsWarningsUseCase.name);
+
     constructor(
         private readonly dealService: DealServiceService,
         private readonly companyInfoService: CompanyInfoService,
@@ -39,9 +43,11 @@ export class SendDealsWarningsUseCase {
     async execute(
         domain: string | undefined = DEFAULT_DOMAIN as string,
     ): Promise<{
+        mode: SendMode;
         employeeReportsCount: number;
         sentTo: string[];
         adminUserId: string;
+        adminMessagesCount: number;
     }> {
         const [emptyFields, groupedByCompany] = await Promise.all([
             this.dealService.getDealsWithEmptyOneOfContractPeriodFields(),
@@ -50,6 +56,11 @@ export class SendDealsWarningsUseCase {
 
         const warnings = (groupedByCompany.warnings ??
             []) as DuplicateWarning[];
+        this.logger.log(
+            `deals-order [${domain}]: emptyFrom=${emptyFields.dealsWithEmptyFrom?.length ?? 0}, ` +
+                `emptyTo=${emptyFields.dealsWithEmptyTo?.length ?? 0}, ` +
+                `companiesWithDeals=${warnings.length}, mode=${mode}`,
+        );
         const dealsForCompanyNames: IBXDeal[] = [
             ...(emptyFields.dealsWithEmptyFrom ?? []),
             ...(emptyFields.dealsWithEmptyTo ?? []),
@@ -86,6 +97,10 @@ export class SendDealsWarningsUseCase {
             warnings,
         );
 
+        this.logger.log(
+            `deals-order [${domain}]: employeeReports=${employeeReports.length}`,
+        );
+
         const sentTo: string[] = [];
         if (mode === 'employee' || mode === 'both') {
             for (const report of employeeReports) {
@@ -103,10 +118,14 @@ export class SendDealsWarningsUseCase {
                     report.userId,
                     message,
                 );
+                this.logger.log(
+                    `deals-order [${domain}]: сообщение отправлено сотруднику ${report.userId}`,
+                );
                 sentTo.push(report.userId);
             }
         }
 
+        let adminMessagesCount = 0;
         if (mode === 'admin' || mode === 'both') {
             const adminMessages = this.buildAdminMessages(
                 domain,
@@ -120,13 +139,19 @@ export class SendDealsWarningsUseCase {
                     ADMIN_USER_ID,
                     message,
                 );
+                adminMessagesCount++;
             }
+            this.logger.log(
+                `deals-order [${domain}]: админу ${ADMIN_USER_ID} отправлено сообщений: ${adminMessagesCount}`,
+            );
         }
 
         return {
+            mode,
             employeeReportsCount: employeeReports.length,
             sentTo,
             adminUserId: ADMIN_USER_ID,
+            adminMessagesCount,
         };
     }
 

@@ -85,6 +85,7 @@ export class PbxLeadFieldInstallByFieldUseCase {
                 PbxEntityType.LEAD,
                 leadId,
                 clearFields,
+                domain,
             );
         console.log(
             'portalFieldEntityInstallResult',

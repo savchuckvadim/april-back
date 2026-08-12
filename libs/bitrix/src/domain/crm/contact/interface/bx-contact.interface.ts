@@ -15,6 +15,8 @@ export interface IBXContact {
     }[];
     POST?: string;
     COMMENTS?: string;
+    /** Ключи СКАП-логинов (множественное, импорт СКАП — pbx-skap-smart). */
+    UF_CRM_SKAP_LOGINS?: string[];
 
     TYPE_ID?: string;
     SOURCE_ID?: string;

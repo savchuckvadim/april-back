@@ -7,6 +7,9 @@ import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-ca
 import {
     buildSkapUfName,
     PbxSkapSmartService,
+    SKAP_CONTACT_LOGINS_FIELD,
+    SKAP_CONTACT_LOGINS_TITLE,
+    SKAP_CONTACT_LOGINS_XML_ID,
     SKAP_SMART_CODE,
     SKAP_SMART_FIELDS,
     SKAP_SMART_GROUP,
@@ -171,7 +174,16 @@ export class InstallSkapSmartUseCase {
             );
         }
 
-        // 4. Инвалидация online-кэша портала (portal_${domain}) — иначе
+        // 4. Поле-ключ СКАП-логинов на КОНТАКТЕ (множественная строка):
+        // идентификация «кто именно работал» — поиск контакта при импорте
+        // идёт по EMAIL и по этому полю (ключ переживает мердж контактов).
+        await this.installContactLoginsField(bitrix, {
+            fieldsAdded,
+            fieldsExisting,
+            fieldsFailed,
+        });
+
+        // 5. Инвалидация online-кэша портала (portal_${domain}) — иначе
         // PortalModel не увидит новые поля до истечения TTL 10ч.
         await this.portalCache.invalidate(domain);
 
@@ -182,6 +194,54 @@ export class InstallSkapSmartUseCase {
             fieldsExisting,
             fieldsFailed,
         };
+    }
+
+    /** Идемпотентная установка UF_CRM_SKAP_LOGINS на контакт. */
+    private async installContactLoginsField(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        out: Pick<
+            InstallSkapSmartResult,
+            'fieldsAdded' | 'fieldsExisting' | 'fieldsFailed'
+        >,
+    ): Promise<void> {
+        try {
+            const existing = await bitrix.userFieldConfig.getAllWithItems(
+                'crm',
+                { entityId: 'CRM_CONTACT' },
+            );
+            if (
+                existing.some(
+                    field => field.fieldName === SKAP_CONTACT_LOGINS_FIELD,
+                )
+            ) {
+                out.fieldsExisting.push(SKAP_CONTACT_LOGINS_FIELD);
+                return;
+            }
+            await bitrix.userFieldConfig.add({
+                moduleId: 'crm',
+                field: {
+                    entityId: 'CRM_CONTACT',
+                    fieldName: SKAP_CONTACT_LOGINS_FIELD,
+                    userTypeId: EUserFieldType.STRING,
+                    multiple: 'Y',
+                    mandatory: 'N',
+                    showFilter: 'Y',
+                    showInList: 'Y',
+                    editInList: 'Y',
+                    isSearchable: 'Y',
+                    xmlId: SKAP_CONTACT_LOGINS_XML_ID,
+                    editFormLabel: { ru: SKAP_CONTACT_LOGINS_TITLE },
+                    listColumnLabel: { ru: SKAP_CONTACT_LOGINS_TITLE },
+                    listFilterLabel: { ru: SKAP_CONTACT_LOGINS_TITLE },
+                },
+            });
+            out.fieldsAdded.push(SKAP_CONTACT_LOGINS_FIELD);
+        } catch (error) {
+            this.logger.error(
+                `Поле контакта ${SKAP_CONTACT_LOGINS_FIELD} не установлено: ${(error as Error).message}`,
+            );
+            out.fieldsFailed.push(SKAP_CONTACT_LOGINS_FIELD);
+        }
     }
 
     /** typeId — id смарт-типа из crm.type.list (НЕ entityTypeId!). */

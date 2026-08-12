@@ -157,6 +157,8 @@ describe('InstallListUseCase', () => {
             5,
             { type: 'presentation', group: 'sales', code: 'presentation' },
             [expect.objectContaining({ code: 'event_date' })],
+            // Домен обязателен: по нему сбрасывается слепок портала.
+            expect.any(String),
         );
         expect(result.installed).toHaveLength(1);
         expect(result.installed[0].portalListId).toBe(5);

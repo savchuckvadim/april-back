@@ -5,6 +5,7 @@ import {
     taskCrmBinding,
 } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { PortalDeadline } from '@lib/shared/lib/date';
 import { IBatchGroupBuffer } from '../../../shared/batch/batch-group-buffer.interface';
@@ -45,6 +46,8 @@ export interface LeadToWorkQueuedPlan {
     reused: boolean;
     tasksMoved: number;
     tasksClosed: number;
+    /** Лишние ОТКРЫТЫЕ сделки лида, закрытые в fail (пары не плодятся). */
+    extraDealsClosed: number;
     /** Лид распознан как заявка (лидоген/сайт) — см. LeadRequestDetector. */
     isRequest: boolean;
     /** KPI «Холодный звонок Запланирован» поставлен в группу (ХО-ветка). */
@@ -93,16 +96,35 @@ export class LeadToWorkFlowService {
         /** Инициатор операции — автор KPI-событий; нет — ответственный. */
         authorId: number | null = null,
     ): LeadToWorkQueuedPlan {
-        // Заявка или просто лид: влияет на названия задачи и KPI-события.
-        const detection = this.detector.detect(ctx.lead as unknown as BxRow);
+        // Заявка или просто лид: явный флаг робота главнее автодетекта
+        // (робот воронки заявок ЗНАЕТ природу лида; поля могут быть пусты).
+        const detection: LeadRequestDetection =
+            item.isRequest === 'Y'
+                ? { isRequest: true, signals: ['флаг робота isRequest=Y'] }
+                : item.isRequest === 'N'
+                  ? { isRequest: false, signals: [] }
+                  : this.detector.detect(ctx.lead as unknown as BxRow);
+
+        /*
+         * ИНВАРИАНТ «одна пара» (правило пользователя, как классический ХО):
+         * у лида не может копиться по паре сделок на каждый прогон. Главной
+         * основной становится ПОСЛЕДНЯЯ открытая (max ID), главной ХО —
+         * последняя открытая ХО; остальные открытые закрываются в fail
+         * своей воронки. Кандидаты собраны контекстом по to_base_sales,
+         * deal_from_lead_id и LEAD_ID.
+         */
+        const consolidated = this.consolidateDeals(item, ctx, plan, buffer);
+        ctx = consolidated.ctx;
+
         const result: LeadToWorkQueuedPlan = {
             reused: !!ctx.existingOurDeal,
             tasksMoved: 0,
             tasksClosed: 0,
+            extraDealsClosed: consolidated.closed,
             isRequest: detection.isRequest,
             kpiPlanned: false,
             kpiNotHeld: false,
-            warnings: [],
+            warnings: [...consolidated.warnings],
         };
         const eventName = this.eventName(item, ctx.lead);
 
@@ -174,6 +196,130 @@ export class LeadToWorkFlowService {
     }
 
     /* ------------------------------------------------------------------ */
+
+    /**
+     * Сведение сделок лида к инварианту «одна открытая пара»:
+     *  - кандидаты: to_base_sales/to_xo_sales лида + свои по
+     *    deal_from_lead_id + конвертационные по LEAD_ID (дедуп по ID);
+     *  - главная основная/ХО = ссылка лида, если жива, иначе ПОСЛЕДНЯЯ
+     *    открытая своей воронки (max ID);
+     *  - остальные ОТКРЫТЫЕ сделки этих воронок закрываются в fail-стадию
+     *    («не состоялась»); fail не сопоставлена → warning, не трогаем.
+     * Закрытые сделки не трогаются никогда (прошлое не переписываем).
+     */
+    private consolidateDeals(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        plan: LeadToWorkStagePlan,
+        buffer: IBatchGroupBuffer,
+    ): { ctx: LeadToWorkContext; closed: number; warnings: string[] } {
+        const warnings: string[] = [];
+        const byId = new Map<number, BxRow>();
+        const candidates = [
+            ctx.existingOurDeal,
+            ctx.existingXoDeal,
+            ...ctx.convertedDeals,
+            ...ctx.fromLeadDeals,
+        ];
+        for (const deal of candidates) {
+            if (!deal) continue;
+            const row = deal as unknown as BxRow;
+            const id = Number(row.ID);
+            if (Number.isFinite(id) && id > 0 && !byId.has(id)) {
+                byId.set(id, row);
+            }
+        }
+
+        const isOpen = (row: BxRow): boolean =>
+            this.text(row.CLOSED)?.toUpperCase() !== 'Y';
+        const openOf = (categoryId: string | undefined): BxRow[] =>
+            categoryId
+                ? [...byId.values()]
+                      .filter(
+                          row =>
+                              this.text(row.CATEGORY_ID) === categoryId &&
+                              isOpen(row),
+                      )
+                      .sort((a, b) => Number(a.ID) - Number(b.ID))
+                : [];
+
+        const pickMain = (
+            linked: BxRow | null,
+            open: BxRow[],
+        ): BxRow | null => {
+            if (linked && isOpen(linked)) return linked;
+            return open.length ? open[open.length - 1] : null;
+        };
+
+        const baseOpen = openOf(plan.dealCategoryId);
+        const xoOpen = openOf(plan.xoCategoryId);
+        const mainBase = pickMain(
+            ctx.existingOurDeal as unknown as BxRow | null,
+            baseOpen,
+        );
+        const mainXo = pickMain(
+            ctx.existingXoDeal as unknown as BxRow | null,
+            xoOpen,
+        );
+
+        let closed = 0;
+        const closeExtras = (
+            open: BxRow[],
+            main: BxRow | null,
+            categoryCode: PbxDealCategoryCodeEnum,
+        ): void => {
+            const extras = open.filter(
+                row => !main || this.text(row.ID) !== this.text(main.ID),
+            );
+            if (!extras.length) return;
+            const failStageId = this.failStageId(categoryCode);
+            if (!failStageId) {
+                warnings.push(
+                    `Fail-стадия воронки ${categoryCode} не сопоставлена — лишние открытые сделки (${extras.length}) не закрыты`,
+                );
+                return;
+            }
+            for (const row of extras) {
+                const dealId = Number(row.ID);
+                const cmd = `lw_close_extra_${item.leadId}_${dealId}`;
+                buffer.queue(() =>
+                    this.bitrix.batch.deal.update(cmd, dealId, {
+                        STAGE_ID: failStageId,
+                    } as never),
+                );
+                closed += 1;
+            }
+        };
+        closeExtras(baseOpen, mainBase, PbxDealCategoryCodeEnum.sales_base);
+        closeExtras(xoOpen, mainXo, PbxDealCategoryCodeEnum.sales_xo);
+        if (closed > 0) {
+            this.logger.log(
+                `[consolidate] lead=${item.leadId}: лишних открытых сделок закрыто в fail: ${closed}`,
+            );
+        }
+
+        return {
+            ctx: {
+                ...ctx,
+                existingOurDeal: mainBase as unknown as
+                    | LeadToWorkContext['existingOurDeal']
+                    | null,
+                existingXoDeal: mainXo as unknown as
+                    | LeadToWorkContext['existingXoDeal']
+                    | null,
+            },
+            closed,
+            warnings,
+        };
+    }
+
+    /** `C{cat}:{fail}` по коду воронки; нет fail-стадии в db → null. */
+    private failStageId(categoryCode: PbxDealCategoryCodeEnum): string | null {
+        const category = this.portal.getDealCategoryByCode(categoryCode);
+        if (!category) return null;
+        const stage = category.stages.find(st => st.code.endsWith('_fail'));
+        return stage ? `C${category.bitrixId}:${stage.bitrixId}` : null;
+    }
 
     private queueCompany(
         item: ResolvedLeadToWorkItem,

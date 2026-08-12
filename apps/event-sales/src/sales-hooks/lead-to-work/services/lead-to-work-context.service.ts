@@ -15,6 +15,13 @@ export interface LeadToWorkContext {
     existingXoDeal: IBXDeal | null;
     /** Сделки, рождённые штатной конвертацией (deal.LEAD_ID = лид). */
     convertedDeals: IBXDeal[];
+    /**
+     * СВОИ сделки хука по прямому полю deal_from_lead_id='L_{id}' — страховка
+     * reuse-гейта: обратная ссылка лида (to_base_sales) могла не записаться
+     * (поле не было сопоставлено в момент прошлого прогона), а плодить пары
+     * нельзя. Поле не сопоставлено сейчас → пустой список.
+     */
+    fromLeadDeals: IBXDeal[];
     openTasks: IBXTask[];
     /** Лид закрыт штатной конвертацией (SEMANTICS='S'/CONVERTED). */
     isConverted: boolean;
@@ -79,6 +86,29 @@ export class LeadToWorkContextService {
             { LEAD_ID: leadId } as never,
             ['ID', 'TITLE', 'CATEGORY_ID', 'STAGE_ID', 'CLOSED', 'COMPANY_ID'],
         );
+        // Свои сделки прошлых прогонов — по прямому полю deal_from_lead_id.
+        const fromLeadFieldName = this.dealFieldName(
+            PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
+        );
+        if (fromLeadFieldName) {
+            this.bitrix.batch.deal.getList(
+                'ctx_from_lead_deals',
+                { [fromLeadFieldName]: `L_${leadId}` } as never,
+                [
+                    'ID',
+                    'TITLE',
+                    'CATEGORY_ID',
+                    'STAGE_ID',
+                    'CLOSED',
+                    'COMPANY_ID',
+                    'ASSIGNED_BY_ID',
+                ],
+            );
+        } else {
+            warnings.push(
+                'Поле deal_from_lead_id не сопоставлено — reuse-гейт видит только ссылки лида (to_base_sales)',
+            );
+        }
         const taskGroupId = this.portal.getSalesTaskGroupId();
         const taskBindings = [`L_${leadId}`];
         if (companyId) taskBindings.push(`CO_${companyId}`);
@@ -116,6 +146,9 @@ export class LeadToWorkContextService {
         const convertedDeals = this.rowsOf(
             flat.get('ctx_converted_deals'),
         ) as unknown as IBXDeal[];
+        const fromLeadDeals = this.rowsOf(
+            flat.get('ctx_from_lead_deals'),
+        ) as unknown as IBXDeal[];
 
         const openTasks: IBXTask[] = [];
         const seenTaskIds = new Set<string>();
@@ -145,6 +178,7 @@ export class LeadToWorkContextService {
             existingOurDeal,
             existingXoDeal,
             convertedDeals,
+            fromLeadDeals,
             openTasks,
             isConverted,
             warnings,

@@ -84,6 +84,28 @@ const makePortal = (
             : `UF_CRM_${field.bitrixId}`,
     getSalesTaskGroupId: () => 77,
     getTimezone: () => 'Europe/Moscow',
+    // Воронки для инварианта «одна открытая пара»: fail-стадии есть.
+    getDealCategoryByCode: (code: string) => {
+        if (code === 'sales_base') {
+            return {
+                bitrixId: '3',
+                stages: [
+                    { code: 'sales_cold', bitrixId: 'COLD' },
+                    { code: 'sales_fail', bitrixId: 'LOSE' },
+                ],
+            };
+        }
+        if (code === 'sales_xo') {
+            return {
+                bitrixId: '7',
+                stages: [
+                    { code: 'cold_plan', bitrixId: 'PLAN' },
+                    { code: 'cold_fail', bitrixId: 'XLOSE' },
+                ],
+            };
+        }
+        return undefined;
+    },
     getListByCode: (code: string) => {
         if (!withKpiLists) return undefined;
         if (code === 'sales_kpi') return makeKpiList('kpi');
@@ -100,6 +122,7 @@ const baseContext = (
     existingOurDeal: null,
     existingXoDeal: null,
     convertedDeals: [],
+    fromLeadDeals: [],
     openTasks: [],
     isConverted: false,
     warnings: [],
@@ -136,6 +159,84 @@ const FIELDS = {
 };
 
 describe('LeadToWorkFlowService', () => {
+    /*
+     * Инвариант «одна открытая пара»: повторные прогоны не должны копить
+     * сделки. Кандидаты собираются из to_base_sales, deal_from_lead_id и
+     * LEAD_ID; главной становится последняя открытая, лишние открытые
+     * закрываются в fail своей воронки; закрытые не трогаются.
+     */
+    it('лишние ОТКРЫТЫЕ сделки лида закрываются в fail, работа идёт по последней', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        const plan = service.queue(
+            makeItem({ leadId: 42, responsible: 5, isXo: 'Y' }),
+            baseContext({
+                // Три сделки ОП: две открытые (100, 300) и одна закрытая (200).
+                fromLeadDeals: [
+                    { ID: '100', CATEGORY_ID: '3', CLOSED: 'N' },
+                    { ID: '200', CATEGORY_ID: '3', CLOSED: 'Y' },
+                    { ID: '300', CATEGORY_ID: '3', CLOSED: 'N' },
+                    // Плюс две ХО: обе открытые.
+                    { ID: '410', CATEGORY_ID: '7', CLOSED: 'N' },
+                    { ID: '420', CATEGORY_ID: '7', CLOSED: 'N' },
+                ] as never,
+            }),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        // Закрыты ровно лишние открытые: 100 (ОП) и 410 (ХО).
+        const closed = calls
+            .filter(c => c.cmd.startsWith('lw_close_extra_'))
+            .map(c => ({
+                dealId: c.args[0],
+                stage: (c.args[1] as Record<string, unknown>).STAGE_ID,
+            }));
+        expect(closed).toEqual([
+            { dealId: 100, stage: 'C3:LOSE' },
+            { dealId: 410, stage: 'C7:XLOSE' },
+        ]);
+        expect(plan.extraDealsClosed).toBe(2);
+
+        // Новая пара НЕ создаётся: работа идёт по последним открытым.
+        expect(calls.some(c => c.method === 'deal.set')).toBe(false);
+        expect(plan.reused).toBe(true);
+        const updated = calls
+            .filter(c => c.method === 'deal.update' && !c.cmd.includes('close'))
+            .map(c => c.args[0]);
+        expect(updated).toContain(300);
+        expect(updated).toContain(420);
+    });
+
+    it('флаг робота isRequest=Y делает лид заявкой без полей лидогена', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS, true) as never,
+        );
+
+        const plan = service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 5,
+                isXo: 'Y',
+                isRequest: 'Y',
+            }),
+            baseContext(),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        expect(plan.isRequest).toBe(true);
+        const taskAdd = calls.find(c => c.method === 'task.add');
+        const title = (taskAdd?.args[0] as Record<string, unknown>).TITLE;
+        expect(String(title)).toContain('Заявка.');
+    });
+
     it('без компании: сделка называется названием лида, связи графа записаны', () => {
         const { bitrix, calls } = makeBitrix();
         const service = new LeadToWorkFlowService(

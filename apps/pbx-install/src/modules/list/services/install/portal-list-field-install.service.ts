@@ -5,6 +5,7 @@ import {
     PbxFieldItemEntity,
     PbxFieldService,
 } from '@lib/portal-lib/pbx-domain';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import {
     IBxListFieldRef,
     IBxListInstalledFieldResult,
@@ -42,12 +43,21 @@ export interface IPbxListFieldInstallData extends IBxListInstalledFieldResult {
 export class PortalListFieldInstallService {
     private readonly logger = new Logger(PortalListFieldInstallService.name);
 
-    constructor(private readonly pbxFieldService: PbxFieldService) {}
+    constructor(
+        private readonly pbxFieldService: PbxFieldService,
+        private readonly onlineCache: PortalOnlineCacheService,
+    ) {}
 
+    /**
+     * `domain` НУЖЕН: без сброса слепка `portal_{domain}` (TTL 10 ч) боевые
+     * приложения не увидят поля списка — KPI-запись молча деградирует до
+     * warning «списки не настроены».
+     */
     async syncWithDb(
         listDbId: number,
         listKey: ListFieldCodeKey,
         fields: IPbxListFieldInstallData[],
+        domain?: string,
     ): Promise<PbxFieldEntity[]> {
         await this.cleanupStaleMirrors(listDbId, listKey, fields);
 
@@ -56,10 +66,14 @@ export class PortalListFieldInstallService {
         );
         const result =
             await this.pbxFieldService.upsertFields(pbxFieldEntities);
+        if (domain) {
+            await this.onlineCache.invalidate(domain);
+        }
         this.logger.log(
             `syncWithDb list=${listKey.group}_${listKey.type} (id=${listDbId}): ` +
                 `upserted ${result.length}/${fields.length} fields ` +
-                `[${result.map(f => f.code).join(', ')}]`,
+                `[${result.map(f => f.code).join(', ')}]` +
+                (domain ? `; кэш portal_${domain} сброшен` : ''),
         );
         return result;
     }

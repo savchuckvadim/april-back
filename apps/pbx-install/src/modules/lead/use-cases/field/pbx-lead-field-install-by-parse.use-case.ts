@@ -107,6 +107,7 @@ export class PbxLeadFieldInstallByParseUseCase {
                 PbxEntityType.LEAD,
                 leadId,
                 clearFields,
+                domain,
             );
         return {
             bxResult,

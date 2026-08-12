@@ -15,6 +15,7 @@ import {
     emptySkapFileStats,
     formatSkapPeriodCode,
     parseSkapPeriod,
+    parseSkapPeriodFromUnloadDate,
     SkapDetailRow,
     SkapEventHistoryRow,
     SkapFileParseService,
@@ -30,7 +31,11 @@ import {
     SkapSubscriptionRepository,
 } from '@lib/skap-lib';
 import { SkapImportFile } from 'generated/prisma';
-import { SkapCompanyMatchService } from '../match/skap-company-match.service';
+import {
+    SkapCompanyContacts,
+    SkapCompanyMatchService,
+} from '../match/skap-company-match.service';
+import { SkapContactKeyService } from '../match/skap-contact-key.service';
 import { SkapDealMatchService } from '../match/skap-deal-match.service';
 
 /** Репозитории БД, передаваемые в per-domain флоу из use-case. */
@@ -87,8 +92,11 @@ export class SkapFileImportFlow {
     private readonly writer: SkapSmartWriterService;
     private readonly companyMatch: SkapCompanyMatchService;
     private readonly dealMatch: SkapDealMatchService;
+    private readonly contactKey: SkapContactKeyService;
     /** Кэш истории клиента для событий месяца (в рамках одного файла). */
     private readonly historyCache = new Map<string, SkapEventHistoryRow[]>();
+    /** Кэш созданных контактов прогона: `${companyId}:${login}` → id. */
+    private readonly createdContacts = new Map<string, number>();
 
     constructor(
         bitrix: BitrixService,
@@ -100,6 +108,7 @@ export class SkapFileImportFlow {
         this.writer = new SkapSmartWriterService(bitrix, ctx.smartInfo);
         this.companyMatch = new SkapCompanyMatchService(bitrix);
         this.dealMatch = new SkapDealMatchService(bitrix, portalModel);
+        this.contactKey = new SkapContactKeyService(bitrix);
     }
 
     /** Обработка файла журнала; возвращает счётчики + версию формата. */
@@ -171,7 +180,21 @@ export class SkapFileImportFlow {
         for (const item of raw) {
             const kind = detectSkapFileKind(path.basename(item.name));
             if (!kind) continue;
-            const period = this.resolvePeriod(item.name);
+            let period = this.resolvePeriod(item.name);
+            if (!period) {
+                // Веб-загрузка Битрикса расплющивает папки месяцев —
+                // fallback: месяц выгрузки из имени файла минус 1.
+                period = parseSkapPeriodFromUnloadDate(
+                    path.basename(item.name),
+                );
+                if (period) {
+                    stats.warnings.push(
+                        `${item.name}: месяц взят из даты выгрузки минус 1 ` +
+                            `(${formatSkapPeriodCode(period)}) — надёжнее ` +
+                            'раскладывать по папкам месяцев или грузить zip',
+                    );
+                }
+            }
             if (!period) {
                 stats.warnings.push(
                     `${item.name}: отчётный месяц не определён по пути/имени — пропущено (error_no_period)`,
@@ -318,11 +341,12 @@ export class SkapFileImportFlow {
             ),
         ];
 
-        // 2. Сделки (по датам договора) и контакты (по email-логину).
+        // 2. Сделки (по датам договора) и контакты (по email-логину И по
+        // ключу UF_CRM_SKAP_LOGINS — ключ переживает мердж/смену email).
         this.assertBudget();
         const dealsByCompany = await this.dealMatch.loadDeals(companyIds);
         const contactsByCompany =
-            await this.companyMatch.loadContactEmails(companyIds);
+            await this.companyMatch.loadCompanyContacts(companyIds);
 
         // 3. Обогащение из Prime_lent (снапшот месяца в БД).
         const enrichment = await this.loadEnrichment(period);
@@ -347,11 +371,17 @@ export class SkapFileImportFlow {
             const pick = this.dealMatch.pickDeal(
                 dealsByCompany.get(company.id),
                 period,
+                row.complectArmId,
             );
-            const contactId =
-                contactsByCompany
-                    .get(company.id)
-                    ?.get(normalizeSkapLogin(row.login)) ?? null;
+            const contactId = await this.resolveContact(
+                company.id,
+                company.title,
+                company.assignedById,
+                clientCard,
+                row.login,
+                contactsByCompany.get(company.id),
+                stats,
+            );
             const events = computeSkapEvents({
                 login: row.login,
                 period,
@@ -566,6 +596,59 @@ export class SkapFileImportFlow {
     // -----------------------------------------------------------------
     // Хелперы
     // -----------------------------------------------------------------
+
+    /**
+     * Контакт по логину: ключ UF_CRM_SKAP_LOGINS / EMAIL → найден (при
+     * находке по email ключ дозаписывается — дальше контакт находится по
+     * ключу даже после смены email или мерджа); не найден → автосоздание
+     * контакта с ключом + задача ответственному компании.
+     */
+    private async resolveContact(
+        companyId: number,
+        companyTitle: string,
+        assignedById: number | null,
+        clientCard: string,
+        rawLogin: string,
+        contacts: SkapCompanyContacts | undefined,
+        stats: SkapFileStats,
+    ): Promise<number | null> {
+        const login = normalizeSkapLogin(rawLogin);
+
+        const existing = contacts?.keyToContact.get(login);
+        if (existing) {
+            const currentLogins = contacts?.loginsByContact.get(existing) ?? [];
+            if (!currentLogins.includes(login)) {
+                await this.contactKey.ensureLoginKey(
+                    existing,
+                    currentLogins,
+                    login,
+                );
+                contacts?.loginsByContact.set(existing, [
+                    ...currentLogins,
+                    login,
+                ]);
+            }
+            return existing;
+        }
+
+        const cacheKey = `${companyId}:${login}`;
+        const cached = this.createdContacts.get(cacheKey);
+        if (cached) return cached;
+
+        const created = await this.contactKey.createContact({
+            login,
+            companyId,
+            companyTitle,
+            clientCard,
+            assignedById,
+        });
+        if (!created) return null;
+        this.createdContacts.set(cacheKey, created);
+        contacts?.keyToContact.set(login, created);
+        contacts?.loginsByContact.set(created, [login]);
+        stats.contactsCreated += 1;
+        return created;
+    }
 
     private async clientHistory(
         clientCard: string,

@@ -87,6 +87,7 @@ export class PbxCompanyInstallFieldUseCase {
                 PbxEntityType.BTX_COMPANY,
                 companyId,
                 clearFields,
+                domain,
             );
         console.log(
             'portalFieldEntityInstallResult',

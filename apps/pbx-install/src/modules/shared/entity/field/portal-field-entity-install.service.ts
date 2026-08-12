@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     getPrismaEntityTypeByType,
     PbxEntityType,
@@ -10,6 +10,7 @@ import {
     PbxFieldItemEntity,
     PbxFieldService,
 } from '@lib/portal-lib/pbx-domain';
+import { PortalOnlineCacheService } from '@lib/portal-lib/store/portal-online-cache.service';
 import { getCamelBxFieldIdCase } from '../../utils/get-camel-case-bx-field.util';
 import { IBXField } from '@/modules/bitrix';
 import { Field } from '../../parse-field-excel/type/parse-field.type';
@@ -22,12 +23,27 @@ export interface IPbxFieldInstallData {
 
 @Injectable()
 export class PortalEntityFieldInstallService {
-    constructor(private readonly pbxFieldService: PbxFieldService) {}
+    private readonly logger = new Logger(PortalEntityFieldInstallService.name);
 
+    constructor(
+        private readonly pbxFieldService: PbxFieldService,
+        private readonly onlineCache: PortalOnlineCacheService,
+    ) {}
+
+    /**
+     * Зеркалит установленные поля в PortalDB.
+     *
+     * `domain` НУЖЕН обязательно: слепок портала лежит в Redis-кэше
+     * `portal_{domain}` с TTL 10 часов, и без сброса боевые приложения
+     * (event-sales и др.) не увидят новые поля до истечения TTL — поля
+     * молча остаются «неустановленными», а хуки их скипают (graceful).
+     * Домен не передан — только предупреждение, установка не падает.
+     */
     async syncWithDb(
         entityType: PbxEntityType,
         entityId: number,
         fields: IPbxFieldInstallData[],
+        domain?: string,
     ): Promise<PbxFieldEntity[]> {
         //получаем entity type нужный для записи в db
         const prismaEntityType = getPrismaEntityTypeByType(entityType);
@@ -37,7 +53,19 @@ export class PortalEntityFieldInstallService {
             this.getPbxFieldEntity(field, prismaEntityType, entityId),
         );
         // записываем pbxFieldEntities в db - добавляем либо удаляем
-        return await this.pbxFieldService.upsertFields(pbxFieldEntities);
+        const saved = await this.pbxFieldService.upsertFields(pbxFieldEntities);
+
+        if (domain) {
+            await this.onlineCache.invalidate(domain);
+            this.logger.log(
+                `Поля ${entityType} синхронизированы (${saved.length}) — кэш portal_${domain} сброшен`,
+            );
+        } else {
+            this.logger.warn(
+                `Поля ${entityType} синхронизированы без домена — кэш портала НЕ сброшен, приложения увидят изменения только через 10 ч`,
+            );
+        }
+        return saved;
     }
 
     private getPbxFieldEntity(

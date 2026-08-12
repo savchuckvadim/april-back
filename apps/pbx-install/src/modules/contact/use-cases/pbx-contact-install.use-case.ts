@@ -101,6 +101,7 @@ export class PbxContactInstallUseCase {
                 PbxEntityType.BTX_CONTACT,
                 contactId,
                 clearFields,
+                domain,
             );
         console.log(
             'portalFieldEntityInstallResult',
