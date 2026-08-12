@@ -1,5 +1,6 @@
 import { PBXService } from '@/modules/pbx';
 import {
+    isBitrixMultipleField,
     mapFieldTypeToBitrixType,
     PbxFieldEntity,
 } from '@lib/portal-lib/pbx-domain';
@@ -310,7 +311,7 @@ export class BxEntityFieldsInstallService {
             FIELD_NAME: bitrixFieldName,
             USER_TYPE_ID: bxFieldType,
             SORT: String(parseField.order),
-            MULTIPLE: parseField.isMultiple ? 'Y' : 'N',
+            MULTIPLE: isBitrixMultipleField(parseField) ? 'Y' : 'N',
             MANDATORY: 'N',
             SHOW_FILTER: 'Y',
             XML_ID: parseField.code,

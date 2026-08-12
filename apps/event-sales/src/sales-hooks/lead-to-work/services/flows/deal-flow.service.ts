@@ -1,0 +1,153 @@
+import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { IBatchGroupBuffer } from '../../../../shared/batch/batch-group-buffer.interface';
+import { ResolvedLeadToWorkItem } from '../../dto/lead-to-work.dto';
+import { LeadToWorkContext } from '../lead-to-work-context.service';
+import { LeadToWorkStagePlan } from '../lead-to-work-stage.resolver';
+import { IXoEventContext } from '../models/xo-event-entity.model';
+import { BxRow, LeadToWorkFlowBase } from './lead-to-work-flow.base';
+
+/** Итог по одной сделке: ссылка для связей + ключ команды. */
+export interface DealFlowResult {
+    /** `123` (reuse) либо `$result[cmd]` (создание); null — сделки нет. */
+    ref: string | null;
+    cmd?: string;
+}
+
+/**
+ * Сделки хука «лид → работа»: основная сделка ОП и ХО-сделка.
+ *
+ * Обе ветки идемпотентны: существующая сделка НЕ дублируется, а доводится
+ * (связи графа, событийные поля, ответственный при передаче). Связи
+ * `deal_from_lead_id` + `deal_joined_leads` пишутся на ЛЮБУЮ нашу сделку —
+ * правило пользователя «у любой связанной сделки видно, из какого лида».
+ */
+export class DealFlowService extends LeadToWorkFlowBase {
+    /** Основная сделка ОП: reuse существующей либо создание новой. */
+    queueBase(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        plan: LeadToWorkStagePlan,
+        eventName: string,
+        companyRef: string | null,
+        eventCtx: IXoEventContext | null,
+        buffer: IBatchGroupBuffer,
+    ): DealFlowResult {
+        if (ctx.existingOurDeal) {
+            const row = ctx.existingOurDeal as unknown as BxRow;
+            const dealId = String(row.ID);
+            const cmd = `lw_deal_upd_${item.leadId}`;
+            const fields: BxRow = {
+                ...this.dealLinkFields(item.leadId, row),
+                ...this.eventFields(eventCtx, 'deal', row),
+            };
+            if (companyRef && !this.text(row.COMPANY_ID)) {
+                fields.COMPANY_ID = companyRef;
+            }
+            // Повторный ХО передаёт работу: сделка — новому ответственному.
+            if (item.isXo === 'Y') {
+                fields.ASSIGNED_BY_ID = String(item.responsible);
+            }
+            buffer.queue(() =>
+                this.bitrix.batch.deal.update(
+                    cmd,
+                    Number(dealId),
+                    fields as never,
+                ),
+            );
+            return { ref: dealId, cmd };
+        }
+
+        const cmd = `lw_deal_${item.leadId}`;
+        const fields: BxRow = {
+            TITLE: eventName,
+            CATEGORY_ID: plan.dealCategoryId,
+            ASSIGNED_BY_ID: String(item.responsible),
+            ...this.dealLinkFields(item.leadId, null),
+            ...this.eventFields(eventCtx, 'deal', null),
+        };
+        if (plan.dealStageId) fields.STAGE_ID = plan.dealStageId;
+        if (companyRef) fields.COMPANY_ID = companyRef;
+        const contactId = this.text((ctx.lead as unknown as BxRow).CONTACT_ID);
+        if (contactId) fields.CONTACT_ID = contactId;
+
+        buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
+        return { ref: `$result[${cmd}]`, cmd };
+    }
+
+    /**
+     * ХО-сделка (только isXo=Y). Повторный ХО существующую сделку не
+     * плодит, а ПЕРЕДАЁТ новому ответственному; смежные сделки не
+     * закрываются — это делает инвариант «одна пара» до записи.
+     */
+    queueXo(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        plan: LeadToWorkStagePlan,
+        xoTitle: string,
+        companyRef: string | null,
+        eventCtx: IXoEventContext | null,
+        buffer: IBatchGroupBuffer,
+    ): DealFlowResult {
+        if (item.isXo !== 'Y') return { ref: null };
+
+        if (ctx.existingXoDeal) {
+            const row = ctx.existingXoDeal as unknown as BxRow;
+            const xoId = String(row.ID);
+            const cmd = `lw_xo_upd_${item.leadId}`;
+            const fields: BxRow = {
+                ASSIGNED_BY_ID: String(item.responsible),
+                ...this.dealLinkFields(item.leadId, row),
+                ...this.eventFields(eventCtx, 'deal', row),
+            };
+            buffer.queue(() =>
+                this.bitrix.batch.deal.update(
+                    cmd,
+                    Number(xoId),
+                    fields as never,
+                ),
+            );
+            return { ref: xoId, cmd };
+        }
+
+        if (!plan.xoCategoryId) return { ref: null };
+        const cmd = `lw_xo_${item.leadId}`;
+        const fields: BxRow = {
+            TITLE: xoTitle,
+            CATEGORY_ID: plan.xoCategoryId,
+            ASSIGNED_BY_ID: String(item.responsible),
+            ...this.dealLinkFields(item.leadId, null),
+            // Событийные поля обзвона — как у ХО-сделки классического хука.
+            ...this.eventFields(eventCtx, 'deal', null),
+        };
+        if (plan.xoStageId) fields.STAGE_ID = plan.xoStageId;
+        if (companyRef) fields.COMPANY_ID = companyRef;
+        buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
+        return { ref: `$result[${cmd}]`, cmd };
+    }
+
+    /**
+     * Наши поля-связи, обязательные для ЛЮБОЙ связанной сделки (основной И
+     * ХО): deal_from_lead_id = лид-первоисточник, deal_joined_leads = union
+     * с текущим значением сделки. Отсутствующее на портале поле — скип.
+     */
+    private dealLinkFields(leadId: number, existingRow: BxRow | null): BxRow {
+        const fields: BxRow = {};
+        const fromLeadName = this.dealFieldName(
+            PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
+        );
+        if (fromLeadName) {
+            fields[fromLeadName] = `L_${leadId}`;
+        }
+        const joinedName = this.dealFieldName(
+            PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
+        );
+        if (joinedName) {
+            const current = existingRow
+                ? this.refList(existingRow[joinedName])
+                : [];
+            fields[joinedName] = mergeTaskCrmBindings(current, [`L_${leadId}`]);
+        }
+        return fields;
+    }
+}

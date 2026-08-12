@@ -191,7 +191,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 220,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'Менеджер по продажам Гарант',
@@ -361,7 +361,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 220,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'ОП Статус Работы',
@@ -478,7 +478,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 230,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'ОП Причины нерезультативности',
@@ -764,7 +764,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 230,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'Сумма предложения',
@@ -1518,7 +1518,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 660,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'Установлена комания',

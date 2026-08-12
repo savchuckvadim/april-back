@@ -2,6 +2,7 @@ import {
     findPbxSalesEventField,
     PBX_SALES_EVENT_FIELDS,
 } from '../pbx-sales-event-field.type';
+import { isBitrixMultipleField } from '../../../../lib/field-type-to-bx.mapper';
 
 /**
  * Зеркало новых полей графа «лид ↔ сделка» и пакета op_lead_* (2026-08):
@@ -82,6 +83,23 @@ describe('PBX_SALES_EVENT_FIELDS — граф лид↔сделка и op_lead_*
                 'Нет',
                 'Нет информации',
             ]);
+        }
+    });
+
+    /*
+     * Шаблонный тип `multiple` = строковое поле СО МНОЖЕСТВЕННЫМИ значениями.
+     * В Битриксе это два разных атрибута (USER_TYPE_ID='string' + MULTIPLE='Y'),
+     * поэтому множественность выводится из ТИПА, а не из дубль-флага: иначе
+     * поле создаётся одиночным, а запись массива Битрикс молча превращает в
+     * строку «Array» — ровно так терялась история обработки заявки.
+     */
+    it('тип multiple всегда даёт множественное поле Битрикса', () => {
+        const multipleFields = PBX_SALES_EVENT_FIELDS.filter(
+            field => field.type === 'multiple',
+        );
+        expect(multipleFields.length).toBeGreaterThan(0);
+        for (const field of multipleFields) {
+            expect(isBitrixMultipleField(field)).toBe(true);
         }
     });
 

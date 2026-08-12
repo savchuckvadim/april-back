@@ -1,5 +1,8 @@
 import { PBXService } from '@/modules/pbx';
-import { mapFieldTypeToBitrixType } from '@lib/portal-lib/pbx-domain';
+import {
+    isBitrixMultipleField,
+    mapFieldTypeToBitrixType,
+} from '@lib/portal-lib/pbx-domain';
 import {
     BitrixService,
     EUserFieldType,
@@ -139,7 +142,7 @@ export class BxTypedEntityFieldsInstallService {
             entityId: this.ctx.bitrixEntityId,
             fieldName,
             userTypeId: bxType,
-            multiple: parseField.isMultiple ? 'Y' : 'N',
+            multiple: isBitrixMultipleField(parseField) ? 'Y' : 'N',
             mandatory: 'N',
             showFilter: 'Y',
             showInList: 'Y',

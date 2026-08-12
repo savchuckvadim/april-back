@@ -5,6 +5,7 @@ import {
     ITaskUserFieldParams,
 } from '@/modules/bitrix';
 import { Field } from '../../parse-field-excel';
+import { isBitrixMultipleField } from '@lib/portal-lib/pbx-domain';
 import { AbstractBxFieldsInstallService } from '@lib/pbx-user-fields';
 
 /** Префикс пользовательских полей задачи в Bitrix. */
@@ -83,7 +84,7 @@ export class BxTaskFieldsInstallService extends AbstractBxFieldsInstallService {
             LABEL: parseField.name,
             EDIT_FORM_LABEL: { ru: parseField.name },
             SORT: String(parseField.order),
-            MULTIPLE: parseField.isMultiple ? 'Y' : 'N',
+            MULTIPLE: isBitrixMultipleField(parseField) ? 'Y' : 'N',
             MANDATORY: 'N',
         };
         // строковые поля-комментарии делаем многострочными
