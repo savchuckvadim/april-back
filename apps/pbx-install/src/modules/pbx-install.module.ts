@@ -22,10 +22,12 @@ import { PbxFieldModule } from './konstructor/field/pbx-field.module';
 import { PbxCounterModule } from './konstructor/counter/pbx-counter.module';
 import { DocumentCounterModule } from '@lib/portal-lib/konstructor';
 import { MarketplaceProvisionModule } from './marketplace-provision/marketplace-provision.module';
+import { PbxPortalCacheModule } from './shared/portal-cache/pbx-portal-cache.module';
 
 @Module({
     imports: [
         MarketplaceProvisionModule,
+        PbxPortalCacheModule,
         PbxSmartInstallModule,
         PbxRpaInstallModule,
         PbxCompanyInstallModule,

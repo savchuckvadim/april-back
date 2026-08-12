@@ -170,11 +170,37 @@ export const SKAP_FIELD_CODES = [
 export type SkapFieldCode = (typeof SKAP_FIELD_CODES)[number];
 
 /**
- * Максимум символов в поле IP_LIST: текст >768 байт занимает фиксированный
- * 768-байтовый префикс строки b_crm_dynamic_items (skill bitrix-field-limits),
- * полный список IP хранится в БД (skap_sessions).
+ * Максимум символов в поле IP_LIST: длинные значения — главный вклад в
+ * row-size лимит строки b_crm_dynamic_items (~8126 байт, skill
+ * bitrix-field-limits; боевой инцидент 2026-08-12 «Row size too large» на
+ * crm.item.update). Полный список IP хранится в БД (skap_sessions).
  */
-export const SKAP_IP_LIST_MAX_LEN = 700;
+export const SKAP_IP_LIST_MAX_LEN = 190;
+
+/**
+ * Ступени деградации записи элемента под row-size лимит (канон
+ * call-report writeWithDegradation): обрезка длины не помогает — помогает
+ * уменьшение ЧИСЛА длинных полей.
+ * Ступень 1 — чисто справочные поля (полные данные в БД: sessions/files).
+ * Ступень 2 — плюс описательные строки (минимум для отчётов остаётся:
+ * период, логин, карточки, комплект-ID, счётчики, связи, события).
+ */
+export const SKAP_DEGRADE_STEP1_CODES: readonly SkapFieldCode[] = [
+    'IP_LIST',
+    'SOURCE_FILE',
+];
+export const SKAP_DEGRADE_STEP2_CODES: readonly SkapFieldCode[] = [
+    ...SKAP_DEGRADE_STEP1_CODES,
+    'RP_NAME',
+    'CLIENT_NAME',
+    'COMPLECT_TYPE',
+    'COMPLECT_NAME',
+    'SUPPLY_KIND',
+    'NET_COEF',
+    'CITY',
+    'REGION',
+    'MANAGER_NAME',
+];
 
 // ---------------------------------------------------------------------------
 // Полный список полей смарта

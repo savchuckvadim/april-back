@@ -5,6 +5,7 @@ import { SalesHookRegistryService } from '../core/services/sales-hook-registry.s
 import { LeadToWorkController } from './controllers/lead-to-work.controller';
 import { LeadToWorkUseCase } from './use-cases/lead-to-work.use-case';
 import { LeadToWorkAssigneeService } from './services/lead-to-work-assignee.service';
+import { PortalFieldsModule } from '../../shared/portal-fields';
 
 /**
  * Хук «лид → работа» (группа 1): конвертация лида в работу ОП и «ХО из
@@ -13,7 +14,9 @@ import { LeadToWorkAssigneeService } from './services/lead-to-work-assignee.serv
  * (LeadToWorkAssigneeService), когда responsible не передан.
  */
 @Module({
-    imports: [SalesHookCoreModule, BxDepartmentModule],
+    // PortalFieldsModule — фактические привязки crm-полей лида: от них
+    // зависит формат значения связей (голый id либо `D_{id}`).
+    imports: [SalesHookCoreModule, BxDepartmentModule, PortalFieldsModule],
     controllers: [LeadToWorkController],
     providers: [LeadToWorkUseCase, LeadToWorkAssigneeService],
 })

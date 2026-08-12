@@ -2,6 +2,8 @@ import { Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import { IBXItem } from '@lib/bitrix/domain/crm/item/interface/item.interface';
 import {
+    SKAP_DEGRADE_STEP1_CODES,
+    SKAP_DEGRADE_STEP2_CODES,
     SKAP_IP_LIST_MAX_LEN,
     SkapEventCode,
     SkapFieldCode,
@@ -56,6 +58,8 @@ const XMLID_CHUNK = 50;
  */
 export class SkapSmartWriterService {
     private readonly logger = new Logger(SkapSmartWriterService.name);
+    /** Поля текущей ступени деградации (пропускаются в setUf). */
+    private dropCodes: ReadonlySet<SkapFieldCode> = new Set();
 
     constructor(
         private readonly bitrix: BitrixService,
@@ -95,12 +99,54 @@ export class SkapSmartWriterService {
         return map;
     }
 
-    /** Upsert элемента; existingId — из findItemIdsByXmlIds. */
+    /**
+     * Upsert элемента с деградацией под row-size лимит MySQL Битрикса
+     * (канон call-report writeWithDegradation, инцидент 2026-08-12:
+     * «Row size too large (> 8126)» на crm.item.update):
+     * попытка 0 — все поля; 1 — без IP_LIST/SOURCE_FILE; 2 — без
+     * описательных строк (минимум для отчётов). existingId — из
+     * findItemIdsByXmlIds. degraded — на какой ступени записалось.
+     */
     async upsertItem(
         input: SkapSmartItemInput,
         existingId: number | null,
+    ): Promise<{ id: number; created: boolean; degraded: number }> {
+        const steps: readonly (readonly SkapFieldCode[])[] = [
+            [],
+            SKAP_DEGRADE_STEP1_CODES,
+            SKAP_DEGRADE_STEP2_CODES,
+        ];
+        let lastError: unknown = null;
+        for (let level = 0; level < steps.length; level++) {
+            const fields = this.buildFields(input, new Set(steps[level]));
+            try {
+                const result = await this.writeFields(
+                    input,
+                    existingId,
+                    fields,
+                );
+                if (level > 0) {
+                    this.logger.warn(
+                        `${input.xmlId}: записан с деградацией ${level} ` +
+                            `(row-size лимит; сокращено полей: ${steps[level].length})`,
+                    );
+                }
+                return { ...result, degraded: level };
+            } catch (error) {
+                if (!this.isRowSizeError(error)) throw error;
+                lastError = error;
+            }
+        }
+        throw lastError instanceof Error
+            ? lastError
+            : new Error(`row-size: ${String(lastError)}`);
+    }
+
+    private async writeFields(
+        input: SkapSmartItemInput,
+        existingId: number | null,
+        fields: Partial<IBXItem>,
     ): Promise<{ id: number; created: boolean }> {
-        const fields = this.buildFields(input);
         if (existingId) {
             await this.bitrix.item.update(
                 existingId,
@@ -127,6 +173,27 @@ export class SkapSmartWriterService {
     }
 
     /**
+     * Детект row-size ошибки — и по message, и по телу ответа: у AxiosError
+     * message = «Request failed with status code 400», сам текст MySQL
+     * лежит в response.data.error_description (прод-урок call-report 06.08).
+     */
+    private isRowSizeError(error: unknown): boolean {
+        const axiosLike = error as {
+            message?: string;
+            response?: { data?: unknown };
+        } | null;
+        let responseText = '';
+        try {
+            responseText = JSON.stringify(axiosLike?.response?.data ?? '');
+        } catch {
+            responseText = '';
+        }
+        return `${axiosLike?.message ?? ''} ${responseText}`.includes(
+            'Row size too large',
+        );
+    }
+
+    /**
      * Детализация месяца в таймлайн элемента (сессии логина из
      * Online_detail) — кусками по ~8000 символов, fail-open.
      */
@@ -150,7 +217,11 @@ export class SkapSmartWriterService {
         }
     }
 
-    private buildFields(input: SkapSmartItemInput): Partial<IBXItem> {
+    private buildFields(
+        input: SkapSmartItemInput,
+        dropCodes: ReadonlySet<SkapFieldCode> = new Set(),
+    ): Partial<IBXItem> {
+        this.dropCodes = dropCodes;
         const fields: Record<string, unknown> = {
             title: input.title,
             companyId: input.companyId,
@@ -223,6 +294,7 @@ export class SkapSmartWriterService {
         code: SkapFieldCode,
         value: unknown,
     ): void {
+        if (this.dropCodes.has(code)) return;
         if (value === null || value === undefined || value === '') return;
         const key = this.info.ufKeyByCode[code];
         if (!key) {

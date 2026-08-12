@@ -158,6 +158,36 @@ const FIELDS = {
     },
 };
 
+/**
+ * Событийные поля ХО установлены на всех трёх сущностях — как на портале,
+ * где классический холодный обзвон их и пишет.
+ */
+const XO_EVENT_FIELDS = {
+    ...FIELDS,
+    ...Object.fromEntries(
+        (
+            [
+                ['xo_name', 'XO_NAME'],
+                ['xo_date', 'XO_DATE'],
+                ['xo_responsible', 'XO_RESPONSIBLE'],
+                ['xo_created', 'XO_CREATED'],
+                ['manager_op', 'MANAGER_OP'],
+                ['call_next_date', 'CALL_NEXT_DATE'],
+                ['call_next_name', 'CALL_NEXT_NAME'],
+                ['call_last_date', 'CALL_LAST_DATE'],
+                ['op_history', 'OP_HISTORY'],
+                ['op_mhistory', 'OP_MHISTORY'],
+                ['op_current_status', 'OP_CURRENT_STATUS'],
+            ] as const
+        ).flatMap(([code, bitrixId]) =>
+            (['lead', 'company', 'deal'] as const).map(entity => [
+                `${entity}:${code}`,
+                { bitrixId },
+            ]),
+        ),
+    ),
+};
+
 describe('LeadToWorkFlowService', () => {
     /*
      * Инвариант «одна открытая пара»: повторные прогоны не должны копить
@@ -212,6 +242,76 @@ describe('LeadToWorkFlowService', () => {
         expect(updated).toContain(420);
     });
 
+    it('ХО-ветка пишет событийные поля обзвона на лид, компанию и обе сделки', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(XO_EVENT_FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 5,
+                isXo: 'Y',
+                deadline: '15.08.2026 10:00:00',
+            }),
+            baseContext({ company: { ID: '7', TITLE: 'Ромашка' } as never }),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+            900, // автор операции → xo_created
+        );
+
+        const fieldsOf = (method: string) =>
+            (calls.find(c => c.method === method)?.args.at(-1) ?? {}) as Record<
+                string,
+                unknown
+            >;
+
+        // Компания: дата обзвона, ответственный, постановщик, текущий статус.
+        const company = fieldsOf('company.update');
+        expect(company.UF_CRM_XO_DATE).toBe('15.08.2026 10:00:00');
+        expect(company.UF_CRM_XO_RESPONSIBLE).toBe('5');
+        expect(company.UF_CRM_XO_CREATED).toBe('900');
+        expect(company.UF_CRM_OP_CURRENT_STATUS).toContain('Холодный обзвон');
+
+        // Основная и ХО-сделки получают тот же набор.
+        const baseDeal = fieldsOf('deal.set');
+        expect(baseDeal.UF_CRM_XO_DATE).toBe('15.08.2026 10:00:00');
+        expect(baseDeal.UF_CRM_CALL_NEXT_DATE).toBe('15.08.2026 10:00:00');
+
+        // Лид: событийные поля + история обзвона (multiple, свежая первой).
+        const lead = fieldsOf('lead.update');
+        expect(lead.UF_CRM_XO_NAME).toBe('ООО Ромашка (заявка)');
+        expect(lead.UF_CRM_MANAGER_OP).toBe('5');
+        const mhistory = lead.UF_CRM_OP_MHISTORY as string[];
+        expect(mhistory[0]).toContain('ХО: ООО Ромашка (заявка)');
+    });
+
+    it('конвертация (isXo=N) событийные поля ХО НЕ пишет', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(XO_EVENT_FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 5,
+                deadline: '15.08.2026 10:00:00',
+            }),
+            baseContext(),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const dealFields = calls.find(c => c.method === 'deal.set')
+            ?.args[0] as Record<string, unknown>;
+        expect(dealFields.UF_CRM_XO_DATE).toBeUndefined();
+        expect(dealFields.UF_CRM_OP_CURRENT_STATUS).toBeUndefined();
+    });
+
     it('флаг робота isRequest=Y делает лид заявкой без полей лидогена', () => {
         const { bitrix, calls } = makeBitrix();
         const service = new LeadToWorkFlowService(
@@ -262,6 +362,8 @@ describe('LeadToWorkFlowService', () => {
         // Лид: обратная ссылка через $result + статус-item «Работа со сделкой».
         const leadUpdate = calls.find(c => c.method === 'lead.update');
         const leadFields = leadUpdate?.args[1] as Record<string, unknown>;
+        // Определения полей не прочитаны → дефолт с префиксом (инсталлер по
+        // умолчанию включает все типы, там формат `D_{id}`).
         expect(leadFields.UF_CRM_TO_BASE_SALES).toBe(
             `D_$result[${dealSet?.cmd}]`,
         );
@@ -270,6 +372,63 @@ describe('LeadToWorkFlowService', () => {
         // Конвертационная ветка KPI не пишет.
         expect(plan.kpiPlanned).toBe(false);
         expect(calls.some(c => c.method === 'listItem.add')).toBe(false);
+    });
+
+    /*
+     * Формат значения crm-поля диктует САМ Битрикс: поле с единственным
+     * разрешённым типом хранит голый id и молча отбрасывает `D_123`, поле с
+     * несколькими типами — наоборот. Поэтому формат берётся из фактических
+     * привязок поля портала, а не из нашей константы.
+     */
+    it('to_base_sales с ОДНИМ разрешённым типом получает голый id (без D_)', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+            { UF_CRM_TO_BASE_SALES: { itemNames: {}, crmTypes: ['DEAL'] } },
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext(),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const dealSet = calls.find(c => c.method === 'deal.set');
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(leadFields.UF_CRM_TO_BASE_SALES).toBe(
+            `$result[${dealSet?.cmd}]`,
+        );
+    });
+
+    it('to_base_sales с НЕСКОЛЬКИМИ типами получает ссылку с префиксом D_', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+            {
+                UF_CRM_TO_BASE_SALES: {
+                    itemNames: {},
+                    crmTypes: ['LEAD', 'DEAL'],
+                },
+            },
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext(),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const dealSet = calls.find(c => c.method === 'deal.set');
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(leadFields.UF_CRM_TO_BASE_SALES).toBe(
+            `D_$result[${dealSet?.cmd}]`,
+        );
     });
 
     it('компания из лида берётся за основу; создание — только по флагу Y', () => {

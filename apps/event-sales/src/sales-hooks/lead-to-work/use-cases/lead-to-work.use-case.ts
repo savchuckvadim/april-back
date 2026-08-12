@@ -20,6 +20,8 @@ import {
     LeadToWorkFlowService,
     LeadToWorkQueuedPlan,
 } from '../services/lead-to-work-flow.service';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 
 type BxRow = Record<string, unknown>;
 
@@ -63,7 +65,23 @@ export class LeadToWorkUseCase
     readonly hook = EnumSalesHookCode.LEAD_TO_WORK;
     private readonly logger = new Logger(LeadToWorkUseCase.name);
 
-    constructor(private readonly assignee: LeadToWorkAssigneeService) {}
+    constructor(
+        private readonly assignee: LeadToWorkAssigneeService,
+        private readonly ufDefinitions: LeadUfDefinitionsService,
+    ) {}
+
+    /** UF-имена полей-связей лида, для которых нужен фактический формат. */
+    private leadLinkFieldNames(ctx: SalesHookExecutionContext): string[] {
+        return [
+            PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
+            PBX_SALES_EVENT_FIELD_CODES.to_xo_sales,
+        ]
+            .map(code => {
+                const field = ctx.portal.getEntityFieldByCode('lead', code);
+                return field ? ctx.portal.getFieldBitrixId(field) : null;
+            })
+            .filter((name): name is string => !!name);
+    }
 
     async execute(
         ctx: SalesHookExecutionContext,
@@ -76,7 +94,22 @@ export class LeadToWorkUseCase
             ctx.bitrix,
             ctx.portal,
         );
-        const flowService = new LeadToWorkFlowService(ctx.bitrix, ctx.portal);
+        /*
+         * Фактические определения полей-связей лида (SETTINGS): от количества
+         * разрешённых типов зависит формат значения — голый id либо `D_{id}`.
+         * Читается ОДИН раз на пачку и кэшируется на домен (10 мин): формат
+         * не угадываем, иначе Битрикс молча не сохранит связь.
+         */
+        const ufDefinitions = await this.ufDefinitions.resolve(
+            ctx.domain,
+            ctx.bitrix,
+            this.leadLinkFieldNames(ctx),
+        );
+        const flowService = new LeadToWorkFlowService(
+            ctx.bitrix,
+            ctx.portal,
+            ufDefinitions,
+        );
 
         // Накопитель: что запланировали по каждому лиду. Реальные id
         // появятся только после отправки батча (шаг 2), поэтому пока

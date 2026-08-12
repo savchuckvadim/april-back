@@ -27,9 +27,9 @@ import {
     LeadRequestUpdateResultDto,
 } from '../dto/lead-request-update.dto';
 import {
-    LeadLiveItemNames,
-    LeadRequestLiveNamesService,
-} from './lead-request-live-names.service';
+    LeadUfDefinitions,
+    LeadUfDefinitionsService,
+} from '../../shared/portal-fields';
 
 type BxRow = Record<string, unknown>;
 
@@ -59,7 +59,7 @@ export class LeadRequestService {
 
     constructor(
         private readonly pbx: PBXService,
-        private readonly liveNames: LeadRequestLiveNamesService,
+        private readonly ufDefinitions: LeadUfDefinitionsService,
     ) {}
 
     async card(domain: string, leadId: number): Promise<LeadRequestCardDto> {
@@ -77,7 +77,7 @@ export class LeadRequestService {
             const field = portal.getEntityFieldByCode('lead', code);
             return field ? portal.getFieldBitrixId(field) : null;
         }).filter((name): name is string => !!name);
-        const live = await this.liveNames.resolve(
+        const live = await this.ufDefinitions.resolve(
             domain,
             bitrix,
             liveFieldNames,
@@ -423,7 +423,7 @@ export class LeadRequestService {
         lead: BxRow,
         code: EnumLeadRequestFieldCode,
         warnings: string[],
-        live: LeadLiveItemNames,
+        live: LeadUfDefinitions,
     ): {
         installed: boolean;
         currentCode: TCode | null;
@@ -439,7 +439,7 @@ export class LeadRequestService {
         const current = field.items.find(
             item => String(item.bitrixId) === String(raw),
         );
-        const liveByItemId = live[ufName] ?? {};
+        const liveByItemId = live[ufName]?.itemNames ?? {};
         return {
             installed: true,
             currentCode: (current?.code as TCode | undefined) ?? null,

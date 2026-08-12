@@ -6,7 +6,7 @@ import { BxDepartmentModule } from 'libs/bx-department';
 import { SalesHookCoreModule } from '../sales-hooks/core/sales-hook-core.module';
 import { LeadRequestService } from './services/lead-request.service';
 import { LeadRequestAcceptService } from './services/lead-request-accept.service';
-import { LeadRequestLiveNamesService } from './services/lead-request-live-names.service';
+import { PortalFieldsModule } from '../shared/portal-fields';
 import { LeadRequestController } from './controllers/lead-request.controller';
 import { LeadRequestSlaService } from './sla/lead-request-sla.service';
 import { LeadRequestSlaScheduler } from './sla/lead-request-sla.scheduler';
@@ -29,12 +29,14 @@ import { LeadRequestSlaScheduler } from './sla/lead-request-sla.scheduler';
         PortalAppSettingsModule,
         BxDepartmentModule,
         SalesHookCoreModule,
+        // Живые названия вариантов полей лида «как на портале» (общий кэш
+        // с sales-хуками — одно чтение определений на домен).
+        PortalFieldsModule,
     ],
     controllers: [LeadRequestController],
     providers: [
         LeadRequestService,
         LeadRequestAcceptService,
-        LeadRequestLiveNamesService,
         LeadRequestSlaService,
         LeadRequestSlaScheduler,
     ],

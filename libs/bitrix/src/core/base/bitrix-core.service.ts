@@ -130,15 +130,22 @@ export class BitrixCore {
             ? ` | response: ${this.stringifyResponse(responseText)}` +
               ` | request: ${this.stringifyResponse(data)}`
             : '';
-        // Идемпотентные «ошибки»-подтверждения (повторная привязка уже
-        // привязанной активности при upsert-ретраях) — штатная ситуация:
-        // вызывающий код трактует их как успех, алертить админов нечем.
-        const isBenign = JSON.stringify(responseText ?? '').includes(
+        // Ожидаемые «ошибки», которые вызывающий код обрабатывает сам —
+        // телеграм-алерт не шлём (логи остаются):
+        // - ACTIVITY_IS_ALREADY_BOUND: идемпотентный повтор привязки,
+        //   трактуется как успех;
+        // - Row size too large: штатная ступень бюджетной записи смарта
+        //   (CallReportSmartWriterService деградирует состав полей и сам
+        //   алертит ТОЛЬКО финальный отказ; 12.08.2026 промежуточные
+        //   попытки заспамили админ-чат восемью алертами за минуту).
+        const responseJson = JSON.stringify(responseText ?? '');
+        const benignMarker = [
             'ACTIVITY_IS_ALREADY_BOUND',
-        );
-        if (isBenign) {
+            'Row size too large',
+        ].find(marker => responseJson.includes(marker));
+        if (benignMarker) {
             this.logger.warn(
-                `Bitrix [${method}]: ACTIVITY_IS_ALREADY_BOUND (идемпотентный повтор) — без алерта`,
+                `Bitrix [${method}]: ${benignMarker} — обрабатывается вызывающим кодом, без алерта`,
             );
         } else {
             this.logger.error(

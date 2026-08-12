@@ -125,20 +125,22 @@ export class ConvertNormalizerUseCase
             );
             if (toBaseField) {
                 const ufName = ctx.portal.getFieldBitrixId(toBaseField);
-                const existingRef = this.refOf(lead[ufName]);
-                if (!existingRef) {
+                // to_base_sales — crm-поле с единственным типом (only_deals):
+                // Битрикс хранит в нём ГОЛЫЙ id, значение `D_123` молча
+                // отбрасывает. Сравнение — по числу, чтобы понять и старые
+                // значения с префиксом.
+                const existingId = this.dealIdOf(lead[ufName]);
+                if (!existingId) {
                     ctx.buffer.queue(() =>
                         ctx.bitrix.batch.lead.update(
                             `cn_lead_${leadId}`,
                             leadId,
-                            {
-                                [ufName]: `D_${dealId}`,
-                            } as never,
+                            { [ufName]: String(dealId) } as never,
                         ),
                     );
-                } else if (existingRef !== `D_${dealId}`) {
+                } else if (existingId !== dealId) {
                     warnings.push(
-                        `У лида ${leadId} уже есть наша сделка ${existingRef} — сделка ${dealId} от ручной конвертации похожа на дубль, кандидат на merge`,
+                        `У лида ${leadId} уже есть наша сделка ${existingId} — сделка ${dealId} от ручной конвертации похожа на дубль, кандидат на merge`,
                     );
                 }
             }
@@ -165,6 +167,14 @@ export class ConvertNormalizerUseCase
     private numberOf(raw: unknown): number | null {
         const value = Number(raw);
         return Number.isFinite(value) && value > 0 ? value : null;
+    }
+
+    /** id сделки из значения связи: понимает и `123`, и legacy `D_123`. */
+    private dealIdOf(raw: unknown): number | null {
+        const ref = this.refOf(raw);
+        if (!ref) return null;
+        const match = /^(?:D_)?(\d+)$/.exec(ref);
+        return match ? Number(match[1]) : null;
     }
 
     private refOf(raw: unknown): string | null {

@@ -52,10 +52,20 @@ export class SkapContactKeyService {
             );
     }
 
+    /** Логин похож на валидный email (Bitrix валидирует поле EMAIL). */
+    static isEmailLike(login: string): boolean {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login);
+    }
+
     /**
      * Создаёт контакт с ключом СКАП-логина + задачу ответственному.
      * Возвращает id контакта; null — создать не удалось (импорт
      * продолжается без контакта).
+     *
+     * ВАЖНО: EMAIL ставится только для логинов-email — АРМ-логины бывают
+     * произвольными строками, Bitrix отклоняет весь crm.contact.add с
+     * «Поле "Рабочий e-mail" содержит некорректный адрес» (прод-инцидент
+     * 2026-08-12, телеграм-флуд). Ключ в UF_CRM_SKAP_LOGINS пишется всегда.
      */
     async createContact(input: SkapContactCreateInput): Promise<number | null> {
         const login = normalizeSkapLogin(input.login);
@@ -68,7 +78,9 @@ export class SkapContactKeyService {
                 ...(input.assignedById
                     ? { ASSIGNED_BY_ID: input.assignedById }
                     : {}),
-                EMAIL: [{ VALUE: login, TYPE: 'WORK' }],
+                ...(SkapContactKeyService.isEmailLike(login)
+                    ? { EMAIL: [{ VALUE: login, TYPE: 'WORK' }] }
+                    : {}),
                 SOURCE_DESCRIPTION: `Создан импортом СКАП (${input.clientCard})`,
                 [SKAP_CONTACT_LOGINS_FIELD]: [login],
             });

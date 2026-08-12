@@ -95,8 +95,12 @@ export class SkapFileImportFlow {
     private readonly contactKey: SkapContactKeyService;
     /** Кэш истории клиента для событий месяца (в рамках одного файла). */
     private readonly historyCache = new Map<string, SkapEventHistoryRow[]>();
-    /** Кэш созданных контактов прогона: `${companyId}:${login}` → id. */
-    private readonly createdContacts = new Map<string, number>();
+    /**
+     * Кэш попыток создания контактов прогона: `${companyId}:${login}` →
+     * id либо null (создание УЖЕ падало — не ретраим на каждой строке,
+     * иначе телеграм-флуд ошибками Bitrix; прод-инцидент 2026-08-12).
+     */
+    private readonly createdContacts = new Map<string, number | null>();
 
     constructor(
         bitrix: BitrixService,
@@ -357,6 +361,7 @@ export class SkapFileImportFlow {
         ]);
 
         // 5. Запись: одиночные вызовы, темп задаёт rate limiter.
+        let degradedCount = 0;
         for (const row of uniqueRows) {
             this.assertBudget();
             const clientCard = row.clientCard.trim();
@@ -392,7 +397,7 @@ export class SkapFileImportFlow {
             const timeTotalMin = Math.round(row.timeMs / 60_000);
 
             try {
-                const { id, created } = await this.writer.upsertItem(
+                const { id, created, degraded } = await this.writer.upsertItem(
                     {
                         xmlId,
                         title: `СКАП ${periodCode} · ${normalizeSkapLogin(row.login)}`,
@@ -431,6 +436,7 @@ export class SkapFileImportFlow {
                 );
                 // Страховка от повторного add в этом же прогоне.
                 existingByXmlId.set(xmlId, id);
+                if (degraded > 0) degradedCount += 1;
                 await this.services.itemRepo.upsertByDedupKey({
                     portalId: this.ctx.portalId,
                     domain: this.ctx.domain,
@@ -473,6 +479,14 @@ export class SkapFileImportFlow {
                     })
                     .catch(() => undefined);
             }
+        }
+
+        if (degradedCount > 0) {
+            stats.warnings.push(
+                `${entry.sourceFile}: ${degradedCount} элементов записаны с ` +
+                    'сокращёнными полями (row-size лимит Битрикса; полные ' +
+                    'данные — в БД и таймлайне)',
+            );
         }
 
         // 6. Записи без компании — в журнал (для reprocess после заведения).

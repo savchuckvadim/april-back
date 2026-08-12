@@ -21,14 +21,14 @@ import {
     LeadToWorkKpiService,
 } from './lead-to-work-kpi.service';
 import {
-    EnumLeadSiteStageCode,
-    EnumLeadSiteStatusCode,
-} from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
+    IXoEventContext,
+    XoEventEntityModel,
+} from './models/xo-event-entity.model';
+import { LeadXoEventEntityModel } from './models/lead-xo-event-entity.model';
 import {
-    appendLeadRequestHistory,
-    buildLeadRequestHistoryEntry,
-    LEAD_REQUEST_HISTORY_TEXT,
-} from '../../../shared/lead-request/lead-request-history.util';
+    buildCrmRefValue,
+    LeadUfDefinitions,
+} from '../../../shared/portal-fields';
 
 /** Префиксы задач; проверка идемпотентна — «Звонок Звонок…» не бывает. */
 export const CALL_TASK_PREFIX = 'Звонок';
@@ -83,6 +83,11 @@ export class LeadToWorkFlowService {
     constructor(
         private readonly bitrix: BitrixService,
         private readonly portal: PortalModel,
+        /**
+         * Фактические определения UF-полей лида с портала (привязки crm).
+         * От них зависит ФОРМАТ значения связей; пусто — дефолт с префиксом.
+         */
+        private readonly ufDefinitions: LeadUfDefinitions = {},
     ) {
         this.detector = new LeadRequestDetectorService(portal);
         this.kpi = new LeadToWorkKpiService(bitrix, portal);
@@ -128,8 +133,25 @@ export class LeadToWorkFlowService {
         };
         const eventName = this.eventName(item, ctx.lead);
 
+        /*
+         * Контекст события ХО: по нему модели считают событийные поля
+         * (xo_name/xo_date/call_next_date/op_history/op_work_status…) — тот
+         * же набор, что пишет классический холодный обзвон. null — ветка не
+         * ХО либо дедлайн не распознан: событийные поля просто не пишутся.
+         */
+        const eventCtx =
+            item.isXo === 'Y'
+                ? this.eventContext(item, eventName, authorId)
+                : null;
+
         // === Компания: существующую берём за основу, новую — только по флагу.
-        const companyRef = this.queueCompany(item, ctx, buffer, result);
+        const companyRef = this.queueCompany(
+            item,
+            ctx,
+            eventCtx,
+            buffer,
+            result,
+        );
 
         // === Основная сделка ОП: reuse или создание.
         const dealRef = this.queueBaseDeal(
@@ -138,6 +160,7 @@ export class LeadToWorkFlowService {
             plan,
             eventName,
             companyRef,
+            eventCtx,
             buffer,
             result,
         );
@@ -149,6 +172,7 @@ export class LeadToWorkFlowService {
             plan,
             this.xoTitle(eventName, detection),
             companyRef,
+            eventCtx,
             buffer,
             result,
         );
@@ -161,6 +185,7 @@ export class LeadToWorkFlowService {
             dealRef,
             xoRef,
             detection,
+            eventCtx,
             buffer,
             result,
         );
@@ -324,19 +349,31 @@ export class LeadToWorkFlowService {
     private queueCompany(
         item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
+        eventCtx: IXoEventContext | null,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): string | null {
         if (ctx.company) {
             const companyId = String(ctx.company.ID);
             // ХО-ветка «передаёт работу»: компания переходит новому
-            // ответственному (как в классическом ХО-хуке).
+            // ответственному и получает событийные поля обзвона —
+            // как в классическом ХО-хуке.
             if (item.isXo === 'Y') {
                 const cmd = `lw_company_upd_${item.leadId}`;
+                const fields: BxRow = {
+                    ASSIGNED_BY_ID: String(item.responsible),
+                    ...this.eventFields(
+                        eventCtx,
+                        'company',
+                        ctx.company as unknown as BxRow,
+                    ),
+                };
                 buffer.queue(() =>
-                    this.bitrix.batch.company.update(cmd, Number(companyId), {
-                        ASSIGNED_BY_ID: String(item.responsible),
-                    } as never),
+                    this.bitrix.batch.company.update(
+                        cmd,
+                        Number(companyId),
+                        fields as never,
+                    ),
                 );
             }
             return companyId;
@@ -352,10 +389,29 @@ export class LeadToWorkFlowService {
                 TITLE: title,
                 ASSIGNED_BY_ID: String(item.responsible),
                 LEAD_ID: String(item.leadId),
+                ...this.eventFields(eventCtx, 'company', null),
             } as never),
         );
         result.companyCmd = cmd;
         return `$result[${cmd}]`;
+    }
+
+    /**
+     * Событийные поля ХО для сущности (общая модель). Контекста нет (не
+     * ХО-ветка / нет дедлайна) — пустой объект.
+     */
+    private eventFields(
+        eventCtx: IXoEventContext | null,
+        entityType: 'company' | 'deal',
+        row: BxRow | null,
+    ): BxRow {
+        if (!eventCtx) return {};
+        return new XoEventEntityModel(
+            this.portal,
+            entityType,
+            row,
+            eventCtx,
+        ).getFields();
     }
 
     private queueBaseDeal(
@@ -364,6 +420,7 @@ export class LeadToWorkFlowService {
         plan: LeadToWorkStagePlan,
         eventName: string,
         companyRef: string | null,
+        eventCtx: IXoEventContext | null,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): string {
@@ -374,6 +431,11 @@ export class LeadToWorkFlowService {
             const fields: BxRow = {
                 ...this.dealLinkFields(
                     item.leadId,
+                    ctx.existingOurDeal as unknown as BxRow,
+                ),
+                ...this.eventFields(
+                    eventCtx,
+                    'deal',
                     ctx.existingOurDeal as unknown as BxRow,
                 ),
             };
@@ -404,6 +466,7 @@ export class LeadToWorkFlowService {
             CATEGORY_ID: plan.dealCategoryId,
             ASSIGNED_BY_ID: String(item.responsible),
             ...this.dealLinkFields(item.leadId, null),
+            ...this.eventFields(eventCtx, 'deal', null),
         };
         if (plan.dealStageId) fields.STAGE_ID = plan.dealStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
@@ -446,13 +509,14 @@ export class LeadToWorkFlowService {
         plan: LeadToWorkStagePlan,
         xoTitle: string,
         companyRef: string | null,
+        eventCtx: IXoEventContext | null,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): string | null {
         if (item.isXo !== 'Y') return null;
 
         // Повторный ХО: существующая ХО-сделка не плодится, а ПЕРЕДАЁТСЯ
-        // новому ответственному; связи графа доводятся.
+        // новому ответственному; связи графа и событийные поля доводятся.
         if (ctx.existingXoDeal) {
             const xoId = String(ctx.existingXoDeal.ID);
             const cmd = `lw_xo_upd_${item.leadId}`;
@@ -460,6 +524,11 @@ export class LeadToWorkFlowService {
                 ASSIGNED_BY_ID: String(item.responsible),
                 ...this.dealLinkFields(
                     item.leadId,
+                    ctx.existingXoDeal as unknown as BxRow,
+                ),
+                ...this.eventFields(
+                    eventCtx,
+                    'deal',
                     ctx.existingXoDeal as unknown as BxRow,
                 ),
             };
@@ -483,6 +552,8 @@ export class LeadToWorkFlowService {
             // Связи графа пишутся и на ХО-сделку (правило пользователя:
             // «у любой связанной сделки — создана из лида/присоединён лид»).
             ...this.dealLinkFields(item.leadId, null),
+            // Событийные поля обзвона — как у ХО-сделки классического хука.
+            ...this.eventFields(eventCtx, 'deal', null),
         };
         if (plan.xoStageId) fields.STAGE_ID = plan.xoStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
@@ -491,6 +562,11 @@ export class LeadToWorkFlowService {
         return `$result[${cmd}]`;
     }
 
+    /**
+     * Лид: стадия, ответственный и ВЕСЬ пакет полей заявки — считает
+     * `LeadXoEventEntityModel` (событийные поля ХО + связи + метки + история).
+     * У лида набор шире, чем у компании и сделки, поэтому модель своя.
+     */
     private queueLeadUpdate(
         item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
@@ -498,6 +574,7 @@ export class LeadToWorkFlowService {
         dealRef: string,
         xoRef: string | null,
         detection: LeadRequestDetection,
+        eventCtx: IXoEventContext | null,
         buffer: IBatchGroupBuffer,
         result: LeadToWorkQueuedPlan,
     ): void {
@@ -508,50 +585,37 @@ export class LeadToWorkFlowService {
             fields.ASSIGNED_BY_ID = String(item.responsible);
         }
 
-        const toBase = this.leadFieldName(
+        const leadRow = ctx.lead as unknown as BxRow;
+        // Формат ссылок зависит от привязок КОНКРЕТНОГО поля портала.
+        const toBaseName = this.leadFieldName(
             PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
         );
-        if (toBase) fields[toBase] = this.asDealRef(dealRef);
-        const toXo = this.leadFieldName(
+        const toXoName = this.leadFieldName(
             PBX_SALES_EVENT_FIELD_CODES.to_xo_sales,
         );
-        if (toXo && xoRef) fields[toXo] = this.asDealRef(xoRef);
+        const model = new LeadXoEventEntityModel(this.portal, leadRow, {
+            eventCtx,
+            isRequest: detection.isRequest,
+            baseDealRef: toBaseName
+                ? this.leadDealRef(toBaseName, dealRef)
+                : null,
+            xoDealRef:
+                toXoName && xoRef ? this.leadDealRef(toXoName, xoRef) : null,
+            hasCompany: Boolean(ctx.company || result.companyCmd),
+            previousResponsibleId: this.prevResponsible(ctx),
+            transferredById: item.transferredBy ?? null,
+            timezone: this.portal.getTimezone(),
+            responsibleId: item.responsible,
+            /*
+             * Событийные поля ХО (xo_date, история обзвона, op_work_status…)
+             * пишутся ТОЛЬКО в ХО-ветке: конвертация лида в работу холодным
+             * обзвоном не является.
+             */
+            withXoEventFields: item.isXo === 'Y',
+        });
+        Object.assign(fields, model.getFields());
 
-        const isCompany = this.leadFieldName(
-            PBX_SALES_EVENT_FIELD_CODES.op_lead_is_company,
-        );
-        if (isCompany && (ctx.company || result.companyCmd)) {
-            fields[isCompany] = 1;
-        }
-        const statusField = this.portal.getEntityFieldByCode(
-            'lead',
-            PBX_SALES_EVENT_FIELD_CODES.op_lead_status,
-        );
-        if (statusField) {
-            const itemCode =
-                ctx.company || result.companyCmd
-                    ? 'op_lead_status_five' // «Работа с компанией»
-                    : 'op_lead_status_four'; // «Работа со сделкой»
-            const statusItem = statusField.items.find(
-                listItem => listItem.code === itemCode,
-            );
-            if (statusItem) {
-                fields[this.portal.getFieldBitrixId(statusField)] =
-                    statusItem.bitrixId;
-            }
-        }
-
-        // Заявка, взятая в ХО впервые: первичное проставление op_lead_site_*
-        // (только пустые поля — историю заявки не переписываем).
-        if (item.isXo === 'Y' && detection.isRequest) {
-            this.appendSiteMarks(ctx, fields);
-        }
-
-        // История обработки заявки: назначение/передача ХО — новая запись
-        // (append от ТЕКУЩЕГО значения лида; multiple перезаписывается целиком).
-        if (item.isXo === 'Y') {
-            this.appendRequestHistory(item, ctx, fields);
-        }
+        this.warnIfLeadFieldsInvisible(item.leadId, fields, result);
 
         if (Object.keys(fields).length === 0) return;
         const cmd = `lw_lead_${item.leadId}`;
@@ -561,64 +625,55 @@ export class LeadToWorkFlowService {
     }
 
     /**
-     * История обработки заявки (op_lead_firstprepare_history, multiple):
-     * «ХО назначен: {id}» либо «ХО передан: {prev} → {new}». Поле не
-     * установлено — молчаливый скип, как остальной граф.
+     * Явный сигнал «портал не отдаёт поля лида»: в fields только системные
+     * ключи (STATUS_ID/ASSIGNED_BY_ID) — значит ни одно UF-поле лида не
+     * разрезолвилось. Практически всегда это устаревший слепок портала
+     * (Redis `portal_{domain}`, TTL 10 ч) после установки полей.
      */
-    private appendRequestHistory(
-        item: ResolvedLeadToWorkItem,
-        ctx: LeadToWorkContext,
+    private warnIfLeadFieldsInvisible(
+        leadId: number,
         fields: BxRow,
+        result: LeadToWorkQueuedPlan,
     ): void {
-        const field = this.portal.getEntityFieldByCode(
-            'lead',
-            PBX_SALES_EVENT_FIELD_CODES.op_lead_firstprepare_history,
-        );
-        if (!field) return;
-        const bitrixId = this.portal.getFieldBitrixId(field);
-
-        const prev = this.prevResponsible(ctx);
-        // Самопередача подсвечивается отдельно: сотрудник сам отдал заявку.
-        const text = item.transferredBy
-            ? LEAD_REQUEST_HISTORY_TEXT.selfTransferred(
-                  item.transferredBy,
-                  item.responsible,
-              )
-            : prev && prev !== item.responsible
-              ? LEAD_REQUEST_HISTORY_TEXT.transferred(prev, item.responsible)
-              : LEAD_REQUEST_HISTORY_TEXT.assigned(item.responsible);
-        fields[bitrixId] = appendLeadRequestHistory(
-            (ctx.lead as unknown as BxRow)[bitrixId],
-            buildLeadRequestHistoryEntry(text, this.portal.getTimezone()),
-        );
+        const ufKeys = Object.keys(fields).filter(key => key.startsWith('UF_'));
+        if (ufKeys.length > 0) return;
+        const message =
+            `Портал не отдаёт ни одного UF-поля ЛИДА ${leadId} — заполнены ` +
+            'только системные поля. Проверьте установку полей лида и сбросьте ' +
+            'кэш слепка портала (POST /pbx-portal-cache/invalidate?domain=…)';
+        result.warnings.push(message);
+        this.logger.warn(`[lead-fields] ${message}`);
     }
 
     /**
-     * Первичные метки заявки при НАЗНАЧЕНИИ ХО: op_lead_site_status →
-     * «Появилась», op_lead_site_stage → «Назначена менеджеру» — только
-     * если поле установлено и ПУСТО. «Взята в работу» здесь НЕ ставится:
-     * это факт ПРИНЯТИЯ, его фиксирует /lead-request/accept.
+     * Общий контекст события ХО для всех моделей сущностей. Дедлайн —
+     * из параметра хука; строка не парсится (робот прислал мусор) → null,
+     * и событийные поля времени просто не пишутся (graceful).
      */
-    private appendSiteMarks(ctx: LeadToWorkContext, fields: BxRow): void {
-        const marks: [code: string, itemCode: string][] = [
-            [
-                PBX_SALES_EVENT_FIELD_CODES.op_lead_site_status,
-                EnumLeadSiteStatusCode.appeared,
-            ],
-            [
-                PBX_SALES_EVENT_FIELD_CODES.op_lead_site_stage,
-                EnumLeadSiteStageCode.assigned,
-            ],
-        ];
-        const lead = ctx.lead as unknown as BxRow;
-        for (const [code, itemCode] of marks) {
-            const field = this.portal.getEntityFieldByCode('lead', code);
-            if (!field) continue;
-            const bitrixId = this.portal.getFieldBitrixId(field);
-            if (this.text(lead[bitrixId])) continue; // уже заполнено
-            const listItem = field.items.find(it => it.code === itemCode);
-            if (listItem) fields[bitrixId] = listItem.bitrixId;
+    private eventContext(
+        item: ResolvedLeadToWorkItem,
+        eventName: string,
+        authorId: number | null,
+    ): IXoEventContext | null {
+        const tz = this.portal.getTimezone();
+        let deadline: PortalDeadline | null = null;
+        if (item.deadline) {
+            try {
+                deadline = PortalDeadline.fromPortalInput(item.deadline, tz);
+            } catch {
+                this.logger.warn(
+                    `[event-fields] дедлайн «${item.deadline}» не распознан — событийные поля ХО пропущены`,
+                );
+            }
         }
+        if (!deadline) return null;
+        return {
+            eventName,
+            deadline,
+            responsibleId: item.responsible,
+            xoCreatedById: authorId ?? item.responsible,
+            timezone: tz,
+        };
     }
 
     private queueTasks(
@@ -844,9 +899,22 @@ export class LeadToWorkFlowService {
         return title.startsWith(prefix) ? title : `${prefix} ${title}`.trim();
     }
 
-    /** `5` → `D_5`; `$result[cmd]` → `D_$result[cmd]` (подстановка-подстрока). */
-    private asDealRef(ref: string): string {
-        return `D_${ref}`;
+    /**
+     * Значение ссылки на сделку для crm-поля ЛИДА (`to_base_sales`,
+     * `to_xo_sales`) в формате, который принимает КОНКРЕТНОЕ поле портала:
+     * один разрешённый тип → голый id, несколько → `D_{id}`.
+     *
+     * Формат берётся из фактических SETTINGS поля (см. buildCrmRefValue):
+     * ошибиться нельзя — Битрикс не ругается, а молча не сохраняет значение,
+     * и связь остаётся пустой. Определения полей не прочитаны — работает
+     * дефолт с префиксом (инсталлер по умолчанию включает все типы).
+     */
+    private leadDealRef(ufName: string, ref: string): string {
+        return buildCrmRefValue(
+            this.ufDefinitions[ufName]?.crmTypes ?? [],
+            'DEAL',
+            ref,
+        );
     }
 
     private leadFieldName(code: string): string | null {
