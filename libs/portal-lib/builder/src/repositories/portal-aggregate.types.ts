@@ -55,10 +55,13 @@ export type BuilderEntityKey =
 /**
  * Какие значения entity_type реально лежат в БД для каждой сущности.
  *
- * Laravel писал FQCN своих моделей (morphMany без morphMap), поэтому для
- * lead в данных встречается legacy-написание `App\Models\BtxLead`,
- * отличающееся от канонического enum (проверено запросом
- * SELECT DISTINCT entity_type) — читаем оба варианта.
+ * Правило одно: значение = FQCN модели Laravel, потому что её morph-связи
+ * (`bitrixfields`, `categories`) ищут привязанные строки строго по нему.
+ * Лид — `App\Models\BtxLead`, как компания/контакт/сделка (`Btx*`).
+ * Прежнее `App\Models\Lead` было ошибкой записи: внешний getportal такие
+ * строки не находил и отдавал пустую секцию lead, из-за чего поля и стадии
+ * лида не доезжали до приложений. Старые строки удалены/переустановлены,
+ * поэтому легаси-вариант больше НЕ читается.
  *
  * Для list каноническим стало легаси-написание `App\Models\Bitrixlist`
  * (его понимает старая Laravel-админка); `App\Models\BitrixList` писала
@@ -72,7 +75,7 @@ export const ENTITY_TYPE_DB_VALUES: Record<
     smart: [PbxEntityTypePrisma.SMART],
     company: [PbxEntityTypePrisma.BTX_COMPANY],
     contact: [PbxEntityTypePrisma.BTX_CONTACT],
-    lead: [PbxEntityTypePrisma.LEAD, 'App\\Models\\BtxLead'],
+    lead: [PbxEntityTypePrisma.LEAD],
     list: [PbxEntityTypePrisma.BITRIX_LIST, 'App\\Models\\BitrixList'],
     rpa: [PbxEntityTypePrisma.BTX_RPA],
     user: [PbxEntityTypePrisma.USER],

@@ -13,6 +13,7 @@ import { SkapController } from './skap.controller';
 import { SkapExcelParseService } from './services/skap-excel-parse.service';
 import { SkapExampleTemplateService } from './services/skap-example-template.service';
 import { SkapZipExtractService } from './services/skap-zip-extract.service';
+import { SkapContactTaskScheduler } from './cron/skap-contact-task.scheduler';
 import { SkapImportScheduler } from './cron/skap-import.scheduler';
 import { SkapImportProcessor } from './queue/skap-import.processor';
 import { SkapImportRunUseCase } from './use-cases/skap-import-run.use-case';
@@ -43,6 +44,8 @@ import { SkapImportRunUseCase } from './use-cases/skap-import-run.use-case';
         SkapImportScheduler,
         SkapImportProcessor,
         SkapImportRunUseCase,
+        // Еженедельные сводные задачи по автосозданным контактам
+        SkapContactTaskScheduler,
     ],
 })
 export class SkapModule {}

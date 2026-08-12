@@ -37,6 +37,27 @@ export class PortalModel {
     getPortal(): IPortal {
         return this.portal;
     }
+
+    /**
+     * Есть ли в слепке портала хоть одно UF-поле сущности.
+     *
+     * Нужен для детекта ПРОТУХШЕГО слепка: поля устанавливают на портал уже
+     * после того, как слепок закэширован (TTL 10 ч), и до истечения TTL все
+     * потребители считают их «неустановленными» — записи молча теряются.
+     * Пустая секция при заведомо установленных полях = сигнал перечитать.
+     */
+    hasEntityFields(entityType: PbxEntityType): boolean {
+        if (entityType === 'company') {
+            return (this.portal.company?.bitrixfields?.length ?? 0) > 0;
+        }
+        if (entityType === 'lead') {
+            return (this.portal.lead?.bitrixfields?.length ?? 0) > 0;
+        }
+        if (entityType === 'deal') {
+            return (this.portal.deals?.[0]?.bitrixfields?.length ?? 0) > 0;
+        }
+        return (this.portal.contact?.bitrixfields?.length ?? 0) > 0;
+    }
     getHook(): string {
         return `${this.portal.domain}/hook?access_key=${this.portal.C_REST_CLIENT_SECRET}`;
     }

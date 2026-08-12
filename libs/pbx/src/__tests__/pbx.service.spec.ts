@@ -124,7 +124,7 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
             BxAuthType.HOOK,
         );
         expect(token.getFreshAccessToken).not.toHaveBeenCalled();
-        expect(result.portal).toBe(LEGACY_PORTAL);
+        expect(result.portal).toEqual(LEGACY_PORTAL);
         expect(result.PortalModel).toBe(portalModelInstance);
     });
 
@@ -174,7 +174,7 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
             'legacy.bitrix24.ru',
         );
         expect(result.internalPortal).toBe(INTERNAL_PORTAL);
-        expect(result.portal).toBe(LEGACY_PORTAL);
+        expect(result.portal).toEqual(LEGACY_PORTAL);
     });
 
     it('internalPortal: ошибка сборки не роняет init → internalPortal undefined', async () => {
@@ -184,7 +184,7 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         const result = await service.init('legacy.bitrix24.ru');
 
         expect(result.internalPortal).toBeUndefined();
-        expect(result.portal).toBe(LEGACY_PORTAL);
+        expect(result.portal).toEqual(LEGACY_PORTAL);
     });
 
     it('без PortalBuilderModule (Optional) — internalPortal undefined', async () => {
@@ -193,5 +193,49 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         const result = await service.init('legacy.bitrix24.ru');
 
         expect(result.internalPortal).toBeUndefined();
+    });
+
+    /*
+     * Внешний getportal отдаёт не все секции: на реальных порталах у него
+     * бывает пустой lead, хотя поля лида установлены (pbx-install пишет их
+     * в НАШУ БД). Без достройки потребитель считает поля неустановленными
+     * и молча теряет записи — ни ошибки, ни данных.
+     */
+    it('внешний портал без полей лида → секция берётся из локальной сборки', async () => {
+        const localLead = {
+            bitrixfields: [{ code: 'op_lead_status', bitrixId: 'X' }],
+        };
+        builder.buildByDomain.mockResolvedValue({
+            ...INTERNAL_PORTAL,
+            lead: localLead,
+        } as never);
+        const service = build();
+
+        const result = await service.init('legacy.bitrix24.ru');
+
+        expect(result.portal.lead).toBe(localLead);
+        // Остальные поля внешнего портала не тронуты.
+        expect(result.portal.key).toBe('webhook-key');
+        expect(modelFactory.create).toHaveBeenCalledWith(result.portal);
+    });
+
+    it('внешний портал С полями лида — локальные данные НЕ перетирают его', async () => {
+        const externalLead = {
+            bitrixfields: [{ code: 'op_lead_status', bitrixId: 'EXTERNAL' }],
+        };
+        portalService.getPortalByDomain.mockResolvedValue({
+            ...LEGACY_PORTAL,
+            lead: externalLead,
+        } as never);
+        builder.buildByDomain.mockResolvedValue({
+            ...INTERNAL_PORTAL,
+            lead: { bitrixfields: [{ code: 'op_lead_status', bitrixId: 'X' }] },
+        } as never);
+        const service = build();
+
+        const result = await service.init('legacy.bitrix24.ru');
+
+        // Секция копируется, но содержимое — внешнее, не локальное.
+        expect(result.portal.lead).toEqual(externalLead);
     });
 });

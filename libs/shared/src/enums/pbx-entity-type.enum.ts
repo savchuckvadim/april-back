@@ -7,7 +7,15 @@ export enum PbxEntityTypePrisma {
     SMART = 'App\\Models\\Smart',
     BTX_COMPANY = 'App\\Models\\BtxCompany',
     BTX_CONTACT = 'App\\Models\\BtxContact',
-    LEAD = 'App\\Models\\Lead',
+    /*
+     * ИМЕННО `BtxLead`: так называется модель Laravel (App\Models\BtxLead),
+     * и её morph-связи (`bitrixfields`, `categories`) ищут поля строго по
+     * этому FQCN. Раньше здесь стояло `App\Models\Lead` — поля лида писались
+     * с ним, внешний getportal их не находил и отдавал пустую секцию lead:
+     * приложения считали поля неустановленными и МОЛЧА теряли записи.
+     * Старые строки переименовываются разовым UPDATE (см. docs).
+     */
+    LEAD = 'App\\Models\\BtxLead',
     DEAL = 'App\\Models\\BtxDeal',
     BTX_RPA = 'App\\Models\\BtxRpa',
     BX_RQ = 'App\\Models\\BxRq',

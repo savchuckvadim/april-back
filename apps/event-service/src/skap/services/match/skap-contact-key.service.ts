@@ -3,6 +3,7 @@ import { BitrixService } from '@lib/bitrix';
 import {
     normalizeSkapLogin,
     SKAP_CONTACT_LOGINS_FIELD,
+    SKAP_CONTACT_SOURCE_PREFIX,
 } from '@lib/portal-lib/pbx/pbx-skap-smart';
 
 /** Параметры автосоздания контакта из данных СКАП. */
@@ -81,14 +82,15 @@ export class SkapContactKeyService {
                 ...(SkapContactKeyService.isEmailLike(login)
                     ? { EMAIL: [{ VALUE: login, TYPE: 'WORK' }] }
                     : {}),
-                SOURCE_DESCRIPTION: `Создан импортом СКАП (${input.clientCard})`,
+                // По префиксу еженедельный крон находит автосозданные
+                // контакты и формирует сводные задачи (по 30 шт).
+                SOURCE_DESCRIPTION: `${SKAP_CONTACT_SOURCE_PREFIX} (${input.clientCard})`,
                 [SKAP_CONTACT_LOGINS_FIELD]: [login],
             });
             const contactId = Number(response.result);
             if (!contactId) {
                 throw new Error('crm.contact.add не вернул id');
             }
-            await this.createIntroTask(contactId, input, login);
             this.logger.log(
                 `Создан контакт #${contactId} (${login}) для компании #${input.companyId}`,
             );
@@ -99,32 +101,5 @@ export class SkapContactKeyService {
             );
             return null;
         }
-    }
-
-    /** Задача ответственному о созданном контакте. Fail-open. */
-    private async createIntroTask(
-        contactId: number,
-        input: SkapContactCreateInput,
-        login: string,
-    ): Promise<void> {
-        if (!input.assignedById) return;
-        await this.bitrix.task
-            .add({
-                TITLE: `СКАП: создан контакт ${login} (${input.companyTitle})`,
-                DESCRIPTION:
-                    `Контакт создан автоматически из выгрузки СКАП.\n` +
-                    `Логин: ${login}\n` +
-                    `Компания: ${input.companyTitle} (рег-лист ${input.clientCard})\n\n` +
-                    `Проверьте контакт: заполните ФИО/должность или смерджите ` +
-                    `с существующим — ключ СКАП-логина (${SKAP_CONTACT_LOGINS_FIELD}) ` +
-                    `переживёт объединение.`,
-                RESPONSIBLE_ID: input.assignedById,
-                UF_CRM_TASK: [`C_${contactId}`, `CO_${input.companyId}`],
-            })
-            .catch((error: Error) =>
-                this.logger.warn(
-                    `Задача о контакте #${contactId} не создана: ${error.message}`,
-                ),
-            );
     }
 }

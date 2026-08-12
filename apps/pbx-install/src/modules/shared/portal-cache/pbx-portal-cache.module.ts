@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
+import { PortalOnlineCacheModule } from '@lib/portal-lib/store/portal-online-cache.module';
 import { PbxPortalCacheController } from './pbx-portal-cache.controller';
 
 /** Ручка сброса слепка портала — только для админ-приложения pbx-install. */
 @Module({
-    imports: [PortalStoreModule],
+    imports: [PortalOnlineCacheModule],
     controllers: [PbxPortalCacheController],
 })
 export class PbxPortalCacheModule {}

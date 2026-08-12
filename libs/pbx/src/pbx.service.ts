@@ -60,8 +60,13 @@ export class PBXService {
             return this.initMarketplace(domain, internalPortal);
         }
 
-        const portal = await this.portal.getPortalByDomain(domain);
-        const PortalModel = await this.portal.getModelByDomain(domain);
+        const externalPortal = await this.portal.getPortalByDomain(domain);
+        const portal = this.fillGapsFromInternal(
+            domain,
+            externalPortal,
+            internalPortal,
+        );
+        const PortalModel = this.modelFactory.create(portal);
 
         const bitrix = await this.bitrixFactory.create(
             { domain: portal.domain, key: portal.key },
@@ -74,6 +79,107 @@ export class PBXService {
             PortalModel,
             internalPortal,
         };
+    }
+
+    /**
+     * Достраивает внешний слепок портала данными ЛОКАЛЬНОЙ сборки из нашей БД.
+     *
+     * Зачем: внешний Laravel-`getportal` отдаёт не все секции — на реальных
+     * порталах у него бывает пустой `lead` (а поля лида pbx-install пишет
+     * именно в нашу БД). Потребитель в этом случае считает поля
+     * «неустановленными» и МОЛЧА пропускает записи: ни ошибки, ни данных.
+     *
+     * Правило простое и безопасное: секция берётся из локальной сборки,
+     * только если внешняя ПУСТА. Внешние данные никогда не перетираются —
+     * пока Laravel остаётся источником истины, он же и приоритетный.
+     */
+    private fillGapsFromInternal(
+        domain: string,
+        external: IPortal,
+        internal?: IPortal,
+    ): IPortal {
+        if (!internal) return external;
+
+        const filled: string[] = [];
+        const portal: IPortal = { ...external };
+
+        portal.lead = this.mergeEntitySection(
+            external.lead,
+            internal.lead,
+            'lead',
+            filled,
+        );
+        portal.company = this.mergeEntitySection(
+            external.company,
+            internal.company,
+            'company',
+            filled,
+        );
+        portal.contact = this.mergeEntitySection(
+            external.contact,
+            internal.contact,
+            'contact',
+            filled,
+        );
+        if (!external.deals?.length && internal.deals?.length) {
+            portal.deals = internal.deals;
+            filled.push('deals');
+        }
+
+        if (filled.length) {
+            this.logger.log(
+                `[portal] ${domain}: внешний слепок неполон (${filled.join(', ')}) — данные взяты из локальной сборки (БД)`,
+            );
+        }
+        return portal;
+    }
+
+    /**
+     * Достройка ОДНОЙ секции сущности: поля и категории берутся из локальной
+     * сборки независимо друг от друга — у внешнего портала встречается и
+     * полностью отсутствующая секция, и секция с полями, но без стадий
+     * (тогда «стадия не установлена» ломает SLA и движение статусов).
+     */
+    private mergeEntitySection<
+        T extends { bitrixfields?: unknown[]; categories?: unknown[] },
+    >(
+        external: T | undefined,
+        internal: T | undefined,
+        label: string,
+        filled: string[],
+    ): T | undefined {
+        if (!internal) return external;
+        if (!external) {
+            if (internal.bitrixfields?.length || internal.categories?.length) {
+                filled.push(label);
+                return internal;
+            }
+            return external;
+        }
+
+        const section = { ...external };
+        if (!external.bitrixfields?.length && internal.bitrixfields?.length) {
+            section.bitrixfields = internal.bitrixfields;
+            filled.push(`${label}.fields`);
+        }
+        if (!external.categories?.length && internal.categories?.length) {
+            section.categories = internal.categories;
+            filled.push(`${label}.stages`);
+        }
+        return section;
+    }
+
+    /**
+     * То же, что init(), но со СБРОСОМ кэша слепка портала.
+     *
+     * Нужен, когда потребитель обнаружил заведомо неполный слепок (например,
+     * у портала не видно ни одного UF-поля лида, хотя они установлены):
+     * слепок кэшируется на 10 часов, и без сброса записи молча теряются.
+     * У самого сброса есть кулдаун (PortalService), поэтому вызов безопасен.
+     */
+    async initFresh(domain: string, authType: BxAuthType = BxAuthType.HOOK) {
+        await this.portal.refreshByDomain(domain);
+        return this.init(domain, authType);
     }
 
     /** Локальная модель портала из БД (best-effort — нет данных/ошибка → undefined). */

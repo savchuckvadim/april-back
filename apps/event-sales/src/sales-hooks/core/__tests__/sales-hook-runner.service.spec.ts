@@ -34,6 +34,8 @@ describe('SalesHookRunnerService', () => {
         overrides: {
             statusFound?: boolean;
             executeError?: Error;
+            /** Слепок портала без полей лида — протух (см. самолечение). */
+            staleSnapshot?: boolean;
         } = {},
     ) => {
         const operation = {
@@ -66,7 +68,14 @@ describe('SalesHookRunnerService', () => {
         const pbx = {
             init: jest.fn().mockResolvedValue({
                 bitrix: {},
-                PortalModel: {},
+                // Слепок портала полон: перечитывать не нужно (см. runner).
+                PortalModel: {
+                    hasEntityFields: () => !overrides.staleSnapshot,
+                },
+            }),
+            initFresh: jest.fn().mockResolvedValue({
+                bitrix: {},
+                PortalModel: { hasEntityFields: () => true },
             }),
         };
         const ws = { sendToClient: jest.fn() };
@@ -86,6 +95,26 @@ describe('SalesHookRunnerService', () => {
         await runner.run(job);
         expect(pbx.init).not.toHaveBeenCalled();
         expect(registry.get).not.toHaveBeenCalled();
+    });
+
+    /*
+     * Слепок портала живёт 10 часов: поля, установленные позже, до истечения
+     * TTL «не видны», и хук молча теряет все записи в лид. Пустая секция
+     * полей лида = сигнал перечитать портал (один раз, у сброса свой кулдаун).
+     */
+    it('слепок без полей лида → портал перечитывается принудительно', async () => {
+        const { runner, pbx } = makeRunner({ staleSnapshot: true });
+        await runner.run(job);
+
+        expect(pbx.init).toHaveBeenCalledWith(job.domain);
+        expect(pbx.initFresh).toHaveBeenCalledWith(job.domain);
+    });
+
+    it('полный слепок портала не перечитывается', async () => {
+        const { runner, pbx } = makeRunner();
+        await runner.run(job);
+
+        expect(pbx.initFresh).not.toHaveBeenCalled();
     });
 
     it('успех: running → execute → flush → done → WS done', async () => {

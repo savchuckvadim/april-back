@@ -87,6 +87,13 @@ export const SKAP_CONTACT_LOGINS_XML_ID = 'SKAP_LOGINS';
 export const SKAP_CONTACT_LOGINS_TITLE = 'СКАП-логины';
 
 /**
+ * Префикс SOURCE_DESCRIPTION автосозданных контактов — по нему еженедельный
+ * крон находит новые контакты и формирует сводные задачи ответственным
+ * (одна задача на каждые 30 контактов, решение 2026-08-12).
+ */
+export const SKAP_CONTACT_SOURCE_PREFIX = 'Создан импортом СКАП';
+
+/**
  * UF-поле СДЕЛКИ с ID комплектов АРМ (пишется konstructor supply как
  * RPA_ARM_COMPLECT_ID, объявлено в IBXDeal). Используется при выборе
  * сделки для элемента СКАП: совпадение «ID Комплекта» строки выгрузки с

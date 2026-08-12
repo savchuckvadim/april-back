@@ -8,6 +8,7 @@ import { SalesHookRegistryService } from './sales-hook-registry.service';
 import { SalesHookJobData } from '../contracts/sales-hook-job.type';
 import { SalesHookExecutionContext } from '../contracts/sales-hook-use-case.contract';
 import { SALES_HOOK_WS_EVENTS } from '../constants/sales-hook.const';
+import { EnumSalesHookCode } from '../constants/sales-hook-code.enum';
 
 /**
  * Исполнитель операции sales-хука — общий для всех хуков и обоих путей
@@ -44,7 +45,24 @@ export class SalesHookRunnerService {
         );
 
         try {
-            const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
+            let { bitrix, PortalModel: portal } = await this.pbx.init(domain);
+
+            /*
+             * Слепок портала кэшируется на 10 часов, а pbx-поля ставят на
+             * портал в любой момент. Пустая секция полей лида = слепок
+             * протух: хук молча потерял бы все записи в лид (симптом —
+             * «поля установлены, а в лиде пусто»). Перечитываем один раз;
+             * у сброса свой кулдаун, поэтому портал без установленных полей
+             * не будет дёргать внешний API на каждой операции.
+             */
+            if (!portal.hasEntityFields('lead')) {
+                this.logger.warn(
+                    `sales-hook ${hook}/${operationId}: слепок ${domain} без полей лида — перечитываю портал`,
+                );
+                ({ bitrix, PortalModel: portal } =
+                    await this.pbx.initFresh(domain));
+            }
+
             const buffer = new SalesBatchGroupBuffer(bitrix);
             const ctx: SalesHookExecutionContext = {
                 domain,
@@ -64,6 +82,7 @@ export class SalesHookRunnerService {
             // Финальный flush: добираем команды, которые use-case накопил
             // в буфере, но не отправил (контракт bitrix-batch-grouping §5).
             await buffer.flush();
+            this.logBatchErrors(hook, operationId, buffer.getResults());
 
             const done = await this.status.setDone(
                 running,
@@ -81,6 +100,34 @@ export class SalesHookRunnerService {
             this.notify(job.socketId, SALES_HOOK_WS_EVENTS.ERROR, failed);
             // rethrow: Bull пометит job failed и применит retry-политику
             throw error;
+        }
+    }
+
+    /**
+     * Ошибки ОТДЕЛЬНЫХ команд батча. Битрикс не роняет весь запрос из-за
+     * одной неудачной команды: остальные выполняются, а неудачная тихо
+     * оседает в `result_error`. Без этого лога симптом выглядит как «поле
+     * просто не заполнилось», а причина (неверный формат значения,
+     * недоступная стадия, нет прав) не видна вообще.
+     */
+    private logBatchErrors(
+        hook: EnumSalesHookCode,
+        operationId: string,
+        chunks: { result_error?: Record<string, unknown> | unknown[] }[],
+    ): void {
+        for (const chunk of chunks) {
+            const errors = chunk?.result_error;
+            if (!errors || Array.isArray(errors)) continue;
+            for (const [cmd, raw] of Object.entries(errors)) {
+                const error = raw as {
+                    error?: string;
+                    error_description?: string;
+                };
+                this.logger.error(
+                    `sales-hook ${hook}/${operationId}: команда ${cmd} не выполнена — ` +
+                        `${error.error ?? '—'} ${error.error_description ?? ''}`.trim(),
+                );
+            }
         }
     }
 

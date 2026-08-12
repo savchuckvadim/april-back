@@ -11,6 +11,8 @@ import { getErrorString } from '@lib/shared';
 export class PortalService {
     private readonly logger = new Logger(PortalService.name);
     private readonly CACHE_TTL = 36000;
+    /** Минимальный интервал между принудительными обновлениями слепка. */
+    private static readonly REFRESH_COOLDOWN_SEC = 300;
     private readonly redis: Redis;
 
     constructor(
@@ -57,6 +59,39 @@ export class PortalService {
         this.logger.error(`Error getting portal: ${response.message}`);
         throw new Error(response.message as string);
     }
+    /**
+     * Принудительно перечитывает слепок портала из online-API, сбросив кэш.
+     *
+     * Зачем: слепок живёт 10 часов, а pbx-сущности (поля, стадии) ставят на
+     * портал в любой момент. До истечения TTL приложения считают их
+     * «неустановленными» и молча теряют записи. Потребитель, обнаруживший
+     * заведомо неполный слепок, зовёт этот метод.
+     *
+     * Кулдаун: не чаще раза в REFRESH_COOLDOWN_SEC на домен — иначе портал
+     * без установленных полей дёргал бы внешний API на каждой операции.
+     * Кулдаун активен — возвращаем то, что есть (без запроса).
+     */
+    async refreshByDomain(domain: string): Promise<IPortal> {
+        const cooldownKey = `portal_refresh_${domain}`;
+        const fresh = await this.redis.set(
+            cooldownKey,
+            '1',
+            'EX',
+            PortalService.REFRESH_COOLDOWN_SEC,
+            'NX',
+        );
+        if (fresh === null) {
+            this.logger.log(
+                `Обновление слепка ${domain} пропущено — кулдаун ещё активен`,
+            );
+            return this.getPortalByDomain(domain);
+        }
+
+        this.logger.log(`Принудительное обновление слепка портала ${domain}`);
+        await this.redis.del(`portal_${domain}`);
+        return this.getPortalByDomain(domain);
+    }
+
     async getModelByDomain(domain: string): Promise<PortalModel> {
         Logger.log('getModelByDomain: ' + domain);
         const portal = await this.getPortalByDomain(domain);
