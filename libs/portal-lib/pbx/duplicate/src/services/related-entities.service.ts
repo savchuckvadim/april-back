@@ -180,11 +180,7 @@ export class RelatedEntitiesService {
         );
         requests += 1;
 
-        const contacts = await this.fetchContacts(
-            bitrix,
-            contactIds,
-            warnings,
-        );
+        const contacts = await this.fetchContacts(bitrix, contactIds, warnings);
         requests += contactIds.length ? 1 : 0;
 
         const stageIndex = this.buildStageIndex(portalModel);

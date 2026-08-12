@@ -168,7 +168,10 @@ export class DuplicateDetailsRequestDto {
  * ------------------------------------------------------------------ */
 
 export class DuplicateSignalsDto {
-    @ApiProperty({ type: [String], description: 'Нормализованные телефоны (10 цифр).' })
+    @ApiProperty({
+        type: [String],
+        description: 'Нормализованные телефоны (10 цифр).',
+    })
     phones: string[];
 
     @ApiProperty({ type: [String], description: 'Нормализованные email.' })
@@ -208,7 +211,8 @@ export class DuplicateCandidateDto {
     entityType: DuplicateEntityType;
 
     @ApiProperty({
-        description: 'entityTypeId Битрикса: 1 лид, 2 сделка, 3 контакт, 4 компания.',
+        description:
+            'entityTypeId Битрикса: 1 лид, 2 сделка, 3 контакт, 4 компания.',
         example: 4,
     })
     entityTypeId: number;
@@ -229,12 +233,18 @@ export class DuplicateCandidateDto {
     })
     score: number;
 
-    @ApiProperty({ type: [DuplicateMatchReasonDto], description: 'Причины совпадения.' })
+    @ApiProperty({
+        type: [DuplicateMatchReasonDto],
+        description: 'Причины совпадения.',
+    })
     reasons: DuplicateMatchReasonDto[];
 }
 
 export class DuplicateSignalOriginDto {
-    @ApiProperty({ enum: DuplicateEntityType, description: 'Откуда взят сигнал.' })
+    @ApiProperty({
+        enum: DuplicateEntityType,
+        description: 'Откуда взят сигнал.',
+    })
     entityType: DuplicateEntityType;
 
     @ApiProperty({ description: 'Идентификатор источника.', example: 1234 })
@@ -256,7 +266,8 @@ export class SearchDuplicatesResponseDto {
 
     @ApiProperty({
         type: [DuplicateSignalOriginDto],
-        description: 'Откуда взялся каждый сигнал — для объяснения в интерфейсе.',
+        description:
+            'Откуда взялся каждый сигнал — для объяснения в интерфейсе.',
     })
     origins: DuplicateSignalOriginDto[];
 
@@ -266,7 +277,10 @@ export class SearchDuplicatesResponseDto {
     })
     candidates: DuplicateCandidateDto[];
 
-    @ApiProperty({ enum: DuplicateSearchLevel, description: 'Использованная глубина.' })
+    @ApiProperty({
+        enum: DuplicateSearchLevel,
+        description: 'Использованная глубина.',
+    })
     level: DuplicateSearchLevel;
 
     @ApiProperty({
@@ -287,7 +301,8 @@ export class SearchDuplicatesResponseDto {
 
     @ApiProperty({
         type: [String],
-        description: 'Что не удалось: недоступная сущность, нет прав, пустые сигналы.',
+        description:
+            'Что не удалось: недоступная сущность, нет прав, пустые сигналы.',
     })
     warnings: string[];
 }
@@ -326,7 +341,10 @@ export class RelatedStageDto {
     @ApiProperty({ description: 'Сырой STAGE_ID Битрикса.', example: 'C1:NEW' })
     bitrixId: string;
 
-    @ApiPropertyOptional({ description: 'Код стадии в терминах портала.', example: 'sales_new' })
+    @ApiPropertyOptional({
+        description: 'Код стадии в терминах портала.',
+        example: 'sales_new',
+    })
     code?: string;
 
     @ApiPropertyOptional({ description: 'Название стадии.', example: 'Новая' })
@@ -341,10 +359,16 @@ export class RelatedStageDto {
     @ApiPropertyOptional({ description: 'Код воронки.', example: 'sales_base' })
     categoryCode?: string;
 
-    @ApiPropertyOptional({ description: 'Название воронки.', example: 'Продажи' })
+    @ApiPropertyOptional({
+        description: 'Название воронки.',
+        example: 'Продажи',
+    })
     categoryTitle?: string;
 
-    @ApiPropertyOptional({ description: 'Позиция стадии в воронке.', example: 2 })
+    @ApiPropertyOptional({
+        description: 'Позиция стадии в воронке.',
+        example: 2,
+    })
     order?: number;
 
     @ApiPropertyOptional({ description: 'Всего стадий в воронке.', example: 8 })
@@ -361,7 +385,10 @@ export class RelatedDealDto {
     @ApiProperty({ type: RelatedStageDto, description: 'Стадия сделки.' })
     stage: RelatedStageDto;
 
-    @ApiPropertyOptional({ type: ResponsibleUserDto, description: 'Ответственный.' })
+    @ApiPropertyOptional({
+        type: ResponsibleUserDto,
+        description: 'Ответственный.',
+    })
     responsible?: ResponsibleUserDto;
 
     @ApiPropertyOptional({ description: 'Сумма сделки.', example: 150000 })
@@ -372,7 +399,10 @@ export class RelatedDealDto {
     @ApiProperty({ description: 'Закрыта ли сделка.', example: false })
     closed: boolean;
 
-    @ApiPropertyOptional({ description: 'Дата создания.', example: '2026-07-01T10:00:00+03:00' })
+    @ApiPropertyOptional({
+        description: 'Дата создания.',
+        example: '2026-07-01T10:00:00+03:00',
+    })
     dateCreate?: string;
 
     @ApiPropertyOptional({
@@ -399,7 +429,10 @@ export class RelatedLeadDto {
     })
     statusSemanticId?: string;
 
-    @ApiPropertyOptional({ type: ResponsibleUserDto, description: 'Ответственный.' })
+    @ApiPropertyOptional({
+        type: ResponsibleUserDto,
+        description: 'Ответственный.',
+    })
     responsible?: ResponsibleUserDto;
 
     @ApiPropertyOptional({ description: 'Дата создания.' })
@@ -444,7 +477,10 @@ export class RelatedContactDto {
     @ApiPropertyOptional({ description: 'Фамилия.', example: 'Сидорова' })
     lastName?: string;
 
-    @ApiPropertyOptional({ description: 'Должность (POST).', example: 'Главный бухгалтер' })
+    @ApiPropertyOptional({
+        description: 'Должность (POST).',
+        example: 'Главный бухгалтер',
+    })
     post?: string;
 
     @ApiPropertyOptional({
@@ -454,7 +490,10 @@ export class RelatedContactDto {
     })
     phones?: string[];
 
-    @ApiPropertyOptional({ type: ResponsibleUserDto, description: 'Ответственный.' })
+    @ApiPropertyOptional({
+        type: ResponsibleUserDto,
+        description: 'Ответственный.',
+    })
     responsible?: ResponsibleUserDto;
 }
 
@@ -487,7 +526,10 @@ export class DuplicateDetailsResponseDto {
     })
     contacts: RelatedContactDto[];
 
-    @ApiProperty({ description: 'Сколько HTTP-запросов ушло на портал.', example: 3 })
+    @ApiProperty({
+        description: 'Сколько HTTP-запросов ушло на портал.',
+        example: 3,
+    })
     batchRequests: number;
 
     @ApiProperty({ type: [String], description: 'Что не удалось получить.' })
@@ -495,13 +537,22 @@ export class DuplicateDetailsResponseDto {
 }
 
 export class DuplicateFieldMapFieldDto {
-    @ApiProperty({ enum: DuplicateEntityType, description: 'Сущность, которой принадлежит поле.' })
+    @ApiProperty({
+        enum: DuplicateEntityType,
+        description: 'Сущность, которой принадлежит поле.',
+    })
     entityType: DuplicateEntityType;
 
-    @ApiProperty({ description: 'Имя поля в Битрикс.', example: 'UF_CRM_OP_INN' })
+    @ApiProperty({
+        description: 'Имя поля в Битрикс.',
+        example: 'UF_CRM_OP_INN',
+    })
     fieldName: string;
 
-    @ApiPropertyOptional({ description: 'Код поля в нашем шаблоне.', example: 'op_inn' })
+    @ApiPropertyOptional({
+        description: 'Код поля в нашем шаблоне.',
+        example: 'op_inn',
+    })
     code?: string;
 
     @ApiPropertyOptional({ description: 'Название поля.', example: 'ИНН' })
@@ -522,7 +573,10 @@ export class DuplicateFieldMapResponseDto {
     @ApiProperty({ description: 'Домен портала.' })
     domain: string;
 
-    @ApiProperty({ description: 'Когда карта собиралась.', example: '2026-08-03T12:00:00.000Z' })
+    @ApiProperty({
+        description: 'Когда карта собиралась.',
+        example: '2026-08-03T12:00:00.000Z',
+    })
     scannedAt: string;
 
     @ApiProperty({
@@ -531,6 +585,9 @@ export class DuplicateFieldMapResponseDto {
     })
     fields: DuplicateFieldMapFieldDto[];
 
-    @ApiProperty({ type: [String], description: 'Что не удалось просканировать.' })
+    @ApiProperty({
+        type: [String],
+        description: 'Что не удалось просканировать.',
+    })
     warnings: string[];
 }

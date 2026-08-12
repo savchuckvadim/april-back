@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@/modules/pbx';
 import { PbxDomainModule } from '@lib/portal-lib/pbx-domain';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { ParseFieldExcelModule } from '../parse-field-excel';
 import { PortalFieldTypedEntityInstallService } from './field/portal-field-typed-entity-install.service';
 
@@ -12,7 +13,13 @@ import { PortalFieldTypedEntityInstallService } from './field/portal-field-typed
  * умышленно не Injectable и конструируются в use-case-ах вместе с конкретным `ctx`.
  */
 @Module({
-    imports: [PBXModule, PbxDomainModule, ParseFieldExcelModule],
+    imports: [
+        PBXModule,
+        PbxDomainModule,
+        ParseFieldExcelModule,
+        // PortalOnlineCacheService: сброс слепка портала после установки полей.
+        PortalStoreModule,
+    ],
     providers: [PortalFieldTypedEntityInstallService],
     exports: [PortalFieldTypedEntityInstallService],
 })
