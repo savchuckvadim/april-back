@@ -1503,6 +1503,30 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    /*
+     * Момент НАЗНАЧЕНИЯ заявки менеджеру — старт отсчёта SLA принятия.
+     * Пишется хуком при каждом назначении и передаче (таймер стартует
+     * заново), очищается принятием. Нужен как надёжная опора вместо
+     * DATE_MODIFY: тот сбивается любой правкой карточки, а стадию лида
+     * может двинуть кто угодно (конструктор, робот, руками).
+     */
+    {
+        name: 'Заявка назначена (дата)',
+        appType: 'lead',
+        type: 'datetime',
+        items: [],
+        code: 'op_lead_assigned_at',
+        lead: 'OP_LEAD_ASSIGNED_AT',
+        company: '',
+        deal: '',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 661,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
     {
         name: 'История Обработки заяки',
         appType: 'lead',

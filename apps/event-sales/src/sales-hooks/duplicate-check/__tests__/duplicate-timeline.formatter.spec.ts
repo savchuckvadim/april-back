@@ -62,9 +62,11 @@ describe('duplicate-timeline.formatter', () => {
             'глубокая',
         );
 
-        expect(comment).toContain('[B]Проверка на дубли (глубокая)[/B]');
-        expect(comment).toContain('Найдено кандидатов: 1.');
-        expect(comment).toContain('[B]Компания[/B] ООО Ромашка — 95 баллов');
+        expect(comment).toContain('Проверка на дубли — глубокая');
+        expect(comment).toContain('Найдено кандидатов: [B]1[/B]');
+        expect(comment).toContain(
+            'Компания [URL=https://d.b24.ru/crm/company/details/431/][B]ООО Ромашка[/B][/URL] — 95 баллов',
+        );
         expect(comment).toContain('ИНН 4826000000 (реквизиты)');
         expect(comment).toContain('телефон 9192569798 (телефон/email базы)');
         expect(comment).toContain('https://d.b24.ru/crm/company/details/431/');

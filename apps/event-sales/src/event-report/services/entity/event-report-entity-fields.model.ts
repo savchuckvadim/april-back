@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import {
     IField,
     IFieldItem,
@@ -402,7 +403,12 @@ export class EventReportEntityFieldsModel {
         const limit = this.ctx.isGsirk
             ? HISTORY_LIMIT_GSIRK
             : HISTORY_LIMIT_DEFAULT;
-        const line = `${this.nowCrmDate()}\n${this.fullEventComment()}`;
+        /*
+         * Перенос строки — ТОЛЬКО через BATCH_LINE_BREAK_SYMBOL: поля
+         * заполняются batch-командой, а там обычный `\n` съедается, и в
+         * истории склеивается «13.08.2026 10:00Отчёт: …».
+         */
+        const line = `${this.nowCrmDate()}${BATCH_LINE_BREAK_SYMBOL}${this.fullEventComment()}`;
         this.appendMultiple(out, 'op_mhistory', line, limit);
         this.setScalar(out, 'op_history', line);
     }

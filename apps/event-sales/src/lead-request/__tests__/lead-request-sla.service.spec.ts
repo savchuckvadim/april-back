@@ -7,15 +7,32 @@ import { LeadRequestSlaService } from '../sla/lead-request-sla.service';
  */
 const ASSIGNED_STATUS = 'PBX_ASSIGNED';
 
-const makePortal = () => ({
+/**
+ * Портал: `withAssignedAt` включает поля НОВОГО механизма отбора —
+ * `op_lead_assigned_at` (таймер) и `op_lead_site_stage` (метка заявки).
+ * Без них сервис откатывается на прежний путь (стадия + DATE_MODIFY).
+ */
+const makePortal = (withAssignedAt = false) => ({
     getLeadStatusIdByCode: (code: string) =>
         code === 'lead_assigned' ? ASSIGNED_STATUS : undefined,
-    getEntityFieldByCode: (_entity: string, code: string) =>
-        code === 'op_lead_firstprepare_history'
-            ? { bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY', items: [] }
-            : code === 'to_base_sales'
-              ? { bitrixId: 'TO_BASE_SALES', items: [] }
-              : undefined,
+    getEntityFieldByCode: (_entity: string, code: string) => {
+        if (code === 'op_lead_firstprepare_history') {
+            return { bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY', items: [] };
+        }
+        if (code === 'to_base_sales') {
+            return { bitrixId: 'TO_BASE_SALES', items: [] };
+        }
+        if (withAssignedAt && code === 'op_lead_assigned_at') {
+            return { bitrixId: 'OP_LEAD_ASSIGNED_AT', items: [] };
+        }
+        if (withAssignedAt && code === 'op_lead_site_stage') {
+            return {
+                bitrixId: 'OP_LEAD_SITE_STAGE',
+                items: [{ code: 'op_lead_site_stage1', bitrixId: 71 }],
+            };
+        }
+        return undefined;
+    },
     getFieldBitrixId: (field: { bitrixId: string }) =>
         `UF_CRM_${field.bitrixId}`,
     getTimezone: () => 'Europe/Moscow',
@@ -28,6 +45,7 @@ const makePortal = () => ({
 const makeDeps = (input: {
     leads: Record<string, unknown>[];
     dealStage?: string;
+    withAssignedAt?: boolean;
 }) => {
     const leadUpdate = jest.fn().mockResolvedValue({});
     const notify = jest.fn().mockResolvedValue(1);
@@ -47,13 +65,12 @@ const makeDeps = (input: {
             ],
         }),
     };
+    const leadGetList = jest.fn().mockResolvedValue({ result: input.leads });
     const pbx = {
         init: jest.fn().mockResolvedValue({
             bitrix: {
                 lead: {
-                    getList: jest
-                        .fn()
-                        .mockResolvedValue({ result: input.leads }),
+                    getList: leadGetList,
                     update: leadUpdate,
                 },
                 deal: {
@@ -65,7 +82,7 @@ const makeDeps = (input: {
                 },
                 imNotify: { systemAdd: notify },
             },
-            PortalModel: makePortal(),
+            PortalModel: makePortal(input.withAssignedAt),
         }),
     };
     const service = new LeadRequestSlaService(
@@ -75,7 +92,14 @@ const makeDeps = (input: {
         idempotency as never,
         structure as never,
     );
-    return { service, leadUpdate, notify, acceptService, dispatch };
+    return {
+        service,
+        leadUpdate,
+        notify,
+        acceptService,
+        dispatch,
+        leadGetList,
+    };
 };
 
 const OVERDUE_LEAD = {
@@ -87,6 +111,44 @@ const OVERDUE_LEAD = {
 };
 
 describe('LeadRequestSlaService', () => {
+    /*
+     * Отбор идёт по НАШИМ полям, а не по стадии лида: стадию двигают
+     * конструктор, роботы и менеджеры руками, а op_lead_assigned_at пишет
+     * только хук назначения и очищает только принятие.
+     */
+    it('фильтр: заполненный op_lead_assigned_at старше порога + метка заявки, без стадии лида', async () => {
+        const { service, leadGetList } = makeDeps({
+            leads: [],
+            withAssignedAt: true,
+        });
+        await service.runForDomain('d.b24.ru', 60, 30);
+
+        const filter = (
+            leadGetList.mock.calls as unknown as [Record<string, unknown>][]
+        )[0][0];
+        // Таймер: поле заполнено И старше порога.
+        expect(filter['!UF_CRM_OP_LEAD_ASSIGNED_AT']).toBe('');
+        expect(filter['<UF_CRM_OP_LEAD_ASSIGNED_AT']).toMatch(
+            /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
+        );
+        // Только заявки: метку «Назначена» ставит хук распознанной заявке.
+        expect(filter.UF_CRM_OP_LEAD_SITE_STAGE).toBe(71);
+        // Стадия лида в отборе не участвует.
+        expect(filter.STATUS_ID).toBeUndefined();
+    });
+
+    it('поля нет на портале → fallback на стадию + DATE_MODIFY с предупреждением', async () => {
+        const { service, leadGetList } = makeDeps({ leads: [] });
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        const filter = (
+            leadGetList.mock.calls as unknown as [Record<string, unknown>][]
+        )[0][0];
+        expect(filter.STATUS_ID).toBe(ASSIGNED_STATUS);
+        expect(filter['<DATE_MODIFY']).toBeDefined();
+        expect(run.warnings.join(' ')).toContain('Заявка назначена (дата)');
+    });
+
     it('просроченных нет → no-op', async () => {
         const { service, dispatch, acceptService } = makeDeps({ leads: [] });
         const run = await service.runForDomain('d.b24.ru', 60, 30);

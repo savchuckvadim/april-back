@@ -1,5 +1,16 @@
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { ETimeZone } from '@lib/shared/lib/date';
+
+// Плагины idempotent: extend() повторно — no-op. Регистрируем явно, чтобы
+// не зависеть от порядка импортов (см. lead-request-history.util).
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+/** Формат CRM datetime-полей Битрикса (локальное время портала). */
+const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
     EnumLeadOpStatusCode,
@@ -40,6 +51,11 @@ export interface ILeadEntityContext {
     /** Сотрудник сам передал заявку (кнопка «Передать другому»). */
     transferredById: number | null;
     responsibleId: number;
+    /**
+     * Имена сотрудников (id → «Имя Фамилия») для читаемой истории.
+     * Имени нет — в запись уйдёт id (страховка, а не пустое место).
+     */
+    userNames?: Record<number, string>;
     /** TZ портала для стампа записи истории заявки. */
     timezone: ETimeZone;
 }
@@ -75,9 +91,29 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
         this.appendWorkLinks(fields);
         this.appendSiteMarks(fields);
         if (this.leadCtx.withXoEventFields) {
+            this.appendAssignedAt(fields);
             this.appendRequestHistory(fields);
         }
         return fields;
+    }
+
+    /**
+     * Момент назначения — старт отсчёта SLA принятия. Пишется при КАЖДОМ
+     * назначении и передаче: после передачи таймер стартует заново, иначе
+     * новый ответственный унаследовал бы чужую просрочку.
+     *
+     * Почему отдельное поле, а не DATE_MODIFY лида: тот сбивается любой
+     * правкой карточки (менеджер поправил телефон — SLA отложился), а
+     * стадию лида может двинуть кто угодно, включая конструктор.
+     */
+    private appendAssignedAt(fields: XoEventRow): void {
+        const name = this.fieldName(
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        if (!name) return;
+        fields[name] = dayjs()
+            .tz(this.leadCtx.timezone)
+            .format(CRM_DATETIME_FORMAT);
     }
 
     /** Связи с работой и агрегированный статус лида. */
@@ -145,17 +181,20 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
 
         const { previousResponsibleId, transferredById, responsibleId } =
             this.leadCtx;
+        // Историю читают люди: подставляем имена, id — только если имени нет.
+        const actor = (id: number): string | number =>
+            this.leadCtx.userNames?.[id] ?? id;
         const text = transferredById
             ? LEAD_REQUEST_HISTORY_TEXT.selfTransferred(
-                  transferredById,
-                  responsibleId,
+                  actor(transferredById),
+                  actor(responsibleId),
               )
             : previousResponsibleId && previousResponsibleId !== responsibleId
               ? LEAD_REQUEST_HISTORY_TEXT.transferred(
-                    previousResponsibleId,
-                    responsibleId,
+                    actor(previousResponsibleId),
+                    actor(responsibleId),
                 )
-              : LEAD_REQUEST_HISTORY_TEXT.assigned(responsibleId);
+              : LEAD_REQUEST_HISTORY_TEXT.assigned(actor(responsibleId));
 
         fields[name] = appendLeadRequestHistory(
             this.currentValue(

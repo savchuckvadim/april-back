@@ -70,17 +70,33 @@ function tail(entry: string): string {
  * поэтому тексты живут здесь, а не размазаны по сервисам.
  * ------------------------------------------------------------------ */
 
+/**
+ * Участник записи истории: имя сотрудника, если удалось разрезолвить, иначе
+ * его id. Историю читают люди — «Вадим Савчук» вместо «447» экономит
+ * руководителю сопоставление чисел с людьми; id остаётся как страховка,
+ * если портал не отдал сотрудника.
+ */
+export type LeadRequestHistoryActor = number | string | null;
+
+const actorText = (actor: LeadRequestHistoryActor): string =>
+    actor === null || actor === '' ? '—' : String(actor);
+
 export const LEAD_REQUEST_HISTORY_TEXT = {
-    assigned: (responsibleId: number): string =>
-        `ХО назначен: ${responsibleId}`,
-    transferred: (fromId: number, toId: number): string =>
-        `ХО передан: ${fromId} → ${toId}`,
+    assigned: (responsible: LeadRequestHistoryActor): string =>
+        `ХО назначен: ${actorText(responsible)}`,
+    transferred: (
+        from: LeadRequestHistoryActor,
+        to: LeadRequestHistoryActor,
+    ): string => `ХО передан: ${actorText(from)} → ${actorText(to)}`,
     /** Сотрудник САМ отдал заявку (кнопка «Передать другому») — подсветка. */
-    selfTransferred: (fromId: number, toId: number): string =>
-        `⚠ Сотрудник ${fromId} сам передал заявку → ${toId}`,
-    accepted: (userId: number | null): string =>
-        userId
-            ? `Заявка принята в работу: ${userId}`
+    selfTransferred: (
+        from: LeadRequestHistoryActor,
+        to: LeadRequestHistoryActor,
+    ): string =>
+        `⚠ Сотрудник ${actorText(from)} сам передал заявку → ${actorText(to)}`,
+    accepted: (actor: LeadRequestHistoryActor): string =>
+        actor
+            ? `Заявка принята в работу: ${actorText(actor)}`
             : 'Заявка принята в работу',
 } as const;
 

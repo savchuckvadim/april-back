@@ -1,3 +1,4 @@
+import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import {
     DuplicateCandidate,
     DuplicateEntityType,
@@ -43,9 +44,15 @@ export function entityCardUrl(
 }
 
 /**
- * «Умеренно красивый» итог проверки дублей для timeline-комментария:
- * BB-разметка Битрикса ([B]…[/B]), нумерованный список кандидатов с
- * признаками совпадения и ссылками на карточки, внизу — сводка сигналов.
+ * Итог проверки дублей для timeline-комментария.
+ *
+ * ПЕРЕНОС СТРОК: комментарий уходит batch-командой, а там обычный `\n`
+ * съедается — Битрикс склеивает весь текст в одну строку. Разделитель —
+ * `BATCH_LINE_BREAK_SYMBOL` (`%0A`), иначе комментарий нечитаем.
+ *
+ * Оформление: BB-разметка Битрикса. Кандидат — заголовок с типом, именем
+ * и баллом, под ним причина совпадения; название кандидата само является
+ * ссылкой ([URL=…]…[/URL]) — голый url в тексте выглядит мусорно.
  *
  * Чистая функция без обращений к Bitrix — легко тестируется.
  */
@@ -57,36 +64,42 @@ export function formatDuplicateTimelineComment(
     const lines: string[] = [];
     const total = result.candidates.length;
 
-    lines.push(`[B]Проверка на дубли (${levelTitle})[/B]`);
-    lines.push(
-        total === 0 ? 'Дубликаты не найдены.' : `Найдено кандидатов: ${total}.`,
-    );
+    lines.push(`[B]🔍 Проверка на дубли — ${levelTitle}[/B]`);
+    if (total === 0) {
+        lines.push('Дубликаты не найдены.');
+        lines.push('');
+        lines.push(`[I]Сигналы поиска: ${describeSignals(result)}[/I]`);
+        return lines.join(BATCH_LINE_BREAK_SYMBOL);
+    }
+
+    lines.push(`Найдено кандидатов: [B]${total}[/B]`);
     lines.push('');
 
     const shown = result.candidates.slice(0, MAX_CANDIDATES_IN_COMMENT);
     shown.forEach((candidate, index) => {
+        const url = entityCardUrl(domain, candidate.entityType, candidate.id);
+        const title = candidate.title ?? `#${candidate.id}`;
         lines.push(
-            `${index + 1}. [B]${TYPE_TITLE[candidate.entityType]}[/B] ` +
-                `${candidate.title ?? `#${candidate.id}`} — ` +
-                `${candidate.score} баллов`,
+            `${index + 1}. ${TYPE_TITLE[candidate.entityType]} ` +
+                `[URL=${url}][B]${title}[/B][/URL] — ${candidate.score} баллов`,
         );
         const reasons = describeReasons(candidate);
-        if (reasons) lines.push(`   Совпадение: ${reasons}`);
-        lines.push(
-            `   ${entityCardUrl(domain, candidate.entityType, candidate.id)}`,
-        );
+        if (reasons) lines.push(`     ↳ ${reasons}`);
     });
     if (total > shown.length) {
-        lines.push(`… и ещё ${total - shown.length} — см. фрейм «Звонки».`);
+        lines.push('');
+        lines.push(
+            `[I]… и ещё ${total - shown.length} — весь список во фрейме «Звонки».[/I]`,
+        );
     }
 
     lines.push('');
-    lines.push(`Сигналы поиска: ${describeSignals(result)}.`);
+    lines.push(`[I]Сигналы поиска: ${describeSignals(result)}[/I]`);
     if (result.warnings.length) {
-        lines.push(`Примечания: ${result.warnings.join('; ')}.`);
+        lines.push(`[I]Примечания: ${result.warnings.join('; ')}[/I]`);
     }
 
-    return lines.join('\n');
+    return lines.join(BATCH_LINE_BREAK_SYMBOL);
 }
 
 /** «телефон 8005553535 (findbycomm), ИНН 4826… (реквизиты)». */

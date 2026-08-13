@@ -81,6 +81,8 @@ export class LeadToWorkFlowService {
          * От них зависит ФОРМАТ значения связей; пусто — дефолт с префиксом.
          */
         ufDefinitions: LeadUfDefinitions = {},
+        /** Имена сотрудников для читаемой истории; нет — пишем id. */
+        private readonly userNames: Record<number, string> = {},
     ) {
         this.detector = new LeadRequestDetectorService(portal);
         this.kpi = new LeadToWorkKpiService(bitrix, portal);
@@ -176,6 +178,7 @@ export class LeadToWorkFlowService {
                 detection,
                 eventCtx,
                 hasCompany: Boolean(ctx.company || company.createdCmd),
+                userNames: this.userNames,
             },
             buffer,
         );

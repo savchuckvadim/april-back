@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import { getErrorDetails } from '@/shared';
 import {
     mergeTaskCrmBindings,
@@ -159,8 +160,10 @@ export class TransferWorkUseCase
         }
 
         // Задачи: целевые значения, идемпотентный префикс, заметка о закрытом.
+        // Перенос строки через BATCH_LINE_BREAK_SYMBOL: задача обновляется
+        // batch-командой, обычный `\n` там съедается и текст склеивается.
         const closedNote = closedSatellites.length
-            ? `\n[Передача работы] Закрыты аналитические сделки: ${closedSatellites.join('; ')}`
+            ? `${BATCH_LINE_BREAK_SYMBOL}[Передача работы] Закрыты аналитические сделки: ${closedSatellites.join('; ')}`
             : '';
         let movedTasks = 0;
         for (const task of scope.openTasks) {

@@ -208,6 +208,20 @@ export class LeadRequestAcceptService {
             warnings,
         );
 
+        /*
+         * Снимаем таймер SLA: op_lead_assigned_at — «заявка ждёт принятия
+         * с этого момента». Пустое поле = ждать больше нечего, и cron её
+         * не увидит вообще (фильтр идёт по заполненности, а не по стадии,
+         * которую могут двигать конструктор/роботы/руками).
+         */
+        const assignedAtField = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        if (assignedAtField) {
+            fields[portal.getFieldBitrixId(assignedAtField)] = '';
+        }
+
         // История: запись принятия (append-only от текущего значения).
         // Кто принял: явный userId (кнопка UI), иначе ответственный лида —
         // вебхук робота userId не шлёт, а принять обязан именно назначенный

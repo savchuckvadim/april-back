@@ -31,6 +31,12 @@ export enum EnumLeadRequestFieldCode {
     op_lead_black_short_reason = 'op_lead_black_short_reason',
     /** Время обработки заявки (сек). */
     op_lead_firstprepare_long = 'op_lead_firstprepare_long',
+    /**
+     * Момент назначения заявки менеджеру — старт отсчёта SLA принятия.
+     * Пишется при каждом назначении/передаче ХО, очищается принятием:
+     * «заполнено» = заявка ждёт подтверждения прямо сейчас.
+     */
+    op_lead_assigned_at = 'op_lead_assigned_at',
     /** История обработки заявки (multiple, append-only). */
     op_lead_firstprepare_history = 'op_lead_firstprepare_history',
     /** Установлена компания. */

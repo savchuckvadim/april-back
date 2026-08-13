@@ -22,6 +22,8 @@ import {
 } from '../services/lead-to-work-flow.service';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
+import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
+import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
 
 type BxRow = Record<string, unknown>;
 
@@ -68,7 +70,23 @@ export class LeadToWorkUseCase
     constructor(
         private readonly assignee: LeadToWorkAssigneeService,
         private readonly ufDefinitions: LeadUfDefinitionsService,
+        private readonly userNames: UserNameResolver,
     ) {}
+
+    /**
+     * Кому заявка принадлежала ДО этого прогона — ему уйдёт уведомление
+     * «работа ушла». Приоритет: сотрудник сам передал (кнопка) → исключён
+     * SLA-передачей → текущий ответственный лида (робот переназначает).
+     */
+    private previousResponsibleOf(
+        item: ILeadToWorkItem,
+        lead: BxRow,
+    ): number | null {
+        if (item.transferredBy) return item.transferredBy;
+        if (item.excludeResponsible) return item.excludeResponsible;
+        const current = Number(lead.ASSIGNED_BY_ID);
+        return Number.isFinite(current) && current > 0 ? current : null;
+    }
 
     /** UF-имена полей-связей лида, для которых нужен фактический формат. */
     private leadLinkFieldNames(ctx: SalesHookExecutionContext): string[] {
@@ -105,10 +123,37 @@ export class LeadToWorkUseCase
             ctx.bitrix,
             this.leadLinkFieldNames(ctx),
         );
+        /*
+         * Ответственные ВСЕЙ пачки — до записи: по ним одним запросом
+         * резолвим имена сотрудников, чтобы история заявки читалась людьми
+         * («ХО передан: Вадим Савчук → Иван Петров», а не «447 → 465»).
+         * Пачечная предобработка обязательна: хук = ×100–200 вызовов.
+         */
+        const resolvedAssignees = new Map<
+            number,
+            Awaited<ReturnType<LeadToWorkAssigneeService['resolve']>>
+        >();
+        for (const item of items) {
+            resolvedAssignees.set(
+                item.leadId,
+                await this.assignee.resolve(ctx.domain, item),
+            );
+        }
+        const userNames = await this.userNames.resolve(
+            ctx.domain,
+            ctx.bitrix,
+            items.flatMap(item => [
+                resolvedAssignees.get(item.leadId)?.responsible ?? 0,
+                item.transferredBy ?? 0,
+                item.excludeResponsible ?? 0,
+            ]),
+        );
+
         const flowService = new LeadToWorkFlowService(
             ctx.bitrix,
             ctx.portal,
             ufDefinitions,
+            userNames,
         );
 
         // Накопитель: что запланировали по каждому лиду. Реальные id
@@ -122,6 +167,10 @@ export class LeadToWorkUseCase
             existingXoDealId: number | null;
             responsible?: number;
             assigneeSource?: 'explicit' | 'round-robin';
+            /** Название лида — в текст персонального уведомления. */
+            leadTitle?: string;
+            /** Прежний ответственный (передача) — ему уходит «работа ушла». */
+            previousResponsibleId?: number | null;
             error?: string;
             warnings: string[];
         }[] = [];
@@ -131,8 +180,8 @@ export class LeadToWorkUseCase
             try {
                 // 1.0 Ответственный: пришёл в хуке — берём его; не пришёл —
                 //     round-robin из отдела продаж (намёк — item.department,
-                //     курсор — в app-cache). Без кандидатов лид пропускается.
-                const assignee = await this.assignee.resolve(ctx.domain, item);
+                //     курсор — в app-cache). Разрезолвлен предпроходом выше.
+                const assignee = resolvedAssignees.get(item.leadId)!;
                 if (!assignee.responsible) {
                     queued.push({
                         item,
@@ -200,6 +249,14 @@ export class LeadToWorkUseCase
                         : null,
                     responsible: assignee.responsible,
                     assigneeSource: assignee.source,
+                    leadTitle:
+                        this.text(
+                            (leadContext.lead as unknown as BxRow).TITLE,
+                        ) ?? undefined,
+                    previousResponsibleId: this.previousResponsibleOf(
+                        item,
+                        leadContext.lead as unknown as BxRow,
+                    ),
                     warnings: [
                         ...assignee.warnings,
                         ...leadContext.warnings,
@@ -233,6 +290,27 @@ export class LeadToWorkUseCase
 
         // ── Шаг 3. Ответы батча → плоская карта `cmdKey → ответ`.
         const byCmd = this.flattenResults(ctx.buffer.getResults());
+
+        /*
+         * Шаг 3.5. Персональные уведомления — ПОСЛЕ записи: назначение уже
+         * состоялось, и сообщение не соврёт. Новому — «вам назначена
+         * заявка» (с требованием подтвердить в ХО-ветке), прежнему — почему
+         * работа ушла. Падение уведомления не роняет операцию.
+         */
+        const notifier = new LeadToWorkNotifyService(ctx.bitrix);
+        for (const entry of queued) {
+            if (entry.error || !entry.responsible) continue;
+            const warnings = await notifier.notifyAssignment({
+                domain: ctx.domain,
+                leadId: entry.item.leadId,
+                leadTitle: entry.leadTitle ?? `Лид ${entry.item.leadId}`,
+                responsibleId: entry.responsible,
+                previousResponsibleId: entry.previousResponsibleId ?? null,
+                transferredById: entry.item.transferredBy ?? null,
+                requiresAccept: entry.item.isXo === 'Y',
+            });
+            entry.warnings.push(...warnings);
+        }
 
         // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.
         const results = queued.map(entry => this.toItemResult(entry, byCmd));

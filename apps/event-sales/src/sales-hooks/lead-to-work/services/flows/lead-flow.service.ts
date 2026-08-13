@@ -28,6 +28,8 @@ export interface LeadFlowInput {
     eventCtx: IXoEventContext | null;
     /** Компания есть или создаётся этой же группой. */
     hasCompany: boolean;
+    /** Имена сотрудников (id → «Имя Фамилия») для читаемой истории. */
+    userNames?: Record<number, string>;
 }
 
 /**
@@ -72,6 +74,7 @@ export class LeadFlowService extends LeadToWorkFlowBase {
                     ? this.leadDealRef(toXoName, input.xoRef)
                     : null,
             hasCompany: input.hasCompany,
+            userNames: input.userNames,
             previousResponsibleId: this.prevResponsible(ctx),
             transferredById: item.transferredBy ?? null,
             timezone: this.portal.getTimezone(),

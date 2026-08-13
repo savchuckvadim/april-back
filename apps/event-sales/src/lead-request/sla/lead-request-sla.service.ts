@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
@@ -15,8 +17,18 @@ import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
 } from '../../shared/lead-request/lead-request-history.util';
-import { EnumLeadRequestFieldCode } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
+import {
+    EnumLeadRequestFieldCode,
+    EnumLeadSiteStageCode,
+} from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { LeadRequestAcceptService } from '../services/lead-request-accept.service';
+
+// Плагины idempotent: extend() повторно — no-op (см. lead-request-history.util).
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+/** Формат CRM datetime-полей Битрикса (локальное время портала). */
+const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 
 type BxRow = Record<string, unknown>;
 
@@ -70,14 +82,6 @@ export class LeadRequestSlaService {
         };
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
 
-        const assignedStatusId = portal.getLeadStatusIdByCode('lead_assigned');
-        if (!assignedStatusId) {
-            result.warnings.push(
-                'Стадия «Назначена менеджеру» не установлена — SLA-контроль невозможен',
-            );
-            return result;
-        }
-
         const historyField = portal.getEntityFieldByCode(
             'lead',
             EnumLeadRequestFieldCode.op_lead_firstprepare_history,
@@ -87,16 +91,15 @@ export class LeadRequestSlaService {
             PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
         );
 
-        const threshold = dayjs().subtract(minutes, 'minute').toISOString();
+        const filter = this.buildOverdueFilter(portal, minutes, result);
+        if (!filter) return result;
+
         const select = ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'DATE_MODIFY'];
         if (historyField) select.push(portal.getFieldBitrixId(historyField));
         if (toBaseField) select.push(portal.getFieldBitrixId(toBaseField));
 
         const { result: leads } = await bitrix.lead.getList(
-            {
-                STATUS_ID: assignedStatusId,
-                '<DATE_MODIFY': threshold,
-            } as never,
+            filter as never,
             select,
         );
         const overdue = (leads ?? []).slice(0, maxPerRun) as unknown as BxRow[];
@@ -144,6 +147,75 @@ export class LeadRequestSlaService {
                 `доведено принятий ${result.healed}, передано ${result.transferred}`,
         );
         return result;
+    }
+
+    /**
+     * Фильтр «нераспределённые заявки, просрочившие принятие».
+     *
+     * ОСНОВНОЙ путь — по НАШИМ полям, которые пишет только хук назначения:
+     *  - `op_lead_assigned_at` ЗАПОЛНЕНО и старше порога — заявка ждёт
+     *    подтверждения дольше N минут. Принятие поле очищает, поэтому
+     *    принятые выпадают из выборки автоматически;
+     *  - `op_lead_site_stage` = «Назначена менеджеру» — это именно ЗАЯВКА
+     *    (метку ставит хук только распознанной заявке), а не любой лид.
+     * Стадия лида здесь НЕ участвует: её двигают конструктор, роботы и
+     * менеджеры руками — опираться на неё как на признак ненадёжно.
+     *
+     * FALLBACK (поля ещё не установлены на портале) — прежний механизм по
+     * стадии `lead_assigned` + DATE_MODIFY, с предупреждением: он грубее,
+     * потому что DATE_MODIFY сбивает любая правка карточки.
+     */
+    private buildOverdueFilter(
+        portal: PortalModel,
+        minutes: number,
+        result: LeadRequestSlaRunResult,
+    ): Record<string, unknown> | null {
+        const assignedAtField = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        const siteStageField = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_site_stage,
+        );
+
+        if (assignedAtField) {
+            const assignedAtName = portal.getFieldBitrixId(assignedAtField);
+            const threshold = dayjs()
+                .tz(portal.getTimezone())
+                .subtract(minutes, 'minute')
+                .format(CRM_DATETIME_FORMAT);
+            const filter: Record<string, unknown> = {
+                [`!${assignedAtName}`]: '',
+                [`<${assignedAtName}`]: threshold,
+            };
+
+            // Сужаем до заявок: метку «Назначена» ставит только наш хук.
+            const assignedCode: string = EnumLeadSiteStageCode.assigned;
+            const assignedItem = siteStageField?.items.find(
+                item => item.code === assignedCode,
+            );
+            if (assignedItem && siteStageField) {
+                filter[portal.getFieldBitrixId(siteStageField)] =
+                    assignedItem.bitrixId;
+            }
+            return filter;
+        }
+
+        const assignedStatusId = portal.getLeadStatusIdByCode('lead_assigned');
+        if (!assignedStatusId) {
+            result.warnings.push(
+                'Ни поле «Заявка назначена (дата)», ни стадия «Назначена менеджеру» не установлены — SLA-контроль невозможен',
+            );
+            return null;
+        }
+        result.warnings.push(
+            'Поле «Заявка назначена (дата)» не установлено — SLA работает по стадии и DATE_MODIFY (грубее: правка карточки сбивает таймер)',
+        );
+        return {
+            STATUS_ID: assignedStatusId,
+            '<DATE_MODIFY': dayjs().subtract(minutes, 'minute').toISOString(),
+        };
     }
 
     /** `C{cat}:{stage}` стадии «Новая» воронки ОП; null — не сконфигурирована. */

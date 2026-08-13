@@ -40,7 +40,11 @@ const GET_METHOD: Record<DuplicateEntityType, string> = {
     [DuplicateEntityType.DEAL]: 'crm.deal.get',
 };
 
-/** Select зеркальных сделок: минимум для сигналов + идентификация. */
+/**
+ * Select зеркальных сделок: минимум для сигналов + идентификация.
+ * `UF_*` — чтобы увидеть наши поля графа (`deal_from_lead_id`,
+ * `deal_joined_leads`): их лиды тоже часть работы, а не дубли.
+ */
 const MIRROR_DEAL_SELECT = [
     'ID',
     'TITLE',
@@ -49,6 +53,7 @@ const MIRROR_DEAL_SELECT = [
     'LEAD_ID',
     'CATEGORY_ID',
     'STAGE_ID',
+    'UF_*',
 ];
 
 const REQUISITE_SELECT = [
@@ -303,10 +308,56 @@ export class DuplicateSourceGraphService {
                 contactIds.forEach(id => push(DuplicateEntityType.CONTACT, id));
             }
         }
+        /*
+         * Сделка → её ЛИДЫ. Без этого ребра лид-первоисточник не попадает в
+         * граф источника, а значит и в excluded — и всплывает в результатах
+         * как «дубль» самого себя (он же и есть эта работа, а не другая).
+         * Источники: штатный LEAD_ID конвертации + наши поля графа
+         * (`deal_from_lead_id`, `deal_joined_leads`), значения которых
+         * бывают и `L_123`, и голым id — разбираем оба вида.
+         */
+        if (ref.entityType === DuplicateEntityType.DEAL) {
+            for (const value of this.leadRefsOf(entity)) {
+                push(DuplicateEntityType.LEAD, value);
+            }
+        }
         if (ref.entityType === DuplicateEntityType.CONTACT) {
             push(DuplicateEntityType.COMPANY, entity.COMPANY_ID);
         }
         return refs;
+    }
+
+    /**
+     * Идентификаторы лидов сделки из всех известных источников связи.
+     * UF-имена полей графа заранее неизвестны (у каждого портала свои),
+     * поэтому берём их из строки сделки по суффиксу кода — это надёжнее,
+     * чем тащить PortalModel в чистый обходчик графа.
+     */
+    private leadRefsOf(entity: BxGraphRow): number[] {
+        const ids: number[] = [];
+        const collect = (raw: unknown): void => {
+            const values = Array.isArray(raw) ? raw : [raw];
+            for (const value of values) {
+                if (typeof value !== 'string' && typeof value !== 'number') {
+                    continue;
+                }
+                const match = /^(?:L_)?(\d+)$/.exec(String(value).trim());
+                if (match) ids.push(Number(match[1]));
+            }
+        };
+
+        collect(entity.LEAD_ID);
+        for (const [key, value] of Object.entries(entity)) {
+            if (!key.startsWith('UF_CRM_')) continue;
+            const code = key.toUpperCase();
+            if (
+                code.endsWith('DEAL_FROM_LEAD_ID') ||
+                code.endsWith('DEAL_JOINED_LEADS')
+            ) {
+                collect(value);
+            }
+        }
+        return ids;
     }
 
     /** Пропуск узла в граф с учётом visited/квот; учитывает его в excluded. */

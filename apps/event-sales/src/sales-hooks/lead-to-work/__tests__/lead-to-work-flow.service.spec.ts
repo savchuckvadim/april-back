@@ -124,6 +124,7 @@ const baseContext = (
     convertedDeals: [],
     fromLeadDeals: [],
     openTasks: [],
+    contactIds: [],
     isConverted: false,
     warnings: [],
     ...over,
@@ -310,6 +311,59 @@ describe('LeadToWorkFlowService', () => {
             ?.args[0] as Record<string, unknown>;
         expect(dealFields.UF_CRM_XO_DATE).toBeUndefined();
         expect(dealFields.UF_CRM_OP_CURRENT_STATUS).toBeUndefined();
+    });
+
+    /*
+     * Контакты лида — то, по чему звонят. При переходе в работу они обязаны
+     * переехать на сделку целиком: главный в CONTACT_ID, все в CONTACT_IDS.
+     */
+    it('контакты лида переезжают на основную и ХО-сделку', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5, isXo: 'Y' }),
+            baseContext({ contactIds: [11, 22] }),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        const dealSets = calls.filter(c => c.method === 'deal.set');
+        expect(dealSets).toHaveLength(2); // основная + ХО
+        for (const call of dealSets) {
+            const fields = call.args[0] as Record<string, unknown>;
+            expect(fields.CONTACT_ID).toBe('11');
+            expect(fields.CONTACT_IDS).toEqual([11, 22]);
+        }
+    });
+
+    it('reuse: контакты лида добавляются к уже привязанным (union)', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext({
+                existingOurDeal: {
+                    ID: '300',
+                    CATEGORY_ID: '3',
+                    CONTACT_IDS: ['99'],
+                } as never,
+                contactIds: [11],
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const update = calls.find(c => c.cmd === 'lw_deal_upd_42');
+        const fields = update?.args[1] as Record<string, unknown>;
+        expect(fields.CONTACT_IDS).toEqual([99, 11]);
     });
 
     it('флаг робота isRequest=Y делает лид заявкой без полей лидогена', () => {

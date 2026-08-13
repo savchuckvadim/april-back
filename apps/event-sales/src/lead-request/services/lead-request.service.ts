@@ -367,16 +367,33 @@ export class LeadRequestService {
     }
 
     /**
-     * «Принята ли заявка» (назначение ≠ принятие): истина — история
-     * (принятие после ПОСЛЕДНЕГО назначения); истории нет — по стадии
-     * заявки (назначена → не принята; дальше — принята); ничего не
-     * установлено → true (кнопку не показываем, механика недоступна).
+     * «Принята ли заявка» (назначение ≠ принятие). Три источника по
+     * убыванию надёжности — тот же порядок, что у SLA-крона:
+     *
+     *  1. `op_lead_assigned_at` — таймер ожидания: пишется при КАЖДОМ
+     *     назначении/передаче и очищается принятием. Заполнен = ждёт
+     *     подтверждения прямо сейчас. Не зависит ни от истории, ни от
+     *     стадии, поэтому переживает ручные правки карточки;
+     *  2. история обработки — принятие после ПОСЛЕДНЕГО назначения;
+     *  3. стадия заявки — назначена → не принята.
+     *
+     * Ничего не установлено → true: механики подтверждения на портале нет,
+     * блокировать работу менеджера нельзя.
      */
     private isAccepted(
         portal: PortalModel,
         lead: BxRow,
         card: LeadRequestCardDto,
     ): boolean {
+        const assignedAtField = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        if (assignedAtField) {
+            const raw = lead[portal.getFieldBitrixId(assignedAtField)];
+            return !this.text(raw);
+        }
+
         const state = getLeadRequestAcceptState(
             this.fieldRaw(
                 portal,

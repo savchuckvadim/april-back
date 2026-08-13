@@ -103,6 +103,37 @@ describe('DuplicateSourceGraphService', () => {
         );
     });
 
+    /*
+     * Лид, из которого выросла сделка, — часть ТОЙ ЖЕ работы, а не другая
+     * запись о клиенте. Без ребра «сделка → её лиды» он не попадал в
+     * excluded и показывался менеджеру как дубль самого себя.
+     */
+    it('сделка-источник тянет свои лиды: LEAD_ID и наши поля графа', async () => {
+        const { bitrix } = makeBitrix([
+            {
+                DEAL_500: {
+                    ID: '500',
+                    LEAD_ID: '337065',
+                    UF_CRM_DEAL_FROM_LEAD_ID: 'L_337065',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_337065', '42'],
+                },
+            },
+            { LEAD_337065: { ID: '337065' }, LEAD_42: { ID: '42' } },
+        ]);
+
+        const result = await service.collect(
+            bitrix as never,
+            { entityType: DuplicateEntityType.DEAL, id: 500 },
+            SOURCE_GRAPH_LIMITS_FAST,
+            [5],
+        );
+
+        const keys = result.excluded.map(ref => `${ref.entityType}_${ref.id}`);
+        expect(keys).toEqual(
+            expect.arrayContaining(['DEAL_500', 'LEAD_337065', 'LEAD_42']),
+        );
+    });
+
     it('зеркальные сделки читаются ТОЛЬКО с фильтром наших воронок', async () => {
         const { bitrix, sentWaves } = makeBitrix([
             { LEAD_42: { ID: '42', COMPANY_ID: '7' } },

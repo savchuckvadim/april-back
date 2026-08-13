@@ -44,6 +44,13 @@ export class DealFlowService extends LeadToWorkFlowBase {
             if (companyRef && !this.text(row.COMPANY_ID)) {
                 fields.COMPANY_ID = companyRef;
             }
+            // Контакты лида доводим и на существующую сделку, но не затираем
+            // уже привязанные: у неё могли появиться свои (union).
+            const mergedContacts = this.mergeContacts(
+                this.refList(row.CONTACT_IDS).map(Number),
+                ctx.contactIds,
+            );
+            if (mergedContacts.length) fields.CONTACT_IDS = mergedContacts;
             // Повторный ХО передаёт работу: сделка — новому ответственному.
             if (item.isXo === 'Y') {
                 fields.ASSIGNED_BY_ID = String(item.responsible);
@@ -68,11 +75,30 @@ export class DealFlowService extends LeadToWorkFlowBase {
         };
         if (plan.dealStageId) fields.STAGE_ID = plan.dealStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
-        const contactId = this.text((ctx.lead as unknown as BxRow).CONTACT_ID);
-        if (contactId) fields.CONTACT_ID = contactId;
+        /*
+         * Контакты лида переезжают на сделку целиком: главный — в
+         * CONTACT_ID (по нему Битрикс показывает «контакт сделки»),
+         * все — в CONTACT_IDS. Иначе при переходе в работу терялись бы
+         * телефоны, по которым и звонят.
+         */
+        if (ctx.contactIds.length) {
+            fields.CONTACT_ID = String(ctx.contactIds[0]);
+            fields.CONTACT_IDS = ctx.contactIds;
+        }
 
         buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
         return { ref: `$result[${cmd}]`, cmd };
+    }
+
+    /** Union контактов с сохранением порядка (главный лида — первым). */
+    private mergeContacts(current: number[], fromLead: number[]): number[] {
+        const merged: number[] = [];
+        for (const id of [...current, ...fromLead]) {
+            if (Number.isFinite(id) && id > 0 && !merged.includes(id)) {
+                merged.push(id);
+            }
+        }
+        return merged;
     }
 
     /**
@@ -122,6 +148,11 @@ export class DealFlowService extends LeadToWorkFlowBase {
         };
         if (plan.xoStageId) fields.STAGE_ID = plan.xoStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
+        // ХО-сделка — та же работа: контакты лида нужны и в ней (по ним звонят).
+        if (ctx.contactIds.length) {
+            fields.CONTACT_ID = String(ctx.contactIds[0]);
+            fields.CONTACT_IDS = ctx.contactIds;
+        }
         buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
         return { ref: `$result[${cmd}]`, cmd };
     }

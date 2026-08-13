@@ -6,6 +6,7 @@ import { LeadToWorkController } from './controllers/lead-to-work.controller';
 import { LeadToWorkUseCase } from './use-cases/lead-to-work.use-case';
 import { LeadToWorkAssigneeService } from './services/lead-to-work-assignee.service';
 import { PortalFieldsModule } from '../../shared/portal-fields';
+import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
 
 /**
  * Хук «лид → работа» (группа 1): конвертация лида в работу ОП и «ХО из
@@ -18,7 +19,12 @@ import { PortalFieldsModule } from '../../shared/portal-fields';
     // зависит формат значения связей (голый id либо `D_{id}`).
     imports: [SalesHookCoreModule, BxDepartmentModule, PortalFieldsModule],
     controllers: [LeadToWorkController],
-    providers: [LeadToWorkUseCase, LeadToWorkAssigneeService],
+    providers: [
+        LeadToWorkUseCase,
+        LeadToWorkAssigneeService,
+        // Имена сотрудников для читаемой истории и уведомлений (кэш на домен).
+        UserNameResolver,
+    ],
 })
 export class LeadToWorkHookModule implements OnModuleInit {
     constructor(

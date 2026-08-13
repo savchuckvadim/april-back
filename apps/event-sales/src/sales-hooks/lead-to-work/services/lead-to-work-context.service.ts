@@ -23,6 +23,12 @@ export interface LeadToWorkContext {
      */
     fromLeadDeals: IBXDeal[];
     openTasks: IBXTask[];
+    /**
+     * ВСЕ контакты лида (`crm.lead.contact.items.get` + штатный CONTACT_ID).
+     * Переезжают на создаваемую сделку: у лида контактов бывает несколько,
+     * и терять их при переходе в работу нельзя — по ним звонят.
+     */
+    contactIds: number[];
     /** Лид закрыт штатной конвертацией (SEMANTICS='S'/CONVERTED). */
     isConverted: boolean;
     warnings: string[];
@@ -109,6 +115,10 @@ export class LeadToWorkContextService {
                 'Поле deal_from_lead_id не сопоставлено — reuse-гейт видит только ссылки лида (to_base_sales)',
             );
         }
+        // Контакты лида: у лида их бывает несколько (штатный CONTACT_ID —
+        // только «главный»), а на сделку должны переехать все.
+        this.bitrix.batch.lead.contactItemsGet('ctx_lead_contacts', leadId);
+
         const taskGroupId = this.portal.getSalesTaskGroupId();
         const taskBindings = [`L_${leadId}`];
         if (companyId) taskBindings.push(`CO_${companyId}`);
@@ -180,9 +190,34 @@ export class LeadToWorkContextService {
             convertedDeals,
             fromLeadDeals,
             openTasks,
+            contactIds: this.collectContactIds(
+                lead as BxRow,
+                flat.get('ctx_lead_contacts'),
+            ),
             isConverted,
             warnings,
         };
+    }
+
+    /**
+     * Контакты лида: главный (`CONTACT_ID`) + все привязанные
+     * (`crm.lead.contact.items.get` → `[{CONTACT_ID, SORT}]`). Порядок
+     * сохраняем — первым идёт главный, он же станет `CONTACT_ID` сделки.
+     */
+    private collectContactIds(lead: BxRow, itemsRaw: unknown): number[] {
+        const ids: number[] = [];
+        const push = (raw: unknown): void => {
+            const id = Number(raw);
+            if (Number.isFinite(id) && id > 0 && !ids.includes(id)) {
+                ids.push(id);
+            }
+        };
+
+        push(lead.CONTACT_ID);
+        for (const item of this.rowsOf(itemsRaw)) {
+            push(item.CONTACT_ID ?? item.ID);
+        }
+        return ids;
     }
 
     /** Значение UF-поля лида по pbx-коду; null при ненайденном поле. */

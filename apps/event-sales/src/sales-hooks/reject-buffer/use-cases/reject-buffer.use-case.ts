@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import { getErrorDetails } from '@/shared';
 import { EnumSalesHookCode } from '../../core/constants/sales-hook-code.enum';
 import {
@@ -87,9 +88,10 @@ export class RejectBufferUseCase
         }
 
         if (item.taskMode === 'complete') {
+            // Перенос строки — batch-символ: задачи закрываются batch'ем.
             const note = item.reasonCode
-                ? `\n[Буфер отказников] Причина: ${item.reasonCode}`
-                : '\n[Буфер отказников] Работа переведена в отказ';
+                ? `${BATCH_LINE_BREAK_SYMBOL}[Буфер отказников] Причина: ${item.reasonCode}`
+                : `${BATCH_LINE_BREAK_SYMBOL}[Буфер отказников] Работа переведена в отказ`;
             for (const task of scope.openTasks) {
                 const row = task as unknown as BxRow;
                 const taskId = Number(row.id ?? row.ID);
