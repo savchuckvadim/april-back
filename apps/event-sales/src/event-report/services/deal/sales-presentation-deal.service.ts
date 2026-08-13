@@ -81,10 +81,13 @@ export class SalesPresentationDealService {
                 isResult: ctx.isResult,
             });
             if (stage) {
+                // Отчёт идёт ПО ЭТОЙ сделке: если презентация состоялась,
+                // засчитывается она именно здесь.
                 const entityFields = this.buildEntityFields(
                     ctx,
                     ctx.currentPresDeal as Record<string, unknown>,
                     baseDealId,
+                    true,
                 );
                 const cmd = `update_pres_deal_${ctx.currentPresDeal.ID}`;
                 this.bitrix.batch.deal.update(
@@ -107,10 +110,12 @@ export class SalesPresentationDealService {
             });
             if (stage) {
                 const cmd = 'set_pres_deal';
+                // Сделка заводится ПОД ПЛАН — презентации на ней ещё не было.
                 const entityFields = this.buildEntityFields(
                     ctx,
                     null,
                     baseDealId,
+                    false,
                 );
                 const fields: Partial<IBXDeal> = {
                     ...(entityFields as Partial<IBXDeal>),
@@ -145,10 +150,13 @@ export class SalesPresentationDealService {
             }
             if (stage) {
                 const cmd = 'set_unplanned_pres_deal';
+                // Незапланированная презентация уже состоялась — сделка
+                // создаётся сразу фактом.
                 const entityFields = this.buildEntityFields(
                     ctx,
                     null,
                     baseDealId,
+                    true,
                 );
                 const fields: Partial<IBXDeal> = {
                     ...(entityFields as Partial<IBXDeal>),
@@ -183,10 +191,17 @@ export class SalesPresentationDealService {
         return result;
     }
 
+    /**
+     * `presentationHappenedHere` — состоялась ли презентация на ЭТОЙ
+     * pres-сделке (см. `DealFieldsOptions`). Каждая из трёх веток знает это
+     * про себя: обновляемая текущая и незапланированная — да, новая под
+     * план — ещё нет.
+     */
     private buildEntityFields(
         ctx: EventReportContext,
         deal: Record<string, unknown> | null,
         baseDealId: string | null,
+        presentationHappenedHere: boolean,
     ): Record<string, unknown> {
         return new EventReportEntityFieldsModel(
             this.portal,
@@ -196,6 +211,7 @@ export class SalesPresentationDealService {
                 deal,
                 role: EDealRole.PRESENTATION,
                 baseDealId,
+                presentationHappenedHere,
             },
         ).toFields();
     }

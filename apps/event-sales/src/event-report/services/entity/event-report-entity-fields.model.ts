@@ -66,6 +66,19 @@ export interface DealFieldsOptions {
      * `to_base_sales`. Для остальных ролей игнорируется.
      */
     baseDealId?: string | null;
+    /**
+     * Только для `role='presentation'`: состоялась ли презентация ИМЕННО на
+     * этой сделке.
+     *
+     * Pres-сделка — это «элемент презентации», у неё счётчик не копится, а
+     * равен 1 (презентация прошла) либо 0 (сделка только заведена под план).
+     * Флаг ставит вызывающий: он единственный знает, какую из pres-сделок
+     * сейчас собирает — обновляемую текущую, новую плановую или новую
+     * незапланированную. Выводить это из общих флагов контекста нельзя:
+     * «отчитались по презентации И запланировали следующую» — обычный
+     * сценарий, и по флагам обе сделки выглядят одинаково.
+     */
+    presentationHappenedHere?: boolean;
 }
 
 /**
@@ -366,34 +379,42 @@ export class EventReportEntityFieldsModel {
         out[this.bitrixKey(field)] = value;
     }
 
+    /**
+     * `pres_count` — сколько презентаций проведено.
+     *
+     * Смысл зависит от того, ЧЬЁ это поле:
+     *  - КОМПАНИЯ — сквозной счётчик клиента: копится через все её сделки,
+     *    сколько бы их ни было;
+     *  - основная сделка (`sales_base`) и лид — копится, пока работа ведётся;
+     *  - pres-сделка — она сама и есть «элемент презентации», поэтому не
+     *    копится: 1, если презентация на ней состоялась, иначе 0.
+     *
+     * Раньше сброс до 0/1 выводился из общих флагов контекста
+     * (`isPlanned && planEventType==='presentation'`), и обычный сценарий
+     * «отчитались по презентации и тут же запланировали следующую» ставил
+     * состоявшейся презентации 0. Теперь сброс — только для pres-сделки и
+     * только по явному флагу вызывающего.
+     */
     private bumpPresCount(out: EntityFieldsMap): void {
         const field = this.portal.getEntityFieldByCode(
             this.entityType,
             'pres_count',
         );
         if (!field) return;
-        // Legacy: для презентации стартуем с 0, а на plan/fail с -1 (++ = 0)
-        // — потому что для НОВОЙ pres-сделки счётчик не наследуем.
-        let current = this.readNumber(this.entityRecord(), field);
+
         if (
             this.entityType === EEventReportEntityType.DEAL &&
             this.dealOptions?.role === EDealRole.PRESENTATION
         ) {
-            const role = this.deriveDealEventAction();
-            current = role === 'plan' || role === 'fail' ? -1 : 0;
+            out[this.bitrixKey(field)] = this.dealOptions
+                .presentationHappenedHere
+                ? 1
+                : 0;
+            return;
         }
-        out[this.bitrixKey(field)] = current + 1;
-    }
 
-    /**
-     * Возвращает «событие» для роли сделки — нужно для обнуления pres_count.
-     */
-    private deriveDealEventAction(): 'plan' | 'done' | 'fail' | 'unplanned' {
-        if (this.ctx.isFail) return 'fail';
-        if (this.ctx.isUnplannedPresentation) return 'unplanned';
-        if (this.ctx.isPlanned && this.ctx.planEventType === 'presentation')
-            return 'plan';
-        return 'done';
+        out[this.bitrixKey(field)] =
+            this.readNumber(this.entityRecord(), field) + 1;
     }
 
     private appendMultiple(

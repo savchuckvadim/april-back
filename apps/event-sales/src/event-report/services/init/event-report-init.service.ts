@@ -34,6 +34,27 @@ const DEAL_LIST_SELECT = [
 ];
 
 /**
+ * Поля сделки, которые event-report ЧИТАЕТ, чтобы дописать к прошлому
+ * значению (`EventReportEntityFieldsModel`): счётчик презентаций и три
+ * накопительных multiple-поля.
+ *
+ * Их ОБЯЗАТЕЛЬНО добавлять в select: `crm.deal.list` возвращает ровно то,
+ * что попросили, а модель делает read-modify-write. Без них прочитанное
+ * значение — пустое, и запись не дописывает, а ЗАТИРАЕТ: `pres_count`
+ * навсегда оставался 1 (не копился ни на основной сделке, ни дальше), а
+ * история и комментарии сделки схлопывались до одной последней строки.
+ *
+ * Имена берём из слепка портала (`UF_CRM_{bitrixId}`), а не хардкодом:
+ * bitrixId полей задаёт установка портала.
+ */
+const DEAL_ACCUMULATED_FIELD_CODES = [
+    'pres_count',
+    'pres_comments',
+    'op_fail_comments',
+    'op_mhistory',
+] as const;
+
+/**
  * Коды pbx-полей сделки со связанными лидами (тот же набор, что в
  * pbx-duplicate/related-entities): стандартный LEAD_ID читается всегда,
  * эти — по слепку портала, когда проинсталлены.
@@ -94,24 +115,33 @@ export class EventReportInitService {
         const ownerLeadIds = this.collectOwnerLeadIds(ownerDeal, portal);
 
         const dtoLeadId = dto.lead?.ID ? Number(dto.lead.ID) : null;
+        // Select один на все чтения сделок: накопительные поля обязаны
+        // приехать, иначе запись их затрёт (см. DEAL_ACCUMULATED_FIELD_CODES).
+        const dealSelect = this.dealListSelect(portal);
 
         // === Фаза 1: владелец (company/lead/deal) + active deals + task + DTO lead ===
         if (entityType === EEventReportEntityType.COMPANY) {
             bitrix.batch.company.get('get_company', entityId);
-            this.queueActiveDealsLoad(bitrix, entityId, entityType);
+            this.queueActiveDealsLoad(bitrix, entityId, entityType, dealSelect);
         } else if (entityType === EEventReportEntityType.DEAL) {
             // У владельца-сделки нет «всех сделок компании» — добираем по
             // D_-ссылкам задачи (pres/tmc), to_*-ссылкам самой сделки и по
             // общим лидам, иначе отчёт создал бы дубли вместо обновления.
-            this.queueActiveDealsLoad(bitrix, entityId, entityType, [
-                ...this.extractTaskDealIds(dto),
-                ...this.collectOwnerLinkedDealIds(ownerDeal),
-            ]);
+            this.queueActiveDealsLoad(
+                bitrix,
+                entityId,
+                entityType,
+                dealSelect,
+                [
+                    ...this.extractTaskDealIds(dto),
+                    ...this.collectOwnerLinkedDealIds(ownerDeal),
+                ],
+            );
             if (ownerLeadIds.length) {
                 bitrix.batch.deal.getList(
                     'list_deals_by_lead',
                     { LEAD_ID: ownerLeadIds } as never,
-                    DEAL_LIST_SELECT,
+                    dealSelect,
                 );
             }
             const primaryLeadId = ownerLeadIds[0];
@@ -120,7 +150,7 @@ export class EventReportInitService {
             }
         } else {
             bitrix.batch.lead.get('get_lead_entity', entityId);
-            this.queueActiveDealsLoad(bitrix, entityId, entityType);
+            this.queueActiveDealsLoad(bitrix, entityId, entityType, dealSelect);
         }
 
         if (dtoLeadId && entityType !== EEventReportEntityType.LEAD) {
@@ -370,10 +400,24 @@ export class EventReportInitService {
      * deal — владелец + переданные extraDealIds (ссылки задачи и to_*-полей),
      * lead — сделки лида. Закрытые отсекает `filterActiveDeals` после.
      */
+    /**
+     * Select чтения сделок: базовый набор + накопительные поля, разрезолвленные
+     * по слепку портала. Неустановленное поле просто не попадёт в select
+     * (graceful — как и везде в event-report).
+     */
+    private dealListSelect(portal: PortalModel): string[] {
+        const accumulated = DEAL_ACCUMULATED_FIELD_CODES.map(code => {
+            const field = portal.getEntityFieldByCode('deal', code);
+            return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
+        }).filter((name): name is string => !!name);
+        return [...new Set([...DEAL_LIST_SELECT, ...accumulated])];
+    }
+
     private queueActiveDealsLoad(
         bitrix: BitrixService,
         entityId: number,
         entityType: EventReportEntityType,
+        select: string[],
         extraDealIds: number[] = [],
     ): void {
         const filter: Partial<IBXDeal> = {};
@@ -388,7 +432,7 @@ export class EventReportInitService {
         } else {
             (filter as Record<string, unknown>).LEAD_ID = entityId;
         }
-        bitrix.batch.deal.getList('list_deals', filter, DEAL_LIST_SELECT);
+        bitrix.batch.deal.getList('list_deals', filter, select);
     }
 
     private flattenResults(

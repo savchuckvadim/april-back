@@ -280,6 +280,64 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
         },
     );
 
+    /*
+     * ПЕРЕНОС события (isExpired + есть текущая задача) обязан менять только
+     * дедлайн. Задача остаётся ТА ЖЕ, значит и слово вида в её заголовке
+     * остаётся — заявка после переноса не превращается в холодный обзвон.
+     */
+    it('перенос: правится только дедлайн, заголовок задачи не трогается', () => {
+        const calls: { method: string; args: unknown[] }[] = [];
+        const bitrix = {
+            batch: {
+                task: {
+                    add: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'add', args }),
+                    update: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'update', args }),
+                    complete: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'complete', args }),
+                },
+            },
+        };
+        const portal = {
+            getSalesTaskGroupId: () => 77,
+            getEntityFieldByCode: () => undefined,
+            getFieldBitrixId: (f: { bitrixId: string }) => f.bitrixId,
+        };
+
+        new EventReportTaskFlowService(bitrix as never, portal as never).queue(
+            {
+                isExpired: true,
+                isNew: false,
+                isPlanned: true,
+                isResult: false,
+                entityType: 'deal',
+                entityId: 500,
+                planResponsibleId: 5,
+                planCreatedById: 5,
+                planDeadline: '2026-08-20T10:00:00',
+                planEventName: 'ООО Ромашка',
+                reportComment: '',
+                planEventType: 'xo',
+                reportEventType: 'xoRequest',
+                currentTask: {
+                    id: 900,
+                    title: 'Холодный обзвон. Заявка.  ООО Ромашка',
+                },
+                ownerDeal: null,
+                dto: { plan: { type: { current: { name: 'Холодный' } } } },
+            } as never,
+            deals,
+        );
+
+        // Единственная команда — update дедлайна; новой задачи нет.
+        expect(calls).toHaveLength(1);
+        expect(calls[0].method).toBe('update');
+        const fields = calls[0].args[1] as Record<string, unknown>;
+        expect(fields.DEADLINE).toBe('2026-08-20T10:00:00');
+        expect(fields.TITLE).toBeUndefined();
+    });
+
     it('таймлайн: пишется русское название типа, а не сырой код', () => {
         const addTimelineComment = jest.fn();
         const service = new EventReportEntityHistoryService(

@@ -252,6 +252,44 @@ export class LeadToWorkAssigneeService {
                     break;
                 }
             }
+
+            /*
+             * Битрикс присылает подразделение по своему маппингу «код
+             * партнёра → отдел», и это может быть ЛЮБОЙ подотдел ОП, а не
+             * только названный «Группа …» (в `groups` попадают лишь они).
+             * Ищем по всей структуре: без этого верный намёк молча
+             * превращался бы в выбор по всем отделам продаж.
+             */
+            if (!users) {
+                const child = (data.department?.childrenDepartments ?? []).find(
+                    dep =>
+                        hint.id !== null
+                            ? Number(dep.ID) === hint.id
+                            : this.nameMatches(dep.NAME, hint.name!),
+                );
+                if (child) {
+                    const childUsers = child.USERS ?? [];
+                    departmentKey = `dep_${Number(child.ID)}`;
+                    if (childUsers.length > 0) {
+                        users = childUsers;
+                    } else {
+                        // Подразделение есть, но пустое: молча уходить во
+                        // «все ОП» нельзя — заявка уедет не в тот отдел.
+                        const parent = (data.salesDepartments ?? []).find(
+                            sales =>
+                                Number(sales.department?.ID) ===
+                                Number(child.PARENT),
+                        );
+                        if (parent) {
+                            users = parent.allUsers ?? [];
+                            departmentKey = `op_${Number(parent.department?.ID)}`;
+                            warnings.push(
+                                `В подразделении «${child.NAME ?? child.ID}» нет сотрудников — выбор по отделу «${parent.department?.NAME ?? ''}»`,
+                            );
+                        }
+                    }
+                }
+            }
             if (!users) {
                 warnings.push(
                     `Отдел «${hint.id ?? hint.name}» из намёка не найден среди ОП — ответственный выбран по всем отделам продаж`,

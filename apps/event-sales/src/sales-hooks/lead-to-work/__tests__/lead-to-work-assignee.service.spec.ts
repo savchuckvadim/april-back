@@ -7,7 +7,27 @@ const makeStructure = () => ({
         department: {
             department: 0,
             generalDepartment: [],
-            childrenDepartments: [],
+            // Подотделы ОП 15: «Группа А» (попадает в groups) и «Сектор
+            // Липецк» — обычный подотдел, в groups его нет, но именно такой
+            // Битрикс присылает по маппингу кода партнёра.
+            childrenDepartments: [
+                {
+                    ID: 16,
+                    NAME: 'Группа А',
+                    PARENT: 15,
+                    USERS: [
+                        { ID: 5, ACTIVE: true },
+                        { ID: 3, ACTIVE: true },
+                    ],
+                },
+                {
+                    ID: 21,
+                    NAME: 'Сектор Липецк',
+                    PARENT: 15,
+                    USERS: [{ ID: 5, ACTIVE: true }],
+                },
+                { ID: 22, NAME: 'Сектор Пустой', PARENT: 15, USERS: [] },
+            ],
             allUsers: [
                 { ID: 3, ACTIVE: true },
                 { ID: 5, ACTIVE: true },
@@ -184,6 +204,53 @@ describe('LeadToWorkAssigneeService', () => {
         );
         expect(result.departmentKey).toBe('group_16');
         expect([3, 5]).toContain(result.responsible);
+    });
+
+    /*
+     * Маппинг «код партнёра → подразделение» держит Битрикс и присылает id
+     * (или название) подотдела внутри ОП. Такой подотдел не обязан называться
+     * «Группа …» — если искать только в groups, верный намёк превратился бы
+     * в выбор по всем отделам продаж, и заявка уехала бы не туда.
+     */
+    it('намёк id подотдела ОП (не «Группа …») выбирает его сотрудников', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '21' }),
+        );
+        expect(result.departmentKey).toBe('dep_21');
+        expect(result.responsible).toBe(5);
+        expect(result.warnings).toEqual([]);
+    });
+
+    it('намёк названием подотдела («Сектор Липецк») тоже матчит', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'Сектор Липецк' }),
+        );
+        expect(result.departmentKey).toBe('dep_21');
+        expect(result.responsible).toBe(5);
+    });
+
+    it('подотдел без сотрудников → родительский ОП + warning (а не все ОП)', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '22' }),
+        );
+        expect(result.departmentKey).toBe('op_15');
+        expect([3, 5]).toContain(result.responsible);
+        expect(result.warnings.join(' ')).toContain('Сектор Пустой');
     });
 
     it('намёк не найден → warning + выбор по всем ОП (неактивные отфильтрованы)', async () => {
