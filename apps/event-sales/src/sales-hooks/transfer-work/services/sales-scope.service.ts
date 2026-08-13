@@ -4,6 +4,7 @@ import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.inter
 import { EBXTaskStatus } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
+import { dealHistoryName } from '../../../shared/lead-request/deal-work-timer.util';
 
 type BxRow = Record<string, unknown>;
 
@@ -37,6 +38,14 @@ export class SalesScopeService {
         private readonly portal: PortalModel,
     ) {}
 
+    /** Базовый select + накопительная история (её передача дописывает). */
+    private dealSelect(): string[] {
+        const historyName = dealHistoryName(this.portal);
+        return historyName
+            ? [...SCOPE_DEAL_SELECT, historyName]
+            : [...SCOPE_DEAL_SELECT];
+    }
+
     async collect(input: {
         companyId?: number;
         dealIds?: number[];
@@ -55,7 +64,7 @@ export class SalesScopeService {
                     CATEGORY_ID: [...categoryByBitrixId.keys()],
                     ...(input.includeClosed ? {} : { CLOSED: 'N' }),
                 } as never,
-                SCOPE_DEAL_SELECT,
+                this.dealSelect(),
             );
         }
         for (const dealId of input.dealIds ?? []) {
@@ -184,6 +193,12 @@ export class SalesScopeService {
     }
 }
 
+/**
+ * `crm.deal.list` отдаёт ровно запрошенное, а передача работы ДОПИСЫВАЕТ
+ * историю сделки (`op_mhistory` — multiple, update перезаписывает целиком).
+ * Без текущего значения запись стёрла бы прошлую историю, поэтому имя поля
+ * добавляется в select динамически — см. `dealSelect()`.
+ */
 const SCOPE_DEAL_SELECT = [
     'ID',
     'TITLE',

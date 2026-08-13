@@ -95,6 +95,69 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: 30,
         }),
 
+        // --- Страховка входа: заявка пришла, а хук назначения не долетел
+        // (Битрикс вебхуки не повторяет). SLA такой лид не видит — он
+        // никому не назначен, значит и не просрочен.
+        leadIntakeRescueEnabled: setting({
+            code: 'lead_intake_rescue_enabled',
+            name: 'Страховка входа заявок',
+            description:
+                'Cron ищет свежие лиды, по которым назначение не отработало ' +
+                '(нет ни ответственного от хука, ни нашей сделки), и ' +
+                'запускает по ним назначение повторно.',
+            type: 'boolean',
+            default: false,
+        }),
+        leadIntakeRescueLookbackMinutes: setting({
+            code: 'lead_intake_rescue_lookback_minutes',
+            name: 'Страховка входа: глубина поиска (минут)',
+            description:
+                'Насколько давние лиды проверять. Больше — надёжнее после ' +
+                'долгого простоя, но тяжелее выборка.',
+            type: 'number',
+            default: 180,
+        }),
+        leadIntakeRescueMaxPerRun: setting({
+            code: 'lead_intake_rescue_max_per_run',
+            name: 'Страховка входа: лидов за проход',
+            description: 'Максимум лидов, дожимаемых за один проход крона.',
+            type: 'number',
+            default: 20,
+        }),
+        leadIntakeRescueRequestsOnly: setting({
+            code: 'lead_intake_rescue_requests_only',
+            name: 'Страховка входа: только заявки',
+            description:
+                'Включено — дожимаются только распознанные заявки и входящие ' +
+                'обращения. Выключено — любой свежий лид без назначения, ' +
+                'включая заведённые вручную.',
+            type: 'boolean',
+            default: true,
+        }),
+
+        // --- Дубли на входе: увидеть «этого клиента уже ведут» ДО первого
+        // звонка менеджера. Проверка ставится один раз на лид (гейт —
+        // маркер op_lead_is_duplicate_check).
+        leadIntakeDuplicateCheckEnabled: setting({
+            code: 'lead_intake_duplicate_check_enabled',
+            name: 'Проверка дублей при назначении заявки',
+            description:
+                'При назначении входящей заявки автоматически ставить ' +
+                'проверку на дубли: итог — комментарий в таймлайне лида и ' +
+                'маркеры «проверено» / «есть дубль».',
+            type: 'boolean',
+            default: false,
+        }),
+        leadIntakeDuplicateCheckDeep: setting({
+            code: 'lead_intake_duplicate_check_deep',
+            name: 'Проверка дублей: глубокий поиск',
+            description:
+                'Включено — глубокий обход связей (точнее, но дороже по ' +
+                'запросам к порталу). Выключено — быстрая проверка.',
+            type: 'boolean',
+            default: true,
+        }),
+
         // --- Фич-флаги фронта «Звонки» (переезд domain-config.ts из
         // хардкода по доменам; фронт читает их через resolve по домену) ---
         withNoPlan: setting({

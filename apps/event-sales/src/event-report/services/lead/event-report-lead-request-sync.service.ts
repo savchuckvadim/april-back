@@ -12,6 +12,11 @@ import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
 } from '../../../shared/lead-request/lead-request-history.util';
+import {
+    buildCrmRefValue,
+    LeadUfDefinitions,
+    parseCrmRefId,
+} from '../../../shared/portal-fields';
 import { EventReportContext } from '../context/event-report.context';
 
 type BxRow = Record<string, unknown>;
@@ -53,6 +58,12 @@ export class EventReportLeadRequestSyncService {
     constructor(
         private readonly bitrix: BitrixService,
         private readonly portal: PortalModel,
+        /**
+         * Фактические определения UF-полей лида (SETTINGS): от количества
+         * разрешённых типов зависит формат crm-значения. Пусто — работаем
+         * на безопасном дефолте с префиксом.
+         */
+        private readonly ufDefinitions: LeadUfDefinitions = {},
     ) {}
 
     async run(ctx: EventReportContext): Promise<LeadRequestSyncResult> {
@@ -168,6 +179,7 @@ export class EventReportLeadRequestSyncService {
                 EnumLeadRequestFieldCode.op_lead_is_boost_sale,
                 true,
             );
+            this.linkSaleDeal(ctx, lead, fields);
         } else if (ctx.isFail) {
             this.setItem(
                 fields,
@@ -220,6 +232,43 @@ export class EventReportLeadRequestSyncService {
 
         this.appendHistory(ctx, lead, fields);
         return fields;
+    }
+
+    /**
+     * `to_sale_deal` заявки = сделка, по которой прошла продажа.
+     *
+     * Пишем ТОЛЬКО в пустое поле: если менеджер уже пометил другую сделку
+     * (или это повторный отчёт по той же), перезапись стёрла бы фактическую
+     * атрибуцию продажи — а это единственное место, где видно, какая заявка
+     * привела к деньгам. Поле одиночное, «дописать вторую» нельзя.
+     *
+     * Формат значения берётся из ФАКТИЧЕСКИХ привязок поля на портале
+     * (один разрешённый тип → голый id, несколько → `D_123`): у этого поля
+     * привязка обычно одна (сделка), и `D_` такое поле молча отбрасывает.
+     */
+    private linkSaleDeal(
+        ctx: EventReportContext,
+        lead: BxRow,
+        fields: BxRow,
+    ): void {
+        const dealId = Number(
+            ctx.currentBaseDeal?.ID ?? ctx.ownerDeal?.ID ?? 0,
+        );
+        if (!Number.isFinite(dealId) || dealId <= 0) return;
+
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            PBX_SALES_EVENT_FIELD_CODES.to_sale_deal,
+        );
+        if (!field) return;
+        const bitrixId = this.portal.getFieldBitrixId(field);
+        if (parseCrmRefId(lead[bitrixId])) return; // уже помечена — не трогаем
+
+        fields[bitrixId] = buildCrmRefValue(
+            this.ufDefinitions[bitrixId]?.crmTypes ?? [],
+            'DEAL',
+            dealId,
+        );
     }
 
     /**

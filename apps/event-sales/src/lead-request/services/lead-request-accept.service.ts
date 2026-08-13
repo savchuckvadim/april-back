@@ -21,6 +21,11 @@ import {
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../../shared/lead-request/lead-request-history.util';
 import {
+    appendDealHistory,
+    clearDealAssignedAt,
+    dealAssignedAtName,
+} from '../../shared/lead-request/deal-work-timer.util';
+import {
     LeadRequestAcceptDto,
     LeadRequestAcceptResultDto,
 } from '../dto/lead-request-accept.dto';
@@ -46,8 +51,11 @@ export interface LeadAcceptPlan {
     fields: BxRow;
     firstprepareSeconds: number | null;
     warnings: string[];
-    /** Движение базовой сделки в «Холодную»; null — нечего/нет конфига. */
-    dealMove: { dealId: number; stageId: string } | null;
+    /**
+     * Запись в базовую сделку: стадия «Холодная» + зеркальная строка
+     * истории. null — сделки нет либо писать нечего.
+     */
+    dealUpdate: { dealId: number; fields: BxRow } | null;
 }
 
 /**
@@ -82,17 +90,35 @@ export class LeadRequestAcceptService {
         const { bitrix, PortalModel: portal } = await this.pbx.init(dto.domain);
 
         // Менеджер живёт в воронке сделок: робот шлёт dealId, лид — по связям.
-        const leadId =
-            dto.leadId ??
-            this.leadIdFromDealRow(
-                portal,
-                (await bitrix.deal.get(dto.dealId!))?.result as
+        let dealRow: BxRow | null = null;
+        if (dto.dealId) {
+            dealRow =
+                ((await bitrix.deal.get(dto.dealId))?.result as
                     | BxRow
-                    | undefined,
-            );
+                    | undefined) ?? null;
+        }
+        const leadId =
+            dto.leadId ?? this.leadIdFromDealRow(portal, dealRow ?? undefined);
+
+        /*
+         * Сделка БЕЗ лида-первоисточника — законный случай: таймер
+         * подтверждения ставит передача работы, и заполнить его может любая
+         * сделка (к заявкам это отношения не имеет). Раньше здесь летела
+         * 404 — подтвердить такую сделку было нечем, и SLA забирал бы её у
+         * менеджера, который её уже принял.
+         */
         if (!leadId) {
-            throw new NotFoundException(
-                `У сделки ${dto.dealId} не найден лид-первоисточник (deal_from_lead_id/LEAD_ID)`,
+            if (!dto.dealId || !dealRow) {
+                throw new NotFoundException(
+                    `Сделка ${dto.dealId} не найдена на портале`,
+                );
+            }
+            return this.acceptDealOnly(
+                bitrix,
+                portal,
+                dto.dealId,
+                dealRow,
+                dto.userId,
             );
         }
 
@@ -103,7 +129,22 @@ export class LeadRequestAcceptService {
             throw new NotFoundException(`Лид ${leadId} не найден на портале`);
         }
 
-        const plan = this.plan(portal, lead, dto.userId, dto.dealId);
+        /*
+         * Сделку читаем и когда пришёл leadId: зеркальная запись истории
+         * идёт в multiple-поле, которое update перезаписывает целиком —
+         * без текущего значения мы стёрли бы историю сделки.
+         */
+        if (!dealRow) {
+            const dealId = this.baseDealIdOf(portal, lead, dto.dealId);
+            if (dealId) {
+                dealRow =
+                    ((await bitrix.deal.get(dealId))?.result as
+                        | BxRow
+                        | undefined) ?? null;
+            }
+        }
+
+        const plan = this.plan(portal, lead, dto.userId, dto.dealId, dealRow);
         if (plan.already) {
             return {
                 success: true,
@@ -125,10 +166,11 @@ export class LeadRequestAcceptService {
         }
 
         await bitrix.lead.update(leadId, plan.fields as never);
-        if (plan.dealMove) {
-            await bitrix.deal.update(plan.dealMove.dealId, {
-                STAGE_ID: plan.dealMove.stageId,
-            } as never);
+        if (plan.dealUpdate) {
+            await bitrix.deal.update(
+                plan.dealUpdate.dealId,
+                plan.dealUpdate.fields as never,
+            );
         }
 
         this.logger.log(
@@ -143,6 +185,35 @@ export class LeadRequestAcceptService {
         };
     }
 
+    /** Принятие СДЕЛКИ без лида: снять таймер ожидания + история. */
+    private async acceptDealOnly(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        dealId: number,
+        dealRow: BxRow,
+        userId?: number,
+    ): Promise<LeadRequestAcceptResultDto> {
+        const plan = this.planDealOnly(portal, dealId, dealRow, userId);
+        if (plan.already || !plan.dealUpdate) {
+            return {
+                success: true,
+                already: true,
+                firstprepareSeconds: null,
+                warnings: plan.warnings,
+            };
+        }
+        await bitrix.deal.update(dealId, plan.dealUpdate.fields as never);
+        this.logger.log(
+            `[accept] deal=${dealId} подтверждена (user=${userId ?? '—'})`,
+        );
+        return {
+            success: true,
+            already: false,
+            firstprepareSeconds: null,
+            warnings: plan.warnings,
+        };
+    }
+
     /**
      * План принятия по УЖЕ ПРОЧИТАННОМУ лиду — ни одного вызова Битрикса.
      * Пачечный хук зовёт его на каждый лид после общего batch-чтения.
@@ -152,6 +223,8 @@ export class LeadRequestAcceptService {
         lead: BxRow,
         userId?: number,
         explicitDealId?: number,
+        /** Текущее состояние базовой сделки — нужно для append истории. */
+        dealRow: BxRow | null = null,
     ): LeadAcceptPlan {
         const warnings: string[] = [];
         const tz = portal.getTimezone();
@@ -169,7 +242,7 @@ export class LeadRequestAcceptService {
                 fields: {},
                 firstprepareSeconds: null,
                 warnings,
-                dealMove: null,
+                dealUpdate: null,
             };
         }
 
@@ -247,7 +320,14 @@ export class LeadRequestAcceptService {
             fields,
             firstprepareSeconds,
             warnings,
-            dealMove: this.planDealMove(portal, lead, explicitDealId, warnings),
+            dealUpdate: this.planDealUpdate(
+                portal,
+                lead,
+                explicitDealId,
+                acceptedBy,
+                dealRow,
+                warnings,
+            ),
         };
     }
 
@@ -273,17 +353,13 @@ export class LeadRequestAcceptService {
         return null;
     }
 
-    /**
-     * Движение базовой сделки (dealId вызова либо to_base_sales лида) в
-     * «Холодную». Воронка/стадия не сконфигурированы — warning, без move.
-     */
-    private planDealMove(
+    /** Базовая сделка заявки: dealId вызова либо to_base_sales лида. */
+    baseDealIdOf(
         portal: PortalModel,
         lead: BxRow,
-        explicitDealId: number | undefined,
-        warnings: string[],
-    ): { dealId: number; stageId: string } | null {
-        const dealId =
+        explicitDealId?: number,
+    ): number | null {
+        return (
             explicitDealId ??
             this.parseDealRef(
                 this.fieldRaw(
@@ -291,22 +367,133 @@ export class LeadRequestAcceptService {
                     lead,
                     PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
                 ),
-            );
+            )
+        );
+    }
+
+    /**
+     * Что пишем в базовую сделку при принятии: стадия «Холодная» и
+     * зеркальная запись истории.
+     *
+     * Зеркало нужно потому, что менеджер живёт в воронке СДЕЛОК и в лид не
+     * заходит: без него путь заявки виден только в лиде. Пишем в
+     * `op_mhistory` — то самое множественное поле истории, которое уже
+     * ведёт отчётность ОП, поэтому события заявки встают в общую ленту.
+     *
+     * `dealRow` — текущее состояние сделки. Без него историю НЕ пишем:
+     * multiple-поле при update перезаписывается целиком, и запись вслепую
+     * стёрла бы всю прошлую историю сделки.
+     */
+    private planDealUpdate(
+        portal: PortalModel,
+        lead: BxRow,
+        explicitDealId: number | undefined,
+        acceptedBy: number | null,
+        dealRow: BxRow | null,
+        warnings: string[],
+    ): { dealId: number; fields: BxRow } | null {
+        const dealId = this.baseDealIdOf(portal, lead, explicitDealId);
         if (!dealId) return null;
 
+        const fields: BxRow = {};
         const category = portal.getDealCategoryByCode(
             PbxDealCategoryCodeEnum.sales_base,
         );
         const stage = category?.stages.find(
             item => item.code === ACCEPT_DEAL_STAGE_CODE,
         );
-        if (!category || !stage) {
+        if (category && stage) {
+            fields.STAGE_ID = `C${category.bitrixId}:${stage.bitrixId}`;
+        } else {
             warnings.push(
                 'Стадия «Холодная» воронки ОП не сконфигурирована — сделка не передвинута',
             );
-            return null;
         }
-        return { dealId, stageId: `C${category.bitrixId}:${stage.bitrixId}` };
+
+        this.applyDealAccept(portal, fields, dealRow, acceptedBy);
+
+        return Object.keys(fields).length ? { dealId, fields } : null;
+    }
+
+    /**
+     * Общая часть принятия для СДЕЛКИ: снять таймер ожидания и дописать
+     * историю. Вынесено отдельно, потому что вызывается из двух путей —
+     * принятия заявки (у сделки есть лид) и принятия сделки без лида.
+     * Точка снятия таймера обязана быть ОДНА, иначе её можно обойти.
+     */
+    private applyDealAccept(
+        portal: PortalModel,
+        fields: BxRow,
+        dealRow: BxRow | null,
+        acceptedBy: number | null,
+    ): void {
+        clearDealAssignedAt(portal, fields);
+        appendDealHistory(
+            portal,
+            fields,
+            dealRow,
+            LEAD_REQUEST_HISTORY_TEXT.accepted(acceptedBy),
+        );
+    }
+
+    /**
+     * План принятия СДЕЛКИ БЕЗ ЛИДА.
+     *
+     * Таймер `op_lead_assigned_at` на сделке к заявкам отношения не имеет:
+     * его ставит передача работы, и заполнить его может любая сделка. Здесь
+     * только снимаем ожидание и пишем историю — стадию НЕ трогаем: сделка
+     * могла ждать подтверждения на любом этапе воронки, и «Холодная» тут
+     * была бы откатом работы назад.
+     *
+     * `already` = таймер уже пуст: подтверждать нечего (идемпотентность).
+     */
+    planDealOnly(
+        portal: PortalModel,
+        dealId: number,
+        dealRow: BxRow,
+        userId?: number,
+    ): LeadAcceptPlan {
+        const warnings: string[] = [];
+        const assignedAtName = dealAssignedAtName(portal);
+        if (!assignedAtName) {
+            warnings.push(
+                'Поле «Заявка назначена (дата)» не установлено на сделке — подтверждать нечего',
+            );
+            return {
+                already: true,
+                fields: {},
+                firstprepareSeconds: null,
+                warnings,
+                dealUpdate: null,
+            };
+        }
+        const waiting = this.text(dealRow[assignedAtName]);
+        if (!waiting) {
+            return {
+                already: true,
+                fields: {},
+                firstprepareSeconds: null,
+                warnings,
+                dealUpdate: null,
+            };
+        }
+
+        const acceptedBy =
+            userId ?? this.parsePositiveInt(dealRow.ASSIGNED_BY_ID);
+        const fields: BxRow = {};
+        this.applyDealAccept(portal, fields, dealRow, acceptedBy);
+
+        return {
+            already: false,
+            fields: {},
+            firstprepareSeconds: null,
+            warnings,
+            dealUpdate: { dealId, fields },
+        };
+    }
+
+    private text(raw: unknown): string {
+        return typeof raw === 'string' ? raw.trim() : '';
     }
 
     /**

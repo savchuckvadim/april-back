@@ -1,7 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
-import { LEAD_WORK_KIND, LeadWorkKind } from '../../../shared/event-title';
+import {
+    LEAD_WORK_KIND,
+    LeadWorkKind,
+    leadWorkKindByItemCode,
+} from '../../../shared/event-title';
 
 /**
  * UF-поля лидогена «Гарант», заполняемые ТОЛЬКО у заявок с сайта
@@ -15,12 +19,20 @@ export const LEAD_REQUEST_UF_FIELD_NAMES = [
 ] as const;
 
 /**
- * Штатные коды `SOURCE_ID` Битрикса, означающие ЗАЯВКУ (клиент оставил
- * данные сам через форму/сайт/магазин).
+ * Штатные коды `SOURCE_ID` Битрикса, по которым можно РАЗЛИЧИТЬ заявку и
+ * входящее обращение.
  *
- * Коды встроенные и одинаковы на всех порталах; кастомные источники
- * (числовые id, заведённые вручную) сюда не попадают и трактуются как
- * «сигнала нет» — гадать по ним нельзя.
+ * ВАЖНО: `SOURCE_ID` — ЧУЖОЕ поле. Его правят руками, у многих порталов он
+ * автоматически проставляется при ручном создании лида, и набор значений на
+ * каждом портале свой. Поэтому источник НЕ имеет права объявить работу
+ * входящей: он используется ТОЛЬКО как последняя подсказка и ТОЛЬКО чтобы
+ * уточнить вид, когда наши собственные признаки уже сказали «работа
+ * входящая», но не сказали какая именно. Иначе холодный лид с дефолтным
+ * `SOURCE_ID=CALL` превратился бы в «Лид», а менеджер настроился бы не на
+ * тот разговор.
+ *
+ * Кастомные (числовые) коды сигналом не считаются — их смысл известен
+ * только владельцу портала.
  */
 export const REQUEST_SOURCE_IDS = [
     'WEB',
@@ -29,10 +41,7 @@ export const REQUEST_SOURCE_IDS = [
     'STORE',
 ] as const;
 
-/**
- * Штатные коды `SOURCE_ID`, означающие ВХОДЯЩЕЕ ОБРАЩЕНИЕ — клиент вышел на
- * связь сам, но заявки не оставлял (позвонил, написал).
- */
+/** Штатные коды `SOURCE_ID` входящего обращения (звонок, письмо, чат). */
 export const LEAD_SOURCE_IDS = [
     'CALL',
     'CALLBACK',
@@ -60,23 +69,24 @@ type BxRow = Record<string, unknown>;
 /**
  * Вид холодной работы ПО ДАННЫМ САМОГО ЛИДА — без правки роботов.
  *
- * Что реально различает виды (по убыванию надёжности):
+ * Порядок признаков — от «нашего» к «чужому», потому что доверять можно
+ * только тому, чем управляем мы сами:
  *
- *  1. Поля лидогена «Гарант» (`UF_CRM_REG_NUMBER` «Код партнёра»,
- *     `UF_CRM_LEAD_QUEST_URL` «Оценка») — заполняются ТОЛЬКО у заявок с
- *     сайта. Однозначная ЗАЯВКА.
- *  2. Штатный `SOURCE_ID` Битрикса — единственное поле о ПРОИСХОЖДЕНИИ
- *     лида. Встроенные коды делятся честно: форма/сайт/магазин — заявка,
- *     звонок/почта/открытая линия — обращение. Кастомные (числовые) коды
- *     сигналом НЕ считаются: их смысл известен только владельцу портала.
- *  3. Наши поля пути заявки (`op_lead_site_status` / `op_lead_site_stage`)
- *     — говорят «лид уже идёт по пути входящей работы», но НЕ говорят,
- *     заявка это или обращение: их ставит наш же хук при назначении.
+ *  1. `op_lead_work_kind` — НАШЕ поле вида работы. Его пишет этот же хук
+ *     при передаче лида в работу, поэтому оно и есть источник истины:
+ *     переживает ручные правки карточки и не зависит от настроек портала.
+ *     Поля нет в слепке (ещё не заведено) — просто идём дальше.
+ *  2. Поля лидогена «Гарант» (`UF_CRM_REG_NUMBER` «Код партнёра»,
+ *     `UF_CRM_LEAD_QUEST_URL` «Оценка») — тоже наши, заполняются ТОЛЬКО у
+ *     заявок. Однозначная ЗАЯВКА.
+ *  3. Наши метки пути заявки (`op_lead_site_status` / `op_lead_site_stage`)
+ *     — говорят «работа входящая», но не уточняют вид: их ставит наш же
+ *     хук при назначении. По умолчанию трактуем как ЗАЯВКУ.
+ *  4. Штатный `SOURCE_ID` — ПОСЛЕДНЯЯ подсказка и только на уточнение вида
+ *     внутри уже признанной входящей работы (см. REQUEST_SOURCE_IDS).
+ *     Объявить работу входящей он НЕ может: поле чужое.
  *
- * Отсюда правило по умолчанию: путь заявки без уточняющего источника
- * трактуется как ЗАЯВКА (`request`) — это минимальный безопасный вариант,
- * прежнее поведение хука ровно такое же. `lead` ставится только при явном
- * входящем `SOURCE_ID`, а `workKind` из хука перебивает всё.
+ * `workKind` из запроса перебивает всё (см. LeadToWorkFlowService.detect).
  *
  * Влияет на названия: «Холодный обзвон. Заявка. {N}» / «. Лид. {N}» —
  * по этому слову фрейм и определяет тип события.
@@ -91,7 +101,29 @@ export class LeadRequestDetectorService {
     detect(lead: BxRow): LeadRequestDetection {
         const signals: string[] = [];
 
-        // 1. Наши pbx-поля пути заявки — «входящая работа», без уточнения вида.
+        // 1. НАШЕ поле вида работы — источник истины, спор на нём и кончается.
+        const ownKind = this.kindByOwnField(lead);
+        if (ownKind) {
+            signals.push(
+                `наше поле ${PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind}=${ownKind}`,
+            );
+            return {
+                isRequest: ownKind !== LEAD_WORK_KIND.cold,
+                kind: ownKind,
+                signals,
+            };
+        }
+
+        // 2. Поля лидогена портала — однозначная заявка.
+        let fromLeadGenerator = false;
+        for (const fieldName of LEAD_REQUEST_UF_FIELD_NAMES) {
+            if (this.filled(lead[fieldName])) {
+                fromLeadGenerator = true;
+                signals.push(`заполнено поле лидогена ${fieldName}`);
+            }
+        }
+
+        // 3. Наши метки пути заявки — «работа входящая», без уточнения вида.
         let onRequestPath = false;
         for (const code of [
             PBX_SALES_EVENT_FIELD_CODES.op_lead_site_status,
@@ -106,26 +138,13 @@ export class LeadRequestDetectorService {
             }
         }
 
-        // 2. Поля лидогена портала — однозначная заявка с сайта.
-        let fromLeadGenerator = false;
-        for (const fieldName of LEAD_REQUEST_UF_FIELD_NAMES) {
-            if (this.filled(lead[fieldName])) {
-                fromLeadGenerator = true;
-                signals.push(`заполнено поле лидогена ${fieldName}`);
-            }
-        }
-
-        // 3. Штатный источник лида — единственное поле о происхождении.
+        // 4. Чужой SOURCE_ID — только уточнение вида уже входящей работы.
         const source = this.sourceId(lead);
-        const sourceKind = this.kindBySource(source);
-        if (sourceKind) {
-            signals.push(`источник лида SOURCE_ID=${source}`);
-        }
-
         const kind = this.resolveKind({
-            onRequestPath,
             fromLeadGenerator,
-            sourceKind,
+            onRequestPath,
+            source,
+            signals,
         });
 
         if (kind === LEAD_WORK_KIND.cold) {
@@ -149,22 +168,53 @@ export class LeadRequestDetectorService {
     /**
      * Сведение сигналов в вид работы.
      *
-     * Лидоген главнее источника: поле «Код партнёра» заполняет наш же
-     * генератор заявок, и это надёжнее любого SOURCE_ID, который менеджер
-     * мог переставить руками.
+     * Ключевое ограничение: `SOURCE_ID` не может СДЕЛАТЬ работу входящей —
+     * он лишь уточняет вид там, где наши поля уже это установили. Поле
+     * чужое: на многих порталах оно проставляется автоматически при ручном
+     * создании лида, и «повышение» холодного лида до обращения по нему было
+     * бы ошибкой в самую неудобную сторону.
      */
     private resolveKind(input: {
-        onRequestPath: boolean;
         fromLeadGenerator: boolean;
-        sourceKind: LeadWorkKind | null;
+        onRequestPath: boolean;
+        source: string | null;
+        signals: string[];
     }): LeadWorkKind {
+        // Лидоген надёжнее источника: «Код партнёра» ставит наш генератор.
         if (input.fromLeadGenerator) return LEAD_WORK_KIND.request;
-        if (input.sourceKind) return input.sourceKind;
-        // Путь заявки без уточняющего источника — считаем заявкой: так вёл
-        // себя хук и раньше, и это безопаснее, чем назвать заявку «лидом».
-        return input.onRequestPath
-            ? LEAD_WORK_KIND.request
-            : LEAD_WORK_KIND.cold;
+        if (!input.onRequestPath) return LEAD_WORK_KIND.cold;
+
+        const sourceKind = this.kindBySource(input.source);
+        if (sourceKind) {
+            input.signals.push(
+                `вид уточнён по ЧУЖОМУ полю SOURCE_ID=${input.source}`,
+            );
+            this.logger.log(
+                `вид работы уточнён по чужому полю SOURCE_ID="${input.source}" → ` +
+                    `${sourceKind}; надёжнее завести наше поле ` +
+                    `${PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind}`,
+            );
+            return sourceKind;
+        }
+        // Путь заявки без уточнения — заявка: так хук вёл себя и раньше, и
+        // это безопаснее, чем назвать заявку «лидом».
+        return LEAD_WORK_KIND.request;
+    }
+
+    /** Вид работы по НАШЕМУ полю лида; null — поле не заведено либо пусто. */
+    private kindByOwnField(lead: BxRow): LeadWorkKind | null {
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind,
+        );
+        // Поля нет в слепке портала — работаем как раньше (graceful).
+        if (!field) return null;
+        const raw = lead[this.portal.getFieldBitrixId(field)];
+        if (!this.filled(raw)) return null;
+        const item = field.items.find(
+            entry => String(entry.bitrixId) === String(raw),
+        );
+        return leadWorkKindByItemCode(item?.code);
     }
 
     /** Вид работы по штатному источнику; null — источник ничего не говорит. */

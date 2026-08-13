@@ -81,6 +81,31 @@ export class LeadAcceptUseCase
                 .filter((id): id is number => !!id),
         );
 
+        /*
+         * === Волна 3: базовые сделки лидов (те, что ещё не прочитаны в
+         * волне 1). Нужны из-за зеркальной истории: она пишется в
+         * multiple-поле сделки, а его update перезаписывает целиком —
+         * без текущего значения прошлая история сделки стёрлась бы.
+         */
+        const baseDealIds = resolved
+            .map(({ item, leadId }) => {
+                const lead = leadId ? leadsById.get(leadId) : undefined;
+                return lead
+                    ? this.acceptService.baseDealIdOf(
+                          ctx.portal,
+                          lead,
+                          item.dealId,
+                      )
+                    : null;
+            })
+            .filter((id): id is number => !!id && !dealsById.has(id));
+        for (const [dealId, row] of await this.prefetchDealsByIds(
+            ctx,
+            baseDealIds,
+        )) {
+            dealsById.set(dealId, row);
+        }
+
         // === Расчёт планов (чисто) + batch-запись через буфер каркаса.
         let accepted = 0;
         for (const { item, leadId } of resolved) {
@@ -102,11 +127,17 @@ export class LeadAcceptUseCase
             }
 
             try {
+                const baseDealId = this.acceptService.baseDealIdOf(
+                    ctx.portal,
+                    lead,
+                    item.dealId,
+                );
                 const plan = this.acceptService.plan(
                     ctx.portal,
                     lead,
                     item.userId,
                     item.dealId,
+                    baseDealId ? (dealsById.get(baseDealId) ?? null) : null,
                 );
                 if (!plan.already && Object.keys(plan.fields).length > 0) {
                     ctx.buffer.queue(() =>
@@ -116,13 +147,13 @@ export class LeadAcceptUseCase
                             plan.fields as never,
                         ),
                     );
-                    if (plan.dealMove) {
-                        const move = plan.dealMove;
+                    if (plan.dealUpdate) {
+                        const update = plan.dealUpdate;
                         ctx.buffer.queue(() =>
                             ctx.bitrix.batch.deal.update(
-                                `la_deal_${move.dealId}`,
-                                move.dealId,
-                                { STAGE_ID: move.stageId } as never,
+                                `la_deal_${update.dealId}`,
+                                update.dealId,
+                                update.fields as never,
                             ),
                         );
                     }
@@ -156,13 +187,20 @@ export class LeadAcceptUseCase
         ctx: SalesHookExecutionContext,
         items: ILeadAcceptItem[],
     ): Promise<Map<number, BxRow>> {
-        const dealIds = [
-            ...new Set(
-                items
-                    .filter(item => !item.leadId && item.dealId)
-                    .map(item => item.dealId!),
-            ),
-        ];
+        return this.prefetchDealsByIds(
+            ctx,
+            items
+                .filter(item => !item.leadId && item.dealId)
+                .map(item => item.dealId!),
+        );
+    }
+
+    /** batch deal.get по списку id — одна волна на любое количество. */
+    private async prefetchDealsByIds(
+        ctx: SalesHookExecutionContext,
+        ids: number[],
+    ): Promise<Map<number, BxRow>> {
+        const dealIds = [...new Set(ids)];
         const map = new Map<number, BxRow>();
         if (!dealIds.length) return map;
 

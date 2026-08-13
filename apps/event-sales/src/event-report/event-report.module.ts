@@ -7,6 +7,7 @@ import { EventFlowStatusService } from './services/status/event-flow-status.serv
 import { EventReportUseCase } from './use-cases/event-report.use-case';
 import { EventFlowProcessor } from './queue/event-flow.processor';
 import { EventSalesController } from './controllers/event-sales.controller';
+import { PortalFieldsModule } from '../shared/portal-fields';
 
 /**
  * Модуль event-report flow. Подключается родительским `EventSalesModule`.
@@ -20,7 +21,9 @@ import { EventSalesController } from './controllers/event-sales.controller';
  * `BitrixService` (см. CLAUDE.md, race condition между порталами).
  */
 @Module({
-    imports: [PBXModule, QueueModule, WsModule],
+    // PortalFieldsModule — фактические привязки crm-полей лида: от них
+    // зависит формат значения связи продажи (`to_sale_deal`).
+    imports: [PBXModule, QueueModule, WsModule, PortalFieldsModule],
     controllers: [EventSalesController],
     providers: [
         EventReportInitService,

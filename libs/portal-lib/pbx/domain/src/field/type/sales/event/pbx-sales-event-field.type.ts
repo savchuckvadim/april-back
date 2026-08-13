@@ -1448,6 +1448,40 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    /*
+     * Вид работы по лиду — НАШ признак, которым управляем только мы.
+     *
+     * Пишется хуком «лид → работа» в момент передачи лида в работу (рядом с
+     * `op_lead_assigned_at`) и дальше служит источником истины: от него
+     * зависит слово в заголовке задачи («Заявка»/«Лид»), а значит и тип
+     * события во фрейме, и код события в KPI.
+     *
+     * Почему своё поле, а не штатный `SOURCE_ID`: источник — чужое поле,
+     * его правят руками и настраивают на каждом портале по-своему, поэтому
+     * держать на нём вид работы нельзя. Наше поле переживает и ручные
+     * правки источника, и разницу настроек порталов.
+     */
+    {
+        name: 'ОП Вид работы по лиду',
+        appType: 'lead',
+        type: 'enumeration',
+        items: [
+            { code: 'op_lead_work_kind1', name: 'Холодный' },
+            { code: 'op_lead_work_kind2', name: 'Заявка' },
+            { code: 'op_lead_work_kind3', name: 'Лид' },
+        ],
+        code: 'op_lead_work_kind',
+        lead: 'OP_LEAD_WORK_KIND',
+        company: '',
+        deal: '',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 660,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
     {
         name: 'Стадия Связанной сделки',
         appType: 'lead',
@@ -1554,6 +1588,17 @@ export const PBX_SALES_EVENT_FIELDS = [
      * заново), очищается принятием. Нужен как надёжная опора вместо
      * DATE_MODIFY: тот сбивается любой правкой карточки, а стадию лида
      * может двинуть кто угодно (конструктор, робот, руками).
+     *
+     * ⚠ На порталах поле заведено И НА СДЕЛКЕ, поэтому маппинг здесь есть —
+     * реестр обязан отражать реальность. Но бэк пишет и читает ТОЛЬКО
+     * лидовую копию: «ждёт подтверждения» обязан иметь ОДИН источник, иначе
+     * фрейм и SLA-крон разъедутся. Все потребители лид-скоупные:
+     * `LeadRequestService.isAccepted`, `LeadRequestSlaService`,
+     * `LeadRequestAcceptService`, `LeadIntakeRescueService`,
+     * `LeadXoEventEntityModel`.
+     * Сценарий для копии на сделке НЕ определён — до решения владельца её
+     * не писать (см. вопрос в отчёте), иначе появится второй, никем не
+     * очищаемый таймер.
      */
     {
         name: 'Заявка назначена (дата)',
@@ -1563,7 +1608,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         code: 'op_lead_assigned_at',
         lead: 'OP_LEAD_ASSIGNED_AT',
         company: '',
-        deal: '',
+        deal: 'OP_LEAD_ASSIGNED_AT',
         smart: '',
         task: '',
         app: 'calling',

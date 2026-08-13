@@ -175,6 +175,18 @@ const FIELDS = {
 const REQUEST_FIELDS = {
     ...FIELDS,
     'lead:op_lead_assigned_at': { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
+    // На порталах поле заведено и на СДЕЛКЕ — проверяем, что хук туда
+    // всё равно не пишет (единственный источник «ждёт подтверждения» —
+    // лид, иначе фрейм и SLA-крон разъедутся).
+    'deal:op_lead_assigned_at': { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
+    'lead:op_lead_work_kind': {
+        bitrixId: 'OP_LEAD_WORK_KIND',
+        items: [
+            { code: 'op_lead_work_kind1', bitrixId: 101 },
+            { code: 'op_lead_work_kind2', bitrixId: 102 },
+            { code: 'op_lead_work_kind3', bitrixId: 103 },
+        ],
+    },
     'lead:op_lead_firstprepare_history': {
         bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY',
     },
@@ -1031,6 +1043,66 @@ describe('LeadToWorkFlowService', () => {
         const history =
             leadFields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history[0]).toContain('ХО назначен: 8');
+    });
+
+    /*
+     * Вид работы пишется в НАШЕ поле лида — дальше оно источник истины для
+     * детектора и переживает ручные правки чужих полей.
+     */
+    it.each([
+        ['request', 102],
+        ['lead', 103],
+        ['cold', 101],
+    ] as const)(
+        'workKind=%s пишется в наше поле лида op_lead_work_kind',
+        (workKind, expectedItemId) => {
+            const { bitrix, calls } = makeBitrix();
+            const service = new LeadToWorkFlowService(
+                bitrix as never,
+                makePortal(REQUEST_FIELDS) as never,
+            );
+
+            service.queue(
+                makeItem({ leadId: 42, responsible: 8, isXo: 'Y', workKind }),
+                baseContext(),
+                basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+                makeBuffer() as never,
+            );
+
+            const leadFields = calls.find(c => c.method === 'lead.update')
+                ?.args[1] as Record<string, unknown>;
+            expect(leadFields.UF_CRM_OP_LEAD_WORK_KIND).toBe(expectedItemId);
+        },
+    );
+
+    /*
+     * У лида свой таймер подтверждения, у сделки — свой (его ставит
+     * передача работы, `transfer-work`). Лидовый хук отвечает только за
+     * лидовый: ставить сделочный отсюда нельзя, иначе у сделки появился бы
+     * таймер, который никто в этом контуре не снимает.
+     */
+    it('лидовый хук ставит таймер лида и НЕ трогает таймер сделок', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(REQUEST_FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 8, isXo: 'Y', isRequest: 'Y' }),
+            baseContext(),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(leadFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeTruthy();
+
+        for (const call of calls.filter(c => c.method.startsWith('deal.'))) {
+            const fields = call.args.at(-1) as Record<string, unknown>;
+            expect(fields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeUndefined();
+        }
     });
 
     /*

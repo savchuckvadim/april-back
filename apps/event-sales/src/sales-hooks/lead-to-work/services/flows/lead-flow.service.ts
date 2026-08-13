@@ -66,6 +66,7 @@ export class LeadFlowService extends LeadToWorkFlowBase {
         const model = new LeadXoEventEntityModel(this.portal, leadRow, {
             eventCtx: input.eventCtx,
             isRequest: input.detection.isRequest,
+            workKind: input.detection.kind,
             baseDealRef: toBaseName
                 ? this.leadDealRef(toBaseName, input.dealRef)
                 : null,

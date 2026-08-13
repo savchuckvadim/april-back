@@ -24,6 +24,10 @@ import {
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../../../../shared/lead-request/lead-request-history.util';
 import {
+    LEAD_WORK_KIND_TO_ITEM_CODE,
+    LeadWorkKind,
+} from '../../../../shared/event-title';
+import {
     IXoEventContext,
     XoEventEntityModel,
     XoEventRow,
@@ -38,8 +42,10 @@ export interface ILeadEntityContext {
     eventCtx: IXoEventContext | null;
     /** Писать ли событийные поля ХО (ветка isXo=Y). */
     withXoEventFields: boolean;
-    /** Лид распознан как заявка — только тогда ставятся site-метки. */
+    /** Лид распознан как входящая работа — только тогда ставятся site-метки. */
     isRequest: boolean;
+    /** Вид работы — пишется в наше поле `op_lead_work_kind`. */
+    workKind: LeadWorkKind;
     /** Ссылка на основную сделку (`D_123` либо `D_$result[cmd]`). */
     baseDealRef: string | null;
     /** Ссылка на ХО-сделку. */
@@ -91,10 +97,34 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
         this.appendWorkLinks(fields);
         this.appendSiteMarks(fields);
         if (this.leadCtx.withXoEventFields) {
+            this.appendWorkKind(fields);
             this.appendAssignedAt(fields);
             this.appendRequestHistory(fields);
         }
         return fields;
+    }
+
+    /**
+     * Вид работы (`op_lead_work_kind`) — НАШ признак «холодный / заявка /
+     * лид». Пишется здесь же, где стартует таймер подтверждения: это момент,
+     * когда лид попадает в работу и вид окончательно известен.
+     *
+     * Дальше поле становится источником истины для детектора: оно переживает
+     * ручные правки карточки и не зависит от настроек портала (в отличие от
+     * чужого `SOURCE_ID`). Поле не заведено на портале — молча пропускаем,
+     * детектор в этом случае работает по прежним признакам.
+     *
+     * Пишется при КАЖДОМ назначении: при передаче вид мог быть переопределён
+     * параметром `workKind`, и лид обязан нести актуальное значение.
+     */
+    private appendWorkKind(fields: XoEventRow): void {
+        const name = this.fieldName(EnumLeadRequestFieldCode.op_lead_work_kind);
+        if (!name) return;
+        const bitrixId = this.leadItemBitrixId(
+            EnumLeadRequestFieldCode.op_lead_work_kind,
+            LEAD_WORK_KIND_TO_ITEM_CODE[this.leadCtx.workKind],
+        );
+        if (bitrixId !== undefined) fields[name] = bitrixId;
     }
 
     /**

@@ -21,6 +21,12 @@ export enum EnumLeadRequestFieldCode {
     op_lead_site_status = 'op_lead_site_status',
     /** Стадия Заявки. */
     op_lead_site_stage = 'op_lead_site_stage',
+    /**
+     * Вид работы по лиду — НАШ признак «холодный / заявка / лид».
+     * Пишется хуком «лид → работа» при передаче лида в работу и служит
+     * источником истины для слова в заголовке задачи и кода события KPI.
+     */
+    op_lead_work_kind = 'op_lead_work_kind',
     /** Стадия связанной основной сделки (зеркало). */
     op_leads_related_base_stage = 'op_leads_related_base_stage',
     /** Тип «не ЦА». */
@@ -87,6 +93,23 @@ export enum EnumLeadSiteStageCode {
     fail = 'op_lead_site_stage8',
     /** Продажа. */
     sale = 'op_lead_site_stage9',
+}
+
+/**
+ * Вид работы по лиду (op_lead_work_kind) — НАШ признак происхождения работы.
+ *
+ * Ставится хуком «лид → работа» при передаче лида в работу и дальше служит
+ * источником истины: холодный обзвон, заявка (клиент оставил заявку) или
+ * входящий лид/обращение. От него зависит слово в заголовке задачи, а через
+ * него — тип события во фрейме.
+ */
+export enum EnumLeadWorkKindCode {
+    /** Холодный обзвон — клиент нас не ждёт. */
+    cold = 'op_lead_work_kind1',
+    /** Заявка — клиент обратился сам. */
+    request = 'op_lead_work_kind2',
+    /** Входящий лид/обращение. */
+    lead = 'op_lead_work_kind3',
 }
 
 /** Статус Лида (op_lead_status). */
@@ -194,6 +217,10 @@ export type _LeadSiteStatusCodesAreValid = AssertSubset<
 export type _LeadSiteStageCodesAreValid = AssertSubset<
     `${EnumLeadSiteStageCode}`,
     PbxSalesEventFieldItemCode<'op_lead_site_stage'>
+>;
+export type _LeadWorkKindCodesAreValid = AssertSubset<
+    `${EnumLeadWorkKindCode}`,
+    PbxSalesEventFieldItemCode<'op_lead_work_kind'>
 >;
 export type _LeadOpStatusCodesAreValid = AssertSubset<
     `${EnumLeadOpStatusCode}`,

@@ -13,6 +13,9 @@ import { EnumSalesHookSource } from '../../sales-hooks/core/contracts/sales-hook
 import { SalesHookDispatchService } from '../../sales-hooks/core/services/sales-hook-dispatch.service';
 import { SalesHookIdempotencyService } from '../../sales-hooks/core/services/sales-hook-idempotency.service';
 import { buildLeadToWorkItem } from '../../sales-hooks/lead-to-work/dto/lead-to-work.dto';
+import { buildTransferWorkItem } from '../../sales-hooks/transfer-work/dto/transfer-work.dto';
+import { LeadToWorkAssigneeService } from '../../sales-hooks/lead-to-work/services/lead-to-work-assignee.service';
+import { dealAssignedAtName } from '../../shared/lead-request/deal-work-timer.util';
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
@@ -37,6 +40,10 @@ export interface LeadRequestSlaRunResult {
     healed: number;
     /** Передано другому сотруднику. */
     transferred: number;
+    /** Сделок с просроченным подтверждением (второй проход, по сделкам). */
+    dealCandidates: number;
+    /** Сделок передано другому сотруднику. */
+    dealsTransferred: number;
     warnings: string[];
 }
 
@@ -64,6 +71,8 @@ export class LeadRequestSlaService {
         private readonly dispatch: SalesHookDispatchService,
         private readonly idempotency: SalesHookIdempotencyService,
         private readonly structure: BxDepartmentStructureService,
+        /** Round-robin выбор нового ответственного для передачи сделки. */
+        private readonly assignee: LeadToWorkAssigneeService,
     ) {}
 
     async runForDomain(
@@ -75,6 +84,8 @@ export class LeadRequestSlaService {
             candidates: 0,
             healed: 0,
             transferred: 0,
+            dealCandidates: 0,
+            dealsTransferred: 0,
             warnings: [],
         };
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
@@ -89,61 +100,277 @@ export class LeadRequestSlaService {
         );
 
         const filter = this.buildOverdueFilter(portal, minutes, result);
-        if (!filter) return result;
+        const handledDealIds = new Set<number>();
 
-        const select = ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'DATE_MODIFY'];
-        if (historyField) select.push(portal.getFieldBitrixId(historyField));
-        if (toBaseField) select.push(portal.getFieldBitrixId(toBaseField));
+        if (filter) {
+            const select = ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'DATE_MODIFY'];
+            if (historyField)
+                select.push(portal.getFieldBitrixId(historyField));
+            if (toBaseField) select.push(portal.getFieldBitrixId(toBaseField));
 
-        const { result: leads } = await bitrix.lead.getList(
-            filter as never,
-            select,
-        );
-        const overdue = (leads ?? []).slice(0, maxPerRun) as unknown as BxRow[];
-        result.candidates = overdue.length;
-        if (!overdue.length) return result;
+            const { result: leads } = await bitrix.lead.getList(
+                filter as never,
+                select,
+            );
+            const overdue = (leads ?? []).slice(
+                0,
+                maxPerRun,
+            ) as unknown as BxRow[];
+            result.candidates = overdue.length;
 
-        const newStageId = this.baseNewStageId(portal);
+            const newStageId = this.baseNewStageId(portal);
+            const toBaseName = toBaseField
+                ? portal.getFieldBitrixId(toBaseField)
+                : null;
 
-        for (const lead of overdue) {
-            const leadId = Number(lead.ID);
-            if (!Number.isFinite(leadId) || leadId <= 0) continue;
-            try {
-                const moved = await this.isBaseDealMoved(
-                    bitrix,
-                    portal,
-                    lead,
-                    toBaseField ? portal.getFieldBitrixId(toBaseField) : null,
-                    newStageId,
-                );
-                if (moved) {
-                    // Менеджер работает, вебхук принятия потерялся — доводим.
-                    await this.acceptService.accept({ domain, leadId });
-                    result.healed += 1;
-                    continue;
+            for (const lead of overdue) {
+                const leadId = Number(lead.ID);
+                if (!Number.isFinite(leadId) || leadId <= 0) continue;
+                // Базовая сделка лида — её второй проход трогать не должен:
+                // лидовый контур уже переназначил по ней работу.
+                const baseDealId = toBaseName
+                    ? this.parseRef(lead[toBaseName])
+                    : null;
+                if (baseDealId) handledDealIds.add(baseDealId);
+                try {
+                    const moved = await this.isBaseDealMoved(
+                        bitrix,
+                        portal,
+                        lead,
+                        toBaseName,
+                        newStageId,
+                    );
+                    if (moved) {
+                        // Менеджер работает, вебхук принятия потерялся — доводим.
+                        await this.acceptService.accept({ domain, leadId });
+                        result.healed += 1;
+                        continue;
+                    }
+                    await this.transfer(
+                        bitrix,
+                        portal,
+                        domain,
+                        lead,
+                        leadId,
+                        minutes,
+                        historyField
+                            ? portal.getFieldBitrixId(historyField)
+                            : null,
+                        result,
+                    );
+                } catch (error) {
+                    result.warnings.push(
+                        `Лид ${leadId}: ${(error as Error).message}`,
+                    );
                 }
-                await this.transfer(
-                    bitrix,
-                    portal,
-                    domain,
-                    lead,
-                    leadId,
-                    minutes,
-                    historyField ? portal.getFieldBitrixId(historyField) : null,
-                    result,
-                );
-            } catch (error) {
-                result.warnings.push(
-                    `Лид ${leadId}: ${(error as Error).message}`,
-                );
             }
         }
 
+        // === Второй проход: сделки с собственным таймером подтверждения.
+        await this.runDealPass(
+            bitrix,
+            portal,
+            domain,
+            minutes,
+            maxPerRun,
+            handledDealIds,
+            result,
+        );
+
         this.logger.log(
-            `[sla] ${domain}: просрочено ${result.candidates}, ` +
-                `доведено принятий ${result.healed}, передано ${result.transferred}`,
+            `[sla] ${domain}: лиды — просрочено ${result.candidates}, ` +
+                `доведено принятий ${result.healed}, передано ${result.transferred}; ` +
+                `сделки — просрочено ${result.dealCandidates}, ` +
+                `передано ${result.dealsTransferred}`,
         );
         return result;
+    }
+
+    /**
+     * ВТОРОЙ ПРОХОД — по СДЕЛКАМ с непустым `op_lead_assigned_at`.
+     *
+     * Таймер сделки живёт своей жизнью: его ставит передача работы
+     * (`transfer-work`), снимает принятие, а этот проход — страховка «чтобы
+     * момент не потерялся»: даже если очистка где-то не сработала, крон
+     * увидит просроченное и перераспределит работу.
+     *
+     * Защита от двойной обработки одного клиента:
+     *  - сделки, уже затронутые лидовым проходом, исключаются по id;
+     *  - сделка пропускается, если у её лида-первоисточника СВОЙ таймер ещё
+     *    не снят: этим клиентом занимается лидовый контур, и переданная
+     *    дважды работа улетела бы к двум разным людям.
+     */
+    private async runDealPass(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        domain: string,
+        minutes: number,
+        maxPerRun: number,
+        handledDealIds: ReadonlySet<number>,
+        result: LeadRequestSlaRunResult,
+    ): Promise<void> {
+        const assignedAtName = dealAssignedAtName(portal);
+        if (!assignedAtName) {
+            result.warnings.push(
+                'Поле «Заявка назначена (дата)» не установлено на СДЕЛКЕ — подтверждение по сделкам не контролируется',
+            );
+            return;
+        }
+
+        const threshold = dayjs()
+            .tz(portal.getTimezone())
+            .subtract(minutes, 'minute')
+            .format(CRM_DATETIME_FORMAT);
+
+        const { result: deals } = await bitrix.deal.getList(
+            {
+                [`!${assignedAtName}`]: '',
+                [`<${assignedAtName}`]: threshold,
+                CLOSED: 'N',
+            } as never,
+            ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'COMPANY_ID', 'LEAD_ID'],
+        );
+        const overdue = (deals ?? []).slice(0, maxPerRun) as unknown as BxRow[];
+        const candidates = overdue.filter(
+            deal => !handledDealIds.has(Number(deal.ID)),
+        );
+        result.dealCandidates = candidates.length;
+        if (!candidates.length) return;
+
+        // Лиды кандидатов — одним заходом: если у лида таймер ещё висит,
+        // клиентом занимается лидовый контур.
+        const busyLeads = await this.leadsWaitingAccept(
+            bitrix,
+            portal,
+            candidates,
+        );
+
+        for (const deal of candidates) {
+            const dealId = Number(deal.ID);
+            if (!Number.isFinite(dealId) || dealId <= 0) continue;
+            const leadId = this.acceptService.leadIdFromDealRow(portal, deal);
+            if (leadId && busyLeads.has(leadId)) {
+                this.logger.log(
+                    `[sla] сделка ${dealId} пропущена: лид ${leadId} ещё ждёт подтверждения (двойной передачи не будет)`,
+                );
+                continue;
+            }
+            try {
+                await this.transferDeal(domain, deal, dealId, minutes, result);
+            } catch (error) {
+                result.warnings.push(
+                    `Сделка ${dealId}: ${(error as Error).message}`,
+                );
+            }
+        }
+    }
+
+    /** Лиды кандидатов, у которых СВОЙ таймер подтверждения ещё не снят. */
+    private async leadsWaitingAccept(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        deals: BxRow[],
+    ): Promise<Set<number>> {
+        const busy = new Set<number>();
+        const leadField = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        if (!leadField) return busy;
+
+        const leadIds = [
+            ...new Set(
+                deals
+                    .map(deal =>
+                        this.acceptService.leadIdFromDealRow(portal, deal),
+                    )
+                    .filter((id): id is number => !!id),
+            ),
+        ];
+        if (!leadIds.length) return busy;
+
+        const name = portal.getFieldBitrixId(leadField);
+        const { result: leads } = await bitrix.lead.getList(
+            { ID: leadIds, [`!${name}`]: '' } as never,
+            ['ID'],
+        );
+        for (const lead of (leads ?? []) as unknown as BxRow[]) {
+            const id = Number(lead.ID);
+            if (Number.isFinite(id) && id > 0) busy.add(id);
+        }
+        return busy;
+    }
+
+    /**
+     * Передача просроченной СДЕЛКИ другому сотруднику — тем же хуком
+     * «передать работу», которым пользуется UI. Он же поставит новый таймер
+     * ожидания, так что подтвердить обязан уже новый ответственный.
+     */
+    private async transferDeal(
+        domain: string,
+        deal: BxRow,
+        dealId: number,
+        minutes: number,
+        result: LeadRequestSlaRunResult,
+    ): Promise<void> {
+        const previous = Number(deal.ASSIGNED_BY_ID) || null;
+        const department = previous
+            ? await this.findUserDepartment(domain, previous)
+            : null;
+
+        const assignee = await this.assignee.resolve(domain, {
+            // leadId у синтетического элемента используется только в логах
+            // распределителя — передаём id сделки, чтобы строка читалась.
+            leadId: dealId,
+            department: department?.departmentId
+                ? String(department.departmentId)
+                : undefined,
+            excludeResponsible: previous ?? undefined,
+            createCompany: 'N',
+            stageMode: 'from_lead',
+            taskMode: 'move',
+            isXo: 'N',
+        });
+        if (!assignee.responsible) {
+            result.warnings.push(
+                `Сделка ${dealId}: некому передать (${assignee.warnings.join('; ') || 'кандидатов нет'})`,
+            );
+            return;
+        }
+
+        const entityKey = `deal:${dealId}`;
+        const item = buildTransferWorkItem('give', {
+            domain,
+            dealIds: [dealId],
+            newResponsibleId: assignee.responsible,
+        } as never);
+        const operation = await this.dispatch.accept(
+            EnumSalesHookCode.TRANSFER_WORK,
+            domain,
+            EnumSalesHookSource.ROBOT,
+            [
+                {
+                    entityKey,
+                    fingerprint: this.idempotency.fingerprint(
+                        EnumSalesHookCode.TRANSFER_WORK,
+                        entityKey,
+                        { sla: true, ...item },
+                    ),
+                    data: item,
+                },
+            ],
+        );
+        if (!operation) {
+            result.warnings.push(
+                `Сделка ${dealId}: передача уже выполняется другой операцией`,
+            );
+            return;
+        }
+        result.dealsTransferred += 1;
+        this.logger.log(
+            `[sla] сделка ${dealId} не подтверждена за ${minutes} мин → ` +
+                `передана ${assignee.responsible} (было ${previous ?? '—'})`,
+        );
     }
 
     /**

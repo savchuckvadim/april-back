@@ -31,6 +31,8 @@ const FIELDS: Record<
     op_lead_firstprepare_long: { bitrixId: 'OP_LEAD_FIRSTPREPARE_LONG' },
     op_lead_firstprepare_history: { bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY' },
     op_lead_assigned_at: { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
+    to_base_sales: { bitrixId: 'TO_BASE_SALES' },
+    op_mhistory: { bitrixId: 'OP_MHISTORY' },
 };
 
 const makePortal = () => ({
@@ -45,6 +47,10 @@ const makePortal = () => ({
     getTimezone: () => 'Europe/Moscow',
     getLeadStatusIdByCode: (code: string) =>
         code === 'lead_taken_in_work' ? 'PBX_TAKEN_IN_WORK' : undefined,
+    getDealCategoryByCode: () => ({
+        bitrixId: '3',
+        stages: [{ code: 'sales_cold', bitrixId: 'COLD' }],
+    }),
 });
 
 type LeadUpdateMock = jest.Mock<
@@ -52,12 +58,23 @@ type LeadUpdateMock = jest.Mock<
     [number, Record<string, unknown>]
 >;
 
-const makePbx = (leadRow: Record<string, unknown>) => {
+const makePbx = (
+    leadRow: Record<string, unknown>,
+    dealRow: Record<string, unknown> | null = null,
+) => {
     const update: LeadUpdateMock = jest
         .fn<Promise<unknown>, [number, Record<string, unknown>]>()
         .mockResolvedValue({});
+    const dealUpdate: LeadUpdateMock = jest
+        .fn<Promise<unknown>, [number, Record<string, unknown>]>()
+        .mockResolvedValue({});
+    const dealGet = jest
+        .fn()
+        .mockResolvedValue({ result: dealRow ?? undefined });
     return {
         update,
+        dealUpdate,
+        dealGet,
         pbx: {
             init: jest.fn().mockResolvedValue({
                 bitrix: {
@@ -65,6 +82,7 @@ const makePbx = (leadRow: Record<string, unknown>) => {
                         get: jest.fn().mockResolvedValue({ result: leadRow }),
                         update,
                     },
+                    deal: { get: dealGet, update: dealUpdate },
                 },
                 PortalModel: makePortal(),
             }),
@@ -124,6 +142,52 @@ describe('LeadRequestAcceptService', () => {
 
         const fields = update.mock.calls[0][1];
         expect(fields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBe('');
+    });
+
+    /*
+     * Менеджер живёт в воронке сделок и в лид не заходит: путь заявки
+     * должен быть виден и в сделке. Пишем в op_mhistory — общее поле
+     * истории ОП, поэтому события заявки встают в одну ленту с отчётами.
+     */
+    it('зеркалит принятие в сделку: стадия «Холодная» + запись истории', async () => {
+        const { pbx, dealUpdate } = makePbx(
+            {
+                ID: '42',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            { ID: '1024', UF_CRM_OP_MHISTORY: ['старое событие сделки'] },
+        );
+        const service = new LeadRequestAcceptService(pbx as never);
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
+
+        const [dealId, fields] = dealUpdate.mock.calls[0];
+        expect(dealId).toBe(1024);
+        expect(fields.STAGE_ID).toBe('C3:COLD');
+        const dealHistory = fields.UF_CRM_OP_MHISTORY as string[];
+        // Multiple-поле перезаписывается целиком — прошлое обязано уцелеть.
+        expect(dealHistory[0]).toBe('старое событие сделки');
+        expect(dealHistory[1]).toContain('Заявка принята в работу: 5');
+    });
+
+    /*
+     * Сделку не прочитали (её нет/недоступна) — историю не трогаем вовсе:
+     * запись вслепую стёрла бы всю прошлую историю сделки.
+     */
+    it('сделка не прочитана → двигаем стадию, историю не пишем', async () => {
+        const { pbx, dealUpdate } = makePbx({
+            ID: '42',
+            UF_CRM_TO_BASE_SALES: 'D_1024',
+            UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+        });
+        const service = new LeadRequestAcceptService(pbx as never);
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
+
+        const [, fields] = dealUpdate.mock.calls[0];
+        expect(fields.STAGE_ID).toBe('C3:COLD');
+        expect(fields.UF_CRM_OP_MHISTORY).toBeUndefined();
     });
 
     it('повтор после принятия — идемпотентный no-op (already=true)', async () => {

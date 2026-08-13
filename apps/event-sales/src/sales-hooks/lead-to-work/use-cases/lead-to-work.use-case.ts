@@ -27,6 +27,7 @@ import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
+import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
 
 type BxRow = Record<string, unknown>;
 
@@ -74,6 +75,7 @@ export class LeadToWorkUseCase
         private readonly assignee: LeadToWorkAssigneeService,
         private readonly ufDefinitions: LeadUfDefinitionsService,
         private readonly userNames: UserNameResolver,
+        private readonly duplicateCheck: LeadToWorkDuplicateCheckService,
     ) {}
 
     /**
@@ -338,6 +340,28 @@ export class LeadToWorkUseCase
                 requiresAccept: entry.item.isXo === 'Y',
             });
             entry.warnings.push(...warnings);
+        }
+
+        /*
+         * Шаг 3.6. Дубли на входе: увидеть «клиента уже ведут» надо ДО
+         * первого звонка менеджера, а руками кнопку никто не жмёт. Ставим
+         * проверку в очередь (не блокируя ответ) только по входящим
+         * заявкам и только если по лиду её ещё не было — гейт внутри
+         * сервиса. Выключено по умолчанию, включается настройкой портала.
+         */
+        const dupWarnings = await this.duplicateCheck.queueForLeads(
+            ctx.domain,
+            ctx.portal,
+            prepared
+                .filter(entry => entry.leadContext && !entry.error)
+                .map(entry => ({
+                    leadId: entry.item.leadId,
+                    leadRow: entry.leadContext!.lead as unknown as BxRow,
+                    isIncoming: entry.item.isXo === 'Y',
+                })),
+        );
+        if (dupWarnings.length && queued.length) {
+            queued[0].warnings.push(...dupWarnings);
         }
 
         // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.

@@ -44,6 +44,7 @@ const FIELD_DEFS: Record<
         ],
     },
     to_presentation_sales: { bitrixId: 'TO_PRESENTATION_SALES' },
+    to_sale_deal: { bitrixId: 'TO_SALE_DEAL' },
     op_lead_not_ca_type: {
         bitrixId: 'OP_LEAD_NOT_CA_TYPE',
         items: [
@@ -151,6 +152,56 @@ describe('EventReportLeadRequestSyncService', () => {
         const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history[0]).toBe('старое'); // прошлое не переписано
         expect(history[1]).toContain('Продажа');
+        // Атрибуция продажи: заявка помечена сделкой, по которой прошла
+        // продажа. Привязок поля не знаем (definitions пусты) → префикс.
+        expect(fields.UF_CRM_TO_SALE_DEAL).toBe('D_500');
+    });
+
+    /*
+     * Поле одиночное: перезапись стёрла бы фактическую атрибуцию продажи —
+     * единственное место, где видно, какая заявка привела к деньгам.
+     */
+    it('связь продажи уже стоит → не перезаписывается', async () => {
+        const { bitrix, updates } = makeBitrix({
+            42: { ID: '42', UF_CRM_TO_SALE_DEAL: '777' },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        await service.run(
+            makeCtx({
+                isSuccessSale: true,
+                isFail: false,
+                ownerDeal: { ID: '500', UF_CRM_DEAL_FROM_LEAD_ID: 'L_42' },
+            }),
+        );
+
+        expect(updates[0].fields.UF_CRM_TO_SALE_DEAL).toBeUndefined();
+    });
+
+    /*
+     * У поля разрешён ОДИН тип сущности (обычная установка `to_sale_deal`)
+     * — значение хранится голым id, а `D_500` Битрикс молча отбросит.
+     */
+    it('одна привязка в SETTINGS → пишем голый id, без префикса', async () => {
+        const { bitrix, updates } = makeBitrix({ 42: { ID: '42' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+            { UF_CRM_TO_SALE_DEAL: { itemNames: {}, crmTypes: ['DEAL'] } },
+        );
+
+        await service.run(
+            makeCtx({
+                isSuccessSale: true,
+                isFail: false,
+                ownerDeal: { ID: '500', UF_CRM_DEAL_FROM_LEAD_ID: 'L_42' },
+            }),
+        );
+
+        expect(updates[0].fields.UF_CRM_TO_SALE_DEAL).toBe('500');
     });
 
     it('отказ с типом «не ЦА»: статусы «Не ЦА» + тип + заметка в историю', async () => {

@@ -1,5 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx/pbx.service';
+import { BitrixService } from '@/modules/bitrix';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import {
+    LeadUfDefinitions,
+    LeadUfDefinitionsService,
+} from '../../shared/portal-fields';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { EventReportInitService } from '../services/init/event-report-init.service';
 import {
@@ -39,6 +46,7 @@ export class EventReportUseCase {
     constructor(
         private readonly pbx: PBXService,
         private readonly initService: EventReportInitService,
+        private readonly ufDefinitions: LeadUfDefinitionsService,
     ) {}
 
     async execute(dto: EventSalesFlowDto): Promise<{
@@ -92,9 +100,13 @@ export class EventReportUseCase {
         // Финал (продажа/отказ) двигает статусы связанных заявок/лидов и
         // дописывает историю обработки — отдельными волнами ПОСЛЕ основного
         // батча (multiple-история требует свежих значений лида).
+        // Формат crm-значений (`to_sale_deal`) зависит от фактических
+        // привязок поля на портале — читаем их (кэш 10 мин на домен),
+        // иначе связь продажи молча не сохранится.
         const leadRequestSync = new EventReportLeadRequestSyncService(
             bitrix,
             portal,
+            await this.leadLinkDefinitions(ctx.domain, bitrix, portal),
         );
         await leadRequestSync.run(ctx);
 
@@ -113,5 +125,24 @@ export class EventReportUseCase {
             entityType: ctx.entityType,
             entityId: ctx.entityId,
         };
+    }
+
+    /**
+     * Определения полей-связей лида с портала: формат crm-значения зависит
+     * от числа разрешённых типов (один → голый id, несколько → `D_123`).
+     * Поле не установлено — не запрашиваем.
+     */
+    private async leadLinkDefinitions(
+        domain: string,
+        bitrix: BitrixService,
+        portal: PortalModel,
+    ): Promise<LeadUfDefinitions> {
+        const names = [PBX_SALES_EVENT_FIELD_CODES.to_sale_deal]
+            .map(code => {
+                const field = portal.getEntityFieldByCode('lead', code);
+                return field ? portal.getFieldBitrixId(field) : null;
+            })
+            .filter((name): name is string => !!name);
+        return this.ufDefinitions.resolve(domain, bitrix, names);
     }
 }

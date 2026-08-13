@@ -18,6 +18,8 @@
  * в заголовок. По полям лида вид не угадывается — автодетект остаётся лишь
  * запасным вариантом для роботов, которые признак не шлют.
  */
+import { EnumLeadWorkKindCode } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
+
 export const LEAD_WORK_KIND = {
     /** Настоящий холодный обзвон: клиент нас не ждёт. */
     cold: 'cold',
@@ -41,6 +43,36 @@ export const LEAD_WORK_KIND_TITLE_WORD: Record<LeadWorkKind, string | null> = {
     [LEAD_WORK_KIND.cold]: null,
     [LEAD_WORK_KIND.request]: 'Заявка',
     [LEAD_WORK_KIND.lead]: 'Лид',
+};
+
+/**
+ * Вид работы ↔ item НАШЕГО поля лида `op_lead_work_kind`.
+ *
+ * Поле — источник истины о виде работы: его пишет только наш хук, поэтому
+ * оно переживает и ручные правки карточки, и разницу настроек порталов
+ * (чего нельзя сказать о штатном `SOURCE_ID`).
+ */
+export const LEAD_WORK_KIND_TO_ITEM_CODE: Record<
+    LeadWorkKind,
+    EnumLeadWorkKindCode
+> = {
+    [LEAD_WORK_KIND.cold]: EnumLeadWorkKindCode.cold,
+    [LEAD_WORK_KIND.request]: EnumLeadWorkKindCode.request,
+    [LEAD_WORK_KIND.lead]: EnumLeadWorkKindCode.lead,
+};
+
+/** Обратная карта: item поля → вид работы; неизвестный код → null. */
+export const leadWorkKindByItemCode = (
+    itemCode: string | null | undefined,
+): LeadWorkKind | null => {
+    if (!itemCode) return null;
+    const entry = (
+        Object.entries(LEAD_WORK_KIND_TO_ITEM_CODE) as [
+            LeadWorkKind,
+            EnumLeadWorkKindCode,
+        ][]
+    ).find(([, code]) => String(code) === itemCode);
+    return entry ? entry[0] : null;
 };
 
 /**
