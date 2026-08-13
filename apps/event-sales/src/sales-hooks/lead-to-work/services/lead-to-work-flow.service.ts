@@ -15,6 +15,10 @@ import {
     ILeadToWorkKpiRefs,
     LeadToWorkKpiService,
 } from './lead-to-work-kpi.service';
+import {
+    buildColdTaskTitle,
+    LEAD_WORK_KIND,
+} from '../../../shared/event-title';
 import { IXoEventContext } from './models/xo-event-entity.model';
 import {
     CALL_TASK_PREFIX,
@@ -223,15 +227,41 @@ export class LeadToWorkFlowService {
 
     /* ------------------------------------------------------------------ */
 
-    /** Природа лида: явный флаг робота главнее автодетекта по полям. */
+    /**
+     * Природа лида. Приоритет — от самого знающего источника к догадке:
+     *  1. `workKind` — Битрикс сказал прямо (заявка / лид / обычный ХО);
+     *  2. `isRequest` — legacy-флаг роботов, различает только заявку и ХО;
+     *  3. автодетект по полям лида — запасной вариант.
+     *
+     * Входящий лид (`lead`) остаётся ЗАЯВКОЙ по бизнес-смыслу (`isRequest`):
+     * site-метки, ожидание подтверждения и SLA у него те же, отличается
+     * только слово в заголовке и код события в KPI.
+     */
     private detect(
         item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
     ): LeadRequestDetection {
-        if (item.isRequest === 'Y') {
-            return { isRequest: true, signals: ['флаг робота isRequest=Y'] };
+        if (item.workKind) {
+            return {
+                isRequest: item.workKind !== LEAD_WORK_KIND.cold,
+                kind: item.workKind,
+                signals: [`вид работы от робота workKind=${item.workKind}`],
+            };
         }
-        if (item.isRequest === 'N') return { isRequest: false, signals: [] };
+        if (item.isRequest === 'Y') {
+            return {
+                isRequest: true,
+                kind: LEAD_WORK_KIND.request,
+                signals: ['флаг робота isRequest=Y'],
+            };
+        }
+        if (item.isRequest === 'N') {
+            return {
+                isRequest: false,
+                kind: LEAD_WORK_KIND.cold,
+                signals: [],
+            };
+        }
         return this.detector.detect(ctx.lead as unknown as BxRow);
     }
 
@@ -278,7 +308,7 @@ export class LeadToWorkFlowService {
                 {
                     refs,
                     name: input.eventName,
-                    isRequest: input.detection.isRequest,
+                    kind: input.detection.kind,
                     prevResponsibleId: prev,
                     authorId: input.authorId,
                 },
@@ -291,7 +321,7 @@ export class LeadToWorkFlowService {
             {
                 refs,
                 name: input.eventName,
-                isRequest: input.detection.isRequest,
+                kind: input.detection.kind,
                 responsibleId: item.responsible,
                 authorId: input.authorId,
                 deadline,
@@ -332,14 +362,20 @@ export class LeadToWorkFlowService {
         };
     }
 
-    /** «Холодный обзвон. Заявка. {name}» либо «Холодный обзвон {name}». */
+    /**
+     * Заголовок ХО-задачи со СЛОВОМ вида: «Холодный обзвон. Заявка. {name}»,
+     * «Холодный обзвон. Лид. {name}» либо «Холодный обзвон {name}».
+     *
+     * Это единственный канал, по которому вид холодной работы доезжает до
+     * фрейма: он разбирает заголовок (`parseTaskTitle`) и по нему шлёт в
+     * отчёт `xoRequest` / `xoLead` / `xo`. Формат общий с event-report —
+     * см. `buildColdTaskTitle`.
+     */
     private xoTitle(
         eventName: string,
         detection: LeadRequestDetection,
     ): string {
-        return detection.isRequest
-            ? `${XO_TASK_PREFIX}. Заявка. ${eventName}`
-            : `${XO_TASK_PREFIX} ${eventName}`;
+        return buildColdTaskTitle(XO_TASK_PREFIX, detection.kind, eventName);
     }
 
     /** Название события: имя из хука → название компании → название лида. */

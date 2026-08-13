@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
+import { eventTypeName } from '../../types/event-report.event-codes';
 
 /**
  * История изменений сущности-владельца (timeline-запись) — gsirk only.
@@ -37,13 +38,20 @@ export class EventReportEntityHistoryService {
         });
     }
 
+    /**
+     * Таймлайн читают люди: тип события пишем русским названием
+     * (`Заявка`), а не сырым кодом (`xoRequest`) — по коду запись мог
+     * прочитать только разработчик.
+     */
     private buildComment(ctx: EventReportContext): string {
         const parts: string[] = [];
         if (ctx.reportEventType) {
-            parts.push(`Отчёт по событию: ${ctx.reportEventType}`);
+            parts.push(
+                `Отчёт по событию: ${eventTypeName(ctx.reportEventType)}`,
+            );
         }
         if (ctx.planEventType) {
-            parts.push(`План: ${ctx.planEventType}`);
+            parts.push(`План: ${eventTypeName(ctx.planEventType)}`);
         }
         if (ctx.reportComment) {
             parts.push(`Комментарий: ${ctx.reportComment}`);

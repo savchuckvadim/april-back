@@ -30,3 +30,7 @@ export * from './smart/skap-smart-writer.service';
 // Оповещения о результатах прогонов (Telegram-дайджест + im-notify)
 export * from './notify/skap-run-notifier.service';
 export * from './notify/skap-notify.module';
+
+// Портальная поверхность: run-джоб «пересчитать/обновить из хранилища» + статус
+export * from './portal/skap-portal.dto';
+export * from './portal/skap-portal.service';

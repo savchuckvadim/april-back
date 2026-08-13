@@ -2,12 +2,17 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsArray,
     IsBoolean,
+    IsIn,
     IsInt,
     IsOptional,
     IsString,
     Min,
 } from 'class-validator';
 import { SalesHookOperationDto } from '../../core/dto/sales-hook-operation.dto';
+import {
+    LEAD_TO_WORK_ASSIGNEE_SOURCES,
+    LeadToWorkAssigneeSource,
+} from '../services/lead-to-work-assignee.service';
 
 /** Итог преобразования одного лида. */
 export class LeadToWorkItemResultDto {
@@ -100,15 +105,17 @@ export class LeadToWorkItemResultDto {
     @ApiPropertyOptional({
         description:
             'Как выбран ответственный: explicit — передан в хук, ' +
-            'round-robin — по курсору отдела продаж.',
+            'lead — оставлен ответственный лида (конвертация ничего не ' +
+            'перераспределяет), round-robin — по курсору отдела продаж (ХО).',
         example: 'explicit',
         type: String,
-        enum: ['explicit', 'round-robin'],
+        enum: LEAD_TO_WORK_ASSIGNEE_SOURCES,
         nullable: true,
     })
     @IsOptional()
     @IsString()
-    assigneeSource: 'explicit' | 'round-robin' | null;
+    @IsIn(LEAD_TO_WORK_ASSIGNEE_SOURCES as unknown as string[])
+    assigneeSource: LeadToWorkAssigneeSource | null;
 
     @ApiProperty({
         description:

@@ -1,7 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { ApiBxHookUserId } from '@/core/decorators/dto/api-bx-hook-user-id.decorator';
+import {
+    LEAD_WORK_KIND_VALUES,
+    LeadWorkKind,
+} from '../../../shared/event-title';
 import { SalesHookRunRequestBaseDto } from '../../core/dto/sales-hook-run-request.dto';
+
+/**
+ * Описание параметра `workKind` — одно на вебхук робота и кнопку фрейма,
+ * чтобы формулировка вида работы не разъезжалась между двумя входами.
+ */
+const WORK_KIND_DESCRIPTION =
+    'Вид холодной работы — решается В БИТРИКСЕ и попадает СЛОВОМ в ' +
+    'заголовок задачи, по которому фрейм определяет тип события: ' +
+    'request → «Холодный обзвон. Заявка. {N}» (eventType xoRequest), ' +
+    'lead → «Холодный обзвон. Лид. {N}» (eventType xoLead), ' +
+    'cold → «Холодный обзвон {N}» (eventType xo). Не передан — вид берётся ' +
+    'из legacy-флага isRequest (Y → request, N → cold), а без него — ' +
+    'автодетект по полям лида.';
 
 /** Y/N-флаги хука в формате, который шлёт робот Битрикса. */
 export const LEAD_TO_WORK_FLAG_VALUES = ['Y', 'N'] as const;
@@ -126,7 +143,8 @@ export class LeadToWorkWebhookQueryDto {
         description:
             'Явный признак «это ЗАЯВКА» от робота: Y — считать заявкой ' +
             '(названия «…Заявка. {Название}», site-метки), N — просто лид. ' +
-            'Не передан — автодетект по полям лида.',
+            'Не передан — автодетект по полям лида. Различить заявку и ' +
+            'входящий лид этим флагом нельзя — для этого workKind.',
         example: 'Y',
         type: String,
         enum: LEAD_TO_WORK_FLAG_VALUES,
@@ -135,6 +153,17 @@ export class LeadToWorkWebhookQueryDto {
     @IsString()
     @IsIn(LEAD_TO_WORK_FLAG_VALUES as unknown as string[])
     isRequest?: LeadToWorkFlag;
+
+    @ApiPropertyOptional({
+        description: WORK_KIND_DESCRIPTION,
+        example: 'request',
+        type: String,
+        enum: LEAD_WORK_KIND_VALUES,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(LEAD_WORK_KIND_VALUES as unknown as string[])
+    workKind?: LeadWorkKind;
 
     @ApiPropertyOptional({
         description:
@@ -285,6 +314,17 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
     isRequest?: LeadToWorkFlag;
 
     @ApiPropertyOptional({
+        description: WORK_KIND_DESCRIPTION,
+        example: 'request',
+        type: String,
+        enum: LEAD_WORK_KIND_VALUES,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(LEAD_WORK_KIND_VALUES as unknown as string[])
+    workKind?: LeadWorkKind;
+
+    @ApiPropertyOptional({
         description:
             'Дедлайн задачи «Звонок» в локали портала (DD.MM.YYYY HH:mm:ss).',
         example: '15.08.2026 10:00:00',
@@ -327,6 +367,11 @@ export interface ILeadToWorkItem {
     isXo: LeadToWorkFlag;
     /** Явный признак заявки от робота; отсутствует — автодетект по полям. */
     isRequest?: LeadToWorkFlag;
+    /**
+     * Вид холодной работы от Битрикса (заявка / лид / обычный ХО). Главнее
+     * isRequest и автодетекта: именно он решает слово в заголовке задачи.
+     */
+    workKind?: LeadWorkKind;
     /** Сырой дедлайн в локали портала; отсутствует — задача без дедлайна. */
     deadline?: string;
     /** Название события; отсутствует — берётся название лида. */
@@ -351,6 +396,7 @@ export function buildLeadToWorkItem(input: {
     taskMode?: LeadToWorkTaskMode;
     isXo?: LeadToWorkFlag;
     isRequest?: LeadToWorkFlag;
+    workKind?: LeadWorkKind;
     deadline?: string;
     name?: string;
 }): ILeadToWorkItem {
@@ -372,6 +418,7 @@ export function buildLeadToWorkItem(input: {
         taskMode: input.taskMode ?? 'move',
         isXo: input.isXo ?? 'N',
         isRequest: input.isRequest,
+        workKind: input.workKind,
         deadline: input.deadline,
         name: input.name,
     };

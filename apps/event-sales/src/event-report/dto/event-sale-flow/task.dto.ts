@@ -15,11 +15,41 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
 import { EBXTaskMark } from '@/modules/bitrix/domain/tasks/task';
 
+/**
+ * Тип события задачи, приходящий с фрейма.
+ *
+ * Набор ОБЯЗАН совпадать с `@lib/shared/event-sales/dto/task.dto` — это тот
+ * же контракт, только здесь он документируется в OpenAPI и валидируется
+ * `@IsEnum`. Значения, которых тут нет, глобальный ValidationPipe отвергает
+ * на входе, поэтому список расширяется, а не переписывается.
+ *
+ * Холодная работа разделена на три типа: `xo` — настоящий холодный обзвон
+ * (клиент нас не ждёт), `xoRequest` — заявка, `xoLead` — входящий
+ * лид/обращение. По стадиям воронки все три ведут себя как холодные, но в
+ * KPI пишутся РАЗНЫМИ кодами события: заявка не должна сливаться с ХО.
+ *
+ * Вид определяется В БИТРИКСЕ и приезжает во фрейм СЛОВОМ В ЗАГОЛОВКЕ задачи
+ * («Холодный звонок. Заявка …» / «… Лид …»); фрейм разбирает заголовок и
+ * возвращает сюда готовый код. Бэк по данным лида вид не угадывает.
+ *
+ * `in_progress`/`money_await` — коды старых сборок фрейма; нормализация
+ * (`EventReportContext.normalizeEventType`) сводит их к `hot`/`moneyAwait`.
+ */
 export enum EnumTaskEventType {
     XO = 'xo',
+    /** Заявка: холодная стадия, но клиент обратился сам. */
+    XO_REQUEST = 'xoRequest',
+    /** Входящий лид/обращение (звонок, чат, письмо). */
+    XO_LEAD = 'xoLead',
     WARM = 'warm',
     PRESENTATION = 'presentation',
+    HOT = 'hot',
+    MONEY_AWAIT_NEW = 'moneyAwait',
+    /** Сервисный сигнал: своего кода в отчётности нет, считается звонком. */
+    SS = 'ss',
+    /** @deprecated код старой сборки фрейма, нормализуется в `hot`. */
     IN_PROGRESS = 'in_progress',
+    /** @deprecated код старой сборки фрейма, нормализуется в `moneyAwait`. */
     MONEY_AWAIT = 'money_await',
     EVENT = 'event',
     SUPPLY = 'supply',

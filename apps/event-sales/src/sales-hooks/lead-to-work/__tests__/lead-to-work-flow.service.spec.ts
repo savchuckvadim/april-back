@@ -62,8 +62,20 @@ const makeKpiList = (type: 'kpi' | 'history') => ({
                 { code: 'expired', bitrixId: 3 },
             ],
         },
+        {
+            code: `sales_${type}_event_type`,
+            bitrixCamelId: 'P_TYPE',
+            items: [
+                { code: 'xo', bitrixId: 10 },
+                { code: 'site', bitrixId: 20 },
+                { code: 'come_call', bitrixId: 30 },
+            ],
+        },
     ],
 });
+
+/** bitrixId item'ов `event_type` в моке — по коду. */
+const KPI_EVENT_TYPE_ID = { xo: 10, site: 20, come_call: 30 } as const;
 
 const makePortal = (
     fields: Record<
@@ -156,6 +168,23 @@ const FIELDS = {
             { code: 'op_lead_status_four', bitrixId: 401 },
             { code: 'op_lead_status_five', bitrixId: 501 },
         ],
+    },
+};
+
+/** Поля пути заявки: таймер ожидания подтверждения + история обработки. */
+const REQUEST_FIELDS = {
+    ...FIELDS,
+    'lead:op_lead_assigned_at': { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
+    'lead:op_lead_firstprepare_history': {
+        bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY',
+    },
+    'lead:op_lead_site_status': {
+        bitrixId: 'OP_LEAD_SITE_STATUS',
+        items: [{ code: 'op_lead_site_status1', bitrixId: 11 }],
+    },
+    'lead:op_lead_site_stage': {
+        bitrixId: 'OP_LEAD_SITE_STAGE',
+        items: [{ code: 'op_lead_site_stage1', bitrixId: 31 }],
     },
 };
 
@@ -389,6 +418,164 @@ describe('LeadToWorkFlowService', () => {
         const taskAdd = calls.find(c => c.method === 'task.add');
         const title = (taskAdd?.args[0] as Record<string, unknown>).TITLE;
         expect(String(title)).toContain('Заявка.');
+    });
+
+    /*
+     * КОНТРАКТ ЗАГОЛОВКА. Вид холодной работы решает Битрикс и присылает в
+     * `workKind`; единственный канал до фрейма — СЛОВО в заголовке задачи
+     * (фронт разбирает его в parseTaskTitle). Нет слова — фрейм прочитает
+     * заявку как обычный холодный обзвон, и менеджер настроится не на тот
+     * разговор. Плюс код события в KPI обязан отличаться от `xo`.
+     */
+    it.each([
+        [
+            'request',
+            'Холодный обзвон. Заявка. ООО Ромашка',
+            KPI_EVENT_TYPE_ID.site,
+            true,
+        ],
+        [
+            'lead',
+            'Холодный обзвон. Лид. ООО Ромашка',
+            KPI_EVENT_TYPE_ID.come_call,
+            true,
+        ],
+        ['cold', 'Холодный обзвон ООО Ромашка', KPI_EVENT_TYPE_ID.xo, false],
+    ] as const)(
+        'workKind=%s → заголовок «%s», свой код события в KPI',
+        (workKind, expectedTitle, expectedEventTypeId, expectedIsRequest) => {
+            const { bitrix, calls } = makeBitrix();
+            const service = new LeadToWorkFlowService(
+                bitrix as never,
+                makePortal(FIELDS, true) as never,
+            );
+
+            const plan = service.queue(
+                makeItem({ leadId: 42, responsible: 5, isXo: 'Y', workKind }),
+                baseContext({
+                    lead: { ID: '42', TITLE: 'ООО Ромашка' } as never,
+                }),
+                basePlan({ xoCategoryId: '9' }),
+                makeBuffer() as never,
+            );
+
+            const taskAdd = calls.find(c => c.method === 'task.add');
+            expect((taskAdd?.args[0] as Record<string, unknown>).TITLE).toBe(
+                expectedTitle,
+            );
+            expect(plan.isRequest).toBe(expectedIsRequest);
+
+            // KPI: свой код события, а не общий 'xo' для всего холодного.
+            const fields = (
+                calls.find(c => c.method === 'listItem.add')?.args[0] as {
+                    FIELDS: Record<string, unknown>;
+                }
+            ).FIELDS;
+            expect(fields.P_TYPE).toBe(expectedEventTypeId);
+            expect(String(fields.NAME)).toBe(
+                expectedTitle.replace(
+                    'Холодный обзвон',
+                    'Холодный звонок Запланирован',
+                ),
+            );
+        },
+    );
+
+    it('workKind=lead: «Не состоялся» прежнему тоже уходит кодом come_call', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS, true) as never,
+        );
+
+        service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 5,
+                isXo: 'Y',
+                workKind: 'lead',
+            }),
+            baseContext({
+                existingOurDeal: { ID: '1024' } as never,
+                existingXoDeal: { ID: '2048', ASSIGNED_BY_ID: '9' } as never,
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const items = calls
+            .filter(c => c.method === 'listItem.add')
+            .map(
+                c => (c.args[0] as { FIELDS: Record<string, unknown> }).FIELDS,
+            );
+        const names = items.map(f => String(f.NAME));
+        expect(names.some(n => n.includes('Не состоялся. Лид.'))).toBe(true);
+        expect(names.some(n => n.includes('Запланирован. Лид.'))).toBe(true);
+        // Обе записи — своим кодом события, ни одной со старым 'xo'.
+        expect(items.every(f => f.P_TYPE === KPI_EVENT_TYPE_ID.come_call)).toBe(
+            true,
+        );
+    });
+
+    /*
+     * Legacy-роботы шлют только isRequest — они обязаны продолжать работать
+     * и давать ровно прежний заголовок «. Заявка.».
+     */
+    it('legacy isRequest=Y без workKind → вид «заявка» (обратная совместимость)', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS, true) as never,
+        );
+
+        const plan = service.queue(
+            makeItem({ leadId: 42, responsible: 5, isXo: 'Y', isRequest: 'Y' }),
+            baseContext({ lead: { ID: '42', TITLE: 'ООО Ромашка' } as never }),
+            basePlan({ xoCategoryId: '9' }),
+            makeBuffer() as never,
+        );
+
+        expect(plan.isRequest).toBe(true);
+        const taskAdd = calls.find(c => c.method === 'task.add');
+        expect((taskAdd?.args[0] as Record<string, unknown>).TITLE).toBe(
+            'Холодный обзвон. Заявка. ООО Ромашка',
+        );
+    });
+
+    /*
+     * Явный workKind главнее и legacy-флага, и автодетекта: Битрикс знает
+     * природу лида точнее, чем эвристика по заполненным полям.
+     */
+    it('workKind сильнее isRequest и автодетекта по полям лидогена', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS, true) as never,
+        );
+
+        service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 5,
+                isXo: 'Y',
+                isRequest: 'Y',
+                workKind: 'lead',
+            }),
+            baseContext({
+                lead: {
+                    ID: '42',
+                    TITLE: 'ООО Ромашка',
+                    UF_CRM_REG_NUMBER: '48-00691',
+                } as never,
+            }),
+            basePlan({ xoCategoryId: '9' }),
+            makeBuffer() as never,
+        );
+
+        const taskAdd = calls.find(c => c.method === 'task.add');
+        expect((taskAdd?.args[0] as Record<string, unknown>).TITLE).toBe(
+            'Холодный обзвон. Лид. ООО Ромашка',
+        );
     });
 
     it('без компании: сделка называется названием лида, связи графа записаны', () => {
@@ -745,6 +932,129 @@ describe('LeadToWorkFlowService', () => {
         );
         expect(names.some(n => String(n).includes('Не состоялся'))).toBe(true);
         expect(names.some(n => String(n).includes('Запланирован'))).toBe(true);
+    });
+
+    /*
+     * Адресная передача заявки: менеджер выбрал конкретного коллегу.
+     * Ответственный обязан стать ИМЕННО им во всех сущностях, а таймер
+     * ожидания подтверждения (op_lead_assigned_at) — стартовать заново:
+     * на него завязаны и блокирующий экран фрейма, и SLA-крон. Раньше
+     * признак выводили из стадии, и любая ручная правка карточки его ломала.
+     */
+    it('адресная передача: работа уходит выбранному, таймер подтверждения стартует заново', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(REQUEST_FIELDS) as never,
+            {},
+            { 5: 'Вадим Савчук', 8: 'Иван Петров' },
+        );
+
+        service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 8,
+                transferredBy: 5,
+                excludeResponsible: 5,
+                isXo: 'Y',
+                isRequest: 'Y',
+                taskMode: 'close',
+            }),
+            baseContext({
+                lead: {
+                    ID: '42',
+                    TITLE: 'ООО Ромашка',
+                    ASSIGNED_BY_ID: '5',
+                } as never,
+                existingOurDeal: { ID: '1024' } as never,
+                existingXoDeal: { ID: '2048', ASSIGNED_BY_ID: '5' } as never,
+            }),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+
+        // Ответственный — выбранный, а не следующий по кругу.
+        expect(leadFields.ASSIGNED_BY_ID).toBe('8');
+        for (const cmd of ['lw_deal_upd_42', 'lw_xo_upd_42']) {
+            const fields = calls.find(c => c.cmd === cmd)?.args[1] as Record<
+                string,
+                unknown
+            >;
+            expect(fields.ASSIGNED_BY_ID).toBe('8');
+        }
+        const taskAdd = calls.find(c => c.method === 'task.add')
+            ?.args[0] as Record<string, unknown>;
+        expect(taskAdd.RESPONSIBLE_ID).toBe(8);
+
+        // Таймер ожидания подтверждения заполнен (дата в локали портала).
+        expect(leadFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toMatch(
+            /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
+        );
+
+        // История заявки: самопередача с именами, а не с id.
+        const history =
+            leadFields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history).toHaveLength(1);
+        expect(history[0]).toContain(
+            'Сотрудник Вадим Савчук сам передал заявку → Иван Петров',
+        );
+    });
+
+    /*
+     * Тот же таймер обязан ставиться и при ПЕРВОМ адресном назначении
+     * (не только при передаче): фрейм показывает экран подтверждения по
+     * заполненности поля, а не по наличию прежнего ответственного.
+     */
+    it('первое назначение с явным responsible тоже ставит таймер подтверждения', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(REQUEST_FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 8, isXo: 'Y', isRequest: 'Y' }),
+            baseContext(),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(leadFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeTruthy();
+        // Первичные метки заявки ставятся только в пустые поля.
+        expect(leadFields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(11);
+        expect(leadFields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(31);
+        const history =
+            leadFields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history[0]).toContain('ХО назначен: 8');
+    });
+
+    /*
+     * Конвертация (isXo=N) — не заявка и не ожидание подтверждения:
+     * таймер ставить нельзя, иначе SLA-крон начнёт «передавать другому»
+     * лиды, которых никто не обязан подтверждать.
+     */
+    it('конвертация (isXo=N) таймер подтверждения НЕ ставит', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(REQUEST_FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 8, isRequest: 'Y' }),
+            baseContext(),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(leadFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeUndefined();
     });
 
     it('повторный ХО тем же ответственным: «Не состоялся» не пишется', () => {

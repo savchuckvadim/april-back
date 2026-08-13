@@ -6,11 +6,37 @@ import { nowCrmDateTime, PortalDeadline } from '@/shared/lib/date';
 import { KpiListFlowService } from '../../../shared/kpi-list-flow/services/kpi-list-flow.service';
 import { KpiEventPayload } from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
 import { IBatchGroupBuffer } from '../../../shared/batch/batch-group-buffer.interface';
+import { KpiEventItemCodes } from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
+import {
+    buildColdTaskTitle,
+    LEAD_WORK_KIND,
+    LeadWorkKind,
+} from '../../../shared/event-title';
+
+/** Код item'а `event_type` списка KPI (типизация portal-lib, без magic-строк). */
+type KpiEventTypeCode = NonNullable<KpiEventItemCodes['event_type']>;
 
 /** Заголовки — как у классического ХО-хука (`ColdListFlowService`). */
 const PLANNED_TITLE_PREFIX = 'Холодный звонок Запланирован';
 const NOT_HELD_TITLE_PREFIX = 'Холодный звонок Не состоялся';
 const COMMENT_PREFIX = 'Холодный обзвон';
+
+/**
+ * Вид холодной работы → код item'а `event_type` списка KPI.
+ *
+ * Тот же маппинг, что у отчёта (`EVENT_TYPE_TO_KPI_ITEM` в
+ * event-report-kpi-payload.builder): заявка и входящий лид пишутся своими
+ * кодами и НЕ сливаются с холодным обзвоном. Раньше хук ставил `xo` всем
+ * подряд, и в отчётности обработка заявок была неотличима от обзвона
+ * «вхолодную».
+ *
+ * Прошлые записи не переписываются — коды меняются только у новых.
+ */
+const WORK_KIND_TO_KPI_EVENT_TYPE: Record<LeadWorkKind, KpiEventTypeCode> = {
+    [LEAD_WORK_KIND.cold]: 'xo',
+    [LEAD_WORK_KIND.request]: 'site',
+    [LEAD_WORK_KIND.lead]: 'come_call',
+};
 
 /**
  * План-запись пишется на +1 с от «не состоялся»: события уходят одним
@@ -36,8 +62,8 @@ export interface ILeadToWorkKpiPlanned {
     refs: ILeadToWorkKpiRefs;
     /** Название события (обычно название лида/компании). */
     name: string;
-    /** Заявка с сайта → заголовок «…Запланирован. Заявка. {name}». */
-    isRequest: boolean;
+    /** Вид работы: слово в заголовке + код события в KPI. */
+    kind: LeadWorkKind;
     responsibleId: number;
     /** Автор (инициатор операции); нет — ответственный. */
     authorId: number | null;
@@ -48,7 +74,8 @@ export interface ILeadToWorkKpiPlanned {
 export interface ILeadToWorkKpiNotHeld {
     refs: ILeadToWorkKpiRefs;
     name: string;
-    isRequest: boolean;
+    /** Вид работы: слово в заголовке + код события в KPI. */
+    kind: LeadWorkKind;
     /** Прежний ответственный — у него обзвон «не состоялся». */
     prevResponsibleId: number;
     authorId: number | null;
@@ -80,11 +107,7 @@ export class LeadToWorkKpiService {
 
     /** «Холодный звонок Запланирован …» — новому ответственному. */
     queuePlanned(data: ILeadToWorkKpiPlanned, buffer: IBatchGroupBuffer): void {
-        const title = this.title(
-            PLANNED_TITLE_PREFIX,
-            data.name,
-            data.isRequest,
-        );
+        const title = this.title(PLANNED_TITLE_PREFIX, data.name, data.kind);
         const tz = this.portal.getTimezone();
         const payload: KpiEventPayload = {
             name: title,
@@ -103,7 +126,7 @@ export class LeadToWorkKpiService {
                 manager_comment: `${COMMENT_PREFIX} ${data.name}`,
             },
             items: {
-                event_type: 'xo',
+                event_type: WORK_KIND_TO_KPI_EVENT_TYPE[data.kind],
                 event_action: 'plan',
                 op_work_status: 'op_status_in_work',
                 op_result_status: 'op_call_result_yes',
@@ -123,11 +146,7 @@ export class LeadToWorkKpiService {
      * это новая запись-факт, прошлое остаётся как было.
      */
     queueNotHeld(data: ILeadToWorkKpiNotHeld, buffer: IBatchGroupBuffer): void {
-        const title = this.title(
-            NOT_HELD_TITLE_PREFIX,
-            data.name,
-            data.isRequest,
-        );
+        const title = this.title(NOT_HELD_TITLE_PREFIX, data.name, data.kind);
         const tz = this.portal.getTimezone();
         const payload: KpiEventPayload = {
             name: title,
@@ -143,7 +162,7 @@ export class LeadToWorkKpiService {
                 manager_comment: `Передача холодного обзвона: ${data.name}`,
             },
             items: {
-                event_type: 'xo',
+                event_type: WORK_KIND_TO_KPI_EVENT_TYPE[data.kind],
                 event_action: 'expired',
                 op_result_status: 'op_call_result_no',
                 op_work_status: 'op_status_in_work',
@@ -156,13 +175,13 @@ export class LeadToWorkKpiService {
     }
 
     /**
-     * Заголовок события: заявка получает «. Заявка.» между префиксом и
-     * названием («Холодный звонок Запланирован. Заявка. ООО Ромашка»).
+     * Заголовок события: вид работы получает своё слово между префиксом и
+     * названием («Холодный звонок Запланирован. Заявка. ООО Ромашка»,
+     * «… Не состоялся. Лид. ООО Ромашка»). Формат общий с задачами —
+     * см. `buildColdTaskTitle`.
      */
-    private title(prefix: string, name: string, isRequest: boolean): string {
-        return isRequest
-            ? `${prefix}. Заявка. ${name}`.trim()
-            : `${prefix} ${name}`.trim();
+    private title(prefix: string, name: string, kind: LeadWorkKind): string {
+        return buildColdTaskTitle(prefix, kind, name);
     }
 
     /** crm-ссылки: лид всегда, компания/сделки — по наличию. */

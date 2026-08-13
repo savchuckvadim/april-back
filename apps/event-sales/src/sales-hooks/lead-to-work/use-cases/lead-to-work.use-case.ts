@@ -15,7 +15,10 @@ import {
 } from '../dto/lead-to-work-result.dto';
 import { LeadToWorkContextService } from '../services/lead-to-work-context.service';
 import { LeadToWorkStageResolver } from '../services/lead-to-work-stage.resolver';
-import { LeadToWorkAssigneeService } from '../services/lead-to-work-assignee.service';
+import {
+    LeadToWorkAssigneeService,
+    LeadToWorkAssigneeSource,
+} from '../services/lead-to-work-assignee.service';
 import {
     LeadToWorkFlowService,
     LeadToWorkQueuedPlan,
@@ -124,28 +127,47 @@ export class LeadToWorkUseCase
             this.leadLinkFieldNames(ctx),
         );
         /*
-         * Ответственные ВСЕЙ пачки — до записи: по ним одним запросом
-         * резолвим имена сотрудников, чтобы история заявки читалась людьми
+         * ── Предобработка пачки: ЧИТАЕМ портал по каждому лиду и только
+         * потом считаем/пишем. Ответственный резолвится здесь же, потому что
+         * при конвертации он берётся С ЛИДА (см. keepLeadResponsible) — до
+         * чтения лида это неизвестно. Имена сотрудников резолвятся одним
+         * запросом на всю пачку: история заявки должна читаться людьми
          * («ХО передан: Вадим Савчук → Иван Петров», а не «447 → 465»).
-         * Пачечная предобработка обязательна: хук = ×100–200 вызовов.
          */
-        const resolvedAssignees = new Map<
-            number,
-            Awaited<ReturnType<LeadToWorkAssigneeService['resolve']>>
-        >();
+        const prepared: {
+            item: ILeadToWorkItem;
+            leadContext?: Awaited<ReturnType<LeadToWorkContextService['load']>>;
+            assignee?: Awaited<
+                ReturnType<LeadToWorkAssigneeService['resolve']>
+            >;
+            error?: string;
+        }[] = [];
         for (const item of items) {
-            resolvedAssignees.set(
-                item.leadId,
-                await this.assignee.resolve(ctx.domain, item),
-            );
+            try {
+                const leadContext = await contextService.load(item.leadId);
+                const leadRow = leadContext.lead as unknown as BxRow;
+                const assignee = await this.assignee.resolve(ctx.domain, item, {
+                    leadResponsibleId: Number(leadRow.ASSIGNED_BY_ID) || null,
+                    // ХО распределяет заявку по кругу, конвертация —
+                    // переносит работу как есть, за текущим менеджером.
+                    keepLeadResponsible: item.isXo !== 'Y',
+                });
+                prepared.push({ item, leadContext, assignee });
+            } catch (error) {
+                const { message } = getErrorDetails(error);
+                this.logger.warn(
+                    `lead-to-work: лид ${item.leadId} пропущен — ${message}`,
+                );
+                prepared.push({ item, error: message });
+            }
         }
         const userNames = await this.userNames.resolve(
             ctx.domain,
             ctx.bitrix,
-            items.flatMap(item => [
-                resolvedAssignees.get(item.leadId)?.responsible ?? 0,
-                item.transferredBy ?? 0,
-                item.excludeResponsible ?? 0,
+            prepared.flatMap(entry => [
+                entry.assignee?.responsible ?? 0,
+                entry.item.transferredBy ?? 0,
+                entry.item.excludeResponsible ?? 0,
             ]),
         );
 
@@ -166,7 +188,7 @@ export class LeadToWorkUseCase
             existingDealId: number | null;
             existingXoDealId: number | null;
             responsible?: number;
-            assigneeSource?: 'explicit' | 'round-robin';
+            assigneeSource?: LeadToWorkAssigneeSource;
             /** Название лида — в текст персонального уведомления. */
             leadTitle?: string;
             /** Прежний ответственный (передача) — ему уходит «работа ушла». */
@@ -175,13 +197,24 @@ export class LeadToWorkUseCase
             warnings: string[];
         }[] = [];
 
-        // ── Шаг 1. Обрабатываем лиды пачки по одному.
-        for (const item of items) {
+        // ── Шаг 1. Планируем запись по каждому лиду (данные уже прочитаны).
+        for (const entry of prepared) {
+            const { item, leadContext, assignee } = entry;
             try {
-                // 1.0 Ответственный: пришёл в хуке — берём его; не пришёл —
-                //     round-robin из отдела продаж (намёк — item.department,
-                //     курсор — в app-cache). Разрезолвлен предпроходом выше.
-                const assignee = resolvedAssignees.get(item.leadId)!;
+                if (!leadContext || !assignee) {
+                    queued.push({
+                        item,
+                        companyId: null,
+                        existingDealId: null,
+                        existingXoDealId: null,
+                        error: entry.error ?? 'Лид не прочитан',
+                        warnings: [],
+                    });
+                    continue;
+                }
+                // 1.0 Ответственный: пришёл в хуке → он; конвертация →
+                //     ответственный лида; ХО → round-robin из отдела продаж
+                //     (намёк — item.department, курсор — в app-cache).
                 if (!assignee.responsible) {
                     queued.push({
                         item,
@@ -197,11 +230,6 @@ export class LeadToWorkUseCase
                     ...item,
                     responsible: assignee.responsible,
                 };
-
-                // 1.1 Читаем портал: лид + компания + наша сделка (если лид
-                //     уже в работе) + ХО-сделка + сделки конвертации +
-                //     открытые задачи.
-                const leadContext = await contextService.load(item.leadId);
 
                 // 1.2 Считаем целевые стадии от ТЕКУЩЕГО статуса лида:
                 //     зеркало стадии («Презентация» лида → sales_pres),
@@ -342,7 +370,7 @@ export class LeadToWorkUseCase
             existingDealId: number | null;
             existingXoDealId: number | null;
             responsible?: number;
-            assigneeSource?: 'explicit' | 'round-robin';
+            assigneeSource?: LeadToWorkAssigneeSource;
             error?: string;
             warnings: string[];
         },

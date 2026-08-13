@@ -6,7 +6,10 @@ import {
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
-import { GSIRK_DOMAIN } from '../../types/event-report.event-codes';
+import {
+    eventTypeName,
+    GSIRK_DOMAIN,
+} from '../../types/event-report.event-codes';
 import { EnumWorkStatusCode } from '../../types/report-types';
 import {
     EEventReportEntityType,
@@ -222,7 +225,11 @@ export class EventReportEntityFieldsModel {
         this.setScalar(out, 'xo_created', this.ctx.planCreatedById);
 
         switch (this.ctx.planEventType) {
+            // Заявка планируется теми же полями обзвона, что и ХО: работа
+            // ведётся в холодной части воронки.
             case 'xo':
+            case 'xoRequest':
+            case 'xoLead':
                 this.setScalar(out, 'xo_date', this.ctx.planDeadline);
                 this.setScalar(out, 'xo_name', this.ctx.planEventName);
                 break;
@@ -272,11 +279,15 @@ export class EventReportEntityFieldsModel {
     private applyExpiredFields(out: EntityFieldsMap): void {
         switch (this.ctx.reportEventType) {
             case 'xo':
+            case 'xoRequest':
+            case 'xoLead':
                 this.setScalar(out, 'xo_date', this.ctx.planDeadline);
                 this.setScalar(
                     out,
                     'op_current_status',
-                    this.statusText('Перенос: Холодный звонок'),
+                    this.statusText(
+                        `Перенос: ${eventTypeName(this.ctx.reportEventType)}`,
+                    ),
                 );
                 break;
             case 'presentation':

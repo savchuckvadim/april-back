@@ -15,12 +15,36 @@ const ASSIGNEE_CACHE_APP = 'event-sales-hooks';
 /** Курсор живёт месяц: потерялся — начнём с первого, это не ошибка. */
 const ASSIGNEE_CURSOR_TTL_SECONDS = 30 * 24 * 3600;
 
+/**
+ * Откуда взялся ответственный: `explicit` — пришёл в хук, `lead` — оставлен
+ * как есть (ответственный лида, конвертация), `round-robin` — распределён по
+ * курсору отдела (ХО-ветка).
+ */
+export const LEAD_TO_WORK_ASSIGNEE_SOURCES = [
+    'explicit',
+    'lead',
+    'round-robin',
+] as const;
+export type LeadToWorkAssigneeSource =
+    (typeof LEAD_TO_WORK_ASSIGNEE_SOURCES)[number];
+
+/** Что известно о лиде на момент выбора ответственного. */
+export interface ILeadToWorkAssigneeContext {
+    /** Текущий ответственный лида (ASSIGNED_BY_ID); null — не задан. */
+    leadResponsibleId?: number | null;
+    /**
+     * true — ответственного НЕ распределяем, а переносим с лида как есть
+     * (конвертация). false — распределяем round-robin (ХО: заявка уходит
+     * следующему по кругу менеджеру).
+     */
+    keepLeadResponsible?: boolean;
+}
+
 /** Итог резолва ответственного. */
 export interface ILeadToWorkAssignee {
     /** null — кандидатов нет (отдел пуст/не найден). */
     responsible: number | null;
-    /** explicit — пришёл в хук; round-robin — выбран по курсору отдела. */
-    source: 'explicit' | 'round-robin';
+    source: LeadToWorkAssigneeSource;
     /** Ключ отдела, по которому крутится курсор (для логов/отладки). */
     departmentKey: string | null;
     warnings: string[];
@@ -58,6 +82,7 @@ export class LeadToWorkAssigneeService {
     async resolve(
         domain: string,
         item: ILeadToWorkItem,
+        context: ILeadToWorkAssigneeContext = {},
     ): Promise<ILeadToWorkAssignee> {
         if (item.responsible) {
             return {
@@ -68,7 +93,32 @@ export class LeadToWorkAssigneeService {
             };
         }
 
+        /*
+         * Конвертация: работа не перераспределяется — сделка и задачи
+         * остаются у того, кто уже ведёт лид. Round-robin здесь был бы
+         * вредом (заявка уехала бы случайному менеджеру), поэтому крутим
+         * его только там, где распределение — суть операции (ХО).
+         */
+        const leadResponsibleId = Number(context.leadResponsibleId ?? 0);
+        if (
+            context.keepLeadResponsible &&
+            Number.isFinite(leadResponsibleId) &&
+            leadResponsibleId > 0
+        ) {
+            return {
+                responsible: leadResponsibleId,
+                source: 'lead',
+                departmentKey: null,
+                warnings: [],
+            };
+        }
+
         const warnings: string[] = [];
+        if (context.keepLeadResponsible) {
+            warnings.push(
+                'У лида не задан ответственный — выбран по кругу из отдела продаж',
+            );
+        }
         // Формат намёка неизвестен — фиксируем сырое значение в логах.
         this.logger.log(
             `[assignee] lead=${item.leadId} responsible не передан; ` +

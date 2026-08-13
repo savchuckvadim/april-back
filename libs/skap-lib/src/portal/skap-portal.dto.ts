@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
-import { SKAP_RUN_STATUSES, SkapRunStatus } from '@lib/skap-lib';
 import { SkapImportRun } from 'generated/prisma';
+import { SKAP_RUN_STATUSES, SkapRunStatus } from '../store/skap-store.types';
 
 export class SkapPortalRunRequestDto {
     @ApiProperty({
@@ -115,4 +115,15 @@ export class SkapPortalStatusResponseDto {
             'https://client.bitrix24.ru/workgroups/group/45/disk/path/СКАП. Загрузка/',
     })
     folderUrl!: string | null;
+
+    @ApiProperty({
+        description:
+            'Ссылка на список элементов смарт-процесса «СКАП» в CRM ' +
+            'портала (куда конвейер пишет элементы логин×месяц). ' +
+            'null — смарт ещё не установлен на портале',
+        type: String,
+        nullable: true,
+        example: 'https://client.bitrix24.ru/crm/type/183/list/category/0/',
+    })
+    smartUrl!: string | null;
 }

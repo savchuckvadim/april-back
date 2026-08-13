@@ -33,33 +33,44 @@ export type KpiScenario =
     | 'final';
 
 /**
- * Маппинг DTO/event-type кодов → коды item списка KPI (`event_type`).
+ * Тип события → код item'а списка KPI (`event_type`).
  *
- * Возвращает `null`, если маппинга нет — тогда payload не создаётся.
+ * Именно `Record`, а не `switch`: TypeScript требует запись для КАЖДОГО
+ * значения `EventReportEventType`, поэтому новый тип события физически
+ * нельзя добавить, забыв про KPI. Раньше здесь был switch с `default`, и
+ * несведённый код молча превращался в «звонок» либо в `null` — записи
+ * (включая продажу и отказ) пропадали из отчётности.
+ *
+ * Заявки НЕ сливаются с холодным обзвоном: `xoRequest` пишется кодом `site`
+ * («Заявка с сайта»), `xoLead` — `come_call` («Входящий звонок»). Оба item'а
+ * уже есть в списке KPI (PBX_SALES_KPI_LIST_FIELDS) и учитываются отчётом ОП
+ * в той же группе «Звонок», что и `xo`, — цифры не разъезжаются.
+ */
+const EVENT_TYPE_TO_KPI_ITEM: Record<EventReportEventType, EventTypeCode> = {
+    xo: 'xo',
+    xoRequest: 'site',
+    xoLead: 'come_call',
+    warm: 'call',
+    presentation: 'presentation',
+    hot: 'call_in_progress',
+    moneyAwait: 'call_in_money',
+    // Своих кодов в KPI у них нет; по смыслу это разговор с клиентом.
+    supply: 'call',
+    document: 'call',
+};
+
+/**
+ * Маппинг типа события → код item'а KPI.
+ *
+ * `null` только тогда, когда типа события НЕТ вовсе (ни отчёта, ни плана).
+ * Для любого известного типа возврат гарантирован таблицей выше; на случай
+ * кода, проехавшего мимо типов (данные с портала), остаётся `call` — как в
+ * легаси (bx-event-flow.service): неизвестный код не должен УНИЧТОЖАТЬ
+ * запись.
  */
 function mapEventType(type: EventReportEventType | null): EventTypeCode | null {
     if (!type) return null;
-    switch (type) {
-        case 'xo':
-            return 'xo';
-        case 'warm':
-            return 'call';
-        case 'presentation':
-            return 'presentation';
-        case 'hot':
-            return 'call_in_progress';
-        case 'moneyAwait':
-            return 'call_in_money';
-        case 'document':
-        case 'supply':
-            // Своих кодов в KPI у них нет; по смыслу это разговор с клиентом.
-            return 'call';
-        default:
-            // Дефолт вместо null — как в легаси (bx-event-flow.service):
-            // неизвестный код не должен УНИЧТОЖАТЬ запись, иначе продажа и
-            // отказ молча пропадают из отчётности.
-            return 'call';
-    }
+    return EVENT_TYPE_TO_KPI_ITEM[type] ?? 'call';
 }
 
 function mapWorkStatus(ctx: EventReportContext): OpWorkStatusCode | undefined {

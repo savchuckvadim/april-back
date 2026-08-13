@@ -1,5 +1,9 @@
 import { PbxSalesKpiListFieldItemCode } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list-field.type';
 import { PbxSalesEventFieldItemCode } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import {
+    LEAD_WORK_KIND,
+    LeadWorkKind,
+} from '../../shared/event-title/types/cold-work-kind';
 
 /**
  * Алиасы типов item-кодов для удобства внутри event-report.
@@ -25,9 +29,21 @@ export type OpProspectsTypeCode =
  * moneyAwait, supply, document) живёт только в DTO/бизнес-логике расчёта
  * стадий — сюда добавляются как литералы и проверяются через
  * exhaustiveness в switch'ах.
+ *
+ * Холодная работа разделена на три типа (см. {@link COLD_EVENT_TYPES}):
+ * `xo` — настоящий холодный обзвон (клиент нас не ждёт), `xoRequest` —
+ * заявка, `xoLead` — входящий лид/обращение. По воронке они ходят одинаково
+ * (стадия «Холодная», воронка ХО), а в KPI пишутся разными кодами события.
+ *
+ * Вид холодной работы определяется В БИТРИКСЕ и приезжает СЛОВОМ В ЗАГОЛОВКЕ
+ * задачи — «Холодный звонок. Заявка …» / «Холодный звонок. Лид …» / просто
+ * «Холодный звонок …». Фронт парсит заголовок и шлёт готовый код обратно;
+ * бэк по данным лида вид не угадывает (см. LEAD_WORK_KIND в lead-to-work).
  */
 export const EVENT_REPORT_EVENT_TYPE = {
     xo: 'xo',
+    xoRequest: 'xoRequest',
+    xoLead: 'xoLead',
     warm: 'warm',
     presentation: 'presentation',
     hot: 'hot',
@@ -38,6 +54,62 @@ export const EVENT_REPORT_EVENT_TYPE = {
 
 export type EventReportEventType =
     (typeof EVENT_REPORT_EVENT_TYPE)[keyof typeof EVENT_REPORT_EVENT_TYPE];
+
+/**
+ * «Холодные» типы события — те, что живут на холодной стадии воронки и в
+ * воронке ХО. Разные по смыслу разговора, одинаковые по движению сделки,
+ * поэтому лестница стадий и цепочка ХО работают по этому набору, а не по
+ * литералу `'xo'`.
+ */
+export const COLD_EVENT_TYPES = [
+    EVENT_REPORT_EVENT_TYPE.xo,
+    EVENT_REPORT_EVENT_TYPE.xoRequest,
+    EVENT_REPORT_EVENT_TYPE.xoLead,
+] as const;
+
+export type ColdEventType = (typeof COLD_EVENT_TYPES)[number];
+
+/**
+ * Холодный тип события → вид холодной работы (слово в заголовке задачи).
+ * Общий словарь с хуком «лид → работа»: заголовок обязан читаться фронтом
+ * одинаково, кем бы задача ни была создана.
+ */
+export const COLD_EVENT_TYPE_TO_WORK_KIND: Record<ColdEventType, LeadWorkKind> =
+    {
+        xo: LEAD_WORK_KIND.cold,
+        xoRequest: LEAD_WORK_KIND.request,
+        xoLead: LEAD_WORK_KIND.lead,
+    };
+
+/** Холодный ли это тип события (ХО / заявка / входящий лид). */
+export const isColdEventType = (
+    type: EventReportEventType | null | undefined,
+): type is ColdEventType =>
+    !!type && (COLD_EVENT_TYPES as readonly string[]).includes(type);
+
+/**
+ * Человекочитаемые названия типов события — для таймлайна и логов. Раньше в
+ * историю попадал сырой код (`xo`, `moneyAwait`), и запись читалась только
+ * разработчиком.
+ */
+export const EVENT_REPORT_EVENT_TYPE_NAME: Record<
+    EventReportEventType,
+    string
+> = {
+    xo: 'Холодный звонок',
+    xoRequest: 'Заявка',
+    xoLead: 'Лид',
+    warm: 'Звонок',
+    presentation: 'Презентация',
+    hot: 'Звонок по решению',
+    moneyAwait: 'Звонок по оплате',
+    supply: 'Поставка',
+    document: 'Документы',
+};
+
+/** Название типа события; неизвестный код возвращается как есть. */
+export const eventTypeName = (type: string): string =>
+    EVENT_REPORT_EVENT_TYPE_NAME[type as EventReportEventType] ?? type;
 
 /**
  * Событие действия — пришедшее из DTO. Не путать с

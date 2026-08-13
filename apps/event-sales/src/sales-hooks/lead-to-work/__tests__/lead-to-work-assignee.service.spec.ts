@@ -79,6 +79,50 @@ describe('LeadToWorkAssigneeService', () => {
         expect(structure.getStructure).not.toHaveBeenCalled();
     });
 
+    /*
+     * Адресная передача заявки (кнопка «Передать другому» с выбором
+     * сотрудника): фронт шлёт responsible ВМЕСТЕ с excludeResponsible и
+     * transferredBy. Выбранный человек обязан победить — ни круг, ни
+     * исключение прежнего не имеют права его перебить.
+     */
+    it('адресная передача: явный responsible сильнее excludeResponsible/department', async () => {
+        const structure = makeStructure();
+        const service = new LeadToWorkAssigneeService(
+            structure as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({
+                responsible: 3,
+                excludeResponsible: 5,
+                transferredBy: 5,
+                department: '20',
+            }),
+        );
+        expect(result).toMatchObject({ responsible: 3, source: 'explicit' });
+        expect(result.warnings).toEqual([]);
+        expect(structure.getStructure).not.toHaveBeenCalled();
+    });
+
+    /*
+     * Вырожденный случай: выбранный адресат совпал с исключаемым (менеджер
+     * выбрал сам себя). Явный выбор всё равно главнее — иначе кнопка
+     * молча отдала бы заявку случайному человеку.
+     */
+    it('адресная передача: responsible == excludeResponsible не перекидывает заявку', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ responsible: 5, excludeResponsible: 5, transferredBy: 5 }),
+        );
+        expect(result.responsible).toBe(5);
+        expect(result.source).toBe('explicit');
+    });
+
     it('round-robin по отделу из намёка: курсор идёт по кругу', async () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
@@ -187,6 +231,59 @@ describe('LeadToWorkAssigneeService', () => {
             item({ transferredBy: 5, excludeResponsible: 5 }),
         );
         expect(result.departmentKey).toBe('op_15');
+        expect(result.responsible).toBe(3);
+    });
+
+    /*
+     * Конвертация (isXo=N) НИЧЕГО не перераспределяет: работа остаётся у
+     * менеджера, который уже ведёт лид. Round-robin здесь был бы вредом —
+     * сделка уехала бы случайному сотруднику вместо владельца заявки.
+     */
+    it('конвертация без responsible: ответственный берётся с лида, круг не крутится', async () => {
+        const structure = makeStructure();
+        const appCache = makeAppCache();
+        const service = new LeadToWorkAssigneeService(
+            structure as never,
+            appCache as never,
+        );
+        const result = await service.resolve('d.b24.ru', item(), {
+            leadResponsibleId: 77,
+            keepLeadResponsible: true,
+        });
+        expect(result).toMatchObject({ responsible: 77, source: 'lead' });
+        expect(result.warnings).toEqual([]);
+        // Ни структура, ни курсор round-robin не тронуты.
+        expect(structure.getStructure).not.toHaveBeenCalled();
+        expect(appCache.set).not.toHaveBeenCalled();
+    });
+
+    it('конвертация без ответственного у лида → round-robin + предупреждение', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15' }),
+            { leadResponsibleId: null, keepLeadResponsible: true },
+        );
+        expect(result.source).toBe('round-robin');
+        expect([3, 5]).toContain(result.responsible);
+        expect(result.warnings.join(' ')).toContain('не задан ответственный');
+    });
+
+    /* ХО распределяет заявку по кругу даже при живом ответственном лида. */
+    it('ХО (keepLeadResponsible=false) игнорирует ответственного лида', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15' }),
+            { leadResponsibleId: 77, keepLeadResponsible: false },
+        );
+        expect(result.source).toBe('round-robin');
         expect(result.responsible).toBe(3);
     });
 

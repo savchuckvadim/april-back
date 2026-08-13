@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { LEAD_WORK_KIND, LeadWorkKind } from '../../../shared/event-title';
 
 /**
  * UF-поля лидогена «Гарант», заполняемые ТОЛЬКО у заявок с сайта
@@ -17,6 +18,12 @@ export const LEAD_REQUEST_UF_FIELD_NAMES = [
 export interface LeadRequestDetection {
     /** true — это заявка (лид с сайта/лидогена), false — просто лид. */
     isRequest: boolean;
+    /**
+     * Вид холодной работы — слово в заголовке задачи. Автодетект различает
+     * только «заявка» и «обычный ХО»: признака «входящий лид» в полях лида
+     * нет, его умеет назвать лишь Битрикс параметром `workKind`.
+     */
+    kind: LeadWorkKind;
     /** Человекочитаемые признаки, по которым решили (для warnings/логов). */
     signals: string[];
 }
@@ -73,7 +80,12 @@ export class LeadRequestDetectorService {
             );
         }
 
-        return { isRequest: signals.length > 0, signals };
+        const isRequest = signals.length > 0;
+        return {
+            isRequest,
+            kind: isRequest ? LEAD_WORK_KIND.request : LEAD_WORK_KIND.cold,
+            signals,
+        };
     }
 
     /** Имена заполненных UF_CRM_* полей лида — только для diag-логов. */

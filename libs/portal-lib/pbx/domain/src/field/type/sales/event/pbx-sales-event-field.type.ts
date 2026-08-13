@@ -193,6 +193,51 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: true,
     },
+    /*
+     * Ответы опросника после презентации (`withCheckPresentation`). Поля
+     * заведены на порталах и заполняются ФРЕЙМОМ напрямую в карточке
+     * клиента; в реестре они нужны, чтобы бэк умел их читать/писать
+     * типизированно (`PBX_SALES_EVENT_FIELD_CODES.op_presentation_xvost`) и
+     * чтобы инсталлятор доводил их на новых порталах.
+     *
+     * `company` пуст намеренно: анкета относится к конкретной презентации,
+     * а презентация живёт в лиде и сделке — на компании такое поле хранило
+     * бы «последний ответ по любой из сделок» и вводило в заблуждение.
+     */
+    {
+        name: 'ОП Хвост (после презентации)',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_presentation_xvost',
+        lead: 'OP_PRESENTATION_XVOST',
+        company: '',
+        deal: 'OP_PRESENTATION_XVOST',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 220,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'ОП Пять К (после презентации)',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_presentation_5k',
+        lead: 'OP_PRESENTATION_5K',
+        company: '',
+        deal: 'OP_PRESENTATION_5K',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 220,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
     {
         name: 'Менеджер по продажам Гарант',
         appType: 'general',

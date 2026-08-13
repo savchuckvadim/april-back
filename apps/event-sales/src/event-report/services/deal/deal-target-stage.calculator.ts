@@ -1,5 +1,9 @@
 import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
-import { EventReportEventType } from '../../types/event-report.event-codes';
+import {
+    COLD_EVENT_TYPES,
+    EventReportEventType,
+    isColdEventType,
+} from '../../types/event-report.event-codes';
 
 /**
  * Вычисление целевой стадии сделки для event-report.
@@ -32,9 +36,16 @@ interface EventOrderEntry {
     stageSuffix: string;
 }
 
-/** Порядок событий по «лестнице» sales_base — нельзя понизить. */
+/**
+ * Порядок событий по «лестнице» sales_base — нельзя понизить.
+ *
+ * Три холодных типа (`xo`/`xoRequest`/`xoLead`) стоят на одной ступени: по
+ * разговору они разные, по воронке — одна и та же «Холодная» стадия.
+ */
 const SALES_BASE_EVENT_ORDER: readonly EventOrderEntry[] = [
     { code: 'xo', order: 0, stageSuffix: 'cold' },
+    { code: 'xoRequest', order: 0, stageSuffix: 'cold' },
+    { code: 'xoLead', order: 0, stageSuffix: 'cold' },
     { code: 'warm', order: 1, stageSuffix: 'warm' },
     { code: 'presentation', order: 2, stageSuffix: 'pres' },
     { code: 'document', order: 3, stageSuffix: 'offer_create' },
@@ -108,7 +119,10 @@ export function getXoTargetStageCode(input: XoStageInput): string | null {
     if (!category?.stages?.length) return null;
 
     let suffix = '';
-    if (reportEventType === 'xo') {
+    // Воронка ХО обслуживает всю холодную работу: настоящий обзвон, заявку
+    // с сайта и входящий лид. Раньше сравнение шло с литералом 'xo', и
+    // отчёт по заявке ХО-сделку бы не двинул.
+    if (isColdEventType(reportEventType)) {
         if (isExpired) suffix = 'pending';
         if (isFail) suffix = isResult ? 'fail' : 'noresult';
         if ((isResult && !isFail) || isSuccess) suffix = 'success';
@@ -180,11 +194,16 @@ export function getTmcTargetStageCode(input: TmcStageInput): string | null {
     if (!category?.stages?.length) return null;
 
     const orderEntries: EventOrderEntry[] = [...TMC_EVENT_ORDER];
-    orderEntries.push({
-        code: 'xo' as EventReportEventType, // используем 'xo' как маркер «pending»
-        order: isExpired ? 7 : 0,
-        stageSuffix: 'pending',
-    });
+    // Холодные коды в TMC-воронке работают маркером «pending» (своей ступени
+    // у них тут нет). Заявки ведут себя так же, как ХО, — иначе отчёт по
+    // заявке из ТМЦ терял бы стадию «в ожидании».
+    for (const cold of COLD_EVENT_TYPES) {
+        orderEntries.push({
+            code: cold,
+            order: isExpired ? 7 : 0,
+            stageSuffix: 'pending',
+        });
+    }
 
     const codes: EventReportEventType[] = [];
     if (planEventType) codes.push(planEventType);

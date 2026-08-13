@@ -5,47 +5,43 @@ import {
     EventTaskDto,
 } from '@lib/shared/event-sales/dto/task.dto';
 
+/**
+ * Русские названия типов события задачи.
+ *
+ * Таблица, а не switch: TypeScript требует запись для КАЖДОГО значения
+ * `EnumTaskEventType`, поэтому новый тип нельзя добавить, забыв про имя, —
+ * и `switch` по строке больше не сравнивается с enum'ом «на глаз».
+ *
+ * Заявка (`xoRequest`/`xoLead`) — НЕ холодный звонок: клиент обратился сам, и
+ * в названии события это обязано быть видно.
+ */
+const TASK_EVENT_TYPE_NAME: Record<EnumTaskEventType, string> = {
+    [EnumTaskEventType.XO]: 'Холодный звонок',
+    [EnumTaskEventType.XO_REQUEST]: 'Заявка',
+    [EnumTaskEventType.XO_LEAD]: 'Лид',
+    [EnumTaskEventType.WARM]: 'Звонок',
+    [EnumTaskEventType.PRESENTATION]: 'Презентация',
+    [EnumTaskEventType.HOT]: 'Звонок по решению',
+    [EnumTaskEventType.IN_PROGRESS]: 'Звонок по решению',
+    [EnumTaskEventType.MONEY_AWAIT_NEW]: 'Звонок по оплате',
+    [EnumTaskEventType.MONEY_AWAIT]: 'Звонок по оплате',
+    [EnumTaskEventType.SS]: 'Сервисный сигнал',
+    [EnumTaskEventType.EVENT]: 'Событие',
+    [EnumTaskEventType.SUPPLY]: 'Поставка',
+};
+
 export class EventTitleService {
     constructor() {}
 
     public getReportEventName(currentTask?: EventTaskDto) {
-        let eventType = 'new';
-        let typeName = '';
-        let currentTaskTitle = '';
-        if (currentTask) {
-            eventType = currentTask.eventType;
-            currentTaskTitle = currentTask.title;
-            switch (eventType) {
-                case EnumTaskEventType.XO:
-                    typeName = 'Холодный звонок';
-                    break;
-                case EnumTaskEventType.WARM:
-                    typeName = 'Звонок';
-                    break;
-                case EnumTaskEventType.PRESENTATION:
-                    typeName = 'Презентация';
-                    break;
-                case EnumTaskEventType.IN_PROGRESS:
-                    typeName = 'Звонок по решению';
-                    break;
-                case EnumTaskEventType.MONEY_AWAIT:
-                    typeName = 'Звонок по оплате';
-                    break;
-                case EnumTaskEventType.EVENT:
-                    typeName = 'Событие';
-                    break;
-                case EnumTaskEventType.SUPPLY:
-                    typeName = 'Поставка';
-                    break;
-                default:
-                    break;
-            }
+        if (!currentTask) {
+            return { eventType: 'new', typeName: '', currentTaskTitle: '' };
         }
-
         return {
-            eventType,
-            typeName,
-            currentTaskTitle,
+            eventType: currentTask.eventType,
+            // Неизвестный код имени не получает — как и раньше (пустая строка).
+            typeName: TASK_EVENT_TYPE_NAME[currentTask.eventType] ?? '',
+            currentTaskTitle: currentTask.title,
         };
     }
 

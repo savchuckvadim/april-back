@@ -2,6 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { IFieldItem } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { Filter, FilterCode, FilterInnerCode } from '../../shared/dto/kpi.dto';
 
+/**
+ * Типы события, которые в отчёте ОП считаются «Звонком» (одна строка
+ * `call_plan`/`call_done`).
+ *
+ * `site` («Заявка с сайта») и `come_call` («Входящий звонок») добавлены
+ * вместе с типами `xoRequest`/`xoLead` в event-sales: заявка пишется своим
+ * кодом события, но в сводке остаётся в той же строке, что и холодный
+ * звонок, — иначе после разделения типов часть записей просто исчезла бы
+ * из отчёта.
+ */
+const CALL_EVENT_TYPE_CODES: readonly string[] = [
+    'xo',
+    'site',
+    'come_call',
+    'call',
+    'call_in_progress',
+    'call_in_money',
+];
+
 @Injectable()
 export class ActionService {
     getActionWithTypeData(actionType: IFieldItem, action: IFieldItem): Filter {
@@ -14,14 +33,7 @@ export class ActionService {
             case 'plan':
             case 'done': {
                 const { actionName } = this.getFeminineActionForm(acCode);
-                if (
-                    [
-                        'xo',
-                        'call',
-                        'call_in_progress',
-                        'call_in_money',
-                    ].includes(atCode)
-                ) {
+                if (CALL_EVENT_TYPE_CODES.includes(atCode)) {
                     result.innerCode = `call_${acCode}` as FilterInnerCode;
                     result.name = `Звонок`;
                 } else if (

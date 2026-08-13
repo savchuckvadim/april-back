@@ -24,7 +24,16 @@ import { EBXTaskMark } from '@lib/bitrix/domain/tasks/task';
  * к одному алфавиту (`EventReportContext.normalizeEventType`).
  */
 export enum EnumTaskEventType {
+    /** Настоящий холодный обзвон: клиент нас не ждёт. */
     XO = 'xo',
+    /**
+     * Заявка. Холодная по стадии воронки, но НЕ холодная по разговору:
+     * клиент обратился сам. Отдельный тип, потому что в отчётности эти
+     * события считаются отдельно от настоящего ХО.
+     */
+    XO_REQUEST = 'xoRequest',
+    /** Входящий лид/обращение (звонок, чат, письмо) — тоже не холодный. */
+    XO_LEAD = 'xoLead',
     WARM = 'warm',
     PRESENTATION = 'presentation',
     HOT = 'hot',

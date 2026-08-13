@@ -30,6 +30,7 @@ const FIELDS: Record<
     },
     op_lead_firstprepare_long: { bitrixId: 'OP_LEAD_FIRSTPREPARE_LONG' },
     op_lead_firstprepare_history: { bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY' },
+    op_lead_assigned_at: { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
 };
 
 const makePortal = () => ({
@@ -103,6 +104,26 @@ describe('LeadRequestAcceptService', () => {
         const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history[0]).toBe(ASSIGNED_ENTRY); // прошлое не переписано
         expect(history[1]).toContain('Заявка принята в работу: 5');
+    });
+
+    /*
+     * `op_lead_assigned_at` — единственный признак «заявка ждёт
+     * подтверждения»: его ставит назначение/передача, снимает принятие.
+     * На него завязаны и блокирующий экран фрейма, и SLA-крон, поэтому
+     * непочищенное поле = заявку заберут у менеджера, который её принял.
+     */
+    it('принятие снимает таймер ожидания подтверждения (op_lead_assigned_at)', async () => {
+        const { pbx, update } = makePbx({
+            ID: '42',
+            UF_CRM_OP_LEAD_ASSIGNED_AT: '01.08.2026 10:00:00',
+            UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+        });
+        const service = new LeadRequestAcceptService(pbx as never);
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
+
+        const fields = update.mock.calls[0][1];
+        expect(fields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBe('');
     });
 
     it('повтор после принятия — идемпотентный no-op (already=true)', async () => {

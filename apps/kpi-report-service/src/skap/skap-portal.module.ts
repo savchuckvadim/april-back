@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { QueueModule } from '@lib/queue';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
-import { SkapStoreModule } from '@lib/skap-lib';
+import { PbxSkapSmartModule } from '@lib/portal-lib/pbx/pbx-skap-smart';
+import { SkapPortalService, SkapStoreModule } from '@lib/skap-lib';
 import { SkapPortalController } from './skap-portal.controller';
 
 /**
@@ -10,7 +11,13 @@ import { SkapPortalController } from './skap-portal.controller';
  * админ-поверхность живут в своих приложениях (app-api-surface).
  */
 @Module({
-    imports: [QueueModule, PortalAppSettingsModule, SkapStoreModule],
+    imports: [
+        QueueModule,
+        PortalAppSettingsModule,
+        PbxSkapSmartModule,
+        SkapStoreModule,
+    ],
     controllers: [SkapPortalController],
+    providers: [SkapPortalService],
 })
 export class SkapPortalModule {}

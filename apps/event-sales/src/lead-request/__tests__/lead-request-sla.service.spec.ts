@@ -131,8 +131,12 @@ describe('LeadRequestSlaService', () => {
         expect(filter['<UF_CRM_OP_LEAD_ASSIGNED_AT']).toMatch(
             /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
         );
-        // Только заявки: метку «Назначена» ставит хук распознанной заявке.
-        expect(filter.UF_CRM_OP_LEAD_SITE_STAGE).toBe(71);
+        // Только заявки: метку стадии ставит хук распознанной заявке.
+        // Именно «заполнена», а не «= Назначена менеджеру»: у принятой и
+        // затем переданной заявки стадия остаётся «Взята в работу», и по
+        // равенству крон её бы не увидел, хотя фрейм требует подтверждения.
+        expect(filter['!UF_CRM_OP_LEAD_SITE_STAGE']).toBe('');
+        expect(filter.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
         // Стадия лида в отборе не участвует.
         expect(filter.STATUS_ID).toBeUndefined();
     });

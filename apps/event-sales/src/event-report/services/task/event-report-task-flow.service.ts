@@ -5,6 +5,15 @@ import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/tas
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { EventReportContext } from '../context/event-report.context';
+import {
+    COLD_EVENT_TYPE_TO_WORK_KIND,
+    isColdEventType,
+} from '../../types/event-report.event-codes';
+import {
+    coldTaskTypeName,
+    LEAD_WORK_KIND,
+    LeadWorkKind,
+} from '../../../shared/event-title';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 
@@ -108,12 +117,13 @@ export class EventReportTaskFlowService {
 
     /**
      * Имя типа события для TITLE задачи.
-     * - cold/xo → фиксированное «Холодный обзвон»;
+     * - холодные типы → «Холодный обзвон» + слово вида («. Заявка.» / «. Лид.»);
      * - presentation/hot/moneyAwait → эмодзи + русское имя из DTO;
      * - остальные → русское имя из DTO как есть.
      */
     private resolveTypeName(ctx: EventReportContext): string {
-        if (ctx.planEventType === 'xo') return COLD_TASK_TYPE_NAME;
+        const coldKind = this.resolveColdKind(ctx);
+        if (coldKind) return coldTaskTypeName(COLD_TASK_TYPE_NAME, coldKind);
 
         const dtoName = ctx.dto.plan?.type?.current?.name?.trim() ?? '';
         const prefix =
@@ -121,6 +131,26 @@ export class EventReportTaskFlowService {
             IMPORTANT_PREFIX_BY_PLAN_TYPE[ctx.planEventType];
         if (prefix && dtoName) return `${prefix} ${dtoName}`;
         return dtoName;
+    }
+
+    /**
+     * Вид холодной работы для следующей задачи; null — план не холодный.
+     *
+     * Почему смотрим и на ОТЧЁТ, а не только на план: справочник планов
+     * (`EnumEventPlanCode`) знает единственный холодный код `cold`, поэтому
+     * при планировании следующего звонка по ЗАЯВКЕ план приезжает как `xo`.
+     * Если взять только его, слово «Заявка» из заголовка пропадёт — и фронт
+     * прочитает следующую задачу как обычный холодный обзвон, а менеджер
+     * настроится не на тот разговор. Поэтому вид наследуется от события,
+     * по которому отчитались, пока план не скажет иное явно.
+     */
+    private resolveColdKind(ctx: EventReportContext): LeadWorkKind | null {
+        if (!isColdEventType(ctx.planEventType)) return null;
+        const planKind = COLD_EVENT_TYPE_TO_WORK_KIND[ctx.planEventType];
+        if (planKind !== LEAD_WORK_KIND.cold) return planKind;
+        return isColdEventType(ctx.reportEventType)
+            ? COLD_EVENT_TYPE_TO_WORK_KIND[ctx.reportEventType]
+            : LEAD_WORK_KIND.cold;
     }
 
     private isPlannedImportant(ctx: EventReportContext): boolean {

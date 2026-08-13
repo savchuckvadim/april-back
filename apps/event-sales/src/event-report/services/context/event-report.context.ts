@@ -5,6 +5,7 @@ import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dt
 import { EnumEventItemResultType } from '../../types/report-types';
 import { EnumWorkStatusCode } from '../../types/report-types';
 import {
+    EVENT_REPORT_EVENT_TYPE,
     EventReportEventType,
     GSIRK_DOMAIN,
 } from '../../types/event-report.event-codes';
@@ -50,13 +51,32 @@ export type EventReportFlowStrategy =
  * отчёт уходил успешно, а в KPI не появлялось НИ ОДНОЙ записи, включая
  * продажу и отказ.
  */
-const NORMALIZED_EVENT_TYPE: Record<string, string> = {
+const NORMALIZED_EVENT_TYPE: Record<string, EventReportEventType> = {
     cold: 'xo',
     in_progress: 'hot',
     money_await: 'moneyAwait',
     event: 'warm',
     ss: 'warm',
 };
+
+/**
+ * Коды, которые фронт шлёт как есть и которые уже совпадают с внутренним
+ * алфавитом. Отдельный Set нужен, чтобы `normalizeEventType` возвращала
+ * ТИПИЗИРОВАННОЕ значение и не приходилось глушить компилятор приведением
+ * `as EventReportEventType` на каждом вызове.
+ */
+const KNOWN_EVENT_TYPES = new Set<string>(
+    Object.values(EVENT_REPORT_EVENT_TYPE),
+);
+
+/**
+ * Куда падает НЕИЗВЕСТНЫЙ код события. Не null и не «как есть»: null терял
+ * запись целиком (см. историю в mapEventType), а сырой код не совпадал ни с
+ * лестницей стадий, ни с KPI. `warm` = «разговор с клиентом» — минимальная
+ * по последствиям трактовка, которая гарантирует, что событие в отчётности
+ * останется.
+ */
+const UNKNOWN_EVENT_TYPE_FALLBACK: EventReportEventType = 'warm';
 
 export class EventReportContext {
     constructor(
@@ -161,9 +181,7 @@ export class EventReportContext {
     }
     get planEventType(): EventReportEventType | null {
         const code = this.dto.plan?.type?.current?.code;
-        return code
-            ? (this.normalizeEventType(code) as EventReportEventType)
-            : null;
+        return code ? this.normalizeEventType(code) : null;
     }
     get planEventName(): string {
         return this.dto.plan?.name ?? '';
@@ -181,9 +199,7 @@ export class EventReportContext {
     // === Report flags ===
     get reportEventType(): EventReportEventType | null {
         const code = this.dto.currentTask?.eventType;
-        return code
-            ? (this.normalizeEventType(code) as EventReportEventType)
-            : null;
+        return code ? this.normalizeEventType(code) : null;
     }
     get reportEventName(): string {
         return this.dto.currentTask?.name ?? '';
@@ -258,44 +274,31 @@ export class EventReportContext {
     }
 
     /**
-     * Маппинг DTO-кодов плана (cold/warm/presentation/hot/moneyAwait/supply) в
-     * унифицированный EventReportEventType. `cold` из DTO → `xo` (исторически).
+     * Коды плана (`EnumEventPlanCode`) и коды задачи (`EnumTaskEventType`) —
+     * два разных набора; здесь оба сводятся к одному внутреннему алфавиту
+     * `EventReportEventType`.
      *
-     * ВНИМАНИЕ: здесь известное расхождение, пока НЕ исправленное.
+     * Что сводится:
+     *  - `cold` (код плана) → `xo` — исторически;
+     *  - `in_progress`/`money_await` (старые сборки фрейма) → `hot`/`moneyAwait`;
+     *  - `event` (тип задачи не распознан) и `ss` (сервисный сигнал) → `warm`:
+     *    своего кода в отчётности у них нет, по смыслу это разговор с клиентом.
      *
-     * Коды плана и коды задачи — разные наборы. План приходит из
-     * EnumEventPlanCode (libs/shared/src/event-sales/types/plan-types.ts):
-     * cold | warm | presentation | hot | moneyAwait | supply — и после
-     * замены cold → xo полностью совпадает с EventReportEventType.
+     * Что проходит как есть: `xo`, `xoRequest`, `xoLead`, `warm`, `presentation`,
+     * `hot`, `moneyAwait`, `supply` — они уже в алфавите отчётности.
      *
-     * А тип ЗАДАЧИ приходит из EnumTaskEventType
-     * (libs/shared/src/event-sales/dto/task.dto.ts):
-     * xo | warm | presentation | in_progress | money_await | event | supply.
-     * Три значения не совпадают ни с чем: `in_progress` вместо `hot`,
-     * `money_await` вместо `moneyAwait`, и `event`, которого в
-     * EventReportEventType нет вовсе. Фронт их действительно шлёт —
-     * parseTaskTitle ставит `in_progress` для «Решение» и `money_await`
-     * для «Оплата» (front/apps/event-sales/modules/entities/EventTask/lib/
-     * task-util.ts).
-     *
-     * Функция их не приводит, а вызывающий код гасит ошибку приведением
-     * `as EventReportEventType`. Из-за этого reportEventType по таким
-     * задачам не совпадает ни с одной записью SALES_BASE_EVENT_ORDER
-     * (deal-target-stage.calculator.ts) и не проходит switch в mapEventType
-     * (kpi-list/event-report-kpi-payload.builder.ts). Практически это значит:
-     *   — отчёт по «Звонку по решению» и «Звонку по оплате» НЕ поднимает
-     *     стадию (вниз она не съезжает: держит currentStageEvent, он выводится
-     *     из текущей стадии и потому всегда в правильном алфавите);
-     *   — запись в «ОП KPI» по таким отчётам НЕ создаётся.
-     * Планирование при этом работает: коды плана с лестницей совпадают.
-     *
-     * Чинится здесь же — добавить in_progress → hot, money_await → moneyAwait
-     * и решить, чем считать `event` (по смыслу warm), — плюс убрать приведение
-     * `as EventReportEventType`, чтобы компилятор впредь ловил такие
-     * расхождения сам. Правка меняет цифры отчётности, поэтому сравнивать
-     * периоды до и после будет некорректно: делать отдельной задачей.
+     * Возврат ВСЕГДА типизирован и никогда не пуст: раньше несведённый код
+     * проезжал сюда строкой и гасился приведением `as EventReportEventType`,
+     * из-за чего он не совпадал ни с лестницей стадий
+     * (`SALES_BASE_EVENT_ORDER`), ни с маппингом KPI — отчёт уходил успешно,
+     * а записи молча пропадали. Неизвестный код теперь падает в
+     * {@link UNKNOWN_EVENT_TYPE_FALLBACK}, а не теряется.
      */
-    private normalizeEventType(raw: string): string {
-        return NORMALIZED_EVENT_TYPE[raw] ?? raw;
+    private normalizeEventType(raw: string): EventReportEventType {
+        const normalized = NORMALIZED_EVENT_TYPE[raw];
+        if (normalized) return normalized;
+        return KNOWN_EVENT_TYPES.has(raw)
+            ? (raw as EventReportEventType)
+            : UNKNOWN_EVENT_TYPE_FALLBACK;
     }
 }

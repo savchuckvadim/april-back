@@ -7,9 +7,11 @@ import { PbxSkapSmartModule } from '@lib/portal-lib/pbx/pbx-skap-smart';
 import {
     SkapFormatModule,
     SkapNotifyModule,
+    SkapPortalService,
     SkapStoreModule,
 } from '@lib/skap-lib';
 import { SkapController } from './skap.controller';
+import { SkapImportController } from './skap-import.controller';
 import { SkapExcelParseService } from './services/skap-excel-parse.service';
 import { SkapExampleTemplateService } from './services/skap-example-template.service';
 import { SkapZipExtractService } from './services/skap-zip-extract.service';
@@ -34,8 +36,10 @@ import { SkapImportRunUseCase } from './use-cases/skap-import-run.use-case';
         SkapStoreModule,
         SkapNotifyModule,
     ],
-    controllers: [SkapController],
+    controllers: [SkapController, SkapImportController],
     providers: [
+        // Портальная поверхность фронта: «Обновить из хранилища» + статус
+        SkapPortalService,
         // Ручной парсинг (существующие эндпоинты /parse, /parse-file)
         SkapExcelParseService,
         SkapExampleTemplateService,

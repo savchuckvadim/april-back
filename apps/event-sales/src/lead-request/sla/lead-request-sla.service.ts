@@ -17,10 +17,7 @@ import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
 } from '../../shared/lead-request/lead-request-history.util';
-import {
-    EnumLeadRequestFieldCode,
-    EnumLeadSiteStageCode,
-} from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
+import { EnumLeadRequestFieldCode } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { LeadRequestAcceptService } from '../services/lead-request-accept.service';
 
 // Плагины idempotent: extend() повторно — no-op (см. lead-request-history.util).
@@ -155,11 +152,20 @@ export class LeadRequestSlaService {
      * ОСНОВНОЙ путь — по НАШИМ полям, которые пишет только хук назначения:
      *  - `op_lead_assigned_at` ЗАПОЛНЕНО и старше порога — заявка ждёт
      *    подтверждения дольше N минут. Принятие поле очищает, поэтому
-     *    принятые выпадают из выборки автоматически;
-     *  - `op_lead_site_stage` = «Назначена менеджеру» — это именно ЗАЯВКА
-     *    (метку ставит хук только распознанной заявке), а не любой лид.
+     *    принятые выпадают из выборки автоматически. Это ЕДИНСТВЕННЫЙ
+     *    признак ожидания — тот же, по которому фрейм показывает экран
+     *    подтверждения, поэтому UI и крон не расходятся;
+     *  - `op_lead_site_stage` ЗАПОЛНЕНА — это именно ЗАЯВКА (метку ставит
+     *    только наш хук распознанной заявке), а не любой лид.
      * Стадия лида здесь НЕ участвует: её двигают конструктор, роботы и
      * менеджеры руками — опираться на неё как на признак ненадёжно.
+     *
+     * Почему «стадия заполнена», а не «стадия = Назначена менеджеру»:
+     * метки заявки пишутся ТОЛЬКО в пустые поля (путь заявки не
+     * переписывается задним числом), поэтому у уже принятой и потом
+     * переданной другому заявки стадия остаётся «Взята в работу». По
+     * равенству «Назначена» такая передача была невидима крону: фрейм
+     * блокировал экран подтверждением, а SLA молчал.
      *
      * FALLBACK (поля ещё не установлены на портале) — прежний механизм по
      * стадии `lead_assigned` + DATE_MODIFY, с предупреждением: он грубее,
@@ -190,14 +196,9 @@ export class LeadRequestSlaService {
                 [`<${assignedAtName}`]: threshold,
             };
 
-            // Сужаем до заявок: метку «Назначена» ставит только наш хук.
-            const assignedCode: string = EnumLeadSiteStageCode.assigned;
-            const assignedItem = siteStageField?.items.find(
-                item => item.code === assignedCode,
-            );
-            if (assignedItem && siteStageField) {
-                filter[portal.getFieldBitrixId(siteStageField)] =
-                    assignedItem.bitrixId;
+            // Сужаем до заявок: метку стадии ставит только наш хук.
+            if (siteStageField) {
+                filter[`!${portal.getFieldBitrixId(siteStageField)}`] = '';
             }
             return filter;
         }

@@ -144,6 +144,18 @@ export type FilterCode =
     | 'xo_done' // дата события
     | 'xo_pound'
     | 'xo_act_noresult_fail'
+    // Заявка с сайта / входящий звонок: свои коды события (типы xoRequest и
+    // xoLead в event-sales), но в сводке считаются «Звонком».
+    | 'site_plan'
+    | 'site_expired'
+    | 'site_done'
+    | 'site_pound'
+    | 'site_act_noresult_fail'
+    | 'come_call_plan'
+    | 'come_call_expired'
+    | 'come_call_done'
+    | 'come_call_pound'
+    | 'come_call_act_noresult_fail'
     | 'call_plan'
     | 'call_expired'
     | 'call_done'
