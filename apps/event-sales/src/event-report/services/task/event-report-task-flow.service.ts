@@ -67,14 +67,18 @@ export class EventReportTaskFlowService {
             : null;
 
         if (ctx.isExpired && currentTaskId) {
-            this.bitrix.batch.task.update(
-                `update_task_${currentTaskId}`,
-                currentTaskId,
-                {
-                    DEADLINE: ctx.planDeadline,
-                    ALLOW_CHANGE_DEADLINE: 'Y',
-                },
-            );
+            // Bitrix хранит DEADLINE задач в server-time (Москва) — сырую
+            // строку плана слать нельзя, на не-московском портале время уедет.
+            if (ctx.planDeadline) {
+                this.bitrix.batch.task.update(
+                    `update_task_${currentTaskId}`,
+                    currentTaskId,
+                    {
+                        DEADLINE: ctx.planDeadline.toTaskDeadline(),
+                        ALLOW_CHANGE_DEADLINE: 'Y',
+                    },
+                );
+            }
             return;
         }
 
@@ -90,7 +94,7 @@ export class EventReportTaskFlowService {
                 TITLE: this.buildTitle(ctx),
                 RESPONSIBLE_ID: ctx.planResponsibleId,
                 CREATED_BY: ctx.planCreatedById || ctx.planResponsibleId,
-                DEADLINE: ctx.planDeadline,
+                DEADLINE: ctx.planDeadline?.toTaskDeadline() ?? '',
                 ALLOW_CHANGE_DEADLINE: 'Y',
                 PRIORITY: this.isPlannedImportant(ctx)
                     ? ETaskPriority.HIGH

@@ -2,9 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { KnowledgeContentService } from '@lib/ai-rag';
 import { CallTypeDefinition, CallTypeRegistryService } from '@lib/call-lib';
+import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
+    AFTER_PRESENTATION_STRICT_BLOCK,
     buildDeepAnalysisUserContent,
     CALL_DEEP_ANALYSIS_SCHEMA,
     CALL_DEEP_ANALYSIS_SYSTEM_PROMPT,
@@ -46,7 +51,30 @@ export class CallDeepAnalysisService {
         private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly knowledgeContent: KnowledgeContentService,
         private readonly callTypeRegistry: CallTypeRegistryService,
+        private readonly appSettings: PortalAppSettingsService,
     ) {}
+
+    /** Ужесточение «5К и хвост» (см. CallFocusAnalysisService) — fail-open. */
+    private async buildAfterPresentationBlock(
+        domain: string,
+        callType: string | null,
+    ): Promise<string> {
+        if (callType !== 'presentation' && callType !== 'decision') return '';
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return settings.withCheckPresentation
+                ? AFTER_PRESENTATION_STRICT_BLOCK
+                : '';
+        } catch (error) {
+            this.logger.warn(
+                `Настройки event-sales недоступны (${domain}): ${(error as Error).message}`,
+            );
+            return '';
+        }
+    }
 
     /**
      * Разбор одного звонка. null — шаг не удался; вызывающий код обязан
@@ -71,7 +99,9 @@ export class CallDeepAnalysisService {
         }
 
         try {
-            const systemPrompt = await this.buildSystemPrompt(domain, callType);
+            const systemPrompt =
+                (await this.buildSystemPrompt(domain, callType)) +
+                (await this.buildAfterPresentationBlock(domain, callType));
             const apiKey = await this.vibeKeyResolver.resolve(domain);
             const parsed = await this.vibeCodeClient.structuredCompletion(
                 systemPrompt,

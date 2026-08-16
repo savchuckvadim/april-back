@@ -24,6 +24,8 @@ const DEFAULTS = {
     irrelevantConfidence: 0.7,
     /** Ночной ревизор удваивает LLM-расход — включается сознательно. */
     revisorEnabled: false,
+    /** Утренняя сверка отчёта менеджера с разбором презентации. */
+    presentationAuditEnabled: false,
 } as const;
 
 /**
@@ -56,6 +58,8 @@ export interface EffectiveCallReportSettings {
     irrelevantConfidence: number;
     /** Ночной ревизор (свод по сущностям). */
     revisorEnabled: boolean;
+    /** Утренняя сверка отчёта менеджера с разбором презентации. */
+    presentationAuditEnabled: boolean;
     /** Откуда взялись значения — для диагностики в логах. */
     source: 'portal' | 'default';
 }
@@ -118,6 +122,9 @@ export class CallReportSettingsService {
             irrelevantConfidence:
                 portal?.irrelevantConfidence ?? DEFAULTS.irrelevantConfidence,
             revisorEnabled: portal?.revisorEnabled ?? DEFAULTS.revisorEnabled,
+            presentationAuditEnabled:
+                portal?.presentationAuditEnabled ??
+                DEFAULTS.presentationAuditEnabled,
             source: portal ? 'portal' : 'default',
         };
     }

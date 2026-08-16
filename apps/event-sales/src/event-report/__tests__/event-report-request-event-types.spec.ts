@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { BitrixDateTime, ETimeZone } from '@/shared/lib/date';
 import { EventReportContext } from '../services/context/event-report.context';
 import { EventReportKpiPayloadBuilder } from '../services/kpi-list/event-report-kpi-payload.builder';
 import { EventReportEntityHistoryService } from '../services/history/event-report-entity-history.service';
@@ -262,7 +263,10 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
                     entityId: 500,
                     planResponsibleId: 5,
                     planCreatedById: 5,
-                    planDeadline: '2026-08-15T10:00:00',
+                    planDeadline: BitrixDateTime.fromPortalInput(
+                        '2026-08-15T10:00:00',
+                        ETimeZone.EUROPE_MOSCOW,
+                    ),
                     planEventName: 'ООО Ромашка',
                     reportComment: '',
                     // План из справочника: холодный код там один — `cold`→`xo`.
@@ -315,7 +319,10 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
                 entityId: 500,
                 planResponsibleId: 5,
                 planCreatedById: 5,
-                planDeadline: '2026-08-20T10:00:00',
+                planDeadline: BitrixDateTime.fromPortalInput(
+                    '2026-08-20T10:00:00',
+                    ETimeZone.EUROPE_MOSCOW,
+                ),
                 planEventName: 'ООО Ромашка',
                 reportComment: '',
                 planEventType: 'xo',
@@ -334,7 +341,9 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
         expect(calls).toHaveLength(1);
         expect(calls[0].method).toBe('update');
         const fields = calls[0].args[1] as Record<string, unknown>;
-        expect(fields.DEADLINE).toBe('2026-08-20T10:00:00');
+        // Дедлайн уходит в server-time Москва (формат tasks.task.*), а не
+        // сырой строкой фронта.
+        expect(fields.DEADLINE).toBe('2026-08-20 10:00:00');
         expect(fields.TITLE).toBeUndefined();
     });
 

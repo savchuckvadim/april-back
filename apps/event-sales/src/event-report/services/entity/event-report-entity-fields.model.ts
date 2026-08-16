@@ -227,7 +227,7 @@ export class EventReportEntityFieldsModel {
     // ---------- private ----------
 
     private applyPlannedFields(out: EntityFieldsMap): void {
-        this.setScalar(out, 'call_next_date', this.ctx.planDeadline);
+        this.setScalar(out, 'call_next_date', this.planDeadlineCrm());
         this.setScalar(out, 'call_next_name', this.ctx.planEventName);
         this.setScalar(
             out,
@@ -243,7 +243,7 @@ export class EventReportEntityFieldsModel {
             case 'xo':
             case 'xoRequest':
             case 'xoLead':
-                this.setScalar(out, 'xo_date', this.ctx.planDeadline);
+                this.setScalar(out, 'xo_date', this.planDeadlineCrm());
                 this.setScalar(out, 'xo_name', this.ctx.planEventName);
                 break;
             case 'hot':
@@ -270,7 +270,7 @@ export class EventReportEntityFieldsModel {
                 this.setScalar(
                     out,
                     'next_pres_plan_date',
-                    this.ctx.planDeadline,
+                    this.planDeadlineCrm(),
                 );
                 this.setScalar(
                     out,
@@ -294,7 +294,7 @@ export class EventReportEntityFieldsModel {
             case 'xo':
             case 'xoRequest':
             case 'xoLead':
-                this.setScalar(out, 'xo_date', this.ctx.planDeadline);
+                this.setScalar(out, 'xo_date', this.planDeadlineCrm());
                 this.setScalar(
                     out,
                     'op_current_status',
@@ -307,7 +307,7 @@ export class EventReportEntityFieldsModel {
                 this.setScalar(
                     out,
                     'next_pres_plan_date',
-                    this.ctx.planDeadline,
+                    this.planDeadlineCrm(),
                 );
                 this.appendMultiple(
                     out,
@@ -474,6 +474,15 @@ export class EventReportEntityFieldsModel {
     }
     private failComment(): string {
         return `${this.nowCrmDate()} Отказ: ${this.ctx.reportComment}`;
+    }
+
+    /**
+     * Дедлайн плана в формате CRM datetime (локаль портала); '' — дедлайна
+     * нет. CRM-поля хранят локальное время портала, поэтому сырая строка
+     * плана нормализуется через BitrixDateTime, а не пишется как есть.
+     */
+    private planDeadlineCrm(): string {
+        return this.ctx.planDeadline?.toCrmDateTime() ?? '';
     }
 
     private nowCrmDate(): string {

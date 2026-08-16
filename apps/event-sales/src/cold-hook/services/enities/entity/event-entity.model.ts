@@ -5,7 +5,7 @@ import { ColdEntityCodesEnum } from './cold-entity.type';
 import { findPbxSalesEventField } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { Logger } from '@nestjs/common';
-import { PortalDeadline } from '@lib/shared/lib/date';
+import { BitrixDateTime } from '@lib/shared/lib/date';
 
 export class EventEntityModel {
     private readonly logger = new Logger(EventEntityModel.name);
@@ -14,7 +14,7 @@ export class EventEntityModel {
     /**
      * Дедлайн в CRM datetime-формате (локаль портала) — единое значение
      * для всех UF-полей, истории и комментария. Конвертация TZ инкапсулирована
-     * в {@link PortalDeadline}, сырую строку сюда уже не пишем.
+     * в {@link BitrixDateTime}, сырую строку сюда уже не пишем.
      */
     private readonly eventDeadline: string;
     constructor(
@@ -23,7 +23,7 @@ export class EventEntityModel {
         private readonly entityType: EnumColdCallEntityType,
 
         private readonly eventName: string,
-        private readonly deadline: PortalDeadline,
+        private readonly deadline: BitrixDateTime,
         private readonly eventResponsible: string,
         private readonly eventXoCreated: string,
     ) {

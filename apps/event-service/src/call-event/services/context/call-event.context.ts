@@ -9,6 +9,11 @@ import { ICallEventInitContext } from '../init/call-event-init.types';
  * передаётся в каждый flow-сервис параметром.
  */
 export class CallEventContext {
+    /** Человекочитаемые строки итога для timeline сделки/компании. */
+    public readonly timeline: string[] = [];
+    /** Имена спонтанных действий — в timeline отдельной группой «⚡ Спонтанно». */
+    public readonly timelineSpont: string[] = [];
+
     constructor(
         public readonly dto: CallingEventDto,
         public readonly portal: PortalModel,

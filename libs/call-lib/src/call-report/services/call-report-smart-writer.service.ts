@@ -77,6 +77,10 @@ export interface CallReportSmartItemInput {
     needsFound?: boolean;
     needs?: string;
     presentationDone?: boolean;
+    /** «Хвост» пройден после демонстрации (только презентация/решение). */
+    hvostDone?: boolean;
+    /** 5К закрыто: клиент/компания/коллеги/конкурент/критерии. */
+    fiveKDone?: boolean;
     productsOffered?: string;
     objections?: string;
     objectionsHandling?: string;
@@ -610,6 +614,8 @@ export class CallReportSmartWriterService {
         this.setBoolUf(fields, 'NEEDS_FOUND', input.needsFound);
         this.setUf(fields, 'NEEDS', input.needs);
         this.setBoolUf(fields, 'PRESENTATION_DONE', input.presentationDone);
+        this.setBoolUf(fields, 'HVOST_DONE', input.hvostDone);
+        this.setBoolUf(fields, 'FIVE_K_DONE', input.fiveKDone);
         this.setUf(fields, 'PRODUCTS_OFFERED', input.productsOffered);
         this.setUf(fields, 'OBJECTIONS', input.objections);
         this.setUf(fields, 'OBJECTIONS_HANDLING', input.objectionsHandling);

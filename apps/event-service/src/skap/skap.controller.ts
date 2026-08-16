@@ -1,7 +1,9 @@
 import {
     BadRequestException,
+    Body,
     Controller,
     Get,
+    HttpCode,
     Post,
     Query,
     StreamableFile,
@@ -12,6 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
     ApiBody,
     ApiConsumes,
+    ApiOkResponse,
     ApiOperation,
     ApiProduces,
     ApiQuery,
@@ -22,6 +25,14 @@ import { SkapExcelParseService } from './services/skap-excel-parse.service';
 import { SkapExampleTemplateService } from './services/skap-example-template.service';
 import { SkapZipExtractService } from './services/skap-zip-extract.service';
 import { SkapParseZipResponseDto } from './types/skap-report.types';
+import {
+    SkapTaskConfirmResponseDto,
+    SkapTaskDiscardResponseDto,
+    SkapTaskOperationDto,
+    SkapTaskScanDto,
+    SkapTaskScanResponseDto,
+} from './types/skap-task-cleanup.dto';
+import { SkapTaskCleanupUseCase } from './use-cases/skap-task-cleanup.use-case';
 
 @ApiTags('Event Service SKAP')
 @Controller('event-service/skap')
@@ -30,7 +41,72 @@ export class SkapController {
         private readonly zipExtract: SkapZipExtractService,
         private readonly excelParse: SkapExcelParseService,
         private readonly exampleTemplate: SkapExampleTemplateService,
+        private readonly taskCleanup: SkapTaskCleanupUseCase,
     ) {}
+
+    @Post('cleanup-tasks/scan')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Уборка задач СКАП, фаза 1: найти и показать (без удаления)',
+        description:
+            'Ищет задачи, созданные импортом СКАП (инцидент 12.08.2026), по ' +
+            'подстроке заголовка («СКАП» по умолчанию), опционально сужая по ' +
+            'постановщику. Ничего не удаляет: возвращает счётчик found, ' +
+            'превью заголовков и operationId. Просмотрите список и вызовите ' +
+            'confirm (удалить ровно этот список) или discard (забыть). ' +
+            'operationId живёт 1 час.',
+    })
+    @ApiBody({ type: SkapTaskScanDto, description: 'Домен и фильтры поиска.' })
+    @ApiOkResponse({
+        type: SkapTaskScanResponseDto,
+        description: 'operationId, счётчик и превью найденных задач.',
+    })
+    async cleanupTasksScan(
+        @Body() dto: SkapTaskScanDto,
+    ): Promise<SkapTaskScanResponseDto> {
+        return this.taskCleanup.scan(dto.domain, {
+            titlePrefix: dto.titlePrefix,
+            createdBy: dto.createdBy,
+        });
+    }
+
+    @Post('cleanup-tasks/confirm')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Уборка задач СКАП, фаза 2: УДАЛИТЬ найденное по operationId',
+        description:
+            'Удаляет РОВНО тот список задач, который был зафиксирован при ' +
+            'scan (новые задачи не затрагиваются). Необратимо. Повторный ' +
+            'вызов с тем же operationId вернёт 404 — токен одноразовый.',
+    })
+    @ApiBody({ type: SkapTaskOperationDto, description: 'Токен операции.' })
+    @ApiOkResponse({
+        type: SkapTaskConfirmResponseDto,
+        description: 'Счётчики удаления по зафиксированному списку.',
+    })
+    async cleanupTasksConfirm(
+        @Body() dto: SkapTaskOperationDto,
+    ): Promise<SkapTaskConfirmResponseDto> {
+        return this.taskCleanup.confirm(dto.operationId);
+    }
+
+    @Post('cleanup-tasks/discard')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Уборка задач СКАП: сброс операции (ничего не делать)',
+        description:
+            'Забывает найденный при scan список — задачи остаются на месте.',
+    })
+    @ApiBody({ type: SkapTaskOperationDto, description: 'Токен операции.' })
+    @ApiOkResponse({
+        type: SkapTaskDiscardResponseDto,
+        description: 'Флаг: была ли операция сброшена.',
+    })
+    async cleanupTasksDiscard(
+        @Body() dto: SkapTaskOperationDto,
+    ): Promise<SkapTaskDiscardResponseDto> {
+        return this.taskCleanup.discard(dto.operationId);
+    }
 
     @Get('example-template')
     @ApiOperation({

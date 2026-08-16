@@ -166,6 +166,13 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
             type: 'array',
             items: { type: 'string', enum: [...CALL_REPORT_RISK_FLAG_CODES] },
         },
+        // «Хвост» и «5К» — только для презентаций/решений, иначе null
+        // (boolean — фильтры смарта; *_Analysis — отдельные записи в
+        // таймлайн элемента).
+        hvostDone: { type: ['boolean', 'null'] },
+        hvostAnalysis: { type: ['string', 'null'] },
+        fiveKDone: { type: ['boolean', 'null'] },
+        fiveKAnalysis: { type: ['string', 'null'] },
         flow: FLOW_SCHEMA,
     },
     required: [
@@ -177,6 +184,10 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         'nextStep',
         'productive',
         'riskFlags',
+        'hvostDone',
+        'hvostAnalysis',
+        'fiveKDone',
+        'fiveKAnalysis',
         'flow',
     ],
     additionalProperties: false,
@@ -207,6 +218,22 @@ ${SECTION_FIELDS_SPEC}
   description — что и когда; date — YYYY-MM-DD или null.
 - productive — состоялся ли контакт и есть ли продвижение по сделке.
 - riskFlags — что должно попасть на стол руководителю.
+- hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
+  после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
+  механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично
+  или «поработайте, я перезвоню» без даты — false. Для других типов — null.
+- hvostAnalysis — вместе с hvostDone: разбор прохождения хвоста по этапам,
+  каждый с новой строки: «1. Вопросы ценности — ✓/✗ что было/чего не хватило»,
+  «2. Кто будет работать — …», «3. Цена комплекта — …», «4. Механизм решения
+  и дата — …»; в конце одна строка вывода. Для других типов — null.
+- fiveKDone — ТОЛЬКО для презентации/звонка по решению: закрыты ли все 5К
+  (Клиент: что хочет/готов/цена; Компания: кто и как решает; Коллеги;
+  Конкурент; Критерии выбора). Хотя бы один «К» не выяснен — false.
+  Для других типов — null.
+- fiveKAnalysis — вместе с fiveKDone: по каждой «К» с новой строки, что
+  выяснено (с конкретикой из разговора) или что осталось невыясненным:
+  «Клиент — …», «Компания — …», «Коллеги — …», «Конкурент — …»,
+  «Критерии выбора — …». Для других типов — null.
 - flow — черновик отчёта менеджера: resultStatus result/noresult/expired;
   noresultReasonCode только при noresult (secretar/nopickup/nonumber/busy/
   noresult_notime/nocontact/giveup/bay/wrong/auto), иначе null; plan.isPlanned —

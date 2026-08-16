@@ -158,6 +158,37 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: true,
         }),
 
+        // --- Прошлое заявки в сделке: менеджер работает в сделке и в лид
+        // не заходит, поэтому переписка и звонки должны быть видны там же.
+        leadWorkCopyActivities: setting({
+            code: 'lead_work_copy_activities',
+            name: 'Переносить дела заявки в сделку',
+            description:
+                'При переводе лида в работу дела его таймлайна (письма, ' +
+                'звонки) дополнительно привязываются к сделке. В лиде они ' +
+                'остаются — это привязка, а не перенос.',
+            type: 'boolean',
+            default: false,
+        }),
+        leadWorkCopyActivitiesLimit: setting({
+            code: 'lead_work_copy_activities_limit',
+            name: 'Дел заявки к переносу',
+            description:
+                'Сколько последних дел привязывать. Битрикс допускает не ' +
+                'более 100 привязок у одного дела.',
+            type: 'number',
+            default: 50,
+        }),
+        leadWorkOriginComment: setting({
+            code: 'lead_work_origin_comment',
+            name: 'Комментарий «создано из заявки»',
+            description:
+                'В таймлайн новой сделки писать комментарий со ссылкой на ' +
+                'лид-первоисточник.',
+            type: 'boolean',
+            default: true,
+        }),
+
         // --- Фич-флаги фронта «Звонки» (переезд domain-config.ts из
         // хардкода по доменам; фронт читает их через resolve по домену) ---
         withNoPlan: setting({
@@ -275,6 +306,18 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             description:
                 'Крон сканирует папку «СКАП» на Диске группы Сервиса и ' +
                 'импортирует выгрузки в смарт-процесс «СКАП».',
+            type: 'boolean',
+            default: false,
+        }),
+        contactTasksEnabled: setting({
+            code: 'contact_tasks_enabled',
+            name: 'Сводные задачи по контактам',
+            description:
+                'Раз в неделю (пн 09:00 МСК) ставить ответственным сводные ' +
+                'задачи «СКАП: проверьте созданные контакты» по контактам, ' +
+                'автосозданным импортом. ВЫКЛЮЧЕНО по умолчанию: включение ' +
+                'самого импорта задач НЕ создаёт (инцидент 12.08.2026 — ' +
+                'задачи ставились неожиданно для владельца).',
             type: 'boolean',
             default: false,
         }),

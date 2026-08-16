@@ -1,10 +1,10 @@
 import { ETimeZone } from './timezone';
-import { PortalDeadline, nowCrmDateTime } from './portal-deadline';
+import { BitrixDateTime, nowCrmDateTime } from './bitrix-datetime';
 
-describe('PortalDeadline', () => {
+describe('BitrixDateTime', () => {
     describe('toTaskDeadline (server-time Москва)', () => {
         it('Иркутск 02:14 → Москва 21:14 предыдущего дня', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '01.07.2026 02:14:00',
                 ETimeZone.ASIA_IRKUTSK,
             );
@@ -13,7 +13,7 @@ describe('PortalDeadline', () => {
         });
 
         it('Новосибирск 10:00 → Москва 06:00', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '26.05.2026 10:00:00',
                 ETimeZone.ASIA_NOVOSIBIRSK,
             );
@@ -21,7 +21,7 @@ describe('PortalDeadline', () => {
         });
 
         it('Москва → Москва без сдвига', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '26.05.2026 10:00:00',
                 ETimeZone.EUROPE_MOSCOW,
             );
@@ -31,7 +31,7 @@ describe('PortalDeadline', () => {
 
     describe('toCrmDateTime (локаль портала)', () => {
         it('остаётся в TZ портала и нормализует формат', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '2026-05-26 09:30:00',
                 ETimeZone.ASIA_IRKUTSK,
             );
@@ -39,7 +39,7 @@ describe('PortalDeadline', () => {
         });
 
         it('тот же момент: задача в Москве, CRM в локали портала', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '01.07.2026 02:14:00',
                 ETimeZone.ASIA_IRKUTSK,
             );
@@ -50,7 +50,7 @@ describe('PortalDeadline', () => {
 
     describe('toRuHuman', () => {
         it('форматирует «26 мая 2026» без «г.»', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '26.05.2026 10:00:00',
                 ETimeZone.EUROPE_MOSCOW,
             );
@@ -58,7 +58,7 @@ describe('PortalDeadline', () => {
         });
 
         it('сохраняет календарный день в TZ портала на полночь', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '2026-05-26',
                 ETimeZone.ASIA_NOVOSIBIRSK,
             );
@@ -69,7 +69,7 @@ describe('PortalDeadline', () => {
     describe('fromPortalInput', () => {
         it('кидает Error на нераспознанный формат', () => {
             expect(() =>
-                PortalDeadline.fromPortalInput(
+                BitrixDateTime.fromPortalInput(
                     'not-a-date',
                     ETimeZone.EUROPE_MOSCOW,
                 ),
@@ -77,7 +77,7 @@ describe('PortalDeadline', () => {
         });
 
         it('сохраняет TZ портала', () => {
-            const d = PortalDeadline.fromPortalInput(
+            const d = BitrixDateTime.fromPortalInput(
                 '26.05.2026 10:00:00',
                 ETimeZone.ASIA_IRKUTSK,
             );

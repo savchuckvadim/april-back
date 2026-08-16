@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { BitrixService } from '@lib/bitrix';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     AiService,
     CALL_RESUME_TYPE,
@@ -8,6 +9,8 @@ import {
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
+import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/services/lead-request-detector.service';
+import { LeadWorkKind } from '../../shared/event-title';
 
 /** Кандидат identity, найденный по номеру телефона. НИКОГДА не факт. */
 export interface CallPassportIdentity {
@@ -43,6 +46,14 @@ export interface CallPassport {
     categoryId: string | null;
     /** Статус лида (STATUS_ID); null вне lead. */
     leadStatusId: string | null;
+    /**
+     * Вид работы лида от LeadRequestDetector (тот же детектор, что в хуке
+     * lead-to-work): request — входящая ЗАЯВКА с сайта/лидогена (вероятный
+     * тип звонка «Заявка с сайта»), lead — входящее обращение
+     * (звонок/письмо/чат), cold — входящая работа не распознана;
+     * null вне lead или при ошибке детекта.
+     */
+    leadWorkKind: LeadWorkKind | null;
     /** Направление: ~99% исходящие (менеджер — инициатор). */
     direction: 'incoming' | 'outgoing' | null;
     /** Кандидаты «кто это на самом деле» по номеру телефона (suspected). */
@@ -74,6 +85,7 @@ export class CallContextBuilderService {
             stageId: null,
             categoryId: null,
             leadStatusId: null,
+            leadWorkKind: null,
             direction: null,
             identity: [],
             history: [],
@@ -81,8 +93,10 @@ export class CallContextBuilderService {
         if (!row.domain) return passport;
 
         try {
-            const { bitrix } = await this.pbxService.init(row.domain);
-            await this.fillCrmContext(bitrix, row, passport);
+            const { bitrix, PortalModel } = await this.pbxService.init(
+                row.domain,
+            );
+            await this.fillCrmContext(bitrix, PortalModel, row, passport);
             await this.fillDirectionAndIdentity(bitrix, row, passport);
         } catch (error) {
             this.logger.warn(
@@ -109,6 +123,16 @@ export class CallContextBuilderService {
                 `- Звонок по ЛИДУ #${passport.entityId}, статус ${passport.leadStatusId ?? '—'}. ` +
                     'Стадии переговоров нет — этап определяй по содержанию разговора, уместность оценивай мягко.',
             );
+            if (passport.leadWorkKind === 'request') {
+                lines.push(
+                    '- Лид создан ВХОДЯЩЕЙ ЗАЯВКОЙ (клиент сам оставил контакты на сайте: прайс, демо-доступ, документ, семинар). ' +
+                        'Клиент ждёт звонка, но может оказаться не-ЦА — оценивай по регламенту заявок: легализация, фильтр ЦА, предложение зайти в систему.',
+                );
+            } else if (passport.leadWorkKind === 'lead') {
+                lines.push(
+                    '- Лид создан ВХОДЯЩИМ ОБРАЩЕНИЕМ клиента (звонок/письмо/чат) — это не холодный выход менеджера.',
+                );
+            }
         } else {
             lines.push(
                 '- CRM-контекст НЕИЗВЕСТЕН (сырой лид или звонок без привязки). ' +
@@ -150,9 +174,39 @@ export class CallContextBuilderService {
         return lines.join('\n');
     }
 
+    /**
+     * Короткая CRM-подсказка для дешёвого классификатора типа звонка:
+     * только факты, влияющие на выбор типа (заявка/обращение/сделка).
+     * null — подсказать нечего, инструкция классификатора не меняется.
+     */
+    renderClassifyHint(passport: CallPassport): string | null {
+        const facts: string[] = [];
+        if (passport.leadWorkKind === 'request') {
+            facts.push(
+                'звонок идёт по лиду, созданному ВХОДЯЩЕЙ ЗАЯВКОЙ с сайта ' +
+                    '(клиент сам оставил контакты) — если менеджер ссылается ' +
+                    "на заявку/оставленные контакты, это тип 'site_lead'",
+            );
+        } else if (passport.leadWorkKind === 'lead') {
+            facts.push(
+                'звонок идёт по лиду из входящего обращения клиента ' +
+                    '(звонок/письмо/чат) — это НЕ холодный выход менеджера',
+            );
+        }
+        if (passport.certainty === 'rich') {
+            facts.push(
+                'звонок привязан к сделке — переговоры уже идут, первый ' +
+                    'холодный контакт маловероятен',
+            );
+        }
+        if (!facts.length) return null;
+        return `\n\nКОНТЕКСТ ИЗ CRM (подсказка, не приговор — решает содержание разговора):\n- ${facts.join('\n- ')}`;
+    }
+
     /** Сделка/лид: стадия или статус. */
     private async fillCrmContext(
         bitrix: BitrixService,
+        portal: PortalModel,
         row: TranscriptionPipelineView,
         passport: CallPassport,
     ): Promise<void> {
@@ -179,13 +233,38 @@ export class CallContextBuilderService {
         if (row.entityType === 'lead') {
             const response = (await bitrix.api.call('crm.lead.get', {
                 id: entityId,
-            })) as { result?: { STATUS_ID?: string } };
+            })) as {
+                result?: Record<string, unknown> & { STATUS_ID?: string };
+            };
             if (response?.result) {
                 passport.certainty = 'lead';
                 passport.entityType = 'lead';
                 passport.entityId = entityId;
                 passport.leadStatusId = response.result.STATUS_ID ?? null;
+                passport.leadWorkKind = this.detectLeadWork(
+                    portal,
+                    response.result,
+                );
             }
+        }
+    }
+
+    /**
+     * Вид работы лида — тем же детектором, что и хук lead-to-work
+     * (наше поле вида работы → поля лидогена → метки пути заявки →
+     * SOURCE_ID). Ошибка детекта паспорт не роняет: null = «не знаем».
+     */
+    private detectLeadWork(
+        portal: PortalModel,
+        lead: Record<string, unknown>,
+    ): LeadWorkKind | null {
+        try {
+            return new LeadRequestDetectorService(portal).detect(lead).kind;
+        } catch (error) {
+            this.logger.warn(
+                `Паспорт: вид работы лида не определён: ${(error as Error).message}`,
+            );
+            return null;
         }
     }
 

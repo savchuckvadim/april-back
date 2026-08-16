@@ -19,6 +19,7 @@ import { SkapContactTaskScheduler } from './cron/skap-contact-task.scheduler';
 import { SkapImportScheduler } from './cron/skap-import.scheduler';
 import { SkapImportProcessor } from './queue/skap-import.processor';
 import { SkapImportRunUseCase } from './use-cases/skap-import-run.use-case';
+import { SkapTaskCleanupUseCase } from './use-cases/skap-task-cleanup.use-case';
 
 /**
  * СКАП: ручной парсинг выгрузок (контроллер) + крон-конвейер импорта с
@@ -50,6 +51,8 @@ import { SkapImportRunUseCase } from './use-cases/skap-import-run.use-case';
         SkapImportRunUseCase,
         // Еженедельные сводные задачи по автосозданным контактам
         SkapContactTaskScheduler,
+        // Одноразовая уборка задач импорта (инцидент 12.08.2026)
+        SkapTaskCleanupUseCase,
     ],
 })
 export class SkapModule {}

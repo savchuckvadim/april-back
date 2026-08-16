@@ -1,7 +1,7 @@
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
-import { nowCrmDateTime, PortalDeadline } from '@/shared/lib/date';
+import { nowCrmDateTime, BitrixDateTime } from '@/shared/lib/date';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
 import { KpiListFlowService } from '../../../../shared/kpi-list-flow/services/kpi-list-flow.service';
 import { KpiEventPayload } from '../../../../shared/kpi-list-flow/type/kpi-event-payload.type';
@@ -10,7 +10,7 @@ export interface IColdListFlowData {
     /** Заголовок события («от 26 мая 2026») */
     name: string;
     /** Дедлайн планируемого звонка (TZ-конвертация инкапсулирована). */
-    deadline: PortalDeadline;
+    deadline: BitrixDateTime;
     /** ID постановщика (автор) */
     createdId: string | number;
     /** ID ответственного */

@@ -49,12 +49,17 @@ export class CallClassifyStepService {
         private readonly aiService: AiService,
     ) {}
 
-    /** enabledOverride — включённость из настроек портала (дефолт: включено). */
+    /**
+     * enabledOverride — включённость из настроек портала (дефолт: включено).
+     * crmHint — CRM-подсказка из паспорта звонка (лид-заявка, сделка):
+     * дописывается к инструкции, тип всё равно решается по содержанию.
+     */
     async run(
         text: string,
         payload: CallReportJobPayload,
         transcriptionId: string,
         enabledOverride?: boolean,
+        crmHint?: string | null,
     ): Promise<CallClassificationResultDto | null> {
         if (!(enabledOverride ?? true)) return null;
         try {
@@ -65,7 +70,8 @@ export class CallClassifyStepService {
             );
             const instruction =
                 (await this.instructionService.resolve(payload.domain)) +
-                this.renderTypeCatalog(registry);
+                this.renderTypeCatalog(registry) +
+                (crmHint ?? '');
             const apiKey = await this.vibeKeyResolver.resolve(payload.domain);
             const classification = await this.vibeCodeClient.classifyCall(
                 text,

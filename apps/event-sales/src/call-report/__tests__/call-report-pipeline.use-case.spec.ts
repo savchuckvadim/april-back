@@ -103,6 +103,7 @@ const makeDeps = (overrides?: {
     const contextBuilder = {
         build: jest.fn().mockResolvedValue({ certainty: 'rich' }),
         renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ: тест'),
+        renderClassifyHint: jest.fn().mockReturnValue(null),
     };
     // Настройки портала (единственный источник конфигурации — БД).
     const settingsService = {
@@ -159,12 +160,14 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             expect.objectContaining({ status: 'done', provider: 'yandex' }),
         );
-        // 4-й аргумент — classifyEnabled из настроек портала.
+        // 4-й аргумент — classifyEnabled из настроек портала,
+        // 5-й — CRM-подсказка из паспорта (в моке подсказки нет).
         expect(classifyStep.run).toHaveBeenCalledWith(
             'текст',
             expect.objectContaining(PAYLOAD),
             '42',
             true,
+            null,
         );
         // Резюме+рекомендации — ОДНИМ объединённым вызовом.
         expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
@@ -265,6 +268,21 @@ describe('CallReportPipelineUseCase', () => {
         const result = await useCase.execute(PAYLOAD);
         expect(result.resumeSaved).toBe(true);
         expect((llm.analyzeCall.mock.calls[0] as string[])[1]).toBe('текст');
+    });
+
+    it('CRM-подсказка паспорта (лид-заявка) уезжает в классификатор', async () => {
+        const { useCase, classifyStep, contextBuilder } = makeDeps();
+        contextBuilder.renderClassifyHint.mockReturnValue(
+            'КОНТЕКСТ ИЗ CRM: лид создан заявкой',
+        );
+        await useCase.execute(PAYLOAD);
+        expect(classifyStep.run).toHaveBeenCalledWith(
+            'текст',
+            expect.objectContaining(PAYLOAD),
+            '42',
+            true,
+            'КОНТЕКСТ ИЗ CRM: лид создан заявкой',
+        );
     });
 
     it('провал классификации (null от шага) не роняет конвейер', async () => {

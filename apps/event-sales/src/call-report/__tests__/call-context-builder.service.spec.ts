@@ -14,6 +14,8 @@ const row = (overrides?: Record<string, unknown>) => ({
 const makeDeps = (options?: {
     dealStage?: string | null;
     leadStatus?: string;
+    /** Дополнительные поля лида (для детекта «лид — заявка»). */
+    leadFields?: Record<string, unknown>;
     direction?: string;
     phoneMatches?: Record<string, number[]>;
     history?: { id: string; callStartedAt: Date | null }[];
@@ -35,7 +37,10 @@ const makeDeps = (options?: {
             }
             if (method === 'crm.lead.get') {
                 return Promise.resolve({
-                    result: { STATUS_ID: options?.leadStatus ?? 'NEW' },
+                    result: {
+                        STATUS_ID: options?.leadStatus ?? 'NEW',
+                        ...options?.leadFields,
+                    },
                 });
             }
             if (method === 'crm.duplicate.findbycomm') {
@@ -60,7 +65,15 @@ const makeDeps = (options?: {
             }),
         },
     };
-    const pbxService = { init: jest.fn().mockResolvedValue({ bitrix }) };
+    // Слепок портала без наших полей: детект заявки работает по
+    // UF-полям лидогена и SOURCE_ID самого лида.
+    const portalModel = {
+        getEntityFieldByCode: jest.fn().mockReturnValue(null),
+        getFieldBitrixId: jest.fn(),
+    };
+    const pbxService = {
+        init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portalModel }),
+    };
     const transcriptionStore = {
         findRecentByEntity: jest.fn().mockResolvedValue(options?.history ?? []),
     };
@@ -104,6 +117,21 @@ describe('CallContextBuilderService', () => {
             'crm.duplicate.findbycomm',
             expect.anything(),
         );
+        // Признаков заявки нет → вид работы «холодный», подсказки нет.
+        expect(passport.leadWorkKind).toBe('cold');
+        expect(service.renderClassifyHint(passport)).toBeNull();
+    });
+
+    it('лид с полем лидогена → заявка: строка в паспорте и подсказка классификатору', async () => {
+        const { service } = makeDeps({
+            leadFields: { UF_CRM_REG_NUMBER: 'A-771' },
+        });
+        const passport = await service.build(
+            row({ entityType: 'lead', entityId: '77' }) as never,
+        );
+        expect(passport.leadWorkKind).toBe('request');
+        expect(service.renderForPrompt(passport)).toContain('ВХОДЯЩЕЙ ЗАЯВКОЙ');
+        expect(service.renderClassifyHint(passport)).toContain('site_lead');
     });
 
     it('без CRM-привязки → naked + suspected identity по номеру', async () => {

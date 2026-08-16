@@ -671,6 +671,68 @@ export class AgentCallAnalysisDto {
     presentationDone: boolean;
 
     @ApiPropertyOptional({
+        description:
+            'Пройден ли «хвост» после демонстрации (вопросы ценности, кто ' +
+            'будет работать, цена комплекта, механизм решения, дата звонка ' +
+            'по решению). Только для презентаций/решений; null — не применимо.',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    hvostDone?: boolean | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Разбор прохождения «хвоста» по 4 этапам (отдельная запись в ' +
+            'таймлайн элемента). null — не применимо.',
+        example: '1. Вопросы ценности — ✓ …',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    hvostAnalysis?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Закрыты ли все 5К после встречи (Клиент/Компания/Коллеги/' +
+            'Конкурент/Критерии выбора). Только для презентаций/решений; ' +
+            'null — не применимо.',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    fiveKDone?: boolean | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Разбор покрытия 5К по каждой «К» (отдельная запись в таймлайн ' +
+            'элемента). null — не применимо.',
+        example: 'Клиент — хочет ускорить поиск практики …',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    fiveKAnalysis?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Сверка разбора звонка с отчётом менеджера (заполняет крон ' +
+            'сверки, Фаза 4) — отдельная запись в таймлайн элемента.',
+        example: 'Менеджер отметил 5К закрытым, в звонке не выяснены Коллеги…',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    reportComparison?: string | null;
+
+    @ApiPropertyOptional({
         description: 'Какие продукты предлагались в разговоре.',
         example: ['Гарант Универсал', 'Гарант Консалтинг'],
         type: [String],

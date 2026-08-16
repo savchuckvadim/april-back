@@ -365,6 +365,8 @@ export class AgentAnalysisIntakeService {
             needsFound: dto.needsFound,
             needs: dto.needs?.join('\n'),
             presentationDone: dto.presentationDone,
+            hvostDone: dto.hvostDone ?? undefined,
+            fiveKDone: dto.fiveKDone ?? undefined,
             productsOffered: dto.productsOffered?.join('\n'),
             objections: dto.objections
                 ?.map(objection => objection.objection)
@@ -469,6 +471,18 @@ export class AgentAnalysisIntakeService {
             const comment = this.renderSectionComment(section);
             // Разделы-пустышки (REFUSAL без отказов и т.п.) не постим.
             if (!comment) continue;
+            await bitrix.timeline.addTimelineComment({
+                ENTITY_ID: written.itemId,
+                ENTITY_TYPE: entityType,
+                COMMENT: comment,
+                AUTHOR_ID: authorId,
+            });
+        }
+
+        // «Хвост», «5К» и сверка с отчётом менеджера — ОТДЕЛЬНЫЕ записи
+        // (решение владельца 15.08.2026). Постятся после разделов —
+        // в ленте окажутся выше них, под диалогом и аудио.
+        for (const comment of this.renderMethodologyComments(dto).reverse()) {
             await bitrix.timeline.addTimelineComment({
                 ENTITY_ID: written.itemId,
                 ENTITY_TYPE: entityType,
@@ -799,6 +813,38 @@ export class AgentAnalysisIntakeService {
             COMMENT: comment,
             AUTHOR_ID: String(dealContext.managerId ?? 1),
         });
+    }
+
+    /**
+     * Отдельные методологические записи таймлайна: «хвост», «5К» и сверка
+     * с отчётом менеджера (порядок в массиве = порядок в ленте сверху вниз).
+     * null/пустые — не постятся.
+     */
+    private renderMethodologyComments(dto: AgentCallAnalysisDto): string[] {
+        const comments: string[] = [];
+        const hvost = this.cleanText(dto.hvostAnalysis ?? undefined);
+        if (dto.hvostDone !== undefined && dto.hvostDone !== null && hvost) {
+            comments.push(
+                `🏁 [b]Хвост (завершение презентации): ${
+                    dto.hvostDone ? 'ПРОЙДЕН' : 'НЕ ПРОЙДЕН'
+                }[/b]\n\n${hvost}`,
+            );
+        }
+        const fiveK = this.cleanText(dto.fiveKAnalysis ?? undefined);
+        if (dto.fiveKDone !== undefined && dto.fiveKDone !== null && fiveK) {
+            comments.push(
+                `🎯 [b]5К (контроль после встречи): ${
+                    dto.fiveKDone ? 'ЗАКРЫТО' : 'НЕ ЗАКРЫТО'
+                }[/b]\n\n${fiveK}`,
+            );
+        }
+        const comparison = this.cleanText(dto.reportComparison ?? undefined);
+        if (comparison) {
+            comments.push(
+                `⚖️ [b]Сверка с отчётом менеджера[/b]\n\n${comparison}`,
+            );
+        }
+        return comments;
     }
 
     /** Компания/контакт/ответственный лида (звонок по лиду). */

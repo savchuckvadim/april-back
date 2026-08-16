@@ -3,26 +3,30 @@ import { Logger } from '@nestjs/common';
 import { ETimeZone } from './timezone';
 import { parsePortalInput } from './parse-portal-input';
 
-const logger = new Logger('PortalDeadline');
+const logger = new Logger('BitrixDateTime');
 
 const TASK_SERVER_TIMEZONE: ETimeZone = ETimeZone.EUROPE_MOSCOW;
 const TASK_DEADLINE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 
 /**
- * Объект-значение дедлайна события (холодный звонок и т.п.).
+ * Объект-значение момента времени для полей Bitrix (дедлайны событий,
+ * datetime-поля CRM и т.п.). Бывший `PortalDeadline`.
  *
- * Зачем: сырой `deadline` из hook/фронта приходит БЕЗ таймзоны (например
+ * Зачем: сырая дата из hook/фронта приходит БЕЗ таймзоны (например
  * `01.07.2026 02:14:00`) и трактуется как локальное время портала. Раньше
  * каждый потребитель заново парсил строку (а `EventEntityModel` вообще писал
  * её сырой), из-за чего на не-московских порталах время разъезжалось.
  *
  * Здесь парсим один раз как локальное время портала → храним абсолютный момент,
  * и отдаём целевые форматы: task DEADLINE (server-time Москва), CRM datetime
- * (локаль портала), человекочитаемую строку. TZ портала всегда берётся из
- * {@link PortalModel.getTimezone}.
+ * (локаль портала), человекочитаемую строку.
+ *
+ * Класс о портале НЕ знает: TZ передаётся параметром, вызывающий берёт её из
+ * {@link PortalModel.getTimezone}. Обёртка, которая достаёт TZ из PortalModel
+ * сама, — это будущий `PBXDateTime`, не этот класс.
  */
-export class PortalDeadline {
+export class BitrixDateTime {
     private constructor(
         private readonly instant: Dayjs,
         private readonly portalTz: ETimeZone,
@@ -35,8 +39,8 @@ export class PortalDeadline {
      *
      * @throws Error если строка не парсится (см. parsePortalInput).
      */
-    static fromPortalInput(raw: string, portalTz: ETimeZone): PortalDeadline {
-        const deadline = new PortalDeadline(
+    static fromPortalInput(raw: string, portalTz: ETimeZone): BitrixDateTime {
+        const deadline = new BitrixDateTime(
             parsePortalInput(raw, portalTz),
             portalTz,
             raw,

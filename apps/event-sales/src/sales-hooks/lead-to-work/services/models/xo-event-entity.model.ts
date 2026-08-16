@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
-import { ETimeZone, PortalDeadline } from '@lib/shared/lib/date';
+import { ETimeZone, BitrixDateTime } from '@lib/shared/lib/date';
 import { findPbxSalesEventField } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import {
     EnumXoEventFieldCode,
@@ -21,7 +21,7 @@ export interface IXoEventContext {
     /** Название события (без префикса «Холодный обзвон»). */
     eventName: string;
     /** Дедлайн обзвона в локали портала. */
-    deadline: PortalDeadline;
+    deadline: BitrixDateTime;
     responsibleId: number;
     /** Кто инициировал обзвон — поле xo_created. */
     xoCreatedById: number;

@@ -41,6 +41,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.allowedUserIds = source.allowedUserIds ?? null;
         this.irrelevantConfidence = source.irrelevantConfidence ?? null;
         this.revisorEnabled = source.revisorEnabled ?? null;
+        this.presentationAuditEnabled = source.presentationAuditEnabled ?? null;
     }
 
     @ApiProperty({
@@ -237,6 +238,19 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     revisorEnabled: boolean | null;
+
+    @ApiProperty({
+        description:
+            'Утренняя СВЕРКА ПО ПРЕЗЕНТАЦИЯМ (08:00 МСК): отчёт менеджера ' +
+            '(«ОП Хвост», «ОП Пять К», комментарии сделки-презентации) ' +
+            'сверяется с AI-разбором звонка; итог — в таймлайн смарт-элемента, ' +
+            'при расхождении — в таймлайн сделки. Один LLM-запрос на ' +
+            'презентацию. Пусто — выключена.',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    presentationAuditEnabled: boolean | null;
 }
 
 /**
@@ -458,4 +472,14 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsOptional()
     @IsBoolean()
     revisorEnabled?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'Утренняя сверка отчёта менеджера с разбором презентации.',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    presentationAuditEnabled?: boolean | null;
 }

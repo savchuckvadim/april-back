@@ -2,9 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { KnowledgeContentService } from '@lib/ai-rag';
 import { CallTypeDefinition, CallTypeRegistryService } from '@lib/call-lib';
+import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
-import { renderCallTypeProfile } from '../contracts/call-deep-analysis.contract';
+import {
+    AFTER_PRESENTATION_STRICT_BLOCK,
+    renderCallTypeProfile,
+} from '../contracts/call-deep-analysis.contract';
 import {
     CallFocusKey,
     FOCUS_CONTENT_PROMPT,
@@ -75,7 +82,35 @@ export class CallFocusAnalysisService {
         private readonly vibeKeyResolver: VibeKeyResolverService,
         private readonly knowledgeContent: KnowledgeContentService,
         private readonly callTypeRegistry: CallTypeRegistryService,
+        private readonly appSettings: PortalAppSettingsService,
     ) {}
+
+    /**
+     * Ужесточение «5К и хвост»: на порталах с обязательной отчётностью
+     * после презентации (event-sales `withCheckPresentation`) разбор
+     * презентационных/решенческих звонков строже требует закрытие.
+     * Fail-open: настройки не прочитались — разбор без блока.
+     */
+    private async buildAfterPresentationBlock(
+        domain: string,
+        callType: string | null,
+    ): Promise<string> {
+        if (callType !== 'presentation' && callType !== 'decision') return '';
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return settings.withCheckPresentation
+                ? AFTER_PRESENTATION_STRICT_BLOCK
+                : '';
+        } catch (error) {
+            this.logger.warn(
+                `Настройки event-sales недоступны (${domain}): ${(error as Error).message}`,
+            );
+            return '';
+        }
+    }
 
     /** options.model — модель VibeCode из настроек портала (deepAnalysisModel). */
     async run(
@@ -93,7 +128,9 @@ export class CallFocusAnalysisService {
         }
         try {
             const apiKey = await this.vibeKeyResolver.resolve(domain);
-            const context = await this.buildSharedContext(domain, callType);
+            const context =
+                (await this.buildSharedContext(domain, callType)) +
+                (await this.buildAfterPresentationBlock(domain, callType));
             const userContent = this.buildUserContent(
                 transcript,
                 callType,

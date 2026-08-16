@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { PortalDeadline } from '@lib/shared/lib/date';
+import { BitrixDateTime } from '@lib/shared/lib/date';
 import { LeadUfDefinitions } from '../../../../shared/portal-fields';
 import {
     IXoEventContext,
@@ -70,10 +70,10 @@ export abstract class LeadToWorkFlowBase {
     }
 
     /** Дедлайн хука в объект-значение; строка-мусор → null (graceful). */
-    protected parseDeadline(raw: string | undefined): PortalDeadline | null {
+    protected parseDeadline(raw: string | undefined): BitrixDateTime | null {
         if (!raw) return null;
         try {
-            return PortalDeadline.fromPortalInput(
+            return BitrixDateTime.fromPortalInput(
                 raw,
                 this.portal.getTimezone(),
             );

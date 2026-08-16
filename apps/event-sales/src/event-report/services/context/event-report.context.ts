@@ -1,6 +1,7 @@
 import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { BitrixDateTime } from '@/shared/lib/date';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
 import { EnumEventItemResultType } from '../../types/report-types';
 import { EnumWorkStatusCode } from '../../types/report-types';
@@ -186,9 +187,22 @@ export class EventReportContext {
     get planEventName(): string {
         return this.dto.plan?.name ?? '';
     }
-    get planDeadline(): string {
-        return this.dto.plan?.deadline ?? '';
+    /**
+     * Дедлайн плана как момент времени портала; null — план без дедлайна.
+     * Сырую строку `dto.plan.deadline` наружу не отдаём: она без таймзоны,
+     * и записанная в Bitrix как есть разъезжается на не-московских порталах.
+     * Целевые форматы — только через {@link BitrixDateTime}.
+     */
+    get planDeadline(): BitrixDateTime | null {
+        if (this.planDeadlineVo === undefined) {
+            const raw = this.dto.plan?.deadline?.trim() ?? '';
+            this.planDeadlineVo = raw
+                ? BitrixDateTime.fromPortalInput(raw, this.portal.getTimezone())
+                : null;
+        }
+        return this.planDeadlineVo;
     }
+    private planDeadlineVo?: BitrixDateTime | null;
     get planResponsibleId(): number {
         return Number(this.dto.plan?.responsibility?.ID ?? 0);
     }

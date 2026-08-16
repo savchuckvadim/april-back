@@ -3,6 +3,7 @@ import { InstallCallReportSmartResult } from '@lib/call-lib';
 import { CallReportScanResult } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineResult } from '../use-cases/call-report-pipeline.use-case';
 import { CallRevisionDomainResult } from '../services/call-revision.service';
+import { PresentationAuditDomainResult } from '../services/presentation-audit.service';
 
 /** Результат установки смарт-процесса «AI-анализ звонков». */
 export class InstallCallReportSmartResponseDto
@@ -333,4 +334,54 @@ export class ReviseCallsResponseDto implements CallRevisionDomainResult {
         type: Number,
     })
     entitiesFailed: number;
+}
+
+/** Итог сверки по презентациям (Фаза 4: отчёт менеджера vs разбор). */
+export class PresentationAuditResponseDto
+    implements PresentationAuditDomainResult
+{
+    @ApiProperty({
+        description: 'Домен портала.',
+        example: 'gsr.bitrix24.ru',
+        type: String,
+    })
+    domain: string;
+
+    @ApiProperty({
+        description:
+            'Кандидатов: разборов презентаций/решений в окне без выполненной сверки.',
+        example: 4,
+        type: Number,
+    })
+    candidates: number;
+
+    @ApiProperty({
+        description: 'Сверено (записи в таймлайн элемента).',
+        example: 4,
+        type: Number,
+    })
+    audited: number;
+
+    @ApiProperty({
+        description:
+            'Из них с расхождениями (дубль сверки ушёл в таймлайн сделки).',
+        example: 1,
+        type: Number,
+    })
+    mismatched: number;
+
+    @ApiProperty({
+        description: 'Пропущено: уже сверено ранее (идемпотентность).',
+        example: 2,
+        type: Number,
+    })
+    skippedDone: number;
+
+    @ApiProperty({
+        description:
+            'С ошибками (детали в логах) — попадут в следующий прогон.',
+        example: 0,
+        type: Number,
+    })
+    failed: number;
 }

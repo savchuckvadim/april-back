@@ -161,9 +161,17 @@ export class DealFlowService extends LeadToWorkFlowBase {
      * Наши поля-связи, обязательные для ЛЮБОЙ связанной сделки (основной И
      * ХО): deal_from_lead_id = лид-первоисточник, deal_joined_leads = union
      * с текущим значением сделки. Отсутствующее на портале поле — скип.
+     *
+     * Плюс ШТАТНОЕ поле `LEAD_ID`: по нему Битрикс сам рисует связь с лидом
+     * в карточке сделки (без него наши UF-связи видит только приложение).
+     * У существующей сделки не перетираем: там может стоять лид штатной
+     * конвертации, и он первичнее нашего.
      */
     private dealLinkFields(leadId: number, existingRow: BxRow | null): BxRow {
         const fields: BxRow = {};
+        if (!existingRow || !this.text(existingRow.LEAD_ID)) {
+            fields.LEAD_ID = String(leadId);
+        }
         const fromLeadName = this.dealFieldName(
             PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
         );

@@ -28,6 +28,11 @@ import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
+import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
+import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
 
 type BxRow = Record<string, unknown>;
 
@@ -76,6 +81,7 @@ export class LeadToWorkUseCase
         private readonly ufDefinitions: LeadUfDefinitionsService,
         private readonly userNames: UserNameResolver,
         private readonly duplicateCheck: LeadToWorkDuplicateCheckService,
+        private readonly appSettings: PortalAppSettingsService,
     ) {}
 
     /**
@@ -366,6 +372,21 @@ export class LeadToWorkUseCase
 
         // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.
         const results = queued.map(entry => this.toItemResult(entry, byCmd));
+
+        /*
+         * Шаг 4.5. Прошлое заявки — в сделку: комментарий со ссылкой на лид
+         * и привязка дел таймлайна (письма, звонки). Только ЗДЕСЬ, потому
+         * что нужен реальный id сделки — до flush его не существует.
+         */
+        const timelineWarnings = await this.transferTimeline(
+            ctx,
+            results,
+            queued,
+        );
+        if (timelineWarnings.length && results.length) {
+            results[0].warnings.push(...timelineWarnings);
+        }
+
         const created = results.filter(
             r => r.baseDealId && !r.reused && !r.warnings.includes('__failed'),
         ).length;
@@ -377,6 +398,50 @@ export class LeadToWorkUseCase
             leadIds: items.map(item => item.leadId),
             message: `Преобразовано лидов: ${results.length} (создано сделок: ${created}, reuse: ${reused}).`,
         };
+    }
+
+    /**
+     * Шаг 4.5: прошлое заявки — в сделку (комментарий-ссылка + привязка дел
+     * таймлайна). Настройками портала выключается целиком; ошибки уходят в
+     * warnings — работа уже создана, и таймлайн её не отменяет.
+     */
+    private async transferTimeline(
+        ctx: SalesHookExecutionContext,
+        results: LeadToWorkItemResultDto[],
+        queued: { item: ILeadToWorkItem; leadTitle?: string }[],
+    ): Promise<string[]> {
+        const settings = await this.appSettings.resolve(
+            ctx.domain,
+            EnumPortalAppCode.eventSales,
+        );
+        if (
+            !settings.leadWorkCopyActivities &&
+            !settings.leadWorkOriginComment
+        ) {
+            return [];
+        }
+
+        const titles = new Map(
+            queued.map(entry => [entry.item.leadId, entry.leadTitle ?? '']),
+        );
+        const transfers = results
+            .filter(item => !!item.baseDealId)
+            .map(item => ({
+                leadId: item.leadId,
+                leadTitle: titles.get(item.leadId) ?? '',
+                dealId: Number(item.baseDealId),
+                reused: item.reused,
+            }));
+        if (!transfers.length) return [];
+
+        return new LeadToWorkTimelineService(ctx.bitrix, ctx.domain).run(
+            transfers,
+            {
+                copyActivities: settings.leadWorkCopyActivities,
+                activitiesLimit: settings.leadWorkCopyActivitiesLimit,
+                writeOriginComment: settings.leadWorkOriginComment,
+            },
+        );
     }
 
     /**

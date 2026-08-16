@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { nowCrmDateTime, PortalDeadline } from '@/shared/lib/date';
+import { nowCrmDateTime, BitrixDateTime } from '@/shared/lib/date';
 import { KpiListFlowService } from '../../../shared/kpi-list-flow/services/kpi-list-flow.service';
 import { KpiEventPayload } from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
 import { IBatchGroupBuffer } from '../../../shared/batch/batch-group-buffer.interface';
@@ -74,7 +74,7 @@ export interface ILeadToWorkKpiPlanned {
     /** Автор (инициатор операции); нет — ответственный. */
     authorId: number | null;
     /** Дедлайн задачи; нет — план-дата не пишется. */
-    deadline: PortalDeadline | null;
+    deadline: BitrixDateTime | null;
 }
 
 export interface ILeadToWorkKpiNotHeld {

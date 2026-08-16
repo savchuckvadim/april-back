@@ -1477,7 +1477,8 @@ export const PBX_SALES_EVENT_FIELDS = [
         smart: '',
         task: '',
         app: 'calling',
-        order: 660,
+        // Зеркало факта установки на портале (garantservisvoronezh, SORT 702).
+        order: 702,
         is_rewrite: '',
         isNeedUpdate: true,
         isMultiple: false,
@@ -1612,7 +1613,8 @@ export const PBX_SALES_EVENT_FIELDS = [
         smart: '',
         task: '',
         app: 'calling',
-        order: 661,
+        // Зеркало факта установки на портале (SORT 701).
+        order: 701,
         is_rewrite: '',
         isNeedUpdate: true,
         isMultiple: false,

@@ -2,10 +2,10 @@ import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
-import { PortalDeadline } from '@lib/shared/lib/date';
+import { BitrixDateTime } from '@lib/shared/lib/date';
 
 export interface IColdTaskFlow {
-    deadline: PortalDeadline;
+    deadline: BitrixDateTime;
     name: string;
     responsibleId: number;
     companyId: number;

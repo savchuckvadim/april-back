@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService, IBXLead } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { PortalDeadline } from '@lib/shared/lib/date';
+import { BitrixDateTime } from '@lib/shared/lib/date';
 import { LeadUfDefinitions } from '../../../shared/portal-fields';
 import { IBatchGroupBuffer } from '../../../shared/batch/batch-group-buffer.interface';
 import { ResolvedLeadToWorkItem } from '../dto/lead-to-work.dto';
@@ -296,7 +296,7 @@ export class LeadToWorkFlowService {
             companyId: ctx.company ? Number(ctx.company.ID) : null,
         };
         const deadline = item.deadline
-            ? PortalDeadline.fromPortalInput(
+            ? BitrixDateTime.fromPortalInput(
                   item.deadline,
                   this.portal.getTimezone(),
               )
@@ -342,10 +342,10 @@ export class LeadToWorkFlowService {
         authorId: number | null,
     ): IXoEventContext | null {
         const tz = this.portal.getTimezone();
-        let deadline: PortalDeadline | null = null;
+        let deadline: BitrixDateTime | null = null;
         if (item.deadline) {
             try {
-                deadline = PortalDeadline.fromPortalInput(item.deadline, tz);
+                deadline = BitrixDateTime.fromPortalInput(item.deadline, tz);
             } catch {
                 this.logger.warn(
                     `[event-fields] дедлайн «${item.deadline}» не распознан — событийные поля ХО пропущены`,

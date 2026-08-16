@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { toCrmDateTime } from '@/shared/lib/date';
 import { KpiEventPayload } from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
 import {
     EventTypeCode,
@@ -236,7 +235,6 @@ export class EventReportKpiPayloadBuilder {
             name: ctx.reportEventName || ctx.planEventName,
             eventType,
             action,
-            dateForName: ctx.nowDate,
             crm: this.crmLinks(),
         });
     }
@@ -256,7 +254,6 @@ export class EventReportKpiPayloadBuilder {
             name: `Незапланированная презентация ${this.nowFormatted()}`,
             eventType: 'presentation',
             action: 'plan',
-            dateForName: ctx.nowDate,
             crm: this.crmLinks(),
         });
     }
@@ -269,7 +266,6 @@ export class EventReportKpiPayloadBuilder {
             name: `Презентация состоялась ${this.nowFormatted()}`,
             eventType: 'presentation',
             action: 'done',
-            dateForName: ctx.nowDate,
             crm: this.crmLinks(),
             // Пара к «Незапланированной презентации»: факт проведения — на
             // секунду ПОЗЖЕ факта планирования (см. комментарий выше).
@@ -290,7 +286,6 @@ export class EventReportKpiPayloadBuilder {
             name: ctx.planEventName,
             eventType,
             action: ctx.isExpired ? 'pound' : 'plan',
-            dateForName: this.parseDeadline(ctx.planDeadline) ?? ctx.nowDate,
             crm: this.crmLinks(),
             eventDateOffsetSec: PLAN_EVENT_DATE_OFFSET_SEC,
         });
@@ -314,7 +309,6 @@ export class EventReportKpiPayloadBuilder {
                 : `Отказ: ${ctx.reportEventName || ''}`,
             eventType,
             action: 'done',
-            dateForName: ctx.nowDate,
             crm: this.crmLinks(),
         });
     }
@@ -326,7 +320,6 @@ export class EventReportKpiPayloadBuilder {
         name: string;
         eventType: EventTypeCode;
         action: EventActionCode;
-        dateForName: Date;
         crm: Record<string, string>;
         /**
          * Смещение event_date в секундах. План-элементы пишутся на +1 c от
@@ -338,7 +331,6 @@ export class EventReportKpiPayloadBuilder {
         eventDateOffsetSec?: number;
     }): KpiEventPayload {
         const ctx = this.ctx;
-        const tz = this.portal.getTimezone();
         const failTypeCode = ctx.dto.report?.failType?.current?.code;
         const eventDate = input.eventDateOffsetSec
             ? new Date(ctx.nowDate.getTime() + input.eventDateOffsetSec * 1000)
@@ -349,9 +341,7 @@ export class EventReportKpiPayloadBuilder {
             values: {
                 event_date: this.formatCrm(eventDate),
                 event_title: input.name,
-                plan_date: ctx.planDeadline
-                    ? toCrmDateTime(ctx.planDeadline, tz)
-                    : null,
+                plan_date: ctx.planDeadline?.toCrmDateTime() ?? null,
                 author: ctx.planCreatedById || ctx.planResponsibleId,
                 responsible: ctx.planResponsibleId,
                 su: ctx.planResponsibleId,
@@ -451,11 +441,5 @@ export class EventReportKpiPayloadBuilder {
 
     private nowFormatted(): string {
         return this.formatCrm(this.ctx.nowDate);
-    }
-
-    private parseDeadline(deadline: string): Date | null {
-        if (!deadline) return null;
-        const d = dayjs(deadline);
-        return d.isValid() ? d.toDate() : null;
     }
 }

@@ -308,3 +308,46 @@ export class ReviseCallsDto {
     @Max(200)
     maxEntities?: number;
 }
+
+/** Ручной запуск сверки по презентациям (смоук Фазы 4). */
+export class PresentationAuditRequestDto {
+    @ApiProperty({
+        description:
+            'Домен портала Bitrix24, по презентациям которого идёт сверка.',
+        example: 'gsr.bitrix24.ru',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Окно назад в часах: сверяются разборы презентаций/решений за ' +
+            'этот период. По умолчанию 30 (вчерашний день с запасом).',
+        example: 30,
+        type: Number,
+        minimum: 1,
+        maximum: 720,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(720)
+    windowHours?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Максимум презентаций за прогон (один LLM-запрос на каждую). ' +
+            'По умолчанию 20.',
+        example: 5,
+        type: Number,
+        minimum: 1,
+        maximum: 200,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(200)
+    maxEntities?: number;
+}

@@ -212,6 +212,21 @@ POST {backend}/api/sales-hooks/lead-to-work/webhook
 Связи графа (`to_base_sales`, `deal_from_lead_id`, `deal_joined_leads`) и
 инвариант «одна открытая пара» работают ОДИНАКОВО в обеих ветках.
 
+#### Прошлое заявки переезжает в сделку
+
+- **`LEAD_ID`** — штатное поле сделки: по нему Битрикс сам рисует связь с
+  лидом в карточке. Ставится при создании; у существующей сделки НЕ
+  перетирается (там может быть лид штатной конвертации — он первичнее).
+- **Комментарий-ссылка** в таймлайне новой сделки: «Работа создана из
+  заявки → лид». Настройка `lead_work_origin_comment` (по умолчанию вкл).
+  При reuse не пишется — работа шла и раньше.
+- **Дела заявки** (письма, звонки) дополнительно ПРИВЯЗЫВАЮТСЯ к сделке
+  (`crm.activity.binding.add`): в лиде они остаются, в сделке появляются.
+  Настройки `lead_work_copy_activities` (по умолчанию выкл) и
+  `lead_work_copy_activities_limit` (последние N, потолок Битрикса — 100
+  привязок на дело). Всё fail-open: сделка уже создана, ошибка таймлайна
+  уходит в warnings.
+
 #### Как проверить конвертацию
 
 1. Взять лид, у которого ещё нет нашей сделки.
@@ -545,7 +560,76 @@ warning и молча выходит (graceful, как всё остальное
 
 ---
 
-## 10. Смежный хук: проверка на дубли из сущности
+## 10. Карта записи полей: кто, куда, при каких условиях
+
+Оркестратор — `services/lead-to-work-flow.service.ts`: один flow-сервис на
+сущность, каждый собирает СВОЮ мапу полей и ставит одну batch-команду.
+Проверять/менять запись поля — искать сущность в этой таблице и идти в
+указанный метод.
+
+| Сущность | Кто пишет | Поля | Условие |
+|---|---|---|---|
+| **Лид** | `flows/lead-flow.service.ts` → `models/lead-xo-event-entity.model.ts` | `STATUS_ID` | стадия из `LeadToWorkStagePlan` разрезолвилась |
+| | | `ASSIGNED_BY_ID` | только `isXo=Y` (передача работы) |
+| | `appendWorkLinks()` | `to_base_sales`, `to_xo_sales`, `op_lead_is_company`, `op_lead_status` | обе ветки, всегда |
+| | `appendSiteMarks()` | `op_lead_site_status`, `op_lead_site_stage` | `isXo=Y` И лид распознан заявкой И поле ПУСТОЕ |
+| | `appendWorkKind()` / `appendAssignedAt()` / `appendRequestHistory()` | `op_lead_work_kind`, `op_lead_assigned_at`, `op_lead_firstprepare_history` | только `isXo=Y` |
+| | `models/xo-event-entity.model.ts` (наследование) | событийные поля ХО (см. ниже) | только `isXo=Y` |
+| **Компания** | `flows/company-flow.service.ts` | `ASSIGNED_BY_ID` + событийные поля ХО | только `isXo=Y`; при `createCompany=Y` ещё `TITLE`, `LEAD_ID` |
+| **Сделка ОП и ХО-сделка** | `flows/deal-flow.service.ts` → `dealLinkFields()` | `LEAD_ID` (не перетирая), `deal_from_lead_id`, `deal_joined_leads` (union) | обе ветки, на ЛЮБУЮ нашу сделку |
+| | `queueBase()` / `queueXo()` | `TITLE`, `CATEGORY_ID`, `STAGE_ID`, `ASSIGNED_BY_ID`, `COMPANY_ID`, `CONTACT_ID(S)` | создание; при reuse — только доводка (контакты union, ответственный при `isXo=Y`) |
+| | + событийные поля ХО через `eventFields()` | | `isXo=Y` и есть дедлайн |
+| **Задачи** | `flows/task-flow.service.ts` | TITLE/DEADLINE/UF_CRM_TASK | `taskMode` (см. §1) |
+| **KPI/History** | `lead-to-work-kpi.service.ts` | элементы списков | см. §6 |
+
+**Событийные поля ХО** — общий набор для лида, компании и ОБЕИХ сделок,
+живёт ОДНИМ списком в `XoEventEntityModel.valueOf()`: `xo_name`, `xo_date`,
+`call_next_name`, `call_next_date`, `call_last_date`, `xo_responsible`,
+`xo_created`, `manager_op`, `op_history`, `op_mhistory`,
+`op_current_status`, `op_work_status`, `op_prospects_type`.
+
+### Два слоя типизации (почему в мапах строки — это нормально)
+
+1. **КОДЫ полей — типизированы, тут и живёт автокомплит**:
+   `PBX_SALES_EVENT_FIELD_CODES` (portal-lib), `EnumXoEventFieldCode`
+   (pbx-xo-event.enum), `EnumLeadRequestFieldCode` (pbx-lead-request.enum).
+   Magic strings запрещены (ai/rules/pbx-typing.md).
+2. **UF-имена — только runtime**: `fieldName(code)` →
+   `portal.getEntityFieldByCode(entityType, code)` → `UF_CRM_…`. У каждого
+   портала свои имена, поэтому итоговая мапа — `Record<string, unknown>`,
+   а поле, не установленное на портале, молча пропускается (graceful).
+   `leadDealRef(ufName, …)` принимает строку потому, что это уже
+   РЕЗОЛВНУТОЕ имя (источник — типизированный код строчкой выше), и оно же —
+   ключ в `ufDefinitions` (ответ `lead.userfield.list` портала).
+
+### Как добавить своё поле (пошагово)
+
+1. **Код поля** — в типизированный домен portal-lib:
+   `pbx-sales-event-field.type.ts` (общие поля продаж) либо enum домена
+   заявки `pbx-lead-request`. Поле должно быть установлено на портале —
+   иначе скип (это штатно: граф достроится после установки).
+2. **Место записи** — по сущности и условию из таблицы выше:
+   - лид, обе ветки → `LeadXoEventEntityModel.appendWorkLinks()` (или свой
+     `append*()`, вызвать из `getFields()` ВНЕ `withXoEventFields`);
+   - лид, только ХО → внутри `if (withXoEventFields)`;
+   - одинаково лид+компания+сделки, только ХО → `XoEventEntityModel`:
+     код в `EnumXoEventFieldCode`/`XO_EVENT_FIELD_CODES` + ветка в
+     `valueOf()` (switch исчерпывающий — компилятор не даст забыть);
+   - обе сделки, обе ветки → `DealFlowService.dealLinkFields()`;
+   - только основная / только ХО-сделка → `queueBase()` / `queueXo()`;
+   - компания → `CompanyFlowService.queue()`.
+3. **Значение** — из контекста (`IXoEventContext`, `ILeadEntityContext`,
+   `LeadToWorkContext`). Нужен новый вход — расширить контекст и прокинуть
+   из use-case; в модели данные с портала не читаются.
+4. **Enumeration-поля**: писать `bitrixId` item'а через
+   `itemBitrixIdByCode(code, itemCode)` — коды item'ов тоже типизированы.
+5. **Даты** — только через `BitrixDateTime` (`toCrmDateTime()` для CRM,
+   `toTaskDeadline()` для задач); сырые строки в Bitrix не уходят.
+6. Тест в `__tests__` + строка в таблицу выше.
+
+---
+
+## 11. Смежный хук: проверка на дубли из сущности
 
 `sales-hooks/duplicate-check` — принимает тип+id сущности (lead / company /
 deal / contact), проводит глубокую проверку дублей (реквизиты, ИНН,

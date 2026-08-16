@@ -4,9 +4,11 @@ import { InstallCallReportSmartUseCase } from '@lib/call-lib';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { CallReportAnalyzeUseCase } from '../use-cases/call-report-analyze.use-case';
 import { CallRevisionService } from '../services/call-revision.service';
+import { PresentationAuditService } from '../services/presentation-audit.service';
 import {
     AnalyzeCallDto,
     InstallCallReportSmartDto,
+    PresentationAuditRequestDto,
     ReviseCallsDto,
     ScanCallsDto,
 } from '../dto/call-report-request.dto';
@@ -14,6 +16,7 @@ import {
     AnalyzeCallsResponseDto,
     CallReportScanResponseDto,
     InstallCallReportSmartResponseDto,
+    PresentationAuditResponseDto,
     ReviseCallsResponseDto,
 } from '../dto/call-report-response.dto';
 
@@ -32,6 +35,7 @@ export class CallReportController {
         private readonly scanUseCase: CallReportScanUseCase,
         private readonly analyzeUseCase: CallReportAnalyzeUseCase,
         private readonly revisionService: CallRevisionService,
+        private readonly presentationAudit: PresentationAuditService,
     ) {}
 
     @Post('install-smart')
@@ -146,6 +150,42 @@ export class CallReportController {
             from,
             to,
             dto.maxEntities ?? REVISOR_DEFAULT_MAX_ENTITIES,
+        );
+    }
+
+    @Post('presentation-audit')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Сверка по презентациям (синхронно, ручной запуск)',
+        description:
+            'Фаза 4: для каждого свежего разбора презентации/решения читает ' +
+            'отчёт менеджера из полей сделки («ОП Хвост», «ОП Пять К», ' +
+            '«ОП Комментарии после презентаций») и сверяет с разбором одним ' +
+            'LLM-вызовом. Итог — «⚖️ Сверка с отчётом менеджера» в таймлайн ' +
+            'смарт-элемента; при расхождении — дубль в таймлайн сделки. ' +
+            'Идемпотентно (ais type=presentation-audit). Ручной аналог ' +
+            'утреннего крона PresentationAuditScheduler (08:00 МСК).',
+    })
+    @ApiBody({
+        type: PresentationAuditRequestDto,
+        description: 'Домен и границы прогона.',
+    })
+    @ApiOkResponse({
+        type: PresentationAuditResponseDto,
+        description: 'Счётчики: кандидатов/сверено/расхождений.',
+    })
+    async presentationAuditRun(
+        @Body() dto: PresentationAuditRequestDto,
+    ): Promise<PresentationAuditResponseDto> {
+        const to = new Date();
+        const from = new Date(
+            to.getTime() - (dto.windowHours ?? 30) * 60 * 60 * 1000,
+        );
+        return this.presentationAudit.runForDomain(
+            dto.domain,
+            from,
+            to,
+            dto.maxEntities ?? 20,
         );
     }
 }

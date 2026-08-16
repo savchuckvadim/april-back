@@ -20,6 +20,13 @@ import {
     collectCallingResultWorklist,
     normalizeCallingEventType,
 } from '../../types/calling-event.enum';
+import {
+    buildTimelineComment,
+    completedPhrase,
+    failedPhrase,
+    plannedPhrase,
+    poundPhrase,
+} from '../timeline/timeline-text';
 
 /**
  * Поток обработки звонка (аналог legacy `EventCalling`): закрытие/перенос
@@ -58,6 +65,32 @@ export class CallingFlowService {
         this.recordCompleted(ctx);
         this.planned(ctx, expired);
         this.recordResultPlanned(ctx);
+        this.queueTimelineComment(ctx);
+    }
+
+    /** Человекочитаемый итог в timeline сделки и связанной компании. */
+    private queueTimelineComment(ctx: CallEventContext): void {
+        const text = buildTimelineComment(
+            formatCrmDateTime(ctx.nowDate, undefined, true),
+            ctx.timeline,
+            ctx.timelineSpont,
+        );
+        if (!text) return;
+
+        if (ctx.dealId) {
+            this.bitrix.batch.timeline.addTimelineComment('timeline_deal', {
+                ENTITY_ID: ctx.dealId,
+                ENTITY_TYPE: 'deal',
+                COMMENT: text,
+            });
+        }
+        if (ctx.companyId) {
+            this.bitrix.batch.timeline.addTimelineComment('timeline_company', {
+                ENTITY_ID: ctx.companyId,
+                ENTITY_TYPE: 'company',
+                COMMENT: text,
+            });
+        }
     }
 
     // ---------- task ops ----------
@@ -101,6 +134,11 @@ export class CallingFlowService {
         const action = ctx.planIsActive
             ? EnumOrkEventAction.ea_ork_pound
             : EnumOrkEventAction.ea_ork_act_noresult_fail;
+        ctx.timeline.push(
+            ctx.planIsActive
+                ? poundPhrase(task.type, ctx.dto.plan.deadline)
+                : failedPhrase(task.type),
+        );
         this.addElement({
             name: `${task.type}\n${ctx.planIsActive ? 'Перенос' : 'Не состоялся'}`,
             eventTypeCode: this.eventTypeCode(task.eventType),
@@ -127,6 +165,12 @@ export class CallingFlowService {
         // при noresult запись делает recordNoresult; plan.isExpired запись
         // «Состоялся» не блокирует (успешный отчёт с далёким планом)
         if (!task || ctx.isNoResult) return;
+        ctx.timeline.push(
+            completedPhrase(
+                normalizeCallingEventType(task.eventType),
+                task.type,
+            ),
+        );
         this.addElement({
             name: `${task.type} Состоялся`,
             eventTypeCode: this.eventTypeCode(task.eventType),
@@ -161,6 +205,13 @@ export class CallingFlowService {
             `Тип коммуникации: ${plan.communication?.type?.name ?? 'Не указано'}\n\n` +
             ctx.dto.report.description;
 
+        ctx.timeline.push(
+            plannedPhrase(
+                normalizeCallingEventType(plan.type.current.code),
+                plan.type.current.name,
+                plan.deadline,
+            ),
+        );
         this.bitrix.batch.task.add('create_task', {
             TITLE: `${plan.type.current.name}: ${plan.name}`,
             DESCRIPTION: description,
@@ -199,6 +250,7 @@ export class CallingFlowService {
         );
 
         for (const { code, name, legacy } of worklist) {
+            ctx.timelineSpont.push(name);
             // легаси-флаги как раньше (звонок/исходящий), spontaneous — из
             // report.communication с фолбэком на звонок/исходящий
             const communicationCode = legacy

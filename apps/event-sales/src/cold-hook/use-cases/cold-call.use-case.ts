@@ -13,7 +13,7 @@ import {
     IColdTaskFlow,
 } from '../services/enities/task/cold-tasks.flow.service';
 import { ColdListFlowService } from '../services/enities/kpi-list/cold-list.flow.service';
-import { PortalDeadline } from '@lib/shared/lib/date';
+import { BitrixDateTime } from '@lib/shared/lib/date';
 
 export class ColdCallUseCase {
     // private readonly logger = new Logger(ColdCallUseCase.name);
@@ -35,7 +35,7 @@ export class ColdCallUseCase {
         lead: IBXLead | null,
         buffer: ColdHookBatchGroupBuffer,
     ) {
-        const deadline = PortalDeadline.fromPortalInput(
+        const deadline = BitrixDateTime.fromPortalInput(
             data.deadline,
             this.portal.getTimezone(),
         );

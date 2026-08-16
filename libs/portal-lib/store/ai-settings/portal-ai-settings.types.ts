@@ -66,6 +66,11 @@ export interface PortalAiSettingsRecord {
      * ревизия удваивает LLM-расход и включается сознательно.
      */
     revisorEnabled: boolean | null;
+    /**
+     * Утренняя СВЕРКА ПО ПРЕЗЕНТАЦИЯМ: отчёт менеджера («ОП Хвост»,
+     * «ОП Пять К», комментарии) против AI-разбора звонка. NULL — выключена.
+     */
+    presentationAuditEnabled: boolean | null;
 }
 
 /**
@@ -98,6 +103,7 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     allowedUserIds: null,
     irrelevantConfidence: null,
     revisorEnabled: null,
+    presentationAuditEnabled: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

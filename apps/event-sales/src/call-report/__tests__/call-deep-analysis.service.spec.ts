@@ -60,13 +60,24 @@ const makeDeps = (options?: {
                   source: 'builtin',
               }),
     };
+    // App-настройки event-sales: «5К и хвост» по умолчанию выключен.
+    const appSettings = {
+        resolve: jest.fn().mockResolvedValue({ withCheckPresentation: false }),
+    };
     const service = new CallDeepAnalysisService(
         vibeCodeClient as never,
         vibeKeyResolver as never,
         knowledgeContent as never,
         callTypeRegistry as never,
+        appSettings as never,
     );
-    return { service, vibeCodeClient, knowledgeContent, callTypeRegistry };
+    return {
+        service,
+        vibeCodeClient,
+        knowledgeContent,
+        callTypeRegistry,
+        appSettings,
+    };
 };
 
 /** Системный промпт — первый аргумент structuredCompletion. */
@@ -181,6 +192,27 @@ describe('CallDeepAnalysisService', () => {
 
     // Выключатель шага живёт в processor (настройки портала → env → дефолт,
     // CallReportSettingsService) — см. call-report.processor.spec.
+
+    it('withCheckPresentation ужесточает промпт презентации блоком «5К и хвост»', async () => {
+        const { service, vibeCodeClient, appSettings } = makeDeps({
+            profileMissing: true,
+        });
+        appSettings.resolve.mockResolvedValue({
+            withCheckPresentation: true,
+        });
+        await service.run('test.bitrix24.ru', 'алло', 'presentation');
+        expect(systemPromptOf(vibeCodeClient)).toContain(
+            'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
+        );
+
+        // Для холодного звонка блок не добавляется даже при включённой
+        // настройке (хвост — требование к презентации/решению).
+        vibeCodeClient.structuredCompletion.mockClear();
+        await service.run('test.bitrix24.ru', 'алло', 'cold');
+        expect(systemPromptOf(vibeCodeClient)).not.toContain(
+            'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
+        );
+    });
 
     it('модель из настроек портала уезжает в structuredCompletion', async () => {
         const { service, vibeCodeClient } = makeDeps();

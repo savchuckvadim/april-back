@@ -30,13 +30,18 @@ const makeDeps = (options?: {
     const callTypeRegistry = {
         resolve: jest.fn().mockResolvedValue({ types: {} }),
     };
+    // App-настройки event-sales: «5К и хвост» по умолчанию выключен.
+    const appSettings = {
+        resolve: jest.fn().mockResolvedValue({ withCheckPresentation: false }),
+    };
     const service = new CallFocusAnalysisService(
         vibeCodeClient as never,
         vibeKeyResolver as never,
         knowledgeContent as never,
         callTypeRegistry as never,
+        appSettings as never,
     );
-    return { service, vibeCodeClient };
+    return { service, vibeCodeClient, appSettings };
 };
 
 describe('контракт фокусов', () => {

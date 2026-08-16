@@ -130,7 +130,8 @@ export class PortalAiSettingsPrismaRepository
         }
         if (
             update.irrelevantConfidence !== undefined ||
-            update.revisorEnabled !== undefined
+            update.revisorEnabled !== undefined ||
+            update.presentationAuditEnabled !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -139,6 +140,10 @@ export class PortalAiSettingsPrismaRepository
             }
             if (update.revisorEnabled !== undefined) {
                 json.revisorEnabled = update.revisorEnabled ?? undefined;
+            }
+            if (update.presentationAuditEnabled !== undefined) {
+                json.presentationAuditEnabled =
+                    update.presentationAuditEnabled ?? undefined;
             }
             data.settings = JSON.parse(
                 JSON.stringify(json),
@@ -151,6 +156,7 @@ export class PortalAiSettingsPrismaRepository
     private toJsonSettings(value: Prisma.JsonValue | undefined): {
         irrelevantConfidence?: number;
         revisorEnabled?: boolean;
+        presentationAuditEnabled?: boolean;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -165,6 +171,10 @@ export class PortalAiSettingsPrismaRepository
             revisorEnabled:
                 typeof raw.revisorEnabled === 'boolean'
                     ? raw.revisorEnabled
+                    : undefined,
+            presentationAuditEnabled:
+                typeof raw.presentationAuditEnabled === 'boolean'
+                    ? raw.presentationAuditEnabled
                     : undefined,
         };
     }
@@ -193,6 +203,9 @@ export class PortalAiSettingsPrismaRepository
                 this.toJsonSettings(row.settings).irrelevantConfidence ?? null,
             revisorEnabled:
                 this.toJsonSettings(row.settings).revisorEnabled ?? null,
+            presentationAuditEnabled:
+                this.toJsonSettings(row.settings).presentationAuditEnabled ??
+                null,
         };
     }
 

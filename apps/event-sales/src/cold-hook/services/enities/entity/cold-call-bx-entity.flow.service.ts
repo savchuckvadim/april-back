@@ -4,11 +4,11 @@ import { EventEntityModel } from './event-entity.model';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { Logger } from '@nestjs/common';
 import { ColdHookBatchGroupBuffer } from '../../batch/cold-hook-batch-group-buffer';
-import { PortalDeadline } from '@lib/shared/lib/date';
+import { BitrixDateTime } from '@lib/shared/lib/date';
 
 export interface IColdCallBxEntityData {
     name: string;
-    deadline: PortalDeadline;
+    deadline: BitrixDateTime;
     responsibleId: string;
     xoCreated: string;
     entity: IBXCompany | IBXLead | IBXDeal;

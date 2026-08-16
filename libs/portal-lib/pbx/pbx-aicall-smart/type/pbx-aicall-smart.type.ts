@@ -71,6 +71,10 @@ export const CALL_REPORT_SMART_TITLE = 'AI-анализ звонков';
  */
 export const CALL_REPORT_CALL_TYPE_CODES = [
     'cold',
+    // Первый звонок по входящей заявке с сайта (прайс/демо/документ/
+    // семинар/Искра) — тёплый вход, свой регламент (легализация →
+    // диагностика → фильтр ЦА → предложение зайти в систему).
+    'site_lead',
     'call',
     'presentation',
     'decision',
@@ -87,6 +91,7 @@ export type CallReportCallTypeCode =
 
 export const CALL_REPORT_CALL_TYPE_ITEMS = [
     { CODE: 'cold', VALUE: 'Холодный (выход на ЛПР)', SORT: 100 },
+    { CODE: 'site_lead', VALUE: 'Заявка с сайта', SORT: 150 },
     { CODE: 'call', VALUE: 'Звонок (цель — презентация)', SORT: 200 },
     { CODE: 'presentation', VALUE: 'Презентация', SORT: 300 },
     { CODE: 'decision', VALUE: 'Звонок по решению', SORT: 400 },
@@ -145,6 +150,21 @@ export const CALL_REPORT_TYPE_PROFILES: Record<
         talkRatioNorm: { min: 30, max: 55 },
         questionsNorm: { min: 3, max: 8 },
         knowledgeKind: 'call-analysis-cold',
+    },
+    site_lead: {
+        focus: 'Первый звонок по заявке с сайта: легализация звонка («вопросы для отчёта»), диагностика что искал, фильтр ЦА («по работе?»), предложение зайти в систему под задачу; минимум — цена и КП; закрытие на конкретную дату.',
+        sectionRelevance: {
+            GREETING: 90,
+            NEEDS: 90,
+            PRESENTATION: 40,
+            OBJECTIONS: 60,
+            PRICE: 50,
+            CLOSING: 90,
+            REFUSAL: 50,
+        },
+        talkRatioNorm: { min: 40, max: 60 },
+        questionsNorm: { min: 5, max: 10 },
+        knowledgeKind: 'call-analysis-site-lead',
     },
     call: {
         focus: 'Договориться о презентации: выявление потребностей, назначение конкретного слота.',
@@ -500,6 +520,19 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         items: CALL_REPORT_CALL_TYPE_ITEMS,
     },
     { code: 'PRODUCTIVE', name: 'Звонок результативный', type: 'boolean' },
+    // «Хвост» и «5К» (методология завершения презентации, 08.2026):
+    // фильтры «презентации без закрытия» в списках смарта. Заполняются
+    // разбором только для типов presentation/decision.
+    {
+        code: 'HVOST_DONE',
+        name: 'Хвост пройден (после демо)',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_DONE',
+        name: '5К закрыто (контроль встречи)',
+        type: 'boolean',
+    },
     {
         code: 'INTERLOCUTOR_ROLE',
         name: 'С кем говорили',

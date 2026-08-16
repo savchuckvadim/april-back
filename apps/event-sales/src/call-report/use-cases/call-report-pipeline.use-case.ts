@@ -16,7 +16,10 @@ import {
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
 import { CallClassifyStepService } from '../services/call-classify-step.service';
-import { CallContextBuilderService } from '../services/call-context-builder.service';
+import {
+    CallContextBuilderService,
+    CallPassport,
+} from '../services/call-context-builder.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 
 /** Задача конвейера: один звонок (по сделке или лиду) на обработку. */
@@ -240,16 +243,22 @@ export class CallReportPipelineUseCase {
         // и модель первичного анализа управляются из админки без деплоя.
         const settings = await this.settingsService.resolve(payload.domain);
 
+        // Паспорт звонка (слой 0) — ДО классификации: CRM-факты (лид создан
+        // заявкой с сайта, звонок по сделке) — подсказка классификатору
+        // типа; тот же паспорт затем префиксуется первичному LLM-анализу.
+        const passport = await this.buildPassport(row);
+
         const classification = await this.classifyStep.run(
             text,
             payload,
             payload.transcriptionId,
             settings.classifyEnabled,
+            passport ? this.contextBuilder.renderClassifyHint(passport) : null,
         );
 
         // ГЕЙТ НЕРЕЛЕВАНТНОСТИ: сотрудник сам звонил в стороннюю
         // организацию / личный / ошибочный разговор — техника продаж не
-        // оценивается, дорогие шаги (паспорт, GigaChat, глубокий разбор,
+        // оценивается, дорогие шаги (GigaChat, глубокий разбор,
         // смарт-элемент) не тратятся. Классификация уже в ais — звонок
         // виден в отчётах с типом irrelevant. Ложное срабатывание чинится
         // порогом уверенности: сомнительные случаи идут полным путём.
@@ -271,9 +280,11 @@ export class CallReportPipelineUseCase {
             };
         }
 
-        // Паспорт звонка (слой 0) — тот же CRM-контекст, что у глубокого
-        // разбора: без него GigaChat судит «холодный/тёплый» вслепую.
-        const passportBlock = await this.buildPassportBlock(row);
+        // Тот же CRM-контекст, что у глубокого разбора: без него GigaChat
+        // судит «холодный/тёплый» вслепую.
+        const passportBlock = passport
+            ? this.contextBuilder.renderForPrompt(passport)
+            : null;
         const llmModel = this.resolveLlmModel(settings.llmModel);
         const { resume, recomendation } = await this.runLlmAnalysis(
             passportBlock ? `${passportBlock}\n\n${text}` : text,
@@ -315,16 +326,15 @@ export class CallReportPipelineUseCase {
         };
     }
 
-    /** Паспорт для первичного анализа; любая ошибка → анализ без паспорта. */
-    private async buildPassportBlock(
+    /** Паспорт звонка; любая ошибка → классификация и анализ без паспорта. */
+    private async buildPassport(
         row: TranscriptionPipelineView,
-    ): Promise<string | null> {
+    ): Promise<CallPassport | null> {
         try {
-            const passport = await this.contextBuilder.build(row);
-            return this.contextBuilder.renderForPrompt(passport);
+            return await this.contextBuilder.build(row);
         } catch (error) {
             this.logger.warn(
-                `Паспорт для первичного анализа не собран (строка ${row.id}): ${(error as Error).message}`,
+                `Паспорт звонка не собран (строка ${row.id}): ${(error as Error).message}`,
             );
             return null;
         }

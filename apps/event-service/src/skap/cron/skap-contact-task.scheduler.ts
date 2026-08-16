@@ -84,7 +84,9 @@ export class SkapContactTaskScheduler {
             domain,
             EnumPortalAppCode.skap,
         );
-        if (!settings.enabled) return;
+        // Задачи — отдельный тумблер (default false): включённый импорт
+        // сам по себе задач НЕ ставит (инцидент 12.08.2026).
+        if (!settings.enabled || !settings.contactTasksEnabled) return;
 
         const redis = this.redisService.getClient();
         const markerKey = buildSkapContactTaskKey(domain);

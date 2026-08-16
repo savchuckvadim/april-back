@@ -1,3 +1,4 @@
+import { BitrixDateTime, ETimeZone } from '@/shared/lib/date';
 import { EventReportTaskFlowService } from '../services/task/event-report-task-flow.service';
 import { DealFlowResult } from '../services/deal/event-report-deal-flow.service';
 
@@ -51,7 +52,10 @@ const baseCtx = (over: Record<string, unknown> = {}) =>
         entityId: 500,
         planResponsibleId: 5,
         planCreatedById: 5,
-        planDeadline: '2026-08-15T10:00:00',
+        planDeadline: BitrixDateTime.fromPortalInput(
+            '2026-08-15T10:00:00',
+            ETimeZone.EUROPE_MOSCOW,
+        ),
         reportComment: '',
         planEventType: 'warm',
         currentTask: null,

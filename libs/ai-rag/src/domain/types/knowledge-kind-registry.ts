@@ -64,6 +64,15 @@ export const KNOWN_KNOWLEDGE_KINDS: readonly KnowledgeKindInfo[] = [
         consumer: 'ночной агент (tier-3)',
     },
     {
+        kind: 'call-analysis-site-lead',
+        title: 'Анализ: заявка с сайта',
+        description:
+            'Инструкция анализа первых звонков по входящим заявкам с сайта ' +
+            '(прайс, демо-доступ, документ, семинар, Искра): легализация, ' +
+            'фильтр ЦА, перевод в показ системы.',
+        consumer: 'ночной агент (tier-3)',
+    },
+    {
         kind: 'call-analysis-call',
         title: 'Анализ: звонок под презентацию',
         description:
