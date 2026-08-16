@@ -16,7 +16,10 @@ import {
     CALL_REVISION_SCHEMA,
     RevisionCallDigest,
 } from '../contracts/call-revision.contract';
-import { CallContextBuilderService } from './call-context-builder.service';
+import {
+    CallContextBuilderService,
+    CallPassport,
+} from './call-context-builder.service';
 
 /** Итог ревизии одного домена. */
 export interface CallRevisionDomainResult {
@@ -154,7 +157,7 @@ export class CallRevisionService {
             apiKey,
         )) as RevisionVerdict;
 
-        await this.applyVerdict(domain, last, verdict);
+        await this.applyVerdict(domain, last, verdict, passport);
     }
 
     /** Выжимки свежих разборов: agent-analysis (полный dto) или gigachat-резюме. */
@@ -192,12 +195,15 @@ export class CallRevisionService {
 
     /**
      * Применение вердикта: upsert последнего смарт-элемента (рекомендации
-     * по сделке, риски, coaching) + итоговый коммент в таймлайн сущности.
+     * по сделке, риски, coaching + ДОЛИВ CRM-связей из паспорта — чинит
+     * элементы, где intake связи не заполнил) + итоговый коммент в
+     * таймлайн сущности.
      */
     private async applyVerdict(
         domain: string,
         last: TranscriptionPipelineView,
         verdict: RevisionVerdict,
+        passport: CallPassport,
     ): Promise<void> {
         const { bitrix } = await this.pbxService.init(domain);
 
@@ -206,6 +212,14 @@ export class CallRevisionService {
             const writer = new CallReportSmartWriterService(bitrix, smartInfo);
             await writer.addItem({
                 activityId: last.activityId,
+                // Связи владельца звонка из CRM (источник истины) — upsert
+                // дополняет существующий элемент, пустые значения не шлются.
+                mainDealId:
+                    passport.entityType === 'deal'
+                        ? (passport.entityId ?? undefined)
+                        : undefined,
+                companyId: passport.crmCompanyId ?? undefined,
+                contactId: passport.crmContactId ?? undefined,
                 recommendations: [
                     ...verdict.dealRecommendations,
                     ...verdict.unkeptPromises.map(

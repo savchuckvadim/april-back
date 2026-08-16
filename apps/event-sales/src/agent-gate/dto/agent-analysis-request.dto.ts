@@ -26,6 +26,7 @@ import {
     CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_SECTION_CODES,
     CALL_REPORT_SENTIMENT_CODES,
+    CALL_REPORT_SPECIALIST_CODES,
     CallReportCoachingCode,
     CallReportCompetitorCode,
     CallReportInterlocutorCode,
@@ -35,6 +36,7 @@ import {
     CallReportRiskFlagCode,
     CallReportSectionCode,
     CallReportSentimentCode,
+    CallReportSpecialistCode,
 } from '@lib/call-lib';
 
 /** Встроенные типы звонков — из конфига смарта call-report. */
@@ -514,6 +516,20 @@ export class AgentCallAnalysisDto {
     @IsString()
     @IsIn(CALL_REPORT_INTERLOCUTOR_CODES as unknown as string[])
     interlocutorRole?: CallReportInterlocutorCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Специальность собеседника по лексике разговора (бухгалтер / ' +
+            'юрист / кадровик / руководитель / другой) — под неё подбирается ' +
+            'карта демонстрации. null — явных признаков в разговоре нет.',
+        enum: CALL_REPORT_SPECIALIST_CODES,
+        example: 'accountant',
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_SPECIALIST_CODES as unknown as string[])
+    specialist?: CallReportSpecialistCode | null;
 
     @ApiPropertyOptional({
         description: 'Общий тон клиента в разговоре.',

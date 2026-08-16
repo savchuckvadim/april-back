@@ -25,6 +25,15 @@ export interface CallPassportHistoryItem {
     resume: string | null;
 }
 
+/** Поля карточки лида/контакта, из которых собирается персона собеседника. */
+interface PersonaFields {
+    STATUS_ID?: string;
+    NAME?: string;
+    LAST_NAME?: string;
+    POST?: string;
+    COMMENTS?: string;
+}
+
 /**
  * «Паспорт звонка» — слой 0 многослойного анализа (план
  * ai/tasks/call-analysis-v2-plan.md): всё, что мы ЗНАЕМ из данных до
@@ -54,6 +63,25 @@ export interface CallPassport {
      * null вне lead или при ошибке детекта.
      */
     leadWorkKind: LeadWorkKind | null;
+    /**
+     * Должность собеседника из CRM (POST лида или контакта сделки) —
+     * подсказка глубокому разбору для специализации показа (бухгалтер/
+     * юрист/кадровик); null — не заполнена или недоступна.
+     */
+    contactPosition: string | null;
+    /**
+     * Имя собеседника из CRM (лид или контакт сделки) — помогает разбору
+     * восстанавливать искажённые распознаванием имена; null — нет данных.
+     */
+    contactName: string | null;
+    /**
+     * Заметки менеджера из CRM (COMMENTS лида или контакта сделки, без
+     * разметки, обрезаны) — фон для разбора; могут быть устаревшими.
+     */
+    crmNotes: string | null;
+    /** Компания/контакт владельца звонка из CRM — для долива связей. */
+    crmCompanyId: number | null;
+    crmContactId: number | null;
     /** Направление: ~99% исходящие (менеджер — инициатор). */
     direction: 'incoming' | 'outgoing' | null;
     /** Кандидаты «кто это на самом деле» по номеру телефона (suspected). */
@@ -86,6 +114,11 @@ export class CallContextBuilderService {
             categoryId: null,
             leadStatusId: null,
             leadWorkKind: null,
+            contactPosition: null,
+            contactName: null,
+            crmNotes: null,
+            crmCompanyId: null,
+            crmContactId: null,
             direction: null,
             identity: [],
             history: [],
@@ -138,6 +171,22 @@ export class CallContextBuilderService {
                 '- CRM-контекст НЕИЗВЕСТЕН (сырой лид или звонок без привязки). ' +
                     'ВАЖНО: это может быть действующий клиент с незнакомого номера — ' +
                     'этап определяй только по содержанию разговора и НЕ штрафуй за «неуместность» этапов.',
+            );
+        }
+        const persona: string[] = [];
+        if (passport.contactName) persona.push(passport.contactName);
+        if (passport.contactPosition) {
+            persona.push(`должность «${passport.contactPosition}»`);
+        }
+        if (persona.length) {
+            lines.push(
+                `- Собеседник по данным CRM: ${persona.join(', ')}. ` +
+                    'Подсказка для специализации показа (бухгалтер/юрист/кадровик) и восстановления искажённых распознаванием имён; лексика разговора важнее.',
+            );
+        }
+        if (passport.crmNotes) {
+            lines.push(
+                `- Заметки менеджера из CRM: «${passport.crmNotes}». Фон для разбора; могут быть устаревшими.`,
             );
         }
         if (passport.direction) {
@@ -216,7 +265,12 @@ export class CallContextBuilderService {
             const response = (await bitrix.api.call('crm.deal.get', {
                 id: entityId,
             })) as {
-                result?: { STAGE_ID?: string; CATEGORY_ID?: string | number };
+                result?: {
+                    STAGE_ID?: string;
+                    CATEGORY_ID?: string | number;
+                    CONTACT_ID?: string | number;
+                    COMPANY_ID?: string | number;
+                };
             };
             if (response?.result) {
                 passport.certainty = 'rich';
@@ -227,6 +281,13 @@ export class CallContextBuilderService {
                     response.result.CATEGORY_ID != null
                         ? String(response.result.CATEGORY_ID)
                         : null;
+                passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
+                passport.crmContactId = this.toId(response.result.CONTACT_ID);
+                await this.fillContactPersona(
+                    bitrix,
+                    response.result.CONTACT_ID,
+                    passport,
+                );
             }
             return;
         }
@@ -234,7 +295,11 @@ export class CallContextBuilderService {
             const response = (await bitrix.api.call('crm.lead.get', {
                 id: entityId,
             })) as {
-                result?: Record<string, unknown> & { STATUS_ID?: string };
+                result?: Record<string, unknown> &
+                    PersonaFields & {
+                        CONTACT_ID?: string | number;
+                        COMPANY_ID?: string | number;
+                    };
             };
             if (response?.result) {
                 passport.certainty = 'lead';
@@ -245,8 +310,62 @@ export class CallContextBuilderService {
                     portal,
                     response.result,
                 );
+                passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
+                passport.crmContactId = this.toId(response.result.CONTACT_ID);
+                this.applyPersona(response.result, passport);
             }
         }
+    }
+
+    /** Положительный числовой id или null. */
+    private toId(raw: string | number | undefined): number | null {
+        const id = Number(raw);
+        return Number.isFinite(id) && id > 0 ? id : null;
+    }
+
+    /**
+     * Персона собеседника из карточки контакта сделки (имя, должность,
+     * заметки менеджера) — в карточке часто больше контекста, чем в самой
+     * сделке. Недоступность контакта паспорт не роняет.
+     */
+    private async fillContactPersona(
+        bitrix: BitrixService,
+        contactId: string | number | undefined,
+        passport: CallPassport,
+    ): Promise<void> {
+        const id = Number(contactId);
+        if (!Number.isFinite(id) || id <= 0) return;
+        try {
+            const response = (await bitrix.api.call('crm.contact.get', {
+                id,
+            })) as { result?: PersonaFields };
+            if (response?.result) this.applyPersona(response.result, passport);
+        } catch {
+            // Контакт недоступен — паспорт остаётся без персоны.
+        }
+    }
+
+    /** Имя/должность/заметки из карточки лида или контакта. */
+    private applyPersona(row: PersonaFields, passport: CallPassport): void {
+        passport.contactName =
+            this.cleanText([row.LAST_NAME, row.NAME].join(' ')) ?? null;
+        passport.contactPosition = this.cleanText(row.POST);
+        passport.crmNotes = this.cleanText(row.COMMENTS, 400);
+    }
+
+    /**
+     * Текст поля CRM без HTML/BB-разметки, со схлопнутыми пробелами и
+     * обрезкой; пусто → null.
+     */
+    private cleanText(raw: string | undefined, max = 200): string | null {
+        if (typeof raw !== 'string') return null;
+        const value = raw
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\[[^\]]+\]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (!value) return null;
+        return value.length > max ? `${value.slice(0, max)}…` : value;
     }
 
     /**

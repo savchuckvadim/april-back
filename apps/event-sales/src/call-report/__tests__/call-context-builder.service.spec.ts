@@ -16,6 +16,11 @@ const makeDeps = (options?: {
     leadStatus?: string;
     /** Дополнительные поля лида (для детекта «лид — заявка»). */
     leadFields?: Record<string, unknown>;
+    /** Контакт сделки и его карточка (для подсказки специализации). */
+    dealContactId?: number;
+    contactPost?: string;
+    contactName?: string;
+    contactComments?: string;
     direction?: string;
     phoneMatches?: Record<string, number[]>;
     history?: { id: string; callStartedAt: Date | null }[];
@@ -31,9 +36,19 @@ const makeDeps = (options?: {
                               result: {
                                   STAGE_ID: options?.dealStage ?? 'C5:PREP',
                                   CATEGORY_ID: 5,
+                                  CONTACT_ID: options?.dealContactId,
                               },
                           },
                 );
+            }
+            if (method === 'crm.contact.get') {
+                return Promise.resolve({
+                    result: {
+                        POST: options?.contactPost,
+                        NAME: options?.contactName,
+                        COMMENTS: options?.contactComments,
+                    },
+                });
             }
             if (method === 'crm.lead.get') {
                 return Promise.resolve({
@@ -120,6 +135,46 @@ describe('CallContextBuilderService', () => {
         // Признаков заявки нет → вид работы «холодный», подсказки нет.
         expect(passport.leadWorkKind).toBe('cold');
         expect(service.renderClassifyHint(passport)).toBeNull();
+    });
+
+    it('персона контакта сделки (имя, должность, заметки) попадает в паспорт', async () => {
+        const { service } = makeDeps({
+            dealContactId: 44,
+            contactPost: 'Главный бухгалтер',
+            contactName: 'Мария',
+            contactComments: '<p>Работает в 1С,  [b]просила счёт[/b]</p>',
+        });
+        const passport = await service.build(row() as never);
+        expect(passport.contactPosition).toBe('Главный бухгалтер');
+        expect(passport.contactName).toBe('Мария');
+        // Разметка вычищена, пробелы схлопнуты.
+        expect(passport.crmNotes).toBe('Работает в 1С, просила счёт');
+        const prompt = service.renderForPrompt(passport);
+        expect(prompt).toContain('Собеседник по данным CRM: Мария');
+        expect(prompt).toContain('должность «Главный бухгалтер»');
+        expect(prompt).toContain('Заметки менеджера из CRM');
+    });
+
+    it('компания и контакт сделки сохраняются для долива связей', async () => {
+        const { service } = makeDeps({ dealContactId: 44 });
+        const passport = await service.build(row() as never);
+        expect(passport.crmContactId).toBe(44);
+    });
+
+    it('должность из POST лида; пустая строка → null', async () => {
+        const { service } = makeDeps({
+            leadFields: { POST: '  Юрист  ' },
+        });
+        const passport = await service.build(
+            row({ entityType: 'lead', entityId: '77' }) as never,
+        );
+        expect(passport.contactPosition).toBe('Юрист');
+
+        const { service: bare } = makeDeps({ leadFields: { POST: '' } });
+        const emptyPassport = await bare.build(
+            row({ entityType: 'lead', entityId: '77' }) as never,
+        );
+        expect(emptyPassport.contactPosition).toBeNull();
     });
 
     it('лид с полем лидогена → заявка: строка в паспорте и подсказка классификатору', async () => {

@@ -335,6 +335,7 @@ export class AgentAnalysisIntakeService {
             callType: dto.callType,
             productive: this.resolveProductive(dto),
             interlocutorRole: dto.interlocutorRole,
+            specialist: dto.specialist ?? undefined,
             sentiment: dto.sentiment,
             nextStepSet: dto.nextStep?.set,
             nextStep: dto.nextStep?.description,

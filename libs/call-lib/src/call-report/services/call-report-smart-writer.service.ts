@@ -53,6 +53,8 @@ export interface CallReportSmartItemInput {
     callType?: string;
     productive?: boolean;
     interlocutorRole?: string;
+    /** Специальность собеседника (бухгалтер/юрист/кадровик/…). */
+    specialist?: string;
     sentiment?: string;
     nextStepSet?: boolean;
     nextStep?: string;
@@ -562,6 +564,7 @@ export class CallReportSmartWriterService {
         this.setEnumUf(fields, 'CALL_TYPE', input.callType);
         this.setBoolUf(fields, 'PRODUCTIVE', input.productive);
         this.setEnumUf(fields, 'INTERLOCUTOR_ROLE', input.interlocutorRole);
+        this.setEnumUf(fields, 'SPECIALIST', input.specialist);
         this.setEnumUf(fields, 'SENTIMENT', input.sentiment);
 
         // — Следующий шаг —

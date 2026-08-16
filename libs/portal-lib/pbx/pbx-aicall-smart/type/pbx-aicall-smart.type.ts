@@ -152,7 +152,7 @@ export const CALL_REPORT_TYPE_PROFILES: Record<
         knowledgeKind: 'call-analysis-cold',
     },
     site_lead: {
-        focus: 'Первый звонок по заявке с сайта: легализация звонка («вопросы для отчёта»), диагностика что искал, фильтр ЦА («по работе?»), предложение зайти в систему под задачу; минимум — цена и КП; закрытие на конкретную дату.',
+        focus: 'Первый звонок по заявке с сайта: вход тёплый (клиент сам оставил контакты), но звонок исходящий и инициатива — у менеджера. Легализация звонка («вопросы для отчёта»), диагностика что искал, фильтр ЦА («по работе?»), предложение зайти в систему под задачу; минимум — цена и КП; закрытие на конкретную дату.',
         sectionRelevance: {
             GREETING: 90,
             NEEDS: 90,
@@ -355,6 +355,31 @@ export const CALL_REPORT_INTERLOCUTOR_ITEMS = [
     CODE: CallReportInterlocutorCode;
 })[];
 
+/**
+ * Специальность собеседника — под неё подбирается карта демонстрации
+ * (свойство → связка → выгода): у бухгалтера, юриста и кадровика разные
+ * задачи и разные «крючки» показа. Определяет глубокий разбор по лексике
+ * разговора; должность из CRM приходит подсказкой в паспорте звонка.
+ */
+export const CALL_REPORT_SPECIALIST_CODES = [
+    'accountant',
+    'lawyer',
+    'hr',
+    'director',
+    'other',
+] as const;
+export type CallReportSpecialistCode =
+    (typeof CALL_REPORT_SPECIALIST_CODES)[number];
+export const CALL_REPORT_SPECIALIST_ITEMS = [
+    { CODE: 'accountant', VALUE: 'Бухгалтер', SORT: 100 },
+    { CODE: 'lawyer', VALUE: 'Юрист', SORT: 200 },
+    { CODE: 'hr', VALUE: 'Кадровик', SORT: 300 },
+    { CODE: 'director', VALUE: 'Руководитель', SORT: 400 },
+    { CODE: 'other', VALUE: 'Другой специалист', SORT: 500 },
+] as const satisfies readonly (CallReportSmartEnumItem & {
+    CODE: CallReportSpecialistCode;
+})[];
+
 /** Категории возражений (классическая пятёрка + скрытое). */
 export const CALL_REPORT_OBJECTION_CODES = [
     'price',
@@ -538,6 +563,12 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         name: 'С кем говорили',
         type: 'enumeration',
         items: CALL_REPORT_INTERLOCUTOR_ITEMS,
+    },
+    {
+        code: 'SPECIALIST',
+        name: 'Специальность собеседника',
+        type: 'enumeration',
+        items: CALL_REPORT_SPECIALIST_ITEMS,
     },
     {
         code: 'SENTIMENT',

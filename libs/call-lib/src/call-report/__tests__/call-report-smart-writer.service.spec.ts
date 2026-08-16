@@ -11,6 +11,7 @@ const SMART_INFO: CallReportSmartInfo = {
         KPI_ITEM_STATUS: { confirmed: 60, suspected: 61 },
         HISTORY_ITEM_STATUS: { confirmed: 70, suspected: 71 },
         INTERLOCUTOR_ROLE: { lpr: 80 },
+        SPECIALIST: { accountant: 85 },
         OBJECTION_CATEGORIES: { price: 90, need: 91 },
         COMPETITORS: { consultant: 95 },
         COACHING_PRIORITY: { urgent: 97 },
@@ -120,6 +121,7 @@ describe('CallReportSmartWriterService', () => {
         await writer.addItem({
             activityId: '101',
             interlocutorRole: 'lpr',
+            specialist: 'accountant',
             nextStepSet: true,
             nextStep: 'Презентация в четверг, подключает главбуха',
             nextStepDate: '2026-07-24',
@@ -136,6 +138,7 @@ describe('CallReportSmartWriterService', () => {
         const addCall = bitrix.item.add.mock.calls[0] as unknown[];
         const fields = addCall[1] as Record<string, unknown>;
         expect(fields.ufCrm128InterlocutorRole).toBe(80);
+        expect(fields.ufCrm128Specialist).toBe(85);
         expect(fields.ufCrm128NextStepSet).toBe(1);
         expect(fields.ufCrm128NextStepDate).toBe('2026-07-24');
         expect(fields.ufCrm128PriceDiscussed).toBe(1);

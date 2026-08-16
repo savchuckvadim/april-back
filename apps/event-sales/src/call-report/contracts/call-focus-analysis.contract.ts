@@ -6,6 +6,7 @@ import {
     CALL_REPORT_REFUSAL_CODES,
     CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_SENTIMENT_CODES,
+    CALL_REPORT_SPECIALIST_CODES,
 } from '@lib/call-lib';
 import {
     DEEP_ANALYSIS_CORE_RULES,
@@ -80,8 +81,18 @@ export const FOCUS_FORM_SCHEMA: Record<string, unknown> = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_INTERLOCUTOR_CODES, null],
         },
+        specialist: {
+            type: ['string', 'null'],
+            enum: [...CALL_REPORT_SPECIALIST_CODES, null],
+        },
     },
-    required: ['sections', 'speechAnalysis', 'sentiment', 'interlocutorRole'],
+    required: [
+        'sections',
+        'speechAnalysis',
+        'sentiment',
+        'interlocutorRole',
+        'specialist',
+    ],
     additionalProperties: false,
 };
 
@@ -98,7 +109,13 @@ ${SECTION_FIELDS_SPEC}
 - speechAnalysis — разбор речи: структура спича, приём «свойство-связка-выгода»,
   темп, слова-паразиты, заученность, соотношение монолога и диалога.
 - sentiment — общий тон клиента в разговоре.
-- interlocutorRole — с кем в итоге говорили: ЛПР / пользователь / секретарь / другое.`;
+- interlocutorRole — с кем в итоге говорили: ЛПР / пользователь / секретарь / другое.
+- specialist — специальность собеседника ПО ЛЕКСИКЕ разговора: проводки, НДС,
+  1С, отчётность — бухгалтер; договоры, иски, претензии, судебная практика —
+  юрист; кадры, приказы, отпуска, трудовые споры — кадровик; управление
+  компанией и решения — руководитель. Явных признаков нет — null, не гадай.
+  Если в контексте CRM указана должность собеседника — используй её как
+  подсказку, но верь лексике разговора больше.`;
 
 // ---------------------------------------------------------------------------
 // ФОКУС «СОДЕРЖАНИЕ»: потребности и презентация. Главный вопрос — уместность.

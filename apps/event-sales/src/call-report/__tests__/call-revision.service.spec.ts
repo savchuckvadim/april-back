@@ -73,6 +73,10 @@ const makeDeps = (options?: {
     const contextBuilder = {
         build: jest.fn().mockResolvedValue({
             certainty: 'rich',
+            entityType: 'deal',
+            entityId: 555,
+            crmCompanyId: 33,
+            crmContactId: 44,
             history: [
                 {
                     startedAt: '2026-07-30T09:00:00Z',
@@ -146,6 +150,10 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 activityId: '102',
                 riskFlags: ['promise'],
                 coachingPriority: 'planned',
+                // Долив CRM-связей из паспорта владельца звонка.
+                mainDealId: 555,
+                companyId: 33,
+                contactId: 44,
             }),
         );
         const written = (

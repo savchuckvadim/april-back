@@ -8,6 +8,7 @@ import {
     CALL_REPORT_REFUSAL_CODES,
     CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_SENTIMENT_CODES,
+    CALL_REPORT_SPECIALIST_CODES,
 } from '@lib/call-lib';
 import {
     AGENT_FLOW_NORESULT_REASONS,
@@ -140,6 +141,10 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_INTERLOCUTOR_CODES, null],
         },
+        specialist: {
+            type: ['string', 'null'],
+            enum: [...CALL_REPORT_SPECIALIST_CODES, null],
+        },
         sentiment: {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_SENTIMENT_CODES, null],
@@ -190,6 +195,7 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'presentationDone',
         'priceDiscussed',
         'interlocutorRole',
+        'specialist',
         'sentiment',
         'nextStep',
         'needs',
@@ -337,6 +343,13 @@ export const DEEP_ANALYSIS_OUTPUT_SPEC = `ИТОГОВЫЕ ПОЛЯ
   обещали мы, что обещал клиент, и какие вопросы менеджер задал. Без оценок.
 - productive — состоялся ли контакт и есть ли продвижение по сделке.
 - needsFound / presentationDone / priceDiscussed — было ли это фактически.
+- specialist — специальность собеседника ПО ЛЕКСИКЕ разговора: проводки, НДС,
+  1С, отчётность — бухгалтер; договоры, иски, претензии, судебная практика —
+  юрист; кадры, приказы, отпуска, трудовые споры — кадровик; управление
+  компанией и решения — руководитель. Явных признаков нет — null, не гадай.
+  Должность из CRM-контекста — подсказка, лексика разговора важнее. Если шла
+  презентация — сверь показ с картой демонстрации ЭТОЙ роли из материалов
+  (что показывали и какую выгоду проговаривали именно для этого специалиста).
 - hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
   после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
   механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично

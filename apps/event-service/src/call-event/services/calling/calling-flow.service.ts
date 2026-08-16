@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { IBXListItemFields } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
@@ -292,7 +293,10 @@ export class CallingFlowService {
     private addElement(params: IOrkHistoryElementParams): void {
         if (!this.builder || !this.list?.bitrixId) return;
         const fields = this.builder.build(params);
-        const code = `${this.list.group}_${this.list.type}_${Date.now()}_${this.elementCounter++}`;
+        // uuid: ELEMENT_CODE обязан быть глобально уникальным — коллизия кода
+        // даёт ERROR_ELEMENT_ALREADY_EXISTS и молчаливую потерю строки
+        const code = `${this.list.group}_${this.list.type}_${randomUUID().replace(/-/g, '')}`;
+        this.elementCounter++;
         this.bitrix.batch.listItem.add(
             `add_ork_history_${this.elementCounter}`,
             {
