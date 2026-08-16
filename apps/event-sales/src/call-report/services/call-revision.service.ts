@@ -15,11 +15,13 @@ import {
     CALL_REVISION_PROMPT,
     CALL_REVISION_SCHEMA,
     RevisionCallDigest,
+    RevisionListCandidates,
 } from '../contracts/call-revision.contract';
 import {
     CallContextBuilderService,
     CallPassport,
 } from './call-context-builder.service';
+import { RevisionListCandidatesService } from './revision-list-candidates.service';
 
 /** Итог ревизии одного домена. */
 export interface CallRevisionDomainResult {
@@ -36,6 +38,11 @@ interface RevisionVerdict {
     dealRecommendations: string[];
     riskFlags: string[];
     coachingPriority: string | null;
+    /** Привязка к записям отчётности: id из кандидатов либо null. */
+    kpiItemId: string | null;
+    kpiItemStatus: string | null;
+    historyItemId: string | null;
+    historyItemStatus: string | null;
 }
 
 /**
@@ -143,6 +150,11 @@ export class CallRevisionService {
                 score: null,
             }),
         );
+        const listCandidates = await this.findListCandidates(
+            domain,
+            passport,
+            fresh,
+        );
 
         const apiKey = await this.vibeKeyResolver.resolve(domain);
         const verdict = (await this.vibeCodeClient.structuredCompletion(
@@ -151,13 +163,66 @@ export class CallRevisionService {
                 this.contextBuilder.renderForPrompt(passport),
                 freshDigests,
                 historyDigests,
+                listCandidates,
             ),
             'call_revision',
             CALL_REVISION_SCHEMA,
             apiKey,
         )) as RevisionVerdict;
 
-        await this.applyVerdict(domain, last, verdict, passport);
+        await this.applyVerdict(
+            domain,
+            last,
+            this.sanitizeListLinks(verdict, listCandidates),
+            passport,
+        );
+    }
+
+    /**
+     * Кандидаты записей отчётности (КПИ / ОП История) для привязки —
+     * по CRM-полю записи, иначе рядом по времени. Fail-open: без
+     * кандидатов ревизия просто идёт без привязки.
+     */
+    private async findListCandidates(
+        domain: string,
+        passport: CallPassport,
+        rows: TranscriptionPipelineView[],
+    ): Promise<RevisionListCandidates> {
+        try {
+            const { bitrix, PortalModel } = await this.pbxService.init(domain);
+            return await new RevisionListCandidatesService(
+                bitrix,
+                PortalModel,
+            ).find(passport, rows);
+        } catch (error) {
+            this.logger.warn(
+                `Кандидаты списков не собраны (${domain}): ${(error as Error).message}`,
+            );
+            return { kpi: [], history: [] };
+        }
+    }
+
+    /**
+     * Анти-галлюцинация: привязка принимается только если id есть среди
+     * кандидатов; статус по умолчанию — suspected.
+     */
+    private sanitizeListLinks(
+        verdict: RevisionVerdict,
+        candidates: RevisionListCandidates,
+    ): RevisionVerdict {
+        const knownKpi = new Set(candidates.kpi.map(item => item.id));
+        const knownHistory = new Set(candidates.history.map(item => item.id));
+        return {
+            ...verdict,
+            kpiItemId:
+                verdict.kpiItemId && knownKpi.has(verdict.kpiItemId)
+                    ? verdict.kpiItemId
+                    : null,
+            historyItemId:
+                verdict.historyItemId && knownHistory.has(verdict.historyItemId)
+                    ? verdict.historyItemId
+                    : null,
+        };
     }
 
     /** Выжимки свежих разборов: agent-analysis (полный dto) или gigachat-резюме. */
@@ -220,6 +285,26 @@ export class CallRevisionService {
                         : undefined,
                 companyId: passport.crmCompanyId ?? undefined,
                 contactId: passport.crmContactId ?? undefined,
+                // Привязка записей отчётности (после sanitizeListLinks id
+                // гарантированно из кандидатов).
+                kpiItem: verdict.kpiItemId
+                    ? {
+                          itemId: verdict.kpiItemId,
+                          status:
+                              verdict.kpiItemStatus === 'confirmed'
+                                  ? 'confirmed'
+                                  : 'suspected',
+                      }
+                    : undefined,
+                historyItem: verdict.historyItemId
+                    ? {
+                          itemId: verdict.historyItemId,
+                          status:
+                              verdict.historyItemStatus === 'confirmed'
+                                  ? 'confirmed'
+                                  : 'suspected',
+                      }
+                    : undefined,
                 recommendations: [
                     ...verdict.dealRecommendations,
                     ...verdict.unkeptPromises.map(
@@ -244,12 +329,22 @@ export class CallRevisionService {
                       .map(item => `• ${item}`)
                       .join('\n')}`
                 : '';
+            const links: string[] = [];
+            if (verdict.kpiItemId) {
+                links.push(`запись КПИ №${verdict.kpiItemId}`);
+            }
+            if (verdict.historyItemId) {
+                links.push(`запись «ОП История» №${verdict.historyItemId}`);
+            }
+            const linksBlock = links.length
+                ? `\n\n🔗 Разбор сопоставлен с отчётностью менеджера: ${links.join(', ')}.`
+                : '';
             await bitrix.timeline.addTimelineComment({
                 ENTITY_ID: Number(last.entityId),
                 ENTITY_TYPE: last.entityType,
                 COMMENT:
                     `📋 [b]Ночная ревизия по клиенту[/b]\n\n` +
-                    `${verdict.entitySummary}${promises}${recommendations}`,
+                    `${verdict.entitySummary}${promises}${recommendations}${linksBlock}`,
                 AUTHOR_ID: '1',
             });
         }

@@ -29,16 +29,45 @@ const VERDICT = {
     dealRecommendations: ['Отправить КП до пятницы'],
     riskFlags: ['promise'],
     coachingPriority: 'planned',
+    kpiItemId: null,
+    kpiItemStatus: null,
+    historyItemId: null,
+    historyItemStatus: null,
 };
 
 const makeDeps = (options?: {
     rows?: Record<string, unknown>[];
     smartInstalled?: boolean;
     llmError?: boolean;
+    /** Элементы списков отчётности (ответ listItem.get для обоих списков). */
+    listItems?: Record<string, unknown>[];
+    verdict?: Record<string, unknown>;
 }) => {
     const timeline = { addTimelineComment: jest.fn().mockResolvedValue({}) };
+    const listItemGet = jest
+        .fn()
+        .mockResolvedValue({ result: options?.listItems ?? [] });
+    // Списки отчётности портала: у обоих есть CRM-поле (PROPERTY_77).
+    const portalModel = {
+        getListByCode: jest.fn((code: string) => ({
+            group: 'sales',
+            type: code === 'sales_kpi' ? 'kpi' : 'history',
+            bitrixId: code === 'sales_kpi' ? '10' : '20',
+            bitrixfields: [
+                {
+                    code: `${code}_comment`,
+                    name: 'Комментарий',
+                    bitrixId: 'PROPERTY_5',
+                },
+            ],
+        })),
+        getIdByCodeFieldList: jest.fn(() => ({ bitrixId: 'PROPERTY_77' })),
+    };
     const pbxService = {
-        init: jest.fn().mockResolvedValue({ bitrix: { timeline } }),
+        init: jest.fn().mockResolvedValue({
+            bitrix: { timeline, listItem: { get: listItemGet } },
+            PortalModel: portalModel,
+        }),
     };
     const transcriptionStore = {
         findDoneInPeriod: jest.fn().mockResolvedValue(
@@ -99,7 +128,7 @@ const makeDeps = (options?: {
     const vibeCodeClient = {
         structuredCompletion: options?.llmError
             ? jest.fn().mockRejectedValue(new Error('llm down'))
-            : jest.fn().mockResolvedValue(VERDICT),
+            : jest.fn().mockResolvedValue(options?.verdict ?? VERDICT),
     };
     const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key-1') };
     const addItem = jest.fn().mockResolvedValue(7);
@@ -168,6 +197,48 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 ENTITY_ID: 555,
                 ENTITY_TYPE: 'deal',
                 COMMENT: expect.stringContaining('Ночная ревизия') as string,
+            }),
+        );
+    });
+
+    it('кандидаты списков уходят в LLM, валидная привязка пишется в смарт и таймлайн', async () => {
+        const { service, vibeCodeClient, addItem, timeline } = makeDeps({
+            listItems: [
+                {
+                    ID: 9001,
+                    NAME: 'Презентация ООО Ромашка',
+                    DATE_CREATE: '2026-08-01T12:00:00Z',
+                    PROPERTY_5: { 101: 'Показал Искру, просили КП' },
+                },
+            ],
+            verdict: {
+                ...VERDICT,
+                kpiItemId: '9001',
+                kpiItemStatus: 'confirmed',
+                // Выдуманный моделью id не из кандидатов — должен отсечься.
+                historyItemId: '777777',
+                historyItemStatus: 'suspected',
+            },
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        // Кандидаты (id + комментарий записи) видны модели.
+        const userContent = (
+            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+        )[1];
+        expect(userContent).toContain('id=9001');
+        expect(userContent).toContain('Показал Искру, просили КП');
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({
+                kpiItem: { itemId: '9001', status: 'confirmed' },
+                historyItem: undefined,
+            }),
+        );
+        expect(timeline.addTimelineComment).toHaveBeenCalledWith(
+            expect.objectContaining({
+                COMMENT: expect.stringContaining('запись КПИ №9001') as string,
             }),
         );
     });
