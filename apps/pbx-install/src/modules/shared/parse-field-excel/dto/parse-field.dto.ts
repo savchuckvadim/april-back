@@ -44,12 +44,14 @@ export class ListItemDto implements ListItem {
     @ApiProperty({
         description:
             'Флаг удаления элемента списка в Bitrix. ' +
-            '"Y" — элемент помечен на удаление, "N" — активный элемент.',
+            '"Y" — элемент помечен на удаление, "N" — активный элемент. ' +
+            'Пустая строка допускается как синоним "N" (шаблоны ' +
+            'const-смартов до 2026-08-16 отдавали её).',
         example: 'N',
-        enum: ['Y', 'N'],
+        enum: ['Y', 'N', ''],
     })
     @IsString()
-    @IsIn(['Y', 'N'])
+    @IsIn(['Y', 'N', ''])
     DEL: string;
 
     @ApiProperty({

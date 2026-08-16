@@ -21,6 +21,12 @@ const makeDeps = (options?: {
     contactPost?: string;
     contactName?: string;
     contactComments?: string;
+    /** Компания сделки и её карточка. */
+    dealCompanyId?: number;
+    companyTitle?: string;
+    companyComments?: string;
+    /** Записи «ОП История» (UF_CRM_OP_MHISTORY) в строке сделки. */
+    dealOpHistory?: string[];
     direction?: string;
     phoneMatches?: Record<string, number[]>;
     history?: { id: string; callStartedAt: Date | null }[];
@@ -37,6 +43,8 @@ const makeDeps = (options?: {
                                   STAGE_ID: options?.dealStage ?? 'C5:PREP',
                                   CATEGORY_ID: 5,
                                   CONTACT_ID: options?.dealContactId,
+                                  COMPANY_ID: options?.dealCompanyId,
+                                  UF_CRM_OP_MHISTORY: options?.dealOpHistory,
                               },
                           },
                 );
@@ -47,6 +55,14 @@ const makeDeps = (options?: {
                         POST: options?.contactPost,
                         NAME: options?.contactName,
                         COMMENTS: options?.contactComments,
+                    },
+                });
+            }
+            if (method === 'crm.company.get') {
+                return Promise.resolve({
+                    result: {
+                        TITLE: options?.companyTitle,
+                        COMMENTS: options?.companyComments,
                     },
                 });
             }
@@ -80,11 +96,13 @@ const makeDeps = (options?: {
             }),
         },
     };
-    // Слепок портала без наших полей: детект заявки работает по
-    // UF-полям лидогена и SOURCE_ID самого лида.
+    // Слепок портала: из наших полей заведено только op_mhistory —
+    // детект заявки работает по UF-полям лидогена и SOURCE_ID лида.
     const portalModel = {
-        getEntityFieldByCode: jest.fn().mockReturnValue(null),
-        getFieldBitrixId: jest.fn(),
+        getEntityFieldByCode: jest.fn((entity: string, code: string) =>
+            code === 'op_mhistory' ? { code } : null,
+        ),
+        getFieldBitrixId: jest.fn().mockReturnValue('UF_CRM_OP_MHISTORY'),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portalModel }),
@@ -156,9 +174,44 @@ describe('CallContextBuilderService', () => {
     });
 
     it('компания и контакт сделки сохраняются для долива связей', async () => {
-        const { service } = makeDeps({ dealContactId: 44 });
+        const { service } = makeDeps({ dealContactId: 44, dealCompanyId: 33 });
         const passport = await service.build(row() as never);
         expect(passport.crmContactId).toBe(44);
+        expect(passport.crmCompanyId).toBe(33);
+    });
+
+    it('записи «ОП История» сделки попадают в паспорт (хвост, без разметки)', async () => {
+        const { service } = makeDeps({
+            dealOpHistory: [
+                '01.05 первый контакт',
+                '12.05 <b>просили перезвонить</b>',
+            ],
+        });
+        const passport = await service.build(row() as never);
+        expect(passport.opHistory).toEqual([
+            '01.05 первый контакт',
+            '12.05 просили перезвонить',
+        ]);
+        expect(service.renderForPrompt(passport)).toContain(
+            '«ОП История» из CRM',
+        );
+    });
+
+    it('карточка компании сделки: название и заметки в паспорте', async () => {
+        const { service } = makeDeps({
+            dealCompanyId: 33,
+            companyTitle: 'ООО «Гарант-Сервис Ростов»',
+            companyComments:
+                'Продление в ноябре, <b>работают с Консультантом</b>',
+        });
+        const passport = await service.build(row() as never);
+        expect(passport.companyTitle).toBe('ООО «Гарант-Сервис Ростов»');
+        expect(passport.companyNotes).toBe(
+            'Продление в ноябре, работают с Консультантом',
+        );
+        const prompt = service.renderForPrompt(passport);
+        expect(prompt).toContain('Компания клиента по данным CRM');
+        expect(prompt).toContain('Заметки менеджера о компании');
     });
 
     it('должность из POST лида; пустая строка → null', async () => {

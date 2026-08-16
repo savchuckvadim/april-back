@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { BitrixService } from '@lib/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
     AiService,
     CALL_RESUME_TYPE,
@@ -82,6 +83,20 @@ export interface CallPassport {
     /** Компания/контакт владельца звонка из CRM — для долива связей. */
     crmCompanyId: number | null;
     crmContactId: number | null;
+    /**
+     * Название компании клиента (карточка компании сделки или
+     * COMPANY_TITLE лида) — помогает восстанавливать искажённое
+     * распознаванием название; null — нет данных.
+     */
+    companyTitle: string | null;
+    /** Заметки менеджера из карточки компании (COMMENTS, без разметки). */
+    companyNotes: string | null;
+    /**
+     * Последние записи «ОП История (Комментарии)» (op_mhistory) из
+     * сделки/лида и компании — датированные заметки менеджера о касаниях
+     * клиента; пустой массив — поле не заведено или пусто.
+     */
+    opHistory: string[];
     /** Направление: ~99% исходящие (менеджер — инициатор). */
     direction: 'incoming' | 'outgoing' | null;
     /** Кандидаты «кто это на самом деле» по номеру телефона (suspected). */
@@ -119,6 +134,9 @@ export class CallContextBuilderService {
             crmNotes: null,
             crmCompanyId: null,
             crmContactId: null,
+            companyTitle: null,
+            companyNotes: null,
+            opHistory: [],
             direction: null,
             identity: [],
             history: [],
@@ -187,6 +205,28 @@ export class CallContextBuilderService {
         if (passport.crmNotes) {
             lines.push(
                 `- Заметки менеджера из CRM: «${passport.crmNotes}». Фон для разбора; могут быть устаревшими.`,
+            );
+        }
+        if (passport.companyTitle) {
+            lines.push(
+                `- Компания клиента по данным CRM: «${passport.companyTitle}». ` +
+                    'Используй для восстановления искажённого распознаванием названия.',
+            );
+        }
+        if (passport.companyNotes) {
+            lines.push(
+                `- Заметки менеджера о компании: «${passport.companyNotes}». Могут быть устаревшими.`,
+            );
+        }
+        if (passport.opHistory.length) {
+            lines.push(
+                '- «ОП История» из CRM — последние записи менеджера о касаниях клиента:',
+            );
+            for (const entry of passport.opHistory) {
+                lines.push(`  • ${entry}`);
+            }
+            lines.push(
+                '  Сверь разговор с этими записями: прошлые договорённости и обещания — фон для оценки; записи могут быть неполными.',
             );
         }
         if (passport.direction) {
@@ -265,7 +305,7 @@ export class CallContextBuilderService {
             const response = (await bitrix.api.call('crm.deal.get', {
                 id: entityId,
             })) as {
-                result?: {
+                result?: Record<string, unknown> & {
                     STAGE_ID?: string;
                     CATEGORY_ID?: string | number;
                     CONTACT_ID?: string | number;
@@ -283,9 +323,16 @@ export class CallContextBuilderService {
                         : null;
                 passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
                 passport.crmContactId = this.toId(response.result.CONTACT_ID);
+                this.appendOpHistory(portal, 'deal', response.result, passport);
                 await this.fillContactPersona(
                     bitrix,
                     response.result.CONTACT_ID,
+                    passport,
+                );
+                await this.fillCompanyPersona(
+                    bitrix,
+                    portal,
+                    response.result.COMPANY_ID,
                     passport,
                 );
             }
@@ -299,6 +346,7 @@ export class CallContextBuilderService {
                     PersonaFields & {
                         CONTACT_ID?: string | number;
                         COMPANY_ID?: string | number;
+                        COMPANY_TITLE?: string;
                     };
             };
             if (response?.result) {
@@ -312,8 +360,73 @@ export class CallContextBuilderService {
                 );
                 passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
                 passport.crmContactId = this.toId(response.result.CONTACT_ID);
+                passport.companyTitle = this.cleanText(
+                    response.result.COMPANY_TITLE,
+                );
+                this.appendOpHistory(portal, 'lead', response.result, passport);
                 this.applyPersona(response.result, passport);
             }
+        }
+    }
+
+    /**
+     * Последние записи «ОП История» (op_mhistory) из строки сущности —
+     * датированные заметки менеджера; берём хвост массива (свежие записи
+     * дописываются в конец). Поле не заведено — тихий скип.
+     */
+    private appendOpHistory(
+        portal: PortalModel,
+        entityType: 'deal' | 'lead' | 'company',
+        row: Record<string, unknown>,
+        passport: CallPassport,
+    ): void {
+        try {
+            const field = portal.getEntityFieldByCode(
+                entityType,
+                PBX_SALES_EVENT_FIELD_CODES.op_mhistory,
+            );
+            if (!field) return;
+            const raw = row[portal.getFieldBitrixId(field)];
+            const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+            const entries = values
+                .map(value => this.cleanText(String(value), 200))
+                .filter((value): value is string => value !== null);
+            passport.opHistory = [...passport.opHistory, ...entries].slice(-6);
+        } catch {
+            // Поле истории недоступно — паспорт без него.
+        }
+    }
+
+    /**
+     * Карточка компании сделки: название (восстановление искажённых ASR
+     * названий) и заметки менеджера. Недоступность — не ошибка.
+     */
+    private async fillCompanyPersona(
+        bitrix: BitrixService,
+        portal: PortalModel,
+        companyId: string | number | undefined,
+        passport: CallPassport,
+    ): Promise<void> {
+        const id = Number(companyId);
+        if (!Number.isFinite(id) || id <= 0) return;
+        try {
+            const response = (await bitrix.api.call('crm.company.get', {
+                id,
+            })) as {
+                result?: Record<string, unknown> & {
+                    TITLE?: string;
+                    COMMENTS?: string;
+                };
+            };
+            if (!response?.result) return;
+            passport.companyTitle = this.cleanText(response.result.TITLE);
+            passport.companyNotes = this.cleanText(
+                response.result.COMMENTS,
+                400,
+            );
+            this.appendOpHistory(portal, 'company', response.result, passport);
+        } catch {
+            // Компания недоступна — паспорт остаётся без неё.
         }
     }
 

@@ -29,7 +29,8 @@ export function buildSkapInstallFields(): ConstSmartInstallField[] {
                 CODE: item.CODE,
                 XML_ID: item.CODE,
                 SORT: item.SORT,
-                DEL: '',
+                // 'N' — активный элемент; install-fields валидирует Y/N.
+                DEL: 'N',
             }),
         ),
     }));
