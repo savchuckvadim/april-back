@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@lib/core';
 import { Prisma, SkapImportFile } from 'generated/prisma';
 import {
+    capSkapWarnings,
     SkapDiskFileInput,
     SkapFileStats,
     SkapFileStatus,
@@ -116,12 +117,14 @@ export class SkapFileRepository {
         formatVersion: string | null,
         stats: SkapFileStats,
     ): Promise<void> {
+        // Обрезка ворнингов — раздутый JSON ломает сортировки MySQL.
+        const capped = { ...stats, warnings: capSkapWarnings(stats.warnings) };
         await this.prisma.skapImportFile.update({
             where: { id },
             data: {
                 status: 'done',
                 formatVersion,
-                stats: stats as unknown as Prisma.InputJsonValue,
+                stats: capped as unknown as Prisma.InputJsonValue,
                 finishedAt: new Date(),
             },
         });
@@ -139,7 +142,10 @@ export class SkapFileRepository {
                 status,
                 error,
                 stats: stats
-                    ? (stats as unknown as Prisma.InputJsonValue)
+                    ? ({
+                          ...stats,
+                          warnings: capSkapWarnings(stats.warnings),
+                      } as unknown as Prisma.InputJsonValue)
                     : undefined,
                 finishedAt: new Date(),
             },

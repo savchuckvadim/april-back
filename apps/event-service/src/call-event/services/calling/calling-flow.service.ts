@@ -129,6 +129,20 @@ export class CallingFlowService {
 
     // ---------- history records ----------
 
+    /**
+     * Поле «Компания» ОРК-истории — строго CO_-привязки: у СС-задач в
+     * ufCrmTask рядом лежат сделка/контакт, и Bitrix отвергал всю запись
+     * (ERROR_ELEMENT_FIELD_VALUE). Основная привязка — поле crm, оно получает
+     * ufCrmTask целиком. Фолбэк — ctx.companyId (bx.companyId → placement).
+     */
+    private companyLinks(ctx: CallEventContext, ufCrmTask: string[]): string[] {
+        const links = (ufCrmTask ?? []).filter(link =>
+            String(link).startsWith('CO_'),
+        );
+        if (links.length) return links;
+        return ctx.companyId ? [`CO_${ctx.companyId}`] : [];
+    }
+
     private recordNoresult(ctx: CallEventContext): void {
         const task = ctx.dto.currentTask;
         if (!task) return;
@@ -156,7 +170,7 @@ export class CallingFlowService {
             planDate: ctx.planIsActive ? ctx.dto.plan.deadline : '',
             comment: ctx.dto.report.description,
             crmLinks: task.ufCrmTask,
-            companyLink: task.ufCrmTask,
+            companyLink: this.companyLinks(ctx, task.ufCrmTask),
             contactId: ctx.dto.report.contact?.ID,
         });
     }
@@ -188,7 +202,7 @@ export class CallingFlowService {
             planDate: ctx.planIsActive ? ctx.dto.plan.deadline : '',
             comment: ctx.dto.report.description,
             crmLinks: ctx.crmLinks(ctx.dto.report.contact?.ID),
-            companyLink: task.ufCrmTask,
+            companyLink: this.companyLinks(ctx, task.ufCrmTask),
             contactId: ctx.dto.report.contact?.ID,
         });
     }

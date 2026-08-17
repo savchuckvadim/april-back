@@ -74,6 +74,26 @@ export interface SkapRunStats extends SkapFileStats {
     filesError: number;
 }
 
+/**
+ * Лимит ворнингов, сохраняемых в JSON `stats` (БД): годовой архив даёт
+ * тысячи строк «компания не найдена», раздутый JSON ломает сортировки
+ * MySQL («Out of sort memory», прод-инцидент 2026-08-12). Полная картина
+ * восстанавливается из skap_import_items (status/warning per запись).
+ */
+export const SKAP_STATS_WARNINGS_LIMIT = 100;
+
+/** Обрезает ворнинги для сохранения в stats (хвост — одной строкой). */
+export function capSkapWarnings(
+    warnings: string[],
+    limit = SKAP_STATS_WARNINGS_LIMIT,
+): string[] {
+    if (warnings.length <= limit) return warnings;
+    return [
+        ...warnings.slice(0, limit),
+        `…и ещё ${warnings.length - limit} ворнингов (обрезано при сохранении; детали — в skap_import_items)`,
+    ];
+}
+
 /** Пустые счётчики (стартовое значение аккумулятора). */
 export function emptySkapFileStats(): SkapFileStats {
     return {
