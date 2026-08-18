@@ -23,12 +23,43 @@ const makeDeps = (options?: {
     records?: Record<string, unknown>[];
     verdict?: Record<string, unknown>;
     dealFields?: Record<string, unknown>;
+    /** Записи списков отчётности (ответ listItem.get). */
+    listItems?: Record<string, unknown>[];
 }) => {
     const timeline = { addTimelineComment: jest.fn().mockResolvedValue({}) };
     const api = {
         call: jest.fn().mockResolvedValue({
             result: { ID: '601', ...(options?.dealFields ?? {}) },
         }),
+    };
+    const listItemGet = jest
+        .fn()
+        .mockResolvedValue({ result: options?.listItems ?? [] });
+    // Список отчётности: комментарий менеджера + выпадающий тип события.
+    const salesList = {
+        group: 'sales',
+        type: 'kpi',
+        bitrixId: '10',
+        bitrixfields: [
+            {
+                code: 'sales_kpi_manager_comment',
+                name: 'Комментарий менеджера',
+                bitrixId: 'PROPERTY_6',
+                items: [],
+            },
+        ],
+    };
+    const eventTypeField = {
+        code: 'sales_kpi_event_type',
+        name: 'Тип события',
+        bitrixId: 'PROPERTY_2',
+        items: [
+            {
+                code: 'sales_kpi_presentation',
+                name: 'Презентация',
+                bitrixId: 201,
+            },
+        ],
     };
     const portal = {
         getEntityFieldByCode: jest.fn((entity: string, code: string) => ({
@@ -37,17 +68,26 @@ const makeDeps = (options?: {
         getFieldBitrixId: jest.fn(
             (field: { code: string }) => `UF_${field.code.toUpperCase()}`,
         ),
+        getListByCode: jest.fn(() => salesList),
+        getIdByCodeFieldList: jest.fn((list: unknown, code: string): unknown =>
+            code === 'event_type' ? eventTypeField : undefined,
+        ),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({
-            bitrix: { timeline, api },
+            bitrix: { timeline, api, listItem: { get: listItemGet } },
             PortalModel: portal,
         }),
     };
     const transcriptionStore = {
-        findDoneInPeriod: jest
-            .fn()
-            .mockResolvedValue([{ id: '42', domain: DOMAIN }]),
+        findDoneInPeriod: jest.fn().mockResolvedValue([
+            {
+                id: '42',
+                domain: DOMAIN,
+                callStartedAt: new Date('2026-08-14T10:00:00Z'),
+                userId: '187',
+            },
+        ]),
     };
     const aiService = {
         findByTranscriptionIds: jest
@@ -117,6 +157,43 @@ describe('PresentationAuditService (сверка отчёта менеджера
         expect(timeline.addTimelineComment).toHaveBeenCalledWith(
             expect.objectContaining({ ENTITY_ID: 601, ENTITY_TYPE: 'deal' }),
         );
+    });
+
+    it('второй источник отчёта: запись списка «Презентация» уходит в промпт сверки', async () => {
+        const { service, vibeCodeClient } = makeDeps({
+            listItems: [
+                {
+                    ID: 7001,
+                    NAME: 'Презентация Проведено. ООО Ромашка',
+                    DATE_CREATE: '2026-08-14T12:00:00Z',
+                    PROPERTY_2: { 1: 201 },
+                    PROPERTY_6: {
+                        2: 'Провёл презентацию, хвост прошли, ждут КП',
+                    },
+                },
+            ],
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        const userContent = (
+            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+        )[1];
+        expect(userContent).toContain('СПИСКАХ ОТЧЁТНОСТИ');
+        expect(userContent).toContain('id=7001');
+        expect(userContent).toContain('тип: Презентация');
+        expect(userContent).toContain(
+            'Провёл презентацию, хвост прошли, ждут КП',
+        );
+    });
+
+    it('записей в списках нет — в промпте честное «записей не найдено»', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+        const userContent = (
+            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+        )[1];
+        expect(userContent).toContain('записей не найдено');
     });
 
     it('без расхождений — в сделку не постит', async () => {

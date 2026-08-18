@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsArray,
     IsBoolean,
+    IsIn,
     IsInt,
     IsNumber,
     IsOptional,
@@ -10,8 +11,10 @@ import {
     Min,
 } from 'class-validator';
 import {
+    PRESENTATION_STRICTNESS_LEVELS,
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
+    PresentationStrictnessLevel,
 } from '../portal-ai-settings.types';
 
 /**
@@ -42,6 +45,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.irrelevantConfidence = source.irrelevantConfidence ?? null;
         this.revisorEnabled = source.revisorEnabled ?? null;
         this.presentationAuditEnabled = source.presentationAuditEnabled ?? null;
+        this.presentationStrictness = source.presentationStrictness ?? null;
     }
 
     @ApiProperty({
@@ -251,6 +255,22 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     presentationAuditEnabled: boolean | null;
+
+    @ApiProperty({
+        description:
+            'Строгость определения ПРЕЗЕНТАЦИИ — влияет на тип звонка и ' +
+            'всё вытекающее (поле «Презентация проведена», хвост/5К, ' +
+            'утреннюю сверку). strict — только живой показ или предметный ' +
+            'рассказ под задачи клиента; normal — плюс содержательный ' +
+            'рассказ о продукте без привязки каждого инструмента к ' +
+            'задачам; soft — любое содержательное обсуждение продукта. ' +
+            '«Выслал демо» и мимолётное упоминание — не презентация ни на ' +
+            'одном уровне. Пусто — strict.',
+        enum: PRESENTATION_STRICTNESS_LEVELS,
+        example: 'strict',
+        nullable: true,
+    })
+    presentationStrictness: PresentationStrictnessLevel | null;
 }
 
 /**
@@ -482,4 +502,18 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsOptional()
     @IsBoolean()
     presentationAuditEnabled?: boolean | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Строгость определения презентации: strict (только показ или ' +
+            'предметный рассказ под задачи клиента) / normal / soft. ' +
+            'null — сбросить на strict.',
+        enum: PRESENTATION_STRICTNESS_LEVELS,
+        example: 'strict',
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(PRESENTATION_STRICTNESS_LEVELS as unknown as string[])
+    presentationStrictness?: PresentationStrictnessLevel | null;
 }

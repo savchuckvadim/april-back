@@ -15,6 +15,7 @@ import {
     AiService,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
+import { renderPresentationStrictnessBlock } from '../contracts/call-deep-analysis.contract';
 import { CallClassifyStepService } from '../services/call-classify-step.service';
 import {
     CallContextBuilderService,
@@ -248,12 +249,27 @@ export class CallReportPipelineUseCase {
         // типа; тот же паспорт затем префиксуется первичному LLM-анализу.
         const passport = await this.buildPassport(row);
 
+        // Дописки к инструкции классификатора: CRM-подсказка паспорта +
+        // строгость определения презентации (настройка портала — тип
+        // звонка и разбор следуют одной планке).
+        const classifyExtra =
+            [
+                passport
+                    ? this.contextBuilder.renderClassifyHint(passport)
+                    : null,
+                renderPresentationStrictnessBlock(
+                    settings.presentationStrictness,
+                ) || null,
+            ]
+                .filter(Boolean)
+                .join('') || null;
+
         const classification = await this.classifyStep.run(
             text,
             payload,
             payload.transcriptionId,
             settings.classifyEnabled,
-            passport ? this.contextBuilder.renderClassifyHint(passport) : null,
+            classifyExtra,
         );
 
         // ГЕЙТ НЕРЕЛЕВАНТНОСТИ: сотрудник сам звонил в стороннюю

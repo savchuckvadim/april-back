@@ -14,7 +14,9 @@ import {
     CALL_DEEP_ANALYSIS_SCHEMA,
     CALL_DEEP_ANALYSIS_SYSTEM_PROMPT,
     renderCallTypeProfile,
+    renderPresentationStrictnessBlock,
 } from '../contracts/call-deep-analysis.contract';
+import { CallReportSettingsService } from './call-report-settings.service';
 
 /** Тип, под которым ищем методичку, если классификатор промолчал. */
 const FALLBACK_CALL_TYPE = 'other';
@@ -52,7 +54,20 @@ export class CallDeepAnalysisService {
         private readonly knowledgeContent: KnowledgeContentService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly reportSettings: CallReportSettingsService,
     ) {}
+
+    /** Поправка строгости презентации (настройка портала) — fail-open. */
+    private async buildStrictnessBlock(domain: string): Promise<string> {
+        try {
+            const settings = await this.reportSettings.resolve(domain);
+            return renderPresentationStrictnessBlock(
+                settings.presentationStrictness,
+            );
+        } catch {
+            return '';
+        }
+    }
 
     /** Ужесточение «5К и хвост» (см. CallFocusAnalysisService) — fail-open. */
     private async buildAfterPresentationBlock(
@@ -101,7 +116,8 @@ export class CallDeepAnalysisService {
         try {
             const systemPrompt =
                 (await this.buildSystemPrompt(domain, callType)) +
-                (await this.buildAfterPresentationBlock(domain, callType));
+                (await this.buildAfterPresentationBlock(domain, callType)) +
+                (await this.buildStrictnessBlock(domain));
             const apiKey = await this.vibeKeyResolver.resolve(domain);
             const parsed = await this.vibeCodeClient.structuredCompletion(
                 systemPrompt,

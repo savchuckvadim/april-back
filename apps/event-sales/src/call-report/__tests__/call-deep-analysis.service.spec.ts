@@ -64,12 +64,19 @@ const makeDeps = (options?: {
     const appSettings = {
         resolve: jest.fn().mockResolvedValue({ withCheckPresentation: false }),
     };
+    // Настройки конвейера: строгость презентации по умолчанию strict.
+    const reportSettings = {
+        resolve: jest
+            .fn()
+            .mockResolvedValue({ presentationStrictness: 'strict' }),
+    };
     const service = new CallDeepAnalysisService(
         vibeCodeClient as never,
         vibeKeyResolver as never,
         knowledgeContent as never,
         callTypeRegistry as never,
         appSettings as never,
+        reportSettings as never,
     );
     return {
         service,

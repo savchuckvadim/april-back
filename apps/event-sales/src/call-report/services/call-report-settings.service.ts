@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
-import { PortalAiSettingsRecord } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
+import {
+    PortalAiSettingsRecord,
+    PresentationStrictnessLevel,
+} from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 
 /**
  * Дефолты кода — действуют, пока настройка не задана на портале.
@@ -26,6 +29,8 @@ const DEFAULTS = {
     revisorEnabled: false,
     /** Утренняя сверка отчёта менеджера с разбором презентации. */
     presentationAuditEnabled: false,
+    /** Строгость определения презентации: по умолчанию строго. */
+    presentationStrictness: 'strict' as PresentationStrictnessLevel,
 } as const;
 
 /**
@@ -60,6 +65,11 @@ export interface EffectiveCallReportSettings {
     revisorEnabled: boolean;
     /** Утренняя сверка отчёта менеджера с разбором презентации. */
     presentationAuditEnabled: boolean;
+    /**
+     * Строгость определения презентации (тип звонка и всё вытекающее):
+     * strict / normal / soft — см. PRESENTATION_STRICTNESS_LEVELS.
+     */
+    presentationStrictness: PresentationStrictnessLevel;
     /** Откуда взялись значения — для диагностики в логах. */
     source: 'portal' | 'default';
 }
@@ -125,6 +135,9 @@ export class CallReportSettingsService {
             presentationAuditEnabled:
                 portal?.presentationAuditEnabled ??
                 DEFAULTS.presentationAuditEnabled,
+            presentationStrictness:
+                portal?.presentationStrictness ??
+                DEFAULTS.presentationStrictness,
             source: portal ? 'portal' : 'default',
         };
     }

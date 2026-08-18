@@ -4,9 +4,11 @@ import { PrismaService } from 'src/core/prisma';
 import { Prisma, PortalAiSettings } from 'generated/prisma';
 import { PortalAiSettingsRepository } from './portal-ai-settings.repository';
 import {
+    PRESENTATION_STRICTNESS_LEVELS,
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
     PortalAiSettingsWithDomain,
+    PresentationStrictnessLevel,
 } from './portal-ai-settings.types';
 
 /** Поля, которые редактируются снаружи (lastScanAt пишет только планировщик). */
@@ -131,7 +133,8 @@ export class PortalAiSettingsPrismaRepository
         if (
             update.irrelevantConfidence !== undefined ||
             update.revisorEnabled !== undefined ||
-            update.presentationAuditEnabled !== undefined
+            update.presentationAuditEnabled !== undefined ||
+            update.presentationStrictness !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -145,6 +148,10 @@ export class PortalAiSettingsPrismaRepository
                 json.presentationAuditEnabled =
                     update.presentationAuditEnabled ?? undefined;
             }
+            if (update.presentationStrictness !== undefined) {
+                json.presentationStrictness =
+                    update.presentationStrictness ?? undefined;
+            }
             data.settings = JSON.parse(
                 JSON.stringify(json),
             ) as Prisma.InputJsonValue;
@@ -157,6 +164,7 @@ export class PortalAiSettingsPrismaRepository
         irrelevantConfidence?: number;
         revisorEnabled?: boolean;
         presentationAuditEnabled?: boolean;
+        presentationStrictness?: PresentationStrictnessLevel;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -176,6 +184,11 @@ export class PortalAiSettingsPrismaRepository
                 typeof raw.presentationAuditEnabled === 'boolean'
                     ? raw.presentationAuditEnabled
                     : undefined,
+            presentationStrictness: (
+                PRESENTATION_STRICTNESS_LEVELS as readonly string[]
+            ).includes(String(raw.presentationStrictness))
+                ? (raw.presentationStrictness as PresentationStrictnessLevel)
+                : undefined,
         };
     }
 
@@ -205,6 +218,9 @@ export class PortalAiSettingsPrismaRepository
                 this.toJsonSettings(row.settings).revisorEnabled ?? null,
             presentationAuditEnabled:
                 this.toJsonSettings(row.settings).presentationAuditEnabled ??
+                null,
+            presentationStrictness:
+                this.toJsonSettings(row.settings).presentationStrictness ??
                 null,
         };
     }

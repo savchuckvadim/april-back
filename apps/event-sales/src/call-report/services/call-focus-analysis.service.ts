@@ -11,7 +11,9 @@ import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-reques
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
     renderCallTypeProfile,
+    renderPresentationStrictnessBlock,
 } from '../contracts/call-deep-analysis.contract';
+import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallFocusKey,
     FOCUS_CONTENT_PROMPT,
@@ -83,7 +85,20 @@ export class CallFocusAnalysisService {
         private readonly knowledgeContent: KnowledgeContentService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly reportSettings: CallReportSettingsService,
     ) {}
+
+    /** Поправка строгости презентации (настройка портала) — fail-open. */
+    private async buildStrictnessBlock(domain: string): Promise<string> {
+        try {
+            const settings = await this.reportSettings.resolve(domain);
+            return renderPresentationStrictnessBlock(
+                settings.presentationStrictness,
+            );
+        } catch {
+            return '';
+        }
+    }
 
     /**
      * Ужесточение «5К и хвост»: на порталах с обязательной отчётностью
@@ -130,7 +145,8 @@ export class CallFocusAnalysisService {
             const apiKey = await this.vibeKeyResolver.resolve(domain);
             const context =
                 (await this.buildSharedContext(domain, callType)) +
-                (await this.buildAfterPresentationBlock(domain, callType));
+                (await this.buildAfterPresentationBlock(domain, callType)) +
+                (await this.buildStrictnessBlock(domain));
             const userContent = this.buildUserContent(
                 transcript,
                 callType,

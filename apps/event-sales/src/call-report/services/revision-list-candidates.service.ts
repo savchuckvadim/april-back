@@ -1,7 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import { TranscriptionPipelineView } from '@lib/call-lib';
-import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import {
+    SalesListCode,
+    SalesListReaderService,
+    SalesListRecord,
+} from '@lib/portal-lib/pbx/pbx-sales-list-reader';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     RevisionListCandidate,
@@ -13,35 +17,30 @@ import { CallPassport } from './call-context-builder.service';
 const TIME_WINDOW_DAYS = 3;
 /** Лимит кандидатов на список — модель выбирает из короткого списка. */
 const CANDIDATES_LIMIT = 10;
-/** Лимит полей и длины значений в preview записи. */
-const PREVIEW_FIELDS_LIMIT = 4;
-const PREVIEW_VALUE_LIMIT = 120;
 
 /**
- * Поиск записей-кандидатов в списках отчётности менеджера (sales_kpi /
- * sales_history) для привязки ночным ревизором.
+ * Кандидаты записей отчётности (sales_kpi / sales_history) для привязки
+ * ночным ревизором. Чтение и резолв полей — через «робота»
+ * SalesListReaderService (канон kpi-report: фильтры по bitrixCamelId,
+ * значения выпадающих списков по bitrixId элемента, даты по полю события).
  *
  * Два уровня (идея владельца):
- *  1. По CRM-полю самой записи (multiple, тип crm — может ссылаться на
- *     сделку/компанию/лид/контакт): записи, привязанные к владельцу
- *     звонка, — строгие кандидаты.
+ *  1. По CRM-полю самой записи (multiple, может ссылаться на
+ *     сделку/компанию/лид/контакт) — строгие кандидаты.
  *  2. Пусто — «кто был рядом»: записи в окне ±TIME_WINDOW_DAYS вокруг
- *     звонков сущности, созданные менеджером звонка.
+ *     звонков сущности от менеджера звонка.
  *
- * Семантический выбор из кандидатов делает LLM-ревизия; сервис только
- * собирает и оформляет. Полностью fail-open: любая ошибка → пустой
- * список (ревизия проходит без привязки).
+ * Семантический выбор из кандидатов делает LLM-ревизия. Fail-open.
  *
- * НЕ @Injectable: создаётся `new` рядом с BitrixService (см. CLAUDE.md
- * про race condition инстансов битрикса).
+ * НЕ @Injectable: создаётся `new` рядом с BitrixService (см. CLAUDE.md).
  */
 export class RevisionListCandidatesService {
     private readonly logger = new Logger(RevisionListCandidatesService.name);
+    private readonly reader: SalesListReaderService;
 
-    constructor(
-        private readonly bitrix: BitrixService,
-        private readonly portal: PortalModel,
-    ) {}
+    constructor(bitrix: BitrixService, portal: PortalModel) {
+        this.reader = new SalesListReaderService(bitrix, portal);
+    }
 
     async find(
         passport: CallPassport,
@@ -54,17 +53,24 @@ export class RevisionListCandidatesService {
     }
 
     private async findForList(
-        listCode: 'sales_kpi' | 'sales_history',
+        listCode: SalesListCode,
         passport: CallPassport,
         rows: TranscriptionPipelineView[],
     ): Promise<RevisionListCandidate[]> {
         try {
-            const list = this.portal.getListByCode(listCode);
-            if (!list?.bitrixId) return [];
-
-            const byCrm = await this.findByCrmBinding(list, passport);
-            if (byCrm.length) return byCrm;
-            return await this.findByTimeWindow(list, rows);
+            const crmRefs = this.buildCrmRefs(passport);
+            if (crmRefs.length) {
+                const byCrm = await this.reader.read(listCode, {
+                    crmRefs,
+                    limit: CANDIDATES_LIMIT,
+                });
+                if (byCrm.length) {
+                    return byCrm.map(record => this.toCandidate(record, 'crm'));
+                }
+            }
+            return (await this.findByTimeWindow(listCode, rows)).map(record =>
+                this.toCandidate(record, 'time'),
+            );
         } catch (error) {
             this.logger.warn(
                 `Кандидаты ${listCode} не собраны: ${(error as Error).message}`,
@@ -73,26 +79,11 @@ export class RevisionListCandidatesService {
         }
     }
 
-    /** Уровень 1: записи, привязанные к владельцу звонка CRM-полем. */
-    private async findByCrmBinding(
-        list: IPBXList,
-        passport: CallPassport,
-    ): Promise<RevisionListCandidate[]> {
-        const crmField = this.portal.getIdByCodeFieldList(list, 'crm');
-        const crmRefs = this.buildCrmRefs(passport);
-        if (!crmField?.bitrixId || !crmRefs.length) return [];
-
-        const items = await this.loadItems(list, {
-            [`=${crmField.bitrixId}`]: crmRefs,
-        });
-        return items.map(item => this.toCandidate(list, item, 'crm'));
-    }
-
     /** Уровень 2: записи менеджера рядом по времени со звонками. */
     private async findByTimeWindow(
-        list: IPBXList,
+        listCode: SalesListCode,
         rows: TranscriptionPipelineView[],
-    ): Promise<RevisionListCandidate[]> {
+    ): Promise<SalesListRecord[]> {
         const dates = rows
             .map(row => row.callStartedAt)
             .filter((date): date is Date => Boolean(date))
@@ -100,19 +91,12 @@ export class RevisionListCandidatesService {
         if (!dates.length) return [];
 
         const dayMs = 24 * 60 * 60_000;
-        const filter: Record<string, unknown> = {
-            '>=DATE_CREATE': new Date(
-                Math.min(...dates) - TIME_WINDOW_DAYS * dayMs,
-            ).toISOString(),
-            '<=DATE_CREATE': new Date(
-                Math.max(...dates) + TIME_WINDOW_DAYS * dayMs,
-            ).toISOString(),
-        };
-        const managerId = rows.find(row => row.userId)?.userId;
-        if (managerId) filter.CREATED_BY = String(managerId);
-
-        const items = await this.loadItems(list, filter);
-        return items.map(item => this.toCandidate(list, item, 'time'));
+        return this.reader.read(listCode, {
+            dateFrom: new Date(Math.min(...dates) - TIME_WINDOW_DAYS * dayMs),
+            dateTo: new Date(Math.max(...dates) + TIME_WINDOW_DAYS * dayMs),
+            responsibleId: rows.find(row => row.userId)?.userId ?? undefined,
+            limit: CANDIDATES_LIMIT,
+        });
     }
 
     /**
@@ -132,81 +116,28 @@ export class RevisionListCandidatesService {
         return refs;
     }
 
-    private async loadItems(
-        list: IPBXList,
-        filter: Record<string, unknown>,
-    ): Promise<Record<string, unknown>[]> {
-        const response = (await this.bitrix.listItem.get({
-            IBLOCK_ID: String(list.bitrixId),
-            filter,
-        })) as unknown as { result?: Record<string, unknown>[] };
-        return (response?.result ?? []).slice(0, CANDIDATES_LIMIT);
-    }
-
-    /** Запись списка → кандидат: id, имя, дата и preview заполненных полей. */
+    /** Резолвленная запись → кандидат ревизии (тип события — в preview). */
     private toCandidate(
-        list: IPBXList,
-        item: Record<string, unknown>,
+        record: SalesListRecord,
         matchedBy: 'crm' | 'time',
     ): RevisionListCandidate {
-        const rawId = item.ID;
+        const meta = [
+            record.eventTypeName
+                ? `тип события: ${record.eventTypeName}`
+                : null,
+            record.eventActionName
+                ? `действие: ${record.eventActionName}`
+                : null,
+        ].filter(Boolean);
+        const fields = record.fields.map(
+            field => `${field.name}: ${field.value}`,
+        );
         return {
-            id:
-                typeof rawId === 'string' || typeof rawId === 'number'
-                    ? String(rawId)
-                    : '',
-            name: typeof item.NAME === 'string' ? item.NAME : '',
-            createdAt:
-                typeof item.DATE_CREATE === 'string' ? item.DATE_CREATE : null,
+            id: record.id,
+            name: record.name,
+            createdAt: record.eventDate ?? record.createdAt,
             matchedBy,
-            preview: this.renderPreview(list, item),
+            preview: [...meta, ...fields].join('; '),
         };
-    }
-
-    /**
-     * Человекочитаемые заполненные поля записи («название: значение») —
-     * комментарии менеджера из записи и есть контекст для ревизии.
-     */
-    private renderPreview(
-        list: IPBXList,
-        item: Record<string, unknown>,
-    ): string {
-        const parts: string[] = [];
-        for (const field of list.bitrixfields ?? []) {
-            if (parts.length >= PREVIEW_FIELDS_LIMIT) break;
-            if (!field.bitrixId) continue;
-            const value = this.flattenValue(item[field.bitrixId]);
-            if (!value) continue;
-            parts.push(`${field.name}: ${value}`);
-        }
-        return parts.join('; ');
-    }
-
-    /** Значение свойства списка (строка/число/массив/объект Bitrix) → текст. */
-    private flattenValue(raw: unknown): string | null {
-        if (raw == null) return null;
-        if (Array.isArray(raw)) {
-            const joined = raw
-                .map(entry => this.flattenValue(entry))
-                .filter(Boolean)
-                .join(', ');
-            return joined || null;
-        }
-        // Свойства списков приходят и объектами {id: value} — берём значения.
-        if (typeof raw === 'object') {
-            return this.flattenValue(Object.values(raw));
-        }
-        if (
-            typeof raw !== 'string' &&
-            typeof raw !== 'number' &&
-            typeof raw !== 'boolean'
-        ) {
-            return null;
-        }
-        const text = String(raw).trim();
-        if (!text) return null;
-        return text.length > PREVIEW_VALUE_LIMIT
-            ? `${text.slice(0, PREVIEW_VALUE_LIMIT)}…`
-            : text;
     }
 }

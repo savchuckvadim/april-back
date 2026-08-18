@@ -71,7 +71,24 @@ export interface PortalAiSettingsRecord {
      * «ОП Пять К», комментарии) против AI-разбора звонка. NULL — выключена.
      */
     presentationAuditEnabled: boolean | null;
+    /**
+     * Строгость определения ПРЕЗЕНТАЦИИ (тип звонка и всё вытекающее:
+     * presentationDone, хвост/5К, сверка): strict — только показ или
+     * предметный рассказ под задачи клиента; normal — плюс содержательный
+     * рассказ о продукте без привязки каждого инструмента к задачам;
+     * soft — любое содержательное обсуждение продукта. NULL — strict.
+     */
+    presentationStrictness: PresentationStrictnessLevel | null;
 }
+
+/** Уровни строгости определения презентации (runtime-константа для DTO). */
+export const PRESENTATION_STRICTNESS_LEVELS = [
+    'strict',
+    'normal',
+    'soft',
+] as const;
+export type PresentationStrictnessLevel =
+    (typeof PRESENTATION_STRICTNESS_LEVELS)[number];
 
 /**
  * Частичное обновление настроек из админки. Отсутствие поля означает
@@ -104,6 +121,7 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     irrelevantConfidence: null,
     revisorEnabled: null,
     presentationAuditEnabled: null,
+    presentationStrictness: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

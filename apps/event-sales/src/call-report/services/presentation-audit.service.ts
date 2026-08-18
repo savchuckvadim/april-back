@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import {
+    renderSalesListRecordLine,
+    SalesListReaderService,
+} from '@lib/portal-lib/pbx/pbx-sales-list-reader';
 import { AiService, TranscriptionStoreService } from '@lib/call-lib';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
@@ -36,6 +40,24 @@ interface AuditVerdict {
 
 /** ais-тип записи сверки (и маркер идемпотентности). */
 export const PRESENTATION_AUDIT_TYPE = 'presentation-audit';
+
+/** Коды типов события «презентация» в списках отчётности. */
+const PRESENTATION_EVENT_TYPE_CODES = [
+    'presentation',
+    'presentation_uniq',
+    'presentation_contact_uniq',
+];
+/** Окно поиска записей списков вокруг даты звонка, дней. */
+const LIST_REPORT_WINDOW_DAYS = 3;
+
+/** Кандидат сверки: разбор + адресация звонка. */
+interface AuditCandidate {
+    transcriptionId: string;
+    dto: AgentCallAnalysisDto;
+    itemId: number | null;
+    callStartedAt: Date | null;
+    managerId: string | null;
+}
 
 /**
  * КРОН-СВЕРКА ПО ПРЕЗЕНТАЦИЯМ (Фаза 4, архитектура владельца 15.08.2026):
@@ -87,11 +109,7 @@ export class PresentationAuditService {
         );
 
         // Кандидаты: разборы презентаций/решений без выполненной сверки.
-        const candidates: {
-            transcriptionId: string;
-            dto: AgentCallAnalysisDto;
-            itemId: number | null;
-        }[] = [];
+        const candidates: AuditCandidate[] = [];
         for (const row of rows) {
             const forRow = records.filter(
                 record => String(record.transcription_id) === row.id,
@@ -114,6 +132,10 @@ export class PresentationAuditService {
                 itemId: analysis?.report_item_id
                     ? Number(analysis.report_item_id)
                     : null,
+                callStartedAt: row.callStartedAt
+                    ? new Date(row.callStartedAt)
+                    : null,
+                managerId: row.userId ?? null,
             });
         }
         result.candidates = candidates.length;
@@ -141,11 +163,7 @@ export class PresentationAuditService {
     /** Сверка одного разбора; возвращает mismatch. */
     private async auditOne(
         domain: string,
-        candidate: {
-            transcriptionId: string;
-            dto: AgentCallAnalysisDto;
-            itemId: number | null;
-        },
+        candidate: AuditCandidate,
     ): Promise<boolean> {
         const { bitrix, PortalModel: portal } =
             await this.pbxService.init(domain);
@@ -161,6 +179,12 @@ export class PresentationAuditService {
             portal,
             dealId,
         );
+        const listReports = await this.readListReports(
+            bitrix,
+            portal,
+            dealId,
+            candidate,
+        );
 
         const apiKey = await this.vibeKeyResolver.resolve(domain);
         const verdict = (await this.vibeCodeClient.structuredCompletion(
@@ -168,6 +192,7 @@ export class PresentationAuditService {
             buildPresentationAuditUserContent({
                 analysisDigest: this.renderAnalysisDigest(dto),
                 managerReport,
+                listReports,
             }),
             'presentation_audit',
             PRESENTATION_AUDIT_SCHEMA,
@@ -222,6 +247,64 @@ export class PresentationAuditService {
                 );
         }
         return verdict.mismatch;
+    }
+
+    /**
+     * Второй источник отчёта менеджера — записи списков отчётности (КПИ и
+     * ОП История) с типом события «Презентация» через «робота»
+     * SalesListReaderService: сначала записи, ПРИВЯЗАННЫЕ к сделке
+     * CRM-полем, иначе — записи менеджера в окне ±LIST_REPORT_WINDOW_DAYS
+     * вокруг даты звонка. null — записей не нашли (тоже результат:
+     * «не отчитался» ставится только когда пусто везде). Fail-open.
+     */
+    private async readListReports(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        dealId: number | null,
+        candidate: AuditCandidate,
+    ): Promise<string | null> {
+        try {
+            const reader = new SalesListReaderService(bitrix, portal);
+            const dayMs = 24 * 60 * 60_000;
+            const window = candidate.callStartedAt
+                ? {
+                      dateFrom: new Date(
+                          candidate.callStartedAt.getTime() -
+                              LIST_REPORT_WINDOW_DAYS * dayMs,
+                      ),
+                      dateTo: new Date(
+                          candidate.callStartedAt.getTime() +
+                              LIST_REPORT_WINDOW_DAYS * dayMs,
+                      ),
+                  }
+                : {};
+
+            // Уровень 1: записи, привязанные к сделке CRM-полем.
+            let records = dealId
+                ? await reader.readBoth({
+                      crmRefs: [`D_${dealId}`],
+                      eventTypeCodes: PRESENTATION_EVENT_TYPE_CODES,
+                      ...window,
+                      limit: 5,
+                  })
+                : [];
+            // Уровень 2: записи менеджера рядом по времени со звонком.
+            if (!records.length && candidate.managerId) {
+                records = await reader.readBoth({
+                    eventTypeCodes: PRESENTATION_EVENT_TYPE_CODES,
+                    responsibleId: candidate.managerId,
+                    ...window,
+                    limit: 5,
+                });
+            }
+            if (!records.length) return null;
+            return records.map(renderSalesListRecordLine).join('\n');
+        } catch (error) {
+            this.logger.warn(
+                `Записи списков для сверки не собраны (${candidate.transcriptionId}): ${(error as Error).message}`,
+            );
+            return null;
+        }
     }
 
     /** Выжимка разбора для сверки. */
