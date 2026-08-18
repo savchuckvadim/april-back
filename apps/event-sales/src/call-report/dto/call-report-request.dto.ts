@@ -351,3 +351,32 @@ export class PresentationAuditRequestDto {
     @Max(200)
     maxEntities?: number;
 }
+
+/** Запрос план-факта по презентациям (ручной запуск). */
+export class PresentationPlanFactRequestDto {
+    @ApiProperty({
+        description:
+            'Домен портала Bitrix24, по планам презентаций которого идёт проверка.',
+        example: 'gsr.bitrix24.ru',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Окно назад в часах: берутся планы презентаций (записи КПИ ' +
+            '«Презентация / План») с датой события за этот период. ' +
+            'По умолчанию 30 (вчерашний день с запасом).',
+        example: 30,
+        type: Number,
+        minimum: 1,
+        maximum: 720,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(720)
+    windowHours?: number;
+}

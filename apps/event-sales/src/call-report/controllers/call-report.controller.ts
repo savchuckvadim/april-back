@@ -5,10 +5,12 @@ import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { CallReportAnalyzeUseCase } from '../use-cases/call-report-analyze.use-case';
 import { CallRevisionService } from '../services/call-revision.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
+import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
 import {
     AnalyzeCallDto,
     InstallCallReportSmartDto,
     PresentationAuditRequestDto,
+    PresentationPlanFactRequestDto,
     ReviseCallsDto,
     ScanCallsDto,
 } from '../dto/call-report-request.dto';
@@ -17,6 +19,7 @@ import {
     CallReportScanResponseDto,
     InstallCallReportSmartResponseDto,
     PresentationAuditResponseDto,
+    PresentationPlanFactResponseDto,
     ReviseCallsResponseDto,
 } from '../dto/call-report-response.dto';
 
@@ -36,6 +39,7 @@ export class CallReportController {
         private readonly analyzeUseCase: CallReportAnalyzeUseCase,
         private readonly revisionService: CallRevisionService,
         private readonly presentationAudit: PresentationAuditService,
+        private readonly planFact: PresentationPlanFactService,
     ) {}
 
     @Post('install-smart')
@@ -187,5 +191,36 @@ export class CallReportController {
             to,
             dto.maxEntities ?? 20,
         );
+    }
+
+    @Post('presentation-plan-fact')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'План-факт по презентациям (синхронно, ручной запуск)',
+        description:
+            'Планы презентаций из списка КПИ (тип события «Презентация», ' +
+            'действие «План», дата события в окне) сопоставляются с фактами: ' +
+            'AI-разбором звонка-презентации того же менеджера/сделки рядом по ' +
+            'времени либо done-записью КПИ. Итог по каждому плану: ' +
+            'подтверждён звонком / отчёт без звонка / пропущен. При наличии ' +
+            'проблем — дайджест в телеграм. Ручной аналог утреннего крона ' +
+            '(идёт после сверки по презентациям, тот же тумблер).',
+    })
+    @ApiBody({
+        type: PresentationPlanFactRequestDto,
+        description: 'Домен и окно поиска планов.',
+    })
+    @ApiOkResponse({
+        type: PresentationPlanFactResponseDto,
+        description: 'Счётчики и судьба каждого плана.',
+    })
+    async presentationPlanFactRun(
+        @Body() dto: PresentationPlanFactRequestDto,
+    ): Promise<PresentationPlanFactResponseDto> {
+        const to = new Date();
+        const from = new Date(
+            to.getTime() - (dto.windowHours ?? 30) * 60 * 60 * 1000,
+        );
+        return this.planFact.runForDomain(dto.domain, from, to);
     }
 }

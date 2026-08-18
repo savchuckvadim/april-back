@@ -25,6 +25,7 @@ import { CallFocusAnalysisService } from './services/call-focus-analysis.service
 import { CallReportSettingsService } from './services/call-report-settings.service';
 import { CallRevisionService } from './services/call-revision.service';
 import { PresentationAuditService } from './services/presentation-audit.service';
+import { PresentationPlanFactService } from './services/presentation-plan-fact.service';
 import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
@@ -94,6 +95,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         // Сверка по презентациям (Фаза 4): отчёт менеджера vs разбор, 08:00 МСК
         PresentationAuditService,
         PresentationAuditScheduler,
+        // План-факт: запланированные презентации КПИ vs звонки-презентации
+        PresentationPlanFactService,
     ],
 })
 export class CallReportModule {}

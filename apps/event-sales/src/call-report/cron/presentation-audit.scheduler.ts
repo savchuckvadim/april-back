@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
+import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 import { CallReportDomainRosterService } from './call-report-domain-roster.service';
 
@@ -30,6 +31,7 @@ export class PresentationAuditScheduler implements OnModuleInit {
         private readonly roster: CallReportDomainRosterService,
         private readonly settingsService: CallReportSettingsService,
         private readonly auditService: PresentationAuditService,
+        private readonly planFactService: PresentationPlanFactService,
     ) {}
 
     onModuleInit(): void {
@@ -77,6 +79,15 @@ export class PresentationAuditScheduler implements OnModuleInit {
                         to,
                         MAX_ENTITIES,
                     );
+                    // План-факт тем же тумблером: пропущенные и «отчитался
+                    // без звонка» презентации — дайджест в телеграм.
+                    await this.planFactService
+                        .runForDomain(entry.domain, from, to)
+                        .catch((error: Error) =>
+                            this.logger.warn(
+                                `План-факт ${entry.domain} не выполнен: ${error.message}`,
+                            ),
+                        );
                 } catch (error) {
                     // { telegram: true } — форс-алерт админам (транспорт логгера)
                     this.logger.error(

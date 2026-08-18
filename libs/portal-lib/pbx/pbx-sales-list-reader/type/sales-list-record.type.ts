@@ -20,6 +20,8 @@ export interface SalesListQuery {
      * фильтр по значению выпадающего списка через bitrixId элемента.
      */
     eventTypeCodes?: string[];
+    /** Коды действия события (items поля event_action: plan, done…). */
+    eventActionCodes?: string[];
     /** Окно по ДАТЕ СОБЫТИЯ (поле event_date; нет поля — DATE_CREATE). */
     dateFrom?: Date;
     dateTo?: Date;

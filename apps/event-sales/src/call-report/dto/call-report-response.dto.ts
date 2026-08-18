@@ -4,6 +4,10 @@ import { CallReportScanResult } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineResult } from '../use-cases/call-report-pipeline.use-case';
 import { CallRevisionDomainResult } from '../services/call-revision.service';
 import { PresentationAuditDomainResult } from '../services/presentation-audit.service';
+import {
+    PresentationPlanFactResult,
+    PresentationPlanItem,
+} from '../services/presentation-plan-fact.service';
 
 /** Результат установки смарт-процесса «AI-анализ звонков». */
 export class InstallCallReportSmartResponseDto
@@ -384,4 +388,94 @@ export class PresentationAuditResponseDto
         type: Number,
     })
     failed: number;
+}
+
+/** Судьба одного плана презентации в план-факте. */
+export class PresentationPlanFactItemDto implements PresentationPlanItem {
+    @ApiProperty({
+        description: 'ID записи-плана в списке КПИ.',
+        example: '9001',
+        type: String,
+    })
+    recordId: string;
+
+    @ApiProperty({
+        description: 'Название записи (заголовок события).',
+        example: 'Презентация План. ООО Ромашка',
+        type: String,
+    })
+    name: string;
+
+    @ApiProperty({
+        description: 'Дата события плана (как в списке).',
+        example: '14.08.2026',
+        type: String,
+        nullable: true,
+    })
+    eventDate: string | null;
+
+    @ApiProperty({
+        description: 'Bitrix-id ответственного менеджера.',
+        example: '187',
+        type: String,
+        nullable: true,
+    })
+    responsibleId: string | null;
+
+    @ApiProperty({
+        description:
+            'Итог: confirmed — презентация подтверждена AI-разбором звонка; ' +
+            'reported-only — менеджер отчитался записью «Проведено», но ' +
+            'звонка-презентации в разборах нет; missed — ни звонка, ни отчёта.',
+        enum: ['confirmed', 'reported-only', 'missed'],
+        example: 'missed',
+    })
+    status: 'confirmed' | 'reported-only' | 'missed';
+}
+
+/** Итог план-факта по презентациям одного домена. */
+export class PresentationPlanFactResponseDto
+    implements PresentationPlanFactResult
+{
+    @ApiProperty({
+        description: 'Домен портала.',
+        example: 'gsr.bitrix24.ru',
+        type: String,
+    })
+    domain: string;
+
+    @ApiProperty({
+        description:
+            'Планов презентаций в окне (записи КПИ «Презентация / План»).',
+        example: 6,
+        type: Number,
+    })
+    planned: number;
+
+    @ApiProperty({
+        description: 'Подтверждено AI-разбором звонка-презентации.',
+        example: 4,
+        type: Number,
+    })
+    confirmed: number;
+
+    @ApiProperty({
+        description: 'Отчёт «Проведено» есть, звонок-презентация не найден.',
+        example: 1,
+        type: Number,
+    })
+    reportedOnly: number;
+
+    @ApiProperty({
+        description: 'Пропущено: ни звонка, ни отчёта.',
+        example: 1,
+        type: Number,
+    })
+    missed: number;
+
+    @ApiProperty({
+        description: 'Судьба каждого плана.',
+        type: [PresentationPlanFactItemDto],
+    })
+    items: PresentationPlanFactItemDto[];
 }

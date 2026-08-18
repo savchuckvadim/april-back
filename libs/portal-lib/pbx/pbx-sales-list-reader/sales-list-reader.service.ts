@@ -59,7 +59,7 @@ export class SalesListReaderService {
             const records = (response?.result ?? [])
                 .slice(0, query.limit ?? DEFAULT_LIMIT)
                 .map(item => this.toRecord(listCode, list, item));
-            return this.applyEventTypePostFilter(records, query);
+            return this.applyPostFilters(records, query);
         } catch (error) {
             this.logger.warn(
                 `Чтение списка ${listCode} не удалось: ${(error as Error).message}`,
@@ -105,6 +105,21 @@ export class SalesListReaderService {
             }
         }
 
+        if (query.eventActionCodes?.length) {
+            const eventAction = this.field(list, 'event_action');
+            const ids = this.itemIdsByCodes(
+                eventAction,
+                query.eventActionCodes,
+            );
+            if (eventAction && ids.length) {
+                filter[this.filterKey(eventAction)] = ids;
+            } else {
+                this.logger.warn(
+                    `Действие события не резолвится в списке ${list.group}_${list.type} — серверный фильтр пропущен`,
+                );
+            }
+        }
+
         if (query.dateFrom || query.dateTo) {
             const eventDate = this.field(list, 'event_date');
             if (eventDate) {
@@ -140,21 +155,26 @@ export class SalesListReaderService {
     }
 
     /**
-     * Пост-фильтр по типу события: серверный фильтр мог быть пропущен
-     * (кривой слепок) — записи с РЕЗОЛВЛЕННЫМ, но не подходящим кодом
-     * отсекаются; записи с нерезолвленным типом остаются (fail-open).
+     * Пост-фильтры по типу/действию события: серверный фильтр мог быть
+     * пропущен (кривой слепок) — записи с РЕЗОЛВЛЕННЫМ, но не подходящим
+     * кодом отсекаются; записи с нерезолвленным значением остаются
+     * (fail-open).
      */
-    private applyEventTypePostFilter(
+    private applyPostFilters(
         records: SalesListRecord[],
         query: SalesListQuery,
     ): SalesListRecord[] {
-        if (!query.eventTypeCodes?.length) return records;
+        const matches = (
+            resolved: string | null,
+            wanted: string[] | undefined,
+        ): boolean =>
+            !wanted?.length ||
+            !resolved ||
+            wanted.some(code => this.codeMatches(resolved, code));
         return records.filter(
             record =>
-                !record.eventTypeCode ||
-                query.eventTypeCodes!.some(code =>
-                    this.codeMatches(record.eventTypeCode!, code),
-                ),
+                matches(record.eventTypeCode, query.eventTypeCodes) &&
+                matches(record.eventActionCode, query.eventActionCodes),
         );
     }
 
