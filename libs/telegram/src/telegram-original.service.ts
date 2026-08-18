@@ -1,14 +1,26 @@
 import { HttpService } from '@nestjs/axios';
-import { Global, Injectable } from '@nestjs/common';
+import { Global, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { TelegramSendMessageDto } from './telegram.dto';
+import {
+    TelegramSendWindow,
+    toTelegramMarkdownText,
+} from './telegram-message.util';
 
+/**
+ * Отправка НАПРЯМУЮ в Bot API независимо от WITH_TELEGRAM (ручка
+ * /telegram/original). Второй вход в тот же канал, поэтому защита та же,
+ * что у TelegramService: троттлинг-окно + текст, безопасный для Markdown,
+ * + гарантия «ошибка отправки не роняет вызвавшего».
+ */
 @Global()
 @Injectable()
 export class TelegramOriginalService {
+    private readonly logger = new Logger(TelegramOriginalService.name);
     private botToken: string;
     private adminChatId: string;
+    private readonly sendWindow = new TelegramSendWindow();
 
     constructor(
         private readonly httpService: HttpService,
@@ -21,65 +33,50 @@ export class TelegramOriginalService {
             'TELEGRAM_ADMIN_CHAT_ID',
         ) as string;
     }
+
     public async sendPublicMessage(dto: TelegramSendMessageDto) {
         const text = `\n💥 App:  ${dto.app}\n🌍 Domain:   ${dto.domain}\n🧭 UserId: ${dto.userId}\n\n ⚠️ Text:  ${dto.text}`;
-        const cleanText = this.cleanText(text);
+        const cleanText = toTelegramMarkdownText(text);
 
-        const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-        const payload = {
+        await this.post({
             chat_id: Number(this.adminChatId),
             text: `NEST from front ${cleanText}`,
             parse_mode: 'Markdown',
-        };
-
-        try {
-            await firstValueFrom(this.httpService.post(url, payload));
-        } catch (error) {
-            console.error('Telegram error:', error);
-        }
+        });
         return cleanText;
     }
 
     async sendMessage(message: string) {
-        const cleanText = this.cleanText(message);
-
-        const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-        const payload = {
+        await this.post({
             chat_id: Number(this.adminChatId),
-            text: `NEST ${cleanText}`,
+            text: `NEST ${toTelegramMarkdownText(message)}`,
             parse_mode: 'Markdown',
-        };
-
-        try {
-            await firstValueFrom(this.httpService.post(url, payload));
-        } catch (error) {
-            console.error('Telegram error:', error);
-        }
+        });
     }
+
     async sendMessageAdminError(message: string) {
-        const cleanText = this.cleanText(message);
-
-        const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-        const payload = {
+        await this.post({
             chat_id: this.adminChatId,
-            text: `NEST ADMIN ERROR: ${cleanText}`,
+            text: `NEST ADMIN ERROR: ${toTelegramMarkdownText(message)}`,
             parse_mode: 'Markdown',
-        };
+        });
+    }
 
+    /** Единая точка отправки: троттлинг + «не уронить вызвавшего». */
+    private async post(payload: unknown): Promise<void> {
+        if (!this.sendWindow.tryConsume()) {
+            this.logger.warn(
+                'Telegram: лимит сообщений в минуту исчерпан — отправка пропущена',
+            );
+            return;
+        }
+        const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
         try {
             await firstValueFrom(this.httpService.post(url, payload));
         } catch (error) {
+            // console, не this.logger.error: лог об ошибке отправки в
+            // Telegram зациклил бы отправку через логгер-транспорт.
             console.error('Telegram error:', error);
         }
-    }
-
-    private cleanText(text: string) {
-        return text
-            .replace(/_/g, '\\_')
-            .replace(/\*/g, '\\*')
-            .replace(/\[/g, '\\[')
-            .replace(/`/g, '\\`')
-            .replace(/[_*[\]()~`>#+=|{}.!\\]/g, '\\$&') // экранируем ВСЁ, что может сломать markdown
-            .slice(0, 4000); // Telegram лимит: 4096 символов;
     }
 }

@@ -360,6 +360,9 @@ export class AgentAnalysisIntakeService {
             // сырого текста — он же уходит в поля TRANSCRIPT_N.
             transcript:
                 this.renderDialogText(dto.dialog) ?? row.text ?? undefined,
+            // Диалог intake постит в таймлайн сам (renderDialogComments) —
+            // writer в этом случае не дублирует транскрипт в таймлайн.
+            transcriptInTimeline: Boolean(dto.dialog?.length),
             summary: dto.summary,
             resumeGigachat: gigachat.resume,
             recomendationGigachat: gigachat.recomendation,

@@ -82,7 +82,9 @@ export class EventReportUseCase {
         entityFlow.queue(ctx);
         const deals = dealFlow.queue(ctx);
         taskFlow.queue(ctx, deals);
-        kpiFlow.queue(ctx, deals, buffer);
+        // await: дедуп финалов/уникальных читает существующие элементы
+        // прямыми вызовами (batch-аккумулятор не трогается — см. flowDedup).
+        await kpiFlow.queue(ctx, deals, buffer);
         presentationList.queue(ctx, deals);
         postFail.queue(ctx);
         leadRelation.queue(ctx);

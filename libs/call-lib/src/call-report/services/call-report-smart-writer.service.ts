@@ -71,6 +71,12 @@ export interface CallReportSmartItemInput {
     scriptCompliance?: number;
     coachingPriority?: string;
     transcriptionId?: string;
+    /**
+     * Диалог уже постится в таймлайн вызывающей стороной (intake с
+     * размеченным dialog) — writer тогда НЕ дублирует транскрипт в
+     * таймлайн при выбросе TRANSCRIPT_N из полей.
+     */
+    transcriptInTimeline?: boolean;
     /** Полный транскрипт — будет разложен кусками по TRANSCRIPT_N. */
     transcript?: string;
     summary?: string;
@@ -145,26 +151,7 @@ export class CallReportSmartWriterService {
                 // Upsert: существующий элемент ДОПОЛНЯЕТСЯ переданными полями
                 // (частичный update) — базовый элемент из smoke-прогона
                 // конвейера потом обогащается глубоким анализом агента.
-                try {
-                    const { dropped } = await this.writeWithDegradation(
-                        this.buildFields(input),
-                        fields =>
-                            this.bitrix.item.update(
-                                existingId,
-                                this.smartInfo.entityTypeId as never,
-                                fields as Partial<IBXItem>,
-                            ),
-                    );
-                    await this.postDroppedToTimeline(existingId, dropped);
-                } catch (error) {
-                    // Не фатально: транскрипт и ais уже в БД, разбор
-                    // дольётся повторным прогоном. { telegram: true } —
-                    // алерт, иначе пустые поля ищут неделями.
-                    this.logger.error(
-                        `Элемент #${existingId} не обновлён (${xmlId}): ${(error as Error).message}`,
-                        { telegram: true, itemId: existingId },
-                    );
-                }
+                await this.updateItem(existingId, xmlId, input);
                 this.logger.log(
                     `Элемент смарта уже существует: #${existingId} (${xmlId}) — обновил поля, дубль не создаю`,
                 );
@@ -191,11 +178,57 @@ export class CallReportSmartWriterService {
                 `crm.item.add не вернул id элемента (activity ${input.activityId})`,
             );
         }
-        await this.postDroppedToTimeline(itemId, dropped);
+        await this.postDroppedToTimeline(itemId, dropped, input);
         this.logger.log(
             `Создан элемент смарта #${itemId} (activity ${input.activityId})`,
         );
         return itemId;
+    }
+
+    /**
+     * Обновление ТОЛЬКО существующего элемента по активности; null —
+     * элемента нет, ничего не создаётся. Для дописывающих проходов
+     * (ночной ревизор): создание элемента без разбора запрещено —
+     * прод-инцидент 16.08.2026: ревизор плодил почти пустые карточки
+     * «только рекомендации по сделке» для звонков без смарт-элемента.
+     */
+    async updateExisting(
+        input: CallReportSmartItemInput,
+    ): Promise<number | null> {
+        if (!input.activityId) return null;
+        const xmlId = `aicall_${input.activityId}`;
+        const existingId = await this.findIdByXmlId(xmlId);
+        if (!existingId) return null;
+        await this.updateItem(existingId, xmlId, input);
+        return existingId;
+    }
+
+    /** Частичный update существующего элемента (общий путь upsert-веток). */
+    private async updateItem(
+        existingId: number,
+        xmlId: string,
+        input: CallReportSmartItemInput,
+    ): Promise<void> {
+        try {
+            const { dropped } = await this.writeWithDegradation(
+                this.buildFields(input),
+                fields =>
+                    this.bitrix.item.update(
+                        existingId,
+                        this.smartInfo.entityTypeId as never,
+                        fields as Partial<IBXItem>,
+                    ),
+            );
+            await this.postDroppedToTimeline(existingId, dropped, input);
+        } catch (error) {
+            // Не фатально: транскрипт и ais уже в БД, разбор дольётся
+            // повторным прогоном. { telegram: true } — алерт, иначе пустые
+            // поля ищут неделями.
+            this.logger.error(
+                `Элемент #${existingId} не обновлён (${xmlId}): ${(error as Error).message}`,
+                { telegram: true, itemId: existingId },
+            );
+        }
     }
 
     /**
@@ -211,9 +244,11 @@ export class CallReportSmartWriterService {
      * УМЕНЬШЕНИЕ ЧИСЛА длинных полей либо укорачивание до <700 байт.
      *
      * Стратегия (что выброшено — постится полным текстом в таймлайн
-     * элемента, см. postDroppedToTimeline):
+     * элемента, см. postDroppedToTimeline; транскрипт при выбросе уходит
+     * в таймлайн ЦЕЛИКОМ кусками — клиент платит за транскрибацию и
+     * обязан видеть весь текст):
      *   1) все поля как есть;
-     *   2) без TRANSCRIPT_N (−4 длинных поля; текст есть в БД и таймлайне);
+     *   2) без TRANSCRIPT_N (−4 длинных поля; полный текст — в таймлайн);
      *   3) остаются только приоритетные тексты, ужатые до <700 байт,
      *      остальные длинные — в таймлайн;
      *   4) только числа/enum/связи + SUMMARY <700 байт.
@@ -384,17 +419,22 @@ export class CallReportSmartWriterService {
     /**
      * Не поместившееся в поля — полным текстом в таймлайн элемента
      * (порядок владельца 10.08.2026: резюме GigaChat → рекомендации →
-     * остальное). Транскрипт не постится: он уже в таймлайне диалогом и в
-     * БД. Разборы разделов (*_ANALYSIS/_ADVICE) не постятся: intake пишет
-     * их в таймлайн отдельными комментами всегда. Fail-open.
+     * остальное). ТРАНСКРИПТ ГАРАНТИРОВАН (решение владельца 16.08.2026:
+     * «за транскрибацию платим, клиент обязан видеть весь текст»):
+     * выброшенные TRANSCRIPT_N склеиваются и постятся в таймлайн ЦЕЛИКОМ
+     * кусками — кроме случая, когда вызывающая сторона уже постит диалог
+     * (input.transcriptInTimeline). Разборы разделов (*_ANALYSIS/_ADVICE)
+     * не постятся: intake пишет их в таймлайн отдельными комментами
+     * всегда. Fail-open.
      */
     private async postDroppedToTimeline(
         itemId: number,
         dropped: DroppedField[],
+        input: CallReportSmartItemInput,
     ): Promise<void> {
         if (!dropped.length) return;
-        // Не постим: транскрипт (уже в таймлайне диалогом и в БД) и разборы
-        // разделов GREETING_ANALYSIS/…_ADVICE (intake постит их всегда).
+        // Разборы разделов GREETING_ANALYSIS/…_ADVICE не постим — intake
+        // постит их отдельными комментами всегда.
         const sectionKeys = new Set(
             CALL_REPORT_SECTION_CODES.flatMap(section => [
                 this.ufName(`${section}_ANALYSIS`),
@@ -406,6 +446,14 @@ export class CallReportSmartWriterService {
         );
         const skip = (key: string): boolean =>
             transcriptKeys.has(key) || sectionKeys.has(key);
+
+        // Транскрипт первым (окажется НИЖЕ остальных записей таймлайна).
+        const droppedTranscript = dropped.filter(field =>
+            transcriptKeys.has(field.key),
+        );
+        if (droppedTranscript.length && !input.transcriptInTimeline) {
+            await this.postFullTranscript(itemId, droppedTranscript);
+        }
         const order = [
             'RESUME_GIGACHAT',
             'RECOMENDATION_GIGACHAT',
@@ -445,6 +493,44 @@ export class CallReportSmartWriterService {
         }
         this.logger.log(
             `Элемент #${itemId}: ${postable.length} полей ушли полным текстом в таймлайн (row size лимит)`,
+        );
+    }
+
+    /**
+     * Полный транскрипт в таймлайн элемента: выброшенные TRANSCRIPT_N
+     * склеиваются в исходный текст (нарезались подряд кусками по 40к) и
+     * постятся частями. Части постятся в ОБРАТНОМ порядке — таймлайн
+     * показывает новое сверху, так часть 1 оказывается первой при чтении
+     * сверху вниз. Fail-open на каждую часть.
+     */
+    private async postFullTranscript(
+        itemId: number,
+        droppedTranscript: DroppedField[],
+    ): Promise<void> {
+        const fullText = [...droppedTranscript]
+            .sort((a, b) => a.key.localeCompare(b.key))
+            .map(field => field.value)
+            .join('');
+        if (!fullText.trim()) return;
+        const parts = this.splitForComment(fullText);
+        for (let i = parts.length - 1; i >= 0; i--) {
+            const partLabel =
+                parts.length > 1 ? ` — часть ${i + 1} из ${parts.length}` : '';
+            await this.bitrix.timeline
+                .addTimelineComment({
+                    ENTITY_ID: itemId,
+                    ENTITY_TYPE: `DYNAMIC_${this.smartInfo.entityTypeId}`,
+                    COMMENT: `📜 [b]Транскрипт звонка[/b]${partLabel}:\n\n${parts[i]}`,
+                    AUTHOR_ID: '1',
+                })
+                .catch((error: Error) =>
+                    this.logger.warn(
+                        `Транскрипт (часть ${i + 1}) не запощен в таймлайн #${itemId}: ${error.message}`,
+                    ),
+                );
+        }
+        this.logger.log(
+            `Элемент #${itemId}: полный транскрипт ушёл в таймлайн ${parts.length} частями (в поля не поместился)`,
         );
     }
 

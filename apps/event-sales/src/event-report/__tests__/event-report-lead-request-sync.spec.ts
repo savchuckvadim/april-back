@@ -59,6 +59,10 @@ const FIELD_DEFS: Record<
     op_lead_firstprepare_history: { bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY' },
     deal_from_lead_id: { bitrixId: 'DEAL_FROM_LEAD_ID' },
     deal_joined_leads: { bitrixId: 'DEAL_JOINED_LEADS' },
+    // Анкета после презентации (перенос на связанный лид).
+    op_presentation_xvost: { bitrixId: 'OP_PRESENTATION_XVOST' },
+    op_presentation_5k: { bitrixId: 'OP_PRESENTATION_5K' },
+    op_5k_client_what: { bitrixId: 'OP_5K_CLIENT_WHAT' },
 };
 
 const makePortal = () => ({
@@ -313,5 +317,138 @@ describe('EventReportLeadRequestSyncService', () => {
         const fields = updates[0].fields;
         expect(fields.UF_CRM_TO_PRESENTATION_SALES).toBeUndefined();
         expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+    });
+
+    /* ------------------------------------------------------------------ *
+     * Анкета проведённой презентации → связанный лид.
+     * Источник — лид контекста (в него анкету пишет фрейм); цель — заявка,
+     * выбранная менеджером в модалке. Себе самому не пишется.
+     * ------------------------------------------------------------------ */
+
+    const SURVEY_CTX_LEAD = {
+        ID: '42',
+        UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
+        UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
+        UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену Консультанта',
+    };
+
+    const surveyCtx = (over: Record<string, unknown> = {}) =>
+        makeCtx({
+            isSuccessSale: false,
+            isFail: false,
+            isPresentationDone: true,
+            lead: SURVEY_CTX_LEAD,
+            currentPresDeal: null,
+            dto: {
+                leadSync: {
+                    leadId: 77,
+                    presentationLink: true,
+                    siteStageCode: 'op_lead_site_stage4',
+                },
+            },
+            ...over,
+        });
+
+    it('анкета переносится на связанный лид, пустые значения не затирают', async () => {
+        const { bitrix, updates } = makeBitrix({
+            77: { ID: '77', UF_CRM_OP_PRESENTATION_XVOST: 'старый хвост' },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                lead: {
+                    ...SURVEY_CTX_LEAD,
+                    UF_CRM_OP_PRESENTATION_5K: '   ', // не заполнено
+                },
+            }),
+        );
+
+        const fields = updates[0].fields;
+        // Скаляр перезаписан значением последней проведённой.
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBe('Дожать по хвосту');
+        expect(fields.UF_CRM_OP_5K_CLIENT_WHAT).toBe(
+            'Хочет замену Консультанта',
+        );
+        // Пустой ответ не затирает то, что уже стоит на заявке.
+        expect(fields.UF_CRM_OP_PRESENTATION_5K).toBeUndefined();
+    });
+
+    it('связанный лид и есть лид контекста → анкета не пишется (ответы уже там)', async () => {
+        const { bitrix, updates } = makeBitrix({
+            42: { ID: '42' },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                dto: {
+                    leadSync: {
+                        leadId: 42, // тот же лид
+                        presentationLink: true,
+                        siteStageCode: 'op_lead_site_stage4',
+                    },
+                },
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
+        expect(fields.UF_CRM_OP_5K_CLIENT_WHAT).toBeUndefined();
+        // Статусы модалки при этом применяются как раньше.
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+    });
+
+    it('лида-источника в контексте нет → анкета молча пропускается', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(surveyCtx({ lead: null }));
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+    });
+
+    it('презентация не проведена → анкета связанному лиду не переносится', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(surveyCtx({ isPresentationDone: false }));
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
+    });
+
+    it('финал без связи презентации: другие лиды анкету не получают', async () => {
+        const { bitrix, updates } = makeBitrix({
+            42: { ID: '42' },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            makeCtx({
+                isSuccessSale: true,
+                isFail: false,
+                isPresentationDone: true,
+                lead: SURVEY_CTX_LEAD,
+                ownerDeal: null,
+                dto: {},
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_STATUS).toBe(8); // финал отработал
     });
 });

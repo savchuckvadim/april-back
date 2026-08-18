@@ -18,6 +18,7 @@ import {
     parseCrmRefId,
 } from '../../../shared/portal-fields';
 import { EventReportContext } from '../context/event-report.context';
+import { PRESENTATION_SURVEY_FIELD_CODES } from '../entity/event-report-entity-fields.model';
 
 type BxRow = Record<string, unknown>;
 
@@ -99,6 +100,11 @@ export class EventReportLeadRequestSyncService {
         // Волна 2: запись статусов + истории.
         for (const [leadId, lead] of leads) {
             const fields = this.buildFields(ctx, lead);
+            // Анкета проведённой презентации — ТОЛЬКО лиду, с которым её
+            // связал менеджер (явный выбор сильнее любой эвристики).
+            if (ctx.isPresentationDone && leadId === presentationLeadId) {
+                this.appendPresentationSurvey(ctx, leadId, fields);
+            }
             if (Object.keys(fields).length === 0) continue;
             this.bitrix.batch.lead.update(
                 `lr_sync_upd_${leadId}`,
@@ -120,6 +126,41 @@ export class EventReportLeadRequestSyncService {
             `lead-request sync: ${reason} → лидов ${result.synced}/${leadIds.length}`,
         );
         return result;
+    }
+
+    /**
+     * Анкета проведённой презентации («Хвост», «Пять К», детальные «5К») —
+     * связанному лиду.
+     *
+     * Источник — ЛИД КОНТЕКСТА (`ctx.lead`): именно в него фрейм пишет
+     * ответы из анкеты, и он же — «один открытый лид, прокинутый через
+     * задачу» из правила владельца. Если менеджер связал презентацию с
+     * ДРУГОЙ заявкой (модалка presentationLink), ответы переносятся на
+     * неё, чтобы карточка заявки показывала итог презентации.
+     *
+     * Себе самому не пишем: когда связанный лид и есть лид контекста,
+     * ответы на нём уже стоят, а перезапись снапшотом init-фазы могла бы
+     * их откатить. Пустые значения не переносятся, неустановленное поле
+     * молча пропускается (graceful, как во всём event-report).
+     */
+    private appendPresentationSurvey(
+        ctx: EventReportContext,
+        targetLeadId: number,
+        fields: BxRow,
+    ): void {
+        const source = ctx.lead as unknown as BxRow | null;
+        if (!source) return;
+        if (Number(source.ID) === targetLeadId) return;
+
+        for (const code of PRESENTATION_SURVEY_FIELD_CODES) {
+            const field = this.portal.getEntityFieldByCode('lead', code);
+            if (!field) continue;
+            const key = this.portal.getFieldBitrixId(field);
+            const raw = source[key];
+            const value = typeof raw === 'string' ? raw.trim() : '';
+            if (!value) continue;
+            fields[key] = value;
+        }
     }
 
     /** Лид, выбранный менеджером в модалке связи презентации (или null). */

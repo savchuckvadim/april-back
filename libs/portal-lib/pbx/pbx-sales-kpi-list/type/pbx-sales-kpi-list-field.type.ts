@@ -204,6 +204,70 @@ export const PBX_SALES_KPI_LIST_FIELDS = [
                 SORT: 90,
                 VALUE: 'Заявка с сайта',
             },
+            /*
+             * Уникальные события sales_kpi (см. event-report
+             * EventReportKpiPayloadBuilder.buildUniqueEvents): пишутся один
+             * раз на компанию/контакт/сделку по детерминированному коду
+             * элемента. До install этих items на портал код деградирует
+             * мягко — уникальная запись пропускается с warning.
+             */
+            {
+                bitrixCode: 'PRESENTATION_UNIQ',
+                code: 'presentation_uniq',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Презентация(уникальная)',
+                SORT: 100,
+                VALUE: 'Презентация(уникальная)',
+            },
+            {
+                bitrixCode: 'PRESENTATION_CONTACT_UNIQ',
+                code: 'presentation_contact_uniq',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'През. по контакту',
+                SORT: 110,
+                VALUE: 'През. по контакту',
+            },
+            {
+                bitrixCode: 'EV_SUCCESS',
+                code: 'ev_success',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Успех',
+                SORT: 120,
+                VALUE: 'Успех',
+            },
+            {
+                bitrixCode: 'EV_FAIL',
+                code: 'ev_fail',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Отказ',
+                SORT: 130,
+                VALUE: 'Отказ',
+            },
+            /*
+             * Звонок «Доработка» (клиент дорабатывается после решения).
+             * В KPI-списке считается «Звонком» (маппинг refine→call в
+             * event-report), а СВОИМ item'ом пишется только в историю
+             * (historyItems override) — чтобы лента различала доработку,
+             * не раздувая сводку.
+             */
+            {
+                bitrixCode: 'REFINE',
+                code: 'refine',
+                fieldCode: 'event_type',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Доработка',
+                SORT: 140,
+                VALUE: 'Доработка',
+            },
         ],
     },
     {
@@ -256,6 +320,23 @@ export const PBX_SALES_KPI_LIST_FIELDS = [
                 name: 'Перенос',
                 SORT: 50,
                 VALUE: 'Перенос',
+            },
+            /*
+             * Легаси-действие «Не состоялся» для финального отказа без
+             * результата (fail + noresult): раньше запись уезжала в
+             * `expired` («Просрочен»), что искажало смысл. До install item
+             * на портал поле события останется незаполненным (warning в
+             * логе), сама запись не теряется.
+             */
+            {
+                bitrixCode: 'ACT_NORESULT_FAIL',
+                code: 'act_noresult_fail',
+                fieldCode: 'event_action',
+                isActive: true,
+                isNeedUpdate: true,
+                name: 'Не состоялся',
+                SORT: 60,
+                VALUE: 'Не состоялся',
             },
         ],
     },

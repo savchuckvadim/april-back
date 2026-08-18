@@ -23,11 +23,19 @@ import { DealFlowResult } from '../deal/event-report-deal-flow.service';
  * по подстроке («Презентация», «Звонок», «Холодный обзвон», ...) и по этому
  * вычисляет `task.eventType`. Любая правка формата ломает фронт.
  */
-const IMPORTANT_PREFIX_BY_PLAN_TYPE: Record<string, string> = {
+const TITLE_EMOJI_BY_PLAN_TYPE: Record<string, string> = {
     presentation: '⚡',
     hot: '🔥',
     moneyAwait: '💎',
+    refine: '🔧',
 };
+
+/**
+ * «Важные» планы — задача ставится с HIGH-приоритетом. Отдельно от эмодзи:
+ * у доработки СВОЙ значок в TITLE, но приоритет обычный (MEDIUM) — она
+ * не горящий шаг воронки, а фоновая работа с клиентом.
+ */
+const IMPORTANT_PLAN_TYPES = new Set(['presentation', 'hot', 'moneyAwait']);
 
 /** Cold/xo — фиксированное русское название (legacy `$stringType`). */
 const COLD_TASK_TYPE_NAME = 'Холодный обзвон';
@@ -131,8 +139,7 @@ export class EventReportTaskFlowService {
 
         const dtoName = ctx.dto.plan?.type?.current?.name?.trim() ?? '';
         const prefix =
-            ctx.planEventType &&
-            IMPORTANT_PREFIX_BY_PLAN_TYPE[ctx.planEventType];
+            ctx.planEventType && TITLE_EMOJI_BY_PLAN_TYPE[ctx.planEventType];
         if (prefix && dtoName) return `${prefix} ${dtoName}`;
         return dtoName;
     }
@@ -159,8 +166,7 @@ export class EventReportTaskFlowService {
 
     private isPlannedImportant(ctx: EventReportContext): boolean {
         return Boolean(
-            ctx.planEventType &&
-                ctx.planEventType in IMPORTANT_PREFIX_BY_PLAN_TYPE,
+            ctx.planEventType && IMPORTANT_PLAN_TYPES.has(ctx.planEventType),
         );
     }
 

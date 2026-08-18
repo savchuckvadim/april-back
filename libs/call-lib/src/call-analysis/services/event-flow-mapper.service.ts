@@ -29,6 +29,7 @@ const PLAN_TYPE_NAMES: Record<CallPlanTypeCode, string> = {
     warm: 'Повторный звонок',
     presentation: 'Презентация',
     hot: 'В решении',
+    refine: 'Доработка',
     moneyAwait: 'Ждём оплату',
     supply: 'Поставка',
 };

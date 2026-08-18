@@ -44,6 +44,8 @@ export enum EnumTaskEventType {
     WARM = 'warm',
     PRESENTATION = 'presentation',
     HOT = 'hot',
+    /** Доработка: клиент дорабатывается после решения. */
+    REFINE = 'refine',
     MONEY_AWAIT_NEW = 'moneyAwait',
     /** Сервисный сигнал: своего кода в отчётности нет, считается звонком. */
     SS = 'ss',

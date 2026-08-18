@@ -75,6 +75,8 @@ export type CallPlanTypeCode =
     | 'warm'
     | 'presentation'
     | 'hot'
+    /** Доработка: клиент дорабатывается после решения. */
+    | 'refine'
     | 'moneyAwait'
     | 'supply';
 
@@ -83,6 +85,7 @@ export const CALL_PLAN_TYPE_CODE_VALUES = [
     'warm',
     'presentation',
     'hot',
+    'refine',
     'moneyAwait',
     'supply',
 ] as const satisfies readonly CallPlanTypeCode[];

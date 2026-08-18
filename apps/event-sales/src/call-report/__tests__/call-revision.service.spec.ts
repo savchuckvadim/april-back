@@ -132,7 +132,12 @@ const makeDeps = (options?: {
     };
     const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key-1') };
     const addItem = jest.fn().mockResolvedValue(7);
-    MockedWriter.mockImplementation(() => ({ addItem }) as never);
+    // Ревизор ТОЛЬКО обновляет существующие элементы (updateExisting);
+    // addItem в моке — для контроля, что создание не вызывается.
+    const updateExisting = jest.fn().mockResolvedValue(7);
+    MockedWriter.mockImplementation(
+        () => ({ addItem, updateExisting }) as never,
+    );
 
     const service = new CallRevisionService(
         pbxService as never,
@@ -150,6 +155,7 @@ const makeDeps = (options?: {
         contextBuilder,
         vibeCodeClient,
         addItem,
+        updateExisting,
         timeline,
     };
 };
@@ -158,7 +164,8 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
     afterEach(() => jest.clearAllMocks());
 
     it('сущность с двумя звонками ревизуется одним LLM-запросом и пишется в смарт + таймлайн', async () => {
-        const { service, vibeCodeClient, addItem, timeline } = makeDeps();
+        const { service, vibeCodeClient, addItem, updateExisting, timeline } =
+            makeDeps();
 
         const result = await service.runForDomain(
             DOMAIN,
@@ -173,8 +180,10 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
             entitiesFailed: 0,
         });
         expect(vibeCodeClient.structuredCompletion).toHaveBeenCalledTimes(1);
-        // Носитель ревизии — ПОСЛЕДНИЙ звонок сущности (activityId 102).
-        expect(addItem).toHaveBeenCalledWith(
+        // Только ОБНОВЛЕНИЕ существующего элемента (создание запрещено),
+        // носитель — ПОСЛЕДНИЙ звонок сущности (activityId 102).
+        expect(addItem).not.toHaveBeenCalled();
+        expect(updateExisting).toHaveBeenCalledWith(
             expect.objectContaining({
                 activityId: '102',
                 riskFlags: ['promise'],
@@ -186,7 +195,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
             }),
         );
         const written = (
-            addItem.mock.calls[0] as [{ recommendations: string }]
+            updateExisting.mock.calls[0] as [{ recommendations: string }]
         )[0];
         expect(written.recommendations).toContain('Отправить КП до пятницы');
         expect(written.recommendations).toContain(
@@ -202,7 +211,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
     });
 
     it('кандидаты списков уходят в LLM, валидная привязка пишется в смарт и таймлайн', async () => {
-        const { service, vibeCodeClient, addItem, timeline } = makeDeps({
+        const { service, vibeCodeClient, updateExisting, timeline } = makeDeps({
             listItems: [
                 {
                     ID: 9001,
@@ -230,7 +239,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
         expect(userContent).toContain('id=9001');
         expect(userContent).toContain('Показал Искру, просили КП');
 
-        expect(addItem).toHaveBeenCalledWith(
+        expect(updateExisting).toHaveBeenCalledWith(
             expect.objectContaining({
                 kpiItem: { itemId: '9001', status: 'confirmed' },
                 historyItem: undefined,
@@ -241,6 +250,35 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 COMMENT: expect.stringContaining('запись КПИ №9001') as string,
             }),
         );
+    });
+
+    it('элемента у последнего звонка нет — обновляется более ранний; нет нигде — ничего не создаётся', async () => {
+        const { service, addItem, updateExisting, timeline } = makeDeps();
+        // Последний звонок (102) без элемента → берётся элемент звонка 101.
+        updateExisting
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(5)
+            // Второй прогон (вторая сущность ниже): элементов нет совсем.
+            .mockResolvedValue(null);
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+        expect(updateExisting).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({ activityId: '102' }),
+        );
+        expect(updateExisting).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({ activityId: '101' }),
+        );
+
+        // Нет ни одного элемента — карточка-пустышка НЕ создаётся,
+        // результат остаётся в таймлайне сущности.
+        jest.clearAllMocks();
+        updateExisting.mockResolvedValue(null);
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+        expect(updateExisting).toHaveBeenCalledTimes(2);
+        expect(addItem).not.toHaveBeenCalled();
+        expect(timeline.addTimelineComment).toHaveBeenCalled();
     });
 
     it('в LLM уходят паспорт, свежие разборы (agent-analysis либо gigachat) и история', async () => {

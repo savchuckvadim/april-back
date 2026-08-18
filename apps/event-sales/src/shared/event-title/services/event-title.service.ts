@@ -22,6 +22,7 @@ const TASK_EVENT_TYPE_NAME: Record<EnumTaskEventType, string> = {
     [EnumTaskEventType.WARM]: 'Звонок',
     [EnumTaskEventType.PRESENTATION]: 'Презентация',
     [EnumTaskEventType.HOT]: 'Звонок по решению',
+    [EnumTaskEventType.REFINE]: 'Доработка',
     [EnumTaskEventType.IN_PROGRESS]: 'Звонок по решению',
     [EnumTaskEventType.MONEY_AWAIT_NEW]: 'Звонок по оплате',
     [EnumTaskEventType.MONEY_AWAIT]: 'Звонок по оплате',
@@ -73,6 +74,11 @@ export class EventTitleService {
             case EnumEventPlanCode.HOT:
                 emoji = '🔥';
                 color = 'bg-red-500';
+                title = emoji + ' ' + typeName;
+                break;
+            case EnumEventPlanCode.REFINE:
+                emoji = '🔧';
+                color = 'bg-amber-500';
                 title = emoji + ' ' + typeName;
                 break;
             case EnumEventPlanCode.PAY:

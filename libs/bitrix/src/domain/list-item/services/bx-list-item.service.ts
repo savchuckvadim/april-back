@@ -17,6 +17,11 @@ export class BxListItemService {
     async get(dto: BxListItemGetRequestDto) {
         return await this.repo.get(dto);
     }
+    async update(
+        dto: Parameters<BxListItemRepository['update']>[0],
+    ): Promise<unknown> {
+        return await this.repo.update(dto);
+    }
     async all(dto: BxListItemGetRequestDto): Promise<IBXListItem[]> {
         const listItems: IBXListItem[] = [];
         let needMore = true;

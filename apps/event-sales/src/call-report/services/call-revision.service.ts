@@ -172,7 +172,7 @@ export class CallRevisionService {
 
         await this.applyVerdict(
             domain,
-            last,
+            fresh,
             this.sanitizeListLinks(verdict, listCandidates),
             passport,
         );
@@ -259,25 +259,32 @@ export class CallRevisionService {
     }
 
     /**
-     * Применение вердикта: upsert последнего смарт-элемента (рекомендации
-     * по сделке, риски, coaching + ДОЛИВ CRM-связей из паспорта — чинит
-     * элементы, где intake связи не заполнил) + итоговый коммент в
-     * таймлайн сущности.
+     * Применение вердикта: обновление СУЩЕСТВУЮЩЕГО смарт-элемента
+     * (рекомендации по сделке, риски, coaching + ДОЛИВ CRM-связей из
+     * паспорта — чинит элементы, где intake связи не заполнил) + итоговый
+     * коммент в таймлайн сущности.
+     *
+     * Элемент ищется по звонкам сущности ОТ НОВОГО К СТАРОМУ и только
+     * ОБНОВЛЯЕТСЯ (updateExisting): у последнего звонка элемента может не
+     * быть (разбор не прошёл, нерелевантный) — создание карточки-пустышки
+     * «только рекомендации» запрещено (прод-инцидент 16.08.2026, gsr
+     * элемент 283). Нет ни одного элемента — результат живёт в таймлайне
+     * сущности.
      */
     private async applyVerdict(
         domain: string,
-        last: TranscriptionPipelineView,
+        fresh: TranscriptionPipelineView[],
         verdict: RevisionVerdict,
         passport: CallPassport,
     ): Promise<void> {
         const { bitrix } = await this.pbxService.init(domain);
+        const last = fresh[fresh.length - 1];
 
         const smartInfo = await this.smartResolver.resolve(domain);
-        if (smartInfo && last.activityId) {
+        if (smartInfo) {
             const writer = new CallReportSmartWriterService(bitrix, smartInfo);
-            await writer.addItem({
-                activityId: last.activityId,
-                // Связи владельца звонка из CRM (источник истины) — upsert
+            const input = {
+                // Связи владельца звонка из CRM (источник истины) — update
                 // дополняет существующий элемент, пустые значения не шлются.
                 mainDealId:
                     passport.entityType === 'deal'
@@ -292,8 +299,8 @@ export class CallRevisionService {
                           itemId: verdict.kpiItemId,
                           status:
                               verdict.kpiItemStatus === 'confirmed'
-                                  ? 'confirmed'
-                                  : 'suspected',
+                                  ? ('confirmed' as const)
+                                  : ('suspected' as const),
                       }
                     : undefined,
                 historyItem: verdict.historyItemId
@@ -301,8 +308,8 @@ export class CallRevisionService {
                           itemId: verdict.historyItemId,
                           status:
                               verdict.historyItemStatus === 'confirmed'
-                                  ? 'confirmed'
-                                  : 'suspected',
+                                  ? ('confirmed' as const)
+                                  : ('suspected' as const),
                       }
                     : undefined,
                 recommendations: [
@@ -315,7 +322,22 @@ export class CallRevisionService {
                     ? verdict.riskFlags
                     : undefined,
                 coachingPriority: verdict.coachingPriority ?? undefined,
-            });
+            };
+            let updatedId: number | null = null;
+            for (const row of [...fresh].reverse()) {
+                if (!row.activityId) continue;
+                updatedId = await writer.updateExisting({
+                    ...input,
+                    activityId: row.activityId,
+                });
+                if (updatedId) break;
+            }
+            if (!updatedId) {
+                this.logger.log(
+                    `Ревизия ${passport.entityType ?? '—'}:${passport.entityId ?? '—'} (${domain}): ` +
+                        'смарт-элементов у звонков нет — результат только в таймлайне сущности',
+                );
+            }
         }
 
         if (last.entityId && last.entityType) {

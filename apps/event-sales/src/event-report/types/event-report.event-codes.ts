@@ -47,6 +47,8 @@ export const EVENT_REPORT_EVENT_TYPE = {
     warm: 'warm',
     presentation: 'presentation',
     hot: 'hot',
+    /** Доработка: клиент дорабатывается после решения. */
+    refine: 'refine',
     moneyAwait: 'moneyAwait',
     supply: 'supply',
     document: 'document',
@@ -102,6 +104,7 @@ export const EVENT_REPORT_EVENT_TYPE_NAME: Record<
     warm: 'Звонок',
     presentation: 'Презентация',
     hot: 'Звонок по решению',
+    refine: 'Доработка',
     moneyAwait: 'Звонок по оплате',
     supply: 'Поставка',
     document: 'Документы',

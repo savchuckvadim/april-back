@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
     KpiEventItemCodes,
@@ -21,6 +22,8 @@ import { IBXListItemFields } from '@/modules/bitrix/domain/list-item/interface/b
  *   двух конкретных списков на каждый портал).
  */
 export class KpiEventItemModel {
+    private readonly logger = new Logger(KpiEventItemModel.name);
+
     constructor(
         private readonly list: IPBXList,
         private readonly payload: KpiEventPayload,
@@ -65,7 +68,21 @@ export class KpiEventItemModel {
             if (!bitrixId) return;
 
             const itemBitrixId = this.getItemBitrixId(code, itemCode);
-            if (itemBitrixId === undefined) return;
+            if (itemBitrixId === undefined) {
+                /*
+                 * Поле на портале ЕСТЬ, а вариант — нет: значит items поля
+                 * отстали от кода (например, ev_success/act_noresult_fail до
+                 * install). Раньше значение молча выбрасывалось; теперь
+                 * мягкая деградация видима — запись пишется без этого поля,
+                 * а warning говорит, что нужен install items.
+                 */
+                this.logger.warn(
+                    `item «${itemCode}» не найден в поле ${String(code)} ` +
+                        `списка ${this.list.type} — значение пропущено ` +
+                        `(нужен install items KPI-списка)`,
+                );
+                return;
+            }
 
             target[bitrixId] = itemBitrixId;
         });

@@ -53,6 +53,38 @@ const PRES_COMMENTS_LIMIT = 15;
 const FAIL_COMMENTS_LIMIT = 18;
 
 /**
+ * Анкета после презентации: сводные («Хвост», «Пять К») + девять детальных
+ * ответов «5К». Значения пишет ФРЕЙМ прямо в ЛИД; event-report при
+ * проведённой презентации разносит их тем же каркасом, что
+ * `pres_comments`/`pres_count`, по правилам владельца:
+ *  - основная (sales_base) сделка — всегда, ПЕРЕЗАТИРАЯ: смысл —
+ *    «последняя проведённая презентация»;
+ *  - pres-сделки — только та, ПО КОТОРОЙ отчитываются, и спонтанная
+ *    (у каждой презентации своя запись); плановой — нет;
+ *  - связанный с презентацией ЛИД — через EventReportLeadRequestSyncService
+ *    (связь — presentationLink из модалки; лид контекста и есть «один
+ *    открытый, прокинутый через задачу», ответы на нём уже стоят).
+ *
+ * Скаляры, не multiple: перенос перезаписывает прошлые значения. Сейчас на
+ * сделках заведены только сводные; детальные разрезолвятся в пустоту и
+ * молча пропустятся — а если владелец заведёт их и на сделках, перенос
+ * подхватит их без правки кода.
+ */
+export const PRESENTATION_SURVEY_FIELD_CODES = [
+    'op_presentation_xvost',
+    'op_presentation_5k',
+    'op_5k_client_what',
+    'op_5k_client_ready',
+    'op_5k_client_price',
+    'op_5k_company_who',
+    'op_5k_company_how',
+    'op_5k_company_right',
+    'op_5k_command',
+    'op_5k_concurent',
+    'op_5k_criteri',
+] as const;
+
+/**
  * Опции для построения полей сделки (entityType='deal').
  */
 export interface DealFieldsOptions {
@@ -131,6 +163,7 @@ export class EventReportEntityFieldsModel {
                 this.presentationDoneComment(),
                 PRES_COMMENTS_LIMIT,
             );
+            this.copyPresentationSurvey(out);
         }
 
         // ===== isPlanned =====
@@ -415,6 +448,58 @@ export class EventReportEntityFieldsModel {
 
         out[this.bitrixKey(field)] =
             this.readNumber(this.entityRecord(), field) + 1;
+    }
+
+    /**
+     * Перенос анкеты после презентации: ответы «последней проведённой»
+     * с ЛИДА → на pres-сделку и основную сделку.
+     *
+     * Почему источник — лид, а не DTO отчёта: анкету фрейм пишет в лид
+     * напрямую, и лид уже прочитан init-фазой; расширять контракт отчёта
+     * ради дублирования этих значений не нужно.
+     *
+     * Пишем ТОЛЬКО на сделки (роли base/pres):
+     *  - на лиде значения и так живут, а перезапись снапшотом init-фазы
+     *    могла бы ОТКАТИТЬ ответ, сохранённый фреймом после чтения;
+     *  - XO/TMC-сделки к презентации отношения не имеют;
+     *  - на компании полей нет намеренно (см. реестр).
+     *
+     * Пустой ответ на лиде НЕ переносится: перенос фиксирует «последнюю
+     * проведённую», а не затирает сделку пустотой, когда анкету ещё не
+     * заполнили. Непустой — перезаписывает (скаляры, не multiple).
+     * Поле не установлено (на лиде или на сделке) — молча пропускается.
+     */
+    private copyPresentationSurvey(out: EntityFieldsMap): void {
+        if (this.entityType !== EEventReportEntityType.DEAL) return;
+        const role = this.dealOptions?.role;
+        if (role !== EDealRole.BASE && role !== EDealRole.PRESENTATION) return;
+        /*
+         * У каждой презентации СВОЯ запись анкеты: pres-сделка получает
+         * ответы, только если презентация состоялась ИМЕННО на ней
+         * (отчитываемая и спонтанная). Плановой pres-сделке, создаваемой
+         * этим же отчётом, писать нечего — у будущей презентации ещё нет
+         * своих ответов. Основная сделка — вне гейта: на ней всегда
+         * «последняя проведённая».
+         */
+        if (
+            role === EDealRole.PRESENTATION &&
+            !this.dealOptions?.presentationHappenedHere
+        ) {
+            return;
+        }
+        const lead = this.ctx.lead as unknown as Record<string, unknown> | null;
+        if (!lead) return;
+
+        for (const code of PRESENTATION_SURVEY_FIELD_CODES) {
+            const leadField = this.portal.getEntityFieldByCode('lead', code);
+            if (!leadField) continue;
+            const raw = lead[this.bitrixKey(leadField)];
+            const value = typeof raw === 'string' ? raw.trim() : '';
+            if (!value) continue;
+            // setScalar сам резолвит поле на ЦЕЛЕВОЙ сущности и молча
+            // пропускает неустановленное (детальные «5К» на сделке).
+            this.setScalar(out, code, value);
+        }
     }
 
     private appendMultiple(

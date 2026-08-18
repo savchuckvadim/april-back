@@ -22,6 +22,19 @@ export type BxListItemAddRequestType = {
     FIELDS: IBXListItemFields;
 };
 
+/**
+ * `lists.element.update`: элемент адресуется ELEMENT_ID либо ELEMENT_CODE
+ * (достаточно одного). FIELDS перезаписывают значения; NAME обязателен —
+ * Битрикс без него отклоняет обновление.
+ */
+export type BxListItemUpdateRequestType = {
+    IBLOCK_TYPE_ID: 'lists';
+    IBLOCK_ID: string | number;
+    ELEMENT_ID?: string | number;
+    ELEMENT_CODE?: string;
+    FIELDS: IBXListItemFields;
+};
+
 export type BxListItemSchema = {
     [EBxMethod.GET]: {
         request: BxListItemGetRequestType;
@@ -30,5 +43,9 @@ export type BxListItemSchema = {
     [EBxMethod.ADD]: {
         request: BxListItemAddRequestType;
         response: number;
+    };
+    [EBxMethod.UPDATE]: {
+        request: BxListItemUpdateRequestType;
+        response: boolean;
     };
 };

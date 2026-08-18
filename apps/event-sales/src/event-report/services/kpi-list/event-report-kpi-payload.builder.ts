@@ -1,6 +1,9 @@
 import dayjs from 'dayjs';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { KpiEventPayload } from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
+import {
+    KpiEventDedup,
+    KpiEventPayload,
+} from '../../../shared/kpi-list-flow/type/kpi-event-payload.type';
 import {
     EventTypeCode,
     EventActionCode,
@@ -11,6 +14,7 @@ import {
     OpNoresultReasonCode,
     OpFailReasonCode,
     EventReportEventType,
+    eventTypeName,
 } from '../../types/event-report.event-codes';
 import { EventReportContext } from '../context/event-report.context';
 import { EEventReportEntityType } from '../init/event-report-init.types';
@@ -23,13 +27,16 @@ const PLAN_EVENT_DATE_OFFSET_SEC = 1;
 
 /**
  * KPI-сценарии (см. event-report-service-map.md «Блок 4»):
+ * `unique` — уникальные презентации sales_kpi
+ * (presentation_uniq / presentation_contact_uniq, легаси-коды).
  */
 export type KpiScenario =
     | 'report'
     | 'unplanned_presentation_plan'
     | 'presentation_done'
     | 'plan'
-    | 'final';
+    | 'final'
+    | 'unique';
 
 /**
  * Тип события → код item'а списка KPI (`event_type`).
@@ -61,11 +68,30 @@ const EVENT_TYPE_TO_KPI_ITEM: Record<EventReportEventType, EventTypeCode> = {
     warm: 'call',
     presentation: 'presentation',
     hot: 'call_in_progress',
+    /*
+     * Доработка в СВОДКЕ считается «Звонком» (решение владельца): свой
+     * item `refine` уходит только в историю через historyItems-override
+     * (см. buildReport/buildPlan) — лента различает доработку, сводка
+     * не раздувается новыми рядами.
+     */
+    refine: 'call',
     moneyAwait: 'call_in_money',
     // Своих кодов в KPI у них нет; по смыслу это разговор с клиентом.
     supply: 'call',
     document: 'call',
 };
+
+/**
+ * Пометка доработки в имени записи: тип в KPI — общий «call», и без
+ * префикса запись «Доработка» в сводке неотличима от обычного звонка.
+ * Имя попадает и в event_title (assemble пишет их одинаково).
+ */
+function withRefineMark(
+    name: string,
+    type: EventReportEventType | null,
+): string {
+    return type === 'refine' ? `Доработка: ${name}` : name;
+}
 
 /**
  * Маппинг типа события → код item'а KPI.
@@ -208,6 +234,14 @@ export class EventReportKpiPayloadBuilder {
         const final = this.buildFinal();
         if (final) payloads.push(final);
 
+        payloads.push(
+            ...this.buildPresentationUniq({
+                unplannedPresPlan,
+                presDone,
+                plan,
+            }),
+        );
+
         return payloads;
     }
 
@@ -217,25 +251,35 @@ export class EventReportKpiPayloadBuilder {
         const ctx = this.ctx;
         if (ctx.isNew || ctx.isExpired) return null;
         if (ctx.reportEventType === 'presentation') return null;
-        /*
-         * Продажа и отказ пишутся ФИНАЛЬНОЙ записью (buildFinal). Раньше
-         * отчётная запись создавалась и тут, с тем же event_type и
-         * action='done' — отчёт считает по паре тип+действие, и каждая
-         * продажа/отказ удваивала «*_done».
-         */
-        if (ctx.isSuccessSale || ctx.isFail) return null;
 
         const eventType = mapEventType(ctx.reportEventType);
         if (!eventType) return null;
 
-        const action: EventActionCode = ctx.isResult ? 'done' : 'expired';
+        /*
+         * Как в легаси (BitrixListFlowService.php:558): несостоявшийся
+         * разговор — act_noresult_fail («Не Состоялся»), а не expired.
+         * Отчётная запись пишется И ПРИ ФИНАЛЕ — двойного счёта с финальной
+         * нет, потому что финал несёт СВОЙ тип события (ev_success/ev_fail),
+         * а не тип звонка (EventReportService.php:3456 + :3643).
+         */
+        const action: EventActionCode = ctx.isResult
+            ? 'done'
+            : 'act_noresult_fail';
 
         return this.assemble({
             scenario: 'report',
-            name: ctx.reportEventName || ctx.planEventName,
+            name: withRefineMark(
+                ctx.reportEventName || ctx.planEventName,
+                ctx.reportEventType,
+            ),
             eventType,
             action,
             crm: this.crmLinks(),
+            // История различает доработку своим item'ом; сводка KPI — нет.
+            historyItems:
+                ctx.reportEventType === 'refine'
+                    ? { event_type: 'refine' }
+                    : undefined,
         });
     }
 
@@ -283,11 +327,16 @@ export class EventReportKpiPayloadBuilder {
         if (!eventType) return null;
         return this.assemble({
             scenario: 'plan',
-            name: ctx.planEventName,
+            name: withRefineMark(ctx.planEventName, ctx.planEventType),
             eventType,
             action: ctx.isExpired ? 'pound' : 'plan',
             crm: this.crmLinks(),
             eventDateOffsetSec: PLAN_EVENT_DATE_OFFSET_SEC,
+            // История различает доработку своим item'ом; сводка KPI — нет.
+            historyItems:
+                ctx.planEventType === 'refine'
+                    ? { event_type: 'refine' }
+                    : undefined,
         });
     }
 
@@ -295,22 +344,234 @@ export class EventReportKpiPayloadBuilder {
         const ctx = this.ctx;
         if (!ctx.isSuccessSale && !ctx.isFail) return null;
         /*
-         * Тип события влияет на разрез отчёта, но НЕ на факт записи: продажа
-         * и отказ обязаны фиксироваться всегда. Раньше здесь стоял ранний
-         * выход по нерезолвнутому типу — и отчёт по «Решению»/«Оплате» не
-         * оставлял в KPI ничего.
+         * Финал несёт СОБСТВЕННЫЙ тип события — ev_success / ev_fail, как в
+         * легаси (getEventType, BitrixListFlowService.php:1052-1056; вызов —
+         * EventReportService.php:3643-3676 с eventType 'success'/'fail').
+         * Тип звонка остаётся у ОТЧЁТНОЙ записи (buildReport) — поэтому
+         * двойного счёта по паре тип+действие нет.
+         *
+         * Расхождение с легаси — СОЗНАТЕЛЬНОЕ, по требованию владельца:
+         * легаси писал финал со СЛУЧАЙНЫМ кодом (повторная отправка плодила
+         * дубли), у нас код детерминирован и повтор ОБНОВЛЯЕТ элемент
+         * (crm-привязки, даты, причину). Имя тоже подробнее легаси
+         * («Продажа»/«Отказ» → finalName с поводом и причиной).
          */
-        const eventType =
-            mapEventType(ctx.reportEventType ?? ctx.planEventType) ?? 'call';
         return this.assemble({
             scenario: 'final',
-            name: ctx.isSuccessSale
-                ? `Успешная продажа: ${ctx.reportEventName || ''}`
-                : `Отказ: ${ctx.reportEventName || ''}`,
-            eventType,
+            name: this.finalName(),
+            eventType: ctx.isSuccessSale ? 'ev_success' : 'ev_fail',
             action: 'done',
             crm: this.crmLinks(),
+            dedup: {
+                key: `final_${ctx.entityType}_${ctx.entityId}`,
+                scope: 'both',
+                mode: 'upsert',
+            },
         });
+    }
+
+    /**
+     * Уникальные презентации — ТОЧНАЯ копия легаси-схемы
+     * (hook/app/Services/HookFlow/BitrixListFlowService.php:823-905):
+     *
+     *  - уникальная запись = КОПИЯ обычной записи презентации с подменённым
+     *    `event_type` и детерминированным кодом; пишется ТОЛЬКО в sales_kpi
+     *    (history — полная лента);
+     *  - уровни зернистости ключа:
+     *      company+deal:          `{companyId}_{baseDealId}_{plan|done}`
+     *      company+deal+contact:  `{companyId}_{baseDealId}_ {contactId}_{plan|done}`
+     *      (подчёркивание+ПРОБЕЛ перед contactId — легаси-формат :895-902,
+     *      сохраняем бук-в-букву ради совместимости с элементами на порталах);
+     *  - `presentation_uniq` — company-уровень, `presentation_contact_uniq` —
+     *    contact-уровень (:826, :891);
+     *  - гейт (:823): только result|new; исключение — «план вхолостую»
+     *    незапланированной презентации, легаси хардкодит result
+     *    (EventReportService.php:3517) и uniq-plan пишется всегда;
+     *  - ЛИД в ключах НЕ участвует — так в легаси (ключи только
+     *    company/deal/contact), поэтому лид-only события уникальных записей
+     *    не порождают;
+     *  - легаси-вариант `_done_{responsible}` (ТМЦ-ответственный ≠ su,
+     *    :840) у нас недостижим: сценарий «презентация от имени ТМЦ» на
+     *    Nest ещё не перенесён.
+     *
+     * Уникальность — insert-once по коду: легаси добивался того же отказом
+     * Битрикса создать дубль кода.
+     */
+    private buildPresentationUniq(sources: {
+        unplannedPresPlan: KpiEventPayload | null;
+        presDone: KpiEventPayload | null;
+        plan: KpiEventPayload | null;
+    }): KpiEventPayload[] {
+        const ctx = this.ctx;
+        const out: KpiEventPayload[] = [];
+
+        // Легаси-предусловие: ключ строится из компании и базовой сделки.
+        const companyId =
+            ctx.entityType === EEventReportEntityType.COMPANY
+                ? ctx.entityId
+                : Number(ctx.company?.ID) || null;
+        const leadId =
+            ctx.entityType === EEventReportEntityType.LEAD
+                ? ctx.entityId
+                : Number(ctx.lead?.ID) || null;
+        /*
+         * Слот владельца в ключе: КОМПАНИЯ, а без неё — ЛИД («он будет как
+         * бы заменой компании» — расширение новой версии поверх легаси:
+         * там ситуация «компании нет, но есть лид» не существовала).
+         *
+         * Форматы слота НАМЕРЕННО разные:
+         *  - компания — голый числовой id, бук-в-букву легаси-формат
+         *    (совместимость с элементами, уже записанными PHP-хуком);
+         *  - лид — с явным маркером `lead{id}`: id-пространства компаний и
+         *    лидов независимы, и голый leadId в коде мог бы численно
+         *    совпасть с чужим companyId — дедуп ложно сработал бы об чужую
+         *    запись. Легаси лид-ключей никогда не писал, поэтому новый
+         *    формат совместимости не ломает.
+         */
+        const owner = companyId ?? (leadId ? `lead${leadId}` : null);
+        const baseDealId =
+            this.deals.baseDealId ??
+            (ctx.entityType === EEventReportEntityType.DEAL
+                ? ctx.entityId
+                : null);
+        // Без владельца ключа не существует вовсе.
+        if (!owner) return out;
+        /*
+         * Отсутствие базовой сделки:
+         *  - для КОМПАНИИ — гейт остаётся: company-ключи всегда c
+         *    deal-сегментом (бук-в-букву легаси), а company-flow без
+         *    базовой сделки в наших сценариях недостижим (isDealFlow её
+         *    создаёт);
+         *  - для ЛИДА — решение владельца: uniq пишется БЕЗ deal-сегмента
+         *    (`lead{id}_done`), lead-only работа без сделок — штатный
+         *    случай. Когда работа дорастёт до сделки, следующая
+         *    презентация получит `lead{id}_{deal}_done` — две «уникальные»
+         *    по одному клиенту (до сделки и после) осознанно допустимы.
+         */
+        if (!baseDealId && companyId) return out;
+
+        const resultOrNew = ctx.isResult || ctx.isNew;
+
+        // План презентации (осознанный) — uniq-plan при result|new.
+        const plannedPres =
+            ctx.planEventType === 'presentation' && !ctx.isExpired
+                ? sources.plan
+                : null;
+        if (plannedPres && resultOrNew) {
+            out.push(
+                ...this.presentationUniqPair(
+                    plannedPres,
+                    'plan',
+                    owner,
+                    baseDealId,
+                    ctx.dto.plan?.contact?.ID,
+                ),
+            );
+        }
+        // «План вхолостую» незапланированной — без гейта (легаси хардкодит
+        // result). Если план-uniq уже создан выше, код совпадёт и второй
+        // не пишется (insert-once), поэтому явно не дублируем.
+        if (sources.unplannedPresPlan && !(plannedPres && resultOrNew)) {
+            out.push(
+                ...this.presentationUniqPair(
+                    sources.unplannedPresPlan,
+                    'plan',
+                    owner,
+                    baseDealId,
+                    ctx.dto.report?.contact?.ID,
+                ),
+            );
+        }
+        // Презентация состоялась — uniq-done при result|new.
+        if (sources.presDone && resultOrNew) {
+            out.push(
+                ...this.presentationUniqPair(
+                    sources.presDone,
+                    'done',
+                    owner,
+                    baseDealId,
+                    ctx.dto.report?.contact?.ID,
+                ),
+            );
+        }
+        return out;
+    }
+
+    /**
+     * Пара уникальных записей одного действия: owner-уровень всегда,
+     * contact-уровень — при известном контакте. Каждая — клон исходной
+     * записи с другим `event_type` и легаси-кодом. `owner` — числовой
+     * companyId (легаси-формат) либо `lead{id}` (замена компании лидом,
+     * см. buildPresentationUniq).
+     */
+    private presentationUniqPair(
+        source: KpiEventPayload,
+        action: 'plan' | 'done',
+        owner: string | number,
+        /** null — lead-only без базовой сделки: deal-сегмент опускается. */
+        baseDealId: string | number | null,
+        contactId: string | number | undefined,
+    ): KpiEventPayload[] {
+        const clone = (
+            eventType: EventTypeCode,
+            key: string,
+        ): KpiEventPayload => ({
+            ...source,
+            items: { ...source.items, event_type: eventType },
+            dedup: {
+                key,
+                scope: 'kpi',
+                mode: 'insert-once',
+                requireEventTypeItem: true,
+            },
+        });
+
+        // Префикс из ПРИСУТСТВУЮЩИХ сегментов: без сделки deal-сегмент
+        // опускается целиком — пустых `__` в кодах не бывает.
+        const prefix =
+            baseDealId != null ? `${owner}_${baseDealId}` : `${owner}`;
+
+        const pair: KpiEventPayload[] = [
+            clone('presentation_uniq', `${prefix}_${action}`),
+        ];
+        if (contactId) {
+            pair.push(
+                clone(
+                    'presentation_contact_uniq',
+                    // Подчёркивание+пробел — легаси-формат, менять нельзя.
+                    `${prefix}_ ${contactId}_${action}`,
+                ),
+            );
+        }
+        return pair;
+    }
+
+    /**
+     * Имя финальной записи — «отдельно и подробно»: тип события + повод +
+     * причина. Примеры: «Отказ: Звонок по решению — Нет денег»,
+     * «Продажа: спонтанная презентация».
+     */
+    private finalName(): string {
+        const ctx = this.ctx;
+        const base = ctx.isSuccessSale ? 'Продажа' : 'Отказ';
+
+        const occasion = ctx.isUnplannedPresentation
+            ? 'спонтанная презентация'
+            : ctx.isPresentationDone
+              ? 'презентация'
+              : (ctx.reportEventType ?? ctx.planEventType)
+                ? eventTypeName(ctx.reportEventType ?? ctx.planEventType!)
+                : ctx.reportEventName;
+
+        const reason = ctx.isFail
+            ? (ctx.dto.report?.failReason?.current?.name ??
+              ctx.dto.report?.failType?.current?.name ??
+              '')
+            : '';
+
+        let name = occasion ? `${base}: ${occasion}` : base;
+        if (reason) name += ` — ${reason}`;
+        return name;
     }
 
     // ---------- helpers ----------
@@ -329,6 +590,10 @@ export class EventReportKpiPayloadBuilder {
          * логическую последовательность.
          */
         eventDateOffsetSec?: number;
+        /** Правило дедупликации (финал/уникальные); нет — множественная. */
+        dedup?: KpiEventDedup;
+        /** Override item'ов для sales_history (см. KpiEventPayload). */
+        historyItems?: KpiEventPayload['historyItems'];
     }): KpiEventPayload {
         const ctx = this.ctx;
         const failTypeCode = ctx.dto.report?.failType?.current?.code;
@@ -370,6 +635,8 @@ export class EventReportKpiPayloadBuilder {
                 ),
                 op_prospects_type: mapProspects(failTypeCode, ctx),
             },
+            historyItems: input.historyItems,
+            dedup: input.dedup,
         };
     }
 
@@ -391,6 +658,18 @@ export class EventReportKpiPayloadBuilder {
         ) {
             push(`L_${this.ctx.entityId}`);
         }
+        /*
+         * Лид контекста при владельце-сделке/компании: без этой привязки
+         * отказ по сделке с лидом не находится ПО ЛИДУ — а карточка заявки
+         * читает свою историю именно по `L_*`.
+         */
+        const contextLead =
+            this.ctx.entityType !== EEventReportEntityType.LEAD
+                ? Number(this.ctx.lead?.ID)
+                : NaN;
+        if (Number.isFinite(contextLead) && contextLead > 0) {
+            push(`L_${contextLead}`);
+        }
         // Заявка, с которой менеджер связал презентацию (модалка перед
         // отправкой): из лида должны быть видны KPI-записи этого отчёта.
         const linkedLead = this.ctx.dto.leadSync?.presentationLink
@@ -399,6 +678,7 @@ export class EventReportKpiPayloadBuilder {
         if (
             Number.isFinite(linkedLead) &&
             linkedLead > 0 &&
+            String(linkedLead) !== String(contextLead) &&
             !(
                 this.ctx.entityType === EEventReportEntityType.LEAD &&
                 String(this.ctx.entityId) === String(linkedLead)

@@ -3,6 +3,8 @@ export enum EnumEventPlanCode {
     WARM = 'warm',
     PRESENTATION = 'presentation',
     HOT = 'hot',
+    /** Доработка: клиент дорабатывается после решения. */
+    REFINE = 'refine',
     PAY = 'moneyAwait',
     SUPPLY = 'supply',
 }

@@ -1,4 +1,5 @@
 import { BitrixService } from '@/modules/bitrix';
+import { IBXListItem } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
 import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Logger } from '@nestjs/common';
@@ -53,7 +54,10 @@ export class KpiListFlowService {
         const uniqueSuffix = this.generateUniqueSuffix();
 
         lists.forEach(list => {
-            const fields = new KpiEventItemModel(list, payload).toFields();
+            const fields = new KpiEventItemModel(
+                list,
+                this.payloadForList(payload, list),
+            ).toFields();
             const cmdCode = `add_list_item_${list.type}_${entityId}_${uniqueSuffix}`;
             const elementCode = `${list.type}_${entityId}_${uniqueSuffix}`;
 
@@ -65,6 +69,169 @@ export class KpiListFlowService {
                 }),
             );
         });
+    }
+
+    /**
+     * Payload для КОНКРЕТНОГО списка: history получает поверх `items` мерж
+     * `historyItems` (типы, которые в сводке KPI считаются общим кодом, а в
+     * ленте истории видны своим — refine). KPI-список берёт payload как есть.
+     */
+    private payloadForList(
+        payload: KpiEventPayload,
+        list: IPBXList,
+    ): KpiEventPayload {
+        if (list.type !== 'history' || !payload.historyItems) return payload;
+        return {
+            ...payload,
+            items: { ...payload.items, ...payload.historyItems },
+        };
+    }
+
+    /**
+     * Дедуплицированная запись (финалы и уникальные события): код элемента
+     * ДЕТЕРМИНИРОВАН — это `payload.dedup.key` КАК ЕСТЬ, без префикса типа
+     * списка. Формат унаследован от легаси-PHP
+     * (hook/app/Services/HookFlow/BitrixListFlowService.php:825-905):
+     * элементы с такими кодами уже лежат на порталах, и наш код обязан
+     * попадать в те же коды, иначе рядом с легаси-уникальными выросли бы
+     * дубли. Kpi и history — разные инфоблоки, одинаковый код в обоих
+     * допустим.
+     *
+     * По наличию кода решается судьба записи:
+     *  - элемента нет → `lists.element.add` с этим кодом;
+     *  - есть, mode `upsert` → `lists.element.update` (crm-привязки, даты,
+     *    причина обновляются: одна продажа/один отказ на владельца);
+     *  - есть, mode `insert-once` → пропуск (уникальное событие уже
+     *    зафиксировано, исходная дата не переписывается). Легаси добивался
+     *    того же отказом Битрикса создать дубль кода — мы просто не шлём.
+     *
+     * Существование проверяется ПРЯМЫМ `lists.element.get` (не батч):
+     * event-report копит в batch-аккумуляторе команды с `$result[...]`
+     * ссылками, и любой преждевременный flush их разорвал бы. Прямой вызов
+     * аккумулятор не трогает.
+     */
+    async flowDedup(
+        payload: KpiEventPayload,
+        buffer: IBatchGroupBuffer,
+    ): Promise<void> {
+        const dedup = payload.dedup;
+        if (!dedup) {
+            // Контрактная ошибка вызывающего: без правила дедупликации
+            // событие обязано идти через flow() с entityId владельца.
+            this.logger.warn(
+                `flowDedup вызван без payload.dedup («${payload.name}») — запись пропущена`,
+            );
+            return;
+        }
+
+        const lists = this.collectLists().filter(
+            list => dedup.scope === 'both' || list.type === 'kpi',
+        );
+        if (lists.length === 0) {
+            this.logger.warn('Списки sales_kpi/sales_history не настроены');
+            return;
+        }
+
+        for (const list of lists) {
+            /*
+             * Уникальная запись обязана нести свой event_type: если item
+             * (presentation_uniq / ev_success / …) ещё не установлен на
+             * портале, элемент без типа — мусор, который отчёт не сможет
+             * классифицировать. Мягкая деградация: warning + пропуск ЭТОЙ
+             * записи, остальные не страдают.
+             */
+            if (
+                dedup.requireEventTypeItem &&
+                !this.eventTypeItemInstalled(list, payload)
+            ) {
+                this.logger.warn(
+                    `item event_type="${payload.items.event_type ?? '—'}" не установлен ` +
+                        `в списке ${list.type} — запись «${payload.name}» пропущена ` +
+                        `(нужен install items KPI-списка)`,
+                );
+                continue;
+            }
+
+            // Легаси-формат: код БЕЗ префикса типа списка — совместимость с
+            // элементами, уже созданными PHP-хуком на порталах.
+            const elementCode = dedup.key;
+            const existingId = await this.findExistingId(list, elementCode);
+
+            if (existingId && dedup.mode === 'insert-once') {
+                this.logger.log(
+                    `уникальная запись ${elementCode} уже существует (ID ${existingId}) — пропуск`,
+                );
+                continue;
+            }
+
+            const fields = new KpiEventItemModel(
+                list,
+                this.payloadForList(payload, list),
+            ).toFields();
+            // list.type в КОМАНДЕ (не в коде): команды батча должны быть
+            // уникальны, а код элемента в kpi и history одинаков.
+            if (existingId) {
+                const cmdCode = `upd_list_item_${list.type}_${elementCode}`;
+                buffer.queue(() =>
+                    this.bitrix.batch.listItem.update(cmdCode, {
+                        IBLOCK_ID: String(list.bitrixId),
+                        ELEMENT_ID: existingId,
+                        FIELDS: fields,
+                    }),
+                );
+            } else {
+                const cmdCode = `add_list_item_${list.type}_${elementCode}`;
+                buffer.queue(() =>
+                    this.bitrix.batch.listItem.add(cmdCode, {
+                        IBLOCK_ID: String(list.bitrixId),
+                        ELEMENT_CODE: elementCode,
+                        FIELDS: fields,
+                    }),
+                );
+            }
+        }
+    }
+
+    /** ID существующего элемента с этим кодом; null — не найден/ошибка. */
+    private async findExistingId(
+        list: IPBXList,
+        elementCode: string,
+    ): Promise<number | null> {
+        try {
+            const response = (await this.bitrix.listItem.get({
+                IBLOCK_ID: String(list.bitrixId),
+                filter: { '=CODE': elementCode },
+                select: ['ID', 'CODE'],
+            })) as { result?: IBXListItem[] };
+            const found = (response?.result ?? []).find(
+                item => String(item.CODE) === elementCode,
+            );
+            const id = Number(found?.ID);
+            return Number.isFinite(id) && id > 0 ? id : null;
+        } catch (error) {
+            /*
+             * Чтение упало (сеть/права) — считаем, что элемента нет, и идём
+             * в add: Битрикс сам отклонит дубликат кода, а потерять продажу
+             * из-за сбоя проверки нельзя.
+             */
+            this.logger.warn(
+                `проверка существования ${elementCode} не удалась: ${String(error)}`,
+            );
+            return null;
+        }
+    }
+
+    /** Установлен ли на портале item event_type, который несёт payload. */
+    private eventTypeItemInstalled(
+        list: IPBXList,
+        payload: KpiEventPayload,
+    ): boolean {
+        const itemCode = payload.items.event_type;
+        if (!itemCode) return false;
+        const field = list.bitrixfields?.find(
+            f => f.code === `${list.group}_${list.type}_event_type`,
+        );
+        return !!field?.items?.some(item => item.code === itemCode);
     }
 
     private collectLists(): IPBXList[] {

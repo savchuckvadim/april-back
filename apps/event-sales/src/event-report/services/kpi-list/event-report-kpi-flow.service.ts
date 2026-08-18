@@ -27,11 +27,17 @@ export class EventReportKpiFlowService {
         this.kpiFlow = new KpiListFlowService(bitrix, portal);
     }
 
-    queue(
+    /**
+     * Async из-за дедуплицированных записей (финалы/уникальные): их
+     * существование проверяется прямым `lists.element.get` ДО постановки
+     * команд — batch-аккумулятор с `$result[...]`-ссылками при этом не
+     * трогается (см. KpiListFlowService.flowDedup).
+     */
+    async queue(
         ctx: EventReportContext,
         deals: DealFlowResult,
         buffer: ColdHookBatchGroupBuffer,
-    ): void {
+    ): Promise<void> {
         if (ctx.isNoCall) return;
 
         const builder = new EventReportKpiPayloadBuilder(
@@ -44,7 +50,11 @@ export class EventReportKpiFlowService {
             return;
         }
         for (const payload of payloads) {
-            this.kpiFlow.flow(payload, ctx.entityId, buffer);
+            if (payload.dedup) {
+                await this.kpiFlow.flowDedup(payload, buffer);
+            } else {
+                this.kpiFlow.flow(payload, ctx.entityId, buffer);
+            }
         }
     }
 }

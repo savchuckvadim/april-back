@@ -49,9 +49,12 @@ const SALES_BASE_EVENT_ORDER: readonly EventOrderEntry[] = [
     { code: 'warm', order: 1, stageSuffix: 'warm' },
     { code: 'presentation', order: 2, stageSuffix: 'pres' },
     { code: 'document', order: 3, stageSuffix: 'offer_create' },
-    { code: 'hot', order: 4, stageSuffix: 'in_progress' },
-    { code: 'moneyAwait', order: 5, stageSuffix: 'money_await' },
-    { code: 'supply', order: 6, stageSuffix: 'supply' },
+    // Доработка стоит между документами и решением: клиент дорабатывается
+    // после отправки документов, до звонка по решению.
+    { code: 'refine', order: 4, stageSuffix: 'refine' },
+    { code: 'hot', order: 5, stageSuffix: 'in_progress' },
+    { code: 'moneyAwait', order: 6, stageSuffix: 'money_await' },
+    { code: 'supply', order: 7, stageSuffix: 'supply' },
 ];
 
 /** Лестница событий TMC-воронки. */

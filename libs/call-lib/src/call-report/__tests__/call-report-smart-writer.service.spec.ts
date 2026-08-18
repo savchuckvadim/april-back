@@ -151,6 +151,77 @@ describe('CallReportSmartWriterService', () => {
         expect(fields.ufCrm128CoachingPriority).toBe(97);
     });
 
+    it('row size: выброшенный транскрипт постится в таймлайн ЦЕЛИКОМ, части в обратном порядке', async () => {
+        const bitrix = makeBitrix();
+        const rowSizeError = Object.assign(
+            new Error('Request failed with status code 400'),
+            {
+                response: {
+                    data: { error_description: 'Row size too large (> 8126)' },
+                },
+            },
+        );
+        // Первый вариант (все поля) падает на row size → второй проходит.
+        bitrix.item.add
+            .mockRejectedValueOnce(rowSizeError)
+            .mockResolvedValue({ result: { item: { id: 7 } } });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        // 50-минутный звонок: ~50к символов → TRANSCRIPT_1+2 → 7 частей по 8к.
+        const transcript = 'а'.repeat(50_000);
+        await writer.addItem({ activityId: '101', transcript });
+
+        const comments = bitrix.timeline.addTimelineComment.mock
+            .calls as unknown as [{ COMMENT: string }][];
+        const transcriptPosts = comments.filter(([dto]) =>
+            dto.COMMENT.includes('Транскрипт звонка'),
+        );
+        expect(transcriptPosts).toHaveLength(7);
+        // Обратный порядок постинга: часть 1 запощена последней (сверху).
+        expect(transcriptPosts[0][0].COMMENT).toContain('часть 7 из 7');
+        expect(transcriptPosts[6][0].COMMENT).toContain('часть 1 из 7');
+        // Весь текст доехал без потерь (тело части — после пустой строки).
+        const total = transcriptPosts.reduce(
+            (sum, [dto]) => sum + (dto.COMMENT.split('\n\n')[1]?.length ?? 0),
+            0,
+        );
+        expect(total).toBe(50_000);
+    });
+
+    it('row size: транскрипт НЕ дублируется в таймлайн, когда диалог постит intake', async () => {
+        const bitrix = makeBitrix();
+        const rowSizeError = Object.assign(
+            new Error('Request failed with status code 400'),
+            {
+                response: {
+                    data: { error_description: 'Row size too large (> 8126)' },
+                },
+            },
+        );
+        bitrix.item.add
+            .mockRejectedValueOnce(rowSizeError)
+            .mockResolvedValue({ result: { item: { id: 7 } } });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            transcript: 'а'.repeat(50_000),
+            transcriptInTimeline: true,
+        });
+
+        const comments = bitrix.timeline.addTimelineComment.mock
+            .calls as unknown as [{ COMMENT: string }][];
+        expect(
+            comments.filter(([dto]) =>
+                dto.COMMENT.includes('Транскрипт звонка'),
+            ),
+        ).toHaveLength(0);
+    });
+
     it('длинный транскрипт раскладывается кусками по полям TRANSCRIPT_N', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(
@@ -314,8 +385,9 @@ describe('CallReportSmartWriterService', () => {
         expect(third.ufCrm128SpeechAnalysis).toBeUndefined();
         // Короткие значения не трогаются ни в одном варианте.
         expect(third.ufCrm128Score).toBe(8);
-        // Выброшенные тексты ушли полным текстом в таймлайн элемента
-        // (транскрипт — нет: он уже в таймлайне диалогом).
+        // Выброшенные тексты ушли полным текстом в таймлайн элемента,
+        // ВКЛЮЧАЯ транскрипт (с 16.08.2026 — целиком кусками: intake без
+        // dialog транскрипт в таймлайн не постит, а клиент за него платит).
         const comments = bitrix.timeline.addTimelineComment.mock.calls.map(
             call => (call as { COMMENT: string }[])[0].COMMENT,
         );
@@ -325,7 +397,7 @@ describe('CallReportSmartWriterService', () => {
         expect(
             comments.some(comment => comment.includes('Объяснение оценки')),
         ).toBe(true);
-        expect(comments.some(comment => comment.includes('ттттт'))).toBe(false);
+        expect(comments.some(comment => comment.includes('ттттт'))).toBe(true);
     });
 
     it('иная ошибка Bitrix пробрасывается без деградационных ретраев', async () => {

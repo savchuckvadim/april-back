@@ -129,6 +129,24 @@ export type PbxDealSalesBaseCategoryType = {
             parentType: 'sales';
             type: 'deal';
             group: 'sales';
+            name: 'Доработка';
+            title: 'Доработка';
+            bitrixId: 'REFINE';
+            isActive: true;
+            smartBitrixId: 'DEAL_STAGE';
+            color: '#f5a623';
+            code: 'sales_refine';
+            isNeedUpdate: true;
+            order: 7;
+            isDefault: 'N';
+        },
+        {
+            id: 7;
+            categoryId: 0;
+            entityType: 'deal';
+            parentType: 'sales';
+            type: 'deal';
+            group: 'sales';
             name: 'В решении';
             title: 'В решении';
             bitrixId: 'IN_PROSRESS';
@@ -137,11 +155,11 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#f0008c';
             code: 'sales_in_progress';
             isNeedUpdate: true;
-            order: 7;
+            order: 8;
             isDefault: 'N';
         },
         {
-            id: 7;
+            id: 8;
             categoryId: 0;
             entityType: 'deal';
             parentType: 'sales';
@@ -155,11 +173,11 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#a0005c';
             code: 'sales_money_await';
             isNeedUpdate: true;
-            order: 8;
+            order: 9;
             isDefault: 'N';
         },
         {
-            id: 8;
+            id: 9;
             categoryId: 0;
             entityType: 'deal';
             parentType: 'sales';
@@ -173,11 +191,11 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#0070bf';
             code: 'sales_supply';
             isNeedUpdate: true;
-            order: 9;
+            order: 10;
             isDefault: 'N';
         },
         {
-            id: 9;
+            id: 10;
             categoryId: 0;
             entityType: 'deal';
             parentType: 'sales';
@@ -191,11 +209,11 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#00ff00';
             code: 'sales_success';
             isNeedUpdate: true;
-            order: 10;
+            order: 11;
             isDefault: 'N';
         },
         {
-            id: 10;
+            id: 11;
             categoryId: 0;
             entityType: 'deal';
             parentType: 'sales';
@@ -209,11 +227,11 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#e7354a';
             code: 'sales_fail';
             isNeedUpdate: true;
-            order: 11;
+            order: 12;
             isDefault: 'N';
         },
         {
-            id: 11;
+            id: 12;
             categoryId: 0;
             entityType: 'deal';
             parentType: 'sales';
@@ -227,7 +245,7 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#2d0b0d';
             code: 'sales_double';
             isNeedUpdate: true;
-            order: 12;
+            order: 13;
             isDefault: 'N';
         },
     ];

@@ -30,6 +30,8 @@ export interface IOrkHistoryElementParams {
     /** Привязка компании (CO_<id> или массив) */
     companyLink: string | string[];
     contactId?: number;
+    /** Значение поля «Тэг» (ork_evemt_tag) — например маркер восстановления */
+    tagValue?: string;
 }
 
 type FieldValue = string | string[] | number;
@@ -120,6 +122,13 @@ export class OrkHistoryElementBuilder {
                 fields,
                 EnumOrkFieldCode.ork_crm_contact,
                 params.contactId,
+            );
+        }
+        if (params.tagValue !== undefined) {
+            this.setScalar(
+                fields,
+                EnumOrkFieldCode.ork_evemt_tag,
+                params.tagValue,
             );
         }
 
