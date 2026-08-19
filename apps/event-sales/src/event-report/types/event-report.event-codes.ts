@@ -115,6 +115,58 @@ export const eventTypeName = (type: string): string =>
     EVENT_REPORT_EVENT_TYPE_NAME[type as EventReportEventType] ?? type;
 
 /**
+ * Состоявшееся событие → фраза с согласованным по роду глаголом
+ * («Звонок совершён», «Презентация проведена») — для истории карточки и
+ * таймлайна. Слово «Отчёт» в записях не используется.
+ */
+export const EVENT_REPORT_EVENT_DONE_PHRASE: Record<
+    EventReportEventType,
+    string
+> = {
+    xo: 'Холодный звонок совершён',
+    xoRequest: 'Заявка отработана',
+    xoLead: 'Лид отработан',
+    warm: 'Звонок совершён',
+    presentation: 'Презентация проведена',
+    hot: 'Звонок по решению совершён',
+    refine: 'Доработка проведена',
+    moneyAwait: 'Звонок по оплате совершён',
+    supply: 'Поставка выполнена',
+    document: 'Документы отработаны',
+};
+
+/**
+ * Запланированное событие → фраза с согласованным по роду причастием
+ * («Запланирован Звонок», «Запланирована Презентация»). Дата плана
+ * добавляется вызывающим («… на 28 мая 14:30»).
+ */
+export const EVENT_REPORT_EVENT_PLAN_PHRASE: Record<
+    EventReportEventType,
+    string
+> = {
+    xo: 'Запланирован Холодный звонок',
+    xoRequest: 'Запланирована работа по заявке',
+    xoLead: 'Запланирована работа по лиду',
+    warm: 'Запланирован Звонок',
+    presentation: 'Запланирована Презентация',
+    hot: 'Запланирован Звонок по решению',
+    refine: 'Запланирована Доработка',
+    moneyAwait: 'Запланирован Звонок по оплате',
+    supply: 'Запланирована Поставка',
+    document: 'Запланирована работа по документам',
+};
+
+/** Фраза состоявшегося события; неизвестный код — русское название типа. */
+export const eventDonePhrase = (type: string): string =>
+    EVENT_REPORT_EVENT_DONE_PHRASE[type as EventReportEventType] ??
+    eventTypeName(type);
+
+/** Фраза плана; неизвестный код — «Запланировано: <название типа>». */
+export const eventPlanPhrase = (type: string): string =>
+    EVENT_REPORT_EVENT_PLAN_PHRASE[type as EventReportEventType] ??
+    `Запланировано: ${eventTypeName(type)}`;
+
+/**
  * Событие действия — пришедшее из DTO. Не путать с
  * `PbxSalesKpiListFieldItemCode<'event_action'>` (это бит-кодов в Bitrix).
  */

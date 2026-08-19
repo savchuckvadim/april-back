@@ -84,6 +84,10 @@ export class CallRevisionService {
         );
         const byEntity = this.groupByEntity(rows);
         const entities = [...byEntity.entries()].slice(0, maxEntities);
+        // Один init на домен: раньше каждая сущность инициализировала pbx
+        // трижды (кандидаты списков, применение вердикта, таймлайн).
+        const { bitrix, PortalModel: portalModel } =
+            await this.pbxService.init(domain);
         const result: CallRevisionDomainResult = {
             domain,
             entitiesTotal: byEntity.size,
@@ -98,7 +102,12 @@ export class CallRevisionService {
 
         for (const [key, entityRows] of entities) {
             try {
-                await this.reviseEntity(domain, entityRows);
+                await this.reviseEntity(
+                    domain,
+                    entityRows,
+                    bitrix,
+                    portalModel,
+                );
                 result.entitiesRevised++;
             } catch (error) {
                 result.entitiesFailed++;
@@ -130,6 +139,8 @@ export class CallRevisionService {
     private async reviseEntity(
         domain: string,
         entityRows: TranscriptionPipelineView[],
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
     ): Promise<void> {
         // Свежие — по времени звонка, новые последними: последний звонок
         // становится носителем результатов ревизии.
@@ -154,6 +165,8 @@ export class CallRevisionService {
             domain,
             passport,
             fresh,
+            bitrix,
+            portalModel,
         );
 
         const apiKey = await this.vibeKeyResolver.resolve(domain);
@@ -175,6 +188,7 @@ export class CallRevisionService {
             fresh,
             this.sanitizeListLinks(verdict, listCandidates),
             passport,
+            bitrix,
         );
     }
 
@@ -187,12 +201,13 @@ export class CallRevisionService {
         domain: string,
         passport: CallPassport,
         rows: TranscriptionPipelineView[],
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
     ): Promise<RevisionListCandidates> {
         try {
-            const { bitrix, PortalModel } = await this.pbxService.init(domain);
             return await new RevisionListCandidatesService(
                 bitrix,
-                PortalModel,
+                portalModel,
             ).find(passport, rows);
         } catch (error) {
             this.logger.warn(
@@ -276,8 +291,8 @@ export class CallRevisionService {
         fresh: TranscriptionPipelineView[],
         verdict: RevisionVerdict,
         passport: CallPassport,
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
     ): Promise<void> {
-        const { bitrix } = await this.pbxService.init(domain);
         const last = fresh[fresh.length - 1];
 
         const smartInfo = await this.smartResolver.resolve(domain);

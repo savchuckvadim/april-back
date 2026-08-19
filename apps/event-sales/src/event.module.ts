@@ -6,6 +6,7 @@ import { EventSupportModule } from './event-support/event-support.module';
 import { EventSalesBxRecordsModule } from './bx-records/bx-records.module';
 import { SalesHooksModule } from './sales-hooks/sales-hooks.module';
 import { LeadRequestModule } from './lead-request/lead-request.module';
+import { PresentationSurveyModule } from './presentation-survey/presentation-survey.module';
 
 @Module({
     imports: [
@@ -18,6 +19,8 @@ import { LeadRequestModule } from './lead-request/lead-request.module';
         SalesHooksModule,
         // Карточка заявки/лида для интерфейса «Звонков»
         LeadRequestModule,
+        // Легаси-опросник после презентации (хвост/«5К» отдельным запросом)
+        PresentationSurveyModule,
     ],
     exports: [
         ColdHookModule,

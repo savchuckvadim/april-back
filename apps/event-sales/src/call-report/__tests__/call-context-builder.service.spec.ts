@@ -107,6 +107,12 @@ const makeDeps = (options?: {
     const pbxService = {
         init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portalModel }),
     };
+    // Кэш паспорта: по умолчанию промах (get→null), запись — no-op.
+    const redisClient = {
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue('OK'),
+    };
+    const redisService = { getClient: () => redisClient };
     const transcriptionStore = {
         findRecentByEntity: jest.fn().mockResolvedValue(options?.history ?? []),
     };
@@ -125,11 +131,32 @@ const makeDeps = (options?: {
         pbxService as never,
         transcriptionStore as never,
         aiService as never,
+        redisService as never,
     );
-    return { service, api, transcriptionStore };
+    return { service, api, transcriptionStore, redisClient };
 };
 
 describe('CallContextBuilderService', () => {
+    it('кэш: готовый паспорт из Redis отдаётся без походов в CRM; свежий — кэшируется', async () => {
+        const { service, api, redisClient } = makeDeps();
+        redisClient.get.mockResolvedValueOnce(
+            JSON.stringify({ certainty: 'rich', stageId: 'C5:CACHED' }),
+        );
+        const cached = await service.build(row() as never);
+        expect(cached.stageId).toBe('C5:CACHED');
+        expect(api.call).not.toHaveBeenCalled();
+
+        // Промах кэша → сборка + запись в кэш с TTL.
+        const fresh = await service.build(row() as never);
+        expect(fresh.certainty).toBe('rich');
+        expect(redisClient.set).toHaveBeenCalledWith(
+            'call-report:passport:115',
+            expect.any(String),
+            'EX',
+            expect.any(Number),
+        );
+    });
+
     it('сделка со стадией → certainty=rich, стадия и воронка в паспорте', async () => {
         const { service } = makeDeps({ dealStage: 'C5:EXECUTING' });
         const passport = await service.build(row() as never);

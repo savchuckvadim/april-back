@@ -662,7 +662,13 @@ export class AgentAnalysisIntakeService {
             : '';
         let text = `[b]${title}[/b]${score}\n`;
 
-        if (asWas) text += `\n[b]Как было:[/b]\n${asWas}\n`;
+        if (asWas) {
+            text += `\n[b]Как было:[/b]\n${asWas}\n`;
+        } else if (weaknesses || alternatives.length || advice) {
+            // Разбор есть, а описания «как было» нет — честная строка
+            // вместо прочерка (модель обязана иначе, но защищаемся).
+            text += `\n[b]Как было:[/b]\nЭтап в разговоре не прозвучал.\n`;
+        }
         if (weaknesses) {
             text += `\n[b]Что в таком подходе не самое лучшее:[/b]\n${weaknesses}\n`;
         }
@@ -682,7 +688,9 @@ export class AgentAnalysisIntakeService {
     private cleanText(value: string | null | undefined): string | undefined {
         if (typeof value !== 'string') return undefined;
         const trimmed = value.trim();
-        if (!trimmed || /^(null|undefined|n\/a|-)$/i.test(trimmed)) {
+        // Пустышки от LLM: literal null/N/A и прочерки любых видов
+        // («-», «—», «–», «−») — прод-кейс 18.08.2026: «Как было: —».
+        if (!trimmed || /^(null|undefined|n\/a|[-—–−.]+)$/i.test(trimmed)) {
             return undefined;
         }
         return trimmed;

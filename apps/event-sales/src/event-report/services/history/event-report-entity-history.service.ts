@@ -1,8 +1,9 @@
 import dayjs from 'dayjs';
 import { BitrixService } from '@/modules/bitrix';
+import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
-import { eventTypeName } from '../../types/event-report.event-codes';
+import { buildEventHistoryParts } from './event-history-comment.builder';
 
 /**
  * История изменений сущности-владельца (timeline-запись) — gsirk only.
@@ -12,6 +13,12 @@ import { eventTypeName } from '../../types/event-report.event-codes';
  * (crm.timeline.comment.add) — значения `EEventReportEntityType` совпадают с
  * ENTITY_TYPE этого API. Команда копится в batch-инстансе и уходит общим
  * callBatchWithConcurrency в конце event-report use-case.
+ *
+ * Формат записи — общий с полем `op_mhistory` карточки
+ * (см. buildEventHistoryParts): первой строкой дата-время события, дальше
+ * «Звонок совершён: <комментарий>» и «Запланирована Презентация на …».
+ * Переносы — через BATCH_LINE_BREAK_SYMBOL: комментарий уходит
+ * batch-командой, и сырой `\n` доезжает подчёркиванием.
  */
 export class EventReportEntityHistoryService {
     constructor(
@@ -25,7 +32,7 @@ export class EventReportEntityHistoryService {
 
         const tz = this.portal.getTimezone();
         const stamp = dayjs(ctx.nowDate).tz(tz).format('DD.MM.YYYY HH:mm:ss');
-        const comment = this.buildComment(ctx);
+        const parts = buildEventHistoryParts(ctx);
 
         // crm.timeline.comment.add — стабильное API записи в таймлайн любой
         // CRM-сущности. Репозиторий сам оборачивает payload в { fields },
@@ -34,28 +41,7 @@ export class EventReportEntityHistoryService {
         this.bitrix.batch.timeline.addTimelineComment(cmd, {
             ENTITY_TYPE: ctx.entityType,
             ENTITY_ID: ctx.entityId,
-            COMMENT: `${stamp}\n${comment}`,
+            COMMENT: [stamp, ...parts].join(BATCH_LINE_BREAK_SYMBOL),
         });
-    }
-
-    /**
-     * Таймлайн читают люди: тип события пишем русским названием
-     * (`Заявка`), а не сырым кодом (`xoRequest`) — по коду запись мог
-     * прочитать только разработчик.
-     */
-    private buildComment(ctx: EventReportContext): string {
-        const parts: string[] = [];
-        if (ctx.reportEventType) {
-            parts.push(
-                `Отчёт по событию: ${eventTypeName(ctx.reportEventType)}`,
-            );
-        }
-        if (ctx.planEventType) {
-            parts.push(`План: ${eventTypeName(ctx.planEventType)}`);
-        }
-        if (ctx.reportComment) {
-            parts.push(`Комментарий: ${ctx.reportComment}`);
-        }
-        return parts.join('\n');
     }
 }

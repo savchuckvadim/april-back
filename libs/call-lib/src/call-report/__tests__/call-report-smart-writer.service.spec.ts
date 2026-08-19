@@ -190,6 +190,41 @@ describe('CallReportSmartWriterService', () => {
         expect(total).toBe(50_000);
     });
 
+    it('row size на UPDATE существующего элемента: транскрипт НЕ постится повторно', async () => {
+        const bitrix = makeBitrix();
+        // Элемент уже существует (создан каркасом) — путь update.
+        bitrix.item.list.mockResolvedValue({
+            result: { items: [{ id: 7 }] },
+        });
+        const rowSizeError = Object.assign(
+            new Error('Request failed with status code 400'),
+            {
+                response: {
+                    data: { error_description: 'Row size too large (> 8126)' },
+                },
+            },
+        );
+        bitrix.item.update
+            .mockRejectedValueOnce(rowSizeError)
+            .mockResolvedValue({ result: {} });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            transcript: 'а'.repeat(50_000),
+        });
+
+        const comments = bitrix.timeline.addTimelineComment.mock
+            .calls as unknown as [{ COMMENT: string }][];
+        expect(
+            comments.filter(([dto]) =>
+                dto.COMMENT.includes('Транскрипт звонка'),
+            ),
+        ).toHaveLength(0);
+    });
+
     it('row size: транскрипт НЕ дублируется в таймлайн, когда диалог постит intake', async () => {
         const bitrix = makeBitrix();
         const rowSizeError = Object.assign(

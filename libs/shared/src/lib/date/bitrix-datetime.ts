@@ -122,6 +122,25 @@ export class BitrixDateTime {
         return formatted.replace(/\s*г\.?\s*$/u, '').trim();
     }
 
+    /**
+     * Человекочитаемые дата и время «28 мая 14:30» (без года) в TZ портала.
+     * Для строк истории/комментариев, где полная дата записи уже стоит
+     * рядом, а план почти всегда ближайший.
+     */
+    toRuHumanDateTime(): string {
+        const date = new Intl.DateTimeFormat('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+            timeZone: this.portalTz,
+        }).format(this.instant.toDate());
+        const time = new Intl.DateTimeFormat('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: this.portalTz,
+        }).format(this.instant.toDate());
+        return `${date} ${time}`;
+    }
+
     /** Копия абсолютного момента, если нужен нестандартный формат. */
     toDayjs(): Dayjs {
         return this.instant.clone();

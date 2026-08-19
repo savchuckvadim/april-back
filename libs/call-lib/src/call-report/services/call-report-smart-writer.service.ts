@@ -178,7 +178,9 @@ export class CallReportSmartWriterService {
                 `crm.item.add не вернул id элемента (activity ${input.activityId})`,
             );
         }
-        await this.postDroppedToTimeline(itemId, dropped, input);
+        await this.postDroppedToTimeline(itemId, dropped, input, {
+            isCreate: true,
+        });
         this.logger.log(
             `Создан элемент смарта #${itemId} (activity ${input.activityId})`,
         );
@@ -219,7 +221,9 @@ export class CallReportSmartWriterService {
                         fields as Partial<IBXItem>,
                     ),
             );
-            await this.postDroppedToTimeline(existingId, dropped, input);
+            await this.postDroppedToTimeline(existingId, dropped, input, {
+                isCreate: false,
+            });
         } catch (error) {
             // Не фатально: транскрипт и ais уже в БД, разбор дольётся
             // повторным прогоном. { telegram: true } — алерт, иначе пустые
@@ -431,6 +435,7 @@ export class CallReportSmartWriterService {
         itemId: number,
         dropped: DroppedField[],
         input: CallReportSmartItemInput,
+        options: { isCreate: boolean },
     ): Promise<void> {
         if (!dropped.length) return;
         // Разборы разделов GREETING_ANALYSIS/…_ADVICE не постим — intake
@@ -448,10 +453,18 @@ export class CallReportSmartWriterService {
             transcriptKeys.has(key) || sectionKeys.has(key);
 
         // Транскрипт первым (окажется НИЖЕ остальных записей таймлайна).
+        // ТОЛЬКО при создании элемента: на update транскрипт либо уже в
+        // полях (лёг при создании и частичный update его не затирает),
+        // либо уже запощен создателем — повторный пост был бы дублем
+        // (кейс «каркас создал → intake обновил», оба с деградацией).
         const droppedTranscript = dropped.filter(field =>
             transcriptKeys.has(field.key),
         );
-        if (droppedTranscript.length && !input.transcriptInTimeline) {
+        if (
+            droppedTranscript.length &&
+            options.isCreate &&
+            !input.transcriptInTimeline
+        ) {
             await this.postFullTranscript(itemId, droppedTranscript);
         }
         const order = [

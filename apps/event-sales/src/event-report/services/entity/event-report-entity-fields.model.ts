@@ -1,5 +1,9 @@
 import dayjs from 'dayjs';
-import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
+import {
+    BATCH_LINE_BREAK_SYMBOL,
+    toBatchText,
+} from '@lib/bitrix/consts/batch.consts';
+import { buildEventHistoryParts } from '../history/event-history-comment.builder';
 import {
     IField,
     IFieldItem,
@@ -522,10 +526,15 @@ export class EventReportEntityFieldsModel {
             : HISTORY_LIMIT_DEFAULT;
         /*
          * Перенос строки — ТОЛЬКО через BATCH_LINE_BREAK_SYMBOL: поля
-         * заполняются batch-командой, а там обычный `\n` съедается, и в
-         * истории склеивается «13.08.2026 10:00Отчёт: …».
+         * заполняются batch-командой, а там сырой `\n` доезжает до карточки
+         * подчёркиванием. Формат записи (склонение типов, без слова
+         * «Отчёт») — см. buildEventHistoryParts; первой строкой — когда
+         * событие произошло.
          */
-        const line = `${this.nowCrmDate()}${BATCH_LINE_BREAK_SYMBOL}${this.fullEventComment()}`;
+        const line = [
+            this.nowCrmDate(),
+            ...buildEventHistoryParts(this.ctx),
+        ].join(BATCH_LINE_BREAK_SYMBOL);
         this.appendMultiple(out, 'op_mhistory', line, limit);
         this.setScalar(out, 'op_history', line);
     }
@@ -534,18 +543,6 @@ export class EventReportEntityFieldsModel {
         return this.ctx.planEventName
             ? `${prefix}: ${this.ctx.planEventName}`
             : prefix;
-    }
-
-    private fullEventComment(): string {
-        const parts: string[] = [];
-        if (this.ctx.reportEventType) {
-            parts.push(`Отчёт: ${this.ctx.reportEventType}`);
-        }
-        if (this.ctx.planEventType) {
-            parts.push(`План: ${this.ctx.planEventType}`);
-        }
-        if (this.ctx.reportComment) parts.push(this.ctx.reportComment);
-        return parts.filter(Boolean).join(' • ');
     }
 
     private presentationPlanComment(): string {
@@ -558,7 +555,9 @@ export class EventReportEntityFieldsModel {
         return `${this.nowCrmDate()} Перенос презентации: ${this.ctx.planEventName}`;
     }
     private failComment(): string {
-        return `${this.nowCrmDate()} Отказ: ${this.ctx.reportComment}`;
+        // Комментарий менеджера бывает многострочным — экранируем переносы
+        // для batch, иначе в карточке они превратятся в подчёркивания.
+        return `${this.nowCrmDate()} Отказ: ${toBatchText(this.ctx.reportComment)}`;
     }
 
     /**

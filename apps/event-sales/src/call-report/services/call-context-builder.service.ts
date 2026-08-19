@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
+import { RedisService } from '@lib/core/redis/redis.service';
 import { BitrixService } from '@lib/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
@@ -114,13 +115,33 @@ export interface CallPassport {
 export class CallContextBuilderService {
     private readonly logger = new Logger(CallContextBuilderService.name);
 
+    /**
+     * Кэш паспорта: один звонок собирает паспорт ДВАЖДЫ за минуты
+     * (стадия анализа — для классификатора и GigaChat, процессор — для
+     * глубокого разбора), а паспорт потяжелел до ~10 запросов (сделка,
+     * контакт, компания, активность, номер, история). TTL короткий:
+     * ночной ревизор придёт за свежими данными уже мимо кэша.
+     */
+    private static readonly CACHE_TTL_SEC = 15 * 60;
+
     constructor(
         private readonly pbxService: PBXService,
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
+        private readonly redisService: RedisService,
     ) {}
 
     async build(row: TranscriptionPipelineView): Promise<CallPassport> {
+        const cached = await this.readCache(row.id);
+        if (cached) return cached;
+        const passport = await this.buildFresh(row);
+        await this.writeCache(row.id, passport);
+        return passport;
+    }
+
+    private async buildFresh(
+        row: TranscriptionPipelineView,
+    ): Promise<CallPassport> {
         const passport: CallPassport = {
             certainty: 'naked',
             entityType: null,
@@ -156,6 +177,42 @@ export class CallContextBuilderService {
         }
         await this.fillHistory(row, passport);
         return passport;
+    }
+
+    /** Паспорт из кэша; любая ошибка Redis — просто собираем заново. */
+    private async readCache(
+        transcriptionId: string,
+    ): Promise<CallPassport | null> {
+        try {
+            const raw = await this.redisService
+                .getClient()
+                .get(this.cacheKey(transcriptionId));
+            return raw ? (JSON.parse(raw) as CallPassport) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    private async writeCache(
+        transcriptionId: string,
+        passport: CallPassport,
+    ): Promise<void> {
+        try {
+            await this.redisService
+                .getClient()
+                .set(
+                    this.cacheKey(transcriptionId),
+                    JSON.stringify(passport),
+                    'EX',
+                    CallContextBuilderService.CACHE_TTL_SEC,
+                );
+        } catch {
+            // Redis недоступен — паспорт просто не кэшируется.
+        }
+    }
+
+    private cacheKey(transcriptionId: string): string {
+        return `call-report:passport:${transcriptionId}`;
     }
 
     /** Текстовый блок паспорта для user-части промпта разбора. */

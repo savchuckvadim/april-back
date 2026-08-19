@@ -368,7 +368,7 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
             string,
             Record<string, unknown>,
         ];
-        expect(payload.COMMENT).toContain('Отчёт по событию: Заявка');
-        expect(payload.COMMENT).toContain('План: Лид');
+        expect(payload.COMMENT).toContain('Заявка отработана');
+        expect(payload.COMMENT).toContain('Запланирована работа по лиду');
     });
 });

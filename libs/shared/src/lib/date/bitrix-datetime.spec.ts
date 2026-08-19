@@ -66,6 +66,24 @@ describe('BitrixDateTime', () => {
         });
     });
 
+    describe('toRuHumanDateTime', () => {
+        it('форматирует «28 мая 14:30» (без года) в TZ портала', () => {
+            const d = BitrixDateTime.fromPortalInput(
+                '28.05.2026 14:30:00',
+                ETimeZone.EUROPE_MOSCOW,
+            );
+            expect(d.toRuHumanDateTime()).toBe('28 мая 14:30');
+        });
+
+        it('тот же момент в TZ портала, а не сервера', () => {
+            const d = BitrixDateTime.fromPortalInput(
+                '01.07.2026 02:14:00',
+                ETimeZone.ASIA_IRKUTSK,
+            );
+            expect(d.toRuHumanDateTime()).toBe('1 июля 02:14');
+        });
+    });
+
     describe('fromPortalInput', () => {
         it('кидает Error на нераспознанный формат', () => {
             expect(() =>

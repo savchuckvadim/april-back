@@ -26,9 +26,10 @@ describe('EventReportEntityHistoryService', () => {
         entityType: 'company',
         entityId: 42,
         nowDate: new Date('2026-08-05T10:00:00Z'),
-        reportEventType: 'Презентация',
-        planEventType: 'Звонок',
+        reportEventType: 'presentation',
+        planEventType: 'warm',
         reportComment: 'Комментарий менеджера',
+        planDeadline: { toRuHumanDateTime: () => '28 мая 14:30' },
         ...overrides,
     });
 
@@ -52,9 +53,18 @@ describe('EventReportEntityHistoryService', () => {
         expect(payload.fields).toBeUndefined();
         expect(payload.ENTITY_TYPE).toBe('company');
         expect(payload.ENTITY_ID).toBe(42);
-        expect(payload.COMMENT).toContain('Отчёт по событию: Презентация');
-        expect(payload.COMMENT).toContain('План: Звонок');
-        expect(payload.COMMENT).toContain('Комментарий: Комментарий менеджера');
+        // Формат: без слова «Отчёт», тип склоняется, план — с датой,
+        // переносы — batch-safe (%0A), первой строкой — когда произошло.
+        expect(payload.COMMENT).toContain('05.08.2026 13:00:00');
+        expect(payload.COMMENT).toContain(
+            'Презентация проведена: Комментарий менеджера',
+        );
+        expect(payload.COMMENT).toContain(
+            'Запланирован Звонок на 28 мая 14:30',
+        );
+        expect(payload.COMMENT).not.toContain('Отчёт');
+        expect(payload.COMMENT).not.toContain('\n');
+        expect(payload.COMMENT).toContain('%0A');
     });
 
     it('не пишет в таймлайн вне gsirk-портала', () => {
