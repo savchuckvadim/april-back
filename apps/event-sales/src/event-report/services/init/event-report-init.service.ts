@@ -104,14 +104,22 @@ export class EventReportInitService {
             );
         }
 
-        // Владелец-сделка читается ДО общего батча: из её полей строится
+        // Сделка запуска читается ДО общего батча: из её полей строится
         // остальная загрузка — лиды (LEAD_ID + deal_from_lead_id +
         // deal_joined_leads), связанные воронки (to_*-ссылки) и сделки тех
         // же лидов (там живёт ХО без компании).
-        const ownerDeal =
+        //
+        // Читаем её и при якоре-компании (context.dealId): наследование
+        // L_*-привязок в новую задачу и sync заявок берут рёбра из
+        // ctx.ownerDeal — без этого лид сделки терялся, как только у
+        // клиента появлялась компания и она становилась якорем.
+        const launchDealId =
             entityType === EEventReportEntityType.DEAL
-                ? await this.fetchOwnerDeal(bitrix, entityId)
-                : null;
+                ? entityId
+                : this.toId(dto.context?.dealId);
+        const ownerDeal = launchDealId
+            ? await this.fetchOwnerDeal(bitrix, launchDealId)
+            : null;
         const ownerLeadIds = this.collectOwnerLeadIds(ownerDeal, portal);
 
         const dtoLeadId = dto.lead?.ID ? Number(dto.lead.ID) : null;
@@ -211,6 +219,34 @@ export class EventReportInitService {
             dealsByCategory[PbxDealCategoryCodeEnum.sales_base] ?? null;
         const currentXoDeal =
             dealsByCategory[PbxDealCategoryCodeEnum.sales_xo] ?? null;
+
+        // Диагностика кейса «flow действовал так, будто основной сделки нет»:
+        // одна строка на запуск — какой контекст прислал фронт, что нашлось
+        // и какая базовая выбрана. По инварианту домена открытая основная
+        // сделка у клиента одна — вторая означает битые данные, о ней warn.
+        this.logger.log(
+            `init: entity=${entityType}:${entityId} ` +
+                `context(co=${dto.context?.companyId ?? '-'},deal=${dto.context?.dealId ?? '-'},lead=${dto.context?.leadId ?? '-'}) ` +
+                `deals=${dealsRaw.length} active=${activeDeals.length} ` +
+                `base=${currentBaseDeal?.ID ?? 'null'}`,
+        );
+        const baseCategory = portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        const baseDeals = baseCategory
+            ? activeDeals.filter(
+                  deal =>
+                      String(deal.CATEGORY_ID) ===
+                      String(baseCategory.bitrixId),
+              )
+            : [];
+        if (baseDeals.length > 1) {
+            this.logger.warn(
+                `init: у ${entityType}:${entityId} ${baseDeals.length} открытых ` +
+                    `основных сделок (${baseDeals.map(deal => deal.ID).join(', ')}) — ` +
+                    `инвариант «одна основная» нарушен, выбрана ${currentBaseDeal?.ID}`,
+            );
+        }
 
         // === Фаза 3: presDeal/tmcDeal — по dealIds из dto.currentTask.ufCrmTask ===
         const taskCrmLinks = this.extractTaskCrmLinks(dto);

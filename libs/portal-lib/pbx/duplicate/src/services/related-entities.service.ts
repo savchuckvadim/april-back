@@ -169,16 +169,47 @@ export class RelatedEntitiesService {
             return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
         }).filter((key): key is string => key !== null);
 
-        const { deals, leads, contactIds } = await this.fetchRelated(
+        const leadSelect = opSourceKey
+            ? [...LEAD_SELECT, opSourceKey]
+            : LEAD_SELECT;
+        const dealSelect = [
+            ...DEAL_SELECT,
+            ...this.dealLeadLinkKeys(portalModel),
+        ];
+
+        const related = await this.fetchRelated(
             bitrix,
             anchor,
             options,
             warnings,
             categories.allowedBitrixIds,
-            opSourceKey,
+            leadSelect,
+            dealSelect,
             leadToDealKeys,
         );
         requests += 1;
+
+        // Вторая волна: лиды по рёбрам НАЙДЕННЫХ сделок. Якорь-компания сам
+        // по себе видит только лиды с COMPANY_ID, а заявка, жившая без
+        // компании, привязана к сделке — без этой волны она невидима.
+        const edgeLeads = await this.fetchDealEdgeLeads(
+            bitrix,
+            anchor,
+            related.deals,
+            related.leads,
+            portalModel,
+            leadSelect,
+            leadToDealKeys,
+            warnings,
+        );
+        if (edgeLeads !== null) requests += 1;
+
+        const deals = related.deals;
+        const leads = this.dedupeRows([
+            ...related.leads,
+            ...(edgeLeads ?? []),
+        ]);
+        const contactIds = related.contactIds;
 
         const contacts = await this.fetchContacts(bitrix, contactIds, warnings);
         requests += contactIds.length ? 1 : 0;
@@ -316,12 +347,10 @@ export class RelatedEntitiesService {
         options: RelatedEntitiesOptions,
         warnings: string[],
         dealCategoryBitrixIds: number[] = [],
-        leadOpSourceKey: string | null = null,
+        leadSelect: string[] = LEAD_SELECT,
+        dealSelect: string[] = DEAL_SELECT,
         leadToDealKeys: string[] = [],
     ): Promise<{ deals: BxRow[]; leads: BxRow[]; contactIds: number[] }> {
-        const leadSelect = leadOpSourceKey
-            ? [...LEAD_SELECT, leadOpSourceKey]
-            : LEAD_SELECT;
         const dealFilter: Record<string, unknown> = {};
         const leadFilter: Record<string, unknown> = {};
         const dealModifiers: Record<string, unknown> = {};
@@ -373,7 +402,7 @@ export class RelatedEntitiesService {
             bitrix.batch.deal.getList(
                 'deals',
                 { ...dealFilter, ...dealModifiers } as never,
-                DEAL_SELECT,
+                dealSelect,
                 { ID: 'DESC' },
             );
         }
@@ -381,7 +410,7 @@ export class RelatedEntitiesService {
             bitrix.batch.deal.getList(
                 'deals_by_lead',
                 { LEAD_ID: dealLeadIds, ...dealModifiers } as never,
-                DEAL_SELECT,
+                dealSelect,
                 { ID: 'DESC' },
             );
             // Сами лиды сделки тоже отдаём в leads — у каждого своя богатая
@@ -455,6 +484,98 @@ export class RelatedEntitiesService {
                 `Не удалось получить связанные сущности: ${this.errorText(error)}`,
             );
             return { deals: [], leads: [], contactIds: [] };
+        }
+    }
+
+    /**
+     * UF-ключи полей сделки со ссылками на лиды — добавляются в select
+     * списков сделок, чтобы вторая волна могла прочитать рёбра прямо из
+     * строк `crm.deal.list` (list возвращает только запрошенное).
+     */
+    private dealLeadLinkKeys(
+        portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
+    ): string[] {
+        return DEAL_LEAD_LINK_FIELD_CODES.map(code => {
+            try {
+                const field = portalModel?.getEntityFieldByCode?.(
+                    'deal',
+                    code,
+                );
+                return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
+            } catch {
+                return null;
+            }
+        }).filter((key): key is string => key !== null);
+    }
+
+    /**
+     * Лиды по рёбрам найденных сделок, вторым HTTP-batch:
+     *  - прямые рёбра — `LEAD_ID` и поля присоединения на сделках;
+     *  - обратные — to_*-ссылки на лидах (по сделкам, которые первая волна
+     *    ещё не спрашивала: рёбра якоря-сделки уже ушли в основном батче).
+     *
+     * Возвращает null, когда дочитывать нечего (запрос не делался) —
+     * вызывающий по этому отличает «нет новых лидов» от «нет запроса».
+     */
+    private async fetchDealEdgeLeads(
+        bitrix: BitrixInstance,
+        anchor: RelatedAnchor,
+        deals: BxRow[],
+        knownLeads: BxRow[],
+        portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
+        leadSelect: string[],
+        leadToDealKeys: string[],
+        warnings: string[],
+    ): Promise<BxRow[] | null> {
+        const knownIds = new Set(
+            knownLeads.map(row => String(row.ID ?? '')),
+        );
+        const wantLeadIds = new Set<number>();
+        for (const deal of deals) {
+            for (const id of this.collectDealLeadIds(deal, portalModel)) {
+                if (!knownIds.has(String(id))) wantLeadIds.add(id);
+            }
+        }
+
+        const backDealIds = deals
+            .map(row => this.id(row.ID))
+            .filter((id): id is number => !!id && id !== anchor.dealId);
+        const askBack = leadToDealKeys.length > 0 && backDealIds.length > 0;
+
+        if (!wantLeadIds.size && !askBack) return null;
+
+        if (wantLeadIds.size) {
+            bitrix.batch.lead.getList(
+                'deal_edge_leads',
+                { ID: [...wantLeadIds] } as never,
+                leadSelect,
+            );
+        }
+        if (askBack) {
+            leadToDealKeys.forEach((key, index) => {
+                bitrix.batch.lead.getList(
+                    `deal_edge_leads_back_${index}`,
+                    { [key]: backDealIds } as never,
+                    leadSelect,
+                );
+            });
+        }
+
+        try {
+            const chunks = await bitrix.api.callBatchAsync();
+            const rows: BxRow[] = [];
+            for (const chunk of chunks) {
+                const byCmd = (chunk?.result ?? {}) as Record<string, unknown>;
+                for (const value of Object.values(byCmd)) {
+                    rows.push(...this.rowsOf(value));
+                }
+            }
+            return rows;
+        } catch (error) {
+            warnings.push(
+                `Не удалось дочитать лиды по рёбрам сделок: ${this.errorText(error)}`,
+            );
+            return [];
         }
     }
 
