@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
+import { toBatchText } from '@lib/bitrix/consts/batch.consts';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
@@ -463,6 +464,14 @@ export class PresentationSurveyEndpointService {
      * UF-ключ — существующей механикой по слепку портала (как в
      * event-report-entity-fields.model): поле не установлено → тихий скип
      * с warning в ответе.
+     *
+     * Значение проходит {@link toBatchText}: ответы анкеты многострочны ПО
+     * ПОСТРОЕНИЮ (хвост — построчная склейка, сводка 5К — построчная
+     * сводка), а все записи ручки уходят batch-командами, где сырой `\n`
+     * доезжает до карточки подчёркиванием. Это ЕДИНСТВЕННАЯ точка попадания
+     * значений в batch-поля — экранируются разом прямая запись, запись из
+     * сигнала и rendezvous-дозапись; Redis-кэш при этом хранит СЫРЫЕ
+     * значения (человекочитаем и независим от транспорта).
      */
     private setField(
         portal: PortalModel,
@@ -480,7 +489,7 @@ export class PresentationSurveyEndpointService {
             }
             return;
         }
-        fields[`UF_CRM_${field.bitrixId}`] = value;
+        fields[`UF_CRM_${field.bitrixId}`] = toBatchText(value);
     }
 
     /**

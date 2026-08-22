@@ -17,10 +17,12 @@ import {
     DeleteDealCategoriesDto,
     DeleteDealCategoryStageDto,
     EditDealCategoryStageDto,
+    SyncDealCategoryStageDto,
 } from '../dto/manage-deal-category.dto';
 import { PbxDealCategoryInstallByParseUseCase } from '../use-cases/category/pbx-deal-category-install-by-parse.use-case';
 import { PbxDealCategoryInstallByCategoryUseCase } from '../use-cases/category/pbx-deal-category-install-by-category.use-case';
 import { PbxDealCategoryManageUseCase } from '../use-cases/category/pbx-deal-category-manage.use-case';
+import { PbxDealCategoryStageSyncUseCase } from '../use-cases/category/pbx-deal-category-stage-sync.use-case';
 
 @ApiTags('PBX Deal Category Install')
 @Controller('pbx-deal-category-install')
@@ -29,6 +31,7 @@ export class PbxDealCategoryInstallController {
         private readonly parseUseCase: PbxDealCategoryInstallByParseUseCase,
         private readonly categoryUseCase: PbxDealCategoryInstallByCategoryUseCase,
         private readonly manageUseCase: PbxDealCategoryManageUseCase,
+        private readonly stageSyncUseCase: PbxDealCategoryStageSyncUseCase,
     ) {}
 
     @ApiOperation({
@@ -120,5 +123,35 @@ export class PbxDealCategoryInstallController {
     @Post('/edit-category-stage/')
     async editDealCategoryStage(@Body() dto: EditDealCategoryStageDto) {
         return await this.manageUseCase.editCategoryStage(dto);
+    }
+
+    @ApiOperation({
+        summary: 'Sync a single stage of a deal category from the template',
+        description:
+            'Синхронизирует ОДНУ стадию воронки сделки из Excel-шаблона группы: ' +
+            'заводит её в Bitrix (`crm.status.add`) либо обновляет существующую ' +
+            '(`crm.status.update`) и зеркалит строку в `btx_stages`. ' +
+            'НИЧЕГО НЕ УДАЛЯЕТ — в отличие от установки воронки целиком, ' +
+            'прочие стадии остаются на месте. ' +
+            'Все атрибуты стадии (название, цвет, `bitrixId`, семантика, порядок) ' +
+            'берутся из строки шаблона, а не из запроса. ' +
+            'По умолчанию `reorder: true` — SORT остальных стадий воронки ' +
+            'пересчитывается по шаблону, иначе стадия, вставленная в середину ' +
+            'лестницы, встанет в Bitrix последней. ' +
+            'Воронка должна быть уже установлена: этот метод её не создаёт. ' +
+            'Поддерживает `domain: "all"`.',
+    })
+    @ApiBody({ type: SyncDealCategoryStageDto })
+    @ApiResponse({
+        status: 201,
+        description:
+            'Пер-портальный результат: что произошло со стадией в Bitrix ' +
+            '(`created`/`updated`) и в PortalDB, а также список STATUS_ID, ' +
+            'которым пересчитан SORT. Порталы без воронки помечаются ' +
+            '`ok: false` с объяснением и не прерывают обработку остальных.',
+    })
+    @Post('/sync-category-stage/')
+    async syncDealCategoryStage(@Body() dto: SyncDealCategoryStageDto) {
+        return await this.stageSyncUseCase.syncStage(dto);
     }
 }

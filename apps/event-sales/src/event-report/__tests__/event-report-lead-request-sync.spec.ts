@@ -376,6 +376,32 @@ describe('EventReportLeadRequestSyncService', () => {
         expect(fields.UF_CRM_OP_PRESENTATION_5K).toBeUndefined();
     });
 
+    /*
+     * Запись на связанный лид уходит batch-командой (lead.update волны 2):
+     * многострочные ответы обязаны быть экранированы в %0A.
+     */
+    it('многострочная анкета доезжает на связанный лид с %0A', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                lead: {
+                    ...SURVEY_CTX_LEAD,
+                    UF_CRM_OP_PRESENTATION_XVOST: 'строка 1\nстрока 2',
+                },
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBe('строка 1%0Aстрока 2');
+        expect(String(fields.UF_CRM_OP_PRESENTATION_XVOST)).not.toMatch(
+            /[\r\n]/,
+        );
+    });
+
     it('связанный лид и есть лид контекста → анкета не пишется (ответы уже там)', async () => {
         const { bitrix, updates } = makeBitrix({
             42: { ID: '42' },

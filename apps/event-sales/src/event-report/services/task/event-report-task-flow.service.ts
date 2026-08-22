@@ -45,13 +45,19 @@ const COLD_TASK_TYPE_NAME = 'Холодный обзвон';
  * + `getUpdateTaskBatchCommand`).
  *
  * Маршрутизация:
- *  - `isExpired && currentTask`
- *      → ТОЛЬКО `update` дедлайна (legacy update меняет только DEADLINE и
- *        ALLOW_CHANGE_DEADLINE; TITLE/UF_CRM_TASK/комментарии не трогает).
+ *  - `isExpired && currentTask` (ПЕРЕНОС: отчёт не результативный, план не
+ *    выключен) → `update` ТОЙ ЖЕ задачи: дедлайн и — если менеджер переписал
+ *    название — TITLE. Тип события и привязки не трогаем: задача та же.
  *  - иначе:
- *      • если есть `currentTask` и `!isNew` (менеджер отчитался) →
- *        `complete(currentTask)` — независимо от плана;
+ *      • если есть `currentTask`, `!isNew` и отчёт НЕ «Не очень» →
+ *        `complete(currentTask)`;
  *      • если `isPlanned` → `add(newTask)`.
+ *
+ * «Не очень» (`isNoResult`) задачу не закрывает: разговор не состоялся,
+ * работа не сделана. Либо её переносят на новую дату (ветка выше), либо не
+ * трогают вовсе — недозвон фиксируется только в полях, истории и стадиях.
+ * Исключение — финальный статус: «Отказ»/«Продажа» по недозвонной цепочке
+ * означают, что работа окончена, и задача обязана закрыться.
  *
  * Поле комментария — `UF_TASK_EVENT_COMMENT` (legacy имя).
  *
@@ -75,22 +81,28 @@ export class EventReportTaskFlowService {
             : null;
 
         if (ctx.isExpired && currentTaskId) {
+            const fields: Record<string, string> = {};
             // Bitrix хранит DEADLINE задач в server-time (Москва) — сырую
             // строку плана слать нельзя, на не-московском портале время уедет.
             if (ctx.planDeadline) {
+                fields.DEADLINE = ctx.planDeadline.toTaskDeadline();
+                fields.ALLOW_CHANGE_DEADLINE = 'Y';
+            }
+            const nextTitle = this.buildRenamedTitle(ctx);
+            if (nextTitle) fields.TITLE = nextTitle;
+
+            if (Object.keys(fields).length) {
                 this.bitrix.batch.task.update(
                     `update_task_${currentTaskId}`,
                     currentTaskId,
-                    {
-                        DEADLINE: ctx.planDeadline.toTaskDeadline(),
-                        ALLOW_CHANGE_DEADLINE: 'Y',
-                    },
+                    fields,
                 );
             }
             return;
         }
 
-        if (currentTaskId && !ctx.isNew) {
+        const isFinalStatus = ctx.isFail || ctx.isSuccessSale;
+        if (currentTaskId && !ctx.isNew && (!ctx.isNoResult || isFinalStatus)) {
             this.bitrix.batch.task.complete(
                 `complete_task_${currentTaskId}`,
                 currentTaskId,
@@ -112,6 +124,38 @@ export class EventReportTaskFlowService {
                 UF_TASK_EVENT_COMMENT: ctx.reportComment,
             });
         }
+    }
+
+    /**
+     * Новый TITLE переносимой задачи; null — переименовывать не нужно.
+     *
+     * Название события — единственное, что менеджер может поправить при
+     * переносе (`plan.name`): «о чём договорились» на новую дату бывает не тем,
+     * что планировали раньше. Правило простое: имя передали и оно отличается —
+     * заменяем, иначе TITLE не трогаем вовсе.
+     *
+     * Меняем ТОЛЬКО среднюю часть заголовка: тип события при переносе тот же
+     * (задача та же), а фронт читает eventType по подстроке типа в TITLE —
+     * пересобирать заголовок из плана нельзя, там тип может быть не выбран.
+     * Заголовок не нашего формата (задача заведена руками) не трогаем.
+     */
+    private buildRenamedTitle(ctx: EventReportContext): string | null {
+        const nextName = ctx.planEventName?.trim();
+        if (!nextName) return null;
+
+        const task = ctx.currentTask as unknown as Record<
+            string,
+            unknown
+        > | null;
+        const currentTitle = String(task?.title ?? task?.TITLE ?? '').trim();
+        if (!currentTitle) return null;
+
+        const parts = currentTitle.split('  ');
+        if (parts.length < 2) return null;
+        if (parts[1].trim() === nextName) return null;
+
+        parts[1] = nextName;
+        return parts.join('  ');
     }
 
     /**

@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { BitrixService } from '@/modules/bitrix';
 import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
@@ -30,8 +29,7 @@ export class EventReportEntityHistoryService {
         if (!ctx.isGsirk) return;
         if (!ctx.entityId) return;
 
-        const tz = this.portal.getTimezone();
-        const stamp = dayjs(ctx.nowDate).tz(tz).format('DD.MM.YYYY HH:mm:ss');
+        const stamp = ctx.dateTime.crmDateTime(ctx.nowDate);
         const parts = buildEventHistoryParts(ctx);
 
         // crm.timeline.comment.add — стабильное API записи в таймлайн любой

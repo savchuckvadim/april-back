@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { IBXListItemFields } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
@@ -64,9 +63,7 @@ export class EventReportPresentationListService {
 
     private collectItems(ctx: EventReportContext): PresentationListItem[] {
         const items: PresentationListItem[] = [];
-        const nowLabel = dayjs(ctx.nowDate)
-            .tz(this.portal.getTimezone())
-            .format('DD.MM.YYYY HH:mm:ss');
+        const nowLabel = ctx.dateTime.crmDateTime(ctx.nowDate);
 
         if (ctx.planEventType === 'presentation' && !ctx.isExpired) {
             items.push({
@@ -100,7 +97,6 @@ export class EventReportPresentationListService {
         deals: DealFlowResult,
         item: PresentationListItem,
     ): Record<string, unknown> {
-        const tz = this.portal.getTimezone();
         const fields: Record<string, unknown> = {
             NAME: item.name,
         };
@@ -114,10 +110,7 @@ export class EventReportPresentationListService {
             }
         };
 
-        set(
-            'date_event',
-            dayjs(ctx.nowDate).tz(tz).format('DD.MM.YYYY HH:mm:ss'),
-        );
+        set('date_event', ctx.dateTime.crmDateTime(ctx.nowDate));
         set('event_action', item.action);
         set('event_type', 'presentation');
         set('responsible', ctx.planResponsibleId);

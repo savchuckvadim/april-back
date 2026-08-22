@@ -1,25 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixOwnerTypeId, BitrixService, IBXStatus } from '@/modules/bitrix';
-import { PBXService } from '@/modules/pbx';
 import {
     BtxCategoryResponseDto,
     BtxCategoryService,
     BtxStageRepository,
     BtxStageResponseDto,
-    PortalDealService,
 } from '@lib/portal-lib/pbx-domain';
-import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PbxEntityType } from '@/shared/enums';
 import {
-    MANAGE_DOMAIN_ALL,
     normalizeBitrixStageColor,
     normalizeStatusListResult,
 } from '@app/pbx-install/shared';
 import { InstallCategorySyncService } from '@app/pbx-install/category/install-category-sync.service';
 import { InstallStageSyncService } from '@app/pbx-install/stage/install-stage-sync.service';
-import { InstallCategoryParent } from '@app/pbx-install/category';
-import { PbxEntityTypePrisma } from '@/shared/enums';
 import { DealCategoryStageStrategy } from '../../services/categories/deal-category-stage.strategy';
+import {
+    PbxDealPortalResolverService,
+    ResolvedPortalDeal,
+} from '../../services/categories/pbx-deal-portal-resolver.service';
 import {
     DeleteDealCategoriesDto,
     DeleteDealCategoryStageDto,
@@ -65,9 +63,7 @@ export class PbxDealCategoryManageUseCase {
     private readonly entityTypeId = BitrixOwnerTypeId.DEAL;
 
     constructor(
-        private readonly pbxService: PBXService,
-        private readonly portalService: PortalStoreService,
-        private readonly portalDealService: PortalDealService,
+        private readonly resolver: PbxDealPortalResolverService,
         private readonly categoryService: BtxCategoryService,
         private readonly stageRepository: BtxStageRepository,
         private readonly categorySync: InstallCategorySyncService,
@@ -290,41 +286,14 @@ export class PbxDealCategoryManageUseCase {
         return results;
     }
 
-    private async resolveDomains(domain: string): Promise<string[]> {
-        if (domain !== MANAGE_DOMAIN_ALL) {
-            return [domain];
-        }
-        const portals = await this.portalService.getPortals();
-        if (!portals) return [];
-        return portals
-            .map(p => p.domain)
-            .filter((d): d is string => typeof d === 'string' && d.length > 0);
+    private resolveDomains(domain: string): Promise<string[]> {
+        return this.resolver.resolveDomains(domain);
     }
 
-    private async resolvePortalDeal(domain: string): Promise<{
-        portalId: number;
-        dealId: number;
-        bitrix: BitrixService;
-        parent: InstallCategoryParent;
-    } | null> {
-        const portal = await this.portalService.getPortalByDomain(domain);
-        if (!portal) {
-            this.logger.warn(`portal not found for domain ${domain}`);
-            return null;
-        }
-        const portalId = Number(portal.id);
-        const deal = await this.portalDealService.findByPortalId(portalId);
-        if (!deal) {
-            this.logger.warn(`deal not found for portalId ${portalId}`);
-            return null;
-        }
-        const { bitrix } = await this.pbxService.init(domain);
-        const parent: InstallCategoryParent = {
-            entityType: PbxEntityTypePrisma.DEAL,
-            entityDbId: BigInt(Number(deal.id)),
-            parentType: 'deal',
-        };
-        return { portalId, dealId: Number(deal.id), bitrix, parent };
+    private resolvePortalDeal(
+        domain: string,
+    ): Promise<ResolvedPortalDeal | null> {
+        return this.resolver.resolvePortalDeal(domain);
     }
 
     private async findCategoryAndStage(
@@ -335,11 +304,10 @@ export class PbxDealCategoryManageUseCase {
         category: BtxCategoryResponseDto;
         stage: BtxStageResponseDto;
     } | null> {
-        const dbCategories = await this.categoryService.findByEntity(
-            PbxEntityType.DEAL,
+        const category = await this.resolver.findCategoryByCode(
             dealId,
+            categoryCode,
         );
-        const category = dbCategories.find(c => c.code === categoryCode);
         if (!category) return null;
         const stage = (category.stages ?? []).find(s => s.code === stageCode);
         if (!stage) return null;

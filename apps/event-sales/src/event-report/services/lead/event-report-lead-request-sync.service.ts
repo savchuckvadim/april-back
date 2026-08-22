@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
+import { toBatchText } from '@lib/bitrix/consts/batch.consts';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
@@ -159,7 +160,9 @@ export class EventReportLeadRequestSyncService {
             const raw = source[key];
             const value = typeof raw === 'string' ? raw.trim() : '';
             if (!value) continue;
-            fields[key] = value;
+            // Запись уходит batch-командой (lead.update волны 2): сырой
+            // `\n` многострочных ответов доехал бы подчёркиванием.
+            fields[key] = toBatchText(value);
         }
     }
 

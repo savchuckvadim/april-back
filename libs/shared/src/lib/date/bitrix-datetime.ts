@@ -53,6 +53,27 @@ export class BitrixDateTime {
     }
 
     /**
+     * Создаёт значение из УЖЕ АБСОЛЮТНОГО момента (`Date` из БД, `nowDate`
+     * контекста, результат вычислений) — парсить нечего, интерпретировать
+     * как локальное время портала не нужно.
+     *
+     * Нужен там, где раньше писали `dayjs(date).tz(portalTz).format(...)`
+     * руками и дублировали формат поля Bitrix.
+     */
+    static fromInstant(
+        date: Date | Dayjs,
+        portalTz: ETimeZone,
+    ): BitrixDateTime {
+        const instant = dayjs(date instanceof Date ? date : date.toDate());
+        return new BitrixDateTime(instant, portalTz, instant.toISOString());
+    }
+
+    /** «Сейчас» как значение (TZ портала применяется при форматировании). */
+    static now(portalTz: ETimeZone): BitrixDateTime {
+        return BitrixDateTime.fromInstant(new Date(), portalTz);
+    }
+
+    /**
      * Все представления дедлайна для диагностики TZ-преобразований.
      * Удобно логировать одним объектом на каждом шаге потока.
      */

@@ -93,6 +93,24 @@ export type PbxDealSalesBaseCategoryType = {
             parentType: 'sales';
             type: 'deal';
             group: 'sales';
+            name: 'Доработка';
+            title: 'Доработка';
+            bitrixId: 'REFINE';
+            isActive: true;
+            smartBitrixId: 'DEAL_STAGE';
+            color: '#f3b01d';
+            code: 'sales_refine';
+            isNeedUpdate: true;
+            order: 5;
+            isDefault: 'N';
+        },
+        {
+            id: 5;
+            categoryId: 0;
+            entityType: 'deal';
+            parentType: 'sales';
+            type: 'deal';
+            group: 'sales';
             name: 'Документы';
             title: 'Документы';
             bitrixId: 'OFFER_CREATE';
@@ -101,11 +119,11 @@ export type PbxDealSalesBaseCategoryType = {
             color: '#8e5cbf';
             code: 'sales_offer_create';
             isNeedUpdate: true;
-            order: 5;
+            order: 6;
             isDefault: 'N';
         },
         {
-            id: 5;
+            id: 6;
             categoryId: 0;
             entityType: 'deal';
             parentType: 'sales';
@@ -118,24 +136,6 @@ export type PbxDealSalesBaseCategoryType = {
             smartBitrixId: 'DEAL_STAGE';
             color: '#683699';
             code: 'sales_document_send';
-            isNeedUpdate: true;
-            order: 6;
-            isDefault: 'N';
-        },
-        {
-            id: 6;
-            categoryId: 0;
-            entityType: 'deal';
-            parentType: 'sales';
-            type: 'deal';
-            group: 'sales';
-            name: 'Доработка';
-            title: 'Доработка';
-            bitrixId: 'REFINE';
-            isActive: true;
-            smartBitrixId: 'DEAL_STAGE';
-            color: '#f5a623';
-            code: 'sales_refine';
             isNeedUpdate: true;
             order: 7;
             isDefault: 'N';
@@ -246,6 +246,24 @@ export type PbxDealSalesBaseCategoryType = {
             code: 'sales_double';
             isNeedUpdate: true;
             order: 13;
+            isDefault: 'N';
+        },
+        {
+            id: 13;
+            categoryId: 0;
+            entityType: 'deal';
+            parentType: 'sales';
+            type: 'deal';
+            group: 'sales';
+            name: 'Не ЦА';
+            title: 'Не ЦА';
+            bitrixId: 'NOT_CA';
+            isActive: true;
+            smartBitrixId: 'DEAL_STAGE';
+            color: '#2d0b0d';
+            code: 'sales_not_ca';
+            isNeedUpdate: true;
+            order: 14;
             isDefault: 'N';
         },
     ];

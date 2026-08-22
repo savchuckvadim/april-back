@@ -58,5 +58,17 @@ Skap Loging	skap		multiple		skap_logins			SKAP_LOGINS			700	ИСТИНА	ИСТ�
 
 
 
-Загрузить 6 методичек из storage/app/ai-rag/drafts/converted/ через админку «База знаний» — kind указан в шапке каждой: hvost-5k и demo-accountant → call-analysis-presentation; decision--script → call-analysis-decision; cold--checklist → call-analysis-cold; site-leads → call-analysis-call и копией в call-analysis-cold; classify--type-features → call-classify (это главный удар по точности типов). База общая или per-domain — если методики одинаковы для gsr и garant, грузите в общую.
-Включить withCheckPresentation в Settings тех порталов, где отчётность «5К и хвост» обязательна — разбор презентаций станет жёстче именно там.
+0	0	Новая	P	NEW	#eef0e6	sales_new	deal	sales	1	Y
+1	0	Холодные	P	COLD	#3bc8f5	sales_cold	deal	sales	2	N
+2	0	Переговоры	P	WARM	#0ec96f	sales_warm	deal	sales	3	N
+3	0	Презентация	P	PRESENTATION	#fff300	sales_pres	deal	sales	4	N
+4	0	Доработка	P	REFINE	#f3b01d	sales_refine	deal	sales	5	N
+5	0	Документы	P	OFFER_CREATE	#8e5cbf	sales_offer_create	deal	sales	6	N
+6	0	Отправлены	P	DOCUMENT_SEND	#683699	sales_document_send	deal	sales	7	N
+7	0	В решении	P	IN_PROSRESS	#f0008c	sales_in_progress	deal	sales	8	N
+8	0	В оплате	P	MONEY_AWAIT	#a0005c	sales_money_await	deal	sales	9	N
+9	0	Поставка	P	SUPPLY_INIT	#0070bf	sales_supply	deal	sales	10	N
+10	0	Успех	S	WON	#00ff00	sales_success	deal	sales	11	N
+11	0	Отказ	F	LOSE	#e7354a	sales_fail	deal	sales	12	N
+12	0	Не состоялась	F	APOLOGY	#2d0b0d	sales_double	deal	sales	13	N
+13	0	Не ЦА	F	NOT_CA	#2d0b0d	sales_not_ca	deal	sales	14	N

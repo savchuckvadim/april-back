@@ -1,6 +1,10 @@
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { findPbxLeadStage } from '@lib/portal-lib/pbx-domain';
+import {
+    PBX_DEAL_SALES_BASE_STAGE_CODE,
+    PbxDealSalesBaseStageCode,
+} from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { ILeadToWorkItem } from '../dto/lead-to-work.dto';
 
 /** Итог резолва целевых стадий. Любое поле может отсутствовать — graceful. */
@@ -18,11 +22,14 @@ export interface LeadToWorkStagePlan {
 }
 
 /** Код стадии ОП по умолчанию для stageMode='from_lead' без зеркала. */
-const DEFAULT_FROM_LEAD_STAGE = 'sales_warm';
+const DEFAULT_FROM_LEAD_STAGE: PbxDealSalesBaseStageCode =
+    PBX_DEAL_SALES_BASE_STAGE_CODE.warm;
 /** Стадия ОП для stageMode='cold' (как классический ХО). */
-const COLD_BASE_STAGE = 'sales_cold';
+const COLD_BASE_STAGE: PbxDealSalesBaseStageCode =
+    PBX_DEAL_SALES_BASE_STAGE_CODE.cold;
 /** Стадия ОП для stageMode='new' — заявка стартует с начала воронки. */
-const NEW_BASE_STAGE = 'sales_new';
+const NEW_BASE_STAGE: PbxDealSalesBaseStageCode =
+    PBX_DEAL_SALES_BASE_STAGE_CODE.new;
 /** Стадия ХО-сделки. */
 const XO_PLAN_STAGE = 'cold_plan';
 

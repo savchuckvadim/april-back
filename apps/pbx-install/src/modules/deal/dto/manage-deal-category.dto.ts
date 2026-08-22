@@ -1,10 +1,31 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    ArrayMinSize,
+    IsArray,
+    IsBoolean,
+    IsEnum,
+    IsIn,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+} from 'class-validator';
 import { MANAGE_DOMAIN_ALL } from '@app/pbx-install/shared';
+import { PbxEntityGroupEnum } from '@app/pbx-install/shared/entity/field/parse-entity-field.service';
+import { ParseCategoryNameEnum } from '../services/categories/parse-category.service';
 
 const DOMAIN_DESCRIPTION =
     'Домен Bitrix-портала без протокола и завершающего слэша. ' +
     `Передайте "${MANAGE_DOMAIN_ALL}", чтобы выполнить операцию для всех порталов.`;
+
+/**
+ * Коды воронок, доступных для поштучной синхронизации стадии.
+ *
+ * Это `ParseCategoryNameEnum` БЕЗ `all`: «синхронизировать одну стадию во
+ * всех воронках сразу» смысла не имеет — стадия принадлежит одной воронке.
+ */
+export const SYNC_CATEGORY_CODES = Object.values(
+    ParseCategoryNameEnum,
+) as readonly ParseCategoryNameEnum[];
 
 /** Удалить воронки сделки по списку `code` из портальной БД + Bitrix. */
 export class DeleteDealCategoriesDto {
@@ -101,4 +122,71 @@ export class EditDealCategoryStageDto {
     @IsString()
     @IsNotEmpty()
     newValue: string;
+}
+
+/**
+ * Синхронизировать ОДНУ стадию воронки сделки из Excel-шаблона.
+ *
+ * В отличие от установки всей воронки, операция ничего не удаляет: стадия
+ * либо заводится, либо обновляется, а прочие стадии остаются на месте.
+ */
+export class SyncDealCategoryStageDto {
+    @ApiProperty({
+        description: DOMAIN_DESCRIPTION,
+        example: 'example.bitrix24.ru',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiProperty({
+        description:
+            'Группа шаблона — определяет Excel-файл, из которого читается ' +
+            'строка стадии (`install/{group}/deal/data.xlsx`).',
+        enum: PbxEntityGroupEnum,
+        example: PbxEntityGroupEnum.SALES,
+    })
+    @IsEnum(PbxEntityGroupEnum)
+    group: PbxEntityGroupEnum;
+
+    @ApiProperty({
+        description:
+            '`code` воронки-владельца стадии. Воронка обязана уже существовать ' +
+            'на портале: поштучная синхронизация стадии её не создаёт.',
+        type: String,
+        enum: SYNC_CATEGORY_CODES,
+        example: ParseCategoryNameEnum.sales_base,
+    })
+    @IsString()
+    @IsIn(SYNC_CATEGORY_CODES as unknown as string[])
+    categoryCode: ParseCategoryNameEnum;
+
+    @ApiProperty({
+        description:
+            '`code` стадии из шаблона. Все атрибуты (название, цвет, `bitrixId`, ' +
+            'семантика, порядок) берутся из строки шаблона, а не из запроса — ' +
+            'чтобы портал и шаблон не разъезжались.',
+        example: 'sales_not_ca',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    stageCode: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Пересчитать SORT остальных стадий воронки по шаблону. ' +
+            'Включено по умолчанию: стадия, вставленная в СЕРЕДИНУ лестницы, ' +
+            'иначе встанет в Bitrix последней — у соседей остаются старые SORT. ' +
+            'Правится только порядок: названия, цвета и семантика соседних ' +
+            'стадий не трогаются. Передайте `false`, если порядок в воронке ' +
+            'настроен руками и его нельзя перетряхивать.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    reorder?: boolean;
 }

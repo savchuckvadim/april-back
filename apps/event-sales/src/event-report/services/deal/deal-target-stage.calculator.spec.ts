@@ -4,6 +4,8 @@ import {
     getXoTargetStageCode,
     getPresentationTargetStageCode,
     composeStageId,
+    detectEventFromBaseStage,
+    BaseStageInput,
 } from './deal-target-stage.calculator';
 
 const stage = (code: string, bitrixId: string) => ({
@@ -18,15 +20,19 @@ const baseCategory: IPCategory = {
     code: 'sales_base',
     name: 'ОП Основная',
     stages: [
-        stage('sales_plan', 'NEW'),
+        stage('sales_new', 'NEW'),
         stage('sales_cold', 'PREPARATION'),
         stage('sales_warm', 'WARM'),
         stage('sales_pres', 'PRES'),
+        stage('sales_refine', 'REFINE'),
+        stage('sales_offer_create', 'OFFER_CREATE'),
+        stage('sales_document_send', 'DOCUMENT_SEND'),
         stage('sales_in_progress', 'HOT'),
         stage('sales_money_await', 'PAY'),
         stage('sales_success', 'WON'),
         stage('sales_fail', 'LOSE'),
-        stage('sales_noresult', 'NORESULT'),
+        stage('sales_double', 'APOLOGY'),
+        stage('sales_not_ca', 'NOT_CA'),
     ],
 } as unknown as IPCategory;
 
@@ -55,80 +61,210 @@ const presCategory: IPCategory = {
     ],
 } as unknown as IPCategory;
 
+/** Вход по умолчанию: ничего не произошло, флаги сняты. */
+const baseInput = (patch: Partial<BaseStageInput> = {}): BaseStageInput => ({
+    category: baseCategory,
+    currentStageEvent: null,
+    planEventType: null,
+    reportEventType: null,
+    isResult: true,
+    isUnplanned: false,
+    isSuccess: false,
+    isFail: false,
+    isNoResult: false,
+    isNotCa: false,
+    ...patch,
+});
+
 describe('getSalesBaseTargetStageCode', () => {
     it('isSuccess побеждает все остальные сигналы', () => {
         expect(
-            getSalesBaseTargetStageCode({
-                category: baseCategory,
-                currentStageEvent: 'warm',
-                planEventType: 'presentation',
-                reportEventType: 'warm',
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: true,
-                isFail: false,
-            }),
+            getSalesBaseTargetStageCode(
+                baseInput({
+                    currentStageEvent: 'warm',
+                    planEventType: 'presentation',
+                    reportEventType: 'warm',
+                    isSuccess: true,
+                }),
+            ),
         ).toBe('WON');
-    });
-
-    it('isFail без isResult → noresult', () => {
-        expect(
-            getSalesBaseTargetStageCode({
-                category: baseCategory,
-                currentStageEvent: 'warm',
-                planEventType: null,
-                reportEventType: 'warm',
-                isResult: false,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: true,
-            }),
-        ).toBe('NORESULT');
     });
 
     it('plan=presentation двигает на pres-стадию', () => {
         expect(
-            getSalesBaseTargetStageCode({
-                category: baseCategory,
-                currentStageEvent: 'warm',
-                planEventType: 'presentation',
-                reportEventType: 'warm',
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
-            }),
+            getSalesBaseTargetStageCode(
+                baseInput({
+                    currentStageEvent: 'warm',
+                    planEventType: 'presentation',
+                    reportEventType: 'warm',
+                }),
+            ),
         ).toBe('PRES');
     });
 
     it('берёт максимум по «лестнице» из current/plan/report', () => {
         expect(
-            getSalesBaseTargetStageCode({
-                category: baseCategory,
-                currentStageEvent: 'hot',
-                planEventType: 'warm',
-                reportEventType: 'presentation',
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
-            }),
+            getSalesBaseTargetStageCode(
+                baseInput({
+                    currentStageEvent: 'hot',
+                    planEventType: 'warm',
+                    reportEventType: 'presentation',
+                }),
+            ),
         ).toBe('HOT');
     });
 
     it('isUnplanned добавляет presentation в кандидаты', () => {
         expect(
-            getSalesBaseTargetStageCode({
-                category: baseCategory,
-                currentStageEvent: 'warm',
-                planEventType: null,
-                reportEventType: 'warm',
-                isResult: true,
-                isUnplanned: true,
-                isSuccess: false,
-                isFail: false,
-            }),
+            getSalesBaseTargetStageCode(
+                baseInput({
+                    currentStageEvent: 'warm',
+                    reportEventType: 'warm',
+                    isUnplanned: true,
+                }),
+            ),
         ).toBe('PRES');
+    });
+
+    it('ни одного сигнала и без финального статуса — стадии нет', () => {
+        expect(getSalesBaseTargetStageCode(baseInput())).toBeNull();
+    });
+
+    /*
+     * «Доработка» стоит МЕЖДУ презентацией и документами: клиента дорабатывают
+     * (узнают компанию, ИНН) после презентации и до подготовки документов.
+     */
+    describe('место «Доработки» в лестнице', () => {
+        it('доработка выше презентации', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'presentation',
+                        planEventType: 'refine',
+                    }),
+                ),
+            ).toBe('REFINE');
+        });
+
+        it('документы выше доработки — сделка идёт вперёд', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'refine',
+                        planEventType: 'document',
+                    }),
+                ),
+            ).toBe('OFFER_CREATE');
+        });
+
+        it('с документов доработка не откатывает сделку назад', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'document',
+                        planEventType: 'refine',
+                    }),
+                ),
+            ).toBe('OFFER_CREATE');
+        });
+    });
+
+    describe('отказные финалы', () => {
+        it('обычный отказ по результату разговора → «Отказ»', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'warm',
+                        reportEventType: 'warm',
+                        isFail: true,
+                    }),
+                ),
+            ).toBe('LOSE');
+        });
+
+        it('отказ по нерезультативному отчёту → «Не состоялась»', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'warm',
+                        reportEventType: 'warm',
+                        isResult: false,
+                        isNoResult: true,
+                        isFail: true,
+                    }),
+                ),
+            ).toBe('APOLOGY');
+        });
+
+        it('нецелевой клиент → «Не ЦА» даже при нерезультативном отчёте', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'warm',
+                        reportEventType: 'warm',
+                        isResult: false,
+                        isNoResult: true,
+                        isFail: true,
+                        isNotCa: true,
+                    }),
+                ),
+            ).toBe('NOT_CA');
+        });
+
+        it('продажа перебивает любой отказной признак', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        reportEventType: 'warm',
+                        isSuccess: true,
+                        isFail: true,
+                        isNotCa: true,
+                    }),
+                ),
+            ).toBe('WON');
+        });
+
+        /*
+         * Отказ обязан закрыть сделку, даже если стадия «Не ЦА»/«Не
+         * состоялась» ещё не установлена на портале: иначе менеджер шлёт
+         * отказ, а сделка молча остаётся открытой.
+         */
+        it('нет стадии «Не ЦА» на портале — стадия не резолвится, а не подменяется', () => {
+            const withoutNotCa = {
+                ...baseCategory,
+                stages: baseCategory.stages.filter(
+                    st => st.code !== 'sales_not_ca',
+                ),
+            } as IPCategory;
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        category: withoutNotCa,
+                        reportEventType: 'warm',
+                        isFail: true,
+                        isNotCa: true,
+                    }),
+                ),
+            ).toBeNull();
+        });
+    });
+});
+
+describe('detectEventFromBaseStage', () => {
+    it('стадия доработки распознаётся как событие refine', () => {
+        expect(detectEventFromBaseStage(baseCategory, 'C17:REFINE')).toBe(
+            'refine',
+        );
+    });
+
+    it('стадия документов распознаётся как событие document', () => {
+        expect(detectEventFromBaseStage(baseCategory, 'C17:OFFER_CREATE')).toBe(
+            'document',
+        );
+    });
+
+    it('стадия вне лестницы событий — null', () => {
+        expect(detectEventFromBaseStage(baseCategory, 'C17:NOT_CA')).toBeNull();
     });
 });
 

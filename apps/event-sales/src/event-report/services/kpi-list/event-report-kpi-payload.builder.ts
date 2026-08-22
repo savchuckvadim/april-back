@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     KpiEventDedup,
@@ -321,13 +320,25 @@ export class EventReportKpiPayloadBuilder {
 
     private buildPlan(): KpiEventPayload | null {
         const ctx = this.ctx;
-        if (!ctx.isPlanned) return null;
+        /*
+         * Перенос пишется этой же записью с action `pound`, и писать её надо
+         * даже без выбранного типа плана: при переносе тип не выбирают заново
+         * — событие то же самое, просто на другую дату. Раньше такой отчёт
+         * («Не очень» без правки типа — самый массовый случай) не давал НИ
+         * ОДНОЙ записи: отчётную глушил isExpired, а плановую — isPlanned.
+         */
+        if (!ctx.isPlanned && !ctx.isExpired) return null;
         if (ctx.isSuccessSale || ctx.isFail) return null;
-        const eventType = mapEventType(ctx.planEventType);
+        // При переносе тип берём от события отчёта — он и остаётся у задачи.
+        const planEventType = ctx.planEventType ?? ctx.reportEventType;
+        const eventType = mapEventType(planEventType);
         if (!eventType) return null;
         return this.assemble({
             scenario: 'plan',
-            name: withRefineMark(ctx.planEventName, ctx.planEventType),
+            name: withRefineMark(
+                ctx.planEventName || ctx.reportEventName,
+                planEventType,
+            ),
             eventType,
             action: ctx.isExpired ? 'pound' : 'plan',
             crm: this.crmLinks(),
@@ -714,9 +725,7 @@ export class EventReportKpiPayloadBuilder {
     }
 
     private formatCrm(d: Date): string {
-        return dayjs(d)
-            .tz(this.portal.getTimezone())
-            .format('DD.MM.YYYY HH:mm:ss');
+        return this.ctx.dateTime.crmDateTime(d);
     }
 
     private nowFormatted(): string {

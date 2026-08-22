@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { BitrixDateTime, ETimeZone } from '@/shared/lib/date';
+import { PBXDateTime } from '@lib/portal-lib/pbx-domain/date/pbx-datetime';
 import { EventReportContext } from '../services/context/event-report.context';
 import { EventReportKpiPayloadBuilder } from '../services/kpi-list/event-report-kpi-payload.builder';
 import { EventReportEntityHistoryService } from '../services/history/event-report-entity-history.service';
@@ -195,6 +196,8 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
                     isUnplanned: false,
                     isSuccess: false,
                     isFail: false,
+                    isNoResult: false,
+                    isNotCa: false,
                 }),
             ).toBe('COLD');
         },
@@ -347,6 +350,221 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
         expect(fields.TITLE).toBeUndefined();
     });
 
+    /*
+     * Название события — единственное, что менеджер правит при переносе.
+     * Передали другое — меняем среднюю часть TITLE; тип и контакт остаются,
+     * иначе фронт прочитает у задачи другой eventType.
+     */
+    it('перенос: изменённое название заменяет часть TITLE', () => {
+        const calls: { method: string; args: unknown[] }[] = [];
+        const bitrix = {
+            batch: {
+                task: {
+                    add: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'add', args }),
+                    update: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'update', args }),
+                    complete: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'complete', args }),
+                },
+            },
+        };
+        const portal = {
+            getSalesTaskGroupId: () => 77,
+            getEntityFieldByCode: () => undefined,
+            getFieldBitrixId: (f: { bitrixId: string }) => f.bitrixId,
+        };
+
+        new EventReportTaskFlowService(bitrix as never, portal as never).queue(
+            {
+                isExpired: true,
+                isNew: false,
+                isNoResult: true,
+                isPlanned: false,
+                isResult: false,
+                entityType: 'deal',
+                entityId: 500,
+                planResponsibleId: 5,
+                planCreatedById: 5,
+                planDeadline: BitrixDateTime.fromPortalInput(
+                    '2026-08-20T10:00:00',
+                    ETimeZone.EUROPE_MOSCOW,
+                ),
+                planEventName: 'Созвон по договору',
+                reportComment: '',
+                planEventType: 'xo',
+                reportEventType: 'xoRequest',
+                currentTask: {
+                    id: 900,
+                    title: 'Холодный обзвон. Заявка.  ООО Ромашка  Пётр',
+                },
+                ownerDeal: null,
+                dto: { plan: { type: { current: { name: 'Холодный' } } } },
+            } as never,
+            deals,
+        );
+
+        expect(calls).toHaveLength(1);
+        const fields = calls[0].args[1] as Record<string, unknown>;
+        expect(fields.TITLE).toBe(
+            'Холодный обзвон. Заявка.  Созвон по договору  Пётр',
+        );
+        expect(fields.DEADLINE).toBe('2026-08-20 10:00:00');
+    });
+
+    /*
+     * «Не очень» без плана — разговор не состоялся, работа не сделана:
+     * задачу не закрываем и новую не создаём. Недозвон фиксируется только
+     * в полях, истории и стадиях.
+     */
+    it('«не очень» без плана не трогает задачу вовсе', () => {
+        const calls: { method: string; args: unknown[] }[] = [];
+        const bitrix = {
+            batch: {
+                task: {
+                    add: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'add', args }),
+                    update: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'update', args }),
+                    complete: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'complete', args }),
+                },
+            },
+        };
+        const portal = {
+            getSalesTaskGroupId: () => 77,
+            getEntityFieldByCode: () => undefined,
+            getFieldBitrixId: (f: { bitrixId: string }) => f.bitrixId,
+        };
+
+        new EventReportTaskFlowService(bitrix as never, portal as never).queue(
+            {
+                isExpired: false,
+                isNew: false,
+                isNoResult: true,
+                isPlanned: false,
+                isResult: false,
+                entityType: 'deal',
+                entityId: 500,
+                planResponsibleId: 5,
+                planCreatedById: 5,
+                planDeadline: null,
+                planEventName: '',
+                reportComment: '',
+                planEventType: null,
+                reportEventType: 'warm',
+                currentTask: { id: 900, title: 'Звонок  ООО Ромашка' },
+                ownerDeal: null,
+                dto: { plan: { isActive: false } },
+            } as never,
+            deals,
+        );
+
+        expect(calls).toHaveLength(0);
+    });
+
+    /*
+     * «Не очень» + финальный статус — работа окончена: задачу закрываем,
+     * дедлайн не двигаем. План на таком отчёте формально остаётся активным
+     * (выключить его на финальном статусе экран не даёт), и без этой защиты
+     * отказник остался бы с живой задачей и переписанным сроком.
+     */
+    it('«не очень» с отказом закрывает задачу, а не переносит', () => {
+        const calls: { method: string; args: unknown[] }[] = [];
+        const bitrix = {
+            batch: {
+                task: {
+                    add: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'add', args }),
+                    update: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'update', args }),
+                    complete: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'complete', args }),
+                },
+            },
+        };
+        const portal = {
+            getSalesTaskGroupId: () => 77,
+            getEntityFieldByCode: () => undefined,
+            getFieldBitrixId: (f: { bitrixId: string }) => f.bitrixId,
+        };
+
+        const ctx = new EventReportContext(
+            {
+                currentTask: {
+                    id: 900,
+                    eventType: 'warm',
+                    name: 'ООО Ромашка',
+                },
+                report: {
+                    resultStatus: 'noresult',
+                    workStatus: { current: { code: 'fail' } },
+                },
+                plan: { isActive: true, isPlanned: false },
+            } as never,
+            makePortal() as never,
+            {
+                entityType: 'deal',
+                entityId: 500,
+                currentTask: { id: 900 },
+            } as never,
+            NOW,
+        );
+
+        expect(ctx.isExpired).toBe(false);
+
+        new EventReportTaskFlowService(bitrix as never, portal as never).queue(
+            ctx,
+            deals,
+        );
+
+        expect(calls.map(c => c.method)).toEqual(['complete']);
+    });
+
+    /*
+     * Перенос без выбранного типа плана (тип при переносе не меняют) обязан
+     * дать запись «Перенос» с типом события отчёта: раньше отчётную запись
+     * глушил isExpired, а плановую — isPlanned, и в KPI/историю не уходило
+     * НИЧЕГО.
+     */
+    it('перенос без типа плана пишет запись «Перенос» типом события отчёта', () => {
+        const ctx = new EventReportContext(
+            {
+                currentTask: {
+                    id: 900,
+                    eventType: 'xoRequest',
+                    name: 'ООО Ромашка',
+                },
+                report: {
+                    resultStatus: 'noresult',
+                    workStatus: { current: { code: 'inJob' } },
+                },
+                plan: { isActive: true, isPlanned: false, deadline: '' },
+            } as never,
+            makePortal() as never,
+            {
+                entityType: 'deal',
+                entityId: 500,
+                currentPresDeal: null,
+            } as never,
+            NOW,
+        );
+
+        expect(ctx.isExpired).toBe(true);
+
+        const payloads = new EventReportKpiPayloadBuilder(
+            makePortal() as never,
+            ctx,
+            deals,
+        ).buildAll();
+
+        const plan = payloads.find(p => p.items?.event_action === 'pound');
+        expect(plan).toBeDefined();
+        // Заявка пишется своим KPI-кодом `site` («Заявка с сайта»).
+        expect(plan?.items?.event_type).toBe('site');
+        expect(payloads).toHaveLength(1);
+    });
+
     it('таймлайн: пишется русское название типа, а не сырой код', () => {
         const addTimelineComment = jest.fn();
         const service = new EventReportEntityHistoryService(
@@ -356,6 +574,9 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
 
         service.queue({
             isGsirk: true,
+            // Даты форматирует контекст (ctx.dateTime) — фейк обязан отдавать
+            // ту же обёртку, что и настоящий EventReportContext.
+            dateTime: new PBXDateTime(makePortal() as never),
             entityType: 'lead',
             entityId: 42,
             nowDate: NOW,

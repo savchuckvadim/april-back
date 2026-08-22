@@ -23,10 +23,11 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 /**
- * Тип звонка «Доработка» (`refine`): клиент дорабатывается после решения.
+ * Тип звонка «Доработка» (`refine`): клиента дорабатывают после презентации
+ * — узнают компанию, ИНН, реквизиты — и только потом готовят документы.
  *
  * Контракт:
- *  - стадия воронки sales_refine между «Отправлены» и «В решении»,
+ *  - стадия воронки sales_refine между «Презентация» и «Документы»,
  *    лестница не понижается;
  *  - в сводке KPI считается «Звонком» (call) с префиксом имени
  *    «Доработка: », в ленте истории — своим item'ом refine
@@ -74,12 +75,24 @@ const CATEGORY = {
     bitrixId: '3',
     stages: [
         { code: 'sales_warm', bitrixId: 'WARM' },
-        { code: 'sales_document_send', bitrixId: 'DOCUMENT_SEND' },
+        { code: 'sales_pres', bitrixId: 'PRESENTATION' },
         { code: 'sales_refine', bitrixId: 'REFINE' },
+        { code: 'sales_offer_create', bitrixId: 'OFFER_CREATE' },
+        { code: 'sales_document_send', bitrixId: 'DOCUMENT_SEND' },
         { code: 'sales_in_progress', bitrixId: 'IN_PROSRESS' },
         { code: 'sales_money_await', bitrixId: 'MONEY_AWAIT' },
     ],
 } as never;
+
+/** Флаги финала по умолчанию сняты — тесты лестницы про них не про то. */
+const STAGE_FLAGS = {
+    isResult: true,
+    isUnplanned: false,
+    isSuccess: false,
+    isFail: false,
+    isNoResult: false,
+    isNotCa: false,
+} as const;
 
 describe('Доработка — лестница стадий', () => {
     it('план refine поднимает сделку на стадию REFINE', () => {
@@ -89,10 +102,7 @@ describe('Доработка — лестница стадий', () => {
                 currentStageEvent: 'warm',
                 planEventType: 'refine',
                 reportEventType: 'warm',
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
+                ...STAGE_FLAGS,
             }),
         ).toBe('REFINE');
     });
@@ -109,39 +119,43 @@ describe('Доработка — лестница стадий', () => {
                 currentStageEvent,
                 planEventType: 'warm',
                 reportEventType: 'warm',
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
+                ...STAGE_FLAGS,
             }),
         ).toBe('REFINE');
     });
 
-    it('доработка выше документов, но ниже решения и оплаты', () => {
+    it('доработка выше презентации, но ниже документов, решения и оплаты', () => {
+        expect(
+            getSalesBaseTargetStageCode({
+                category: CATEGORY,
+                currentStageEvent: 'presentation',
+                planEventType: 'refine',
+                reportEventType: null,
+                ...STAGE_FLAGS,
+            }),
+        ).toBe('REFINE');
         expect(
             getSalesBaseTargetStageCode({
                 category: CATEGORY,
                 currentStageEvent: 'refine',
                 planEventType: 'hot',
                 reportEventType: null,
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
+                ...STAGE_FLAGS,
             }),
         ).toBe('IN_PROSRESS');
+        /*
+         * Клиента дорабатывают ДО документов: если сделка уже на документах,
+         * план «доработка» её назад не откатывает.
+         */
         expect(
             getSalesBaseTargetStageCode({
                 category: CATEGORY,
                 currentStageEvent: 'document',
                 planEventType: 'refine',
                 reportEventType: null,
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
+                ...STAGE_FLAGS,
             }),
-        ).toBe('REFINE');
+        ).toBe('OFFER_CREATE');
     });
 
     it('стадия sales_refine не сконфигурирована на портале → null (graceful)', () => {
@@ -155,10 +169,7 @@ describe('Доработка — лестница стадий', () => {
                 currentStageEvent: null,
                 planEventType: 'refine',
                 reportEventType: null,
-                isResult: true,
-                isUnplanned: false,
-                isSuccess: false,
-                isFail: false,
+                ...STAGE_FLAGS,
             }),
         ).toBeNull();
     });

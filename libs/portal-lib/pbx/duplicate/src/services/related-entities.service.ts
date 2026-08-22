@@ -205,10 +205,7 @@ export class RelatedEntitiesService {
         if (edgeLeads !== null) requests += 1;
 
         const deals = related.deals;
-        const leads = this.dedupeRows([
-            ...related.leads,
-            ...(edgeLeads ?? []),
-        ]);
+        const leads = this.dedupeRows([...related.leads, ...(edgeLeads ?? [])]);
         const contactIds = related.contactIds;
 
         const contacts = await this.fetchContacts(bitrix, contactIds, warnings);
@@ -497,10 +494,7 @@ export class RelatedEntitiesService {
     ): string[] {
         return DEAL_LEAD_LINK_FIELD_CODES.map(code => {
             try {
-                const field = portalModel?.getEntityFieldByCode?.(
-                    'deal',
-                    code,
-                );
+                const field = portalModel?.getEntityFieldByCode?.('deal', code);
                 return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
             } catch {
                 return null;
@@ -527,9 +521,7 @@ export class RelatedEntitiesService {
         leadToDealKeys: string[],
         warnings: string[],
     ): Promise<BxRow[] | null> {
-        const knownIds = new Set(
-            knownLeads.map(row => String(row.ID ?? '')),
-        );
+        const knownIds = new Set(knownLeads.map(row => String(row.ID ?? '')));
         const wantLeadIds = new Set<number>();
         for (const deal of deals) {
             for (const id of this.collectDealLeadIds(deal, portalModel)) {

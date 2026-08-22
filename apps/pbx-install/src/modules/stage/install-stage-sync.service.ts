@@ -15,6 +15,51 @@ export type SyncStagesForCategoryParams = SyncStagesForCategoryArgs & {
     resetStagesBeforeSync?: boolean;
 };
 
+/** Что произошло со стадией: её создали или обновили существующую. */
+export type StageSyncAction = 'created' | 'updated';
+
+/** Параметры поштучной синхронизации ОДНОЙ стадии воронки. */
+export interface SyncSingleStageParams {
+    bitrix: BitrixService;
+    entityTypeId: number;
+    bxCategoryId: number;
+    portalCategoryId: number;
+    /** Стадия шаблона, которую ставим/обновляем. */
+    stage: Stage;
+    /**
+     * Все стадии шаблона этой воронки — источник правды для пересчёта SORT
+     * соседей. Нужны только при `reorder`.
+     */
+    templateStages: Stage[];
+    strategy: BitrixCategoryStageStrategy;
+    /**
+     * Пересчитать SORT остальных стадий воронки по шаблону.
+     *
+     * По умолчанию ВКЛЮЧЕНО: без этого стадия, вставленная в середину
+     * лестницы, встаёт в Bitrix не на своё место — соседи сохраняют старые
+     * SORT, и менеджер видит её в конце воронки.
+     */
+    reorder?: boolean;
+}
+
+/** Итог поштучной синхронизации — что реально изменилось в Bitrix и в БД. */
+export interface SyncSingleStageResult {
+    statusId: string;
+    bxAction: StageSyncAction;
+    bxId: string | number | null;
+    portalStageId: number | null;
+    portalAction: StageSyncAction;
+    /** STATUS_ID стадий, которым пересчитан SORT (пусто при `reorder: false`). */
+    reorderedStatusIds: string[];
+}
+
+/** Результат применения одной стадии к Bitrix. */
+interface ApplyStageResult {
+    statusId: string;
+    action: StageSyncAction;
+    bxId: string | number | null;
+}
+
 /**
  * Справочник стадий (`crm.status.*`) для воронки.
  *
@@ -145,38 +190,15 @@ export class InstallStageSyncService {
 
         // Шаг 4: применяем шаблон по возрастанию SORT.
         for (const stage of sortedStages) {
-            const statusId = strategy.statusId(
+            await this.applyStageToBitrix({
+                bitrix,
+                entityId,
                 entityTypeId,
                 bxCategoryId,
-                String(stage.bitrixId),
-            );
-            const sort = toSort(stage.order);
-            const color = normalizeBitrixStageColor(stage.color, this.logger);
-            const name = String(stage.title || stage.name);
-            const semantics = strategy.resolveStageSemantics(stage);
-
-            const existing = currentRows.find(r => r.STATUS_ID === statusId);
-
-            const fields: Partial<IBXStatus> = {
-                ENTITY_ID: entityId,
-                STATUS_ID: statusId,
-                NAME: name,
-                SORT: sort,
-                COLOR: color,
-                ...(semantics ? { SEMANTICS: semantics } : {}),
-            };
-
-            if (existing?.ID != null) {
-                await bitrix.status.update(existing.ID, {
-                    NAME: name,
-                    SORT: sort,
-                    COLOR: color,
-                    ...(semantics ? { SEMANTICS: semantics } : {}),
-                });
-            } else {
-                await bitrix.status.add(fields);
-            }
-
+                stage,
+                strategy,
+                currentRows,
+            });
             await this.upsertPortalStage(portalCategoryId, stage);
         }
 
@@ -204,6 +226,200 @@ export class InstallStageSyncService {
         }
     }
 
+    /**
+     * Поштучная синхронизация ОДНОЙ стадии воронки с шаблоном.
+     *
+     * Отличие от {@link syncStagesForCategory}: НИЧЕГО НЕ УДАЛЯЕТ — ни в
+     * Bitrix, ни в БД портала. Полный синк считает шаблон исчерпывающим и
+     * сносит всё, чего в нём нет; здесь же шаблон сужен до одной строки, и
+     * такое поведение стёрло бы воронку целиком.
+     *
+     * Шаги:
+     * 1) upsert `crm.status` целевой стадии (add при отсутствии, update при наличии);
+     * 2) upsert строки в `btx_stages`;
+     * 3) при `reorder` (по умолчанию ВКЛ) — пересчитать SORT остальных
+     *    стадий воронки по шаблону. Правится ТОЛЬКО SORT: имена, цвета и
+     *    семантику соседей поштучная операция не трогает.
+     */
+    async syncSingleStage(
+        params: SyncSingleStageParams,
+    ): Promise<SyncSingleStageResult> {
+        const {
+            bitrix,
+            entityTypeId,
+            bxCategoryId,
+            portalCategoryId,
+            stage,
+            templateStages,
+            strategy,
+            reorder = true,
+        } = params;
+
+        const entityId = strategy.statusEntityId(entityTypeId, bxCategoryId);
+        const listBefore = await bitrix.status.getList({ ENTITY_ID: entityId });
+        const currentRows = normalizeStatusListResult(listBefore.result);
+
+        const applied = await this.applyStageToBitrix({
+            bitrix,
+            entityId,
+            entityTypeId,
+            bxCategoryId,
+            stage,
+            strategy,
+            currentRows,
+        });
+
+        const portal = await this.upsertPortalStage(portalCategoryId, stage);
+
+        const reorderedStatusIds = reorder
+            ? await this.reorderCategoryStages({
+                  bitrix,
+                  entityId,
+                  entityTypeId,
+                  bxCategoryId,
+                  templateStages,
+                  strategy,
+                  skipStatusId: applied.statusId,
+              })
+            : [];
+
+        this.logger.log(
+            `sync stage ${String(stage.code)} → ${applied.statusId}: ` +
+                `bitrix=${applied.action}, portal=${portal.action}, ` +
+                `reorder=${reorderedStatusIds.length}`,
+        );
+
+        return {
+            statusId: applied.statusId,
+            bxAction: applied.action,
+            bxId: applied.bxId,
+            portalStageId: portal.stageId,
+            portalAction: portal.action,
+            reorderedStatusIds,
+        };
+    }
+
+    /**
+     * Upsert одной стадии в Bitrix (`crm.status.add` / `crm.status.update`).
+     * Общий шаг полного синка и поштучного — форматы `STATUS_ID`/семантики
+     * обязаны совпадать, иначе поштучная правка разъедется с установкой.
+     */
+    private async applyStageToBitrix(params: {
+        bitrix: BitrixService;
+        entityId: string;
+        entityTypeId: number;
+        bxCategoryId: number;
+        stage: Stage;
+        strategy: BitrixCategoryStageStrategy;
+        currentRows: IBXStatus[];
+    }): Promise<ApplyStageResult> {
+        const {
+            bitrix,
+            entityId,
+            entityTypeId,
+            bxCategoryId,
+            stage,
+            strategy,
+            currentRows,
+        } = params;
+
+        const statusId = strategy.statusId(
+            entityTypeId,
+            bxCategoryId,
+            String(stage.bitrixId),
+        );
+        const sort = toSort(stage.order);
+        const color = normalizeBitrixStageColor(stage.color, this.logger);
+        const name = String(stage.title || stage.name);
+        const semantics = strategy.resolveStageSemantics(stage);
+
+        const mutableFields: Partial<IBXStatus> = {
+            NAME: name,
+            SORT: sort,
+            COLOR: color,
+            ...(semantics ? { SEMANTICS: semantics } : {}),
+        };
+
+        const existing = currentRows.find(r => r.STATUS_ID === statusId);
+        if (existing?.ID != null) {
+            await bitrix.status.update(existing.ID, mutableFields);
+            return { statusId, action: 'updated', bxId: existing.ID };
+        }
+
+        const added = await bitrix.status.add({
+            ENTITY_ID: entityId,
+            STATUS_ID: statusId,
+            ...mutableFields,
+        });
+        return {
+            statusId,
+            action: 'created',
+            bxId: this.extractAddedStatusId(added),
+        };
+    }
+
+    /**
+     * Пересчёт SORT соседних стадий воронки по шаблону.
+     *
+     * Только UPDATE существующих статусов: поштучная операция не заводит и не
+     * удаляет стадии — для этого есть полный install. Стадии шаблона, которых
+     * на портале ещё нет, молча пропускаются.
+     */
+    private async reorderCategoryStages(params: {
+        bitrix: BitrixService;
+        entityId: string;
+        entityTypeId: number;
+        bxCategoryId: number;
+        templateStages: Stage[];
+        strategy: BitrixCategoryStageStrategy;
+        skipStatusId: string;
+    }): Promise<string[]> {
+        const {
+            bitrix,
+            entityId,
+            entityTypeId,
+            bxCategoryId,
+            templateStages,
+            strategy,
+            skipStatusId,
+        } = params;
+
+        // Список тянем заново: только что добавленной стадии в прежнем нет.
+        const list = await bitrix.status.getList({ ENTITY_ID: entityId });
+        const rows = normalizeStatusListResult(list.result);
+
+        const reordered: string[] = [];
+        for (const stage of this.sortStagesByTemplateOrder(templateStages)) {
+            const statusId = strategy.statusId(
+                entityTypeId,
+                bxCategoryId,
+                String(stage.bitrixId),
+            );
+            // Целевой стадии SORT уже проставлен на предыдущем шаге.
+            if (statusId === skipStatusId) continue;
+
+            const row = rows.find(r => r.STATUS_ID === statusId);
+            if (row?.ID == null) continue;
+
+            const sort = toSort(stage.order);
+            if (Number(row.SORT) === sort) continue;
+
+            await bitrix.status.update(row.ID, { SORT: sort });
+            reordered.push(statusId);
+        }
+        return reordered;
+    }
+
+    /** `crm.status.add` отдаёт ID новой записи в `result`. */
+    private extractAddedStatusId(response: unknown): string | number | null {
+        if (response == null || typeof response !== 'object') return null;
+        const result = (response as { result?: unknown }).result;
+        if (typeof result === 'number' || typeof result === 'string') {
+            return result;
+        }
+        return null;
+    }
+
     /** Шаг 1 шаблона: стабильный порядок для crm.status.* (Bitrix не любит «промежуточную» после SUCCESS по SORT). */
     private sortStagesByTemplateOrder(stages: Stage[]): Stage[] {
         return [...stages].sort((a, b) => Number(a.order) - Number(b.order));
@@ -212,7 +428,7 @@ export class InstallStageSyncService {
     private async upsertPortalStage(
         portalCategoryId: number,
         stage: Stage,
-    ): Promise<void> {
+    ): Promise<{ stageId: number | null; action: StageSyncAction }> {
         const portalStages =
             await this.stageRepository.findByCategoryId(portalCategoryId);
         const found = portalStages?.find(
@@ -233,8 +449,9 @@ export class InstallStageSyncService {
 
         if (found) {
             await this.stageRepository.update(found.id, payload);
-        } else {
-            await this.stageRepository.create(payload);
+            return { stageId: found.id, action: 'updated' };
         }
+        const created = await this.stageRepository.create(payload);
+        return { stageId: created?.id ?? null, action: 'created' };
     }
 }

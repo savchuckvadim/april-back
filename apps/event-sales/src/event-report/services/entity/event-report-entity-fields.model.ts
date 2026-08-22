@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import {
     BATCH_LINE_BREAK_SYMBOL,
     toBatchText,
@@ -500,9 +499,16 @@ export class EventReportEntityFieldsModel {
             const raw = lead[this.bitrixKey(leadField)];
             const value = typeof raw === 'string' ? raw.trim() : '';
             if (!value) continue;
-            // setScalar сам резолвит поле на ЦЕЛЕВОЙ сущности и молча
-            // пропускает неустановленное (детальные «5К» на сделке).
-            this.setScalar(out, code, value);
+            /*
+             * setScalar сам резолвит поле на ЦЕЛЕВОЙ сущности и молча
+             * пропускает неустановленное (детальные «5К» на сделке).
+             * toBatchText обязателен: ответы анкеты многострочны по
+             * построению, а поля сделок уезжают batch-командой, где сырой
+             * `\n` доезжает подчёркиванием. На лиде значение хранится с
+             * настоящими переносами (Битрикс декодирует %0A при записи),
+             * поэтому повторный перенос не двоит экранирование.
+             */
+            this.setScalar(out, code, toBatchText(value));
         }
     }
 
@@ -570,9 +576,7 @@ export class EventReportEntityFieldsModel {
     }
 
     private nowCrmDate(): string {
-        return dayjs(this.ctx.nowDate)
-            .tz(this.portal.getTimezone())
-            .format('DD.MM.YYYY HH:mm:ss');
+        return this.ctx.dateTime.crmDateTime(this.ctx.nowDate);
     }
 
     private bitrixKey(field: IField): string {

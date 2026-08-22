@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { PBXDateTime } from '@lib/portal-lib/pbx-domain/date/pbx-datetime';
 import { EventReportEntityHistoryService } from '../services/history/event-report-entity-history.service';
 
 // В рантайме плагины dayjs расширяются при импорте @lib/shared/lib/date;
@@ -23,6 +24,9 @@ describe('EventReportEntityHistoryService', () => {
 
     const makeCtx = (overrides: Record<string, unknown> = {}) => ({
         isGsirk: true,
+        // Форматирование дат идёт через контекст (ctx.dateTime) — фейковый
+        // контекст обязан отдавать ту же обёртку, что и настоящий.
+        dateTime: new PBXDateTime(portal as never),
         entityType: 'company',
         entityId: 42,
         nowDate: new Date('2026-08-05T10:00:00Z'),

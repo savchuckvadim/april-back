@@ -264,6 +264,46 @@ describe('PresentationSurveyEndpointService', () => {
         expect(sendBatch).not.toHaveBeenCalled();
     });
 
+    /*
+     * Значения анкеты многострочны ПО ПОСТРОЕНИЮ (хвост — построчная
+     * склейка, сводка 5К — построчная сводка), а записи уходят
+     * batch-командами: сырой `\n` там доезжает до карточки подчёркиванием.
+     * Перед батчем всё проходит toBatchText (\r\n|\r|\n → %0A).
+     */
+    it('переносы строк экранируются в %0A во всех batch-полях', async () => {
+        const { service, updates } = makeDeps();
+
+        await service.submit(
+            dto({
+                values: {
+                    xvost: 'строка 1\nстрока 2\r\nстрока 3',
+                    fiveKSummary: 'Клиент: готов\nКомпания: решает директор',
+                    fiveK: {
+                        op_5k_client_what: 'хочет:\n- замену\n- обновления',
+                    },
+                },
+            } as never),
+        );
+
+        const lead = updates.find(u => u.entity === 'lead')!;
+        // Многострочная склейка доезжает строками: стыки — %0A, без потерь.
+        expect(lead.fields.UF_CRM_OP_PRESENTATION_XVOST).toBe(
+            'строка 1%0Aстрока 2%0Aстрока 3',
+        );
+        expect(lead.fields.UF_CRM_OP_PRESENTATION_5K).toBe(
+            'Клиент: готов%0AКомпания: решает директор',
+        );
+        expect(lead.fields.UF_CRM_OP_5K_CLIENT_WHAT).toBe(
+            'хочет:%0A- замену%0A- обновления',
+        );
+        // Ни одного сырого переноса ни в одном batch-поле.
+        for (const update of updates) {
+            for (const value of Object.values(update.fields)) {
+                expect(String(value)).not.toMatch(/[\r\n]/);
+            }
+        }
+    });
+
     it('длинные значения обрезаются до лимита', async () => {
         const { service, updates } = makeDeps();
         await service.submit(
@@ -349,6 +389,36 @@ describe('Rendezvous: unplanned-сигнал hook ↔ опросник', () => {
             dto({ operationId: 'e1c1a1f0-0000-4000-8000-000000000003' }),
         );
         expect(deps.updates.some(u => u.id === 900)).toBe(false);
+    });
+
+    /*
+     * Кэш rendezvous хранит СЫРЫЕ значения (человекочитаем, независим от
+     * транспорта), а экранирование происходит при записи — поэтому оба
+     * порядка прибытия дают одинаково экранированный результат.
+     */
+    it('rendezvous-запись экранирована так же, как прямая (кэш — сырой)', async () => {
+        const deps = makeDeps();
+        await deps.service.submit(
+            dto({
+                values: { xvost: 'строка 1\nстрока 2' },
+            } as never),
+        );
+
+        // В Redis-кэше — настоящий перенос, не %0A.
+        const cached = deps.redisStore.get(
+            'survey:values:example.bitrix24.ru:deal:1024',
+        )!;
+        expect(cached).toContain('\\n'); // JSON.stringify сырого \n
+        expect(cached).not.toContain('%0A');
+
+        deps.updates.length = 0;
+        const result = await deps.service.signal(signalDto());
+
+        expect(result.matched).toBe(true);
+        const unplanned = deps.updates.find(u => u.id === 900)!;
+        expect(unplanned.fields.UF_CRM_OP_PRESENTATION_XVOST).toBe(
+            'строка 1%0Aстрока 2',
+        );
     });
 
     it('повтор сигнала после записи → дедуп, второй записи нет', async () => {

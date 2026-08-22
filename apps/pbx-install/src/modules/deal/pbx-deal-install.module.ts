@@ -28,6 +28,8 @@ import { PbxDealCategoryInstallController } from './controllers/pbx-deal-categor
 import { PbxDealCategoryInstallByParseUseCase } from './use-cases/category/pbx-deal-category-install-by-parse.use-case';
 import { PbxDealCategoryInstallByCategoryUseCase } from './use-cases/category/pbx-deal-category-install-by-category.use-case';
 import { PbxDealCategoryManageUseCase } from './use-cases/category/pbx-deal-category-manage.use-case';
+import { PbxDealCategoryStageSyncUseCase } from './use-cases/category/pbx-deal-category-stage-sync.use-case';
+import { PbxDealPortalResolverService } from './services/categories/pbx-deal-portal-resolver.service';
 import { InstallCategoryModule } from '../category';
 import { InstallStageModule } from '../stage';
 
@@ -58,6 +60,7 @@ import { InstallStageModule } from '../stage';
         PbxDealCategoryMonitoringService,
         PbxDealCategorySearchService,
         DealCategoryStageStrategy,
+        PbxDealPortalResolverService,
         InstallDealCategoriesService,
         PbxDealFieldInstallByParseUseCase,
         PbxDealFieldInstallByFieldUseCase,
@@ -65,6 +68,7 @@ import { InstallStageModule } from '../stage';
         PbxDealCategoryInstallByParseUseCase,
         PbxDealCategoryInstallByCategoryUseCase,
         PbxDealCategoryManageUseCase,
+        PbxDealCategoryStageSyncUseCase,
     ],
     // экспорт для воркера marketplace-provision
     exports: [

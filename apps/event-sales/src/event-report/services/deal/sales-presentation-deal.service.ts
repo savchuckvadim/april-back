@@ -8,9 +8,11 @@ import {
     EDealRole,
     EventReportEntityFieldsModel,
 } from '../entity/event-report-entity-fields.model';
+import { EVENT_REPORT_ACTION } from '../../types/event-report.event-codes';
 import {
     composeStageId,
     getPresentationTargetStageCode,
+    PresentationEventAction,
 } from './deal-target-stage.calculator';
 
 /**
@@ -105,7 +107,7 @@ export class SalesPresentationDealService {
         if (ctx.planEventType === 'presentation') {
             const stage = getPresentationTargetStageCode({
                 category,
-                eventAction: 'plan',
+                eventAction: EVENT_REPORT_ACTION.plan,
                 isResult: ctx.isResult,
             });
             if (stage) {
@@ -138,7 +140,7 @@ export class SalesPresentationDealService {
         if (ctx.isUnplannedPresentation) {
             const stage = getPresentationTargetStageCode({
                 category,
-                eventAction: 'done',
+                eventAction: EVENT_REPORT_ACTION.done,
                 isResult: ctx.isResult,
             });
             if (!stage) {
@@ -175,7 +177,7 @@ export class SalesPresentationDealService {
         if (ctx.isPresentationCanceled && ctx.currentPresDeal) {
             const stage = getPresentationTargetStageCode({
                 category,
-                eventAction: 'fail',
+                eventAction: EVENT_REPORT_ACTION.fail,
                 isResult: ctx.isResult,
             });
             if (stage) {
@@ -218,11 +220,11 @@ export class SalesPresentationDealService {
 
     private deriveReportAction(
         ctx: EventReportContext,
-    ): 'done' | 'expired' | 'fail' | 'noresult' | 'success' {
-        if (ctx.isSuccessSale) return 'success';
-        if (ctx.isFail) return 'fail';
-        if (ctx.isExpired) return 'expired';
-        if (!ctx.isResult) return 'noresult';
-        return 'done';
+    ): PresentationEventAction {
+        if (ctx.isSuccessSale) return EVENT_REPORT_ACTION.success;
+        if (ctx.isFail) return EVENT_REPORT_ACTION.fail;
+        if (ctx.isExpired) return EVENT_REPORT_ACTION.expired;
+        if (!ctx.isResult) return EVENT_REPORT_ACTION.noresult;
+        return EVENT_REPORT_ACTION.done;
     }
 }

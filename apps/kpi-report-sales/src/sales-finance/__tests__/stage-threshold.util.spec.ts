@@ -40,6 +40,7 @@ function category(stages: IStage[]): IPCategory {
 const FULL_LADDER = category([
     stage('sales_new', 'NEW', 'Новая'),
     stage('sales_pres', 'PRESENTATION', 'Презентация'),
+    stage('sales_refine', 'REFINE', 'Доработка'),
     stage('sales_offer_create', 'OFFER_CREATE', 'Документы'),
     stage('sales_document_send', 'DOCUMENT_SEND', 'Отправлены'),
     stage('sales_in_progress', 'IN_PROSRESS', 'В решении'),
@@ -47,6 +48,8 @@ const FULL_LADDER = category([
     stage('sales_supply', 'SUPPLY_INIT', 'Поставка'),
     stage('sales_success', 'WON', 'Успех'),
     stage('sales_fail', 'LOSE', 'Отказ'),
+    stage('sales_double', 'APOLOGY', 'Не состоялась'),
+    stage('sales_not_ca', 'NOT_CA', 'Не ЦА'),
 ]);
 
 describe('resolveStageIdsFromThreshold', () => {
@@ -64,14 +67,39 @@ describe('resolveStageIdsFromThreshold', () => {
         ]);
     });
 
-    it("'presentation' добавляет стадию Презентация (order 4)", () => {
+    it("'presentation' добавляет стадии Презентация (4) и Доработка (5)", () => {
         const { stageIds } = resolveStageIdsFromThreshold(
             FULL_LADDER,
             'presentation',
         );
         expect(stageIds[0]).toBe('C7:PRESENTATION');
-        expect(stageIds).toHaveLength(6);
+        expect(stageIds[1]).toBe('C7:REFINE');
+        expect(stageIds).toHaveLength(7);
         expect(stageIds).not.toContain('C7:WON');
+    });
+
+    /*
+     * «Доработка» стоит ДО документов (order 5 < 6), поэтому в порог
+     * «от документов» она НЕ входит: клиента ещё дорабатывают, документов
+     * нет. Раньше стадия стояла после «Отправлены» и в этот порог попадала.
+     */
+    it("'document' не включает «Доработку» — она ниже документов", () => {
+        const { stageIds } = resolveStageIdsFromThreshold(
+            FULL_LADDER,
+            'document',
+        );
+        expect(stageIds).not.toContain('C7:REFINE');
+    });
+
+    /* Закрытые стадии (order > WON) в «горячие» не попадают ни при каком пороге. */
+    it('отказные финалы не попадают в горячие стадии', () => {
+        const { stageIds } = resolveStageIdsFromThreshold(
+            FULL_LADDER,
+            'presentation',
+        );
+        expect(stageIds).not.toContain('C7:LOSE');
+        expect(stageIds).not.toContain('C7:APOLOGY');
+        expect(stageIds).not.toContain('C7:NOT_CA');
     });
 
     it('отсутствующие на портале стадии пропускаются', () => {

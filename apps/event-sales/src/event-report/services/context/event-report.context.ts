@@ -2,6 +2,7 @@ import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BitrixDateTime } from '@/shared/lib/date';
+import { PBXDateTime } from '@lib/portal-lib/pbx-domain/date/pbx-datetime';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
 import { EnumEventItemResultType } from '../../types/report-types';
 import { EnumWorkStatusCode } from '../../types/report-types';
@@ -87,6 +88,16 @@ export class EventReportContext {
         public readonly nowDate: Date = new Date(),
     ) {}
 
+    /**
+     * Дата/время в таймзоне портала — единая точка форматирования для всего
+     * flow. Раньше каждый сервис писал `dayjs(...).tz(portal.getTimezone())
+     * .format('DD.MM.YYYY HH:mm:ss')` и дублировал формат поля Bitrix.
+     */
+    get dateTime(): PBXDateTime {
+        return (this.dateTimeVo ??= new PBXDateTime(this.portal));
+    }
+    private dateTimeVo?: PBXDateTime;
+
     // === Identity ===
     get domain(): string {
         return this.portal.getPortal().domain;
@@ -171,14 +182,49 @@ export class EventReportContext {
     get isSuccessSale(): boolean {
         return this.workStatusCode === EnumWorkStatusCode.success;
     }
+    /**
+     * Клиент НЕЦЕЛЕВОЙ: менеджер квалифицировал отказ как «не ЦА». Тип «не ЦА»
+     * обязателен при таком отказе (см. `LeadRequestSyncDto.notCaTypeCode`),
+     * поэтому его наличие и есть признак.
+     *
+     * Сигнал общий для лида и сделки: лид уезжает в статус «Не ЦА», сделка
+     * ОП — в отдельный отказной финал «Не ЦА» вместо общего «Отказа».
+     */
+    get isNotCa(): boolean {
+        return Boolean(this.dto.leadSync?.notCaTypeCode);
+    }
 
     // === Plan flags ===
     get isPlanned(): boolean {
         return Boolean(this.dto.plan?.isPlanned && this.dto.plan?.isActive);
     }
+    /**
+     * ПЕРЕНОС события: отчитались не результатом, а план не выключили.
+     *
+     * Опираться на {@link isPlanned} здесь нельзя: он требует выбранного типа
+     * плана, а при переносе тип не меняют — событие то же самое, просто уезжает
+     * на другую дату. Из-за этого «Не очень» без правки типа не считалось
+     * переносом: задача закрывалась (complete), новая не создавалась (add под
+     * тем же isPlanned), и клиент молча выпадал из обзвона.
+     *
+     * Выключенный план («Без плана») переносом не считается — там менеджер
+     * фиксирует недозвон и не назначает следующий шаг; задачу в этом случае
+     * не трогает и task-flow.
+     *
+     * Финальный статус («Отказ»/«Продажа») переносом не бывает по определению:
+     * работа с клиентом окончена, и задачу нужно ЗАКРЫТЬ, даже если менеджер
+     * пришёл в отчёт кнопкой «Не очень» и не выключал план руками (выключить
+     * его на финальном статусе не даёт и сам экран — колонка плана там
+     * схлопнута в «не планируется»).
+     */
     get isExpired(): boolean {
-        // resultStatus не result/new + план есть + план активен
-        return !this.isResult && !this.isNew && this.isPlanned;
+        return (
+            !this.isResult &&
+            !this.isNew &&
+            !this.isFail &&
+            !this.isSuccessSale &&
+            Boolean(this.dto.plan?.isActive)
+        );
     }
     get planEventType(): EventReportEventType | null {
         const code = this.dto.plan?.type?.current?.code;
@@ -196,9 +242,7 @@ export class EventReportContext {
     get planDeadline(): BitrixDateTime | null {
         if (this.planDeadlineVo === undefined) {
             const raw = this.dto.plan?.deadline?.trim() ?? '';
-            this.planDeadlineVo = raw
-                ? BitrixDateTime.fromPortalInput(raw, this.portal.getTimezone())
-                : null;
+            this.planDeadlineVo = raw ? this.dateTime.fromInput(raw) : null;
         }
         return this.planDeadlineVo;
     }
