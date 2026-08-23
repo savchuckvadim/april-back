@@ -567,10 +567,9 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
 
     it('таймлайн: пишется русское название типа, а не сырой код', () => {
         const addTimelineComment = jest.fn();
-        const service = new EventReportEntityHistoryService(
-            { batch: { timeline: { addTimelineComment } } } as never,
-            makePortal() as never,
-        );
+        const service = new EventReportEntityHistoryService({
+            batch: { timeline: { addTimelineComment } },
+        } as never);
 
         service.queue({
             isGsirk: true,

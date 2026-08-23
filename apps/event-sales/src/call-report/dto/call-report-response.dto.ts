@@ -105,6 +105,28 @@ export class CallReportScanResponseDto implements CallReportScanResult {
         type: Number,
     })
     enqueued: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Выборка телефонии оказалась НЕПОЛНОЙ: упёрлись в потолок строк ' +
+            'или Битрикс не отдал страницу. Часть звонков этот проход не ' +
+            'увидел — сузьте окно, задайте список сотрудников или поднимите ' +
+            'maxRows. Сопровождается алертом в телеграм.',
+        example: false,
+        type: Boolean,
+    })
+    truncated?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько звонков всего подходит под фильтр по данным Битрикса ' +
+            '(поле total ответа). null — Битрикс не сообщил. Сравнение с ' +
+            '«найдено» показывает, была ли обрезка.',
+        example: 37,
+        type: Number,
+        nullable: true,
+    })
+    totalByFilter?: number | null;
 }
 
 /** Результат синхронного анализа одного звонка. */

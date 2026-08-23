@@ -50,9 +50,10 @@ describe('TranscriptionStoreService (pipeline)', () => {
         const repo = makeRepo();
         const service = new TranscriptionStoreService(repo as never);
         const busy = await service.filterBusyDedupKeys(['a:1', 'a:2']);
+        // 'queued' — бронь сканера: звонок в очереди тоже занят.
         expect(repo.findBusyDedupKeys).toHaveBeenCalledWith(
             ['a:1', 'a:2'],
-            ['processing', 'done'],
+            ['queued', 'processing', 'done'],
         );
         expect(busy.has('a:1')).toBe(true);
         expect(busy.has('a:2')).toBe(false);

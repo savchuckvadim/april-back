@@ -39,10 +39,7 @@ describe('EventReportEntityHistoryService', () => {
 
     it('ставит batch-команду crm.timeline.comment.add с плоскими полями (без вложенного fields)', () => {
         const { bitrix, addTimelineComment } = makeBitrix();
-        const service = new EventReportEntityHistoryService(
-            bitrix as never,
-            portal as never,
-        );
+        const service = new EventReportEntityHistoryService(bitrix as never);
 
         service.queue(makeCtx() as never);
 
@@ -73,10 +70,7 @@ describe('EventReportEntityHistoryService', () => {
 
     it('не пишет в таймлайн вне gsirk-портала', () => {
         const { bitrix, addTimelineComment } = makeBitrix();
-        const service = new EventReportEntityHistoryService(
-            bitrix as never,
-            portal as never,
-        );
+        const service = new EventReportEntityHistoryService(bitrix as never);
 
         service.queue(makeCtx({ isGsirk: false }) as never);
 
@@ -85,10 +79,7 @@ describe('EventReportEntityHistoryService', () => {
 
     it('не пишет в таймлайн без entityId', () => {
         const { bitrix, addTimelineComment } = makeBitrix();
-        const service = new EventReportEntityHistoryService(
-            bitrix as never,
-            portal as never,
-        );
+        const service = new EventReportEntityHistoryService(bitrix as never);
 
         service.queue(makeCtx({ entityId: 0 }) as never);
 
@@ -101,7 +92,6 @@ describe('EventReportEntityHistoryService', () => {
             const { bitrix, addTimelineComment } = makeBitrix();
             const service = new EventReportEntityHistoryService(
                 bitrix as never,
-                portal as never,
             );
 
             service.queue(makeCtx({ entityType }) as never);

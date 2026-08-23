@@ -75,17 +75,43 @@ interface Harness {
     strategy: DealCategoryStageStrategy;
 }
 
+const NEW_BX_ID = 555;
+
+/**
+ * Stateful-фейк справочника Bitrix: `add` реально кладёт строку в список,
+ * и второй `getList` её видит. Это существенно — `bitrixId` для БД сервис
+ * берёт из ПЕРЕЧИТАННОГО справочника, а не из шаблона.
+ */
 const makeHarness = (
     options: {
         bxRows?: Partial<IBXStatus>[];
         portalStages?: { id: number; code: string; bitrixId: string }[];
+        /** Bitrix «проглотил» add: ответ есть, строки в справочнике нет. */
+        swallowAdd?: boolean;
+        /** Bitrix сохранил STATUS_ID не тем, что просили (нормализация). */
+        rewriteStatusIdTo?: string;
     } = {},
 ): Harness => {
-    const bxRows = options.bxRows ?? [];
+    const rows: Partial<IBXStatus>[] = [...(options.bxRows ?? [])];
     const bitrix = {
         status: {
-            getList: jest.fn().mockResolvedValue({ result: bxRows }),
-            add: jest.fn().mockResolvedValue({ result: 555 }),
+            getList: jest
+                .fn()
+                .mockImplementation(() =>
+                    Promise.resolve({ result: rows.map(r => ({ ...r })) }),
+                ),
+            add: jest.fn().mockImplementation((fields: Partial<IBXStatus>) => {
+                if (!options.swallowAdd) {
+                    rows.push({
+                        ID: String(NEW_BX_ID),
+                        STATUS_ID:
+                            options.rewriteStatusIdTo ?? fields.STATUS_ID,
+                        NAME: fields.NAME,
+                        SORT: fields.SORT,
+                    });
+                }
+                return Promise.resolve({ result: NEW_BX_ID });
+            }),
             update: jest.fn().mockResolvedValue({ result: true }),
             delete: jest.fn().mockResolvedValue({ result: true }),
         },
@@ -179,6 +205,49 @@ describe('InstallStageSyncService.syncSingleStage', () => {
             expect(h.repo.update).not.toHaveBeenCalled();
             expect(result.portalAction).toBe('created');
             expect(result.portalStageId).toBe(101);
+        });
+    });
+
+    /*
+     * `btx_stages.bitrixId` — это суффикс STATUS_ID, из которого рантайм
+     * собирает `C{cat}:{bitrixId}`. Записанное «на веру» значение, которого
+     * в Bitrix нет, тихо ломает движение сделок: сервисы не резолвят стадию
+     * и молча не двигают сделку. Поэтому значение берётся из Bitrix.
+     */
+    describe('bitrixId приезжает из Bitrix, а не из шаблона', () => {
+        it('справочник перечитывается ПОСЛЕ применения стадии', async () => {
+            const h = makeHarness();
+            await run(h);
+
+            expect(h.bitrix.status.getList).toHaveBeenCalledTimes(2);
+        });
+
+        it('Bitrix сохранил другой STATUS_ID — в БД уезжает его значение', async () => {
+            const h = makeHarness({
+                rewriteStatusIdTo: `C${BX_CATEGORY_ID}:NOT_CA_1`,
+            });
+            await run(h);
+
+            expect(h.repo.create).toHaveBeenCalledWith(
+                expect.objectContaining({ bitrixId: 'NOT_CA_1' }),
+            );
+        });
+
+        it('Bitrix стадию не принял — строка в БД не пишется, операция падает', async () => {
+            const h = makeHarness({ swallowAdd: true });
+
+            await expect(run(h)).rejects.toThrow(/не найдена в Bitrix/);
+            expect(h.repo.create).not.toHaveBeenCalled();
+            expect(h.repo.update).not.toHaveBeenCalled();
+        });
+
+        it('у дефолтной воронки префикса нет — bitrixId пишется как есть', async () => {
+            const h = makeHarness();
+            await run(h, { bxCategoryId: 0 });
+
+            expect(h.repo.create).toHaveBeenCalledWith(
+                expect.objectContaining({ bitrixId: 'NOT_CA' }),
+            );
         });
     });
 

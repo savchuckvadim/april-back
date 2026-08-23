@@ -144,9 +144,11 @@ export class InstallStageSyncService {
      * 1) Отсортировать стадии шаблона по `order` (SORT в Bitrix) — иначе возможна ошибка «промежуточная после успешной».
      * 2) При bootstrap — удалить все текущие `crm.status` по ENTITY_ID воронки (включая системные дефолты новой категории).
      * 3) Загрузить актуальный список статусов из Bitrix.
-     * 4) Для каждой стадии шаблона (в порядке SORT): семантика из стратегии, update или add, затем upsert строки в `btx_stages`.
+     * 4) Для каждой стадии шаблона (в порядке SORT): семантика из стратегии, update или add.
      * 5) Удалить из Bitrix статусы, которых нет в шаблоне (по STATUS_ID).
-     * 6) Удалить из БД портала стадии, чьих `code` нет в шаблоне.
+     * 6) Зеркалить стадии в `btx_stages` — `bitrixId` берётся из ФАКТИЧЕСКОГО
+     *    состояния Bitrix (перечитанного на шаге 5), а не из шаблона.
+     * 7) Удалить из БД портала стадии, чьих `code` нет в шаблоне.
      */
     async syncStagesForCategory(
         params: SyncStagesForCategoryParams,
@@ -189,17 +191,20 @@ export class InstallStageSyncService {
         );
 
         // Шаг 4: применяем шаблон по возрастанию SORT.
+        const appliedByCode = new Map<string, ApplyStageResult>();
         for (const stage of sortedStages) {
-            await this.applyStageToBitrix({
-                bitrix,
-                entityId,
-                entityTypeId,
-                bxCategoryId,
-                stage,
-                strategy,
-                currentRows,
-            });
-            await this.upsertPortalStage(portalCategoryId, stage);
+            appliedByCode.set(
+                String(stage.code),
+                await this.applyStageToBitrix({
+                    bitrix,
+                    entityId,
+                    entityTypeId,
+                    bxCategoryId,
+                    stage,
+                    strategy,
+                    currentRows,
+                }),
+            );
         }
 
         // Шаг 5: в Bitrix не должно остаться статусов вне шаблона.
@@ -215,7 +220,34 @@ export class InstallStageSyncService {
             }
         }
 
-        // Шаг 6: в БД портала убираем стадии, которых больше нет в шаблоне.
+        /*
+         * Шаг 6: зеркало в БД портала. `bitrixId` берётся из ФАКТИЧЕСКОГО
+         * состояния Bitrix (`rowsAfter`), а не из шаблона: по нему рантайм
+         * собирает STAGE_ID (`C{cat}:{bitrixId}`), и записанное «на веру»
+         * значение, которого в Bitrix нет, тихо ломает движение сделок.
+         * Стадию, которую Bitrix не принял, в БД не заводим вовсе — пустая
+         * строка честнее битой (её видно в мониторинге).
+         */
+        for (const stage of sortedStages) {
+            const confirmed = this.confirmStageBitrixId({
+                entityTypeId,
+                bxCategoryId,
+                stage,
+                strategy,
+                rows: rowsAfter,
+                bxId: appliedByCode.get(String(stage.code))?.bxId,
+            });
+            if (!confirmed) {
+                this.logger.warn(
+                    `стадия ${String(stage.code)} отсутствует в Bitrix после установки — ` +
+                        'строка btx_stages не создаётся',
+                );
+                continue;
+            }
+            await this.upsertPortalStage(portalCategoryId, stage, confirmed);
+        }
+
+        // Шаг 7: в БД портала убираем стадии, которых больше нет в шаблоне.
         const portalStages =
             await this.stageRepository.findByCategoryId(portalCategoryId);
         const keepCodes = new Set(sortedStages.map(s => String(s.code)));
@@ -236,8 +268,9 @@ export class InstallStageSyncService {
      *
      * Шаги:
      * 1) upsert `crm.status` целевой стадии (add при отсутствии, update при наличии);
-     * 2) upsert строки в `btx_stages`;
-     * 3) при `reorder` (по умолчанию ВКЛ) — пересчитать SORT остальных
+     * 2) перечитать справочник Bitrix и подтвердить фактический `STATUS_ID`;
+     * 3) upsert строки в `btx_stages` — `bitrixId` из подтверждённого состояния Bitrix;
+     * 4) при `reorder` (по умолчанию ВКЛ) — пересчитать SORT остальных
      *    стадий воронки по шаблону. Правится ТОЛЬКО SORT: имена, цвета и
      *    семантику соседей поштучная операция не трогает.
      */
@@ -269,16 +302,46 @@ export class InstallStageSyncService {
             currentRows,
         });
 
-        const portal = await this.upsertPortalStage(portalCategoryId, stage);
+        /*
+         * Справочник перечитываем ПОСЛЕ применения: только что созданной
+         * стадии в прежнем списке нет, а `bitrixId` для БД обязан приехать
+         * из Bitrix — по нему рантайм собирает STAGE_ID.
+         */
+        const listAfter = await bitrix.status.getList({ ENTITY_ID: entityId });
+        const rowsAfter = normalizeStatusListResult(listAfter.result);
+
+        const confirmed = this.confirmStageBitrixId({
+            entityTypeId,
+            bxCategoryId,
+            stage,
+            strategy,
+            rows: rowsAfter,
+            bxId: applied.bxId,
+        });
+        if (!confirmed) {
+            // Записать шаблонный bitrixId «на веру» нельзя: строка в БД,
+            // которой нет статуса в Bitrix, тихо ломает движение сделок.
+            throw new Error(
+                `Стадия «${String(stage.code)}» не найдена в Bitrix после ` +
+                    `${applied.action === 'created' ? 'создания' : 'обновления'} ` +
+                    `(ожидался STATUS_ID ${applied.statusId}) — строка в БД портала не записана`,
+            );
+        }
+
+        const portal = await this.upsertPortalStage(
+            portalCategoryId,
+            stage,
+            confirmed,
+        );
 
         const reorderedStatusIds = reorder
             ? await this.reorderCategoryStages({
                   bitrix,
-                  entityId,
                   entityTypeId,
                   bxCategoryId,
                   templateStages,
                   strategy,
+                  rows: rowsAfter,
                   skipStatusId: applied.statusId,
               })
             : [];
@@ -297,6 +360,57 @@ export class InstallStageSyncService {
             portalAction: portal.action,
             reorderedStatusIds,
         };
+    }
+
+    /**
+     * Фактический `bitrixId` стадии — из справочника Bitrix, а не из шаблона.
+     *
+     * В `btx_stages.bitrixId` лежит СУФФИКС `STATUS_ID` (`NOT_CA`), из
+     * которого рантайм собирает `C{cat}:{bitrixId}`. Префикс не хардкодим:
+     * его формирует та же стратегия, что и полный `STATUS_ID`, поэтому берём
+     * её же с пустым `bitrixId` (у дефолтной воронки сделки префикса нет).
+     *
+     * `null` — Bitrix такой стадии не отдаёт (не принял add, удалил как
+     * защищённую и т.п.).
+     */
+    private confirmStageBitrixId(params: {
+        entityTypeId: number;
+        bxCategoryId: number;
+        stage: Stage;
+        strategy: BitrixCategoryStageStrategy;
+        rows: IBXStatus[];
+        /** ID записи `crm.status`, вернувшийся из add/update. */
+        bxId?: string | number | null;
+    }): string | null {
+        const { entityTypeId, bxCategoryId, stage, strategy, rows, bxId } =
+            params;
+
+        /*
+         * Ищем сначала по ID записи: Bitrix мог сохранить STATUS_ID не тем,
+         * что мы просили (нормализация, коллизия), и тогда поиск по
+         * ожидаемому ключу нашёл бы пустоту, а в БД уехало бы шаблонное
+         * значение. Поиск по ожидаемому STATUS_ID — запасной путь, когда
+         * add/update не вернул ID.
+         */
+        const row =
+            (bxId != null
+                ? rows.find(r => r.ID != null && String(r.ID) === String(bxId))
+                : undefined) ??
+            rows.find(
+                r =>
+                    r.STATUS_ID ===
+                    strategy.statusId(
+                        entityTypeId,
+                        bxCategoryId,
+                        String(stage.bitrixId),
+                    ),
+            );
+        if (!row?.STATUS_ID) return null;
+
+        const prefix = strategy.statusId(entityTypeId, bxCategoryId, '');
+        return prefix && row.STATUS_ID.startsWith(prefix)
+            ? row.STATUS_ID.slice(prefix.length)
+            : row.STATUS_ID;
     }
 
     /**
@@ -367,26 +481,23 @@ export class InstallStageSyncService {
      */
     private async reorderCategoryStages(params: {
         bitrix: BitrixService;
-        entityId: string;
         entityTypeId: number;
         bxCategoryId: number;
         templateStages: Stage[];
         strategy: BitrixCategoryStageStrategy;
+        /** Справочник Bitrix, перечитанный ПОСЛЕ применения целевой стадии. */
+        rows: IBXStatus[];
         skipStatusId: string;
     }): Promise<string[]> {
         const {
             bitrix,
-            entityId,
             entityTypeId,
             bxCategoryId,
             templateStages,
             strategy,
+            rows,
             skipStatusId,
         } = params;
-
-        // Список тянем заново: только что добавленной стадии в прежнем нет.
-        const list = await bitrix.status.getList({ ENTITY_ID: entityId });
-        const rows = normalizeStatusListResult(list.result);
 
         const reordered: string[] = [];
         for (const stage of this.sortStagesByTemplateOrder(templateStages)) {
@@ -425,16 +536,23 @@ export class InstallStageSyncService {
         return [...stages].sort((a, b) => Number(a.order) - Number(b.order));
     }
 
+    /**
+     * Зеркало стадии в `btx_stages`.
+     *
+     * @param bitrixId ФАКТИЧЕСКИЙ идентификатор из Bitrix (см.
+     * {@link confirmStageBitrixId}). Из шаблона его брать нельзя: по этому
+     * значению рантайм собирает STAGE_ID, и записанное «на веру» тихо
+     * ломает движение сделок, если Bitrix стадию не принял.
+     */
     private async upsertPortalStage(
         portalCategoryId: number,
         stage: Stage,
+        bitrixId: string,
     ): Promise<{ stageId: number | null; action: StageSyncAction }> {
         const portalStages =
             await this.stageRepository.findByCategoryId(portalCategoryId);
         const found = portalStages?.find(
-            s =>
-                s.code === String(stage.code) ||
-                s.bitrixId === String(stage.bitrixId),
+            s => s.code === String(stage.code) || s.bitrixId === bitrixId,
         );
 
         const payload = {
@@ -442,7 +560,7 @@ export class InstallStageSyncService {
             name: String(stage.name),
             title: String(stage.title),
             code: String(stage.code),
-            bitrixId: String(stage.bitrixId),
+            bitrixId,
             color: normalizeBitrixStageColor(stage.color, this.logger),
             isActive: Boolean(stage.isActive),
         };

@@ -1,6 +1,5 @@
 import { BitrixService } from '@/modules/bitrix';
 import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
-import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 import { buildEventHistoryParts } from './event-history-comment.builder';
 
@@ -18,12 +17,12 @@ import { buildEventHistoryParts } from './event-history-comment.builder';
  * «Звонок совершён: <комментарий>» и «Запланирована Презентация на …».
  * Переносы — через BATCH_LINE_BREAK_SYMBOL: комментарий уходит
  * batch-командой, и сырой `\n` доезжает подчёркиванием.
+ *
+ * PortalModel сервису не нужен: таймзону для отметки времени знает контекст
+ * (`ctx.dateTime`), а больше портальных данных здесь нет.
  */
 export class EventReportEntityHistoryService {
-    constructor(
-        private readonly bitrix: BitrixService,
-        private readonly portal: PortalModel,
-    ) {}
+    constructor(private readonly bitrix: BitrixService) {}
 
     queue(ctx: EventReportContext): void {
         if (!ctx.isGsirk) return;

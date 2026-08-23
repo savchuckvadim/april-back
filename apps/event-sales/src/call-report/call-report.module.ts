@@ -32,6 +32,7 @@ import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
 import { CallReportProcessor } from './queue/call-report.processor';
 import { CallReportDomainRosterService } from './cron/call-report-domain-roster.service';
 import { CallReportScheduler } from './cron/call-report.scheduler';
+import { CallReportCatchUpScheduler } from './cron/call-report-catch-up.scheduler';
 import { CallRevisionScheduler } from './cron/call-revision.scheduler';
 import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler';
 
@@ -90,6 +91,7 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallReportProcessor,
         CallReportDomainRosterService,
         CallReportScheduler,
+        CallReportCatchUpScheduler,
         // Ночной ревизор (Фаза 3): свод по сущностям в 23:30 МСК
         CallRevisionScheduler,
         // Сверка по презентациям (Фаза 4): отчёт менеджера vs разбор, 08:00 МСК

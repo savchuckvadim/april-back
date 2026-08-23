@@ -41,8 +41,31 @@ export abstract class TranscriptionRepository {
         statuses: string[],
     ): Promise<string[]>;
 
+    /**
+     * Бронь звонка сканером ДО постановки в очередь: строка со статусом
+     * 'queued'. true — забронировали мы, false — звонок уже занят кем-то
+     * (queued/processing/done) и ставить его повторно не нужно.
+     */
+    abstract claimQueued(
+        input: TranscriptionPipelineUpsertInput,
+    ): Promise<boolean>;
+
+    /** Снятие брони (постановка в очередь не удалась): queued → error. */
+    abstract releaseQueued(dedupKey: string): Promise<boolean>;
+
     /** Реанимация зависших processing: status→error, возвращает число строк. */
     abstract reanimateStaleProcessing(olderThan: Date): Promise<number>;
+
+    /**
+     * Брони, висящие дольше порога: кандидаты на реанимацию. Решение
+     * принимает вызывающий — только он знает, жив ли ещё джоб в очереди.
+     */
+    abstract findStaleQueued(
+        olderThan: Date,
+    ): Promise<{ id: string; dedupKey: string }[]>;
+
+    /** Перевод перечисленных строк в error (снятие мёртвых броней). */
+    abstract markPipelineError(ids: string[]): Promise<number>;
 
     /**
      * Готовые (done) строки автоконвейера для Agent API, новые первыми.

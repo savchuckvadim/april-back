@@ -71,7 +71,7 @@ export class EventReportUseCase {
         const postFail = new EventReportPostFailService(bitrix, portal);
         const leadRelation = new EventReportLeadRelationService(bitrix, portal);
         const returnToTmc = new EventReportReturnToTmcService(bitrix, portal);
-        const history = new EventReportEntityHistoryService(bitrix, portal);
+        const history = new EventReportEntityHistoryService(bitrix);
 
         // KPI использует тот же ColdHookBatchGroupBuffer (контракт KpiListFlowService).
         // По факту мы тут одна группа = весь endpoint; вся работа упадёт в один HTTP.

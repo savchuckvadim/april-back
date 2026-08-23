@@ -176,9 +176,12 @@ export class CallReportAnalyzeUseCase {
         const voximplant = new VoximplantCallsService(bitrix);
         const bx = new CallAnalysisBitrixService(bitrix);
 
-        const rows = await voximplant.findRecentCalls({
+        // Точечный подбор: если менеджер задан, фильтр уходит в запрос
+        // Битрикса — выборка сразу узкая и не упирается в потолок строк.
+        const { rows } = await voximplant.findRecentCalls({
             sinceIso,
             minDurationSec: dto.minDurationSec ?? 0,
+            userIds: dto.userId ? [dto.userId] : undefined,
         });
 
         // Свежие первыми: «последние N записей». Счётчики отсева — в лог:

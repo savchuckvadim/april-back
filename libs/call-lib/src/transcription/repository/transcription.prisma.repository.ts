@@ -176,6 +176,91 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             .filter((key): key is string => key !== null);
     }
 
+    /**
+     * Бронь под обработку. Создаём строку 'queued'; если ключ уже есть —
+     * перехватываем ТОЛЬКО упавшую строку (status='error'). Перехват по
+     * любому статусу был бы опасен: гонка «скан прочитал busy, воркер
+     * дописал done» откатила бы готовый разбор обратно в очередь.
+     */
+    async claimQueued(
+        input: TranscriptionPipelineUpsertInput,
+    ): Promise<boolean> {
+        const now = new Date();
+        const meta = {
+            domain: input.domain,
+            activity_id: input.activityId,
+            entity_type: input.entityType,
+            entity_id: input.entityId,
+            app: input.app,
+            call_id: input.callId ?? null,
+            call_started_at: input.callStartedAt ?? null,
+            user_id: input.userId ?? null,
+            duration:
+                input.durationSec !== undefined
+                    ? String(input.durationSec)
+                    : null,
+        };
+        try {
+            await this.prisma.transcription.create({
+                data: {
+                    dedup_key: input.dedupKey,
+                    status: 'queued',
+                    created_at: now,
+                    updated_at: now,
+                    ...meta,
+                },
+            });
+            return true;
+        } catch (error) {
+            // P2002 — уникальный dedup_key: строка уже существует.
+            if (
+                !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+                error.code !== 'P2002'
+            ) {
+                throw error;
+            }
+            const { count } = await this.prisma.transcription.updateMany({
+                where: { dedup_key: input.dedupKey, status: 'error' },
+                data: { status: 'queued', updated_at: now, ...meta },
+            });
+            return count > 0;
+        }
+    }
+
+    async releaseQueued(dedupKey: string): Promise<boolean> {
+        const { count } = await this.prisma.transcription.updateMany({
+            where: { dedup_key: dedupKey, status: 'queued' },
+            data: { status: 'error', updated_at: new Date() },
+        });
+        return count > 0;
+    }
+
+    async findStaleQueued(
+        olderThan: Date,
+    ): Promise<{ id: string; dedupKey: string }[]> {
+        const rows = await this.prisma.transcription.findMany({
+            where: {
+                status: 'queued',
+                dedup_key: { not: null },
+                updated_at: { lt: olderThan },
+            },
+            select: { id: true, dedup_key: true },
+        });
+        return rows.map(row => ({
+            id: String(row.id),
+            dedupKey: String(row.dedup_key),
+        }));
+    }
+
+    async markPipelineError(ids: string[]): Promise<number> {
+        if (!ids.length) return 0;
+        const { count } = await this.prisma.transcription.updateMany({
+            where: { id: { in: ids.map(id => BigInt(id)) } },
+            data: { status: 'error', updated_at: new Date() },
+        });
+        return count;
+    }
+
     async reanimateStaleProcessing(olderThan: Date): Promise<number> {
         const result = await this.prisma.transcription.updateMany({
             where: {

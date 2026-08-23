@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    IsArray,
     IsBoolean,
     IsInt,
     IsNotEmpty,
@@ -90,9 +91,28 @@ export class ScanCallsDto {
         type: [Number],
     })
     @IsOptional()
+    @IsArray()
     @IsInt({ each: true })
     @Min(1, { each: true })
     userIds?: number[];
+
+    @ApiPropertyOptional({
+        description:
+            'Потолок строк выборки телефонии за проход (защита от разноса ' +
+            'пагинации). По умолчанию 2000. Поднимать имеет смысл только ' +
+            'для догона по широкому окну БЕЗ фильтра сотрудников: когда ' +
+            'список сотрудников задан, фильтр уходит в запрос Битрикса и ' +
+            'потолок недостижим.',
+        example: 5000,
+        type: Number,
+        minimum: 100,
+        maximum: 20000,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(100)
+    @Max(20000)
+    maxRows?: number;
 
     @ApiPropertyOptional({
         description:

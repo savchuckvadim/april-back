@@ -110,7 +110,34 @@ export class TranscriptionStoreService {
         return this.toPipelineView(row);
     }
 
-    /** Отсев уже занятых (processing/done) ключей — дедупликация сканера. */
+    /**
+     * Бронь звонка перед постановкой в очередь. false — звонок уже занят
+     * (в очереди, в работе или обработан), ставить повторно не нужно.
+     */
+    async claimQueued(
+        input: TranscriptionPipelineUpsertInput,
+    ): Promise<boolean> {
+        return this.transcriptionRepository.claimQueued(input);
+    }
+
+    /** Снятие брони, если постановка в очередь не удалась. */
+    async releaseQueued(dedupKey: string): Promise<boolean> {
+        return this.transcriptionRepository.releaseQueued(dedupKey);
+    }
+
+    /** Брони старше порога — кандидаты на снятие (джоб проверяет вызывающий). */
+    async findStaleQueued(
+        olderThan: Date,
+    ): Promise<{ id: string; dedupKey: string }[]> {
+        return this.transcriptionRepository.findStaleQueued(olderThan);
+    }
+
+    /** Пометить строки ошибкой (снятие мёртвых броней). */
+    async markPipelineError(ids: string[]): Promise<number> {
+        return this.transcriptionRepository.markPipelineError(ids);
+    }
+
+    /** Отсев уже занятых (queued/processing/done) ключей — дедуп сканера. */
     async filterBusyDedupKeys(dedupKeys: string[]): Promise<Set<string>> {
         const busy = await this.transcriptionRepository.findBusyDedupKeys(
             dedupKeys,

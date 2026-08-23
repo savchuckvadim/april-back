@@ -31,12 +31,21 @@ describe('CallReportScanUseCase', () => {
         busy?: string[];
         activityById?: Record<number, unknown>;
         salesUserIds?: number[];
+        truncated?: boolean;
+        total?: number | null;
+        departmentError?: boolean;
+        /** Бронь не досталась (звонок забрал параллельный скан). */
+        claimTaken?: boolean;
+        /** Постановка в очередь падает. */
+        dispatchError?: boolean;
     }) => {
+        const findRecentCalls = jest.fn().mockResolvedValue({
+            rows: options.rows,
+            truncated: options.truncated ?? false,
+            total: options.total ?? options.rows.length,
+        });
         MockedVoximplant.mockImplementation(
-            () =>
-                ({
-                    findRecentCalls: jest.fn().mockResolvedValue(options.rows),
-                }) as never,
+            () => ({ findRecentCalls }) as never,
         );
         const getActivityById = jest.fn((id: number) =>
             Promise.resolve(options.activityById?.[id] ?? activity(2)),
@@ -60,17 +69,28 @@ describe('CallReportScanUseCase', () => {
             filterBusyDedupKeys: jest
                 .fn()
                 .mockResolvedValue(new Set(options.busy ?? [])),
+            // Бронь: по умолчанию удаётся; false — звонок забрал другой скан.
+            claimQueued: jest
+                .fn()
+                .mockResolvedValue(options.claimTaken !== true),
+            releaseQueued: jest.fn().mockResolvedValue(true),
         };
-        const dispatcher = { dispatch: jest.fn().mockResolvedValue({}) };
+        const dispatcher = {
+            dispatch: options.dispatchError
+                ? jest.fn().mockRejectedValue(new Error('redis down'))
+                : jest.fn().mockResolvedValue({}),
+        };
         const config = { get: jest.fn(() => undefined) };
         const bxDepartment = {
-            getFullDepartment: jest.fn().mockResolvedValue({
-                department: {
-                    allUsers: (options.salesUserIds ?? [7]).map(id => ({
-                        ID: String(id),
-                    })),
-                },
-            }),
+            getFullDepartment: options.departmentError
+                ? jest.fn().mockRejectedValue(new Error('department down'))
+                : jest.fn().mockResolvedValue({
+                      department: {
+                          allUsers: (options.salesUserIds ?? [7]).map(id => ({
+                              ID: String(id),
+                          })),
+                      },
+                  }),
         };
         const useCase = new CallReportScanUseCase(
             pbxService as never,
@@ -79,10 +99,74 @@ describe('CallReportScanUseCase', () => {
             config as never,
             bxDepartment as never,
         );
-        return { useCase, dispatcher, store, bxDepartment };
+        return {
+            useCase,
+            dispatcher,
+            store,
+            bxDepartment,
+            findRecentCalls,
+        };
     };
 
     afterEach(() => jest.clearAllMocks());
+
+    it('фильтр сотрудников уходит В ЗАПРОС Битрикса (пересечение ОП и белого списка)', async () => {
+        const { useCase, findRecentCalls } = makeDeps({
+            rows: [row(101)],
+            salesUserIds: [7, 8, 9],
+        });
+        await useCase.execute(DOMAIN, { allowedUserIds: [8, 9, 42] });
+        // 42 вне отдела продаж — в запрос уходит только пересечение.
+        expect(findRecentCalls).toHaveBeenCalledWith(
+            expect.objectContaining({ userIds: [8, 9] }),
+        );
+    });
+
+    it('без белого списка в запрос уходит состав отдела продаж', async () => {
+        const { useCase, findRecentCalls } = makeDeps({
+            rows: [row(101)],
+            salesUserIds: [7, 8],
+        });
+        await useCase.execute(DOMAIN);
+        expect(findRecentCalls).toHaveBeenCalledWith(
+            expect.objectContaining({ userIds: [7, 8] }),
+        );
+    });
+
+    it('отдел продаж недоступен + список не задан → запрос без фильтра сотрудников', async () => {
+        const { useCase, findRecentCalls } = makeDeps({
+            rows: [row(101)],
+            departmentError: true,
+        });
+        await useCase.execute(DOMAIN);
+        expect(findRecentCalls).toHaveBeenCalledWith(
+            expect.objectContaining({ userIds: undefined }),
+        );
+    });
+
+    it('пустое пересечение не сужает запрос, но отсеивает в памяти', async () => {
+        const { useCase, dispatcher, findRecentCalls } = makeDeps({
+            rows: [row(101)],
+            salesUserIds: [7],
+        });
+        const result = await useCase.execute(DOMAIN, { allowedUserIds: [999] });
+        expect(findRecentCalls).toHaveBeenCalledWith(
+            expect.objectContaining({ userIds: undefined }),
+        );
+        expect(result.skippedNotDemo).toBe(1);
+        expect(dispatcher.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('неполная выборка помечается truncated и отдаётся наружу', async () => {
+        const { useCase } = makeDeps({
+            rows: [row(101)],
+            truncated: true,
+            total: 5000,
+        });
+        const result = await useCase.execute(DOMAIN);
+        expect(result.truncated).toBe(true);
+        expect(result.totalByFilter).toBe(5000);
+    });
 
     it('createSmartItem едет в payload джоба — cron доводит звонок до карточки', async () => {
         const { useCase, dispatcher } = makeDeps({ rows: [row(101)] });
@@ -112,6 +196,45 @@ describe('CallReportScanUseCase', () => {
             `${DOMAIN}:101`,
             expect.objectContaining({ attempts: 2 }),
         );
+    });
+
+    it('звонок бронируется ДО постановки в очередь (виден дедупу сразу)', async () => {
+        const { useCase, store, dispatcher } = makeDeps({ rows: [row(101)] });
+        await useCase.execute(DOMAIN);
+        expect(store.claimQueued).toHaveBeenCalledWith(
+            expect.objectContaining({
+                dedupKey: `${DOMAIN}:101`,
+                domain: DOMAIN,
+                activityId: '101',
+                entityType: 'deal',
+                app: 'call-report',
+            }),
+        );
+        // Бронь строго раньше постановки.
+        const claimOrder = store.claimQueued.mock.invocationCallOrder[0];
+        const dispatchOrder = dispatcher.dispatch.mock.invocationCallOrder[0];
+        expect(claimOrder).toBeLessThan(dispatchOrder);
+    });
+
+    it('бронь досталась другому скану — звонок не ставится повторно', async () => {
+        const { useCase, dispatcher } = makeDeps({
+            rows: [row(101)],
+            claimTaken: true,
+        });
+        const result = await useCase.execute(DOMAIN);
+        expect(dispatcher.dispatch).not.toHaveBeenCalled();
+        expect(result.enqueued).toBe(0);
+        expect(result.alreadyProcessed).toBe(1);
+    });
+
+    it('постановка упала — бронь снимается, слот не теряется', async () => {
+        const { useCase, store } = makeDeps({
+            rows: [row(101)],
+            dispatchError: true,
+        });
+        const result = await useCase.execute(DOMAIN);
+        expect(store.releaseQueued).toHaveBeenCalledWith(`${DOMAIN}:101`);
+        expect(result.enqueued).toBe(0);
     });
 
     it('уже обработанные звонки отсеиваются дедупом', async () => {

@@ -3,6 +3,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { TranscriptionStoreService } from '@lib/call-lib';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
+import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
+import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import {
     CallReportSettingsService,
     EffectiveCallReportSettings,
@@ -40,6 +42,7 @@ export class CallReportScheduler implements OnModuleInit {
         private readonly roster: CallReportDomainRosterService,
         private readonly settingsService: CallReportSettingsService,
         private readonly portalAiSettings: PortalAiSettingsService,
+        private readonly queueDispatcher: QueueDispatcherService,
     ) {}
 
     /** Диагностика на старте: откуда берётся конфигурация. */
@@ -70,6 +73,7 @@ export class CallReportScheduler implements OnModuleInit {
 
         try {
             await this.reanimateStale();
+            await this.releaseDeadClaims();
             for (const entry of domains) {
                 try {
                     await this.scanDomain(entry);
@@ -164,6 +168,49 @@ export class CallReportScheduler implements OnModuleInit {
                 timeZone: 'Europe/Moscow',
             }).format(now),
         );
+    }
+
+    /**
+     * Мёртвые брони: строка 'queued' старше порога, а джоба в очереди уже
+     * НЕТ (потерян при сбросе Redis, съеден stalled-лимитом). Проверка
+     * живости обязательна: слепой перевод по таймеру вернул бы исходный
+     * баг — скан поставил бы дубль, Bull молча его проглотил, а слот
+     * прохода сгорел бы впустую.
+     */
+    private async releaseDeadClaims(): Promise<void> {
+        const staleMinutes = this.settingsService.globals().staleMinutes;
+        const olderThan = new Date(Date.now() - staleMinutes * 60_000);
+        try {
+            const stale =
+                await this.transcriptionStore.findStaleQueued(olderThan);
+            if (!stale.length) return;
+
+            const dead: string[] = [];
+            for (const item of stale) {
+                const job = await this.queueDispatcher.getJob(
+                    QueueNames.CALL_REPORT,
+                    item.dedupKey,
+                );
+                if (!job) dead.push(item.id);
+            }
+            if (!dead.length) {
+                this.logger.log(
+                    `Броней старше порога: ${stale.length}, все с живыми задачами — ждём`,
+                );
+                return;
+            }
+            const count = await this.transcriptionStore.markPipelineError(dead);
+            this.logger.warn(
+                `Снято мёртвых броней: ${count} из ${stale.length} (задача потеряна) — ` +
+                    `звонки снова видны сканеру`,
+                { telegram: true, count },
+            );
+        } catch (error) {
+            this.logger.error(
+                `Снятие мёртвых броней не выполнено: ${(error as Error).message}`,
+                { telegram: true },
+            );
+        }
     }
 
     /** Зависшие processing старше порога → error (звонок снова виден дедупу). */

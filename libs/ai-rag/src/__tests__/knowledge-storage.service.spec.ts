@@ -92,7 +92,7 @@ describe('KnowledgeStorageService', () => {
             }
         });
 
-        it('с domain и папкой — берёт ТОЛЬКО клиентскую базу', async () => {
+        it('с domain и папкой — общая база ДОПОЛНЯЕТСЯ портальной (слияние)', async () => {
             await touch('general/shared-global.txt');
             await touch('resume/shared-r.txt');
             await touch('april.bitrix24.ru/general/client-global.txt');
@@ -102,11 +102,30 @@ describe('KnowledgeStorageService', () => {
                 'april.bitrix24.ru',
                 'resume',
             );
-            const names = docs.map(d => d.fileName).sort();
-            expect(names).toEqual(['client-global.txt', 'client-r.txt']);
-            for (const doc of docs) {
-                expect(doc.source).toBe('april.bitrix24.ru');
-            }
+            // Прод-баг 23.08.2026: раньше портальная папка ГАСИЛА общую —
+            // один свой документ отключал все методички компании.
+            expect(docs.map(d => d.fileName).sort()).toEqual([
+                'client-global.txt',
+                'client-r.txt',
+                'shared-global.txt',
+                'shared-r.txt',
+            ]);
+            const bySource = (name: string) =>
+                docs.find(doc => doc.fileName === name)?.source;
+            expect(bySource('shared-r.txt')).toBe('shared');
+            expect(bySource('client-r.txt')).toBe('april.bitrix24.ru');
+        });
+
+        it('одноимённый портальный документ ПЕРЕОПРЕДЕЛЯЕТ общий', async () => {
+            await touch('resume/script.txt');
+            await touch('april.bitrix24.ru/resume/script.txt');
+
+            const docs = await service.listDocuments(
+                'april.bitrix24.ru',
+                'resume',
+            );
+            expect(docs).toHaveLength(1);
+            expect(docs[0].source).toBe('april.bitrix24.ru');
         });
 
         it('kind=general — возвращает только содержимое general/, не дублирует', async () => {

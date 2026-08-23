@@ -34,13 +34,34 @@ const makeDeps = (options: {
     /** Настройки по домену (resolve). */
     settingsByDomain?: Record<string, Record<string, unknown>>;
     dbError?: boolean;
+    /** Зависшие брони (строки в статусе queued старше порога). */
+    staleQueued?: { id: string; dedupKey: string }[];
+    /** dedup-ключи, задачи которых ещё живы в очереди. */
+    aliveJobs?: string[];
 }) => {
     const redisClient = {
         set: jest.fn().mockResolvedValue(options.lockTaken ? null : 'OK'),
         del: jest.fn().mockResolvedValue(1),
     };
     const redisService = { getClient: () => redisClient };
-    const store = { reanimateStaleProcessing: jest.fn().mockResolvedValue(0) };
+    const store = {
+        reanimateStaleProcessing: jest.fn().mockResolvedValue(0),
+        // Брони: по умолчанию зависших нет.
+        findStaleQueued: jest.fn().mockResolvedValue(options.staleQueued ?? []),
+        markPipelineError: jest
+            .fn()
+            .mockImplementation((ids: string[]) => Promise.resolve(ids.length)),
+    };
+    // Живость задачи в очереди: null — задача потеряна, бронь мёртвая.
+    const queueDispatcher = {
+        getJob: jest
+            .fn()
+            .mockImplementation((_queue: string, id: string) =>
+                Promise.resolve(
+                    options.aliveJobs?.includes(id) ? { id } : null,
+                ),
+            ),
+    };
     const scan = {
         execute: jest.fn((domain: string) =>
             options.scanError?.includes(domain)
@@ -71,11 +92,13 @@ const makeDeps = (options: {
         roster,
         settingsService as never,
         portalAiSettings as never,
+        queueDispatcher as never,
     );
     return {
         scheduler,
         scan,
         store,
+        queueDispatcher,
         redisClient,
         portalAiSettings,
         settingsService,
@@ -188,5 +211,29 @@ describe('CallReportScheduler (конфигурация — только БД)',
         expect(store.reanimateStaleProcessing).toHaveBeenCalledWith(
             expect.any(Date),
         );
+    });
+
+    it('мёртвая бронь (задача потеряна) снимается, живая — остаётся', async () => {
+        const { scheduler, store } = makeDeps({
+            dbPortals: [{ portalId: 1, domain: 'a.bitrix24.ru' }],
+            staleQueued: [
+                { id: '1', dedupKey: 'a.bitrix24.ru:101' },
+                { id: '2', dedupKey: 'a.bitrix24.ru:102' },
+            ],
+            // Задача второго звонка ещё в очереди — его бронь трогать нельзя.
+            aliveJobs: ['a.bitrix24.ru:102'],
+        });
+        await scheduler.tick();
+        expect(store.markPipelineError).toHaveBeenCalledWith(['1']);
+    });
+
+    it('все брони с живыми задачами — ничего не снимается', async () => {
+        const { scheduler, store } = makeDeps({
+            dbPortals: [{ portalId: 1, domain: 'a.bitrix24.ru' }],
+            staleQueued: [{ id: '1', dedupKey: 'a.bitrix24.ru:101' }],
+            aliveJobs: ['a.bitrix24.ru:101'],
+        });
+        await scheduler.tick();
+        expect(store.markPipelineError).not.toHaveBeenCalled();
     });
 });

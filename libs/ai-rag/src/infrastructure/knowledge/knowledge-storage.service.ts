@@ -23,9 +23,15 @@ export class KnowledgeStorageService {
     constructor(private readonly storageService: StorageService) {}
 
     /**
-     * Возвращает документы для запроса (domain?, kind):
-     * - если есть папка домена → берём её, иначе общую;
-     * - в выбранной базе сначала general/, затем {kind}/.
+     * Возвращает документы для запроса (domain?, kind): ОБЩАЯ база плюс
+     * материалы портала. Внутри базы сначала general/, затем {kind}/.
+     *
+     * СЛИЯНИЕ, А НЕ ЗАМЕЩЕНИЕ (прод-баг, найден 23.08.2026): раньше
+     * выбирался ОДИН источник — при наличии папки портала общая база не
+     * читалась вообще, и один портальный документ молча отключал ВСЕ
+     * методички компании для этого портала. Теперь портальные документы
+     * ДОПОЛНЯЮТ общие, а одноимённый файл портала ПЕРЕОПРЕДЕЛЯЕТ общий
+     * (в паре (kind, fileName) побеждает портальный).
      */
     async listDocuments(
         domain: string | undefined,
@@ -34,23 +40,48 @@ export class KnowledgeStorageService {
         const sanitizedDomain = this.sanitizeOptionalDomain(domain);
         const sanitizedKind = this.requireValidKind(kind);
 
-        const baseSource = await this.resolveBaseSource(sanitizedDomain);
-        const generalDocs = await this.listInSubPath(
-            baseSource.subPath,
-            KNOWLEDGE_GENERAL_KIND,
-            baseSource.label,
-        );
+        const kinds =
+            sanitizedKind === KNOWLEDGE_GENERAL_KIND
+                ? [KNOWLEDGE_GENERAL_KIND]
+                : [KNOWLEDGE_GENERAL_KIND, sanitizedKind];
 
-        if (sanitizedKind === KNOWLEDGE_GENERAL_KIND) {
-            return generalDocs;
+        const shared: KnowledgeDocument[] = [];
+        for (const item of kinds) {
+            shared.push(
+                ...(await this.listInSubPath(
+                    KNOWLEDGE_ROOT_SUBPATH,
+                    item,
+                    'shared',
+                )),
+            );
         }
+        if (!sanitizedDomain) return shared;
 
-        const typedDocs = await this.listInSubPath(
-            baseSource.subPath,
-            sanitizedKind,
-            baseSource.label,
+        const domainSubPath = path.join(
+            KNOWLEDGE_ROOT_SUBPATH,
+            sanitizedDomain,
         );
-        return [...generalDocs, ...typedDocs];
+        const portal: KnowledgeDocument[] = [];
+        for (const item of kinds) {
+            portal.push(
+                ...(await this.listInSubPath(
+                    domainSubPath,
+                    item,
+                    sanitizedDomain,
+                )),
+            );
+        }
+        if (!portal.length) return shared;
+
+        const overridden = new Set(
+            portal.map(doc => `${doc.kind}/${doc.fileName}`),
+        );
+        return [
+            ...shared.filter(
+                doc => !overridden.has(`${doc.kind}/${doc.fileName}`),
+            ),
+            ...portal,
+        ];
     }
 
     /**
@@ -188,25 +219,6 @@ export class KnowledgeStorageService {
             kind: sanitizedKind,
             source: sanitizedDomain ?? 'shared',
         };
-    }
-
-    private async resolveBaseSource(
-        domain: string | undefined,
-    ): Promise<{ subPath: string; label: string }> {
-        if (!domain) {
-            return { subPath: KNOWLEDGE_ROOT_SUBPATH, label: 'shared' };
-        }
-        const domainSubPath = path.join(KNOWLEDGE_ROOT_SUBPATH, domain);
-        const absolute = this.storageService.getFilePath(
-            StorageType.APP,
-            domainSubPath,
-            '',
-        );
-        const exists = await this.storageService.fileExists(absolute);
-        if (exists) {
-            return { subPath: domainSubPath, label: domain };
-        }
-        return { subPath: KNOWLEDGE_ROOT_SUBPATH, label: 'shared' };
     }
 
     private async listInSubPath(
