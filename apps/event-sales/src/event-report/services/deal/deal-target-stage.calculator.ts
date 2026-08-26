@@ -315,7 +315,7 @@ export function getXoTargetStageCode(input: XoStageInput): string | null {
 export const PRESENTATION_EVENT_ACTIONS = [
     EVENT_REPORT_ACTION.plan,
     EVENT_REPORT_ACTION.done,
-    EVENT_REPORT_ACTION.expired,
+    EVENT_REPORT_ACTION.expired, //переводится как просрочен но на самом деле имеется ввиду что менеджер переносить событие
     EVENT_REPORT_ACTION.fail,
     EVENT_REPORT_ACTION.success,
     EVENT_REPORT_ACTION.noresult,

@@ -4,6 +4,9 @@ import { QueueModule } from '@/modules/queue/queue.module';
 import { WsModule } from '@/core/ws/ws.module';
 import { EventReportInitService } from './services/init/event-report-init.service';
 import { EventFlowStatusService } from './services/status/event-flow-status.service';
+import { StagePredictService } from './services/stage-predict/stage-predict.service';
+import { EventFlowGuardService } from './services/flow-guard/event-flow-guard.service';
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { EventReportUseCase } from './use-cases/event-report.use-case';
 import { EventFlowProcessor } from './queue/event-flow.processor';
 import { EventSalesController } from './controllers/event-sales.controller';
@@ -23,13 +26,24 @@ import { PortalFieldsModule } from '../shared/portal-fields';
 @Module({
     // PortalFieldsModule — фактические привязки crm-полей лида: от них
     // зависит формат значения связи продажи (`to_sale_deal`).
-    imports: [PBXModule, QueueModule, WsModule, PortalFieldsModule],
+    imports: [
+        PBXModule,
+        QueueModule,
+        WsModule,
+        PortalFieldsModule,
+        // Настройки портала: гейт чек-листов в flow-guard (проверка продажи).
+        PortalAppSettingsModule,
+    ],
     controllers: [EventSalesController],
     providers: [
         EventReportInitService,
         EventReportUseCase,
         EventFlowStatusService,
         EventFlowProcessor,
+        // Предикт стадии: PBXService.init(domain) внутри метода —
+        // bitrix-состояние per-request, инжектить его сюда безопасно.
+        StagePredictService,
+        EventFlowGuardService,
     ],
 })
 export class EventReportModule {}

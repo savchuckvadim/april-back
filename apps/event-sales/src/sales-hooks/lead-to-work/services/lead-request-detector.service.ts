@@ -126,6 +126,8 @@ export class LeadRequestDetectorService {
         }
 
         // 3. Наши метки пути заявки — «работа входящая», без уточнения вида.
+        // Ось слита (2408): ПИШЕТСЯ только site_status, но читаем и
+        // site_stage — легаси-лиды с одной стадией обязаны распознаваться.
         let onRequestPath = false;
         for (const code of [
             PBX_SALES_EVENT_FIELD_CODES.op_lead_site_status,

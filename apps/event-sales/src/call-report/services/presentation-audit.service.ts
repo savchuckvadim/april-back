@@ -8,6 +8,7 @@ import {
 } from '@lib/portal-lib/pbx/pbx-sales-list-reader';
 import { AiService, TranscriptionStoreService } from '@lib/call-lib';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
+import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
@@ -55,6 +56,8 @@ interface AuditCandidate {
     transcriptionId: string;
     dto: AgentCallAnalysisDto;
     itemId: number | null;
+    /** Активность звонка — адрес элемента для writer.updateExisting. */
+    activityId: string | null;
     callStartedAt: Date | null;
     managerId: string | null;
 }
@@ -132,6 +135,7 @@ export class PresentationAuditService {
                 itemId: analysis?.report_item_id
                     ? Number(analysis.report_item_id)
                     : null,
+                activityId: row.activityId ?? null,
                 callStartedAt: row.callStartedAt
                     ? new Date(row.callStartedAt)
                     : null,
@@ -191,7 +195,7 @@ export class PresentationAuditService {
             PRESENTATION_AUDIT_PROMPT,
             buildPresentationAuditUserContent({
                 analysisDigest: this.renderAnalysisDigest(dto),
-                managerReport,
+                managerReport: managerReport.text,
                 listReports,
             }),
             'presentation_audit',
@@ -218,6 +222,26 @@ export class PresentationAuditService {
             verdict.comparison.slice(0, 8000);
 
         const smartInfo = await this.smartResolver.resolve(domain);
+        // Отчёт менеджера — в поля элемента «Хвост/5К: отчёт менеджера»:
+        // сравнение с разбором AI видно прямо в карточке. Fail-open.
+        if (
+            smartInfo &&
+            candidate.activityId &&
+            (managerReport.xvost || managerReport.fiveK)
+        ) {
+            const writer = new CallReportSmartWriterService(bitrix, smartInfo);
+            await writer
+                .updateExisting({
+                    activityId: candidate.activityId,
+                    hvostManager: managerReport.xvost ?? undefined,
+                    fiveKManager: managerReport.fiveK ?? undefined,
+                })
+                .catch((error: Error) =>
+                    this.logger.warn(
+                        `Отчёт менеджера не записан в элемент (activity ${candidate.activityId}): ${error.message}`,
+                    ),
+                );
+        }
         if (candidate.itemId && smartInfo) {
             await bitrix.timeline
                 .addTimelineComment({
@@ -313,8 +337,32 @@ export class PresentationAuditService {
             `Тип звонка: ${dto.callType}`,
             `Резюме: ${dto.summary}`,
             `Хвост пройден: ${this.boolLabel(dto.hvostDone)}`,
+            dto.hvostSteps
+                ? 'Чеклист хвоста (AI по звонку): ' +
+                  [
+                      `КП: ${this.boolLabel(dto.hvostSteps.offer)}`,
+                      `наполнение: ${this.boolLabel(dto.hvostSteps.complect)}`,
+                      `цена: ${this.boolLabel(dto.hvostSteps.price)}`,
+                      `дата решения: ${this.boolLabel(dto.hvostSteps.decisionDate)}`,
+                      `дата согласована: ${this.boolLabel(dto.hvostSteps.dateAgreed)}`,
+                  ].join(', ')
+                : null,
             dto.hvostAnalysis ? `Разбор хвоста:\n${dto.hvostAnalysis}` : null,
             `5К закрыто: ${this.boolLabel(dto.fiveKDone)}`,
+            dto.fiveKItems
+                ? 'Чеклист 5К (AI по звонку): ' +
+                  [
+                      `клиент-что: ${this.boolLabel(dto.fiveKItems.clientWhat)}`,
+                      `клиент-готов: ${this.boolLabel(dto.fiveKItems.clientReady)}`,
+                      `клиент-цена: ${this.boolLabel(dto.fiveKItems.clientPrice)}`,
+                      `компания-кто: ${this.boolLabel(dto.fiveKItems.companyWho)}`,
+                      `компания-как: ${this.boolLabel(dto.fiveKItems.companyHow)}`,
+                      `подбор верен: ${this.boolLabel(dto.fiveKItems.companyRight)}`,
+                      `коллеги: ${this.boolLabel(dto.fiveKItems.colleagues)}`,
+                      `конкурент: ${this.boolLabel(dto.fiveKItems.competitor)}`,
+                      `критерии: ${this.boolLabel(dto.fiveKItems.criteria)}`,
+                  ].join(', ')
+                : null,
             dto.fiveKAnalysis ? `Разбор 5К:\n${dto.fiveKAnalysis}` : null,
             `Цена обсуждалась: ${this.boolLabel(dto.priceDiscussed)}`,
             dto.nextStep
@@ -344,21 +392,40 @@ export class PresentationAuditService {
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         portal: PortalModel,
         dealId: number | null,
-    ): Promise<string> {
+    ): Promise<{
+        text: string;
+        /** Сырые значения полей сделки — для полей смарта «отчёт менеджера». */
+        xvost: string | null;
+        fiveK: string | null;
+    }> {
         if (!dealId) {
-            return 'Сделка-презентация не связана с разбором — отчёт менеджера недоступен.';
+            return {
+                text: 'Сделка-презентация не связана с разбором — отчёт менеджера недоступен.',
+                xvost: null,
+                fiveK: null,
+            };
         }
         const response = (await bitrix.api.call('crm.deal.get', {
             id: dealId,
         })) as { result?: Record<string, unknown> };
         const deal = response?.result;
-        if (!deal) return `Сделка #${dealId} не прочитана.`;
+        if (!deal) {
+            return {
+                text: `Сделка #${dealId} не прочитана.`,
+                xvost: null,
+                fiveK: null,
+            };
+        }
 
-        const readField = (code: string): string | null => {
+        const readEntityField = (
+            entity: 'deal' | 'lead',
+            record: Record<string, unknown>,
+            code: string,
+        ): string | null => {
             try {
-                const field = portal.getEntityFieldByCode('deal', code);
+                const field = portal.getEntityFieldByCode(entity, code);
                 if (!field) return null;
-                const raw = deal[portal.getFieldBitrixId(field)];
+                const raw = record[portal.getFieldBitrixId(field)];
                 if (raw == null || raw === '') return null;
                 const toText = (value: unknown): string =>
                     typeof value === 'object'
@@ -371,6 +438,15 @@ export class PresentationAuditService {
                 return null;
             }
         };
+        const readField = (code: string): string | null =>
+            readEntityField('deal', deal, code);
+        // 'Y'/'1' → «да», 'N'/'0' → «нет», прочее (даты) — как есть.
+        const answerLabel = (raw: string | null): string => {
+            if (raw === null) return 'не заполнено';
+            if (raw === 'Y' || raw === '1' || raw === 'true') return 'да';
+            if (raw === 'N' || raw === '0' || raw === 'false') return 'нет';
+            return raw;
+        };
 
         const xvost = readField(
             PBX_SALES_EVENT_FIELD_CODES.op_presentation_xvost,
@@ -378,16 +454,116 @@ export class PresentationAuditService {
         const fiveK = readField(PBX_SALES_EVENT_FIELD_CODES.op_presentation_5k);
         const comments = readField(PBX_SALES_EVENT_FIELD_CODES.pres_comments);
 
-        if (!xvost && !fiveK && !comments) {
-            return `Сделка #${dealId}: поля отчёта («ОП Хвост», «ОП Пять К», «ОП Комментарии после презентаций») ПУСТЫ — менеджер не отчитался.`;
+        // Гранулярный чеклист хвоста — прямо на сделке (op_xvost_*).
+        const codes = PBX_SALES_EVENT_FIELD_CODES;
+        const xvostChecklist: Array<[string, string | null]> = [
+            ['Предложено КП', readField(codes.op_xvost_is_offer)],
+            ['Озвучено наполнение', readField(codes.op_xvost_is_complect)],
+            ['Озвучена цена', readField(codes.op_xvost_is_price)],
+            [
+                'Дата звонка по решению',
+                readField(codes.op_xvost_decision_call_date),
+            ],
+            [
+                'Согласование даты',
+                readField(codes.op_xvost_decision_date_agreement),
+            ],
+        ];
+        const xvostGranular = xvostChecklist.some(([, value]) => value !== null)
+            ? xvostChecklist
+                  .map(([label, value]) => `${label}: ${answerLabel(value)}`)
+                  .join('\n')
+            : null;
+
+        // Гранулярные 9 вопросов 5К менеджер заполняет на ЛИДЕ (op_5k_*).
+        const fiveKGranular = await this.readLeadFiveK(
+            bitrix,
+            portal,
+            deal,
+            readEntityField,
+        );
+
+        const xvostFull =
+            [xvost, xvostGranular].filter(Boolean).join('\n') || null;
+        const fiveKFull =
+            [fiveK, fiveKGranular].filter(Boolean).join('\n') || null;
+
+        if (!xvostFull && !fiveKFull && !comments) {
+            return {
+                text: `Сделка #${dealId}: поля отчёта («ОП Хвост» с чеклистом, «ОП Пять К» с 9 вопросами лида, «ОП Комментарии после презентаций») ПУСТЫ — менеджер не отчитался.`,
+                xvost: null,
+                fiveK: null,
+            };
         }
-        return [
-            `Сделка #${dealId}.`,
-            xvost ? `ОП Хвост: ${xvost}` : 'ОП Хвост: не заполнено',
-            fiveK ? `ОП Пять К: ${fiveK}` : 'ОП Пять К: не заполнено',
-            comments
-                ? `ОП Комментарии после презентаций:\n${comments}`
-                : 'ОП Комментарии: не заполнено',
-        ].join('\n');
+        return {
+            text: [
+                `Сделка #${dealId}.`,
+                xvostFull
+                    ? `ОП Хвост (отчёт менеджера):\n${xvostFull}`
+                    : 'ОП Хвост: не заполнено',
+                fiveKFull
+                    ? `ОП Пять К (отчёт менеджера):\n${fiveKFull}`
+                    : 'ОП Пять К: не заполнено',
+                comments
+                    ? `ОП Комментарии после презентаций:\n${comments}`
+                    : 'ОП Комментарии: не заполнено',
+            ].join('\n'),
+            xvost: xvostFull,
+            fiveK: fiveKFull,
+        };
+    }
+
+    /**
+     * Гранулярные ответы 5К (9 вопросов op_5k_*) менеджер даёт в ЛИДЕ —
+     * реестр pbx-sales-event-field держит их только на лиде, в смарт
+     * презентации они зеркалятся оттуда же. Лид берём из LEAD_ID сделки;
+     * нет лида или полей — честный null (сверка не падает).
+     */
+    private async readLeadFiveK(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        deal: Record<string, unknown>,
+        readEntityField: (
+            entity: 'deal' | 'lead',
+            record: Record<string, unknown>,
+            code: string,
+        ) => string | null,
+    ): Promise<string | null> {
+        const leadId = Number(deal['LEAD_ID'] ?? 0);
+        if (!leadId) return null;
+        try {
+            const response = (await bitrix.api.call('crm.lead.get', {
+                id: leadId,
+            })) as { result?: Record<string, unknown> };
+            const lead = response?.result;
+            if (!lead) return null;
+            const codes = PBX_SALES_EVENT_FIELD_CODES;
+            const questions: Array<[string, string]> = [
+                ['КЛИЕНТ: Что хочет?', codes.op_5k_client_what],
+                ['КЛИЕНТ: Готов работать?', codes.op_5k_client_ready],
+                ['КЛИЕНТ: Укладываемся в цену?', codes.op_5k_client_price],
+                ['КОМПАНИЯ: Кто решает?', codes.op_5k_company_who],
+                ['КОМПАНИЯ: Как решает?', codes.op_5k_company_how],
+                ['КОМПАНИЯ: Верно подобрали?', codes.op_5k_company_right],
+                ['КОЛЛЕГИ: Кто будет работать?', codes.op_5k_command],
+                ['КОНКУРЕНТ: Критерии сравнения?', codes.op_5k_concurent],
+                ['КРИТЕРИЙ ВЫБОРА СПС?', codes.op_5k_criteri],
+            ];
+            const answered = questions
+                .map(([label, code]): [string, string | null] => [
+                    label,
+                    readEntityField('lead', lead, code),
+                ])
+                .filter((pair): pair is [string, string] => pair[1] !== null);
+            if (!answered.length) return null;
+            return answered
+                .map(([label, value]) => `${label} ${value}`)
+                .join('\n');
+        } catch (error) {
+            this.logger.warn(
+                `Лид ${leadId}: гранулярные 5К не прочитаны — ${(error as Error).message}`,
+            );
+            return null;
+        }
     }
 }

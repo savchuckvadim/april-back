@@ -29,6 +29,14 @@ const FIELD_DEFS: Record<
                 bitrixId: 34,
             },
             { code: 'op_lead_site_status5', name: 'Отказ', bitrixId: 55 },
+            {
+                code: 'op_lead_site_status6',
+                name: 'Первый звонок',
+                bitrixId: 36,
+            },
+            { code: 'op_lead_site_status7', name: 'Дозвонились', bitrixId: 37 },
+            { code: 'op_lead_site_status8', name: 'Презентация', bitrixId: 38 },
+            { code: 'op_lead_site_status9', name: 'Продажа', bitrixId: 39 },
         ],
     },
     op_lead_site_stage: {
@@ -150,8 +158,11 @@ describe('EventReportLeadRequestSyncService', () => {
 
         expect(result.synced).toBe(1);
         const fields = updates[0].fields;
-        expect(fields.UF_CRM_OP_LEAD_STATUS).toBe(8);
-        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(99);
+        // Ось слита (2408): исход несёт единый site_status;
+        // op_lead_status и site_stage больше не пишутся.
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(39); // Продажа
+        expect(fields.UF_CRM_OP_LEAD_STATUS).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
         expect(fields.UF_CRM_OP_LEAD_IS_BOOST_SALE).toBe(1);
         const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history[0]).toBe('старое'); // прошлое не переписано
@@ -232,7 +243,7 @@ describe('EventReportLeadRequestSyncService', () => {
 
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(33); // Не ЦА
-        expect(fields.UF_CRM_OP_LEAD_STATUS).toBe(10);
+        expect(fields.UF_CRM_OP_LEAD_STATUS).toBeUndefined(); // ось слита
         expect(fields.UF_CRM_OP_LEAD_NOT_CA_TYPE).toBe(44);
         const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history.join(' ')).toContain('не ЦА');
@@ -254,8 +265,89 @@ describe('EventReportLeadRequestSyncService', () => {
         );
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(55); // Отказ
-        expect(fields.UF_CRM_OP_LEAD_STATUS).toBe(9);
+        expect(fields.UF_CRM_OP_LEAD_STATUS).toBeUndefined(); // ось слита
         expect(fields.UF_CRM_OP_LEAD_NOT_CA_TYPE).toBeUndefined();
+    });
+
+    /* ------------------------------------------------------------------ *
+     * Автостатус единой оси (2408): любой отчёт двигает op_lead_site_status
+     * «только вперёд»; история при этом НЕ пишется (не спамим заявку).
+     * ------------------------------------------------------------------ */
+
+    it('автостатус: результативный отчёт → «Дозвонились», без истории', async () => {
+        const { bitrix, updates } = makeBitrix({ 42: { ID: '42' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        const result = await service.run(
+            makeCtx({
+                isSuccessSale: false,
+                isFail: false,
+                isResult: true,
+                lead: { ID: '42' },
+            }),
+        );
+        expect(result.synced).toBe(1);
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(37); // Дозвонились
+        expect(fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY).toBeUndefined();
+    });
+
+    it('автостатус: недозвон после «Дозвонились» не понижает — записи нет', async () => {
+        const { bitrix, updates } = makeBitrix({
+            42: { ID: '42', UF_CRM_OP_LEAD_SITE_STATUS: 37 },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        const result = await service.run(
+            makeCtx({
+                isSuccessSale: false,
+                isFail: false,
+                isNoResult: true,
+                lead: { ID: '42' },
+            }),
+        );
+        expect(result.synced).toBe(0);
+        expect(updates).toHaveLength(0);
+    });
+
+    it('автостатус: первый недозвон по пустому лиду → «Первый звонок»', async () => {
+        const { bitrix, updates } = makeBitrix({ 42: { ID: '42' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            makeCtx({
+                isSuccessSale: false,
+                isFail: false,
+                isNoResult: true,
+                lead: { ID: '42' },
+            }),
+        );
+        expect(updates[0].fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(36);
+    });
+
+    it('автостатус не перетирает финал: отказ на лиде остаётся отказом', async () => {
+        const { bitrix, updates } = makeBitrix({
+            42: { ID: '42', UF_CRM_OP_LEAD_SITE_STATUS: 55 },
+        });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            makeCtx({
+                isSuccessSale: false,
+                isFail: false,
+                isResult: true,
+                lead: { ID: '42' },
+            }),
+        );
+        expect(updates).toHaveLength(0);
     });
 
     it('связь презентации без финала: пишется ТОЛЬКО выбранный лид — статусы менеджера, to_presentation_sales ∪, история', async () => {
@@ -288,7 +380,8 @@ describe('EventReportLeadRequestSyncService', () => {
         expect(updates[0].leadId).toBe(77);
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(34);
-        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+        // siteStageCode старых сборок принимается, но игнорируется (ось слита).
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
         expect(fields.UF_CRM_TO_PRESENTATION_SALES).toEqual(['D_5', 'D_900']);
         const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history.join(' ')).toContain('Презентация связана с заявкой');
@@ -316,7 +409,10 @@ describe('EventReportLeadRequestSyncService', () => {
         );
         const fields = updates[0].fields;
         expect(fields.UF_CRM_TO_PRESENTATION_SALES).toBeUndefined();
-        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+        // Стадия игнорируется (ось слита) — осталась только история.
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
+        const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history.join(' ')).toContain('Презентация связана с заявкой');
     });
 
     /* ------------------------------------------------------------------ *
@@ -425,8 +521,10 @@ describe('EventReportLeadRequestSyncService', () => {
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
         expect(fields.UF_CRM_OP_5K_CLIENT_WHAT).toBeUndefined();
-        // Статусы модалки при этом применяются как раньше.
-        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+        // Стадия игнорируется (ось слита); автостатус единой оси при
+        // проведённой презентации двигает статус на «Презентация».
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(38);
     });
 
     it('лида-источника в контексте нет → анкета молча пропускается', async () => {
@@ -439,7 +537,9 @@ describe('EventReportLeadRequestSyncService', () => {
 
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
-        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(84);
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
+        // Автостатус: презентация проведена → «Презентация».
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(38);
     });
 
     it('презентация не проведена → анкета связанному лиду не переносится', async () => {
@@ -475,6 +575,6 @@ describe('EventReportLeadRequestSyncService', () => {
 
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
-        expect(fields.UF_CRM_OP_LEAD_STATUS).toBe(8); // финал отработал
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(39); // финал отработал
     });
 });

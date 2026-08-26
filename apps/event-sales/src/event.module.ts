@@ -7,6 +7,8 @@ import { EventSalesBxRecordsModule } from './bx-records/bx-records.module';
 import { SalesHooksModule } from './sales-hooks/sales-hooks.module';
 import { LeadRequestModule } from './lead-request/lead-request.module';
 import { PresentationSurveyModule } from './presentation-survey/presentation-survey.module';
+import { ZprFlowModule } from './zpr-flow/zpr-flow.module';
+import { PresentationFlowModule } from './presentation-flow/presentation-flow.module';
 
 @Module({
     imports: [
@@ -21,6 +23,10 @@ import { PresentationSurveyModule } from './presentation-survey/presentation-sur
         LeadRequestModule,
         // Легаси-опросник после презентации (хвост/«5К» отдельным запросом)
         PresentationSurveyModule,
+        // Сайд-очередь ЗПР-смарта («Звонки По решению»)
+        ZprFlowModule,
+        // Сайд-очередь смарта «Презентации» (зеркало сделок ОП Презентации)
+        PresentationFlowModule,
     ],
     exports: [
         ColdHookModule,

@@ -71,6 +71,8 @@ export class SalesBaseDealService {
         const baseFields: Partial<IBXDeal> = {
             ...(entityFields as Partial<IBXDeal>),
             ...ctx.ownerLinkFields,
+            ...this.saleFields(ctx),
+            ...this.failFields(ctx),
             CATEGORY_ID: String(category.bitrixId),
             STAGE_ID: composeStageId(category.bitrixId, targetStage),
             ASSIGNED_BY_ID: String(ctx.planResponsibleId),
@@ -89,5 +91,58 @@ export class SalesBaseDealService {
         const cmd = 'set_base_deal';
         this.bitrix.batch.deal.set(cmd, baseFields);
         return `$result[${cmd}]`;
+    }
+
+    /**
+     * Поля продажи из чек-листа (SaleDto): сумма → штатный OPPORTUNITY
+     * (+ IS_MANUAL_OPPORTUNITY, иначе Bitrix пересчитает её из товарных
+     * позиций), дата первой оплаты → pbx-поле `first_pay_date`
+     * (konstructor-реестр; не установлено — молча пропускаем, graceful).
+     */
+    private saleFields(ctx: EventReportContext): Record<string, string> {
+        if (!ctx.isSuccessSale) return {};
+        const sale = ctx.dto.sale;
+        const fields: Record<string, string> = {};
+
+        if (typeof sale?.opportunity === 'number' && sale.opportunity > 0) {
+            fields['OPPORTUNITY'] = String(sale.opportunity);
+            fields['IS_MANUAL_OPPORTUNITY'] = 'Y';
+        }
+
+        if (sale?.firstPayDate) {
+            const field = this.portal.getEntityFieldByCode(
+                'deal',
+                'first_pay_date',
+            );
+            if (field) {
+                fields[this.portal.getFieldBitrixId(field)] = sale.firstPayDate;
+            }
+        }
+
+        return fields;
+    }
+
+    /**
+     * Поля отказа для реанимации отказников (sales-hooks/reject-revive):
+     * дата следующего звонка после отказа (withPostFail-порталы) + очистка
+     * маркеров реанимации — повторный отказ обязан реанимироваться заново
+     * через интервал, а не считаться «уже отправленным». Поля не установлены
+     * на портале — graceful-пропуск (фича сама молчит).
+     */
+    private failFields(ctx: EventReportContext): Record<string, string> {
+        if (!ctx.isFail) return {};
+        const fields: Record<string, string> = {};
+
+        const set = (code: string, value: string) => {
+            const field = this.portal.getEntityFieldByCode('deal', code);
+            if (field) fields[this.portal.getFieldBitrixId(field)] = value;
+        };
+
+        const postFailDate = ctx.dto.fail?.postFailDate;
+        if (postFailDate) set('post_fail_date', postFailDate);
+        set('op_xo_revive_queued_at', '');
+        set('op_xo_revive_sent_at', '');
+
+        return fields;
     }
 }

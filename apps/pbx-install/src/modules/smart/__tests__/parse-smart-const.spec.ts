@@ -47,6 +47,49 @@ describe('ParseSmartService — const-ветка (реестр const-смарт�
         });
     });
 
+    it('zpr/sales несёт воронку со стадиями (первый const-смарт с категориями)', async () => {
+        const parsed = await service.getParsedData(
+            SmartNameEnum.ZPR,
+            SmartGroupEnum.SALES,
+        );
+
+        expect(parsed).toHaveLength(1);
+        const smart = parsed[0];
+        expect(smart.code).toBe('zpr_sales');
+        // Воронка из descriptor.buildInstallCategories — контракт Excel-листов
+        // categories/stages: InstallSmartUseCase поставит стадии тем же
+        // InstallSmartCategoriesService, что и шаблоны из файла.
+        expect(smart.categories).toHaveLength(1);
+        expect(smart.categories[0].stages).toHaveLength(5);
+        expect(smart.categories[0].stages.map(stage => stage.code)).toEqual([
+            'zpr_plan',
+            'zpr_pending',
+            'zpr_success',
+            'zpr_noresult',
+            'zpr_fail',
+        ]);
+    });
+
+    it('pres/sales — воронка-зеркало «ОП Презентации» из 6 стадий', async () => {
+        const parsed = await service.getParsedData(
+            SmartNameEnum.PRES,
+            SmartGroupEnum.SALES,
+        );
+
+        expect(parsed).toHaveLength(1);
+        const smart = parsed[0];
+        expect(smart.code).toBe('pres_sales');
+        expect(smart.categories).toHaveLength(1);
+        expect(smart.categories[0].stages.map(stage => stage.code)).toEqual([
+            'pres_new',
+            'pres_plan',
+            'pres_pending',
+            'pres_success',
+            'pres_noresult',
+            'pres_fail',
+        ]);
+    });
+
     it('excel-смарты идут прежним путём (файл не найден → NotFound)', async () => {
         const storage = {
             getFilePath: jest.fn().mockReturnValue('nope.xlsx'),

@@ -198,6 +198,24 @@ describe('CallReportScanUseCase', () => {
         );
     });
 
+    it('в задачу и в бронь уходит id ЗВОНИВШЕГО (PORTAL_USER_ID)', async () => {
+        const { useCase, dispatcher, store } = makeDeps({
+            rows: [row(101, { PORTAL_USER_ID: 622 })],
+            salesUserIds: [622],
+        });
+        await useCase.execute(DOMAIN, { allowedUserIds: [622] });
+        expect(dispatcher.dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-transcribe',
+            expect.objectContaining({ callerUserId: 622 }),
+            expect.any(String),
+            expect.anything(),
+        );
+        expect(store.claimQueued).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: '622' }),
+        );
+    });
+
     it('звонок бронируется ДО постановки в очередь (виден дедупу сразу)', async () => {
         const { useCase, store, dispatcher } = makeDeps({ rows: [row(101)] });
         await useCase.execute(DOMAIN);

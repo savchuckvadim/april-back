@@ -1,4 +1,4 @@
-import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
+import { IBXCompany, IBXContact, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BitrixDateTime } from '@/shared/lib/date';
@@ -7,15 +7,16 @@ import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dt
 import { EnumEventItemResultType } from '../../types/report-types';
 import { EnumWorkStatusCode } from '../../types/report-types';
 import {
-    EVENT_REPORT_EVENT_TYPE,
     EventReportEventType,
     GSIRK_DOMAIN,
+    normalizeEventReportEventType,
 } from '../../types/event-report.event-codes';
 import {
     EEventReportEntityType,
     EventReportEntityType,
     IEventReportInitContext,
 } from '../init/event-report-init.types';
+import { EventTaskChecklistOutcome } from '../task/event-task-checklist.catalog';
 
 /**
  * Стратегия flow по типу владельца события:
@@ -40,46 +41,6 @@ export type EventReportFlowStrategy =
  * Класс держит ссылки, но не имеет инстанса Bitrix — он передаётся отдельно
  * в каждый flow-сервис. Это соответствует CLAUDE.md (никакого `this.bitrix`).
  */
-/**
- * Коды типа события → внутренний алфавит EventReportEventType.
- *
- * Фронт с 08.08.2026 шлёт уже согласованные коды (hot/moneyAwait), но карта
- * остаётся: она закрывает legacy-значения старых сборок фрейма
- * (in_progress/money_await), фронтовые состояния без аналога на бэке
- * (event — тип задачи не распознан, ss — сервисный сигнал; оба по смыслу
- * разговор с клиентом) и историческое cold.
- *
- * Раньше несогласованный код проезжал сюда как есть и обнулял mapEventType —
- * отчёт уходил успешно, а в KPI не появлялось НИ ОДНОЙ записи, включая
- * продажу и отказ.
- */
-const NORMALIZED_EVENT_TYPE: Record<string, EventReportEventType> = {
-    cold: 'xo',
-    in_progress: 'hot',
-    money_await: 'moneyAwait',
-    event: 'warm',
-    ss: 'warm',
-};
-
-/**
- * Коды, которые фронт шлёт как есть и которые уже совпадают с внутренним
- * алфавитом. Отдельный Set нужен, чтобы `normalizeEventType` возвращала
- * ТИПИЗИРОВАННОЕ значение и не приходилось глушить компилятор приведением
- * `as EventReportEventType` на каждом вызове.
- */
-const KNOWN_EVENT_TYPES = new Set<string>(
-    Object.values(EVENT_REPORT_EVENT_TYPE),
-);
-
-/**
- * Куда падает НЕИЗВЕСТНЫЙ код события. Не null и не «как есть»: null терял
- * запись целиком (см. историю в mapEventType), а сырой код не совпадал ни с
- * лестницей стадий, ни с KPI. `warm` = «разговор с клиентом» — минимальная
- * по последствиям трактовка, которая гарантирует, что событие в отчётности
- * останется.
- */
-const UNKNOWN_EVENT_TYPE_FALLBACK: EventReportEventType = 'warm';
-
 export class EventReportContext {
     constructor(
         public readonly dto: EventSalesFlowDto,
@@ -149,6 +110,31 @@ export class EventReportContext {
     get currentTask(): IBXTask | null {
         return this.init.currentTask;
     }
+    get reportContact(): IBXContact | null {
+        return this.init.reportContact;
+    }
+    get planContact(): IBXContact | null {
+        return this.init.planContact;
+    }
+
+    // === Чек-лист закрываемой задачи ===
+    /**
+     * Итог чек-листа задачи, которую этот отчёт закрывает; null — чек-листы
+     * выключены настройкой портала, задачи нет, либо пунктов в ней не было.
+     *
+     * Заполняется ОДИН раз, ДО прогонки flow-сервисов
+     * (`EventReportTaskFlowService.readClosingChecklist`): итог обязан попасть
+     * в историю карточки, а её собирает entity-flow — первым в цепочке.
+     * Отдельным полем контекста, а не параметром сервисов: читателей трое
+     * (поля сущности, таймлайн gsirk, комментарий задачи).
+     */
+    get taskChecklist(): EventTaskChecklistOutcome | null {
+        return this.taskChecklistVo;
+    }
+    setTaskChecklist(outcome: EventTaskChecklistOutcome | null): void {
+        this.taskChecklistVo = outcome;
+    }
+    private taskChecklistVo: EventTaskChecklistOutcome | null = null;
 
     // === Result/work-status flags ===
     get resultStatus(): EnumEventItemResultType | null {
@@ -247,6 +233,15 @@ export class EventReportContext {
         return this.planDeadlineVo;
     }
     private planDeadlineVo?: BitrixDateTime | null;
+    /**
+     * Флаг «важная» из UI планирования (todo2508-02 №10): менеджер отметил
+     * задачу важной руками. Отдельно от «важных» ТИПОВ событий
+     * (IMPORTANT_PLAN_TYPES в task-flow): флаг поднимает приоритет любому
+     * типу, тип — сам по себе. Старые сборки фрейма поле не шлют — false.
+     */
+    get isPlanMarkedImportant(): boolean {
+        return Boolean(this.dto.plan?.isImportant);
+    }
     get planResponsibleId(): number {
         return Number(this.dto.plan?.responsibility?.ID ?? 0);
     }
@@ -352,11 +347,12 @@ export class EventReportContext {
      * а записи молча пропадали. Неизвестный код теперь падает в
      * {@link UNKNOWN_EVENT_TYPE_FALLBACK}, а не теряется.
      */
+    /**
+     * Нормализация кода события — общая с stage-predict
+     * (normalizeEventReportEventType): предикт обязан считать стадию тем же
+     * алфавитом, что и реальный прогон.
+     */
     private normalizeEventType(raw: string): EventReportEventType {
-        const normalized = NORMALIZED_EVENT_TYPE[raw];
-        if (normalized) return normalized;
-        return KNOWN_EVENT_TYPES.has(raw)
-            ? (raw as EventReportEventType)
-            : UNKNOWN_EVENT_TYPE_FALLBACK;
+        return normalizeEventReportEventType(raw);
     }
 }

@@ -27,7 +27,12 @@ dayjs.extend(timezone);
  */
 const NOW = new Date('2026-08-18T09:00:00.000Z');
 
-const makePortal = () => ({ getTimezone: () => 'Europe/Moscow' });
+const makePortal = () => ({
+    getTimezone: () => 'Europe/Moscow',
+    // Поле «не ЦА» на портале спеки не установлено: имя типа опускается,
+    // финал остаётся «Не ЦА: …» без причины — это и проверяем.
+    getEntityFieldByCode: () => null,
+});
 
 const makeCtx = (over: Record<string, unknown> = {}) =>
     new EventReportContext(
@@ -75,11 +80,55 @@ describe('Финальная запись продажи/отказа (лега�
         expect(final).toBeDefined();
         expect(final!.items.event_action).toBe('done');
         expect(final!.name).toBe('Отказ: Звонок по решению — Нет денег');
+        // Ключ финала — цикл работы (решение владельца 25.08): вид финала
+        // + клиент + основная сделка цикла + менеджер. Прежний ключ на
+        // сущность съедал новые отказы upsert'ом старой записи.
         expect(final!.dedup).toEqual({
-            key: 'final_deal_1024',
+            key: 'final_fail_deal1024_new_0',
             scope: 'both',
             mode: 'upsert',
         });
+    });
+
+    it('код финала различает вид, сделку и менеджера (цикл работы)', () => {
+        const sale = build(
+            makeCtx({
+                dto: {
+                    currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                    report: {
+                        resultStatus: 'result',
+                        workStatus: { current: { code: 'success' } },
+                    },
+                    plan: { responsibility: { ID: 447 } },
+                },
+                init: {
+                    entityType: 'company',
+                    entityId: 431,
+                    currentBaseDeal: { ID: '5512' },
+                },
+            }),
+        ).find(p => p.items.event_type === 'ev_success');
+        expect(sale!.dedup!.key).toBe('final_sale_431_5512_447');
+
+        const notCa = build(
+            makeCtx({
+                dto: {
+                    currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                    report: {
+                        resultStatus: 'result',
+                        workStatus: { current: { code: 'fail' } },
+                    },
+                    leadSync: { notCaTypeCode: 'op_lead_not_ca_type1' },
+                },
+                init: {
+                    entityType: 'company',
+                    entityId: 431,
+                    currentBaseDeal: { ID: '5512' },
+                },
+            }),
+        ).find(p => p.items.event_type === 'ev_fail');
+        // «Не ЦА» — ОТДЕЛЬНЫЙ вид отказа: не склеивается с обычным.
+        expect(notCa!.dedup!.key).toBe('final_notca_431_5512_0');
     });
 
     it('при финале отчётная запись по звонку тоже пишется (типы разные — двойного счёта нет)', () => {
@@ -112,6 +161,110 @@ describe('Финальная запись продажи/отказа (лега�
         // Финал при этом остаётся done — как в легаси (:3654).
         const final = build(ctx).find(p => p.items.event_type === 'ev_fail');
         expect(final!.items.event_action).toBe('done');
+    });
+
+    /*
+     * Недозвонный отказ (todo2508-02 №8): «Не очень» → финал «Отказ» без
+     * результативного разговора. Владелец: в списке обязаны быть ОБЕ записи —
+     * недозвонная «Не состоялся» И независимый финал «Отказ» (событие
+     * «Состоялся», тип «Отказ») — тот же элемент, что при обычном отказе.
+     */
+    describe('недозвонный отказ (noresult + fail): обе записи', () => {
+        const noresultFailCtx = () =>
+            makeCtx({
+                dto: {
+                    currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                    report: {
+                        resultStatus: 'noresult',
+                        workStatus: { current: { code: 'fail' } },
+                        noresultReason: { current: { code: 'nopickup' } },
+                        failReason: {
+                            current: { code: 'nomoney', name: 'Нет денег' },
+                        },
+                    },
+                    // Финал приходит кнопкой «Не очень»: план не выключали.
+                    plan: { isActive: true },
+                },
+            });
+
+        it('недозвонная запись И финал присутствуют одновременно', () => {
+            const payloads = build(noresultFailCtx());
+            const report = payloads.find(
+                p => p.items.event_type === 'call_in_progress',
+            );
+            const final = payloads.find(p => p.items.event_type === 'ev_fail');
+
+            expect(report).toBeDefined();
+            expect(report!.items.event_action).toBe('act_noresult_fail');
+            expect(final).toBeDefined();
+            expect(final!.items.event_action).toBe('done');
+        });
+
+        it('финал идентичен финалу обычного отказа (result + fail)', () => {
+            const noresultFinal = build(noresultFailCtx()).find(
+                p => p.items.event_type === 'ev_fail',
+            );
+            const resultFinal = build(makeCtx()).find(
+                p => p.items.event_type === 'ev_fail',
+            );
+
+            expect(noresultFinal!.name).toBe(resultFinal!.name);
+            expect(noresultFinal!.items.event_type).toBe(
+                resultFinal!.items.event_type,
+            );
+            expect(noresultFinal!.items.event_action).toBe(
+                resultFinal!.items.event_action,
+            );
+            expect(noresultFinal!.dedup).toEqual(resultFinal!.dedup);
+            // Разница только в результативности: недозвонный финал честно
+            // несёт «Нет» и причину нерезультативности.
+            expect(noresultFinal!.items.op_result_status).toBe(
+                'op_call_result_no',
+            );
+            expect(noresultFinal!.items.op_noresult_reason).toBe('nopickup');
+        });
+
+        it('финал — следующим тиком секунды после недозвонной записи', () => {
+            const payloads = build(noresultFailCtx());
+            const report = payloads.find(
+                p => p.items.event_type === 'call_in_progress',
+            );
+            const final = payloads.find(p => p.items.event_type === 'ev_fail');
+
+            const fmt = (offsetSec: number) =>
+                dayjs(NOW)
+                    .add(offsetSec, 'second')
+                    .tz('Europe/Moscow')
+                    .format('DD.MM.YYYY HH:mm:ss');
+            expect(report!.values.event_date).toBe(fmt(0));
+            expect(final!.values.event_date).toBe(fmt(1));
+        });
+
+        it('«не ЦА» через недозвон: финал «Не ЦА», отказные селекты не выдумываются', () => {
+            const ctx = makeCtx({
+                dto: {
+                    currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                    report: {
+                        resultStatus: 'noresult',
+                        workStatus: { current: { code: 'fail' } },
+                        noresultReason: { current: { code: 'secretar' } },
+                        // Дефолты формы — писать их в отказ нельзя.
+                        failType: { current: { code: 'garant' } },
+                        failReason: { current: { code: 'fail_notime' } },
+                    },
+                    leadSync: { notCaTypeCode: 'not_ca_budget' },
+                },
+            });
+            const final = build(ctx).find(
+                p => p.items.event_type === 'ev_fail',
+            );
+
+            expect(final).toBeDefined();
+            expect(final!.name).toContain('Не ЦА');
+            expect(final!.items.op_fail_type).toBeUndefined();
+            expect(final!.items.op_fail_reason).toBeUndefined();
+            expect(final!.items.op_noresult_reason).toBe('secretar');
+        });
     });
 
     it('продажа со спонтанной презентацией: ev_success + «Продажа: спонтанная презентация»', () => {
@@ -365,13 +518,13 @@ describe('Уникальные презентации (легаси-коды)', 
         expect(withoutDeal!.dedup!.key).not.toBe(withDeal!.dedup!.key);
     });
 
-    it('финал лид-владельца дедуплицируется ключом final_lead_{id}', () => {
+    it('финал лид-владельца дедуплицируется маркером lead{id} в слоте клиента', () => {
         const ctx = makeCtx({
             init: { entityType: 'lead', entityId: 42, lead: { ID: '42' } },
         });
         const final = build(ctx).find(p => p.items.event_type === 'ev_fail');
         expect(final!.dedup).toEqual({
-            key: 'final_lead_42',
+            key: 'final_fail_lead42_new_0',
             scope: 'both',
             mode: 'upsert',
         });

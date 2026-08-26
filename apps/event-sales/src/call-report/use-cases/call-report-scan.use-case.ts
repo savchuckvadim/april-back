@@ -271,6 +271,7 @@ export class CallReportScanUseCase {
                 continue;
             }
 
+            const callerUserId = Number(row.PORTAL_USER_ID);
             const payload: CallReportJobPayload = {
                 domain,
                 activityId,
@@ -281,6 +282,12 @@ export class CallReportScanUseCase {
                 durationSec: row.CALL_DURATION
                     ? Number(row.CALL_DURATION)
                     : undefined,
+                // Кто звонил (из телефонии) — по нему же работал фильтр
+                // сотрудников, поэтому и в отчётах должен стоять он.
+                callerUserId:
+                    Number.isFinite(callerUserId) && callerUserId > 0
+                        ? callerUserId
+                        : undefined,
                 createSmartItem: options?.createSmartItem,
             };
 
@@ -299,6 +306,10 @@ export class CallReportScanUseCase {
                 entityType,
                 entityId: String(activity.OWNER_ID),
                 durationSec: payload.durationSec,
+                userId:
+                    payload.callerUserId !== undefined
+                        ? String(payload.callerUserId)
+                        : undefined,
                 app: APP_NAME,
             });
             if (!claimed) {

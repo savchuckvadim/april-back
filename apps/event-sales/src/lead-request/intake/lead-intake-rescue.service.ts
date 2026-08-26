@@ -23,6 +23,19 @@ const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 /** Лид «в работе»: закрытые (CONVERTED/JUNK) дожимать нельзя. */
 const IN_PROGRESS_SEMANTIC = 'P';
 
+/**
+ * Код видимой стадии-очереди отправки в ХО (todo2508 №3). Лид ставится в
+ * неё ПЕРЕД отправкой хука и уезжает дальше, когда хук отработал.
+ */
+const XO_QUEUE_STAGE_CODE = 'lead_xo_queue';
+
+/**
+ * Сколько минут лид должен провисеть в очереди, чтобы считаться
+ * «недоехавшим». Меньше — рискуем продублировать хук, который прямо сейчас
+ * выполняется.
+ */
+const QUEUE_STUCK_MINUTES = 15;
+
 type BxRow = Record<string, unknown>;
 
 /** Итог прохода страховки по домену (лог/диагностика/тесты). */
@@ -33,6 +46,8 @@ export interface LeadIntakeRescueRunResult {
     dispatched: number;
     /** Отсеяно: уже назначены, уже есть работа, не заявка. */
     skipped: number;
+    /** Из них подобрано по ЗАСТРЯВШЕЙ стадии-очереди, вне окна создания. */
+    rescuedFromQueue: number;
     warnings: string[];
 }
 
@@ -73,6 +88,7 @@ export class LeadIntakeRescueService {
             scanned: 0,
             dispatched: 0,
             skipped: 0,
+            rescuedFromQueue: 0,
             warnings: [],
         };
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
@@ -104,7 +120,7 @@ export class LeadIntakeRescueService {
         // `op_lead_assigned_at` и есть «никем не назначен».
         if (assignedAtName) filter[assignedAtName] = '';
 
-        const { result: leads } = await bitrix.lead.getList(filter as never, [
+        const select = [
             'ID',
             'TITLE',
             'STATUS_ID',
@@ -112,8 +128,38 @@ export class LeadIntakeRescueService {
             'ASSIGNED_BY_ID',
             'DATE_CREATE',
             'UF_*',
-        ]);
+        ];
+        const { result: leads } = await bitrix.lead.getList(
+            filter as never,
+            select,
+        );
         const rows = (leads ?? []) as unknown as BxRow[];
+
+        /*
+         * Вторая выборка — по ВИДИМОЙ стадии-очереди. Окно создания её не
+         * ограничивает: лид, застрявший в очереди сутки назад, из окна давно
+         * выпал бы и не дожался никогда. Свежие (моложе QUEUE_STUCK_MINUTES)
+         * не берём — по ним хук, возможно, прямо сейчас работает.
+         */
+        const queueStatusId = portal.getLeadStatusIdByCode(XO_QUEUE_STAGE_CODE);
+        const queued = queueStatusId
+            ? await this.listStuckInQueue(
+                  bitrix,
+                  portal,
+                  queueStatusId,
+                  assignedAtName,
+                  select,
+                  result.warnings,
+              )
+            : [];
+        const seen = new Set(rows.map(row => String(row.ID)));
+        for (const row of queued) {
+            if (seen.has(String(row.ID))) continue;
+            seen.add(String(row.ID));
+            rows.push(row);
+            result.rescuedFromQueue += 1;
+        }
+
         result.scanned = rows.length;
         if (!rows.length) return result;
 
@@ -146,6 +192,18 @@ export class LeadIntakeRescueService {
                 break;
             }
 
+            // Стадия-очередь ставится ДО отправки: упади хук сейчас — лид
+            // останется видимо «в очереди», и следующий тик его подберёт
+            // (порядок как у маркеров реанимации отказников).
+            if (queueStatusId && String(lead.STATUS_ID) !== queueStatusId) {
+                await this.stampQueueStage(
+                    bitrix,
+                    leadId,
+                    queueStatusId,
+                    result.warnings,
+                );
+            }
+
             const sent = await this.dispatchAssignment(domain, leadId);
             if (sent) {
                 dispatched += 1;
@@ -159,9 +217,65 @@ export class LeadIntakeRescueService {
 
         this.logger.log(
             `[intake-rescue] ${domain}: просмотрено ${result.scanned}, ` +
-                `дожато ${result.dispatched}, пропущено ${result.skipped}`,
+                `дожато ${result.dispatched}, пропущено ${result.skipped}, ` +
+                `из очереди ХО ${result.rescuedFromQueue}`,
         );
         return result;
+    }
+
+    /**
+     * Лиды, застрявшие в стадии-очереди дольше порога. Проверка непустоты
+     * наших полей — общая для обеих выборок (ниже по циклу), здесь только
+     * сужаем на стороне Битрикса.
+     */
+    private async listStuckInQueue(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        queueStatusId: string,
+        assignedAtName: string | null,
+        select: string[],
+        warnings: string[],
+    ): Promise<BxRow[]> {
+        const stuckBefore = dayjs()
+            .tz(portal.getTimezone())
+            .subtract(QUEUE_STUCK_MINUTES, 'minute')
+            .format(CRM_DATETIME_FORMAT);
+        const filter: Record<string, unknown> = {
+            STATUS_ID: queueStatusId,
+            STATUS_SEMANTIC_ID: IN_PROGRESS_SEMANTIC,
+            '<DATE_MODIFY': stuckBefore,
+        };
+        if (assignedAtName) filter[assignedAtName] = '';
+        try {
+            const { result } = await bitrix.lead.getList(
+                filter as never,
+                select,
+            );
+            return ((result ?? []) as unknown as BxRow[]).filter(Boolean);
+        } catch (error) {
+            warnings.push(
+                `Выборка застрявших в очереди ХО не удалась: ${(error as Error).message}`,
+            );
+            return [];
+        }
+    }
+
+    /** Видимая отметка «лид отправляется в ХО»; падение не блокирует отправку. */
+    private async stampQueueStage(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        leadId: number,
+        queueStatusId: string,
+        warnings: string[],
+    ): Promise<void> {
+        try {
+            await bitrix.lead.update(leadId, {
+                STATUS_ID: queueStatusId,
+            } as never);
+        } catch (error) {
+            warnings.push(
+                `Лид ${leadId}: стадию «Очередь в ХО» поставить не удалось (${(error as Error).message}) — назначение всё равно запускается`,
+            );
+        }
     }
 
     /**

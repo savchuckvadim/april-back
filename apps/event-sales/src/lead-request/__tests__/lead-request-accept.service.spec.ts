@@ -115,7 +115,8 @@ describe('LeadRequestAcceptService', () => {
         const fields = update.mock.calls[0][1];
         expect(fields.STATUS_ID).toBe('PBX_TAKEN_IN_WORK');
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(22);
-        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(32);
+        // Ось слита (2408): site_stage больше не пишется.
+        expect(fields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
         expect(fields.UF_CRM_OP_LEAD_FIRSTPREPARE_LONG).toBe(
             result.firstprepareSeconds,
         );

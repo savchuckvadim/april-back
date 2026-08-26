@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { IBXListItemFields } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
+import { toBatchText } from '@lib/bitrix/consts/batch.consts';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../context/event-report.context';
 import { EEventReportEntityType } from '../init/event-report-init.types';
@@ -86,7 +87,12 @@ export class EventReportPresentationListService {
         if (ctx.reportEventType === 'presentation' && ctx.isFail) {
             items.push({
                 action: 'fail',
-                name: `Презентация не состоялась: ${ctx.reportComment || nowLabel}`,
+                // NAME элемента однострочный по природе — многострочный
+                // комментарий менеджера схлопываем в одну строку, иначе
+                // сырой \n batch-команды доехал бы подчёркиваниями.
+                name: `Презентация не состоялась: ${
+                    ctx.reportComment.replace(/\s+/g, ' ').trim() || nowLabel
+                }`,
             });
         }
         return items;
@@ -114,7 +120,9 @@ export class EventReportPresentationListService {
         set('event_action', item.action);
         set('event_type', 'presentation');
         set('responsible', ctx.planResponsibleId);
-        set('comment', ctx.reportComment);
+        // Комментарий уходит batch-командой (lists.element.add строкой):
+        // сырой \n доезжает до элемента подчёркиванием — только %0A.
+        set('comment', toBatchText(ctx.reportComment));
         const crm: Record<string, string> = {};
         let i = 0;
         const pushCrm = (v: string) => {

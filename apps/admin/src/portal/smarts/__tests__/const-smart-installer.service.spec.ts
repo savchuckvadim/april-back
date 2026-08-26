@@ -21,11 +21,31 @@ describe('ConstSmartInstallerResolver', () => {
                 fieldsFailed: [],
             }),
         };
+        const zpr = {
+            execute: jest.fn().mockResolvedValue({
+                entityTypeId: 1038,
+                created: true,
+                fieldsAdded: ['UF_CRM_7_ZPR_BASE_DEAL'],
+                fieldsExisting: [],
+                fieldsFailed: [],
+            }),
+        };
+        const presentation = {
+            execute: jest.fn().mockResolvedValue({
+                entityTypeId: 1040,
+                created: true,
+                fieldsAdded: ['UF_CRM_8_PRES_BASE_DEAL'],
+                fieldsExisting: [],
+                fieldsFailed: [],
+            }),
+        };
         const resolver = new ConstSmartInstallerResolver(
             aicall as never,
             skap as never,
+            zpr as never,
+            presentation as never,
         );
-        return { resolver, aicall, skap };
+        return { resolver, aicall, skap, zpr, presentation };
     };
 
     it('resolve(aicall) проксирует execute(domain)', async () => {
@@ -44,6 +64,24 @@ describe('ConstSmartInstallerResolver', () => {
             .execute('april.bitrix24.ru');
         expect(skap.execute).toHaveBeenCalledWith('april.bitrix24.ru');
         expect(result.created).toBe(true);
+    });
+
+    it('resolve(zpr) проксирует execute(domain)', async () => {
+        const { resolver, zpr } = makeResolver();
+        const result = await resolver
+            .resolve('zpr')
+            .execute('april.bitrix24.ru');
+        expect(zpr.execute).toHaveBeenCalledWith('april.bitrix24.ru');
+        expect(result.entityTypeId).toBe(1038);
+    });
+
+    it('resolve(presentation) проксирует execute(domain)', async () => {
+        const { resolver, presentation } = makeResolver();
+        const result = await resolver
+            .resolve('presentation')
+            .execute('april.bitrix24.ru');
+        expect(presentation.execute).toHaveBeenCalledWith('april.bitrix24.ru');
+        expect(result.entityTypeId).toBe(1040);
     });
 
     it('неизвестный kind — BadRequest со списком доступных', () => {

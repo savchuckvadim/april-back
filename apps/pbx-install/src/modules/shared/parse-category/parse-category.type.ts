@@ -16,6 +16,12 @@ export interface Stage {
     order: number;
     bitrixEnitiyId: string;
     isDefault: 'Y' | 'N';
+    /**
+     * Явная семантика стадии (`SEMANTICS` crm.status.*): 'S' | 'F' | ''.
+     * Excel-шаблоны её не задают (эвристика по bitrixId/code), const-смарты
+     * задают сами — эвристика не знает исходов вроде NORESULT.
+     */
+    semantics?: 'S' | 'F' | '';
 }
 
 export interface Category {

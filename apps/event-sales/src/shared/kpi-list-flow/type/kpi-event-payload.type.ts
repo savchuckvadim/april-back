@@ -114,8 +114,14 @@ export interface KpiEventItemCodes {
     /** op_result_status: 'op_call_result_yes' | 'op_call_result_no' */
     op_result_status?: PbxSalesKpiListFieldItemCode<'op_result_status'>;
 
-    /** op_noresult_reason: 'secretar' | 'nopickup' | 'busy' | ... */
-    op_noresult_reason?: PbxSalesKpiListFieldItemCode<'op_noresult_reason'>;
+    /**
+     * op_noresult_reason: 'secretar' | 'nopickup' | 'busy' | ...
+     *
+     * `null` — явная очистка поля (пустое значение в FIELDS): финал
+     * upsert'ится, и без очистки стейл-«недозвон» от прошлых событий жил бы
+     * в записи вечно. `undefined` — поле не трогается.
+     */
+    op_noresult_reason?: PbxSalesKpiListFieldItemCode<'op_noresult_reason'> | null;
 
     /** op_work_status: 'op_status_in_work' | 'op_status_fail' | ... */
     op_work_status?: PbxSalesKpiListFieldItemCode<'op_work_status'>;

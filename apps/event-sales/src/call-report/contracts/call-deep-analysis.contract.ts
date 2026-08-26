@@ -128,6 +128,56 @@ export const OBJECTION_SCHEMA = {
     additionalProperties: false,
 } as const;
 
+/**
+ * Гранулярный хвост — ЗЕРКАЛО чеклиста менеджера (поля сделки op_xvost_*):
+ * КП предложено / наполнение озвучено / цена озвучена / дата решения
+ * назначена / дата согласована. null — пункт не звучал или тип не тот.
+ */
+export const HVOST_STEPS_SCHEMA = {
+    type: ['object', 'null'],
+    properties: {
+        offer: { type: ['boolean', 'null'] },
+        complect: { type: ['boolean', 'null'] },
+        price: { type: ['boolean', 'null'] },
+        decisionDate: { type: ['boolean', 'null'] },
+        dateAgreed: { type: ['boolean', 'null'] },
+    },
+    required: ['offer', 'complect', 'price', 'decisionDate', 'dateAgreed'],
+    additionalProperties: false,
+} as const;
+
+/**
+ * Гранулярные 5К — ЗЕРКАЛО чеклиста менеджера (9 подвопросов op_5k_*):
+ * КЛИЕНТ что хочет/готов/цена, КОМПАНИЯ кто/как/правильно ли подобрали,
+ * КОЛЛЕГИ, КОНКУРЕНТ, КРИТЕРИИ выбора.
+ */
+export const FIVE_K_ITEMS_SCHEMA = {
+    type: ['object', 'null'],
+    properties: {
+        clientWhat: { type: ['boolean', 'null'] },
+        clientReady: { type: ['boolean', 'null'] },
+        clientPrice: { type: ['boolean', 'null'] },
+        companyWho: { type: ['boolean', 'null'] },
+        companyHow: { type: ['boolean', 'null'] },
+        companyRight: { type: ['boolean', 'null'] },
+        colleagues: { type: ['boolean', 'null'] },
+        competitor: { type: ['boolean', 'null'] },
+        criteria: { type: ['boolean', 'null'] },
+    },
+    required: [
+        'clientWhat',
+        'clientReady',
+        'clientPrice',
+        'companyWho',
+        'companyHow',
+        'companyRight',
+        'colleagues',
+        'competitor',
+        'criteria',
+    ],
+    additionalProperties: false,
+} as const;
+
 /** Схема ответа модели для глубокого разбора звонка. */
 export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
     type: 'object',
@@ -168,6 +218,10 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         recommendations: { type: 'array', items: { type: 'string' } },
         sections: { type: 'array', items: SECTION_ITEM_SCHEMA },
         speechAnalysis: { type: ['string', 'null'] },
+        // Оценка LLM: транскрипт без разметки ролей, точные числа кодом
+        // возможны только при размеченном диалоге (внешний агент-контур).
+        talkRatioPct: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
+        questionsCount: { type: ['integer', 'null'], minimum: 0 },
         score: { type: 'integer', minimum: 1, maximum: 10 },
         scoreExplanation: { type: ['string', 'null'] },
         scriptCompliance: {
@@ -184,8 +238,10 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         // (boolean — фильтры смарта; *_Analysis — записи в таймлайн).
         hvostDone: { type: ['boolean', 'null'] },
         hvostAnalysis: { type: ['string', 'null'] },
+        hvostSteps: HVOST_STEPS_SCHEMA,
         fiveKDone: { type: ['boolean', 'null'] },
         fiveKAnalysis: { type: ['string', 'null'] },
+        fiveKItems: FIVE_K_ITEMS_SCHEMA,
         flow: FLOW_SCHEMA,
     },
     required: [
@@ -207,6 +263,8 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'recommendations',
         'sections',
         'speechAnalysis',
+        'talkRatioPct',
+        'questionsCount',
         'score',
         'scoreExplanation',
         'scriptCompliance',
@@ -214,8 +272,10 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'employeeRecommendations',
         'hvostDone',
         'hvostAnalysis',
+        'hvostSteps',
         'fiveKDone',
         'fiveKAnalysis',
+        'fiveKItems',
         'flow',
     ],
     additionalProperties: false,
@@ -413,8 +473,10 @@ export const DEEP_ANALYSIS_OUTPUT_SPEC = `ИТОГОВЫЕ ПОЛЯ
   (что показывали и какую выгоду проговаривали именно для этого специалиста).
 - hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
   после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
-  механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично
-  или «поработайте, я перезвоню» без даты — false. Для других типов — null.
+  механизм решения, договорённость о КП и ДАТЕ следующего звонка).
+  СТРОГО: если хотя бы ОДИН из четырёх этапов в твоём же hvostAnalysis
+  помечен «✗» — hvostDone ОБЯЗАН быть false; «пройден» = все четыре «✓».
+  «Поработайте, я перезвоню» без даты — false. Для других типов — null.
 - hvostAnalysis — вместе с hvostDone: разбор прохождения хвоста по этапам,
   каждый с новой строки («1. Вопросы ценности — ✓/✗ …», «2. Кто будет
   работать — …», «3. Цена комплекта — …», «4. Механизм решения и дата — …»)
@@ -426,6 +488,22 @@ export const DEEP_ANALYSIS_OUTPUT_SPEC = `ИТОГОВЫЕ ПОЛЯ
 - fiveKAnalysis — вместе с fiveKDone: по каждой «К» с новой строки — что
   выяснено (с конкретикой) или что осталось невыясненным. Для других
   типов — null.
+- hvostSteps — гранулярный хвост, ТЕ ЖЕ вопросы, на которые менеджер
+  отвечает в своём чеклисте (отвечай true=прозвучало, false=должно было
+  прозвучать, но нет; null=тип звонка не презентация/решение):
+  offer — «Предложено КП?»; complect — «Озвучено наполнение комплекта?»;
+  price — «Озвучена цена?»; decisionDate — «Назначена дата звонка по
+  решению?»; dateAgreed — «Дата согласована с клиентом (он подтвердил)?».
+- fiveKItems — гранулярные 5К, дословно вопросы чеклиста менеджера
+  (true=выяснено в разговоре, false=не выяснено, null=не тот тип звонка):
+  clientWhat — «КЛИЕНТ: Что хочет?»; clientReady — «КЛИЕНТ: Готов
+  работать?»; clientPrice — «КЛИЕНТ: Укладываемся в цену?»;
+  companyWho — «КОМПАНИЯ: Кто принимает решение?»; companyHow —
+  «КОМПАНИЯ: Как принимается решение?»; companyRight — «КОМПАНИЯ:
+  Правильно ли подобрали цену и комплект?»; colleagues — «КОЛЛЕГИ: Кто
+  будет работать с системой, будут ли обсуждать?»; competitor —
+  «КОНКУРЕНТ: По каким критериям нас сравнивают?»; criteria — «КРИТЕРИЙ
+  ВЫБОРА: Что важно клиенту при выборе СПС?».
 - nextStep.set — договорились ли о КОНКРЕТНОМ следующем шаге. «Клиент подумает» и
   «перезвоним как-нибудь» — это НЕ следующий шаг. description — что именно
   и когда, date — YYYY-MM-DD или null.
@@ -449,6 +527,12 @@ export const DEEP_ANALYSIS_OUTPUT_SPEC = `ИТОГОВЫЕ ПОЛЯ
   разговор с той точки, где он оборвался.
 - speechAnalysis — разбор речи: структура спича, приём «свойство-связка-выгода»,
   темп, слова-паразиты, заученность, соотношение монолога и диалога.
+- talkRatioPct — оцени долю речи МЕНЕДЖЕРА в разговоре, целое 0-100 (%).
+  Реплики менеджера определяй по смыслу (кто продаёт/задаёт вопросы про
+  систему). Норма 40-60; монолог менеджера >70 — тревожный признак.
+  Не можешь отличить роли (обрывок, автоответчик) — null.
+- questionsCount — сколько вопросов задал МЕНЕДЖЕР клиенту за разговор
+  (целое, только явные вопросы менеджера, не клиента). Не определить — null.
 - score (1-10) — общая оценка звонка в контексте его этапа продаж, только по
   применимым разделам. Короткий звонок с согласием на пробный доступ — это не
   «десятка»: смотри на глубину проработки, а не на факт согласия.

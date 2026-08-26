@@ -5,7 +5,12 @@ import { LeadIntakeRescueService } from '../intake/lead-intake-rescue.service';
  * вебхуки не повторяет). Проверяем, что дожимаются ТОЛЬКО такие лиды —
  * ошибочный дожим увёл бы заявку у работающего менеджера.
  */
-const makePortal = (withFields = true) => ({
+const makePortal = (
+    withFields = true,
+    queueStatusId: string | null = null,
+) => ({
+    getLeadStatusIdByCode: (code: string) =>
+        code === 'lead_xo_queue' ? (queueStatusId ?? undefined) : undefined,
     getEntityFieldByCode: (_entity: string, code: string) => {
         if (!withFields) return undefined;
         if (code === 'op_lead_assigned_at') {
@@ -27,16 +32,28 @@ const makePortal = (withFields = true) => ({
 const makeDeps = (input: {
     leads: Record<string, unknown>[];
     withFields?: boolean;
+    /** STATUS_ID стадии-очереди ХО; null — стадия на портале не сопоставлена. */
+    queueStatusId?: string | null;
+    /** Лиды, застрявшие в очереди (вторая выборка). */
+    queuedLeads?: Record<string, unknown>[];
 }) => {
-    const leadGetList = jest.fn().mockResolvedValue({ result: input.leads });
+    // Первый вызов — окно создания, второй — застрявшие в очереди.
+    const leadGetList = jest
+        .fn()
+        .mockResolvedValueOnce({ result: input.leads })
+        .mockResolvedValue({ result: input.queuedLeads ?? [] });
+    const leadUpdate = jest.fn().mockResolvedValue({ result: true });
     const dispatch = {
         accept: jest.fn().mockResolvedValue({ operationId: 'op-1' }),
     };
     const idempotency = { fingerprint: jest.fn().mockReturnValue('fp') };
     const pbx = {
         init: jest.fn().mockResolvedValue({
-            bitrix: { lead: { getList: leadGetList } },
-            PortalModel: makePortal(input.withFields ?? true),
+            bitrix: { lead: { getList: leadGetList, update: leadUpdate } },
+            PortalModel: makePortal(
+                input.withFields ?? true,
+                input.queueStatusId ?? null,
+            ),
         }),
     };
     const service = new LeadIntakeRescueService(
@@ -44,7 +61,7 @@ const makeDeps = (input: {
         dispatch as never,
         idempotency as never,
     );
-    return { service, leadGetList, dispatch };
+    return { service, leadGetList, leadUpdate, dispatch };
 };
 
 /** Заявка лидогена: код партнёра заполнен, назначения не было. */
@@ -181,5 +198,89 @@ describe('LeadIntakeRescueService', () => {
         expect(filter['>DATE_CREATE']).toBeDefined();
         expect(filter.STATUS_SEMANTIC_ID).toBe('P');
         expect(filter['UF_CRM_OP_LEAD_ASSIGNED_AT']).toBe('');
+    });
+
+    /*
+     * Видимая очередь ХО (todo2508 №3): стадия ставится ДО отправки хука —
+     * упади он сейчас, лид останется «в очереди» и его подберёт следующий
+     * тик. Порядок тот же, что у маркеров реанимации отказников.
+     */
+    it('ставит стадию «Очередь в ХО» перед отправкой', async () => {
+        const { service, leadUpdate, dispatch } = makeDeps({
+            leads: [LOST_REQUEST],
+            queueStatusId: 'PBX_XO_QUEUE',
+        });
+
+        await service.runForDomain('d.b24.ru', 180, 20, true);
+
+        expect(leadUpdate).toHaveBeenCalledWith(42, {
+            STATUS_ID: 'PBX_XO_QUEUE',
+        });
+        const updateOrder = leadUpdate.mock.invocationCallOrder[0];
+        const dispatchOrder = dispatch.accept.mock.invocationCallOrder[0];
+        expect(updateOrder).toBeLessThan(dispatchOrder);
+    });
+
+    it('лид уже в очереди — стадию повторно не пишет', async () => {
+        const { service, leadUpdate } = makeDeps({
+            leads: [{ ...LOST_REQUEST, STATUS_ID: 'PBX_XO_QUEUE' }],
+            queueStatusId: 'PBX_XO_QUEUE',
+        });
+
+        await service.runForDomain('d.b24.ru', 180, 20, true);
+
+        expect(leadUpdate).not.toHaveBeenCalled();
+    });
+
+    /*
+     * Главная ценность стадии: застрявший лид дожимается ВНЕ окна создания —
+     * по полям его бы уже никогда не нашли (окно давно ушло).
+     */
+    it('дожимает застрявшего в очереди вне окна создания', async () => {
+        const { service, dispatch, leadGetList } = makeDeps({
+            leads: [],
+            queueStatusId: 'PBX_XO_QUEUE',
+            queuedLeads: [{ ...LOST_REQUEST, ID: '900' }],
+        });
+
+        const run = await service.runForDomain('d.b24.ru', 180, 20, true);
+
+        expect(run.rescuedFromQueue).toBe(1);
+        expect(run.dispatched).toBe(1);
+        const [queueFilter] = leadGetList.mock.calls[1] as [
+            Record<string, unknown>,
+            string[],
+        ];
+        expect(queueFilter.STATUS_ID).toBe('PBX_XO_QUEUE');
+        // Свежие не берём: по ним хук может выполняться прямо сейчас.
+        expect(queueFilter['<DATE_MODIFY']).toBeDefined();
+        expect(queueFilter['>DATE_CREATE']).toBeUndefined();
+    });
+
+    it('стадия-очередь не сопоставлена — второй выборки нет, работа как раньше', async () => {
+        const { service, leadGetList, leadUpdate, dispatch } = makeDeps({
+            leads: [LOST_REQUEST],
+            queueStatusId: null,
+        });
+
+        const run = await service.runForDomain('d.b24.ru', 180, 20, true);
+
+        expect(leadGetList).toHaveBeenCalledTimes(1);
+        expect(leadUpdate).not.toHaveBeenCalled();
+        expect(run.rescuedFromQueue).toBe(0);
+        expect(dispatch.accept).toHaveBeenCalledTimes(1);
+    });
+
+    it('дубль между выборками не дожимается дважды', async () => {
+        const { service, dispatch } = makeDeps({
+            leads: [LOST_REQUEST],
+            queueStatusId: 'PBX_XO_QUEUE',
+            queuedLeads: [LOST_REQUEST],
+        });
+
+        const run = await service.runForDomain('d.b24.ru', 180, 20, true);
+
+        expect(run.scanned).toBe(1);
+        expect(dispatch.accept).toHaveBeenCalledTimes(1);
     });
 });

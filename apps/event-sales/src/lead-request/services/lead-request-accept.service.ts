@@ -258,18 +258,13 @@ export class LeadRequestAcceptService {
             );
         }
 
+        // Ось слита (2408): признак пути заявки несёт только site_status,
+        // site_stage больше не пишется.
         this.setItem(
             portal,
             fields,
             EnumLeadRequestFieldCode.op_lead_site_status,
             EnumLeadSiteStatusCode.taken,
-            warnings,
-        );
-        this.setItem(
-            portal,
-            fields,
-            EnumLeadRequestFieldCode.op_lead_site_stage,
-            EnumLeadSiteStageCode.taken,
             warnings,
         );
 

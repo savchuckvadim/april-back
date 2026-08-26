@@ -4,10 +4,9 @@ import { toBatchText } from '@lib/bitrix/consts/batch.consts';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
-    EnumLeadOpStatusCode,
     EnumLeadRequestFieldCode,
-    EnumLeadSiteStageCode,
     EnumLeadSiteStatusCode,
+    LEAD_SITE_STATUS_RANK,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import {
     appendLeadRequestHistory,
@@ -35,7 +34,12 @@ export interface LeadRequestSyncResult {
  *  - ФИНАЛ (продажа/отказ) — статусы всем связанным лидам;
  *  - СВЯЗЬ ПРЕЗЕНТАЦИИ (leadSync.presentationLink + leadId из модалки) —
  *    статусы, выбранные менеджером, только ВЫБРАННОМУ лиду + линк
- *    to_presentation_sales + история «Презентация связана с заявкой».
+ *    to_presentation_sales + история «Презентация связана с заявкой»;
+ *  - АВТОСТАТУС ЗАЯВКИ (единая ось, 2408): любой отчёт двигает
+ *    op_lead_site_status «только вперёд» по лестнице
+ *    Первый звонок → Дозвонились → Презентация (LEAD_SITE_STATUS_RANK) —
+ *    без записи истории и без спама: лид уже прочитан волной 1, статус
+ *    пишется лишь когда реально повышается.
  *
  * Что пишется на финале (graceful — нет поля → скип):
  *  - продажа: op_lead_status=Продажа, стадия заявки=Продажа,
@@ -72,13 +76,17 @@ export class EventReportLeadRequestSyncService {
         const result: LeadRequestSyncResult = { synced: 0, warnings: [] };
         const isFinal = ctx.isSuccessSale || ctx.isFail;
         const presentationLeadId = this.presentationLeadId(ctx);
-        if (!isFinal && !presentationLeadId) return result;
+        const axisTarget = this.axisStatusFor(ctx);
+        if (!isFinal && !presentationLeadId && !axisTarget) return result;
 
-        // Связь презентации без финала — пишем ТОЛЬКО выбранному лиду.
-        const leadIds =
-            !isFinal && presentationLeadId
-                ? [presentationLeadId]
-                : this.collectLeadIds(ctx);
+        // Финал и автостатус двигают ВСЕ связанные лиды; связь презентации
+        // добавляет выбранного менеджером (его лид может не быть в графе).
+        const ids = new Set<number>();
+        if (isFinal || axisTarget) {
+            for (const id of this.collectLeadIds(ctx)) ids.add(id);
+        }
+        if (presentationLeadId) ids.add(presentationLeadId);
+        const leadIds = [...ids];
         if (leadIds.length === 0) return result;
 
         // Волна 1: текущее состояние лидов (история — multiple, нужен append).
@@ -122,7 +130,9 @@ export class EventReportLeadRequestSyncService {
             ? 'продажа'
             : ctx.isFail
               ? 'отказ'
-              : 'связь презентации';
+              : presentationLeadId
+                ? 'связь презентации'
+                : 'автостатус заявки';
         this.logger.log(
             `lead-request sync: ${reason} → лидов ${result.synced}/${leadIds.length}`,
         );
@@ -207,16 +217,16 @@ export class EventReportLeadRequestSyncService {
         const sync = ctx.dto.leadSync;
         const notCaType = sync?.notCaTypeCode ?? null;
 
+        /*
+         * Ось слита (аудит 2408): исход несёт ОДИН op_lead_site_status;
+         * op_lead_site_stage и op_lead_status выведены из оборота
+         * (0 читателей-логики), их писатели сняты.
+         */
         if (ctx.isSuccessSale) {
             this.setItem(
                 fields,
-                EnumLeadRequestFieldCode.op_lead_status,
-                EnumLeadOpStatusCode.sale,
-            );
-            this.setItem(
-                fields,
-                EnumLeadRequestFieldCode.op_lead_site_stage,
-                EnumLeadSiteStageCode.sale,
+                EnumLeadRequestFieldCode.op_lead_site_status,
+                EnumLeadSiteStatusCode.sale,
             );
             this.setBool(
                 fields,
@@ -232,18 +242,6 @@ export class EventReportLeadRequestSyncService {
                     ? EnumLeadSiteStatusCode.notCa
                     : EnumLeadSiteStatusCode.fail,
             );
-            this.setItem(
-                fields,
-                EnumLeadRequestFieldCode.op_lead_site_stage,
-                EnumLeadSiteStageCode.fail,
-            );
-            this.setItem(
-                fields,
-                EnumLeadRequestFieldCode.op_lead_status,
-                notCaType
-                    ? EnumLeadOpStatusCode.notCa
-                    : EnumLeadOpStatusCode.fail,
-            );
             if (notCaType) {
                 this.setItem(
                     fields,
@@ -251,10 +249,14 @@ export class EventReportLeadRequestSyncService {
                     notCaType,
                 );
             }
+        } else {
+            // Не финал: автостатус единой оси — только вперёд по лестнице.
+            this.applyAxisStatus(ctx, lead, fields);
         }
 
         // Явный выбор менеджера (модалка связи презентации) — поверх
-        // вычисленных дефолтов: его решение главнее.
+        // вычисленных дефолтов: его решение главнее. siteStageCode из
+        // старых сборок фрейма принимается, но игнорируется (ось слита).
         if (sync?.siteStatusCode) {
             this.setItem(
                 fields,
@@ -262,20 +264,80 @@ export class EventReportLeadRequestSyncService {
                 sync.siteStatusCode,
             );
         }
-        if (sync?.siteStageCode) {
-            this.setItem(
-                fields,
-                EnumLeadRequestFieldCode.op_lead_site_stage,
-                sync.siteStageCode,
-            );
-        }
 
         if (this.presentationLeadId(ctx) === Number(lead.ID)) {
             this.linkPresentationDeal(ctx, lead, fields);
         }
 
-        this.appendHistory(ctx, lead, fields);
+        // История — только для финалов и связи презентации: автостатус на
+        // каждом отчёте превратил бы append-историю заявки в спам.
+        if (
+            ctx.isSuccessSale ||
+            ctx.isFail ||
+            this.presentationLeadId(ctx) === Number(lead.ID)
+        ) {
+            this.appendHistory(ctx, lead, fields);
+        }
         return fields;
+    }
+
+    /**
+     * Целевой автостатус единой оси заявки по отчёту; null — двигать нечего
+     * («новое дело», отмена — не разговор с клиентом).
+     */
+    private axisStatusFor(
+        ctx: EventReportContext,
+    ): EnumLeadSiteStatusCode | null {
+        if (ctx.isSuccessSale || ctx.isFail) return null; // финалы — своя ветка
+        if (ctx.isPresentationDone) {
+            return EnumLeadSiteStatusCode.presentation;
+        }
+        if (ctx.isResult) return EnumLeadSiteStatusCode.reached;
+        if (ctx.isNoResult) return EnumLeadSiteStatusCode.firstCall;
+        return null;
+    }
+
+    /**
+     * Автостатус «только вперёд»: пишется лишь когда лестница реально
+     * повышается (LEAD_SITE_STATUS_RANK). Повторный недозвон после
+     * «Дозвонились» ничего не трогает; финалы автоматика не перетирает.
+     */
+    private applyAxisStatus(
+        ctx: EventReportContext,
+        lead: BxRow,
+        fields: BxRow,
+    ): void {
+        const target = this.axisStatusFor(ctx);
+        if (!target) return;
+
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_site_status,
+        );
+        if (!field) return;
+
+        const raw = lead[this.portal.getFieldBitrixId(field)];
+        // Значение enum приходит числом или строкой id; иное — не значение.
+        const rawId =
+            typeof raw === 'number' || typeof raw === 'string'
+                ? String(raw)
+                : '';
+        const currentCode = rawId
+            ? (field.items.find(item => String(item.bitrixId) === rawId)
+                  ?.code ?? null)
+            : null;
+        const currentRank =
+            currentCode &&
+            LEAD_SITE_STATUS_RANK[currentCode as EnumLeadSiteStatusCode];
+        if (currentRank && currentRank >= LEAD_SITE_STATUS_RANK[target]) {
+            return;
+        }
+
+        this.setItem(
+            fields,
+            EnumLeadRequestFieldCode.op_lead_site_status,
+            target,
+        );
     }
 
     /**

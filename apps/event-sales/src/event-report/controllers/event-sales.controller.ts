@@ -25,6 +25,12 @@ import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { EventFlowOperationDto } from '../dto/response/event-flow-operation.dto';
 import { EventFlowJobData } from '../dto/event-flow-job.dto';
 import { EventFlowStatusService } from '../services/status/event-flow-status.service';
+import { StagePredictService } from '../services/stage-predict/stage-predict.service';
+import {
+    StagePredictRequestDto,
+    StagePredictResponseDto,
+} from '../dto/stage-predict/stage-predict.dto';
+import { EventFlowGuardService } from '../services/flow-guard/event-flow-guard.service';
 
 @ApiTags('Event Sales')
 @Controller('event-sales')
@@ -34,7 +40,31 @@ export class EventSalesController {
     constructor(
         private readonly queue: QueueDispatcherService,
         private readonly status: EventFlowStatusService,
+        private readonly stagePredict: StagePredictService,
+        private readonly flowGuard: EventFlowGuardService,
     ) {}
+
+    /**
+     * Предикт смены стадии основной воронки — ДО отправки отчёта.
+     * Фронт зовёт его при смене статуса/типа плана, чтобы показать
+     * стадийные чек-листы («Клиент на решении», «Продажа») заранее.
+     */
+    @ApiOperation({
+        summary: 'Предикт стадии основной сделки',
+        description:
+            'Считает, куда отправка отчёта с таким контекстом двинет ' +
+            'основную сделку (та же лестница, что у реального flow). ' +
+            'UX-хинт для чек-листов: реальный прогон пересчитает стадию сам.',
+    })
+    @ApiBody({ type: StagePredictRequestDto })
+    @ApiOkResponse({ type: StagePredictResponseDto })
+    @Post('stage-predict')
+    @HttpCode(200)
+    async getStagePredict(
+        @Body() dto: StagePredictRequestDto,
+    ): Promise<StagePredictResponseDto> {
+        return this.stagePredict.predict(dto);
+    }
 
     /**
      * Приём отчёта менеджера из приложения «Звонки».
@@ -68,6 +98,10 @@ export class EventSalesController {
     async getFlow(
         @Body() dto: EventSalesFlowDto,
     ): Promise<EventFlowOperationDto> {
+        // Согласованность DTO проверяется ДО очереди: 400 отсюда фронт
+        // покажет баннером, 400 из воркера не увидит никто.
+        await this.flowGuard.assertValid(dto);
+
         const operationId = dto.operationId || randomUUID();
 
         const existing = await this.status.get(dto.domain, operationId);

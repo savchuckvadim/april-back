@@ -21,6 +21,7 @@ import {
     collectCallingResultWorklist,
     normalizeCallingEventType,
 } from '../../types/calling-event.enum';
+import { toBatchText } from '@lib/bitrix/consts/batch.consts';
 import {
     buildTimelineComment,
     completedPhrase,
@@ -75,21 +76,25 @@ export class CallingFlowService {
             formatCrmDateTime(ctx.nowDate, undefined, true),
             ctx.timeline,
             ctx.timelineSpont,
+            ctx.dto.report.description,
         );
         if (!text) return;
+
+        // комментарий уходит batch-командой: сырые \n теряются, только %0A
+        const comment = toBatchText(text);
 
         if (ctx.dealId) {
             this.bitrix.batch.timeline.addTimelineComment('timeline_deal', {
                 ENTITY_ID: ctx.dealId,
                 ENTITY_TYPE: 'deal',
-                COMMENT: text,
+                COMMENT: comment,
             });
         }
         if (ctx.companyId) {
             this.bitrix.batch.timeline.addTimelineComment('timeline_company', {
                 ENTITY_ID: ctx.companyId,
                 ENTITY_TYPE: 'company',
-                COMMENT: text,
+                COMMENT: comment,
             });
         }
     }
@@ -102,7 +107,8 @@ export class CallingFlowService {
 
         this.bitrix.batch.task.commentAdd('add_comment_task', task.id, {
             AUTHOR_ID: ctx.currentUserId,
-            POST_MESSAGE: ctx.dto.report.description,
+            // batch-команда: сырые \n в значении теряются, только %0A
+            POST_MESSAGE: toBatchText(ctx.dto.report.description),
         });
 
         // plan.isExpired — НЕ признак нерезультативности: фронт ставит его и при
@@ -229,7 +235,8 @@ export class CallingFlowService {
         );
         this.bitrix.batch.task.add('create_task', {
             TITLE: `${plan.type.current.name}: ${plan.name}`,
-            DESCRIPTION: description,
+            // batch-команда: сырые \n в значении теряются, только %0A
+            DESCRIPTION: toBatchText(description),
             DEADLINE: plan.deadline,
             UF_CRM_TASK: ufCrmTask,
             CREATED_BY: plan.createdBy.ID,
@@ -306,7 +313,16 @@ export class CallingFlowService {
 
     private addElement(params: IOrkHistoryElementParams): void {
         if (!this.builder || !this.list?.bitrixId) return;
-        const fields = this.builder.build(params);
+        // Единая точка экранирования: NAME и комментарий уходят в
+        // lists.element.add batch-командой — сырые \n там теряются, только %0A
+        const fields = this.builder.build({
+            ...params,
+            name: toBatchText(params.name),
+            comment:
+                params.comment === undefined
+                    ? undefined
+                    : toBatchText(params.comment),
+        });
         // uuid: ELEMENT_CODE обязан быть глобально уникальным — коллизия кода
         // даёт ERROR_ELEMENT_ALREADY_EXISTS и молчаливую потерю строки
         const code = `${this.list.group}_${this.list.type}_${randomUUID().replace(/-/g, '')}`;

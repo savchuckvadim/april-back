@@ -4,6 +4,8 @@ import {
     InstallCallReportSmartUseCase,
 } from '@lib/call-lib';
 import { InstallSkapSmartUseCase } from '@lib/skap-lib';
+import { InstallZprSmartUseCase } from '@app/pbx-install/smart/zpr/install-zpr-smart.use-case';
+import { InstallPresentationSmartUseCase } from '@app/pbx-install/smart/presentation/install-presentation-smart.use-case';
 import { CONST_SMART_REGISTRY } from '@lib/portal-lib/pbx/const-smart-registry';
 
 /** Общий контракт установщика const-смарта. */
@@ -23,10 +25,16 @@ export class ConstSmartInstallerResolver {
     constructor(
         aicallInstaller: InstallCallReportSmartUseCase,
         skapInstaller: InstallSkapSmartUseCase,
+        zprInstaller: InstallZprSmartUseCase,
+        presentationInstaller: InstallPresentationSmartUseCase,
     ) {
         this.byKind = {
             aicall: aicallInstaller,
             skap: skapInstaller,
+            // ЗПР — первый const-смарт с воронкой/стадиями.
+            zpr: zprInstaller,
+            // «Презентации» — зеркало сделок sales_presentation (тип 'pres').
+            presentation: presentationInstaller,
         };
     }
 

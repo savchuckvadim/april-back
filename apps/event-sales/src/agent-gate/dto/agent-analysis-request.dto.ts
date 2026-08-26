@@ -259,6 +259,161 @@ export class AgentNextStepDto {
     date?: string;
 }
 
+/**
+ * Гранулярный «хвост» — зеркало чеклиста менеджера в сделке (op_xvost_*).
+ * true — пункт прозвучал в звонке, false — должен был, но нет,
+ * null/пропуск — тип звонка не презентация/решение.
+ */
+export class AgentHvostStepsDto {
+    @ApiPropertyOptional({
+        description: 'Предложено КП?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    offer?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'Озвучено наполнение комплекта?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    complect?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'Озвучена цена?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    price?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'Назначена дата звонка по решению?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    decisionDate?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'Дата согласована с клиентом (он подтвердил)?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    dateAgreed?: boolean | null;
+}
+
+/**
+ * Гранулярные 5К — зеркало чеклиста менеджера в сделке (op_5k_*).
+ * true — выяснено в разговоре, false — не выяснено,
+ * null/пропуск — тип звонка не презентация/решение.
+ */
+export class AgentFiveKItemsDto {
+    @ApiPropertyOptional({
+        description: 'КЛИЕНТ: Что хочет?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    clientWhat?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КЛИЕНТ: Готов работать?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    clientReady?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КЛИЕНТ: Укладываемся в цену?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    clientPrice?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КОМПАНИЯ: Кто принимает решение?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    companyWho?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КОМПАНИЯ: Как принимается решение?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    companyHow?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КОМПАНИЯ: Правильно ли подобрали цену и комплект?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    companyRight?: boolean | null;
+
+    @ApiPropertyOptional({
+        description:
+            'КОЛЛЕГИ: Кто будет работать с системой, будут ли обсуждать?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    colleagues?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КОНКУРЕНТ: По каким критериям нас сравнивают?',
+        example: false,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    competitor?: boolean | null;
+
+    @ApiPropertyOptional({
+        description: 'КРИТЕРИЙ ВЫБОРА: Что важно клиенту при выборе СПС?',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    criteria?: boolean | null;
+}
+
 /** Привязка к элементу списка отчётности (KPI / История). */
 export class AgentListItemLinkDto {
     @ApiProperty({
@@ -713,6 +868,19 @@ export class AgentCallAnalysisDto {
 
     @ApiPropertyOptional({
         description:
+            'Гранулярный «хвост» по вопросам чеклиста менеджера (КП, ' +
+            'наполнение, цена, дата решения, согласование даты). ' +
+            'Итог hvostDone пересчитывается кодом из этих пунктов.',
+        type: AgentHvostStepsDto,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentHvostStepsDto)
+    hvostSteps?: AgentHvostStepsDto | null;
+
+    @ApiPropertyOptional({
+        description:
             'Закрыты ли все 5К после встречи (Клиент/Компания/Коллеги/' +
             'Конкурент/Критерии выбора). Только для презентаций/решений; ' +
             'null — не применимо.',
@@ -735,6 +903,19 @@ export class AgentCallAnalysisDto {
     @IsOptional()
     @IsString()
     fiveKAnalysis?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Гранулярные 5К по вопросам чеклиста менеджера (9 подвопросов: ' +
+            'клиент ×3, компания ×3, коллеги, конкурент, критерии выбора). ' +
+            'Итог fiveKDone пересчитывается кодом из этих пунктов.',
+        type: AgentFiveKItemsDto,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentFiveKItemsDto)
+    fiveKItems?: AgentFiveKItemsDto | null;
 
     @ApiPropertyOptional({
         description:

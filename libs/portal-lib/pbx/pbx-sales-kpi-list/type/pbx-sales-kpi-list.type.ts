@@ -30,6 +30,15 @@ import {
 // su
 // crm
 
+/**
+ * @deprecated ЛЕГАСИ-копия справочника KPI-списка — рантаймом НЕ используется
+ * и ОТСТАЛА от истины: здесь нет item'ов `refine`, `call_in_progress` в
+ * items event_type и др. Единственный источник для install и рантайма —
+ * `PBX_SALES_KPI_LIST_FIELDS` (pbx-sales-kpi-list-field.type.ts). Не
+ * генерируйте по этому объекту шаблоны — история «доработка запланирована →
+ * тип события неопределён» началась именно с ручного install по устаревшему
+ * списку.
+ */
 export const SalesKpiFields = {
     [EnumSalesKpiFieldCode.event_type]: {
         name: 'Тип События',

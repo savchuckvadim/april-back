@@ -192,7 +192,21 @@ export class KpiListFlowService {
         }
     }
 
-    /** ID существующего элемента с этим кодом; null — не найден/ошибка. */
+    /**
+     * ID существующего элемента с этим кодом; null — не найден/ошибка.
+     *
+     * Адресация — ТОЛЬКО через штатный параметр `ELEMENT_CODE`
+     * (первоклассный параметр lists.element.get), а не через
+     * `filter { '=CODE': … }`: фильтр по CODE у списков ненадёжен — REST
+     * молча выбрасывает неподдержанный ключ и отдаёт ПЕРВУЮ СТРАНИЦУ всех
+     * элементов. На боевом портале (тысячи записей KPI) существующий финал в
+     * страницу не попадал → false negative → `lists.element.add` с занятым
+     * кодом падал в result_error, и повторный финал (отказ/продажа) МОЛЧА
+     * терялся — владелец видел только отчётную запись (todo2508-02 №8).
+     * `ELEMENT_CODE` возвращает ровно этот элемент независимо от размера
+     * списка; отсутствие элемента приходит пустым результатом либо ошибкой —
+     * оба случая корректно дают null (ветка add).
+     */
     private async findExistingId(
         list: IPBXList,
         elementCode: string,
@@ -200,7 +214,7 @@ export class KpiListFlowService {
         try {
             const response = (await this.bitrix.listItem.get({
                 IBLOCK_ID: String(list.bitrixId),
-                filter: { '=CODE': elementCode },
+                ELEMENT_CODE: elementCode,
                 select: ['ID', 'CODE'],
             })) as { result?: IBXListItem[] };
             const found = (response?.result ?? []).find(
@@ -210,12 +224,13 @@ export class KpiListFlowService {
             return Number.isFinite(id) && id > 0 ? id : null;
         } catch (error) {
             /*
-             * Чтение упало (сеть/права) — считаем, что элемента нет, и идём
-             * в add: Битрикс сам отклонит дубликат кода, а потерять продажу
-             * из-за сбоя проверки нельзя.
+             * «Элемента нет» у Битрикса — тоже ошибка чтения, поэтому любой
+             * сбой (не найден/сеть/права) ведёт в add: Битрикс сам отклонит
+             * дубликат кода, а потерять продажу из-за сбоя проверки нельзя.
+             * Лог — debug, не warn: штатный первый финал проходит эту ветку.
              */
-            this.logger.warn(
-                `проверка существования ${elementCode} не удалась: ${String(error)}`,
+            this.logger.debug(
+                `элемент ${elementCode} не прочитан (считаем отсутствующим): ${String(error)}`,
             );
             return null;
         }

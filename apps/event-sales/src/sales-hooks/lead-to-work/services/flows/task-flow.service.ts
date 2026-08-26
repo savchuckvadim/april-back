@@ -37,7 +37,8 @@ export interface TaskFlowInput {
 /**
  * Задачи хука «лид → работа».
  *
- * Два режима: `move` — открытые задачи переезжают на нового ответственного
+ * Три режима: `none` — задачи не трогаются вообще (и новая НЕ создаётся:
+ * конвертации автозадача не нужна); `move` — открытые задачи переезжают на нового ответственного
  * с идемпотентным префиксом «Звонок» (повторный хук не даёт «Звонок Звонок…»)
  * и union CRM-привязок; `close` (а также любая ХО-ветка) — открытые задачи
  * закрываются и ставится одна новая. Новая задача создаётся и тогда, когда
@@ -55,6 +56,20 @@ export class TaskFlowService extends LeadToWorkFlowBase {
             tasksClosed: 0,
             warnings: [],
         };
+        /*
+         * none — задачи не трогаем вовсе: работа переезжает в сделку, а
+         * следующий шаг менеджер ставит сам. Нужен конвертации, где лишняя
+         * автозадача «Звонок» только шумит в списке.
+         */
+        if (item.taskMode === 'none') {
+            if (item.isXo === 'Y') {
+                result.warnings.push(
+                    'taskMode=none в ХО-ветке: задача обзвона не создана — обзвон останется без следующего шага',
+                );
+            }
+            return result;
+        }
+
         const groupId = this.portal.getSalesTaskGroupId();
         const bindings = this.taskBindings(item.leadId, input);
         const closeAll = item.taskMode === 'close' || item.isXo === 'Y';

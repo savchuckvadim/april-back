@@ -52,4 +52,13 @@ export class BxItemService {
     async delete(id: number | string, entityTypeId: string) {
         return await this.repo.delete(id, entityTypeId);
     }
+
+    /**
+     * crm.item.fields — описание полей смарт-типа. Ключи ответа —
+     * ФАКТИЧЕСКИЕ camel-имена crm.item: по ним сверяются формульные
+     * ufCrm{typeId}{Pascal} при зеркалировании полей в PortalDB.
+     */
+    async fields(entityTypeId: number | string) {
+        return await this.repo.fields(entityTypeId);
+    }
 }

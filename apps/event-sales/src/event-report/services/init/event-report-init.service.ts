@@ -11,6 +11,8 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
+import { XVOST_DEAL_FIELD_CODES } from '../entity/event-report-entity-fields.model';
+import { COMPANY_BACKFILL_CODES } from '../entity/event-report-company-backfill.model';
 import {
     EEventReportEntityType,
     EventReportEntityType,
@@ -52,6 +54,9 @@ const DEAL_ACCUMULATED_FIELD_CODES = [
     'pres_comments',
     'op_fail_comments',
     'op_mhistory',
+    // Счётчик переносов (todo2508-02 №6): DealMoveCountService пишет
+    // «текущее + 1» из слепка — без чтения инкремент вечно давал бы 1.
+    'op_move_count',
 ] as const;
 
 /**
@@ -73,6 +78,41 @@ const OWNER_DEAL_LINK_KEYS = [
     'UF_CRM_TO_PRESENTATION_SALES',
     'UF_CRM_TO_BASE_TMC',
 ] as const;
+
+/**
+ * Select чтения сделок init-батча: базовый набор + UF-поля, которые flow
+ * потом ЧИТАЕТ со сделок. `crm.deal.list` возвращает ровно то, что попросили,
+ * поэтому каждый читатель обязан быть здесь представлен:
+ *  - {@link DEAL_ACCUMULATED_FIELD_CODES} — read-modify-write накопительных
+ *    полей (без чтения запись затирает историю);
+ *  - {@link XVOST_DEAL_FIELD_CODES} — снимок deal-only «Хвоста» с базовой
+ *    сделки в pres-сделку (`copyXvostSnapshot`): без select значения с
+ *    базовой не приезжали, и снимок был вечно пуст;
+ *  - {@link COMPANY_BACKFILL_CODES} — бэкфилл пустых полей компании со
+ *    сделки (`EventReportCompanyBackfillModel`): без select сделка выглядела
+ *    пустой, и бэкфилл никогда не срабатывал.
+ *
+ * Компании select не нужен: она читается `crm.company.get`, который отдаёт
+ * ВСЕ поля (включая UF_*) — параметра select у метода нет вовсе.
+ *
+ * Имена резолвятся по слепку портала (`UF_CRM_{bitrixId}`), не хардкодом;
+ * неустановленное поле просто не попадает в select (graceful — как и везде
+ * в event-report). Экспортирована как чистая функция — на состав select
+ * есть тесты (event-report-init-select.spec).
+ */
+export const buildDealListSelect = (portal: PortalModel): string[] => {
+    const resolved = [
+        ...DEAL_ACCUMULATED_FIELD_CODES,
+        ...XVOST_DEAL_FIELD_CODES,
+        ...COMPANY_BACKFILL_CODES,
+    ]
+        .map(code => {
+            const field = portal.getEntityFieldByCode('deal', code);
+            return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
+        })
+        .filter((name): name is string => !!name);
+    return [...new Set([...DEAL_LIST_SELECT, ...resolved])];
+};
 
 /**
  * Загружает все нужные event-report flow сущности одним HTTP-batch:
@@ -214,7 +254,13 @@ export class EventReportInitService {
 
         // === Фаза 2: распределить deals по категориям ===
         const activeDeals = this.filterActiveDeals(dealsRaw);
-        const dealsByCategory = this.groupDealsByCategory(activeDeals, portal);
+        const ownResponsibleIds = this.collectOwnResponsibleIds(dto);
+        const dealsByCategory = this.groupDealsByCategory(
+            activeDeals,
+            portal,
+            launchDealId,
+            ownResponsibleIds,
+        );
         const currentBaseDeal =
             dealsByCategory[PbxDealCategoryCodeEnum.sales_base] ?? null;
         const currentXoDeal =
@@ -228,6 +274,7 @@ export class EventReportInitService {
             `init: entity=${entityType}:${entityId} ` +
                 `context(co=${dto.context?.companyId ?? '-'},deal=${dto.context?.dealId ?? '-'},lead=${dto.context?.leadId ?? '-'}) ` +
                 `deals=${dealsRaw.length} active=${activeDeals.length} ` +
+                `own=${[...ownResponsibleIds].join('/') || '-'} ` +
                 `base=${currentBaseDeal?.ID ?? 'null'}`,
         );
         const baseCategory = portal.getDealCategoryByCode(
@@ -244,7 +291,14 @@ export class EventReportInitService {
             this.logger.warn(
                 `init: у ${entityType}:${entityId} ${baseDeals.length} открытых ` +
                     `основных сделок (${baseDeals.map(deal => deal.ID).join(', ')}) — ` +
-                    `инвариант «одна основная» нарушен, выбрана ${currentBaseDeal?.ID}`,
+                    `инвариант «одна основная» нарушен, выбрана ` +
+                    // «никакая»: все открытые — чужие (правило владельца 25.08),
+                    // flow создаст новую сделку ответственного отчёта.
+                    `${currentBaseDeal?.ID ?? 'никакая (все чужие)'}` +
+                    (launchDealId &&
+                    String(currentBaseDeal?.ID) === String(launchDealId)
+                        ? ' (сделка плейсмента)'
+                        : ''),
             );
         }
 
@@ -436,17 +490,9 @@ export class EventReportInitService {
      * deal — владелец + переданные extraDealIds (ссылки задачи и to_*-полей),
      * lead — сделки лида. Закрытые отсекает `filterActiveDeals` после.
      */
-    /**
-     * Select чтения сделок: базовый набор + накопительные поля, разрезолвленные
-     * по слепку портала. Неустановленное поле просто не попадёт в select
-     * (graceful — как и везде в event-report).
-     */
+    /** См. {@link buildDealListSelect} — вынесен в чистую функцию для тестов. */
     private dealListSelect(portal: PortalModel): string[] {
-        const accumulated = DEAL_ACCUMULATED_FIELD_CODES.map(code => {
-            const field = portal.getEntityFieldByCode('deal', code);
-            return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
-        }).filter((name): name is string => !!name);
-        return [...new Set([...DEAL_LIST_SELECT, ...accumulated])];
+        return buildDealListSelect(portal);
     }
 
     private queueActiveDealsLoad(
@@ -500,9 +546,65 @@ export class EventReportInitService {
         });
     }
 
+    /**
+     * «Свои» сотрудники отчёта — те, чьи открытые сделки можно подхватывать
+     * автоматически (правило владельца, 25.08):
+     *  - ответственный плана (`plan.responsibility.ID` = ctx.planResponsibleId;
+     *    фронт по умолчанию ставит сюда ТЕКУЩЕГО юзера фрейма) — flow именно
+     *    ему назначает сделки/задачи (`ASSIGNED_BY_ID`);
+     *  - ответственный закрываемой задачи (`currentTask.responsibleId`) — при
+     *    ПЕРЕДАЧЕ клиента план уже указывает на нового менеджера, а сделка
+     *    ещё висит на отправителе: без него передача создавала бы дубль
+     *    вместо переназначения существующей сделки.
+     *
+     * Пустой набор (легаси-DTO без плана и задачи) — фильтр не применяется:
+     * некого считать «своим», работаем как раньше.
+     */
+    private collectOwnResponsibleIds(dto: EventSalesFlowDto): Set<number> {
+        const ids = new Set<number>();
+        const planResponsible = this.toId(Number(dto.plan?.responsibility?.ID));
+        if (planResponsible) ids.add(planResponsible);
+        const taskResponsible = this.toId(
+            Number(
+                (dto.currentTask as { responsibleId?: unknown } | undefined)
+                    ?.responsibleId,
+            ),
+        );
+        if (taskResponsible) ids.add(taskResponsible);
+        return ids;
+    }
+
+    /**
+     * Первая активная сделка каждой категории, НО сделка запуска
+     * (`preferredDealId`, из плейсмента) всегда перебивает найденную поиском.
+     *
+     * Без приоритета воспроизводился реальный инцидент: приложение открыто
+     * из сделки, к которой привязали компанию с ДРУГОЙ, более ранней открытой
+     * основной сделкой — `crm.deal.list` без ORDER отдаёт по ID ASC, первой
+     * вставала ранняя сделка, и отказ закрывал ЕЁ, а не ту, из которой
+     * работал менеджер.
+     *
+     * Правило владельца (25.08): автоматический поиск идёт ТОЛЬКО среди
+     * сделок «своих» сотрудников ({@link collectOwnResponsibleIds}) —
+     * `ASSIGNED_BY_ID` сравнивается ЧИСЛОМ (REST отдаёт строки). Чужая
+     * открытая сделка молча не подхватывается никогда: отчёт не должен
+     * двигать/закрывать сделку другого менеджера (двойная работа, путаница
+     * в отчётах). Своих открытых нет — категория остаётся пустой, и flow
+     * идёт своим штатным путём «сделки нет» (sales-base/xo создают новую
+     * на ответственного отчёта). Исключение — сделка запуска: менеджер
+     * ОСОЗНАННО открыл приложение из неё, это явный контекст, а не
+     * молчаливый автоподбор, поэтому она в приоритете независимо от
+     * ответственного.
+     *
+     * pres/tmc это правило не касается: они резолвятся не поиском по
+     * компании, а явными D_-ссылками закрываемой задачи
+     * ({@link resolveTaskLinkedDeals}).
+     */
     private groupDealsByCategory(
         deals: IBXDeal[],
         portal: PortalModel,
+        preferredDealId?: number | null,
+        ownResponsibleIds: ReadonlySet<number> = new Set<number>(),
     ): Partial<Record<PbxDealCategoryCodeEnum, IBXDeal>> {
         const result: Partial<Record<PbxDealCategoryCodeEnum, IBXDeal>> = {};
         const categories = portal.getDealCategories();
@@ -512,7 +614,16 @@ export class EventReportInitService {
             );
             if (!category) continue;
             const code = category.code as PbxDealCategoryCodeEnum;
-            if (!result[code]) {
+            const isPreferred =
+                preferredDealId != null &&
+                String(deal.ID) === String(preferredDealId);
+            // Пустой набор «своих» — фильтр выключен (легаси-DTO).
+            const isOwn =
+                ownResponsibleIds.size === 0 ||
+                ownResponsibleIds.has(
+                    Number((deal as Record<string, unknown>)['ASSIGNED_BY_ID']),
+                );
+            if (isPreferred || (!result[code] && isOwn)) {
                 result[code] = deal;
             }
         }

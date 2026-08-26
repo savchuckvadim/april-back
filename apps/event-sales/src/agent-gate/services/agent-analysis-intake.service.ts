@@ -67,6 +67,7 @@ export class AgentAnalysisIntakeService {
         // и литеральные "null"-строки (боевые кейсы 2026-07-30).
         dto = this.sanitizeAgentStrings(dto);
         dto = this.applySpeechMetrics(transcriptionId, dto);
+        dto = this.enforceConsistency(transcriptionId, dto);
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.domain) {
@@ -202,6 +203,101 @@ export class AgentAnalysisIntakeService {
             talkRatioPct: metrics.talkRatioPct,
             questionsCount: metrics.questionsCount,
         };
+    }
+
+    /**
+     * «Code fixes contradictions»: LLM иногда отдаёт внутренне
+     * противоречивый ответ — правим кодом, не переспрашивая модель
+     * (прод-кейсы 25.08.2026):
+     * - дата и описание следующего шага есть, а set=false («созвон завтра
+     *   в 14:00», но «шаг не назначен») → set=true;
+     * - hvostDone/fiveKDone=true, а в их же разборе есть пункты «✗»
+     *   (правило «частично = НЕ пройден») → false.
+     */
+    private enforceConsistency(
+        transcriptionId: string,
+        dto: AgentCallAnalysisDto,
+    ): AgentCallAnalysisDto {
+        const fixed = { ...dto };
+
+        if (
+            fixed.nextStep &&
+            !fixed.nextStep.set &&
+            fixed.nextStep.date &&
+            fixed.nextStep.description
+        ) {
+            this.logger.log(
+                `Консистентность: у шага есть дата (${fixed.nextStep.date}) и описание — ` +
+                    `set исправлен на true (transcription ${transcriptionId})`,
+            );
+            fixed.nextStep = { ...fixed.nextStep, set: true };
+        }
+
+        // Только явные крестики формата разбора («1. … — ✗ …»): текстовые
+        // обороты вроде «— не потребовалось» дают ложные срабатывания.
+        const hasFailMark = (text: string | null | undefined): boolean =>
+            typeof text === 'string' && /[✗✘]/.test(text);
+        if (fixed.hvostDone === true && hasFailMark(fixed.hvostAnalysis)) {
+            this.logger.log(
+                `Консистентность: hvostDone=true при «✗» в разборе хвоста — ` +
+                    `исправлен на false (частично ≠ пройден; transcription ${transcriptionId})`,
+            );
+            fixed.hvostDone = false;
+        }
+        if (fixed.fiveKDone === true && hasFailMark(fixed.fiveKAnalysis)) {
+            this.logger.log(
+                `Консистентность: fiveKDone=true при «✗» в разборе 5К — ` +
+                    `исправлен на false (transcription ${transcriptionId})`,
+            );
+            fixed.fiveKDone = false;
+        }
+
+        // Гранулярка главнее эвристик и мнения модели: если чеклист
+        // заполнен (есть хоть один boolean-ответ), итог = «все пункты true».
+        const recomputeDone = (
+            items:
+                | Record<string, boolean | null | undefined>
+                | null
+                | undefined,
+        ): boolean | undefined => {
+            if (!items) return undefined;
+            const values = Object.values(items);
+            if (!values.some(v => typeof v === 'boolean')) return undefined;
+            return values.every(v => v === true);
+        };
+        const hvostFromSteps = recomputeDone(
+            fixed.hvostSteps as Record<
+                string,
+                boolean | null | undefined
+            > | null,
+        );
+        if (
+            hvostFromSteps !== undefined &&
+            fixed.hvostDone !== hvostFromSteps
+        ) {
+            this.logger.log(
+                `Консистентность: hvostDone ${fixed.hvostDone} → ${hvostFromSteps} ` +
+                    `(пересчёт по гранулярному чеклисту; transcription ${transcriptionId})`,
+            );
+            fixed.hvostDone = hvostFromSteps;
+        }
+        const fiveKFromItems = recomputeDone(
+            fixed.fiveKItems as Record<
+                string,
+                boolean | null | undefined
+            > | null,
+        );
+        if (
+            fiveKFromItems !== undefined &&
+            fixed.fiveKDone !== fiveKFromItems
+        ) {
+            this.logger.log(
+                `Консистентность: fiveKDone ${fixed.fiveKDone} → ${fiveKFromItems} ` +
+                    `(пересчёт по гранулярному чеклисту; transcription ${transcriptionId})`,
+            );
+            fixed.fiveKDone = fiveKFromItems;
+        }
+        return fixed;
     }
 
     /**
@@ -370,7 +466,11 @@ export class AgentAnalysisIntakeService {
             needs: dto.needs?.join('\n'),
             presentationDone: dto.presentationDone,
             hvostDone: dto.hvostDone ?? undefined,
+            hvostAnalysis: dto.hvostAnalysis ?? undefined,
+            hvostSteps: dto.hvostSteps ?? undefined,
+            fiveKAnalysis: dto.fiveKAnalysis ?? undefined,
             fiveKDone: dto.fiveKDone ?? undefined,
+            fiveKItems: dto.fiveKItems ?? undefined,
             productsOffered: dto.productsOffered?.join('\n'),
             objections: dto.objections
                 ?.map(objection => objection.objection)
@@ -834,20 +934,46 @@ export class AgentAnalysisIntakeService {
      */
     private renderMethodologyComments(dto: AgentCallAnalysisDto): string[] {
         const comments: string[] = [];
+        const mark = (value: boolean | null | undefined): string =>
+            value === true ? '✓' : value === false ? '✗' : '—';
         const hvost = this.cleanText(dto.hvostAnalysis ?? undefined);
         if (dto.hvostDone !== undefined && dto.hvostDone !== null && hvost) {
+            const steps = dto.hvostSteps
+                ? '\n\nЧеклист (как в отчёте менеджера):\n' +
+                  [
+                      `${mark(dto.hvostSteps.offer)} Предложено КП`,
+                      `${mark(dto.hvostSteps.complect)} Озвучено наполнение`,
+                      `${mark(dto.hvostSteps.price)} Озвучена цена`,
+                      `${mark(dto.hvostSteps.decisionDate)} Назначена дата решения`,
+                      `${mark(dto.hvostSteps.dateAgreed)} Дата согласована с клиентом`,
+                  ].join('\n')
+                : '';
             comments.push(
                 `🏁 [b]Хвост (завершение презентации): ${
                     dto.hvostDone ? 'ПРОЙДЕН' : 'НЕ ПРОЙДЕН'
-                }[/b]\n\n${hvost}`,
+                }[/b]\n\n${hvost}${steps}`,
             );
         }
         const fiveK = this.cleanText(dto.fiveKAnalysis ?? undefined);
         if (dto.fiveKDone !== undefined && dto.fiveKDone !== null && fiveK) {
+            const items = dto.fiveKItems
+                ? '\n\nЧеклист (как в отчёте менеджера):\n' +
+                  [
+                      `${mark(dto.fiveKItems.clientWhat)} КЛИЕНТ: что хочет`,
+                      `${mark(dto.fiveKItems.clientReady)} КЛИЕНТ: готов работать`,
+                      `${mark(dto.fiveKItems.clientPrice)} КЛИЕНТ: укладываемся в цену`,
+                      `${mark(dto.fiveKItems.companyWho)} КОМПАНИЯ: кто решает`,
+                      `${mark(dto.fiveKItems.companyHow)} КОМПАНИЯ: как решает`,
+                      `${mark(dto.fiveKItems.companyRight)} КОМПАНИЯ: подбор верен`,
+                      `${mark(dto.fiveKItems.colleagues)} КОЛЛЕГИ: кто будет работать`,
+                      `${mark(dto.fiveKItems.competitor)} КОНКУРЕНТ: критерии сравнения`,
+                      `${mark(dto.fiveKItems.criteria)} КРИТЕРИИ выбора СПС`,
+                  ].join('\n')
+                : '';
             comments.push(
                 `🎯 [b]5К (контроль после встречи): ${
                     dto.fiveKDone ? 'ЗАКРЫТО' : 'НЕ ЗАКРЫТО'
-                }[/b]\n\n${fiveK}`,
+                }[/b]\n\n${fiveK}${items}`,
             );
         }
         const comparison = this.cleanText(dto.reportComparison ?? undefined);

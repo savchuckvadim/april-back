@@ -32,8 +32,13 @@ export type LeadToWorkFlag = (typeof LEAD_TO_WORK_FLAG_VALUES)[number];
 export const LEAD_TO_WORK_STAGE_MODES = ['from_lead', 'cold', 'new'] as const;
 export type LeadToWorkStageMode = (typeof LEAD_TO_WORK_STAGE_MODES)[number];
 
-/** Что делать с открытыми задачами лида. */
-export const LEAD_TO_WORK_TASK_MODES = ['move', 'close'] as const;
+/**
+ * Что делать с открытыми задачами лида: move — перенести с префиксом
+ * «Звонок», close — закрыть и поставить новую, none — не трогать вовсе
+ * (и НЕ создавать новую: работа переезжает, а следующий шаг менеджер
+ * ставит сам).
+ */
+export const LEAD_TO_WORK_TASK_MODES = ['move', 'close', 'none'] as const;
 export type LeadToWorkTaskMode = (typeof LEAD_TO_WORK_TASK_MODES)[number];
 
 /**
@@ -114,7 +119,8 @@ export class LeadToWorkWebhookQueryDto {
     @ApiPropertyOptional({
         description:
             'Задачи лида: move — перенести с префиксом «Звонок», ' +
-            'close — закрыть и поставить новую.',
+            'close — закрыть и поставить новую, none — не трогать и новую ' +
+            'не создавать.',
         example: 'move',
         type: String,
         enum: LEAD_TO_WORK_TASK_MODES,
@@ -275,7 +281,9 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
     stageMode?: LeadToWorkStageMode;
 
     @ApiPropertyOptional({
-        description: 'Что делать с открытыми задачами лида.',
+        description:
+            'Что делать с открытыми задачами лида: move / close / none ' +
+            '(none — не трогать и новую не создавать).',
         example: 'move',
         type: String,
         enum: LEAD_TO_WORK_TASK_MODES,

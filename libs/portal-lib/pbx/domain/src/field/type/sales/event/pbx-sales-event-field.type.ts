@@ -1469,6 +1469,258 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    {
+        // Плановая дата покупки — по владельческой таблице install
+        // (front todo2508, строка 418): фильтровое поле компании и сделки.
+        name: 'ОП Плановая дата покупки',
+        appType: 'calling',
+        type: 'date',
+        items: [],
+        code: 'op_sale_date_prognoz',
+        lead: '',
+        company: 'OP_SALE_DATE_PROGNOZ',
+        deal: 'OP_SALE_DATE_PROGNOZ',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 703,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Чек-лист перехода «Клиент на решении» (2408): дата звонка по
+        // решению «выдернута из Хвоста» в отдельное фича-поле — по нему
+        // строятся фильтры. Коды и сущности xvost-блока — по владельческой
+        // таблице install (todo2508): префикс op_xvost_*, ТОЛЬКО сделка.
+        name: 'ОП Дата звонка по решению',
+        appType: 'calling',
+        type: 'date',
+        items: [],
+        code: 'op_xvost_decision_call_date',
+        lead: '',
+        company: '',
+        deal: 'OP_XVOST_DECISION_CALL_DATE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 704,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Вопрос «выдернут из Хвоста» в фича-поле: код вопроса опросника
+        // на фронте совпадает с кодом поля — персист CheckPresentation
+        // резолвит его сам.
+        name: 'ОП Согласование даты по решению',
+        appType: 'pres',
+        type: 'date',
+        items: [],
+        code: 'op_xvost_decision_date_agreement',
+        lead: '',
+        company: '',
+        deal: 'OP_XVOST_DECISION_DATE_AGREEMENT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 705,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Вопрос «выдернут из Хвоста» — см. выше. Код БЕЗ префикса xvost —
+        // так поле установлено владельцем (таблица todo2508, строка 416).
+        name: 'ОП Дата похода к руководителю',
+        appType: 'pres',
+        type: 'date',
+        items: [],
+        code: 'op_manager_approach_date',
+        lead: '',
+        company: '',
+        deal: 'OP_MANAGER_APPROACH_DATE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 706,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Булевы вопросы «Разговора» опросника хвоста — настоящие pbx-поля
+        // сделки (владельческая таблица todo2508, строки 413-415).
+        name: 'Предложено КП ?',
+        appType: 'pres',
+        type: 'boolean',
+        items: [],
+        code: 'op_xvost_is_offer',
+        lead: '',
+        company: '',
+        deal: 'OP_XVOST_IS_OFFER',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 707,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'Озвучить наполнение ?',
+        appType: 'pres',
+        type: 'boolean',
+        items: [],
+        code: 'op_xvost_is_complect',
+        lead: '',
+        company: '',
+        deal: 'OP_XVOST_IS_COMPLECT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 708,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'Озвучить цену ?',
+        appType: 'pres',
+        type: 'boolean',
+        items: [],
+        code: 'op_xvost_is_price',
+        lead: '',
+        company: '',
+        deal: 'OP_XVOST_IS_PRICE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 709,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Связи «Звонки По решению» — элементы будущего ЗПР-смарта
+        // (концепция front/docs/zpr-smart-concept.md). Пока только реестр.
+        name: 'Звонки По решению',
+        appType: 'pres',
+        type: 'crm',
+        items: [],
+        code: 'op_zprs',
+        lead: '',
+        company: 'OP_ZPRS',
+        deal: 'OP_ZPRS',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 710,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: true,
+    },
+    {
+        // Связи «Презентации» — элементы смарта pres_sales (зеркало сделок
+        // «ОП Презентации», libs/portal-lib/pbx/pbx-presentation-smart).
+        // Обратная ссылка на элемент: `T{hex(entityTypeId)}_{id}` —
+        // presentation-flow дописывает её в сделку и компанию. Пара к
+        // op_zprs: тот же контур, только про презентации.
+        name: 'Презентации',
+        appType: 'pres',
+        type: 'crm',
+        items: [],
+        code: 'op_presentations',
+        lead: '',
+        company: 'OP_PRESENTATIONS',
+        deal: 'OP_PRESENTATIONS',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 710,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: true,
+    },
+    {
+        // Дата следующего звонка после ОТКАЗА (withPostFail-порталы):
+        // перебивает интервал реанимации отказников (sales-hooks/reject-revive).
+        name: 'ОП Дата звонка после отказа',
+        appType: 'fail',
+        type: 'date',
+        items: [],
+        code: 'post_fail_date',
+        lead: '',
+        company: '',
+        deal: 'POST_FAIL_DATE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 711,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Маркеры реанимации отказников (двухфазная подстраховка):
+        // queued_at ставится ДО отправки cold-call хука — упавший хук
+        // оставляет сделку «недоехавшей», и чек-крон досылает её.
+        name: 'ОП Реанимация: взято в очередь',
+        appType: 'fail',
+        type: 'datetime',
+        items: [],
+        code: 'op_xo_revive_queued_at',
+        lead: '',
+        company: '',
+        deal: 'OP_XO_REVIVE_QUEUED_AT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 712,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Пара к queued_at: cold-call хук принят буфером — повторно не шлём.
+        name: 'ОП Реанимация: хук отправлен',
+        appType: 'fail',
+        type: 'datetime',
+        items: [],
+        code: 'op_xo_revive_sent_at',
+        lead: '',
+        company: '',
+        deal: 'OP_XO_REVIVE_SENT_AT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 713,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Счётчик переносов события (todo2508-02 №6): сколько раз менеджер
+        // переносил текущий шаг («Не очень» → новая дата). Инкрементирует
+        // event-report в ветке переноса: ХО-сделка при холодном контексте,
+        // основная — при остальных типах (DealMoveCountService). Смарты
+        // Презентаций/ЗПР считаются отдельно, поэтому поле ТОЛЬКО сделочное.
+        name: 'ОП Количество переносов',
+        appType: 'calling',
+        type: 'integer',
+        items: [],
+        code: 'op_move_count',
+        lead: '',
+        company: '',
+        deal: 'OP_MOVE_COUNT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 714,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
 
     // === Граф связей «лид ↔ сделка» + пакет op_lead_* (2026-08, b2b-flow) ===
     // Зеркало листа calling_fields (строки 73-89 + to_sale_deal):
@@ -1564,6 +1816,12 @@ export const PBX_SALES_EVENT_FIELDS = [
             { code: 'op_lead_site_status3', name: 'Не ЦА' },
             { code: 'op_lead_site_status4', name: 'Ведется активная работа' },
             { code: 'op_lead_site_status5', name: 'Отказ' },
+            // Единая ось заявки (2408): автоматика из отчётов, руками не
+            // ставятся. Items новые — добить install на порталах.
+            { code: 'op_lead_site_status6', name: 'Первый звонок' },
+            { code: 'op_lead_site_status7', name: 'Дозвонились' },
+            { code: 'op_lead_site_status8', name: 'Презентация' },
+            { code: 'op_lead_site_status9', name: 'Продажа' },
         ],
         code: 'op_lead_site_status',
         lead: 'OP_LEAD_SITE_STATUS',
@@ -1684,8 +1942,10 @@ export const PBX_SALES_EVENT_FIELDS = [
         ],
         code: 'op_lead_not_ca_type',
         lead: 'OP_LEAD_NOT_CA_TYPE',
-        company: '',
-        deal: '',
+        // Компания и сделка — по владельческой таблице install (todo2508):
+        // при «не ЦА» тип пишется и в них (event-report entity-fields).
+        company: 'OP_LEAD_NOT_CA_TYPE',
+        deal: 'OP_LEAD_NOT_CA_TYPE',
         smart: '',
         task: '',
         app: 'calling',
@@ -1759,9 +2019,10 @@ export const PBX_SALES_EVENT_FIELDS = [
      * `LeadRequestService.isAccepted`, `LeadRequestSlaService`,
      * `LeadRequestAcceptService`, `LeadIntakeRescueService`,
      * `LeadXoEventEntityModel`.
-     * Сценарий для копии на сделке НЕ определён — до решения владельца её
-     * не писать (см. вопрос в отчёте), иначе появится второй, никем не
-     * очищаемый таймер.
+     * Копия на сделке (решение владельца, todo2508): таймер работы по сделке.
+     * Ставит deal-work-timer.util (передача работы + создание сделки из лида
+     * хуком lead-to-work), снимает принятие (LeadRequestAcceptService),
+     * страхует SLA-проход по сделкам.
      */
     {
         name: 'Заявка назначена (дата)',

@@ -16,8 +16,8 @@ export class BxCompanyService {
         this.repo = new BxCompanyRepository(api);
     }
 
-    get(companyId: number) {
-        return this.repo.get(companyId);
+    get(companyId: number, select?: string[]) {
+        return this.repo.get(companyId, select);
     }
 
     getList(

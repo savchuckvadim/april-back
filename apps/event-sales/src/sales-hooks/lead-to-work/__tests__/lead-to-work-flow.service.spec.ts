@@ -620,7 +620,8 @@ describe('LeadToWorkFlowService', () => {
         expect(leadFields.UF_CRM_TO_BASE_SALES).toBe(
             `D_$result[${dealSet?.cmd}]`,
         );
-        expect(leadFields.UF_CRM_OP_LEAD_STATUS).toBe(401);
+        // Аудит 2408: op_lead_status и is_company хук больше не пишет.
+        expect(leadFields.UF_CRM_OP_LEAD_STATUS).toBeUndefined();
         expect(leadFields.UF_CRM_OP_LEAD_IS_COMPANY).toBeUndefined();
         // Конвертационная ветка KPI не пишет.
         expect(plan.kpiPlanned).toBe(false);
@@ -703,8 +704,9 @@ describe('LeadToWorkFlowService', () => {
         expect(dealFields.COMPANY_ID).toBe('7');
         const leadFields = calls.find(c => c.method === 'lead.update')
             ?.args[1] as Record<string, unknown>;
-        expect(leadFields.UF_CRM_OP_LEAD_IS_COMPANY).toBe(1);
-        expect(leadFields.UF_CRM_OP_LEAD_STATUS).toBe(501);
+        // Аудит 2408: op_lead_status и is_company хук больше не пишет.
+        expect(leadFields.UF_CRM_OP_LEAD_IS_COMPANY).toBeUndefined();
+        expect(leadFields.UF_CRM_OP_LEAD_STATUS).toBeUndefined();
     });
 
     it('createCompany=Y без компании: company.set + сделка ссылается через $result', () => {
@@ -1037,9 +1039,10 @@ describe('LeadToWorkFlowService', () => {
         const leadFields = calls.find(c => c.method === 'lead.update')
             ?.args[1] as Record<string, unknown>;
         expect(leadFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeTruthy();
-        // Первичные метки заявки ставятся только в пустые поля.
+        // Первичная метка заявки ставится только в пустое поле;
+        // ось слита — site_stage больше не пишется.
         expect(leadFields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(11);
-        expect(leadFields.UF_CRM_OP_LEAD_SITE_STAGE).toBe(31);
+        expect(leadFields.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
         const history =
             leadFields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history[0]).toContain('ХО назначен: 8');
@@ -1076,12 +1079,13 @@ describe('LeadToWorkFlowService', () => {
     );
 
     /*
-     * У лида свой таймер подтверждения, у сделки — свой (его ставит
-     * передача работы, `transfer-work`). Лидовый хук отвечает только за
-     * лидовый: ставить сделочный отсюда нельзя, иначе у сделки появился бы
-     * таймер, который никто в этом контуре не снимает.
+     * У лида свой таймер подтверждения, у ОСНОВНОЙ сделки — свой: с todo2508
+     * хук ставит его и на базовую сделку (работа сразу ждёт подтверждения;
+     * снимает его принятие — LeadRequestAcceptService.applyDealAccept, как и
+     * у передачи работы). ХО-сделка таймер НЕ получает: подтверждают работу,
+     * а не сопровождающий обзвон.
      */
-    it('лидовый хук ставит таймер лида и НЕ трогает таймер сделок', () => {
+    it('лидовый хук ставит таймер лида и базовой сделки, но не ХО-сделки', () => {
         const { bitrix, calls } = makeBitrix();
         const service = new LeadToWorkFlowService(
             bitrix as never,
@@ -1099,10 +1103,17 @@ describe('LeadToWorkFlowService', () => {
             ?.args[1] as Record<string, unknown>;
         expect(leadFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeTruthy();
 
-        for (const call of calls.filter(c => c.method.startsWith('deal.'))) {
-            const fields = call.args.at(-1) as Record<string, unknown>;
-            expect(fields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeUndefined();
-        }
+        const dealCalls = calls.filter(c => c.method.startsWith('deal.'));
+        const baseCall = dealCalls.find(c => c.cmd.startsWith('lw_deal_'));
+        const xoCall = dealCalls.find(c => c.cmd.startsWith('lw_xo_'));
+
+        expect(baseCall).toBeDefined();
+        const baseFields = baseCall!.args.at(-1) as Record<string, unknown>;
+        expect(baseFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeTruthy();
+
+        expect(xoCall).toBeDefined();
+        const xoFields = xoCall!.args.at(-1) as Record<string, unknown>;
+        expect(xoFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBeUndefined();
     });
 
     /*

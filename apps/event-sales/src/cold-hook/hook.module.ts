@@ -11,6 +11,8 @@ import { EventSilenceModule } from '@/core';
     imports: [EventSilenceModule, PBXModule, TelegramModule, HttpModule],
     controllers: [EventSalesHookController],
     providers: [ColdHookSilinceEndpointService, ColdHooksHandlerService],
-    exports: [ColdHooksHandlerService],
+    // Endpoint-сервис экспортируется для внутренних постановок холодного
+    // звонка (реанимация отказников) — минуя HTTP-контроллер.
+    exports: [ColdHooksHandlerService, ColdHookSilinceEndpointService],
 })
 export class ColdHookModule {}

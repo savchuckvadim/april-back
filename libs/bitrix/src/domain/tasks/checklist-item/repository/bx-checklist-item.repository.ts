@@ -8,6 +8,7 @@ import {
     IBXChecklistItemAddRequest,
     IBXChecklistItemCompleteRequest,
     IBXChecklistItemDeleteRequest,
+    IBXChecklistItemGetListRequest,
     IBXChecklistItemGetRequest,
     IBXChecklistItemUpdateRequest,
 } from '../interface/bx-checklist-item.interface';
@@ -49,6 +50,26 @@ export class BxChecklistItemRepository {
             EBxNamespace.TASK,
             EBXEntity.CHECKLIST_ITEM,
             EBxMethod.GET,
+            data,
+        );
+    }
+
+    /** `task.checklistitem.getlist` — пункты чек-листов задачи. */
+    async getList(data: IBXChecklistItemGetListRequest) {
+        return await this.bxApi.callType(
+            EBxNamespace.TASK,
+            EBXEntity.CHECKLIST_ITEM,
+            EBxMethod.GET_LIST,
+            data,
+        );
+    }
+
+    getListBtch(cmdCode: string, data: IBXChecklistItemGetListRequest) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.TASK,
+            EBXEntity.CHECKLIST_ITEM,
+            EBxMethod.GET_LIST,
             data,
         );
     }

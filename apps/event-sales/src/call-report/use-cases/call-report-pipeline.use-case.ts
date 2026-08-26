@@ -38,6 +38,14 @@ export interface CallReportJobPayload {
     callStartedAtIso?: string;
     durationSec?: number;
     /**
+     * Bitrix-id сотрудника, КОТОРЫЙ ЗВОНИЛ (PORTAL_USER_ID телефонии).
+     * Именно он попадает в строку транскрибации и в отчёты: разбор речи
+     * должен числиться за тем, кто говорил, а не за владельцем сделки
+     * (прод-инцидент 24.08.2026 — в списке анализа отображались чужие
+     * менеджеры). Нет значения (ручной путь) — берём ответственного.
+     */
+    callerUserId?: number;
+    /**
      * После стадии ANALYZE создать базовый элемент смарта «AI-анализ
      * звонков». Ставит флаг сканер (cron/ручка), исполняет процессор —
      * сам конвейер смарт по-прежнему не трогает. Отсутствует в старых
@@ -181,18 +189,20 @@ export class CallReportPipelineUseCase {
                     durationSec: payload.durationSec,
                 });
 
-            // Менеджер (ответственный сделки/лида) — для фильтров отчётов
-            // call-report-analytics; недоступность Bitrix шаг не роняет.
-            const responsibleId = await this.getResponsibleId(
-                bitrix,
-                bx,
-                payload,
-            ).catch((error: Error) => {
-                this.logger.warn(
-                    `Ответственный ${payload.entityType ?? 'deal'} ${payload.dealId} не получен: ${error.message}`,
-                );
-                return undefined;
-            });
+            // Менеджер звонка — ТОТ, КТО ЗВОНИЛ (из телефонии). Ответственный
+            // сделки берётся только как запасной вариант: звонок Софьи по
+            // сделке Анны должен числиться за Софьей, иначе фильтр по
+            // сотрудникам и отчёты показывают разных людей.
+            const responsibleId =
+                payload.callerUserId ??
+                (await this.getResponsibleId(bitrix, bx, payload).catch(
+                    (error: Error) => {
+                        this.logger.warn(
+                            `Ответственный ${payload.entityType ?? 'deal'} ${payload.dealId} не получен: ${error.message}`,
+                        );
+                        return undefined;
+                    },
+                ));
 
             await this.transcriptionStore.finishPipeline(row.id, {
                 status: 'done',

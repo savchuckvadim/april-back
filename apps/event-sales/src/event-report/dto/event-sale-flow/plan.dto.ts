@@ -128,6 +128,19 @@ export class PlanDto {
 
     @ApiPropertyOptional({
         description:
+            'Флаг «важная» из UI планирования: задача ставится с PRIORITY=HIGH ' +
+            'независимо от типа события. Без флага важность определяет тип ' +
+            '(presentation/hot/moneyAwait). Поле опциональное: старые сборки ' +
+            'фрейма его не шлют.',
+        type: Boolean,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    isImportant?: boolean;
+
+    @ApiPropertyOptional({
+        description:
             'Лиды/заявки, с которыми менеджер связал новую задачу ' +
             '(чекбоксы при создании задачи из сделки/компании без текущей ' +
             'задачи) — попадут в UF_CRM_TASK как L_{id}.',

@@ -13,9 +13,7 @@ dayjs.extend(timezone);
 const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
-    EnumLeadOpStatusCode,
     EnumLeadRequestFieldCode,
-    EnumLeadSiteStageCode,
     EnumLeadSiteStatusCode,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import {
@@ -157,49 +155,29 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
             fields[xo] = this.leadCtx.xoDealRef;
         }
 
-        const isCompany = this.fieldName(
-            EnumLeadRequestFieldCode.op_lead_is_company,
-        );
-        if (isCompany && this.leadCtx.hasCompany) {
-            fields[isCompany] = 1;
-        }
-
-        const statusName = this.fieldName(
-            EnumLeadRequestFieldCode.op_lead_status,
-        );
-        if (statusName) {
-            const bitrixId = this.leadItemBitrixId(
-                EnumLeadRequestFieldCode.op_lead_status,
-                this.leadCtx.hasCompany
-                    ? EnumLeadOpStatusCode.companyWork
-                    : EnumLeadOpStatusCode.dealWork,
-            );
-            if (bitrixId !== undefined) fields[statusName] = bitrixId;
-        }
+        /*
+         * op_lead_status и op_lead_is_company здесь больше не пишутся
+         * (аудит 2408): у статуса 0 читателей-логики (смысл перекрыт
+         * op_current_status), is_company вычислим — фронт берёт компанию
+         * из app.bitrix.company, поле никто не читал.
+         */
     }
 
     /**
-     * Первичные метки заявки — только у распознанной заявки и только в
-     * ПУСТЫЕ поля: путь заявки не переписывается задним числом.
+     * Первичная метка заявки — только у распознанной заявки и только в
+     * ПУСТОЕ поле: путь заявки не переписывается задним числом.
+     * Ось слита (2408): метку несёт один site_status, site_stage умерла.
      */
     private appendSiteMarks(fields: XoEventRow): void {
         if (!this.leadCtx.isRequest || !this.leadCtx.withXoEventFields) return;
-        const marks: [code: EnumLeadRequestFieldCode, itemCode: string][] = [
-            [
-                EnumLeadRequestFieldCode.op_lead_site_status,
-                EnumLeadSiteStatusCode.appeared,
-            ],
-            [
-                EnumLeadRequestFieldCode.op_lead_site_stage,
-                EnumLeadSiteStageCode.assigned,
-            ],
-        ];
-        for (const [code, itemCode] of marks) {
-            const name = this.fieldName(code);
-            if (!name || this.currentValue(code)) continue;
-            const bitrixId = this.leadItemBitrixId(code, itemCode);
-            if (bitrixId !== undefined) fields[name] = bitrixId;
-        }
+        const code = EnumLeadRequestFieldCode.op_lead_site_status;
+        const name = this.fieldName(code);
+        if (!name || this.currentValue(code)) return;
+        const bitrixId = this.leadItemBitrixId(
+            code,
+            EnumLeadSiteStatusCode.appeared,
+        );
+        if (bitrixId !== undefined) fields[name] = bitrixId;
     }
 
     /** История обработки заявки: назначение / передача / самопередача. */

@@ -46,11 +46,8 @@ const REG_NUMBER_FIELD = 'UF_CRM_REG_NUMBER';
  */
 /** Enum-поля карточки, для которых подтягиваются live-названия портала. */
 const CARD_ENUM_FIELD_CODES: EnumLeadRequestFieldCode[] = [
-    EnumLeadRequestFieldCode.op_lead_status,
     EnumLeadRequestFieldCode.op_lead_site_status,
-    EnumLeadRequestFieldCode.op_lead_site_stage,
     EnumLeadRequestFieldCode.op_lead_not_ca_type,
-    EnumLeadRequestFieldCode.op_leads_related_base_stage,
 ];
 
 @Injectable()
@@ -100,31 +97,10 @@ export class LeadRequestService {
                 warnings,
                 live,
             ),
-            siteStage: this.enumState<EnumLeadSiteStageCode>(
-                portal,
-                lead,
-                EnumLeadRequestFieldCode.op_lead_site_stage,
-                warnings,
-                live,
-            ),
-            leadStatus: this.enumState<EnumLeadOpStatusCode>(
-                portal,
-                lead,
-                EnumLeadRequestFieldCode.op_lead_status,
-                warnings,
-                live,
-            ),
             notCaType: this.enumState<EnumLeadNotCaTypeCode>(
                 portal,
                 lead,
                 EnumLeadRequestFieldCode.op_lead_not_ca_type,
-                warnings,
-                live,
-            ),
-            relatedBaseStage: this.enumState<EnumLeadRelatedBaseStageCode>(
-                portal,
-                lead,
-                EnumLeadRequestFieldCode.op_leads_related_base_stage,
                 warnings,
                 live,
             ),
@@ -138,11 +114,6 @@ export class LeadRequestService {
                 lead,
                 EnumLeadRequestFieldCode.op_lead_black_short_reason,
             ),
-            isCompany: this.bool(
-                portal,
-                lead,
-                EnumLeadRequestFieldCode.op_lead_is_company,
-            ),
             nppReported: this.bool(
                 portal,
                 lead,
@@ -152,16 +123,6 @@ export class LeadRequestService {
                 portal,
                 lead,
                 EnumLeadRequestFieldCode.op_lead_is_duplicate_check,
-            ),
-            duplicateFound: this.bool(
-                portal,
-                lead,
-                EnumLeadRequestFieldCode.op_lead_is_duplicate,
-            ),
-            mergedByExist: this.bool(
-                portal,
-                lead,
-                EnumLeadRequestFieldCode.op_lead_is_merged_by_exist,
             ),
             boostSale: this.bool(
                 portal,
@@ -203,9 +164,7 @@ export class LeadRequestService {
         }
 
         // Правило «не ЦА»: статус выбран, а типа нет ни в запросе, ни на лиде.
-        const picksNotCa =
-            dto.siteStatusCode === EnumLeadSiteStatusCode.notCa ||
-            dto.leadStatusCode === EnumLeadOpStatusCode.notCa;
+        const picksNotCa = dto.siteStatusCode === EnumLeadSiteStatusCode.notCa;
         const hasNotCaType =
             Boolean(dto.notCaTypeCode) ||
             Boolean(
@@ -269,24 +228,9 @@ export class LeadRequestService {
             'Статус заявки',
         );
         setItem(
-            EnumLeadRequestFieldCode.op_lead_site_stage,
-            dto.siteStageCode,
-            'Стадия заявки',
-        );
-        setItem(
-            EnumLeadRequestFieldCode.op_lead_status,
-            dto.leadStatusCode,
-            'Статус лида',
-        );
-        setItem(
             EnumLeadRequestFieldCode.op_lead_not_ca_type,
             dto.notCaTypeCode,
             'Тип не ЦА',
-        );
-        setItem(
-            EnumLeadRequestFieldCode.op_leads_related_base_stage,
-            dto.relatedBaseStageCode,
-            'Стадия связанной сделки',
         );
         setBool(
             EnumLeadRequestFieldCode.op_lead_is_black_short,
@@ -405,9 +349,12 @@ export class LeadRequestService {
         if (state.acceptedAfterAssign !== null) {
             return state.acceptedAfterAssign;
         }
-        const stage = card.siteStage.currentCode;
-        if (stage === null) return true;
-        return stage !== EnumLeadSiteStageCode.assigned;
+        // Фолбэк №3 по единой оси: «Появилась» = ещё не принята; всё, что
+        // дальше по лестнице, — принята. Раньше признаком была стадия
+        // site_stage «Назначена менеджеру» (ось слита, аудит 2408).
+        const status = card.siteStatus.currentCode;
+        if (status === null) return true;
+        return status !== EnumLeadSiteStatusCode.appeared;
     }
 
     /** Готовность к продаже: что обязано быть отмечено (правило пользователя). */
@@ -417,12 +364,6 @@ export class LeadRequestService {
         const missing: string[] = [];
         if (card.siteStatus.installed && !card.siteStatus.currentCode) {
             missing.push('Статус заявки');
-        }
-        if (card.siteStage.installed && !card.siteStage.currentCode) {
-            missing.push('Стадия заявки');
-        }
-        if (card.leadStatus.installed && !card.leadStatus.currentCode) {
-            missing.push('Статус лида');
         }
         if (!card.duplicateChecked) {
             missing.push('Проверка на дубли (ИНН)');

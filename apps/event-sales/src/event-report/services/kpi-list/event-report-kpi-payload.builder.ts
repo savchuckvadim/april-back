@@ -18,11 +18,34 @@ import {
 import { EventReportContext } from '../context/event-report.context';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
+import { toBatchText } from '@lib/bitrix/consts/batch.consts';
 
 import { EnumWorkStatusCode } from '../../types/report-types';
 
-/** План-элементы KPI пишутся на секунду позже отчётных (см. assemble). */
+/**
+ * Смещения event_date (секунды) — читаемая хронология шагов ОДНОГО отчёта
+ * при сортировке ленты по дате (todo2508 №14). Спонтанная презентация:
+ *   звонок состоялся (0) → презентация запланирована (+1) →
+ *   презентация состоялась (+2) → следующий план, например ЗПР (+3).
+ * Плановая презентация пары «запланирована/состоялась» не даёт:
+ *   отчёт-презентация (0) → следующий план (+1).
+ * Раньше пары (report, unplannedPlan) и (presDone, plan) получали равные
+ * даты — порядок внутри пар в ленте был недетерминированным.
+ */
 const PLAN_EVENT_DATE_OFFSET_SEC = 1;
+const UNPLANNED_PRES_PLAN_OFFSET_SEC = 1;
+const UNPLANNED_PRES_DONE_OFFSET_SEC = 2;
+const UNPLANNED_NEXT_PLAN_OFFSET_SEC = 3;
+/**
+ * Финал (продажа/отказ) — всегда ПОСЛЕДНИЙ шаг хронологии отчёта: сначала
+ * отчётная запись по звонку (в т.ч. недозвонная «Не состоялся»), следующим
+ * тиком секунды — финальная «Продажа»/«Отказ» (todo2508-02 №8: при
+ * недозвонном отказе обе записи обязаны быть, финал — отдельным элементом).
+ * План с финалом не сосуществует (buildPlan гасится при fail/success),
+ * поэтому слот +1 свободен; при спонтанной презентации финал уходит за
+ * пару «запланирована/состоялась» — на слот следующего плана (+3).
+ */
+const FINAL_EVENT_DATE_OFFSET_SEC = PLAN_EVENT_DATE_OFFSET_SEC;
 
 /**
  * KPI-сценарии (см. event-report-service-map.md «Блок 4»):
@@ -183,11 +206,32 @@ function mapNoresultReason(
         : undefined;
 }
 
+/**
+ * Тип нерезультативности пишется ТОЛЬКО для несостоявшихся разговоров.
+ *
+ * Фронт шлёт `noresultReason` всегда (дефолт селекта — «Недозвон - трубку
+ * не берут»), а `isActive` бэк не читает — поэтому без гарда КАЖДОЕ событие,
+ * включая результативные и финалы, получало «недозвон». Легаси-гард
+ * (example legacy-flow.php:234-256) при переносе был потерян: при
+ * result/new поле явно очищалось — возвращаем ровно эту семантику
+ * (`null` = очистка, см. KpiEventItemCodes).
+ */
+function mapNoresultReasonGuarded(
+    ctx: EventReportContext,
+): OpNoresultReasonCode | null {
+    if (ctx.isResult || ctx.isNew) return null;
+    return (
+        mapNoresultReason(ctx.dto.report?.noresultReason?.current?.code) ?? null
+    );
+}
+
 function mapProspects(
     failTypeCode: string | undefined,
     ctx: EventReportContext,
 ): OpProspectsTypeCode | undefined {
     if (ctx.isInWork || ctx.isSuccessSale) return undefined;
+    // «Не ЦА»: тип отказа не выбирался (дефолт в DTO) — без перспектив.
+    if (ctx.isNotCa) return 'op_prospects_nopersp';
     if (!failTypeCode) return 'op_prospects_nopersp';
     const m: Partial<Record<string, OpProspectsTypeCode>> = {
         garant: 'op_prospects_garant',
@@ -249,7 +293,17 @@ export class EventReportKpiPayloadBuilder {
     private buildReport(): KpiEventPayload | null {
         const ctx = this.ctx;
         if (ctx.isNew || ctx.isExpired) return null;
-        if (ctx.reportEventType === 'presentation') return null;
+        /*
+         * Отчёт по презентации живёт в сценариях buildPresentationDone/
+         * buildPlan; исключение — недозвон (isNoCall): у него презентационных
+         * сценариев нет, и без этой ветки быстрый недозвон по задаче
+         * «Презентация» не оставлял бы ни одной записи. Легаси-правило
+         * дословно: PHP писал отчёт при `!== 'presentation' || isNoCall`
+         * (порт в event-flow.service.ts:273).
+         */
+        if (ctx.reportEventType === 'presentation' && !ctx.isNoCall) {
+            return null;
+        }
 
         const eventType = mapEventType(ctx.reportEventType);
         if (!eventType) return null;
@@ -287,10 +341,9 @@ export class EventReportKpiPayloadBuilder {
         if (!ctx.isUnplannedPresentation || ctx.isExpired) return null;
         /*
          * Незапланированная презентация даёт ПАРУ записей с читаемой
-         * хронологией: сначала «запланирована» (эта запись, без смещения),
-         * через +1 с — «состоялась» (buildPresentationDone). Раньше offset
-         * стоял наоборот, и в сортировке по дате презентация «проводилась»
-         * раньше, чем планировалась.
+         * хронологией ПОСЛЕ отчётной: звонок (0) → «запланирована» (+1) →
+         * «состоялась» (+2). Раньше эта запись шла без смещения и совпадала
+         * датой с отчётной — порядок в ленте был недетерминированным.
          */
         return this.assemble({
             scenario: 'unplanned_presentation_plan',
@@ -298,6 +351,7 @@ export class EventReportKpiPayloadBuilder {
             eventType: 'presentation',
             action: 'plan',
             crm: this.crmLinks(),
+            eventDateOffsetSec: UNPLANNED_PRES_PLAN_OFFSET_SEC,
         });
     }
 
@@ -310,10 +364,10 @@ export class EventReportKpiPayloadBuilder {
             eventType: 'presentation',
             action: 'done',
             crm: this.crmLinks(),
-            // Пара к «Незапланированной презентации»: факт проведения — на
-            // секунду ПОЗЖЕ факта планирования (см. комментарий выше).
+            // Пара к «Незапланированной презентации»: факт проведения — ПОЗЖЕ
+            // факта планирования (см. хронологию у констант смещений).
             eventDateOffsetSec: this.ctx.isUnplannedPresentation
-                ? PLAN_EVENT_DATE_OFFSET_SEC
+                ? UNPLANNED_PRES_DONE_OFFSET_SEC
                 : undefined,
         });
     }
@@ -342,7 +396,11 @@ export class EventReportKpiPayloadBuilder {
             eventType,
             action: ctx.isExpired ? 'pound' : 'plan',
             crm: this.crmLinks(),
-            eventDateOffsetSec: PLAN_EVENT_DATE_OFFSET_SEC,
+            // При спонтанной презентации план (например, ЗПР) — последний
+            // шаг хронологии, после «запланирована»/«состоялась».
+            eventDateOffsetSec: ctx.isUnplannedPresentation
+                ? UNPLANNED_NEXT_PLAN_OFFSET_SEC
+                : PLAN_EVENT_DATE_OFFSET_SEC,
             // История различает доработку своим item'ом; сводка KPI — нет.
             historyItems:
                 ctx.planEventType === 'refine'
@@ -373,12 +431,52 @@ export class EventReportKpiPayloadBuilder {
             eventType: ctx.isSuccessSale ? 'ev_success' : 'ev_fail',
             action: 'done',
             crm: this.crmLinks(),
+            // Финал — последний шаг хронологии: следующим тиком секунды после
+            // отчётной записи (недозвонный отказ даёт ПАРУ «Не состоялся» →
+            // «Отказ», и порядок в ленте обязан быть детерминированным).
+            eventDateOffsetSec: ctx.isUnplannedPresentation
+                ? UNPLANNED_NEXT_PLAN_OFFSET_SEC
+                : FINAL_EVENT_DATE_OFFSET_SEC,
             dedup: {
-                key: `final_${ctx.entityType}_${ctx.entityId}`,
+                key: this.finalDedupKey(),
                 scope: 'both',
                 mode: 'upsert',
             },
         });
+    }
+
+    /**
+     * Код финального элемента (он же ELEMENT_CODE дедупа).
+     *
+     * Решение владельца (25.08): один финал НА ЦИКЛ РАБОТЫ, а не на
+     * сущность навсегда. Прежний ключ `final_{entity}_{id}` съедал новые
+     * отказы: у давнего клиента финал уже существовал, и upsert лишь
+     * обновлял старую запись — в ленте новый исход не появлялся. Состав:
+     *  - вид финала: продажа / отказ / «не ЦА» (не ЦА — ОТДЕЛЬНЫЙ вид
+     *    отказа: его финал не должен склеиваться с обычным и наоборот);
+     *  - клиент (компания, фолбэк — сущность-владелец у лид-only);
+     *  - основная сделка цикла (создана этим же отчётом — литерал `new`:
+     *    числового id в момент сборки batch ещё нет);
+     *  - менеджер.
+     * Повтор ТОГО ЖЕ исхода тем же менеджером по той же сделке по-прежнему
+     * обновляет элемент, а не плодит дубли.
+     */
+    private finalDedupKey(): string {
+        const ctx = this.ctx;
+        const kind = ctx.isSuccessSale
+            ? 'sale'
+            : ctx.isNotCa
+              ? 'notca'
+              : 'fail';
+        const companyId =
+            ctx.entityType === EEventReportEntityType.COMPANY
+                ? ctx.entityId
+                : Number(ctx.company?.ID) || null;
+        const client = companyId ?? `${ctx.entityType}${ctx.entityId}`;
+        const dealId =
+            Number(ctx.currentBaseDeal?.ID ?? this.deals.baseDealId) || 'new';
+        const userId = ctx.planResponsibleId || 0;
+        return `final_${kind}_${client}_${dealId}_${userId}`;
     }
 
     /**
@@ -564,7 +662,11 @@ export class EventReportKpiPayloadBuilder {
      */
     private finalName(): string {
         const ctx = this.ctx;
-        const base = ctx.isSuccessSale ? 'Продажа' : 'Отказ';
+        const base = ctx.isSuccessSale
+            ? 'Продажа'
+            : ctx.isNotCa
+              ? 'Не ЦА'
+              : 'Отказ';
 
         const occasion = ctx.isUnplannedPresentation
             ? 'спонтанная презентация'
@@ -574,15 +676,31 @@ export class EventReportKpiPayloadBuilder {
                 ? eventTypeName(ctx.reportEventType ?? ctx.planEventType!)
                 : ctx.reportEventName;
 
-        const reason = ctx.isFail
-            ? (ctx.dto.report?.failReason?.current?.name ??
-              ctx.dto.report?.failType?.current?.name ??
-              '')
-            : '';
+        // При «не ЦА» отказные селекты не выбирались (в DTO дефолты) —
+        // причиной идёт имя типа «не ЦА» из слепка портала.
+        const reason = ctx.isNotCa
+            ? this.notCaTypeName()
+            : ctx.isFail
+              ? (ctx.dto.report?.failReason?.current?.name ??
+                ctx.dto.report?.failType?.current?.name ??
+                '')
+              : '';
 
         let name = occasion ? `${base}: ${occasion}` : base;
         if (reason) name += ` — ${reason}`;
         return name;
+    }
+
+    /** Имя типа «не ЦА» по коду из leadSync (поле лида в слепке портала). */
+    private notCaTypeName(): string {
+        const code = this.ctx.dto.leadSync?.notCaTypeCode;
+        if (!code) return '';
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            'op_lead_not_ca_type',
+        );
+        if (!field) return '';
+        return this.portal.getFieldItemByCode(field, code)?.name ?? '';
     }
 
     // ---------- helpers ----------
@@ -630,20 +748,25 @@ export class EventReportKpiPayloadBuilder {
                 crm_contact: ctx.dto.report?.contact?.ID
                     ? { n0: `C_${ctx.dto.report.contact.ID}` }
                     : undefined,
-                manager_comment: ctx.reportComment,
+                // Комментарий уходит в lists.element.* через batch-строку:
+                // сырые \n там теряются, экранируем в %0A.
+                manager_comment: toBatchText(ctx.reportComment),
             },
             items: {
                 event_type: input.eventType,
                 event_action: input.action,
                 op_result_status: mapResultStatus(ctx.isResult),
-                op_noresult_reason: mapNoresultReason(
-                    ctx.dto.report?.noresultReason?.current?.code,
-                ),
+                op_noresult_reason: mapNoresultReasonGuarded(ctx),
                 op_work_status: mapWorkStatus(ctx),
-                op_fail_type: mapFailType(failTypeCode),
-                op_fail_reason: mapFailReason(
-                    ctx.dto.report?.failReason?.current?.code,
-                ),
+                // При «не ЦА» отказные селекты не выбирались — в DTO лежат
+                // дефолты («Гарант/Запрет», «Не было времени»), писать их
+                // значило бы выдумать тип и причину отказа.
+                op_fail_type: ctx.isNotCa
+                    ? undefined
+                    : mapFailType(failTypeCode),
+                op_fail_reason: ctx.isNotCa
+                    ? undefined
+                    : mapFailReason(ctx.dto.report?.failReason?.current?.code),
                 op_prospects_type: mapProspects(failTypeCode, ctx),
             },
             historyItems: input.historyItems,
@@ -653,8 +776,14 @@ export class EventReportKpiPayloadBuilder {
 
     private crmLinks(): Record<string, string> {
         const links: Record<string, string> = {};
+        const seen = new Set<string>();
         let i = 0;
+        // Дедуп на входе: привязки задачи (ufCrmTask) пересекаются с
+        // владельцем/сделками контекста, а дубль `D_25359` в crm-поле —
+        // мусор в карточке элемента.
         const push = (v: string) => {
+            if (seen.has(v)) return;
+            seen.add(v);
             links[`n${i++}`] = v;
         };
         if (
@@ -721,7 +850,26 @@ export class EventReportKpiPayloadBuilder {
         if (reportContact) {
             push(`C_${reportContact}`);
         }
+        /*
+         * Привязки САМОЙ задачи (ufCrmTask): элемент обязан ссылаться на все
+         * сущности задачи (todo2508-02 №2 — недозвон из списка дел). Контекст
+         * фрейма знает только владельца (company/deal/lead карточки), а
+         * задача может быть связана с другими лидами/сделками — без этих
+         * привязок запись не находится из их карточек. Дубли гасит push.
+         */
+        for (const link of this.taskCrmLinks()) {
+            push(link);
+        }
         return links;
+    }
+
+    /** CRM-привязки закрываемой задачи (`L_*`/`D_*`/`CO_*`/`C_*`) из DTO. */
+    private taskCrmLinks(): string[] {
+        const raw = this.ctx.dto.currentTask?.ufCrmTask;
+        if (!Array.isArray(raw)) return [];
+        return raw.filter(
+            (v): v is string => typeof v === 'string' && /^[A-Z]+_\d+$/.test(v),
+        );
     }
 
     private formatCrm(d: Date): string {

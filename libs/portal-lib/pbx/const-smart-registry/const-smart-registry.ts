@@ -1,5 +1,7 @@
 import { AICALL_SMART_DESCRIPTOR } from '../pbx-aicall-smart/type/pbx-aicall-smart.descriptor';
 import { SKAP_SMART_DESCRIPTOR } from '../pbx-skap-smart/type/pbx-skap-smart.descriptor';
+import { ZPR_SMART_DESCRIPTOR } from '../pbx-zpr-smart/type/pbx-zpr-smart.descriptor';
+import { PRESENTATION_SMART_DESCRIPTOR } from '../pbx-presentation-smart/type/pbx-presentation-smart.descriptor';
 import { ConstSmartDescriptor } from './type/const-smart-descriptor.type';
 
 /**
@@ -13,6 +15,11 @@ import { ConstSmartDescriptor } from './type/const-smart-descriptor.type';
 export const CONST_SMART_REGISTRY = [
     AICALL_SMART_DESCRIPTOR,
     SKAP_SMART_DESCRIPTOR,
+    // ЗПР — первый const-смарт с воронкой/стадиями (hasCategories: true).
+    ZPR_SMART_DESCRIPTOR,
+    // «Презентации» — зеркало сделок sales_presentation тем же каркасом,
+    // что и ЗПР (type 'pres': имя 'presentation' занято Excel-шаблоном).
+    PRESENTATION_SMART_DESCRIPTOR,
 ] as const satisfies readonly ConstSmartDescriptor[];
 
 export type ConstSmartKind = (typeof CONST_SMART_REGISTRY)[number]['kind'];

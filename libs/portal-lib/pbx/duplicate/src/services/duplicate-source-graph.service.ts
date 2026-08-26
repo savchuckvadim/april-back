@@ -56,6 +56,20 @@ const MIRROR_DEAL_SELECT = [
     'UF_*',
 ];
 
+/**
+ * Select контактов компании: идентификация + всё, что читает сборщик
+ * сигналов (PHONE/EMAIL — мультиполя, имя — для titlesOf).
+ */
+const COMPANY_CONTACT_SELECT = [
+    'ID',
+    'NAME',
+    'LAST_NAME',
+    'SECOND_NAME',
+    'COMPANY_ID',
+    'PHONE',
+    'EMAIL',
+];
+
 const REQUISITE_SELECT = [
     'ID',
     'ENTITY_TYPE_ID',
@@ -108,14 +122,15 @@ export class DuplicateSourceGraphService {
             );
             if (!wave.length) break;
 
-            const { rows, requisites, mirrors } = await this.runWave(
-                bitrix,
-                wave,
-                depth,
-                dealCategoryBitrixIds,
-                limits,
-                result,
-            );
+            const { rows, requisites, mirrors, companyContacts } =
+                await this.runWave(
+                    bitrix,
+                    wave,
+                    depth,
+                    dealCategoryBitrixIds,
+                    limits,
+                    result,
+                );
             result.httpRequests += 1;
 
             const nextFrontier: SourceGraphRef[] = [];
@@ -147,6 +162,27 @@ export class DuplicateSourceGraphService {
                 nextFrontier.push(...this.edgesOf(ref, dealRow));
             }
 
+            // Контакты компаний — такие же узлы окружения, как зеркальные
+            // сделки: в excluded и в следующую волну (их ребро ведёт назад к
+            // компании — visited не даст зациклиться).
+            for (const contactRow of companyContacts) {
+                const id = Number(contactRow.ID);
+                if (!Number.isFinite(id) || id <= 0) continue;
+                const ref: SourceGraphRef = {
+                    entityType: DuplicateEntityType.CONTACT,
+                    id,
+                };
+                if (!this.admit(ref, visited, perType, result, limits)) {
+                    continue;
+                }
+                result.nodes.push({
+                    ...ref,
+                    depth: depth + 1,
+                    entity: contactRow,
+                });
+                nextFrontier.push(...this.edgesOf(ref, contactRow));
+            }
+
             frontier = nextFrontier;
         }
 
@@ -168,6 +204,7 @@ export class DuplicateSourceGraphService {
         rows: Map<string, BxGraphRow>;
         requisites: BxGraphRow[];
         mirrors: BxGraphRow[];
+        companyContacts: BxGraphRow[];
     }> {
         let commands = 0;
         const budget = () => commands < limits.maxCommandsPerWave;
@@ -198,6 +235,32 @@ export class DuplicateSourceGraphService {
                 REQUISITE_SELECT,
             );
             commands++;
+        }
+
+        /*
+         * Контакты компаний волны. Строка компании их id не несёт, и без
+         * этой команды собственные контакты клиента не попадали в граф —
+         * а значит и в excluded: поиск находил их по СОБСТВЕННЫМ телефонам
+         * и показывал «дублями» самой компании-источника.
+         */
+        const companyIds = wave
+            .filter(ref => ref.entityType === DuplicateEntityType.COMPANY)
+            .map(ref => ref.id);
+        if (companyIds.length) {
+            if (budget()) {
+                bitrix.api.addCmdBatch(
+                    `company_contacts_${depth}`,
+                    'crm.contact.list',
+                    {
+                        filter: { COMPANY_ID: companyIds },
+                        select: COMPANY_CONTACT_SELECT,
+                        start: -1,
+                    },
+                );
+                commands++;
+            } else {
+                overBudget.push(`company_contacts_${depth}`);
+            }
         }
 
         // Зеркальные сделки НАШИХ воронок по компаниям/контактам/лидам волны.
@@ -256,6 +319,7 @@ export class DuplicateSourceGraphService {
         const rows = new Map<string, BxGraphRow>();
         const requisites: BxGraphRow[] = [];
         const mirrors: BxGraphRow[] = [];
+        const companyContacts: BxGraphRow[] = [];
 
         for (const chunk of responses) {
             const byCmd = (chunk?.result ?? {}) as Record<string, unknown>;
@@ -264,6 +328,8 @@ export class DuplicateSourceGraphService {
                     requisites.push(
                         ...this.matchRequisites(this.rowsOf(value), wave),
                     );
+                } else if (cmd.startsWith('company_contacts_')) {
+                    companyContacts.push(...this.rowsOf(value));
                 } else if (cmd.startsWith('mirror_')) {
                     mirrors.push(...this.rowsOf(value));
                 } else if (value && typeof value === 'object') {
@@ -271,7 +337,7 @@ export class DuplicateSourceGraphService {
                 }
             }
         }
-        return { rows, requisites, mirrors };
+        return { rows, requisites, mirrors, companyContacts };
     }
 
     /** Пары (ENTITY_TYPE_ID, ENTITY_ID) матчим против узлов волны. */

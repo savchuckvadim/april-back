@@ -4,6 +4,10 @@ import {
 } from '@lib/bitrix/consts/batch.consts';
 import { buildEventHistoryParts } from '../history/event-history-comment.builder';
 import {
+    EVENT_TASK_CHECKLIST_ITEM,
+    isChecklistItemDone,
+} from '../task/event-task-checklist.catalog';
+import {
     IField,
     IFieldItem,
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
@@ -88,6 +92,22 @@ export const PRESENTATION_SURVEY_FIELD_CODES = [
 ] as const;
 
 /**
+ * Deal-only поля хвоста (владельческая таблица todo2508): фрейм пишет их
+ * в БАЗОВУЮ сделку, на лиде их нет вовсе — поэтому общий перенос анкеты
+ * (источник — лид) их не видит. Пресс-сделка, по которой отчитались,
+ * увозит СВОЙ снимок этих значений с базовой: следующая презентация
+ * перезатрёт базовую, а история по каждой презентации сохранится.
+ */
+export const XVOST_DEAL_FIELD_CODES = [
+    'op_xvost_decision_call_date',
+    'op_xvost_decision_date_agreement',
+    'op_manager_approach_date',
+    'op_xvost_is_offer',
+    'op_xvost_is_complect',
+    'op_xvost_is_price',
+] as const;
+
+/**
  * Опции для построения полей сделки (entityType='deal').
  */
 export interface DealFieldsOptions {
@@ -169,6 +189,9 @@ export class EventReportEntityFieldsModel {
             this.copyPresentationSurvey(out);
         }
 
+        // ===== Чек-лист закрытой задачи (фолбэк по презентации) =====
+        this.applyChecklistFacts(out);
+
         // ===== isPlanned =====
         if (this.ctx.isPlanned) {
             this.applyPlannedFields(out);
@@ -182,11 +205,24 @@ export class EventReportEntityFieldsModel {
         // ===== Финальный статус =====
         if (!this.ctx.isPlanned) {
             if (this.ctx.isFail) {
+                // «Не ЦА» — брак, а не отказ: история сущности обязана
+                // называть исход своим именем, хотя по проводам он едет
+                // отказным статусом (контракт очереди кода notCa не знает).
                 this.setScalar(
                     out,
                     'op_current_status',
-                    this.statusText('Отказ'),
+                    this.statusText(this.ctx.isNotCa ? 'Не ЦА' : 'Отказ'),
                 );
+                // Тип «не ЦА» — и на владельца (компанию/сделку), не только
+                // на лид: поле заведено на всех трёх сущностях (todo2508),
+                // item-коды у них совпадают (op_lead_not_ca_type1..4).
+                if (this.ctx.isNotCa && this.ctx.dto.leadSync?.notCaTypeCode) {
+                    this.applyEnumeration(
+                        out,
+                        'op_lead_not_ca_type',
+                        this.ctx.dto.leadSync.notCaTypeCode,
+                    );
+                }
                 this.appendMultiple(
                     out,
                     'op_fail_comments',
@@ -222,7 +258,13 @@ export class EventReportEntityFieldsModel {
                 this.applyEnumeration(out, 'op_noresult_reason', code);
             }
         }
-        if (this.ctx.isFail && this.ctx.dto.report?.failReason) {
+        // При «не ЦА» причина отказа не выбиралась — в DTO лежит дефолт
+        // селекта, писать его в поле значило бы выдумать причину.
+        if (
+            this.ctx.isFail &&
+            !this.ctx.isNotCa &&
+            this.ctx.dto.report?.failReason
+        ) {
             const failReasonCode = this.ctx.dto.report.failReason.current?.code;
             if (failReasonCode) {
                 this.applyEnumeration(
@@ -261,6 +303,41 @@ export class EventReportEntityFieldsModel {
     }
 
     // ---------- private ----------
+
+    /**
+     * Факты из чек-листа закрываемой задачи в поля карточки.
+     *
+     * Пишется ТОЛЬКО то, под что поле в реестре уже есть, и ТОЛЬКО как
+     * фолбэк: галка в задаче не спорит с отчётом. Сейчас это одна ветка —
+     * «Презентация проведена» отмечена, а в отчёте кнопку не нажали:
+     * дату последней проведённой презентации фиксируем, СЧЁТЧИК не трогаем
+     * (`pres_count` ведёт отчёт, и удвоить его галкой нельзя).
+     *
+     * «Решение подтверждено» и «Возражения зафиксированы» полей на порталах
+     * не имеют (см. EVENT_TASK_CHECKLIST_FIELDLESS_CODES) — их итог уходит
+     * в историю (`appendHistory`) и комментарий задачи.
+     *
+     * «Дата следующей коммуникации» отдельного действия не требует:
+     * `call_next_date` уже выставляется планом, а без плана даты и нет.
+     */
+    private applyChecklistFacts(out: EntityFieldsMap): void {
+        if (this.ctx.isPresentationDone) return;
+        if (
+            !isChecklistItemDone(
+                this.ctx.taskChecklist,
+                EVENT_TASK_CHECKLIST_ITEM.presentationDone,
+            )
+        ) {
+            return;
+        }
+
+        this.setScalar(out, 'last_pres_done_date', this.nowCrmDate());
+        this.setScalar(
+            out,
+            'last_pres_done_responsible',
+            this.ctx.planResponsibleId,
+        );
+    }
 
     private applyPlannedFields(out: EntityFieldsMap): void {
         this.setScalar(out, 'call_next_date', this.planDeadlineCrm());
@@ -371,11 +448,24 @@ export class EventReportEntityFieldsModel {
         if (this.ctx.planEventType === 'moneyAwait')
             return 'op_status_money_await';
         if (this.ctx.isInWork) return 'op_status_in_work';
+        /*
+         * Статус обязан «поддерживаться при любом event-report» (todo2508-02
+         * №9): активный план сам по себе означает, что клиент снова в работе.
+         * Без этой ветки план после отказа оставлял и компанию, и НОВУЮ
+         * сделку со старым «Провалом» (или вовсе без статуса): отчётный
+         * workStatus при чистом плане не выбирается, и резолвер возвращал
+         * null. Ничего не утверждаем только когда нет ни финала, ни плана.
+         */
+        if (this.ctx.isPlanned) return 'op_status_in_work';
         return null;
     }
 
     private resolveProspectsCode(): string | null {
         if (this.ctx.isInWork || this.ctx.isSuccessSale) return null;
+        // «Не ЦА»: тип отказа не выбирался (в DTO дефолт селекта) — клиент
+        // без перспектив. Item «Не ЦА» в op_prospects_type — фолоу-ап с
+        // переустановкой поля.
+        if (this.ctx.isNotCa) return 'op_prospects_nopersp';
         const failTypeCode = this.ctx.dto.report?.failType?.current?.code;
         if (!failTypeCode) return 'op_prospects_nopersp';
         const map: Record<string, string> = {
@@ -490,6 +580,10 @@ export class EventReportEntityFieldsModel {
         ) {
             return;
         }
+        // Deal-only хвост (op_xvost_*) — отдельным снимком с БАЗОВОЙ сделки:
+        // на лиде этих полей нет, общий цикл ниже их не увидит.
+        this.copyXvostSnapshot(out);
+
         const lead = this.ctx.lead as unknown as Record<string, unknown> | null;
         if (!lead) return;
 
@@ -509,6 +603,31 @@ export class EventReportEntityFieldsModel {
              * поэтому повторный перенос не двоит экранирование.
              */
             this.setScalar(out, code, toBatchText(value));
+        }
+    }
+
+    /**
+     * Снимок deal-only полей хвоста (op_xvost_*) с БАЗОВОЙ сделки в
+     * пресс-сделку, по которой отчитались (см. XVOST_DEAL_FIELD_CODES).
+     * Даты и булевы — однострочные, toBatchText не нужен.
+     */
+    private copyXvostSnapshot(out: EntityFieldsMap): void {
+        if (this.dealOptions?.role !== EDealRole.PRESENTATION) return;
+        if (!this.dealOptions?.presentationHappenedHere) return;
+        const base = this.ctx.currentBaseDeal as unknown as Record<
+            string,
+            unknown
+        > | null;
+        if (!base) return;
+
+        for (const code of XVOST_DEAL_FIELD_CODES) {
+            const field = this.portal.getEntityFieldByCode('deal', code);
+            if (!field) continue;
+            const raw = base[this.bitrixKey(field)];
+            const value =
+                typeof raw === 'string' ? raw.trim() : raw ? String(raw) : '';
+            if (!value) continue;
+            this.setScalar(out, code, value);
         }
     }
 
@@ -563,7 +682,8 @@ export class EventReportEntityFieldsModel {
     private failComment(): string {
         // Комментарий менеджера бывает многострочным — экранируем переносы
         // для batch, иначе в карточке они превратятся в подчёркивания.
-        return `${this.nowCrmDate()} Отказ: ${toBatchText(this.ctx.reportComment)}`;
+        const label = this.ctx.isNotCa ? 'Не ЦА' : 'Отказ';
+        return `${this.nowCrmDate()} ${label}: ${toBatchText(this.ctx.reportComment)}`;
     }
 
     /**

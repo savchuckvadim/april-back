@@ -53,13 +53,28 @@ const makeDeps = (input: {
 }) => {
     const adds: { cmd: string; dto: Record<string, unknown> }[] = [];
     const updates: { cmd: string; dto: Record<string, unknown> }[] = [];
-    const get = jest.fn((dto: { filter?: Record<string, unknown> }) => {
+    /*
+     * Мок отвечает ТОЛЬКО на адресацию через ELEMENT_CODE — как реальный
+     * lists.element.get. Фильтр `{'=CODE': …}` РЕСТ списков не гарантирует
+     * (неподдержанный ключ молча выбрасывается, и метод отдаёт первую
+     * страницу ВСЕХ элементов) — регрессия на фильтр провалит существование
+     * и молча потеряет повторный финал (todo2508-02 №8).
+     */
+    const get = jest.fn((dto: { ELEMENT_CODE?: string }) => {
         if (input.getFails) return Promise.reject(new Error('network'));
-        const wanted = dto.filter?.['=CODE'];
-        const codes = Array.isArray(wanted) ? wanted : [wanted];
+        const wanted = dto.ELEMENT_CODE;
+        if (!wanted) {
+            // Без ELEMENT_CODE реальный метод вернул бы первую страницу
+            // элементов — для теста это «ничего полезного не нашли».
+            return Promise.resolve({ result: [] });
+        }
         const result = Object.entries(input.existing ?? {})
-            .filter(([code]) => codes.includes(code))
+            .filter(([code]) => code === wanted)
             .map(([code, id]) => ({ ID: id, CODE: code }));
+        if (result.length === 0) {
+            // Битрикс на несуществующий ELEMENT_CODE отвечает ошибкой.
+            return Promise.reject(new Error('Element not found'));
+        }
         return Promise.resolve({ result });
     });
     const bitrix = {
@@ -119,6 +134,21 @@ describe('KpiListFlowService — дедупликация финалов и ун
             'add_list_item_history_final_deal_1024',
         ]);
         expect(adds.map(a => a.dto.IBLOCK_ID)).toEqual(['55', '56']);
+    });
+
+    it('существование проверяется адресацией ELEMENT_CODE, а не фильтром', async () => {
+        const { service, get, buffer } = makeDeps({});
+
+        await service.flowDedup(finalPayload(), buffer as never);
+
+        expect(get).toHaveBeenCalled();
+        for (const call of get.mock.calls) {
+            const dto = call[0] as Record<string, unknown>;
+            expect(dto.ELEMENT_CODE).toBe('final_deal_1024');
+            // Фильтра по CODE быть не должно: REST списков молча выбрасывает
+            // неподдержанный ключ и отдаёт первую страницу всех элементов.
+            expect(dto.filter).toBeUndefined();
+        }
     });
 
     it('повторная отправка финала: update существующих, НОВЫХ записей нет', async () => {

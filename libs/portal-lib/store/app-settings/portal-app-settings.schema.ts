@@ -297,6 +297,130 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'number',
             default: 1,
         }),
+        // === Чек-листы pbx-полей (каталог — данные фронта CallChecklist) ===
+        withChecklistRefine: setting({
+            code: 'checklist_refine_enabled',
+            name: 'Чек-лист «Доработка»',
+            description:
+                'При планировании звонка «Доработка» менеджер обязан ' +
+                'заполнить причину возражения (поле сделки «ОП Причина ' +
+                'Отказа») — с показом текущего значения.',
+            type: 'boolean',
+            default: false,
+        }),
+        withChecklistPay: setting({
+            code: 'checklist_pay_enabled',
+            name: 'Чек-лист «Оплата»',
+            description:
+                'При планировании звонка «Оплата» показывать дату ' +
+                'последнего выставления счёта (op_invoice_date, поле ' +
+                'конструктора) и требовать её заполнить.',
+            type: 'boolean',
+            default: false,
+        }),
+        withChecklistDecision: setting({
+            code: 'checklist_decision_enabled',
+            name: 'Чек-лист перехода «Клиент на решении»',
+            description:
+                'Перед отправкой отчёта, двигающего основную сделку на ' +
+                '«Клиент на решении», обязательны даты КП, проекта ' +
+                'договора, счёта и дата звонка по решению.',
+            type: 'boolean',
+            default: false,
+        }),
+        withChecklistSale: setting({
+            code: 'checklist_sale_enabled',
+            name: 'Чек-лист продажи',
+            description:
+                'Перед отправкой отчёта «Продажа» обязательны сумма сделки ' +
+                '(OPPORTUNITY) и дата первой оплаты (first_pay_date).',
+            type: 'boolean',
+            default: false,
+        }),
+        withTaskChecklist: setting({
+            code: 'task_checklist_enabled',
+            name: 'Чек-лист в задаче обзвона',
+            description:
+                'Планируемая задача создаётся с чек-листом («Презентация ' +
+                'проведена», «Решение подтверждено», «Дата следующей ' +
+                'коммуникации назначена», «Возражения зафиксированы» — ' +
+                'состав зависит от типа события). При закрытии задачи ' +
+                'отмеченные пункты попадают в историю карточки и в ' +
+                'комментарий задачи. ВЫКЛЮЧЕНО по умолчанию: включение ' +
+                'меняет вид задач у всех менеджеров портала.',
+            type: 'boolean',
+            default: false,
+        }),
+        withKonstructorSlider: setting({
+            code: 'konstructor_slider_enabled',
+            name: 'Кнопка карточки сделки (конструктор)',
+            description:
+                'В чек-листах решения/продажи показывать кнопку, открывающую ' +
+                'слайдер карточки сделки — там таб «Гарант: Конструктор КП» ' +
+                'с комплектами и ценами.',
+            type: 'boolean',
+            default: false,
+        }),
+        // === Реанимация отказников (sales-hooks/reject-revive) ===
+        rejectReviveEnabled: setting({
+            code: 'reject_revive_enabled',
+            name: 'Реанимация отказников',
+            description:
+                'Крон возвращает отказные сделки основной воронки в работу: ' +
+                'через интервал (или по дате звонка после отказа) ставится ' +
+                'холодный звонок cold-call хуком. Перед включением установите ' +
+                'поля post_fail_date / op_xo_revive_* на сделки.',
+            type: 'boolean',
+            default: false,
+        }),
+        rejectReviveIntervalDays: setting({
+            code: 'reject_revive_interval_days',
+            name: 'Реанимация: интервал (дней)',
+            description:
+                'Сколько дней сделка лежит в отказе до постановки холодного ' +
+                'звонка (отсчёт от даты закрытия).',
+            type: 'number',
+            default: 120,
+        }),
+        rejectReviveAssignMode: setting({
+            code: 'reject_revive_assign_mode',
+            name: 'Реанимация: кому назначать',
+            description:
+                "'same' — тому же ответственному сделки; 'random' — " +
+                'случайному активному менеджеру отдела продаж (при пустом ' +
+                'отделе — фолбэк на того же).',
+            type: 'string',
+            default: 'same',
+        }),
+        rejectReviveMaxPerRun: setting({
+            code: 'reject_revive_max_per_run',
+            name: 'Реанимация: лимит за прогон',
+            description:
+                'Максимум сделок, обрабатываемых за один тик крона ' +
+                '(досылка «недоехавших» входит в лимит).',
+            type: 'number',
+            default: 20,
+        }),
+        rejectReviveUsePostFailDate: setting({
+            code: 'reject_revive_use_post_fail_date',
+            name: 'Реанимация: учитывать дату после отказа',
+            description:
+                'Если у сделки заполнена «ОП Дата звонка после отказа» ' +
+                '(post_fail_date) — она перебивает интервал: звонок ставится ' +
+                'по ней.',
+            type: 'boolean',
+            default: false,
+        }),
+        rejectReviveResendAfterMinutes: setting({
+            code: 'reject_revive_resend_after_minutes',
+            name: 'Реанимация: порог досылки (минут)',
+            description:
+                'Через сколько минут «взятая в очередь» сделка без отметки ' +
+                '«хук отправлен» считается недоехавшей и досылается ' +
+                '(подстраховка на падение хука).',
+            type: 'number',
+            default: 120,
+        }),
     },
     [EnumPortalAppCode.konstructor]: {},
     [EnumPortalAppCode.skap]: {

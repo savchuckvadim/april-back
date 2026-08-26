@@ -137,7 +137,9 @@ export class ParseSmartService {
             isActive: true,
             isNeedUpdate: true,
             order: 0,
-            categories: [],
+            // Воронки/стадии const-смарта (ЗПР) — тем же контрактом, что и
+            // Excel-лист categories/stages: их ставит InstallSmartCategoriesService.
+            categories: descriptor.buildInstallCategories?.() ?? [],
             // ConstSmartInstallField структурно совместим с Field.
             fields: descriptor.buildInstallFields() as Field[],
         };

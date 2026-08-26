@@ -558,6 +558,95 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         name: '5К закрыто (контроль встречи)',
         type: 'boolean',
     },
+    // Хвост/5К: краткие версии в полях (ужаты писателем до <700 байт —
+    // row size), полные тексты — в таймлайне элемента. Пары «AI ↔ менеджер»
+    // дают сравнение бок-о-бок прямо в карточке.
+    {
+        code: 'HVOST_ANALYSIS',
+        name: 'Хвост: разбор AI (кратко)',
+        type: 'string',
+    },
+    {
+        code: 'FIVE_K_ANALYSIS',
+        name: '5К: разбор AI (кратко)',
+        type: 'string',
+    },
+    {
+        code: 'HVOST_MANAGER',
+        name: 'Хвост: отчёт менеджера (из сделки)',
+        type: 'string',
+    },
+    {
+        code: 'FIVE_K_MANAGER',
+        name: '5К: отчёт менеджера (из сделки)',
+        type: 'string',
+    },
+    // Гранулярный хвост/5К — зеркало чеклиста менеджера в сделке
+    // (op_xvost_* / op_5k_* из pbx-sales-event-field): AI отвечает на ТЕ ЖЕ
+    // вопросы по транскрипту, итоги HVOST_DONE/FIVE_K_DONE пересчитываются
+    // кодом из этих пунктов. Заполняются только для presentation/decision.
+    { code: 'HVOST_OFFER', name: 'Хвост AI: КП предложено', type: 'boolean' },
+    {
+        code: 'HVOST_COMPLECT',
+        name: 'Хвост AI: наполнение озвучено',
+        type: 'boolean',
+    },
+    { code: 'HVOST_PRICE', name: 'Хвост AI: цена озвучена', type: 'boolean' },
+    {
+        code: 'HVOST_DECISION_DATE',
+        name: 'Хвост AI: дата решения назначена',
+        type: 'boolean',
+    },
+    {
+        code: 'HVOST_DATE_AGREED',
+        name: 'Хвост AI: дата согласована с клиентом',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_CLIENT_WHAT',
+        name: '5К AI: клиент — что хочет',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_CLIENT_READY',
+        name: '5К AI: клиент — готов работать',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_CLIENT_PRICE',
+        name: '5К AI: клиент — укладываемся в цену',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_COMPANY_WHO',
+        name: '5К AI: компания — кто принимает решение',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_COMPANY_HOW',
+        name: '5К AI: компания — как принимается решение',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_COMPANY_RIGHT',
+        name: '5К AI: цена и комплект подобраны верно',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_COMMAND',
+        name: '5К AI: коллеги — кто будет работать',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_CONCURENT',
+        name: '5К AI: конкурент — критерии сравнения',
+        type: 'boolean',
+    },
+    {
+        code: 'FIVE_K_CRITERI',
+        name: '5К AI: критерии выбора СПС',
+        type: 'boolean',
+    },
     {
         code: 'INTERLOCUTOR_ROLE',
         name: 'С кем говорили',
@@ -741,6 +830,163 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
     // — Служебные —
     { code: 'AGENT_NAME', name: 'Имя агента-аналитика', type: 'string' },
     { code: 'AGENT_VERSION', name: 'Версия скилла агента', type: 'string' },
+];
+
+// ---------------------------------------------------------------------------
+// Раскладка карточки элемента по разделам
+// ---------------------------------------------------------------------------
+
+/** Раздел карточки элемента (crm.item.details.configuration.set). */
+export interface CallReportCardSection {
+    /** Уникальное имя раздела в конфигурации карточки. */
+    name: string;
+    /** Заголовок раздела, виден пользователю. */
+    title: string;
+    /**
+     * Поля раздела по порядку: UPPER_SNAKE — коды UF-полей смарта
+     * (превращаются в ufCrm{typeId}{Code}), camelCase — системные поля
+     * карточки (title, assignedById…) как есть.
+     */
+    codes: readonly string[];
+}
+
+/**
+ * Общая (scope C) раскладка карточки — применяется установщиком, чтобы
+ * поля не сваливались в кучу «Об элементе», а лежали по смысловым
+ * разделам. Пользовательские личные настройки поверх неё сохраняются.
+ */
+export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
+    {
+        name: 'main',
+        title: 'Об элементе',
+        codes: ['title', 'assignedById', 'companyId', 'contactId'],
+    },
+    {
+        name: 'call',
+        title: 'Звонок',
+        codes: [
+            'CALL_TYPE',
+            'PRODUCTIVE',
+            'CALL_DATE',
+            'DURATION_SEC',
+            'MANAGER',
+            'INTERLOCUTOR_ROLE',
+            'SPECIALIST',
+            'SENTIMENT',
+            'TALK_RATIO_PCT',
+            'QUESTIONS_COUNT',
+            'ACTIVITY_ID',
+            'CALL_ID',
+        ],
+    },
+    {
+        name: 'result',
+        title: 'Итоги разбора',
+        codes: [
+            'SCORE',
+            'WEIGHTED_SCORE',
+            'SCORE_EXPLANATION',
+            'SUMMARY',
+            'RECOMMENDATIONS',
+            'EMPLOYEE_RECOMMENDATIONS',
+            'SPEECH_ANALYSIS',
+            'SCRIPT_COMPLIANCE',
+            'COACHING_PRIORITY',
+            'RESUME_GIGACHAT',
+            'RECOMENDATION_GIGACHAT',
+        ],
+    },
+    {
+        name: 'sections',
+        title: 'Разделы разговора',
+        codes: CALL_REPORT_SECTIONS.flatMap(section =>
+            ['SCORE', 'RELEVANCE', 'ANALYSIS', 'ADVICE'].map(
+                suffix => `${section.code}_${suffix}`,
+            ),
+        ),
+    },
+    {
+        name: 'presentation',
+        title: 'Презентация: хвост и 5К',
+        codes: [
+            'PRESENTATION_DONE',
+            'HVOST_DONE',
+            'HVOST_OFFER',
+            'HVOST_COMPLECT',
+            'HVOST_PRICE',
+            'HVOST_DECISION_DATE',
+            'HVOST_DATE_AGREED',
+            'HVOST_ANALYSIS',
+            'HVOST_MANAGER',
+            'FIVE_K_DONE',
+            'FIVE_K_CLIENT_WHAT',
+            'FIVE_K_CLIENT_READY',
+            'FIVE_K_CLIENT_PRICE',
+            'FIVE_K_COMPANY_WHO',
+            'FIVE_K_COMPANY_HOW',
+            'FIVE_K_COMPANY_RIGHT',
+            'FIVE_K_COMMAND',
+            'FIVE_K_CONCURENT',
+            'FIVE_K_CRITERI',
+            'FIVE_K_ANALYSIS',
+            'FIVE_K_MANAGER',
+        ],
+    },
+    {
+        name: 'needs',
+        title: 'Потребности и продукты',
+        codes: ['NEEDS_FOUND', 'NEEDS', 'PRODUCTS_OFFERED'],
+    },
+    {
+        name: 'objections',
+        title: 'Возражения, риски, отказы',
+        codes: [
+            'OBJECTIONS',
+            'OBJECTIONS_HANDLING',
+            'OBJECTION_CATEGORIES',
+            'RISK_FLAGS',
+            'REFUSAL_CATEGORY',
+        ],
+    },
+    {
+        name: 'price',
+        title: 'Цена и следующий шаг',
+        codes: [
+            'PRICE_DISCUSSED',
+            'COMPETITOR_MENTIONED',
+            'COMPETITORS',
+            'NEXT_STEP_SET',
+            'NEXT_STEP',
+            'NEXT_STEP_DATE',
+        ],
+    },
+    {
+        name: 'links',
+        title: 'Связи и отчётность',
+        codes: [
+            'DEAL_MAIN',
+            'DEAL_PRESENTATION',
+            'DEAL_XO',
+            'KPI_ITEM_ID',
+            'KPI_ITEM_STATUS',
+            'HISTORY_ITEM_ID',
+            'HISTORY_ITEM_STATUS',
+            'RELATED_REPORTS',
+        ],
+    },
+    {
+        name: 'transcript',
+        title: 'Транскрипт и служебные',
+        codes: [
+            'TRANSCRIPT_1',
+            'TRANSCRIPT_2',
+            'TRANSCRIPT_3',
+            'TRANSCRIPT_4',
+            'TRANSCRIPTION_ID',
+            'AGENT_NAME',
+            'AGENT_VERSION',
+        ],
+    },
 ];
 
 /**

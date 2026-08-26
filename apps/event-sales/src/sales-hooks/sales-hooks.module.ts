@@ -4,6 +4,7 @@ import { LeadToWorkHookModule } from './lead-to-work/lead-to-work.module';
 import { MergeDuplicatesHookModule } from './merge-duplicates/merge-duplicates.module';
 import { TransferWorkHookModule } from './transfer-work/transfer-work.module';
 import { RejectBufferHookModule } from './reject-buffer/reject-buffer.module';
+import { RejectReviveHookModule } from './reject-revive/reject-revive.module';
 import { ConvertNormalizerHookModule } from './convert-normalizer/convert-normalizer.module';
 import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.module';
 import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
@@ -19,6 +20,7 @@ import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
         MergeDuplicatesHookModule,
         TransferWorkHookModule,
         RejectBufferHookModule,
+        RejectReviveHookModule,
         ConvertNormalizerHookModule,
         DuplicateCheckHookModule,
         LeadAcceptHookModule,

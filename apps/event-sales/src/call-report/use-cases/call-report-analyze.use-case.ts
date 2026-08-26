@@ -259,6 +259,8 @@ export class CallReportAnalyzeUseCase {
                     durationSec: row.CALL_DURATION
                         ? Number(row.CALL_DURATION)
                         : undefined,
+                    // Звонок числится за тем, кто звонил (см. payload).
+                    callerUserId: Number(row.PORTAL_USER_ID) || undefined,
                 },
                 dto.createSmartItem,
             );

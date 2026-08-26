@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
+import {
+    BATCH_LINE_BREAK_SYMBOL,
+    toBatchText,
+} from '@lib/bitrix/consts/batch.consts';
 import { getErrorDetails } from '@/shared';
 import { EnumSalesHookCode } from '../../core/constants/sales-hook-code.enum';
 import {
@@ -101,7 +104,9 @@ export class RejectBufferUseCase
                         `rb_task_note_${taskId}`,
                         taskId,
                         {
-                            DESCRIPTION: `${this.textOf(row.description ?? row.DESCRIPTION)}${note}`,
+                            // Существующий текст пришёл из Битрикса с сырыми
+                            // \n — при batch-update их тоже надо экранировать.
+                            DESCRIPTION: `${toBatchText(this.textOf(row.description ?? row.DESCRIPTION))}${note}`,
                         } as never,
                     ),
                 );

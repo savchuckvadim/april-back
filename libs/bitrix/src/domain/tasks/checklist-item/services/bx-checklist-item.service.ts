@@ -3,6 +3,7 @@ import {
     IBXChecklistItemAddRequest,
     IBXChecklistItemCompleteRequest,
     IBXChecklistItemDeleteRequest,
+    IBXChecklistItemGetListRequest,
     IBXChecklistItemGetRequest,
     IBXChecklistItemUpdateRequest,
 } from '../interface/bx-checklist-item.interface';
@@ -27,6 +28,11 @@ export class BxChecklistItemService {
 
     async get(data: IBXChecklistItemGetRequest) {
         return await this.repo.get(data);
+    }
+
+    /** Пункты чек-листов задачи (одна страница, максимум 50). */
+    async getList(data: IBXChecklistItemGetListRequest) {
+        return await this.repo.getList(data);
     }
 
     async update(data: IBXChecklistItemUpdateRequest) {

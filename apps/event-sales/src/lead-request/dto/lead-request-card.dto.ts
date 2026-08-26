@@ -9,14 +9,8 @@ import {
 } from 'class-validator';
 import {
     EnumLeadNotCaTypeCode,
-    EnumLeadOpStatusCode,
-    EnumLeadRelatedBaseStageCode,
-    EnumLeadSiteStageCode,
     EnumLeadSiteStatusCode,
     LEAD_NOT_CA_TYPE_CODES,
-    LEAD_OP_STATUS_CODES,
-    LEAD_RELATED_BASE_STAGE_CODES,
-    LEAD_SITE_STAGE_CODES,
     LEAD_SITE_STATUS_CODES,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 
@@ -70,32 +64,6 @@ export class LeadSiteStatusStateDto extends LeadRequestEnumStateBaseDto {
     currentCode: EnumLeadSiteStatusCode | null;
 }
 
-export class LeadSiteStageStateDto extends LeadRequestEnumStateBaseDto {
-    @ApiPropertyOptional({
-        description: 'Текущая стадия заявки.',
-        type: String,
-        enum: LEAD_SITE_STAGE_CODES,
-        nullable: true,
-        example: EnumLeadSiteStageCode.callPlanned,
-    })
-    @IsOptional()
-    @IsString()
-    currentCode: EnumLeadSiteStageCode | null;
-}
-
-export class LeadOpStatusStateDto extends LeadRequestEnumStateBaseDto {
-    @ApiPropertyOptional({
-        description: 'Текущий статус лида (наш агрегированный).',
-        type: String,
-        enum: LEAD_OP_STATUS_CODES,
-        nullable: true,
-        example: EnumLeadOpStatusCode.dealWork,
-    })
-    @IsOptional()
-    @IsString()
-    currentCode: EnumLeadOpStatusCode | null;
-}
-
 export class LeadNotCaTypeStateDto extends LeadRequestEnumStateBaseDto {
     @ApiPropertyOptional({
         description: 'Текущий тип «не ЦА».',
@@ -107,19 +75,6 @@ export class LeadNotCaTypeStateDto extends LeadRequestEnumStateBaseDto {
     @IsOptional()
     @IsString()
     currentCode: EnumLeadNotCaTypeCode | null;
-}
-
-export class LeadRelatedBaseStageStateDto extends LeadRequestEnumStateBaseDto {
-    @ApiPropertyOptional({
-        description: 'Текущее зеркало стадии связанной основной сделки.',
-        type: String,
-        enum: LEAD_RELATED_BASE_STAGE_CODES,
-        nullable: true,
-        example: EnumLeadRelatedBaseStageCode.inWork,
-    })
-    @IsOptional()
-    @IsString()
-    currentCode: EnumLeadRelatedBaseStageCode | null;
 }
 
 /** Готовность заявки к финалу «Продажа»: что ещё не отмечено. */
@@ -203,26 +158,20 @@ export class LeadRequestCardDto {
     @IsString()
     regNumber: string | null;
 
+    /*
+     * Ось заявки слита (аудит 2408): siteStage / leadStatus /
+     * relatedBaseStage из карточки удалены — единственная ось состояния
+     * теперь siteStatus (+ битриксовская стадия лида, которую фронт
+     * рисует градиентом сам).
+     */
     @ApiProperty({
-        description: 'Статус заявки.',
+        description: 'Статус заявки (единая ось состояния).',
         type: LeadSiteStatusStateDto,
     })
     siteStatus: LeadSiteStatusStateDto;
 
-    @ApiProperty({ description: 'Стадия заявки.', type: LeadSiteStageStateDto })
-    siteStage: LeadSiteStageStateDto;
-
-    @ApiProperty({ description: 'Статус лида.', type: LeadOpStatusStateDto })
-    leadStatus: LeadOpStatusStateDto;
-
     @ApiProperty({ description: 'Тип «не ЦА».', type: LeadNotCaTypeStateDto })
     notCaType: LeadNotCaTypeStateDto;
-
-    @ApiProperty({
-        description: 'Зеркало стадии связанной сделки.',
-        type: LeadRelatedBaseStageStateDto,
-    })
-    relatedBaseStage: LeadRelatedBaseStageStateDto;
 
     @ApiProperty({
         description: '«Не звонить никогда».',
@@ -243,14 +192,6 @@ export class LeadRequestCardDto {
     blackShortReason: string | null;
 
     @ApiProperty({
-        description: 'Установлена компания.',
-        type: Boolean,
-        example: false,
-    })
-    @IsBoolean()
-    isCompany: boolean;
-
-    @ApiProperty({
         description: 'Отправлен отчёт в НПП.',
         type: Boolean,
         example: false,
@@ -265,22 +206,6 @@ export class LeadRequestCardDto {
     })
     @IsBoolean()
     duplicateChecked: boolean;
-
-    @ApiProperty({
-        description: 'Найдены дубли.',
-        type: Boolean,
-        example: false,
-    })
-    @IsBoolean()
-    duplicateFound: boolean;
-
-    @ApiProperty({
-        description: 'Присоединён к существующей работе.',
-        type: Boolean,
-        example: false,
-    })
-    @IsBoolean()
-    mergedByExist: boolean;
 
     @ApiProperty({
         description: 'Повлиял на продажу.',

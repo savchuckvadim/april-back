@@ -5,7 +5,7 @@ import {
     ContactMultifieldDto,
 } from '../dto/event-sale-flow/contact.dto';
 import { ReturnToTmcDto } from '../dto/event-sale-flow/event-sales-flow.dto';
-import { PlanTypeDto } from '../dto/event-sale-flow/plan.dto';
+import { PlanDto, PlanTypeDto } from '../dto/event-sale-flow/plan.dto';
 import { ReportDto } from '../dto/event-sale-flow/report.dto';
 import {
     EnumEventItemResultType,
@@ -88,6 +88,47 @@ describe('PlanTypeDto', () => {
     it('невалиден, если у выбранного типа неизвестный code', async () => {
         const dto = plainToInstance(PlanTypeDto, {
             current: { id: 1, code: 'unknown', name: 'Что-то' },
+        });
+        const errors = await validate(dto);
+        expect(errors.length).toBeGreaterThan(0);
+    });
+});
+
+describe('PlanDto — флаг «важная» (isImportant, todo2508-02 №10)', () => {
+    // Полный валидный план: у PlanDto много обязательных полей, флаг
+    // проверяем на нём, а не в вакууме.
+    const basePlan = {
+        responsibility: { ID: 5 },
+        createdBy: { ID: 5 },
+        type: { current: null },
+        name: 'Перезвонить по КП',
+        deadline: '10.06.2026 15:00:00',
+        isPlanned: true,
+        contact: null,
+        isActive: true,
+    };
+
+    it('валиден с isImportant: true — поле проходит whitelist-валидацию', async () => {
+        const dto = plainToInstance(PlanDto, {
+            ...basePlan,
+            isImportant: true,
+        });
+        const errors = await validate(dto, { whitelist: true });
+        expect(errors).toHaveLength(0);
+        expect(dto.isImportant).toBe(true);
+    });
+
+    it('валиден без isImportant (старые сборки фрейма поле не шлют)', async () => {
+        const dto = plainToInstance(PlanDto, basePlan);
+        const errors = await validate(dto);
+        expect(errors).toHaveLength(0);
+        expect(dto.isImportant).toBeUndefined();
+    });
+
+    it('невалиден, если isImportant не boolean', async () => {
+        const dto = plainToInstance(PlanDto, {
+            ...basePlan,
+            isImportant: 'yes',
         });
         const errors = await validate(dto);
         expect(errors.length).toBeGreaterThan(0);

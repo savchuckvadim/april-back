@@ -2,6 +2,10 @@ export enum JobNames {
     //event sales
     EVENT_COLD_CALL = 'cold-call',
     EVENT_SALES_FLOW = 'event-sales-flow',
+    /** Сайд-flow ЗПР: создание/закрытие элементов смарта «Звонки По решению». */
+    EVENT_SALES_ZPR_FLOW = 'event-sales-zpr-flow',
+    /** Сайд-flow презентаций: создание/закрытие элементов смарта «Презентации». */
+    EVENT_SALES_PRESENTATION_FLOW = 'event-sales-presentation-flow',
 
     //sales-хуки: одно и то же имя служит и именем silence-события
     //(silence:<job> в event-silent), и именем джобы в EVENT_SALES_HOOK_OPS

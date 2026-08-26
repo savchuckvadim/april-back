@@ -189,6 +189,16 @@ describe('CallReportPipelineUseCase', () => {
         });
     });
 
+    it('звонок числится за ТЕМ, КТО ЗВОНИЛ, а не за владельцем сделки', async () => {
+        const { useCase, store } = makeDeps();
+        // Ответственный сделки — 7 (мок bitrix), звонила — 622.
+        await useCase.execute({ ...PAYLOAD, callerUserId: 622 });
+        expect(store.finishPipeline).toHaveBeenCalledWith(
+            '42',
+            expect.objectContaining({ userId: '622' }),
+        );
+    });
+
     it('стадия транскрибации сохраняет менеджера (ответственного сделки)', async () => {
         const { useCase, store } = makeDeps();
         await useCase.execute(PAYLOAD);

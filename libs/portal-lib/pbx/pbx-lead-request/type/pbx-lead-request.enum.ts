@@ -59,7 +59,7 @@ export enum EnumLeadRequestFieldCode {
     op_lead_is_boost_sale = 'op_lead_is_boost_sale',
 }
 
-/** Статус Заявки (op_lead_site_status). */
+/** Статус Заявки (op_lead_site_status) — единая ось заявки (2408). */
 export enum EnumLeadSiteStatusCode {
     /** Появилась. */
     appeared = 'op_lead_site_status1',
@@ -67,11 +67,38 @@ export enum EnumLeadSiteStatusCode {
     taken = 'op_lead_site_status2',
     /** Не ЦА. */
     notCa = 'op_lead_site_status3',
-    /** Ведётся активная работа. */
+    /** Ведётся активная работа (legacy, руками). */
     active = 'op_lead_site_status4',
     /** Отказ. */
     fail = 'op_lead_site_status5',
+    /** Первый звонок — АВТО: первый отчёт по лиду (в т.ч. недозвон). */
+    firstCall = 'op_lead_site_status6',
+    /** Дозвонились — АВТО: результативный отчёт. */
+    reached = 'op_lead_site_status7',
+    /** Презентация — АВТО: презентация проведена. */
+    presentation = 'op_lead_site_status8',
+    /** Продажа — синк финала. */
+    sale = 'op_lead_site_status9',
 }
+
+/**
+ * Лестница статуса заявки для автоматики «только вперёд»: старые оси умерли
+ * именно потому, что статусы ставились руками — автоматика не имеет права
+ * понижать достигнутое (повторный недозвон после дозвона не откатывает
+ * «Дозвонились»). Исходы (не ЦА/отказ/продажа) — финалы, их пишет только
+ * синк финального отчёта.
+ */
+export const LEAD_SITE_STATUS_RANK: Record<EnumLeadSiteStatusCode, number> = {
+    [EnumLeadSiteStatusCode.appeared]: 1,
+    [EnumLeadSiteStatusCode.taken]: 2,
+    [EnumLeadSiteStatusCode.active]: 3,
+    [EnumLeadSiteStatusCode.firstCall]: 4,
+    [EnumLeadSiteStatusCode.reached]: 5,
+    [EnumLeadSiteStatusCode.presentation]: 6,
+    [EnumLeadSiteStatusCode.notCa]: 100,
+    [EnumLeadSiteStatusCode.fail]: 100,
+    [EnumLeadSiteStatusCode.sale]: 100,
+};
 
 /** Стадия Заявки (op_lead_site_stage). */
 export enum EnumLeadSiteStageCode {

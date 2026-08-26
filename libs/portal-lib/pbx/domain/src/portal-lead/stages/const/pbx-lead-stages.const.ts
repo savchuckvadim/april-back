@@ -67,6 +67,23 @@ const SALES_LEAD_STAGES = [
         installMode: 'map-only',
     },
     {
+        // Очередь-подстраховка отправки в ХО (todo2508 №3): видимая стадия
+        // «лид ждёт отправки на обзвон». Ставится инициатором отправки ДО
+        // cold-call хука; хук, приняв лид, двигает его дальше (assigned).
+        // Застрявшие здесь — маркер для чек-крона на досылку. Порталы с
+        // существующим аналогичным статусом сопоставляют его в админке
+        // вместо создания нашего.
+        code: 'lead_xo_queue',
+        name: 'xo_queue',
+        title: 'Очередь в ХО',
+        color: '#5B8DEF',
+        order: 19,
+        isActive: true,
+        bitrixStatusId: 'PBX_XO_QUEUE',
+        semantics: '',
+        installMode: 'create',
+    },
+    {
         code: 'lead_in_work',
         name: 'in_work',
         title: 'В работе',

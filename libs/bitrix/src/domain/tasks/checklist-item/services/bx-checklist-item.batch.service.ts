@@ -4,6 +4,7 @@ import {
     IBXChecklistItemAddRequest,
     IBXChecklistItemCompleteRequest,
     IBXChecklistItemDeleteRequest,
+    IBXChecklistItemGetListRequest,
     IBXChecklistItemGetRequest,
     IBXChecklistItemUpdateRequest,
 } from '../interface/bx-checklist-item.interface';
@@ -29,6 +30,10 @@ export class BxChecklistItemBatchService {
 
     get(cmdCode: string, data: IBXChecklistItemGetRequest) {
         return this.repo.getBtch(cmdCode, data);
+    }
+
+    getList(cmdCode: string, data: IBXChecklistItemGetListRequest) {
+        return this.repo.getListBtch(cmdCode, data);
     }
 
     update(cmdCode: string, data: IBXChecklistItemUpdateRequest) {

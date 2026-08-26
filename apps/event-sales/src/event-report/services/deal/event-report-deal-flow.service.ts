@@ -9,6 +9,7 @@ import {
     SalesPresentationDealService,
 } from './sales-presentation-deal.service';
 import { TmcDealService } from './tmc-deal.service';
+import { DealMoveCountService } from './deal-move-count.service';
 
 /**
  * Результат deal-flow — нужен таскам и спискам для привязки через `$result[...]`.
@@ -29,12 +30,14 @@ export class EventReportDealFlowService {
     private readonly xo: SalesXoDealService;
     private readonly pres: SalesPresentationDealService;
     private readonly tmc: TmcDealService;
+    private readonly moveCount: DealMoveCountService;
 
     constructor(bitrix: BitrixService, portal: PortalModel) {
         this.base = new SalesBaseDealService(bitrix, portal);
         this.xo = new SalesXoDealService(bitrix, portal);
         this.pres = new SalesPresentationDealService(bitrix, portal);
         this.tmc = new TmcDealService(bitrix, portal);
+        this.moveCount = new DealMoveCountService(bitrix, portal);
     }
 
     queue(ctx: EventReportContext): DealFlowResult {
@@ -53,6 +56,9 @@ export class EventReportDealFlowService {
             baseDealId,
         );
         this.tmc.queue(ctx, presResult.newPlanPresDealId);
+        // Перенос: счётчик op_move_count на текущей ХО/основной сделке
+        // (todo2508-02 №6). Внутри гейт по ctx.isExpired.
+        this.moveCount.queue(ctx);
 
         return {
             baseDealId,

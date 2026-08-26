@@ -25,10 +25,10 @@ const makePortal = (withAssignedAt = false) => ({
         if (withAssignedAt && code === 'op_lead_assigned_at') {
             return { bitrixId: 'OP_LEAD_ASSIGNED_AT', items: [] };
         }
-        if (withAssignedAt && code === 'op_lead_site_stage') {
+        if (withAssignedAt && code === 'op_lead_site_status') {
             return {
-                bitrixId: 'OP_LEAD_SITE_STAGE',
-                items: [{ code: 'op_lead_site_stage1', bitrixId: 71 }],
+                bitrixId: 'OP_LEAD_SITE_STATUS',
+                items: [{ code: 'op_lead_site_status1', bitrixId: 71 }],
             };
         }
         return undefined;
@@ -165,12 +165,14 @@ describe('LeadRequestSlaService', () => {
         expect(filter['<UF_CRM_OP_LEAD_ASSIGNED_AT']).toMatch(
             /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
         );
-        // Только заявки: метку стадии ставит хук распознанной заявке.
-        // Именно «заполнена», а не «= Назначена менеджеру»: у принятой и
-        // затем переданной заявки стадия остаётся «Взята в работу», и по
+        // Только заявки: метку статуса ставит хук распознанной заявке
+        // (ось слита — признаком служит site_status, не site_stage).
+        // Именно «заполнен», а не «= Появилась»: у принятой и затем
+        // переданной заявки статус остаётся «Взята в работу», и по
         // равенству крон её бы не увидел, хотя фрейм требует подтверждения.
-        expect(filter['!UF_CRM_OP_LEAD_SITE_STAGE']).toBe('');
-        expect(filter.UF_CRM_OP_LEAD_SITE_STAGE).toBeUndefined();
+        expect(filter['!UF_CRM_OP_LEAD_SITE_STATUS']).toBe('');
+        expect(filter.UF_CRM_OP_LEAD_SITE_STATUS).toBeUndefined();
+        expect(filter['!UF_CRM_OP_LEAD_SITE_STAGE']).toBeUndefined();
         // Стадия лида в отборе не участвует.
         expect(filter.STATUS_ID).toBeUndefined();
     });

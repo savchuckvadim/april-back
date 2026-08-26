@@ -10,12 +10,13 @@ import { IBXCompany } from '../interface/bx-company.interface';
 export class BxCompanyRepository {
     constructor(private readonly bxApi: BitrixBaseApi) {}
 
-    async get(companyId: number) {
+    async get(companyId: number, select?: string[]) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.COMPANY,
             EBxMethod.GET,
-            { ID: companyId },
+            // select — как у сделки: без него Bitrix не отдаёт UF-поля.
+            { ID: companyId, select },
         );
     }
 

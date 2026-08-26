@@ -9,8 +9,10 @@ import { Stage } from '@app/pbx-install/shared';
  * `ENTITY_ID = DYNAMIC_<entityTypeId>_STAGE_<bxCategoryId>`,
  * `STATUS_ID = DT<entityTypeId>_<bxCategoryId>:<bitrixId>`.
  *
- * Семантика стадии в шаблоне смарта не приходит явно — берётся эвристически из `bitrixId`
- * (SUCCESS/FAIL/...), а если суффикс не распознан — из `code` (`*success*` / `*fail*`).
+ * Семантика стадии: сначала явное поле `semantics` шаблона (const-смарты,
+ * например ZPR_SMART_STAGES — эвристика не знает исходов вроде NORESULT),
+ * иначе эвристически из `bitrixId` (SUCCESS/FAIL/...), а если суффикс не
+ * распознан — из `code` (`*success*` / `*fail*`).
  */
 @Injectable()
 export class SmartCategoryStageStrategy implements BitrixCategoryStageStrategy {
@@ -31,6 +33,10 @@ export class SmartCategoryStageStrategy implements BitrixCategoryStageStrategy {
     }
 
     resolveStageSemantics(stage: Stage): string {
+        // Явная семантика const-шаблона важнее эвристики ('' = промежуточная).
+        if (stage.semantics !== undefined) {
+            return stage.semantics;
+        }
         const fromBitrixId = semanticsFromBitrixId(String(stage.bitrixId));
         if (fromBitrixId) {
             return fromBitrixId;

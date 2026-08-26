@@ -4,6 +4,10 @@ import {
     eventDonePhrase,
     eventPlanPhrase,
 } from '../../types/event-report.event-codes';
+import {
+    EventTaskChecklistOutcome,
+    formatChecklistOutcomeLine,
+} from '../task/event-task-checklist.catalog';
 
 /**
  * Минимум контекста для строки истории — структурно совместим с
@@ -15,6 +19,11 @@ export interface IEventHistoryCommentSource {
     planEventType: string | null;
     reportComment: string;
     planDeadline?: BitrixDateTime | null;
+    /**
+     * Итог чек-листа закрываемой задачи; null/undefined — чек-листов нет
+     * (настройка выключена, задачи не было, пункты не заводились).
+     */
+    taskChecklist?: EventTaskChecklistOutcome | null;
 }
 
 /**
@@ -44,6 +53,11 @@ export const buildEventHistoryParts = (
     } else if (src.reportComment) {
         parts.push(src.reportComment);
     }
+
+    // Чек-лист описывает ЗАКРЫВАЕМУЮ задачу — идёт после «что сделано» и
+    // до «что запланировано»; нечего писать — строки не будет вовсе.
+    const checklistLine = formatChecklistOutcomeLine(src.taskChecklist ?? null);
+    if (checklistLine) parts.push(checklistLine);
 
     if (src.planEventType) {
         const planned = eventPlanPhrase(src.planEventType);

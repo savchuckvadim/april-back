@@ -1,5 +1,6 @@
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { stampDealAssignedAt } from '../../../../shared/lead-request/deal-work-timer.util';
 import { IBatchGroupBuffer } from '../../../../shared/batch/batch-group-buffer.interface';
 import { ResolvedLeadToWorkItem } from '../../dto/lead-to-work.dto';
 import { LeadToWorkContext } from '../lead-to-work-context.service';
@@ -51,9 +52,16 @@ export class DealFlowService extends LeadToWorkFlowBase {
                 ctx.contactIds,
             );
             if (mergedContacts.length) fields.CONTACT_IDS = mergedContacts;
-            // Повторный ХО передаёт работу: сделка — новому ответственному.
+            // Повторный ХО передаёт работу: сделка — новому ответственному,
+            // таймер подтверждения стартует заново (todo2508: assigned_at
+            // живёт и на сделке; снимает его принятие работы).
             if (item.isXo === 'Y') {
                 fields.ASSIGNED_BY_ID = String(item.responsible);
+                stampDealAssignedAt(
+                    this.portal,
+                    fields,
+                    this.portal.getTimezone(),
+                );
             }
             buffer.queue(() =>
                 this.bitrix.batch.deal.update(
@@ -75,6 +83,11 @@ export class DealFlowService extends LeadToWorkFlowBase {
         };
         if (plan.dealStageId) fields.STAGE_ID = plan.dealStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
+        // Новая сделка из ХО-лида сразу ждёт подтверждения ответственным —
+        // тот же таймер, что при передаче работы (todo2508).
+        if (item.isXo === 'Y') {
+            stampDealAssignedAt(this.portal, fields, this.portal.getTimezone());
+        }
         /*
          * Контакты лида переезжают на сделку целиком: главный — в
          * CONTACT_ID (по нему Битрикс показывает «контакт сделки»),

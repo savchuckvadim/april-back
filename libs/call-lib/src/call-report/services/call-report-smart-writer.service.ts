@@ -89,6 +89,40 @@ export interface CallReportSmartItemInput {
     hvostDone?: boolean;
     /** 5К закрыто: клиент/компания/коллеги/конкурент/критерии. */
     fiveKDone?: boolean;
+    /** Разбор хвоста от AI — в поле пишется ужатым (<700 байт). */
+    hvostAnalysis?: string;
+    /** Разбор 5К от AI — в поле пишется ужатым. */
+    fiveKAnalysis?: string;
+    /** Отчёт менеджера по хвосту из сделки-презентации (пишет сверка). */
+    hvostManager?: string;
+    /** Отчёт менеджера по 5К из сделки-презентации (пишет сверка). */
+    fiveKManager?: string;
+    /**
+     * Гранулярный хвост — зеркало чеклиста менеджера (op_xvost_*):
+     * КП / наполнение / цена / дата решения / дата согласована.
+     */
+    hvostSteps?: {
+        offer?: boolean | null;
+        complect?: boolean | null;
+        price?: boolean | null;
+        decisionDate?: boolean | null;
+        dateAgreed?: boolean | null;
+    };
+    /**
+     * Гранулярные 5К — зеркало чеклиста менеджера (op_5k_*):
+     * клиент ×3, компания ×3, коллеги, конкурент, критерии выбора.
+     */
+    fiveKItems?: {
+        clientWhat?: boolean | null;
+        clientReady?: boolean | null;
+        clientPrice?: boolean | null;
+        companyWho?: boolean | null;
+        companyHow?: boolean | null;
+        companyRight?: boolean | null;
+        colleagues?: boolean | null;
+        competitor?: boolean | null;
+        criteria?: boolean | null;
+    };
     productsOffered?: string;
     objections?: string;
     objectionsHandling?: string;
@@ -718,6 +752,69 @@ export class CallReportSmartWriterService {
         this.setBoolUf(fields, 'PRESENTATION_DONE', input.presentationDone);
         this.setBoolUf(fields, 'HVOST_DONE', input.hvostDone);
         this.setBoolUf(fields, 'FIVE_K_DONE', input.fiveKDone);
+        // Гранулярные пункты хвоста/5К (null «не применимо» поле не трогает).
+        const steps = input.hvostSteps;
+        this.setBoolUf(fields, 'HVOST_OFFER', steps?.offer ?? undefined);
+        this.setBoolUf(fields, 'HVOST_COMPLECT', steps?.complect ?? undefined);
+        this.setBoolUf(fields, 'HVOST_PRICE', steps?.price ?? undefined);
+        this.setBoolUf(
+            fields,
+            'HVOST_DECISION_DATE',
+            steps?.decisionDate ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'HVOST_DATE_AGREED',
+            steps?.dateAgreed ?? undefined,
+        );
+        const fiveK = input.fiveKItems;
+        this.setBoolUf(
+            fields,
+            'FIVE_K_CLIENT_WHAT',
+            fiveK?.clientWhat ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_CLIENT_READY',
+            fiveK?.clientReady ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_CLIENT_PRICE',
+            fiveK?.clientPrice ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_COMPANY_WHO',
+            fiveK?.companyWho ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_COMPANY_HOW',
+            fiveK?.companyHow ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_COMPANY_RIGHT',
+            fiveK?.companyRight ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_COMMAND',
+            fiveK?.colleagues ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'FIVE_K_CONCURENT',
+            fiveK?.competitor ?? undefined,
+        );
+        this.setBoolUf(fields, 'FIVE_K_CRITERI', fiveK?.criteria ?? undefined);
+        // Краткие версии в полях (ужаты до <700 байт — row size), полные
+        // тексты AI-разбора живут в таймлайне элемента.
+        this.setShortTextUf(fields, 'HVOST_ANALYSIS', input.hvostAnalysis);
+        this.setShortTextUf(fields, 'FIVE_K_ANALYSIS', input.fiveKAnalysis);
+        this.setShortTextUf(fields, 'HVOST_MANAGER', input.hvostManager);
+        this.setShortTextUf(fields, 'FIVE_K_MANAGER', input.fiveKManager);
         this.setUf(fields, 'PRODUCTS_OFFERED', input.productsOffered);
         this.setUf(fields, 'OBJECTIONS', input.objections);
         this.setUf(fields, 'OBJECTIONS_HANDLING', input.objectionsHandling);
@@ -798,6 +895,38 @@ export class CallReportSmartWriterService {
     ): void {
         if (value === undefined) return;
         fields[this.ufName(code)] = value ? 1 : 0;
+    }
+
+    /**
+     * Короткое текстовое поле: значение всегда ужимается до порога
+     * «длинного» поля (<700 байт) — такие поля не платят 768-байтовый
+     * префикс row size и безопасны в любом количестве. Полные тексты
+     * вызывающий публикует в таймлайн сам.
+     */
+    private setShortTextUf(
+        fields: Record<string, unknown>,
+        code: string,
+        value: string | undefined,
+    ): void {
+        const trimmed = value?.trim();
+        if (!trimmed) return;
+        this.setUf(fields, code, this.shrinkToShortField(trimmed));
+    }
+
+    /** Ужать строку до лимита короткого поля по БАЙТАМ (граница символов). */
+    private shrinkToShortField(value: string): string {
+        const limit = CallReportSmartWriterService.LONG_FIELD_BYTES - 2;
+        if (Buffer.byteLength(value, 'utf8') <= limit) return value;
+        let result = value;
+        while (Buffer.byteLength(result, 'utf8') > limit) {
+            result = result.slice(
+                0,
+                Math.floor(
+                    (result.length * limit) / Buffer.byteLength(result, 'utf8'),
+                ),
+            );
+        }
+        return `${result}…`;
     }
 
     /** crm-поле со ссылкой на сделку: массив ['D_123'] (формат crm.item). */

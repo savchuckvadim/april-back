@@ -10,7 +10,9 @@ import {
 } from '@lib/call-lib';
 import {
     DEEP_ANALYSIS_CORE_RULES,
+    FIVE_K_ITEMS_SCHEMA,
     FLOW_SCHEMA,
+    HVOST_STEPS_SCHEMA,
     NEXT_STEP_SCHEMA,
     OBJECTION_SCHEMA,
     SECTION_FIELDS_SPEC,
@@ -73,6 +75,11 @@ export const FOCUS_FORM_SCHEMA: Record<string, unknown> = {
     properties: {
         sections: focusSectionsSchema('form'),
         speechAnalysis: { type: ['string', 'null'] },
+        // Оценка LLM (транскрипт без разметки ролей — точный подсчёт кодом
+        // невозможен до стерео-диаризации). Код перекрывает эти числа,
+        // когда есть размеченный диалог (внешний агент-контур).
+        talkRatioPct: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
+        questionsCount: { type: ['integer', 'null'], minimum: 0 },
         sentiment: {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_SENTIMENT_CODES, null],
@@ -89,6 +96,8 @@ export const FOCUS_FORM_SCHEMA: Record<string, unknown> = {
     required: [
         'sections',
         'speechAnalysis',
+        'talkRatioPct',
+        'questionsCount',
         'sentiment',
         'interlocutorRole',
         'specialist',
@@ -108,6 +117,12 @@ ${SECTION_FIELDS_SPEC}
 ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ТВОЕГО ФОКУСА
 - speechAnalysis — разбор речи: структура спича, приём «свойство-связка-выгода»,
   темп, слова-паразиты, заученность, соотношение монолога и диалога.
+- talkRatioPct — оцени долю речи МЕНЕДЖЕРА в разговоре, целое 0-100 (%).
+  Реплики менеджера определяй по смыслу (кто продаёт/задаёт вопросы про
+  систему). Норма 40-60; монолог менеджера >70 — тревожный признак.
+  Не можешь отличить роли (обрывок, автоответчик) — null.
+- questionsCount — сколько вопросов задал МЕНЕДЖЕР клиенту за разговор
+  (целое, только явные вопросы менеджера, не клиента). Не определить — null.
 - sentiment — общий тон клиента в разговоре.
 - interlocutorRole — с кем в итоге говорили: ЛПР / пользователь / секретарь / другое.
 - specialist — специальность собеседника ПО ЛЕКСИКЕ разговора: проводки, НДС,
@@ -188,8 +203,10 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         // таймлайн элемента).
         hvostDone: { type: ['boolean', 'null'] },
         hvostAnalysis: { type: ['string', 'null'] },
+        hvostSteps: HVOST_STEPS_SCHEMA,
         fiveKDone: { type: ['boolean', 'null'] },
         fiveKAnalysis: { type: ['string', 'null'] },
+        fiveKItems: FIVE_K_ITEMS_SCHEMA,
         flow: FLOW_SCHEMA,
     },
     required: [
@@ -203,8 +220,10 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         'riskFlags',
         'hvostDone',
         'hvostAnalysis',
+        'hvostSteps',
         'fiveKDone',
         'fiveKAnalysis',
+        'fiveKItems',
         'flow',
     ],
     additionalProperties: false,
@@ -251,6 +270,22 @@ ${SECTION_FIELDS_SPEC}
   выяснено (с конкретикой из разговора) или что осталось невыясненным:
   «Клиент — …», «Компания — …», «Коллеги — …», «Конкурент — …»,
   «Критерии выбора — …». Для других типов — null.
+- hvostSteps — гранулярный хвост, ТЕ ЖЕ вопросы, на которые менеджер
+  отвечает в своём чеклисте (true=прозвучало, false=должно было прозвучать,
+  но нет; null=тип звонка не презентация/решение):
+  offer — «Предложено КП?»; complect — «Озвучено наполнение комплекта?»;
+  price — «Озвучена цена?»; decisionDate — «Назначена дата звонка по
+  решению?»; dateAgreed — «Дата согласована с клиентом (он подтвердил)?».
+- fiveKItems — гранулярные 5К, дословно вопросы чеклиста менеджера
+  (true=выяснено в разговоре, false=не выяснено, null=не тот тип звонка):
+  clientWhat — «КЛИЕНТ: Что хочет?»; clientReady — «КЛИЕНТ: Готов
+  работать?»; clientPrice — «КЛИЕНТ: Укладываемся в цену?»;
+  companyWho — «КОМПАНИЯ: Кто принимает решение?»; companyHow —
+  «КОМПАНИЯ: Как принимается решение?»; companyRight — «КОМПАНИЯ:
+  Правильно ли подобрали цену и комплект?»; colleagues — «КОЛЛЕГИ: Кто
+  будет работать с системой, будут ли обсуждать?»; competitor —
+  «КОНКУРЕНТ: По каким критериям нас сравнивают?»; criteria — «КРИТЕРИЙ
+  ВЫБОРА: Что важно клиенту при выборе СПС?».
 - flow — черновик отчёта менеджера: resultStatus result/noresult/expired;
   noresultReasonCode только при noresult (secretar/nopickup/nonumber/busy/
   noresult_notime/nocontact/giveup/bay/wrong/auto), иначе null; plan.isPlanned —

@@ -6,6 +6,8 @@ import {
     IBXChecklistItemCompleteResponse,
     IBXChecklistItemDeleteRequest,
     IBXChecklistItemDeleteResponse,
+    IBXChecklistItemGetListRequest,
+    IBXChecklistItemGetListResponse,
     IBXChecklistItemGetRequest,
     IBXChecklistItemGetResponse,
     IBXChecklistItemUpdateRequest,
@@ -20,6 +22,11 @@ export type ChecklistItemSchema = {
     [EBxMethod.GET]: {
         request: IBXChecklistItemGetRequest;
         response: IBXChecklistItemGetResponse;
+    };
+    /** `task.checklistitem.getlist` — все пункты чек-листов задачи. */
+    [EBxMethod.GET_LIST]: {
+        request: IBXChecklistItemGetListRequest;
+        response: IBXChecklistItemGetListResponse;
     };
     [EBxMethod.UPDATE]: {
         request: IBXChecklistItemUpdateRequest;

@@ -190,3 +190,44 @@ export type EventReportAction =
  */
 export const GSIRK_DOMAIN = 'gsirk.bitrix24.ru' as const;
 export type GsirkDomain = typeof GSIRK_DOMAIN;
+
+/**
+ * Коды типа события → внутренний алфавит EventReportEventType.
+ *
+ * Фронт с 08.08.2026 шлёт согласованные коды (hot/moneyAwait), но карта
+ * остаётся: legacy-значения старых сборок фрейма (in_progress/money_await),
+ * фронтовые состояния без аналога на бэке (event, ss) и историческое cold.
+ */
+const NORMALIZED_EVENT_TYPE: Record<string, EventReportEventType> = {
+    cold: 'xo',
+    in_progress: 'hot',
+    money_await: 'moneyAwait',
+    event: 'warm',
+    ss: 'warm',
+};
+
+const KNOWN_EVENT_TYPES = new Set<string>(
+    Object.values(EVENT_REPORT_EVENT_TYPE),
+);
+
+/**
+ * Куда падает НЕИЗВЕСТНЫЙ код: не null и не «как есть» — null терял запись
+ * целиком, сырой код не совпадал ни с лестницей стадий, ни с KPI.
+ * `warm` = «разговор с клиентом» — минимальная по последствиям трактовка.
+ */
+const UNKNOWN_EVENT_TYPE_FALLBACK: EventReportEventType = 'warm';
+
+/**
+ * Нормализация сырого кода события из DTO. Единая для контекста flow и
+ * stage-predict: предикт обязан считать стадию ТЕМ ЖЕ алфавитом, что и
+ * реальный прогон, иначе фронт показывал бы чек-лист не той стадии.
+ */
+export const normalizeEventReportEventType = (
+    raw: string,
+): EventReportEventType => {
+    const normalized = NORMALIZED_EVENT_TYPE[raw];
+    if (normalized) return normalized;
+    return KNOWN_EVENT_TYPES.has(raw)
+        ? (raw as EventReportEventType)
+        : UNKNOWN_EVENT_TYPE_FALLBACK;
+};

@@ -62,6 +62,12 @@ export class QueueDispatcherService {
 
         @InjectQueue(QueueNames.SKAP_IMPORT)
         private readonly skapImportQueue: Queue,
+
+        @InjectQueue(QueueNames.EVENT_SALES_ZPR_FLOW)
+        private readonly eventSalesZprFlowQueue: Queue,
+
+        @InjectQueue(QueueNames.EVENT_SALES_PRESENTATION_FLOW)
+        private readonly eventSalesPresentationFlowQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -142,6 +148,12 @@ export class QueueDispatcherService {
 
             case QueueNames.SKAP_IMPORT:
                 return this.skapImportQueue;
+
+            case QueueNames.EVENT_SALES_ZPR_FLOW:
+                return this.eventSalesZprFlowQueue;
+
+            case QueueNames.EVENT_SALES_PRESENTATION_FLOW:
+                return this.eventSalesPresentationFlowQueue;
 
             default: {
                 const error = `Unknown queue name: ${name}`;

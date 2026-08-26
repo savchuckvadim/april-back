@@ -164,6 +164,63 @@ describe('AgentAnalysisIntakeService', () => {
         );
     });
 
+    it('гранулярный чеклист главнее итога модели: все пункты true → hvostDone=true, один false в 5К → fiveKDone=false', async () => {
+        const { service, addItem } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            hvostDone: false,
+            hvostSteps: {
+                offer: true,
+                complect: true,
+                price: true,
+                decisionDate: true,
+                dateAgreed: true,
+            },
+            fiveKDone: true,
+            fiveKItems: {
+                clientWhat: true,
+                clientReady: true,
+                clientPrice: false,
+                companyWho: true,
+                companyHow: true,
+                companyRight: true,
+                colleagues: true,
+                competitor: true,
+                criteria: true,
+            },
+        } as never);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({
+                hvostDone: true,
+                fiveKDone: false,
+                hvostSteps: expect.objectContaining({ offer: true }) as unknown,
+                fiveKItems: expect.objectContaining({
+                    clientPrice: false,
+                }) as unknown,
+            }),
+        );
+    });
+
+    it('чеклист из одних null итоги не трогает (тип звонка не презентация)', async () => {
+        const { service, addItem } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            hvostDone: true,
+            hvostSteps: {
+                offer: null,
+                complect: null,
+                price: null,
+                decisionDate: null,
+                dateAgreed: null,
+            },
+        } as never);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ hvostDone: true }),
+        );
+    });
+
     it('черновик flow (plan+report) сохраняется в ais.report_result', async () => {
         const { service, aiService } = makeDeps();
         await service.intake('42', 'claw-main', {

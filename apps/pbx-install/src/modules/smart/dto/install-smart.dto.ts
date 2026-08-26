@@ -6,6 +6,15 @@ export enum SmartNameEnum {
     AICALL = 'aicall',
     /** Const-смарт «СКАП» (логин×месяц): шаблон из констант, не из Excel. */
     SKAP = 'skap',
+    /** Const-смарт «Звонки По решению»: первый const-смарт с воронкой. */
+    ZPR = 'zpr',
+    /**
+     * Const-смарт «Презентации» — зеркало сделок «ОП Презентации».
+     * Значение `pres`, а НЕ `presentation`: имя presentation занято
+     * Excel-шаблоном смарта выше, а const-ветка ParseSmartService матчит
+     * шаблоны по паре (type, group) и перехватила бы его.
+     */
+    PRES = 'pres',
 }
 
 export enum SmartGroupEnum {

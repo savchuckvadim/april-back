@@ -382,8 +382,10 @@ export class LeadRequestSlaService {
      *    принятые выпадают из выборки автоматически. Это ЕДИНСТВЕННЫЙ
      *    признак ожидания — тот же, по которому фрейм показывает экран
      *    подтверждения, поэтому UI и крон не расходятся;
-     *  - `op_lead_site_stage` ЗАПОЛНЕНА — это именно ЗАЯВКА (метку ставит
-     *    только наш хук распознанной заявке), а не любой лид.
+     *  - `op_lead_site_status` ЗАПОЛНЕН — это именно ЗАЯВКА (метку ставит
+     *    только наш хук распознанной заявке), а не любой лид. Раньше тем же
+     *    признаком была site_stage — ось слита в site_status (аудит 2408),
+     *    stage больше не пишется.
      * Стадия лида здесь НЕ участвует: её двигают конструктор, роботы и
      * менеджеры руками — опираться на неё как на признак ненадёжно.
      *
@@ -407,9 +409,9 @@ export class LeadRequestSlaService {
             'lead',
             EnumLeadRequestFieldCode.op_lead_assigned_at,
         );
-        const siteStageField = portal.getEntityFieldByCode(
+        const siteStatusField = portal.getEntityFieldByCode(
             'lead',
-            EnumLeadRequestFieldCode.op_lead_site_stage,
+            EnumLeadRequestFieldCode.op_lead_site_status,
         );
 
         if (assignedAtField) {
@@ -423,9 +425,9 @@ export class LeadRequestSlaService {
                 [`<${assignedAtName}`]: threshold,
             };
 
-            // Сужаем до заявок: метку стадии ставит только наш хук.
-            if (siteStageField) {
-                filter[`!${portal.getFieldBitrixId(siteStageField)}`] = '';
+            // Сужаем до заявок: метку статуса ставит только наш хук.
+            if (siteStatusField) {
+                filter[`!${portal.getFieldBitrixId(siteStatusField)}`] = '';
             }
             return filter;
         }

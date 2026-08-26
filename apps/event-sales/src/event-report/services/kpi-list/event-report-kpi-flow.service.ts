@@ -38,7 +38,17 @@ export class EventReportKpiFlowService {
         deals: DealFlowResult,
         buffer: ColdHookBatchGroupBuffer,
     ): Promise<void> {
-        if (ctx.isNoCall) return;
+        /*
+         * Недозвон (isNoCall) КПИ НЕ пропускает — он обязан оставить след:
+         * запись «Не состоялся» в sales_kpi и sales_history с привязками ко
+         * всем сущностям задачи (todo2508-02 №2, в легаси так и работало —
+         * BitrixListFlowService nodone → act_noresult_fail). Гейт раньше
+         * глушил flow целиком, и быстрый недозвон из списка дел не оставлял
+         * ни KPI, ни истории. Сделки/задачи недозвон по-прежнему не двигает —
+         * их сервисы гейтятся своим isNoCall; сам builder при недозвонном
+         * payload (plan неактивен, результата нет) строит ровно одну
+         * отчётную запись act_noresult_fail.
+         */
 
         const builder = new EventReportKpiPayloadBuilder(
             this.portal,

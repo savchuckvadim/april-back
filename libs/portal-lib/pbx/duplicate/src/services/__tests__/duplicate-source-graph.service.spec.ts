@@ -104,6 +104,44 @@ describe('DuplicateSourceGraphService', () => {
     });
 
     /*
+     * Кейс владельца (22.08, сделка 25329): у компании-источника строка
+     * компании не несёт id её контактов, и без отдельной list-команды они
+     * не попадали в граф — а значит и в excluded. Поиск находил их по их же
+     * телефонам/почтам и показывал «дублями» собственной компании.
+     */
+    it('контакты компании-источника читаются и уходят в excluded', async () => {
+        const { bitrix, sentWaves } = makeBitrix([
+            {
+                COMPANY_7: { ID: '7', TITLE: 'Ромашка' },
+                company_contacts_0: [
+                    { ID: '31', COMPANY_ID: '7' },
+                    { ID: '32', COMPANY_ID: '7' },
+                ],
+            },
+            {},
+        ]);
+
+        const result = await service.collect(
+            bitrix as never,
+            { entityType: DuplicateEntityType.COMPANY, id: 7 },
+            SOURCE_GRAPH_LIMITS_FAST,
+            [5],
+        );
+
+        const listCmd = sentWaves[0]['company_contacts_0'];
+        expect(listCmd.method).toBe('crm.contact.list');
+        expect(
+            (listCmd.params as { filter: { COMPANY_ID: number[] } }).filter
+                .COMPANY_ID,
+        ).toEqual([7]);
+
+        const keys = result.excluded.map(ref => `${ref.entityType}_${ref.id}`);
+        expect(keys).toEqual(
+            expect.arrayContaining(['COMPANY_7', 'CONTACT_31', 'CONTACT_32']),
+        );
+    });
+
+    /*
      * Лид, из которого выросла сделка, — часть ТОЙ ЖЕ работы, а не другая
      * запись о клиенте. Без ребра «сделка → её лиды» он не попадал в
      * excluded и показывался менеджеру как дубль самого себя.

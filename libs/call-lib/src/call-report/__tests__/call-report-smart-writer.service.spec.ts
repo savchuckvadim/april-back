@@ -70,6 +70,46 @@ describe('CallReportSmartWriterService', () => {
         );
     });
 
+    it('гранулярный чеклист хвоста/5К пишется boolean-полями, null пункт поле не трогает', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            callType: 'presentation',
+            transcriptionId: '42',
+            hvostDone: false,
+            hvostSteps: {
+                offer: true,
+                complect: false,
+                price: null,
+                decisionDate: false,
+                dateAgreed: false,
+            },
+            fiveKItems: {
+                clientWhat: true,
+                clientReady: false,
+                colleagues: true,
+                criteria: null,
+            },
+        });
+
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(fields.ufCrm128HvostOffer).toBe(1);
+        expect(fields.ufCrm128HvostComplect).toBe(0);
+        // null «не применимо/не определено» — поле не пишется вовсе.
+        expect(fields).not.toHaveProperty('ufCrm128HvostPrice');
+        expect(fields.ufCrm128HvostDecisionDate).toBe(0);
+        expect(fields.ufCrm128FiveKClientWhat).toBe(1);
+        expect(fields.ufCrm128FiveKClientReady).toBe(0);
+        expect(fields.ufCrm128FiveKCommand).toBe(1);
+        expect(fields).not.toHaveProperty('ufCrm128FiveKCriteri');
+    });
+
     it('пишет связи воронок crm-массивами, привязки списков и разделы анализа', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(

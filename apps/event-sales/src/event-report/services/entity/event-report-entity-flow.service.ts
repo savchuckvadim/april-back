@@ -6,6 +6,7 @@ import {
     EDealRole,
     EventReportEntityFieldsModel,
 } from './event-report-entity-fields.model';
+import { EventReportCompanyBackfillModel } from './event-report-company-backfill.model';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 
 /**
@@ -25,6 +26,7 @@ export class EventReportEntityFlowService {
     ) {}
 
     queue(ctx: EventReportContext): void {
+        this.queueCompanyBackfill(ctx);
         if (!ctx.entityId) {
             this.logger.warn('entity-flow: skipped — no entityId');
             return;
@@ -88,5 +90,39 @@ export class EventReportEntityFlowService {
                 >[2],
             );
         }
+    }
+
+    /**
+     * Автозаполнение пустых РУЧНЫХ полей компании с базовой сделки (вопрос
+     * владельца №6: работали со сделкой без компании, потом привязали
+     * компанию — её поля пусты, а данные уже собраны на сделке).
+     * Отдельная batch-команда: она не зависит от того, кто владелец отчёта,
+     * и не смешивается с основным update сущности.
+     */
+    private queueCompanyBackfill(ctx: EventReportContext): void {
+        const company = ctx.company as Record<string, unknown> | null;
+        const deal = ctx.currentBaseDeal as Record<string, unknown> | null;
+        if (!company || !deal) return;
+        const companyId = Number(company.ID);
+        if (!Number.isFinite(companyId) || companyId <= 0) return;
+
+        const fields = new EventReportCompanyBackfillModel(
+            this.portal,
+            company,
+            deal,
+        ).toFields();
+        if (!Object.keys(fields).length) return;
+
+        this.logger.log(
+            `entity-flow: бэкфилл компании ${companyId} со сделки ` +
+                `${deal.ID}: ${Object.keys(fields).join(', ')}`,
+        );
+        this.bitrix.batch.company.update(
+            `backfill_company_${companyId}`,
+            companyId,
+            fields as unknown as Parameters<
+                typeof this.bitrix.batch.company.update
+            >[2],
+        );
     }
 }

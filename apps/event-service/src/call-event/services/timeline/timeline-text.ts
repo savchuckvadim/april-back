@@ -61,12 +61,18 @@ export const buildTimelineComment = (
     when: string,
     lines: string[],
     spontaneousNames: string[],
+    comment?: string,
 ): string | null => {
     if (!lines.length && !spontaneousNames.length) return null;
     const parts = [`🗂 Итог коммуникации — ${when}`, ''];
     parts.push(...lines);
     if (spontaneousNames.length) {
-        parts.push(`⚡ Спонтанно: ${spontaneousNames.join(', ')}`);
+        // в столбик, а не через запятую — иначе в карточке сливаются в строку
+        parts.push('⚡ Спонтанно:');
+        parts.push(...spontaneousNames.map(name => `— ${name}`));
+    }
+    if (comment) {
+        parts.push('', '💬 Комментарий менеджера:', comment);
     }
     return parts.join('\n');
 };

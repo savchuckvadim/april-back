@@ -62,7 +62,19 @@ export class KpiEventItemModel {
     ): void {
         (Object.keys(items) as (keyof KpiEventItemCodes)[]).forEach(code => {
             const itemCode = items[code];
-            if (!itemCode) return;
+            if (!itemCode) {
+                /*
+                 * null — явная очистка (контракт KpiEventItemCodes): при
+                 * upsert финала без неё стейл-значение (например, «недозвон»
+                 * у результативного события) жило бы в записи вечно.
+                 * undefined/'' — поле просто не трогаем.
+                 */
+                if (itemCode === null) {
+                    const bitrixId = this.getFieldBitrixId(code);
+                    if (bitrixId) target[bitrixId] = '';
+                }
+                return;
+            }
 
             const bitrixId = this.getFieldBitrixId(code);
             if (!bitrixId) return;

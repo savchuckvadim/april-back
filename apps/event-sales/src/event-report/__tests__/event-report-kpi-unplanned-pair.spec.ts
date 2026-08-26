@@ -4,8 +4,10 @@ import { EventReportKpiPayloadBuilder } from '../services/kpi-list/event-report-
 import { DealFlowResult } from '../services/deal/event-report-deal-flow.service';
 
 /**
- * Незапланированная презентация = ДВЕ KPI-записи с читаемой хронологией:
- * «запланирована» (plan, +0 с) → «состоялась» (done, +1 с).
+ * Незапланированная презентация = записи с читаемой хронологией (todo2508
+ * №14): звонок состоялся (+0) → «запланирована» (+1) → «состоялась» (+2) →
+ * следующий план (+3). Равных дат внутри цепочки не бывает — иначе порядок
+ * в отсортированной ленте недетерминирован.
  */
 const NOW = new Date('2026-08-10T09:00:00.000Z');
 
@@ -39,7 +41,7 @@ const format = (date: Date) =>
     dayjs(date).tz('Europe/Moscow').format('DD.MM.YYYY HH:mm:ss');
 
 describe('EventReportKpiPayloadBuilder — пара записей незапланированной презентации', () => {
-    it('plan в момент события, done на +1 секунду позже', () => {
+    it('хронология: звонок +0, «запланирована» +1, «состоялась» +2', () => {
         const builder = new EventReportKpiPayloadBuilder(
             makePortal() as never,
             makeCtx(),
@@ -47,6 +49,7 @@ describe('EventReportKpiPayloadBuilder — пара записей незапл�
         );
         const payloads = builder.buildAll();
 
+        const report = payloads.find(p => p.items.event_type === 'xo');
         const plan = payloads.find(
             p =>
                 p.items.event_type === 'presentation' &&
@@ -58,11 +61,15 @@ describe('EventReportKpiPayloadBuilder — пара записей незапл�
                 p.items.event_action === 'done',
         );
 
+        expect(report).toBeDefined();
         expect(plan).toBeDefined();
         expect(done).toBeDefined();
-        expect(plan?.values.event_date).toBe(format(NOW));
-        expect(done?.values.event_date).toBe(
+        expect(report?.values.event_date).toBe(format(NOW));
+        expect(plan?.values.event_date).toBe(
             format(new Date(NOW.getTime() + 1000)),
+        );
+        expect(done?.values.event_date).toBe(
+            format(new Date(NOW.getTime() + 2000)),
         );
     });
 

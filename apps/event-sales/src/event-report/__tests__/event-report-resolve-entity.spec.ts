@@ -106,6 +106,176 @@ describe('EventReportInitService.resolveEntity', () => {
     });
 });
 
+/**
+ * Приоритет сделки плейсмента при выборе текущей сделки категории.
+ *
+ * Инцидент: приложение открыто из сделки, к ней привязали компанию с другой,
+ * более ранней открытой основной сделкой — crm.deal.list (ID ASC) ставил
+ * раннюю первой, и отказ закрывал ЕЁ. Сделка запуска обязана побеждать.
+ */
+describe('EventReportInitService.groupDealsByCategory', () => {
+    const service = new EventReportInitService();
+    const portal = {
+        getDealCategories: () => [
+            { bitrixId: 14, code: 'sales_base' },
+            { bitrixId: 20, code: 'sales_xo' },
+        ],
+    };
+    const deals = [
+        { ID: '100', CATEGORY_ID: '14' },
+        { ID: '250', CATEGORY_ID: '14' },
+        { ID: '300', CATEGORY_ID: '20' },
+    ];
+    const group = (preferredDealId?: number | null) =>
+        (
+            service as unknown as {
+                groupDealsByCategory: (
+                    d: unknown,
+                    p: unknown,
+                    pref?: number | null,
+                ) => Record<string, { ID: string }>;
+            }
+        ).groupDealsByCategory(deals, portal, preferredDealId);
+
+    it('без приоритета — первая сделка категории (как раньше)', () => {
+        const result = group();
+        expect(result['sales_base']?.ID).toBe('100');
+        expect(result['sales_xo']?.ID).toBe('300');
+    });
+
+    it('сделка плейсмента перебивает первую в своей категории', () => {
+        const result = group(250);
+        expect(result['sales_base']?.ID).toBe('250');
+        expect(result['sales_xo']?.ID).toBe('300');
+    });
+
+    it('плейсмент-сделки нет в списке (закрыта/чужая компания) — старое поведение', () => {
+        expect(group(999)['sales_base']?.ID).toBe('100');
+    });
+
+    it('плейсмент из другой категории не трогает соседнюю', () => {
+        const result = group(300);
+        expect(result['sales_base']?.ID).toBe('100');
+        expect(result['sales_xo']?.ID).toBe('300');
+    });
+});
+
+/**
+ * Правило владельца (25.08): автоподбор текущей сделки категории — только
+ * среди сделок «своих» сотрудников (ответственный плана + ответственный
+ * закрываемой задачи). Чужая открытая сделка молча не подхватывается:
+ * своих нет — категория пустая, flow создаст новую своим штатным путём.
+ * Сделка запуска — явный контекст и остаётся вне фильтра.
+ */
+describe('EventReportInitService.groupDealsByCategory — свои/чужие', () => {
+    const service = new EventReportInitService();
+    const portal = {
+        getDealCategories: () => [
+            { bitrixId: 14, code: 'sales_base' },
+            { bitrixId: 20, code: 'sales_xo' },
+        ],
+    };
+    const group = (
+        deals: unknown[],
+        preferredDealId: number | null,
+        own: Set<number>,
+    ) =>
+        (
+            service as unknown as {
+                groupDealsByCategory: (
+                    d: unknown,
+                    p: unknown,
+                    pref: number | null,
+                    own: Set<number>,
+                ) => Record<string, { ID: string } | undefined>;
+            }
+        ).groupDealsByCategory(deals, portal, preferredDealId, own);
+
+    it('своя открытая предпочитается более ранней чужой', () => {
+        const deals = [
+            { ID: '100', CATEGORY_ID: '14', ASSIGNED_BY_ID: '3' },
+            { ID: '250', CATEGORY_ID: '14', ASSIGNED_BY_ID: '8' },
+        ];
+        expect(group(deals, null, new Set([8]))['sales_base']?.ID).toBe('250');
+    });
+
+    it('чужая открытая НЕ подхватывается: своих нет — категория пустая', () => {
+        const deals = [
+            { ID: '100', CATEGORY_ID: '14', ASSIGNED_BY_ID: '3' },
+            { ID: '300', CATEGORY_ID: '20', ASSIGNED_BY_ID: '3' },
+        ];
+        const result = group(deals, null, new Set([8]));
+        expect(result['sales_base']).toBeUndefined();
+        expect(result['sales_xo']).toBeUndefined();
+    });
+
+    it('ASSIGNED_BY_ID сравнивается ЧИСЛОМ: строка REST матчится с number', () => {
+        const deals = [{ ID: '250', CATEGORY_ID: '14', ASSIGNED_BY_ID: '8' }];
+        expect(group(deals, null, new Set([8]))['sales_base']?.ID).toBe('250');
+    });
+
+    it('сделка запуска вне правила: явный контекст побеждает даже чужой', () => {
+        const deals = [
+            { ID: '100', CATEGORY_ID: '14', ASSIGNED_BY_ID: '3' },
+            { ID: '250', CATEGORY_ID: '14', ASSIGNED_BY_ID: '8' },
+        ];
+        expect(group(deals, 100, new Set([8]))['sales_base']?.ID).toBe('100');
+    });
+
+    it('пустой набор «своих» (легаси-DTO) — фильтр выключен', () => {
+        const deals = [{ ID: '100', CATEGORY_ID: '14', ASSIGNED_BY_ID: '3' }];
+        expect(group(deals, null, new Set())['sales_base']?.ID).toBe('100');
+    });
+
+    it('фильтр посекционный: чужая базовая не мешает своей ХО', () => {
+        const deals = [
+            { ID: '100', CATEGORY_ID: '14', ASSIGNED_BY_ID: '3' },
+            { ID: '300', CATEGORY_ID: '20', ASSIGNED_BY_ID: '8' },
+        ];
+        const result = group(deals, null, new Set([8]));
+        expect(result['sales_base']).toBeUndefined();
+        expect(result['sales_xo']?.ID).toBe('300');
+    });
+});
+
+/**
+ * «Свои» сотрудники отчёта: ответственный плана (по умолчанию текущий юзер
+ * фрейма) + ответственный закрываемой задачи (при передаче клиента сделка
+ * ещё висит на отправителе). Значения приводятся к числу.
+ */
+describe('EventReportInitService.collectOwnResponsibleIds', () => {
+    const service = new EventReportInitService();
+    const collect = (dto: unknown) =>
+        (
+            service as unknown as {
+                collectOwnResponsibleIds: (d: unknown) => Set<number>;
+            }
+        ).collectOwnResponsibleIds(dto);
+
+    it('план + задача на одном юзере — один id, строки приводятся к числу', () => {
+        expect(
+            collect({
+                plan: { responsibility: { ID: '8' } },
+                currentTask: { responsibleId: '8' },
+            }),
+        ).toEqual(new Set([8]));
+    });
+
+    it('передача: план на новом менеджере, задача на отправителе — оба свои', () => {
+        expect(
+            collect({
+                plan: { responsibility: { ID: 9 } },
+                currentTask: { responsibleId: 8 },
+            }),
+        ).toEqual(new Set([9, 8]));
+    });
+
+    it('легаси-DTO без плана и задачи — пустой набор (фильтр выключен)', () => {
+        expect(collect({})).toEqual(new Set());
+        expect(collect({ plan: {}, currentTask: {} })).toEqual(new Set());
+    });
+});
+
 describe('EventReportContext.strategy', () => {
     const makeCtx = (entityType: string) =>
         new EventReportContext(

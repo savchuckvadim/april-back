@@ -34,6 +34,62 @@ export interface ConstSmartInstallField {
 }
 
 /**
+ * Стадия воронки const-смарта в установочном контракте pbx-install
+ * (структурно совместима со `Stage` из shared/parse-category; локальная
+ * копия — portal-lib не импортирует из приложений).
+ */
+export interface ConstSmartInstallStage {
+    id: string;
+    /** Пусто в эталоне: entityTypeId появляется после установки типа. */
+    entityTypeId: string;
+    entityType: string;
+    parentType: string;
+    type: string;
+    group: string;
+    name: string;
+    title: string;
+    /** Суффикс STATUS_ID (`PLAN` → `DT{entityTypeId}_{catId}:PLAN`). */
+    bitrixId: string;
+    isActive: boolean;
+    smartBitrixId: string;
+    color: string;
+    code: string;
+    isNeedUpdate: boolean;
+    order: number;
+    bitrixEnitiyId: string;
+    isDefault: 'Y' | 'N';
+    /**
+     * Явная семантика стадии (`SEMANTICS` в crm.status.*): 'S' | 'F' | ''.
+     * Эвристика по bitrixId (SUCCESS/FAIL) покрывает не все исходы
+     * (например NORESULT) — const-конфиг задаёт семантику сам.
+     */
+    semantics?: 'S' | 'F' | '';
+}
+
+/**
+ * Воронка const-смарта в установочном контракте pbx-install (структурно
+ * совместима с `Category` из shared/parse-category — см. ConstSmartInstallStage).
+ */
+export interface ConstSmartInstallCategory {
+    id: string;
+    /** Пусто в эталоне: entityTypeId появляется после установки типа. */
+    entityTypeId: string;
+    entityType: string;
+    type: string;
+    group: string;
+    name: string;
+    title: string;
+    bitrixId: string;
+    bitrixCamelId: string;
+    code: string;
+    isActive: boolean;
+    isNeedUpdate: boolean;
+    order: number;
+    isDefault: boolean;
+    stages: ConstSmartInstallStage[];
+}
+
+/**
  * Описатель const-смарта (устанавливается из констант, без Excel-шаблона)
  * для реестра галереи смартов в админке.
  *
@@ -66,10 +122,40 @@ export interface ConstSmartDescriptor {
      */
     buildInstallFields: () => ConstSmartInstallField[];
     /**
+     * Эталонные воронки со стадиями в установочном контракте pbx-install —
+     * для const-смартов с hasCategories: true (ЗПР). Ставятся тем же
+     * install-smart-categories.service, что и Excel-шаблоны. Отсутствует —
+     * смарт без воронок (aicall, skap).
+     */
+    buildInstallCategories?: () => ConstSmartInstallCategory[];
+    /**
      * Родительские сущности типа (crm.type relations.parent, entityTypeId:
      * LEAD=1/DEAL=2/CONTACT=3/COMPANY=4): элементы смарта появляются
      * вкладкой в карточках этих сущностей. По умолчанию установщик ставит
      * только DEAL.
      */
     parentEntityTypeIds?: readonly number[];
+    /**
+     * Обратные crm-поля на сделке/компании (op_zprs, op_presentations),
+     * которые хранят ссылки на элементы этого смарта значением
+     * `T{hex(entityTypeId)}_{id}`.
+     *
+     * Такие поля ставятся установкой ПОЛЕЙ event-sales, когда entityTypeId
+     * смарта ещё неизвестен — привязки к динамическому типу у них нет, и
+     * Битрикс молча отбрасывает значения `T…_…`. Установщик смарта после
+     * создания/резолва типа ДОЛИВАЕТ в settings поля ключ
+     * `DYNAMIC_{entityTypeId} = 'Y'` (формат settings crm-поля:
+     * LEAD/CONTACT/COMPANY/DEAL/QUOTE/ORDER/SMART_INVOICE/DYNAMIC_* —
+     * userfieldconfig.add, apidocs). Поле не установлено — warn и пропуск:
+     * повторная установка смарта идемпотентно дольёт.
+     */
+    backRefFields?: readonly ConstSmartBackRefField[];
+}
+
+/** Обратное crm-поле смарта на стандартной сущности CRM. */
+export interface ConstSmartBackRefField {
+    /** Сущность-владелец поля (entityId userfieldconfig: CRM_DEAL/CRM_COMPANY). */
+    entity: 'deal' | 'company';
+    /** Полное имя поля (`UF_CRM_*`) — как его ставит установка полей. */
+    ufName: string;
 }

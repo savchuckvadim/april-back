@@ -32,4 +32,14 @@ export type BxItemSchema = {
         request: CrmItemGetRequestType<string | number>;
         response: boolean;
     };
+
+    /**
+     * crm.item.fields: описание полей смарт-типа, ключи — ФАКТИЧЕСКИЕ
+     * camel-имена crm.item (боевой инцидент UF_CRM_94_TRANSCRIPT_1:
+     * формула ufCrm{typeId}{Pascal} совпадает с реальностью не всегда).
+     */
+    [EBxMethod.FIELDS]: {
+        request: { entityTypeId: number | string };
+        response: { fields: Record<string, Record<string, unknown>> };
+    };
 };

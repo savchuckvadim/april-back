@@ -151,4 +151,14 @@ export class BxItemRepository {
             { id, entityTypeId },
         );
     }
+
+    /** crm.item.fields: ключи ответа — фактические camel-имена полей. */
+    async fields(entityTypeId: number | string) {
+        return this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.ITEM,
+            EBxMethod.FIELDS,
+            { entityTypeId },
+        );
+    }
 }

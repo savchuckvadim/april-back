@@ -10,7 +10,9 @@ import {
     IUserFieldConfigEnumerationItem,
 } from '@/modules/bitrix';
 import {
+    buildCallReportItemFieldName,
     buildCallReportUfName,
+    CALL_REPORT_CARD_SECTIONS,
     CALL_REPORT_SMART_CODE,
     CALL_REPORT_SMART_FIELDS,
     CALL_REPORT_SMART_GROUP,
@@ -176,6 +178,10 @@ export class InstallCallReportSmartUseCase {
             );
         }
 
+        // 3b. Раскладка карточки по смысловым разделам (общая, scope C):
+        // без неё все UF-поля сваливаются в «Об элементе». Fail-open.
+        await this.applyCardLayout(bitrix, domain, entityTypeId, typeId);
+
         // 4. Инвалидация online-кэша портала (portal_${domain}) — иначе
         // PortalModel не увидит новые поля до истечения TTL 10ч.
         await this.smartResolver.invalidate(domain);
@@ -187,6 +193,44 @@ export class InstallCallReportSmartUseCase {
             fieldsExisting,
             fieldsFailed,
         };
+    }
+
+    /**
+     * Общая раскладка карточки элемента по разделам
+     * (crm.item.details.configuration.set, scope 'C'): коды UF-полей →
+     * camelCase-имена по typeId, системные поля (title…) — как есть.
+     * Личные настройки пользователей поверх общей сохраняются.
+     */
+    private async applyCardLayout(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        domain: string,
+        entityTypeId: number,
+        typeId: number,
+    ): Promise<void> {
+        try {
+            const data = CALL_REPORT_CARD_SECTIONS.map(section => ({
+                name: section.name,
+                title: section.title,
+                type: 'section',
+                elements: section.codes.map(code => ({
+                    name: /^[A-Z0-9_]+$/.test(code)
+                        ? buildCallReportItemFieldName(typeId, code)
+                        : code,
+                })),
+            }));
+            await bitrix.api.call('crm.item.details.configuration.set', {
+                entityTypeId,
+                scope: 'C',
+                data,
+            });
+            this.logger.log(
+                `Карточка смарта разложена по ${data.length} разделам (${domain})`,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Раскладка карточки не применена (${domain}): ${(error as Error).message}`,
+            );
+        }
     }
 
     /** typeId — id смарт-типа из crm.type.list (НЕ entityTypeId!). */

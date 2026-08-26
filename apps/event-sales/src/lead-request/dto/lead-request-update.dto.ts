@@ -11,14 +11,8 @@ import {
 } from 'class-validator';
 import {
     EnumLeadNotCaTypeCode,
-    EnumLeadOpStatusCode,
-    EnumLeadRelatedBaseStageCode,
-    EnumLeadSiteStageCode,
     EnumLeadSiteStatusCode,
     LEAD_NOT_CA_TYPE_CODES,
-    LEAD_OP_STATUS_CODES,
-    LEAD_RELATED_BASE_STAGE_CODES,
-    LEAD_SITE_STAGE_CODES,
     LEAD_SITE_STATUS_CODES,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 
@@ -59,30 +53,14 @@ export class LeadRequestUpdateDto {
     @IsIn(LEAD_SITE_STATUS_CODES)
     siteStatusCode?: EnumLeadSiteStatusCode;
 
-    @ApiPropertyOptional({
-        description: 'Новая стадия заявки.',
-        type: String,
-        enum: LEAD_SITE_STAGE_CODES,
-        example: EnumLeadSiteStageCode.presentationDone,
-    })
-    @IsOptional()
-    @IsIn(LEAD_SITE_STAGE_CODES)
-    siteStageCode?: EnumLeadSiteStageCode;
-
-    @ApiPropertyOptional({
-        description: 'Новый статус лида (агрегированный).',
-        type: String,
-        enum: LEAD_OP_STATUS_CODES,
-        example: EnumLeadOpStatusCode.companyWork,
-    })
-    @IsOptional()
-    @IsIn(LEAD_OP_STATUS_CODES)
-    leadStatusCode?: EnumLeadOpStatusCode;
-
+    /*
+     * Ось слита (аудит 2408): siteStageCode / leadStatusCode /
+     * relatedBaseStageCode из контракта удалены — поля выведены из оборота.
+     */
     @ApiPropertyOptional({
         description:
             'Тип «не ЦА». Обязателен при выборе статуса «Не ЦА» ' +
-            '(site_status3 / lead_status_ten).',
+            '(site_status3).',
         type: String,
         enum: LEAD_NOT_CA_TYPE_CODES,
         example: EnumLeadNotCaTypeCode.apartment,
@@ -90,16 +68,6 @@ export class LeadRequestUpdateDto {
     @IsOptional()
     @IsIn(LEAD_NOT_CA_TYPE_CODES)
     notCaTypeCode?: EnumLeadNotCaTypeCode;
-
-    @ApiPropertyOptional({
-        description: 'Зеркало стадии связанной основной сделки.',
-        type: String,
-        enum: LEAD_RELATED_BASE_STAGE_CODES,
-        example: EnumLeadRelatedBaseStageCode.presentation,
-    })
-    @IsOptional()
-    @IsIn(LEAD_RELATED_BASE_STAGE_CODES)
-    relatedBaseStageCode?: EnumLeadRelatedBaseStageCode;
 
     @ApiPropertyOptional({
         description: '«Не звонить никогда» (чёрный список).',
