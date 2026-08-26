@@ -1,5 +1,6 @@
 export * from './marketplace-core.module';
 export * from './domain/marketplace-token.errors';
+export * from './domain/app-secret-code.util';
 export * from './domain/marketplace-provision-job.interface';
 export * from './persistence/marketplace-auth.repository';
 export * from './persistence/marketplace-component-state.repository';

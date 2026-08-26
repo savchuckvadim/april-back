@@ -3,7 +3,11 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { RedisService } from '@/core/redis/redis.service';
-import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
+import {
+    localAppSecretCodeByDomain,
+    localAppSecretCodeByMemberId,
+    SHARED_APP_SECRET_CODE,
+} from '../domain/app-secret-code.util';
 import {
     ActiveInstall,
     FindActiveInstallQuery,
@@ -43,20 +47,45 @@ const POLL_INTERVAL_MS = 500;
 const POLL_TIMEOUT_MS = 10 * 1000;
 /** Кэш «есть активная установка» (для PBXService.init на каждый вызов) */
 const HAS_INSTALL_CACHE_TTL_S = 60;
-/** Кэш OAuth-кред приложения (bitrix_app_secrets) в памяти процесса */
+/** Кэш найденных OAuth-кред (bitrix_app_secrets) в памяти процесса */
 const APP_SECRETS_CACHE_TTL_MS = 60 * 1000;
+/**
+ * Кэш ОТСУТСТВИЯ кред — заметно короче: клиент вносит свои client_id/secret
+ * и тут же ставит приложение, минутный «мисс» выглядел бы как поломка.
+ */
+const APP_SECRETS_MISS_CACHE_TTL_MS = 10 * 1000;
+/** Предел кэша кред: по записи на портал, чистится при переполнении */
+const APP_SECRETS_CACHE_MAX_ENTRIES = 500;
 
 const DEFAULT_OAUTH_URL = 'https://oauth.bitrix24.tech/oauth/token/';
+
+/**
+ * Идентичность портала для адресации ЕГО OAuth-кред.
+ * У локальных приложений креды свои на каждом портале, поэтому резолв
+ * секретов больше не глобальный (см. resolveAppSecrets).
+ */
+export interface PortalSecretIdentity {
+    memberId?: string | null;
+    domain?: string | null;
+}
 
 @Injectable()
 export class MarketplaceTokenService {
     private readonly logger = new Logger(MarketplaceTokenService.name);
 
-    /** Кэш кред приложения: {значение, до какого момента валиден} */
-    private appSecretsCache?: {
-        value: MarketplaceAppSecrets;
-        expiresAt: number;
-    };
+    /**
+     * Кэш кред ПО КОДУ строки bitrix_app_secrets.
+     *
+     * Именно по коду, а не одним полем на сервис: у локальных приложений
+     * креды свои на каждом портале, и общий кэш отдал бы порталу B креды
+     * портала A — чужой портал под чужим OAuth-приложением.
+     * null в значении = «строки нет» (отрицательный результат тоже кэшируем,
+     * иначе каждый refresh бил бы в БД по всей цепочке кандидатов).
+     */
+    private readonly appSecretsCache = new Map<
+        string,
+        { value: MarketplaceAppSecrets | null; expiresAt: number }
+    >();
 
     constructor(
         private readonly repository: MarketplaceAuthRepository,
@@ -185,7 +214,14 @@ export class MarketplaceTokenService {
             );
         }
 
-        const { clientId, clientSecret } = await this.resolveAppSecrets();
+        // Креды берутся ПО ПОРТАЛУ установки: у локальных приложений они
+        // свои на каждом портале (member_id приоритетнее домена — домен
+        // могли переименовать уже после внесения кред клиентом).
+        const { secrets, code: secretsCode } = await this.resolveAppSecrets({
+            memberId: install.portals.member_id,
+            domain: install.portals.domain,
+        });
+        const { clientId, clientSecret } = secrets;
         const oauthUrl =
             this.configService.get<string>('MARKETPLACE_OAUTH_URL') ??
             DEFAULT_OAUTH_URL;
@@ -219,10 +255,10 @@ export class MarketplaceTokenService {
                 memberId: install.portals.member_id ?? undefined,
                 domain: install.portals.domain ?? undefined,
                 status: 'error',
-                errorDetail: detail,
+                errorDetail: `${detail} (креды: ${secretsCode})`,
             });
             this.logger.warn(
-                `Token refresh failed: install=${install.id} ${detail}`,
+                `Token refresh failed: install=${install.id} secrets=${secretsCode} ${detail}`,
             );
             throw new MarketplaceTokenError(
                 invalidGrant
@@ -245,40 +281,93 @@ export class MarketplaceTokenService {
             status: 'processed',
         });
         this.logger.log(
-            `Token refreshed: install=${install.id} domain=${install.portals.domain ?? '-'}`,
+            `Token refreshed: install=${install.id} domain=${install.portals.domain ?? '-'} secrets=${secretsCode}`,
         );
         return data.access_token;
     }
 
     /**
-     * OAuth-креды приложения: источник истины — bitrix_app_secrets
-     * (code = «Менеджер Гарант»; правится админкой без деплоя), фолбэк —
-     * env MARKETPLACE_CLIENT_ID/SECRET. Кэш в памяти на минуту.
+     * OAuth-креды ДЛЯ КОНКРЕТНОГО ПОРТАЛА. Порядок резолва:
+     *
+     *  1. локальное приложение по member_id — постоянный ключ;
+     *  2. локальное приложение по домену — ключ, которым креды завела форма
+     *     клиента ДО установки (member_id тогда ещё не был известен);
+     *  3. тиражное приложение (общая пара на все порталы);
+     *  4. env MARKETPLACE_CLIENT_ID/SECRET — аварийный фолбэк.
+     *
+     * Возвращается и код найденной строки: он пишется в лог рефреша
+     * (САМИ креды в логи не попадают никогда) — иначе при ошибке
+     * wrong_client невозможно понять, какими кредами ходили.
      */
-    private async resolveAppSecrets(): Promise<MarketplaceAppSecrets> {
-        if (
-            this.appSecretsCache &&
-            this.appSecretsCache.expiresAt > Date.now()
-        ) {
-            return this.appSecretsCache.value;
+    private async resolveAppSecrets(
+        identity: PortalSecretIdentity,
+    ): Promise<{ secrets: MarketplaceAppSecrets; code: string }> {
+        const candidates = [
+            identity.memberId
+                ? localAppSecretCodeByMemberId(identity.memberId)
+                : null,
+            identity.domain ? localAppSecretCodeByDomain(identity.domain) : null,
+            SHARED_APP_SECRET_CODE,
+        ].filter((code): code is string => code !== null);
+
+        for (const code of candidates) {
+            const secrets = await this.findAppSecretsCached(code);
+            if (secrets) {
+                return { secrets, code };
+            }
         }
 
-        const fromDb = await this.repository.findAppSecrets(
-            BITRIX_APP_CODES.GARANT as string,
-        );
-        const value: MarketplaceAppSecrets | null =
-            fromDb ?? this.appSecretsFromEnv();
-        if (!value) {
-            throw new MarketplaceTokenError(
-                MarketplaceTokenErrorCode.OAUTH_UNAVAILABLE,
-                'OAuth-креды приложения не найдены: нет строки в bitrix_app_secrets (code=garant_manager) и не заданы MARKETPLACE_CLIENT_ID/SECRET',
-            );
+        const fromEnv = this.appSecretsFromEnv();
+        if (fromEnv) {
+            return { secrets: fromEnv, code: 'env' };
         }
-        this.appSecretsCache = {
+
+        throw new MarketplaceTokenError(
+            MarketplaceTokenErrorCode.OAUTH_UNAVAILABLE,
+            'OAuth-креды приложения не найдены: в bitrix_app_secrets нет строк с code ' +
+                `${candidates.join(' / ')} и не заданы MARKETPLACE_CLIENT_ID/SECRET`,
+        );
+    }
+
+    /** Чтение кред по коду через кэш (положительный и отрицательный) */
+    private async findAppSecretsCached(
+        code: string,
+    ): Promise<MarketplaceAppSecrets | null> {
+        const cached = this.appSecretsCache.get(code);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.value;
+        }
+
+        const value = await this.repository.findAppSecrets(code);
+        this.pruneAppSecretsCache();
+        this.appSecretsCache.set(code, {
             value,
-            expiresAt: Date.now() + APP_SECRETS_CACHE_TTL_MS,
-        };
+            expiresAt:
+                Date.now() +
+                (value
+                    ? APP_SECRETS_CACHE_TTL_MS
+                    : APP_SECRETS_MISS_CACHE_TTL_MS),
+        });
         return value;
+    }
+
+    /**
+     * Кэш растёт по числу порталов и живёт всё время процесса — чистим
+     * протухшее при переполнении (а если и это не помогло — сбрасываем).
+     */
+    private pruneAppSecretsCache(): void {
+        if (this.appSecretsCache.size < APP_SECRETS_CACHE_MAX_ENTRIES) {
+            return;
+        }
+        const now = Date.now();
+        for (const [code, entry] of this.appSecretsCache) {
+            if (entry.expiresAt <= now) {
+                this.appSecretsCache.delete(code);
+            }
+        }
+        if (this.appSecretsCache.size >= APP_SECRETS_CACHE_MAX_ENTRIES) {
+            this.appSecretsCache.clear();
+        }
     }
 
     private appSecretsFromEnv(): MarketplaceAppSecrets | null {
