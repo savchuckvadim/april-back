@@ -88,12 +88,17 @@ export class PortalFieldTypedEntityInstallService {
         e.code = field.parsedField.code;
         e.type = field.parsedField.type;
         e.isPlural = field.bxField.multiple === 'Y';
-        e.bitrixId = String(
+        const bxFieldName = String(
             field.bxField.fieldName ?? field.parsedField.bxFieldName,
         );
-        e.bitrixCamelId = getCamelBxFieldIdCase(
-            String(field.bxField.fieldName ?? field.parsedField.bxFieldName),
-        );
+        // RPA: в зеркале держим КОРОТКИЙ код (RPA_CRM_BASE_DEAL) — префикс
+        // UF_RPA_{typeId}_ клеят потребители (PortalModel.getRpaFieldBitrixId).
+        // У смартов bitrixId читается как есть, поэтому режем только rpa.
+        e.bitrixId =
+            parentType === 'rpa'
+                ? bxFieldName.replace(/^UF_RPA_\d+_/, '')
+                : bxFieldName;
+        e.bitrixCamelId = getCamelBxFieldIdCase(bxFieldName);
         if (
             field.parsedField.type === 'enumeration' &&
             field.bxField.enum &&

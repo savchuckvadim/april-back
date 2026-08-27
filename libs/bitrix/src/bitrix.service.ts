@@ -67,6 +67,7 @@ import { BxDialogMessageBatchService } from './domain/chat/dialog-message/servic
 import { BxDialogMessageService } from './domain/chat/dialog-message/services/bx-dialog-message.service';
 import { BxImV2EventBatchService } from './domain/chat/im-v2-event/services/bx-im-v2-event.batch.service';
 import { BxImV2EventService } from './domain/chat/im-v2-event/services/bx-im-v2-event.service';
+import { BxImV2FileService } from './domain/chat/im-v2-file/services/bx-im-v2-file.service';
 import { BxActivityTodoBatchService } from './domain/crm/activity-todo/services/bx-activity-todo.batch.service';
 import { BxActivityTodoService } from './domain/crm/activity-todo/services/bx-activity-todo.service';
 import {
@@ -138,6 +139,8 @@ export class BitrixService {
     public message: BxMessageService;
     public dialogMessage: BxDialogMessageService;
     public imV2Event: BxImV2EventService;
+    /** Файл в чат одним вызовом (im.v2.File.upload). */
+    public imV2File: BxImV2FileService;
     public task: BxTaskService;
     public taskUserField: BxTaskUserFieldService;
     public checklistItem: BxChecklistItemService;
@@ -249,6 +252,7 @@ export class BitrixService {
         this.initMessage();
         this.initDialogMessage();
         this.initImV2Event();
+        this.initImV2File();
         this.initTask();
         this.initTaskUserField();
         this.initChecklistItem();
@@ -439,6 +443,10 @@ export class BitrixService {
             this.api,
         );
     }
+    private initImV2File() {
+        this.imV2File = this.cloner.clone(BxImV2FileService, this.api);
+    }
+
     private initImV2Event() {
         this.imV2Event = this.cloner.clone(BxImV2EventService, this.api);
         this.batch.imV2Event = this.cloner.clone(

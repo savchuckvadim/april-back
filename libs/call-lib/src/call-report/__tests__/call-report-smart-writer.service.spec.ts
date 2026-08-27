@@ -110,7 +110,7 @@ describe('CallReportSmartWriterService', () => {
         expect(fields).not.toHaveProperty('ufCrm128FiveKCriteri');
     });
 
-    it('пишет связи воронок crm-массивами, привязки списков и разделы анализа', async () => {
+    it('пишет связи воронок в формате поля, привязки списков и разделы анализа', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(
             bitrix as never,
@@ -137,9 +137,11 @@ describe('CallReportSmartWriterService', () => {
 
         const addCall = bitrix.item.add.mock.calls[0] as unknown[];
         const fields = addCall[1] as Record<string, unknown>;
-        expect(fields.ufCrm128DealMain).toEqual(['D_555']);
-        expect(fields.ufCrm128DealPresentation).toEqual(['D_601']);
-        expect(fields.ufCrm128DealXo).toEqual(['D_602']);
+        // Поля привязаны к ОДНОЙ сущности (DEAL) — Битрикс хранит голый
+        // id; значение 'D_555' такое поле молча отбрасывает (прод 27.08.2026).
+        expect(fields.ufCrm128DealMain).toEqual(['555']);
+        expect(fields.ufCrm128DealPresentation).toEqual(['601']);
+        expect(fields.ufCrm128DealXo).toEqual(['602']);
         expect(fields.ufCrm128KpiItemId).toBe('9001');
         expect(fields.ufCrm128KpiItemStatus).toBe(60);
         expect(fields.ufCrm128HistoryItemStatus).toBe(71);
@@ -399,7 +401,7 @@ describe('CallReportSmartWriterService', () => {
                     id: 7,
                     parentId2: '555',
                     companyId: '33',
-                    ufCrm128DealMain: ['D_555'],
+                    ufCrm128DealMain: ['555'],
                 },
             },
         });

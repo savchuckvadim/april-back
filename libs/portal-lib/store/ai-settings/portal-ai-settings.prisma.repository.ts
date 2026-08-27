@@ -9,6 +9,8 @@ import {
     PortalAiSettingsUpdate,
     PortalAiSettingsWithDomain,
     PresentationStrictnessLevel,
+    WEEKLY_REPORT_DELIVERY_MODES,
+    WeeklyReportDeliveryMode,
 } from './portal-ai-settings.types';
 
 /** Поля, которые редактируются снаружи (lastScanAt пишет только планировщик). */
@@ -137,7 +139,8 @@ export class PortalAiSettingsPrismaRepository
             update.presentationStrictness !== undefined ||
             update.weeklyReportEnabled !== undefined ||
             update.weeklyReportRecipients !== undefined ||
-            update.weeklyReportFolderId !== undefined
+            update.weeklyReportFolderId !== undefined ||
+            update.weeklyReportDelivery !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -167,6 +170,10 @@ export class PortalAiSettingsPrismaRepository
                 json.weeklyReportFolderId =
                     update.weeklyReportFolderId ?? undefined;
             }
+            if (update.weeklyReportDelivery !== undefined) {
+                json.weeklyReportDelivery =
+                    update.weeklyReportDelivery ?? undefined;
+            }
             data.settings = JSON.parse(
                 JSON.stringify(json),
             ) as Prisma.InputJsonValue;
@@ -183,6 +190,7 @@ export class PortalAiSettingsPrismaRepository
         weeklyReportEnabled?: boolean;
         weeklyReportRecipients?: number[];
         weeklyReportFolderId?: number;
+        weeklyReportDelivery?: WeeklyReportDeliveryMode;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -205,6 +213,11 @@ export class PortalAiSettingsPrismaRepository
                 Number.isFinite(folderId) && folderId > 0
                     ? folderId
                     : undefined,
+            weeklyReportDelivery: (
+                WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
+            ).includes(String(raw.weeklyReportDelivery))
+                ? (raw.weeklyReportDelivery as WeeklyReportDeliveryMode)
+                : undefined,
             irrelevantConfidence:
                 Number.isFinite(confidence) && confidence > 0 && confidence <= 1
                     ? confidence
@@ -262,6 +275,8 @@ export class PortalAiSettingsPrismaRepository
                 null,
             weeklyReportFolderId:
                 this.toJsonSettings(row.settings).weeklyReportFolderId ?? null,
+            weeklyReportDelivery:
+                this.toJsonSettings(row.settings).weeklyReportDelivery ?? null,
         };
     }
 

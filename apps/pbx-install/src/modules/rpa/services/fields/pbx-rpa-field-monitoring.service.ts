@@ -6,6 +6,7 @@ import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PortalRpaService } from '@lib/portal-lib/pbx-domain/portal-rpa';
 import { PbxEntityTypePrisma } from '@/shared/enums';
 import { RpaNameEnum } from '../../dto/install-rpa.dto';
+import { isSameRpaField } from './rpa-field-name.util';
 
 /** Одно смерженное поле RPA: портал ↔ Bitrix. */
 export interface PbxRpaMergedField {
@@ -67,8 +68,8 @@ export class PbxRpaFieldMonitoringService {
         const matchedBxNames = new Set<string>();
 
         for (const bxField of bitrixFields) {
-            const portalField = portalFields.find(
-                f => f.bitrixId === bxField.fieldName,
+            const portalField = portalFields.find(f =>
+                isSameRpaField(f.bitrixId, bxField.fieldName),
             );
             if (portalField) {
                 merged.push({

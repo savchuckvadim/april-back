@@ -55,6 +55,14 @@ export class TranscriptionStoreService {
         return createTranscriptionResponseDtoFromPrisma(transcription);
     }
 
+    /** Строка конвейера по домену и активности — для диагностики звонка. */
+    async findPipelineByDedupKey(
+        dedupKey: string,
+    ): Promise<TranscriptionPipelineView | null> {
+        const row = await this.transcriptionRepository.findByDedupKey(dedupKey);
+        return row ? this.toPipelineView(row) : null;
+    }
+
     async findAll(): Promise<TranscriptionStoreDto[]> {
         const transcriptions = await this.transcriptionRepository.findMany();
         if (!transcriptions) {

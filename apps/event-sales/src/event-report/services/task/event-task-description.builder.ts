@@ -17,14 +17,6 @@ import { entityCardUrl } from '../../../sales-hooks/duplicate-check/lib/duplicat
  * рендер её не дублирует.
  */
 export const EVENT_TASK_DESCRIPTION_STYLE = {
-    colors: {
-        /** Заголовок секции. */
-        heading: '#1d74d8',
-        /** Акцент внутри секции (имя сущности, группа телефонов). */
-        accent: '#d97706',
-        /** Служебный текст (подписи типов телефонов). */
-        muted: '#6b7280',
-    },
     icons: {
         links: '🔗',
         phones: '📞',
@@ -168,17 +160,12 @@ const bb = {
 };
 
 const heading = (icon: string, text: string): string =>
-    bb.bold(
-        bb.color(
-            EVENT_TASK_DESCRIPTION_STYLE.colors.heading,
-            `${icon} ${text}`,
-        ),
-    );
+    bb.bold(`${icon} ${text}`);
 
 /**
  * DESCRIPTION задачи обзвона в BB-коде Битрикса.
  *
- * Формат (`DESCRIPTION_IN_BBCODE: 'Y'`, поддерживаются `[B] [I] [URL=] [color=]`
+ * Формат (`DESCRIPTION_IN_BBCODE: 'Y'`: только `[B]` и `[URL=]` —
  * — см. ответ `tasks.task.add`, поле `descriptionInBbcode`):
  *
  *   [B][color=#1d74d8]🔗 Карточки клиента[/color][/B]
@@ -331,13 +318,13 @@ const buildPhoneBlock = (src: EventTaskDescriptionSource): string => {
 
     if (!groups.length) return '';
 
-    const { bullet, colors, icons } = EVENT_TASK_DESCRIPTION_STYLE;
+    const { bullet, icons } = EVENT_TASK_DESCRIPTION_STYLE;
     const lines: string[] = [heading(icons.phones, 'Телефоны')];
     for (const group of groups) {
-        lines.push(bb.bold(bb.color(colors.accent, group.title)));
+        lines.push(bb.bold(group.title));
         for (const phone of group.phones) {
             const suffix = phone.typeLabel
-                ? ` ${bb.color(colors.muted, `(${phone.typeLabel})`)}`
+                ? ` (${phone.typeLabel})`
                 : '';
             lines.push(`${bullet} ${phone.value}${suffix}`);
         }

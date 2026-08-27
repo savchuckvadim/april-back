@@ -11,6 +11,7 @@ import {
 import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
 import { CallReportSmartResolverService } from './call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from './call-report-smart-writer.service';
+import { CallReportDealFamilyService } from './call-report-deal-family.service';
 
 /**
  * Базовый смарт-элемент по обработанной транскрипции — БЕЗ глубокого анализа
@@ -31,6 +32,7 @@ export class CallReportBaseItemService {
         private readonly smartResolver: CallReportSmartResolverService,
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
+        private readonly dealFamily: CallReportDealFamilyService,
     ) {}
 
     /** id созданного/обновлённого элемента; null — смарт не установлен. */
@@ -59,6 +61,13 @@ export class CallReportBaseItemService {
 
         const isLead = row.entityType === 'lead';
         const entityId = row.entityId ? Number(row.entityId) : undefined;
+        // Звонят обычно из дочерней сделки (презентация/ХО): нативная
+        // связь покажет её (это владелец активности), а «ОП: основная
+        // сделка» должна вести на корневую — она известна порталу через
+        // поле «Корневая сделка Продажи».
+        const family = isLead
+            ? {}
+            : await this.dealFamily.resolve(domain, entityId);
         const context = await this.loadContext(
             bitrix,
             isLead ? 'lead' : 'deal',
@@ -71,7 +80,9 @@ export class CallReportBaseItemService {
             activityId: row.activityId ?? '',
             dealId: isLead ? undefined : entityId,
             leadId: isLead ? entityId : undefined,
-            mainDealId: isLead ? undefined : entityId,
+            mainDealId: family.mainDealId,
+            presentationDealId: family.presentationDealId,
+            xoDealId: family.xoDealId,
             companyId: context.companyId,
             contactId: context.contactId,
             managerId: context.managerId,

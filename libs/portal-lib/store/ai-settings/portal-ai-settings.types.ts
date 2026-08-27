@@ -96,7 +96,18 @@ export interface PortalAiSettingsRecord {
      * и т.п.). NULL — папка приложения на Диске.
      */
     weeklyReportFolderId: number | null;
+    /**
+     * Как получателю приходит файл: chat — сообщением в личный чат с
+     * вложенным xlsx (по умолчанию); task — задачей с прикреплённым
+     * файлом; notify — уведомлением со ссылкой на Диск.
+     */
+    weeklyReportDelivery: WeeklyReportDeliveryMode | null;
 }
+
+/** Способы доставки недельного отчёта (runtime-константа для DTO). */
+export const WEEKLY_REPORT_DELIVERY_MODES = ['chat', 'task', 'notify'] as const;
+export type WeeklyReportDeliveryMode =
+    (typeof WEEKLY_REPORT_DELIVERY_MODES)[number];
 
 /** Уровни строгости определения презентации (runtime-константа для DTO). */
 export const PRESENTATION_STRICTNESS_LEVELS = [
@@ -142,6 +153,7 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     weeklyReportEnabled: null,
     weeklyReportRecipients: null,
     weeklyReportFolderId: null,
+    weeklyReportDelivery: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService, BitrixOwnerTypeId } from '@lib/bitrix';
+import { buildCrmRefValue } from '@lib/bitrix/domain/crm/utils/crm-ref-format.util';
 import { IBXItem } from '@lib/bitrix/domain/crm/item/interface/item.interface';
 import {
     buildCallReportItemFieldName,
@@ -1108,14 +1109,30 @@ export class CallReportSmartWriterService {
         return `${result}…`;
     }
 
-    /** crm-поле со ссылкой на сделку: массив ['D_123'] (формат crm.item). */
+    /**
+     * crm-поле со ссылкой на сделку.
+     *
+     * ФОРМАТ ЗАДАЁТ САМ БИТРИКС (прод-инцидент 27.08.2026: «нашли сделку
+     * ОП Презентации, а поле пустое»): если поле привязано к ОДНОМУ типу
+     * сущности (наши DEAL_MAIN/DEAL_PRESENTATION/DEAL_XO — только DEAL),
+     * хранится ГОЛЫЙ id — `1024`; значение `D_1024` такое поле молча
+     * отбрасывает. Префикс нужен только полям с несколькими типами.
+     * Привязки берём из того же реестра, по которому установщик создаёт
+     * поля, — формат и настройка поля не могут разъехаться.
+     */
     private setCrmDealUf(
         fields: Record<string, unknown>,
         code: string,
         dealId: number | undefined,
     ): void {
         if (!dealId) return;
-        fields[this.ufName(code)] = [`D_${dealId}`];
+        const definition = CALL_REPORT_SMART_FIELDS.find(
+            field => field.code === code,
+        );
+        const allowedTypes = definition?.crmEntities ?? [];
+        fields[this.ufName(code)] = [
+            buildCrmRefValue(allowedTypes, 'DEAL', dealId),
+        ];
     }
 
     /** Multi-enum: массив числовых id значений; неизвестные коды — warn и skip. */

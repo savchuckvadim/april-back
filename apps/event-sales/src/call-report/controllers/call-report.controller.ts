@@ -255,6 +255,13 @@ export class CallReportController {
         const from = new Date(
             to.getTime() - (dto.days ?? 7) * 24 * 60 * 60 * 1000,
         );
-        return this.sendWeekly.execute(dto.domain, { from, to });
+        return this.sendWeekly.execute(dto.domain, {
+            from,
+            to,
+            // Тестовая отправка «только себе»: получатели и способ из
+            // запроса перекрывают настройки портала, не изменяя их.
+            recipients: dto.recipients,
+            delivery: dto.delivery,
+        });
     }
 }

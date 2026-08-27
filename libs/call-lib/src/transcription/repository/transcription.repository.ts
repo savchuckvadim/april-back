@@ -14,6 +14,8 @@ export abstract class TranscriptionRepository {
         transcription: Partial<Transcription>,
     ): Promise<Transcription | null>;
     abstract findById(id: string): Promise<Transcription | null>;
+    /** Строка конвейера по ключу дедупа «domain:activityId» (диагностика). */
+    abstract findByDedupKey(dedupKey: string): Promise<Transcription | null>;
     abstract findMany(): Promise<Transcription[] | null>;
     abstract findByDomain(domain: string): Promise<Transcription[] | null>;
     abstract findByDomainAndUser(

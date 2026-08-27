@@ -41,6 +41,7 @@ import { MessageSchema } from '@/modules/bitrix/domain/chat/message/schema/bx-me
 import { DialogSchema } from '@/modules/bitrix/domain/chat/dialog/schema/bx-dialog.schema';
 import { DialogMessageSchema } from '@/modules/bitrix/domain/chat/dialog-message/schema/bx-dialog-message.schema';
 import { ImV2EventSchema } from '@/modules/bitrix/domain/chat/im-v2-event/schema/bx-im-v2-event.schema';
+import { ImV2FileSchema } from '../../../domain/chat/im-v2-file/schema/bx-im-v2-file.schema';
 import {
     BxDiskFileSchema,
     BxDiskFolderSchema,
@@ -127,6 +128,7 @@ export type BXApiSchema = {
     };
     [EBxNamespace.IMV2]: {
         [EBXEntity.EVENT]: ImV2EventSchema;
+        [EBXEntity.FILE]: ImV2FileSchema;
     };
     [EBxNamespace.IMBOT]: {
         [EBXEntity.BOT_LIFECYCLE]: ImBotLifecycleSchema;

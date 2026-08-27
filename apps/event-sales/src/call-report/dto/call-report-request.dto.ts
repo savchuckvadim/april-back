@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsArray,
     IsBoolean,
+    IsIn,
     IsInt,
     IsNotEmpty,
     IsOptional,
@@ -9,6 +10,10 @@ import {
     Max,
     Min,
 } from 'class-validator';
+import {
+    WEEKLY_REPORT_DELIVERY_MODES,
+    WeeklyReportDeliveryMode,
+} from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 
 /** Установка смарт-процесса «AI-анализ звонков» на портал. */
 export class InstallCallReportSmartDto {
@@ -427,4 +432,33 @@ export class CallReportWeeklyRequestDto {
     @Min(1)
     @Max(92)
     days?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Кому отправить ВМЕСТО получателей из настроек портала — ' +
+            'bitrix-id сотрудников. Для теста: укажи свой id, и отчёт ' +
+            'придёт только тебе, настройки портала не изменятся. ' +
+            'Пусто — получатели из настроек.',
+        example: [622],
+        type: [Number],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    recipients?: number[];
+
+    @ApiPropertyOptional({
+        description:
+            'Способ доставки ВМЕСТО заданного в настройках: chat — файл ' +
+            'сообщением в личный чат, task — задача с прикреплённым файлом, ' +
+            'notify — уведомление со ссылкой. Пусто — способ из настроек ' +
+            '(по умолчанию chat).',
+        enum: WEEKLY_REPORT_DELIVERY_MODES,
+        example: 'chat',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(WEEKLY_REPORT_DELIVERY_MODES as unknown as string[])
+    delivery?: WeeklyReportDeliveryMode;
 }

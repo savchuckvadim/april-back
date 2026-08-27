@@ -15,6 +15,8 @@ import {
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
     PresentationStrictnessLevel,
+    WEEKLY_REPORT_DELIVERY_MODES,
+    WeeklyReportDeliveryMode,
 } from '../portal-ai-settings.types';
 
 /**
@@ -49,6 +51,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.weeklyReportEnabled = source.weeklyReportEnabled ?? null;
         this.weeklyReportRecipients = source.weeklyReportRecipients ?? null;
         this.weeklyReportFolderId = source.weeklyReportFolderId ?? null;
+        this.weeklyReportDelivery = source.weeklyReportDelivery ?? null;
     }
 
     @ApiProperty({
@@ -306,6 +309,17 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     weeklyReportFolderId: number | null;
+
+    @ApiProperty({
+        description:
+            'Как получателю приходит файл: chat — сообщением в личный чат с ' +
+            'вложенным xlsx (по умолчанию), task — задачей с прикреплённым ' +
+            'файлом, notify — уведомлением со ссылкой на Диск.',
+        enum: WEEKLY_REPORT_DELIVERY_MODES,
+        example: 'chat',
+        nullable: true,
+    })
+    weeklyReportDelivery: WeeklyReportDeliveryMode | null;
 }
 
 /**
@@ -588,4 +602,18 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsInt()
     @Min(1)
     weeklyReportFolderId?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Способ доставки недельного отчёта: chat (файл в личный чат), ' +
+            'task (задача с файлом), notify (уведомление со ссылкой). ' +
+            'null — сбросить на chat.',
+        enum: WEEKLY_REPORT_DELIVERY_MODES,
+        example: 'chat',
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(WEEKLY_REPORT_DELIVERY_MODES as unknown as string[])
+    weeklyReportDelivery?: WeeklyReportDeliveryMode | null;
 }

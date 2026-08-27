@@ -8,6 +8,7 @@ import { PbxEntityTypePrisma } from '@/shared/enums';
 import { Field } from '@app/pbx-install/shared/parse-field-excel/type/parse-field.type';
 import { ParseRpaService } from '../parse/parse-rpa.service';
 import { RpaGroupEnum, RpaNameEnum } from '../../dto/install-rpa.dto';
+import { isSameRpaField } from './rpa-field-name.util';
 
 /**
  * Статус поля RPA в трёх слоях. Шаблон — источник истины; «лишнее» в Bitrix
@@ -193,8 +194,8 @@ export class PbxRpaFieldOverviewService {
             const code =
                 b.xmlId && b.xmlId.length
                     ? b.xmlId
-                    : (db.find(d => d.bitrixId === b.fieldName)?.code ??
-                      b.fieldName);
+                    : (db.find(d => isSameRpaField(d.bitrixId, b.fieldName))
+                          ?.code ?? b.fieldName);
             ensure(code).bx = b;
         }
 

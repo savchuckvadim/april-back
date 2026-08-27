@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
+import { WeeklyReportDeliveryMode } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import { CallReportWeeklyDataService } from './call-report-weekly-data.service';
 import { CallReportExcelBuilder } from './call-report-excel.builder';
 import { CallReportWeeklyDeliveryService } from './call-report-weekly-delivery.service';
@@ -28,20 +29,39 @@ export class SendCallReportWeeklyUseCase {
 
     /**
      * @param domain портал
-     * @param period период отчёта; по умолчанию — последние 7 дней
+     * @param options период отчёта (по умолчанию — последние 7 дней) и
+     * ручные переопределения получателей/способа доставки: нужны для
+     * теста «отправить отчёт себе», не трогая настройки портала.
      */
     async execute(
         domain: string,
-        period?: { from: Date; to: Date },
+        options?: {
+            from?: Date;
+            to?: Date;
+            /** Кому отправить вместо получателей из настроек портала. */
+            recipients?: number[];
+            /** Способ доставки вместо заданного в настройках. */
+            delivery?: WeeklyReportDeliveryMode;
+        },
     ): Promise<CallReportWeeklyResult> {
-        const to = period?.to ?? new Date();
+        const to = options?.to ?? new Date();
         const from =
-            period?.from ?? new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+            options?.from ?? new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
 
         const dataset = await this.data.collect(domain, from, to);
         const portalSettings = await this.settings.getByDomain(domain);
-        const recipients = portalSettings?.weeklyReportRecipients ?? [];
+        const recipients = options?.recipients?.length
+            ? options.recipients
+            : (portalSettings?.weeklyReportRecipients ?? []);
+        const deliveryMode =
+            options?.delivery ?? portalSettings?.weeklyReportDelivery ?? 'chat';
         const folderId = portalSettings?.weeklyReportFolderId ?? null;
+        if (options?.recipients?.length) {
+            this.logger.log(
+                `Недельный отчёт ${domain}: ручная отправка получателям ` +
+                    `[${options.recipients.join(', ')}] способом ${deliveryMode}`,
+            );
+        }
 
         if (!dataset.rows.length) {
             this.logger.log(
@@ -55,6 +75,7 @@ export class SendCallReportWeeklyUseCase {
                 fileId: null,
                 fileUrl: null,
                 notifiedUserIds: [],
+                delivery: null,
             };
         }
 
@@ -68,17 +89,20 @@ export class SendCallReportWeeklyUseCase {
             folderId,
         );
 
+        const message = this.buildMessage(
+            dataset.rows.length,
+            from,
+            to,
+            uploaded.fileUrl,
+        );
         const notifiedUserIds = recipients.length
-            ? await this.delivery.notify(
-                  bitrix,
-                  recipients,
-                  this.buildMessage(
-                      dataset.rows.length,
-                      from,
-                      to,
-                      uploaded.fileUrl,
-                  ),
-              )
+            ? await this.deliver(bitrix, deliveryMode, recipients, {
+                  fileName,
+                  content,
+                  message,
+                  uploaded,
+                  period: { from, to },
+              })
             : [];
 
         this.logger.log(
@@ -93,7 +117,71 @@ export class SendCallReportWeeklyUseCase {
             fileId: uploaded.fileId,
             fileUrl: uploaded.fileUrl,
             notifiedUserIds,
+            delivery: notifiedUserIds.length ? deliveryMode : null,
         };
+    }
+
+    /**
+     * Доставка получателям выбранным способом:
+     * - chat (по умолчанию) — файл сообщением в личный чат каждому;
+     * - task — одна задача с прикреплённым файлом с Диска;
+     * - notify — уведомление со ссылкой на файл.
+     *
+     * Если основной способ не сработал (например, чат недоступен), файл
+     * не теряется: уходит уведомление со ссылкой — получатель узнает об
+     * отчёте в любом случае.
+     */
+    private async deliver(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        mode: WeeklyReportDeliveryMode,
+        recipients: number[],
+        payload: {
+            fileName: string;
+            content: Buffer;
+            message: string;
+            uploaded: { fileId: number | null; fileUrl: string | null };
+            period: { from: Date; to: Date };
+        },
+    ): Promise<number[]> {
+        if (mode === 'chat') {
+            const delivered = await this.delivery.sendToChat(
+                bitrix,
+                recipients,
+                payload.fileName,
+                payload.content,
+                payload.message,
+            );
+            const failed = recipients.filter(id => !delivered.includes(id));
+            if (!failed.length) return delivered;
+            this.logger.warn(
+                `Недельный отчёт: файл в чат не ушёл ${failed.length} получателям — ` +
+                    `отправляю им уведомление со ссылкой`,
+            );
+            const fallback = await this.delivery.notify(
+                bitrix,
+                failed,
+                payload.message,
+            );
+            return [...delivered, ...fallback];
+        }
+
+        if (mode === 'task') {
+            const period = `${this.formatDate(payload.period.from)} — ${this.formatDate(payload.period.to)}`;
+            const taskId = await this.delivery.createTask(
+                bitrix,
+                recipients,
+                `Недельный отчёт по звонкам (${period})`,
+                payload.message,
+                payload.uploaded.fileId,
+            );
+            if (taskId) return recipients;
+            this.logger.warn(
+                'Недельный отчёт: задача не создана — отправляю уведомления',
+            );
+            return this.delivery.notify(bitrix, recipients, payload.message);
+        }
+
+        return this.delivery.notify(bitrix, recipients, payload.message);
     }
 
     /** «call-report_alfacentr_2026-08-21_2026-08-27.xlsx». */

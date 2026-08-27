@@ -327,6 +327,12 @@ export class PortalModel {
         if (!field) {
             throw new Error('Field not found');
         }
+        // В pbx у части порталов bitrixId лежит уже с префиксом
+        // (UF_RPA_1_RPA_CRM_BASE_DEAL). Без этой проверки получаем
+        // UF_RPA_1_UF_RPA_1_... и 400 «Unknown field definition» от rpa.item.*
+        if (String(field.bitrixId).startsWith('UF_RPA_')) {
+            return String(field.bitrixId);
+        }
         return `UF_RPA_${rpaTypeId}_${field.bitrixId}`;
     }
 

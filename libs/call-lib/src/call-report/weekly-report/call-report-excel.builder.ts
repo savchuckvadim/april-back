@@ -2,17 +2,89 @@ import { Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import {
     CallReportWeeklyDataset,
+    CallReportWeeklyPresentationRow,
     CallReportWeeklyRow,
     CallReportWeeklySectionRow,
+    CallReportWeeklyTranscriptRow,
+    WeeklyFiveKItems,
+    WeeklyHvostSteps,
 } from './call-report-weekly.types';
+
+/** Значение ячейки: обычное либо кликабельная ссылка. */
+type CellValue =
+    | string
+    | number
+    | Date
+    | null
+    | { text: string; hyperlink: string };
 
 /** Описание колонки листа: заголовок, ширина и извлечение значения. */
 interface SheetColumn<T> {
     header: string;
     width: number;
-    value: (row: T) => string | number | Date | null;
+    value: (row: T) => CellValue;
     /** Длинный текст: перенос по словам и увеличенная высота строки. */
     wrap?: boolean;
+}
+
+/** Ссылки на карточки CRM портала — чтобы из отчёта можно было провалиться. */
+class PortalLinks {
+    constructor(
+        private readonly domain: string,
+        private readonly smartEntityTypeId: number | null,
+    ) {}
+
+    /** Сделка/лид — владелец звонка. */
+    entity(entityType: string | null, entityId: number | null): CellValue {
+        if (!entityId) return '';
+        if (entityType === 'deal') {
+            return {
+                text: `Сделка ${entityId}`,
+                hyperlink: `https://${this.domain}/crm/deal/details/${entityId}/`,
+            };
+        }
+        if (entityType === 'lead') {
+            return {
+                text: `Лид ${entityId}`,
+                hyperlink: `https://${this.domain}/crm/lead/details/${entityId}/`,
+            };
+        }
+        return '';
+    }
+
+    /** Карточка разбора в смарт-процессе «AI-анализ звонков». */
+    smartItem(itemId: number | null): CellValue {
+        if (!itemId || !this.smartEntityTypeId) return itemId ?? '';
+        return {
+            text: `Разбор #${itemId}`,
+            hyperlink: `https://${this.domain}/crm/type/${this.smartEntityTypeId}/details/${itemId}/`,
+        };
+    }
+
+    company(companyId: number | null): CellValue {
+        if (!companyId) return '';
+        return {
+            text: `Компания ${companyId}`,
+            hyperlink: `https://${this.domain}/crm/company/details/${companyId}/`,
+        };
+    }
+
+    contact(contactId: number | null): CellValue {
+        if (!contactId) return '';
+        return {
+            text: `Контакт ${contactId}`,
+            hyperlink: `https://${this.domain}/crm/contact/details/${contactId}/`,
+        };
+    }
+
+    /** Карточка сотрудника — «кто звонил». */
+    user(userId: number | null): CellValue {
+        if (!userId) return '';
+        return {
+            text: String(userId),
+            hyperlink: `https://${this.domain}/company/personal/user/${userId}/`,
+        };
+    }
 }
 
 /**
@@ -20,6 +92,41 @@ interface SheetColumn<T> {
  * лимит укладывается, но на всякий случай режем с явной пометкой.
  */
 const CELL_LIMIT = 32_000;
+
+/** Порог «содержательного» звонка для отдельного листа, секунд. */
+const LONG_CALL_SEC = 300;
+
+/** Чеклист хвоста одной строкой: «✓ КП · ✗ цена · — дата». */
+function renderHvostChecklist(steps: WeeklyHvostSteps | null): string {
+    if (!steps) return '';
+    const mark = (value: boolean | null | undefined): string =>
+        value === true ? '✓' : value === false ? '✗' : '—';
+    return [
+        `${mark(steps.offer)} КП предложено`,
+        `${mark(steps.complect)} наполнение`,
+        `${mark(steps.price)} цена`,
+        `${mark(steps.decisionDate)} дата решения`,
+        `${mark(steps.dateAgreed)} дата согласована`,
+    ].join('\n');
+}
+
+/** Чеклист 5К одной строкой (9 пунктов, как в отчёте менеджера). */
+function renderFiveKChecklist(items: WeeklyFiveKItems | null): string {
+    if (!items) return '';
+    const mark = (value: boolean | null | undefined): string =>
+        value === true ? '✓' : value === false ? '✗' : '—';
+    return [
+        `${mark(items.clientWhat)} КЛИЕНТ: что хочет`,
+        `${mark(items.clientReady)} КЛИЕНТ: готов`,
+        `${mark(items.clientPrice)} КЛИЕНТ: цена`,
+        `${mark(items.companyWho)} КОМПАНИЯ: кто решает`,
+        `${mark(items.companyHow)} КОМПАНИЯ: как решает`,
+        `${mark(items.companyRight)} подбор верен`,
+        `${mark(items.colleagues)} КОЛЛЕГИ`,
+        `${mark(items.competitor)} КОНКУРЕНТ`,
+        `${mark(items.criteria)} КРИТЕРИИ`,
+    ].join('\n');
+}
 
 const HEADER_FILL: ExcelJS.Fill = {
     type: 'pattern',
@@ -47,12 +154,31 @@ export class CallReportExcelBuilder {
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'AI-анализ звонков';
         workbook.created = dataset.to;
+        const links = new PortalLinks(
+            dataset.domain,
+            dataset.smartEntityTypeId,
+        );
 
+        this.addSummarySheet(workbook, dataset);
         this.addSheet<CallReportWeeklyRow>(
             workbook,
             'Звонки',
-            this.callColumns(),
+            this.callColumns(links),
             dataset.rows,
+        );
+        // Звонки от 5 минут — предметный разговор, а не «недозвон/уточнение»;
+        // РОПу нужен отдельный срез именно по ним.
+        this.addSheet<CallReportWeeklyRow>(
+            workbook,
+            'Звонки от 5 минут',
+            this.callColumns(links),
+            dataset.rows.filter(row => (row.durationSec ?? 0) >= LONG_CALL_SEC),
+        );
+        this.addSheet<CallReportWeeklyPresentationRow>(
+            workbook,
+            'Презентации (хвост и 5К)',
+            this.presentationColumns(links),
+            dataset.presentations,
         );
         this.addSheet<CallReportWeeklySectionRow>(
             workbook,
@@ -60,7 +186,12 @@ export class CallReportExcelBuilder {
             this.sectionColumns(),
             dataset.sections,
         );
-        this.addSummarySheet(workbook, dataset);
+        this.addSheet<CallReportWeeklyTranscriptRow>(
+            workbook,
+            'Транскрипции',
+            this.transcriptColumns(links),
+            dataset.transcripts,
+        );
 
         const buffer = await workbook.xlsx.writeBuffer();
         return Buffer.from(buffer);
@@ -108,6 +239,18 @@ export class CallReportExcelBuilder {
                 };
                 if (!column.wrap) {
                     cell.alignment = { vertical: 'top', wrapText: false };
+                }
+                // Ссылка на карточку CRM — синий подчёркнутый текст.
+                const value: unknown = cell.value;
+                if (
+                    value &&
+                    typeof value === 'object' &&
+                    'hyperlink' in (value as Record<string, unknown>)
+                ) {
+                    cell.font = {
+                        color: { argb: 'FF0B57D0' },
+                        underline: true,
+                    };
                 }
             });
         });
@@ -187,22 +330,38 @@ export class CallReportExcelBuilder {
         note.getCell(2).alignment = { wrapText: true, vertical: 'top' };
     }
 
-    private callColumns(): SheetColumn<CallReportWeeklyRow>[] {
+    private callColumns(
+        links: PortalLinks,
+    ): SheetColumn<CallReportWeeklyRow>[] {
         const yesNo = (value: boolean | null): string =>
             value === true ? 'да' : value === false ? 'нет' : '';
         return [
             { header: 'Дата звонка', width: 18, value: row => row.callDate },
-            { header: 'Менеджер (ID)', width: 14, value: row => row.managerId },
+            {
+                header: 'Менеджер (ID)',
+                width: 14,
+                value: row => links.user(row.managerId),
+            },
             { header: 'Длит., мин', width: 11, value: row => row.durationMin },
             {
-                header: 'Объект',
-                width: 16,
-                value: row =>
-                    row.entityType === 'deal'
-                        ? `Сделка ${row.entityId ?? ''}`.trim()
-                        : row.entityType === 'lead'
-                          ? `Лид ${row.entityId ?? ''}`.trim()
-                          : '',
+                header: 'Объект CRM',
+                width: 18,
+                value: row => links.entity(row.entityType, row.entityId),
+            },
+            {
+                header: 'Компания',
+                width: 18,
+                value: row => links.company(row.companyId),
+            },
+            {
+                header: 'Контакт',
+                width: 18,
+                value: row => links.contact(row.contactId),
+            },
+            {
+                header: 'Карточка разбора',
+                width: 18,
+                value: row => links.smartItem(row.smartItemId),
             },
             {
                 header: 'ID активности',
@@ -274,6 +433,18 @@ export class CallReportExcelBuilder {
                 header: '5К закрыто',
                 width: 12,
                 value: row => yesNo(row.fiveKDone),
+            },
+            {
+                header: 'Хвост: чеклист AI',
+                width: 46,
+                value: row => renderHvostChecklist(row.hvostSteps),
+                wrap: true,
+            },
+            {
+                header: '5К: чеклист AI',
+                width: 46,
+                value: row => renderFiveKChecklist(row.fiveKItems),
+                wrap: true,
             },
             {
                 header: 'Резюме звонка',
@@ -361,6 +532,193 @@ export class CallReportExcelBuilder {
         ];
     }
 
+    /**
+     * Лист «Презентации»: по одной строке на звонок с методологическим
+     * разбором. Каждый пункт чеклиста — отдельная колонка, чтобы РОП мог
+     * отфильтровать «все, где не назначена дата решения».
+     */
+    private presentationColumns(
+        links: PortalLinks,
+    ): SheetColumn<CallReportWeeklyPresentationRow>[] {
+        const mark = (value: boolean | null | undefined): string =>
+            value === true ? 'да' : value === false ? 'нет' : '';
+        return [
+            { header: 'Дата звонка', width: 18, value: row => row.callDate },
+            {
+                header: 'Менеджер (ID)',
+                width: 14,
+                value: row => links.user(row.managerId),
+            },
+            { header: 'Длит., мин', width: 11, value: row => row.durationMin },
+            {
+                header: 'Объект CRM',
+                width: 18,
+                value: row => links.entity(row.entityType, row.entityId),
+            },
+            {
+                header: 'Карточка разбора',
+                width: 18,
+                value: row => links.smartItem(row.smartItemId),
+            },
+            // Тип показываем, но лист не фильтруется по нему: классификатор
+            // иногда ставит «другое», а хвост/5К при этом разобраны.
+            { header: 'Тип звонка', width: 16, value: row => row.callType },
+            { header: 'Оценка', width: 9, value: row => row.score },
+            {
+                header: 'Хвост пройден',
+                width: 14,
+                value: row => mark(row.hvostDone),
+            },
+            {
+                header: 'КП предложено',
+                width: 14,
+                value: row => mark(row.hvostSteps?.offer),
+            },
+            {
+                header: 'Наполнение озвучено',
+                width: 18,
+                value: row => mark(row.hvostSteps?.complect),
+            },
+            {
+                header: 'Цена озвучена',
+                width: 14,
+                value: row => mark(row.hvostSteps?.price),
+            },
+            {
+                header: 'Дата решения назначена',
+                width: 20,
+                value: row => mark(row.hvostSteps?.decisionDate),
+            },
+            {
+                header: 'Дата согласована',
+                width: 17,
+                value: row => mark(row.hvostSteps?.dateAgreed),
+            },
+            {
+                header: '5К закрыто',
+                width: 12,
+                value: row => mark(row.fiveKDone),
+            },
+            {
+                header: 'КЛИЕНТ: что хочет',
+                width: 17,
+                value: row => mark(row.fiveKItems?.clientWhat),
+            },
+            {
+                header: 'КЛИЕНТ: готов работать',
+                width: 20,
+                value: row => mark(row.fiveKItems?.clientReady),
+            },
+            {
+                header: 'КЛИЕНТ: цена подходит',
+                width: 20,
+                value: row => mark(row.fiveKItems?.clientPrice),
+            },
+            {
+                header: 'КОМПАНИЯ: кто решает',
+                width: 20,
+                value: row => mark(row.fiveKItems?.companyWho),
+            },
+            {
+                header: 'КОМПАНИЯ: как решает',
+                width: 20,
+                value: row => mark(row.fiveKItems?.companyHow),
+            },
+            {
+                header: 'Подбор верен',
+                width: 14,
+                value: row => mark(row.fiveKItems?.companyRight),
+            },
+            {
+                header: 'КОЛЛЕГИ',
+                width: 12,
+                value: row => mark(row.fiveKItems?.colleagues),
+            },
+            {
+                header: 'КОНКУРЕНТ',
+                width: 13,
+                value: row => mark(row.fiveKItems?.competitor),
+            },
+            {
+                header: 'КРИТЕРИИ выбора',
+                width: 16,
+                value: row => mark(row.fiveKItems?.criteria),
+            },
+            {
+                header: 'Шаг назначен',
+                width: 13,
+                value: row => mark(row.nextStepSet),
+            },
+            {
+                header: 'Следующий шаг',
+                width: 40,
+                value: row => row.nextStep,
+                wrap: true,
+            },
+            { header: 'Дата шага', width: 13, value: row => row.nextStepDate },
+            {
+                header: 'Хвост: разбор AI (полный)',
+                width: 60,
+                value: row => row.hvostAnalysis,
+                wrap: true,
+            },
+            {
+                header: '5К: разбор AI (полный)',
+                width: 60,
+                value: row => row.fiveKAnalysis,
+                wrap: true,
+            },
+            {
+                header: 'Сверка с отчётом менеджера',
+                width: 60,
+                value: row => row.reportComparison,
+                wrap: true,
+            },
+        ];
+    }
+
+    /** Лист «Транскрипции»: полный текст кусками (длинные звонки). */
+    private transcriptColumns(
+        links: PortalLinks,
+    ): SheetColumn<CallReportWeeklyTranscriptRow>[] {
+        return [
+            { header: 'Дата звонка', width: 18, value: row => row.callDate },
+            {
+                header: 'Менеджер (ID)',
+                width: 14,
+                value: row => links.user(row.managerId),
+            },
+            { header: 'Длит., мин', width: 11, value: row => row.durationMin },
+            {
+                header: 'Объект CRM',
+                width: 18,
+                value: row => links.entity(row.entityType, row.entityId),
+            },
+            {
+                header: 'Карточка разбора',
+                width: 18,
+                value: row => links.smartItem(row.smartItemId),
+            },
+            { header: 'Тип звонка', width: 16, value: row => row.callType },
+            {
+                header: 'ID активности',
+                width: 14,
+                value: row => row.activityId,
+            },
+            {
+                header: 'Часть',
+                width: 9,
+                value: row => `${row.part}/${row.partsTotal}`,
+            },
+            {
+                header: 'Текст расшифровки',
+                width: 120,
+                value: row => row.text,
+                wrap: true,
+            },
+        ];
+    }
+
     private sectionColumns(): SheetColumn<CallReportWeeklySectionRow>[] {
         return [
             { header: 'Дата звонка', width: 18, value: row => row.callDate },
@@ -389,11 +747,15 @@ export class CallReportExcelBuilder {
         ];
     }
 
-    /** Пустое → пустая ячейка; длинный текст режем под лимит Excel. */
-    private cellValue(
-        value: string | number | Date | null,
-    ): string | number | Date | null {
+    /**
+     * Пустое → пустая ячейка; длинный текст режем под лимит Excel;
+     * ссылки отдаём как есть (ExcelJS сам делает их кликабельными).
+     */
+    private cellValue(value: CellValue): CellValue {
         if (value === null || value === undefined) return null;
+        if (typeof value === 'object' && !(value instanceof Date)) {
+            return value;
+        }
         if (typeof value !== 'string') return value;
         if (value.length <= CELL_LIMIT) return value;
         return `${value.slice(0, CELL_LIMIT)}\n… текст обрезан под лимит ячейки Excel`;

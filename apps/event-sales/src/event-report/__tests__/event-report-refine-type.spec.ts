@@ -30,8 +30,9 @@ dayjs.extend(timezone);
  *  - стадия воронки sales_refine между «Презентация» и «Документы»,
  *    лестница не понижается;
  *  - в сводке KPI считается «Звонком» (call) с префиксом имени
- *    «Доработка: », в ленте истории — своим item'ом refine
- *    (historyItems-override);
+ *    «Доработка: » — и в сводке, и в истории (свой item `refine` в
+ *    истории показывал «тип события неопределён»: на портале он в поле
+ *    EVENT_TYPE списков не установлен; решение владельца 27.08);
  *  - рабочий статус — обычный in_work (без спец-веток);
  *  - финал отказа наследует название: «Отказ: Доработка — {причина}»;
  *  - задача плана: «🔧 Доработка  …», приоритет ОБЫЧНЫЙ (не HIGH).
@@ -187,19 +188,21 @@ describe('Доработка — KPI-записи', () => {
             },
         });
 
-    it('в сводке — call с префиксом «Доработка: », история — своим item', () => {
+    it('в сводке и в истории — call с префиксом «Доработка: »', () => {
         const report = build(reportCtx()).find(p => !p.dedup);
         expect(report!.items.event_type).toBe('call');
         expect(report!.name).toBe('Доработка: ООО Ромашка');
         // Имя дублируется в event_title через assemble.
         expect(report!.values.event_title).toBe('Доработка: ООО Ромашка');
-        // История различает доработку своим item'ом.
-        expect(report!.historyItems).toEqual({ event_type: 'refine' });
+
+        // История получает ту же запись «call» — свой item на портале
+        // не установлен и показывался пустым типом события.
+        expect(report!.historyItems).toBeUndefined();
         // Обычный рабочий статус — спец-веток у доработки нет.
         expect(report!.items.op_work_status).toBe('op_status_in_work');
     });
 
-    it('план доработки: call + префикс + history-override', () => {
+    it('план доработки: call + префикс, без history-override', () => {
         const ctx = makeCtx({
             dto: {
                 report: { resultStatus: 'result' },
@@ -214,7 +217,9 @@ describe('Доработка — KPI-записи', () => {
         const plan = build(ctx).find(p => p.items.event_action === 'plan');
         expect(plan!.items.event_type).toBe('call');
         expect(plan!.name).toBe('Доработка: Дозакрыть возражения');
-        expect(plan!.historyItems).toEqual({ event_type: 'refine' });
+        // Своего item истории больше нет: на портале он не установлен,
+        // и запись показывалась с пустым типом события.
+        expect(plan!.historyItems).toBeUndefined();
     });
 
     it('обычный звонок historyItems не получает', () => {

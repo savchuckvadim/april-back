@@ -552,9 +552,21 @@ export class CallReportWeeklyResponseDto {
 
     @ApiProperty({
         description:
-            'Кому доставлено уведомление (bitrix-id из настроек портала).',
+            'Кому доставлен отчёт (bitrix-id: из настроек портала либо ' +
+            'переданные в запросе).',
         example: [12, 25],
         type: [Number],
     })
     notifiedUserIds: number[];
+
+    @ApiProperty({
+        description:
+            'Каким способом ушёл отчёт: chat (файл в личный чат), task ' +
+            '(задача с файлом), notify (уведомление со ссылкой). ' +
+            'null — получателей не было.',
+        example: 'chat',
+        type: String,
+        nullable: true,
+    })
+    delivery: string | null;
 }

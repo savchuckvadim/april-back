@@ -65,17 +65,22 @@ const makeDataDeps = () => {
             {
                 type: 'agent-analysis',
                 transcription_id: '42',
+                report_item_id: '206',
                 user_result: ANALYSIS,
             },
             // Чужие записи конвейера в отчёт не попадают.
             { type: 'call-resume', transcription_id: '42', user_result: {} },
         ]),
     };
+    const smartResolver = {
+        resolve: jest.fn().mockResolvedValue({ entityTypeId: 1056 }),
+    };
     const service = new CallReportWeeklyDataService(
         transcriptionStore as never,
         aiService as never,
+        smartResolver as never,
     );
-    return { service, transcriptionStore, aiService };
+    return { service, transcriptionStore, aiService, smartResolver };
 };
 
 describe('CallReportWeeklyDataService', () => {
@@ -120,6 +125,75 @@ describe('CallReportWeeklyDataService', () => {
         expect(dataset.rows[0].transcript).toBe('полный транскрипт разговора');
         expect(dataset.sections).toHaveLength(0);
     });
+
+    it('длинный транскрипт (3 часа) режется на части — ничего не теряется', async () => {
+        const { service, transcriptionStore } = makeDataDeps();
+        // ~200k символов: примерно трёхчасовой разговор.
+        const huge = 'а'.repeat(200_000);
+        transcriptionStore.findDoneInPeriod.mockResolvedValue([
+            { ...CALL_ROW, text: huge },
+        ]);
+
+        const dataset = await service.collect(
+            'alfacentr.bitrix24.ru',
+            FROM,
+            TO,
+        );
+
+        expect(dataset.transcripts).toHaveLength(7);
+        expect(dataset.transcripts[0].part).toBe(1);
+        expect(dataset.transcripts[0].partsTotal).toBe(7);
+        // Склейка частей возвращает исходный текст целиком.
+        const restored = dataset.transcripts.map(part => part.text).join('');
+        expect(restored).toHaveLength(huge.length);
+        expect(dataset.transcripts[0].smartItemId).toBe(206);
+    });
+
+    it('на лист презентаций звонок попадает по НАЛИЧИЮ хвоста/5К, даже если тип «другое»', async () => {
+        const { service, aiService } = makeDataDeps();
+        aiService.findByTranscriptionIds.mockResolvedValue([
+            {
+                type: 'agent-analysis',
+                transcription_id: '42',
+                report_item_id: '206',
+                user_result: {
+                    // Классификатор ошибся с типом — разбор при этом есть.
+                    callType: 'other',
+                    hvostDone: false,
+                    hvostSteps: { offer: true, price: false },
+                    fiveKAnalysis: 'Коллеги — не выяснено',
+                },
+            },
+        ]);
+
+        const dataset = await service.collect(
+            'alfacentr.bitrix24.ru',
+            FROM,
+            TO,
+        );
+
+        expect(dataset.presentations).toHaveLength(1);
+        expect(dataset.presentations[0].callType).toBe('other');
+        expect(dataset.presentations[0].hvostSteps?.offer).toBe(true);
+    });
+
+    it('звонок без методологического разбора на лист презентаций не попадает', async () => {
+        const { service, aiService } = makeDataDeps();
+        aiService.findByTranscriptionIds.mockResolvedValue([
+            {
+                type: 'agent-analysis',
+                transcription_id: '42',
+                user_result: { callType: 'cold', summary: 'холодный звонок' },
+            },
+        ]);
+
+        const dataset = await service.collect(
+            'alfacentr.bitrix24.ru',
+            FROM,
+            TO,
+        );
+        expect(dataset.presentations).toHaveLength(0);
+    });
 });
 
 describe('CallReportExcelBuilder', () => {
@@ -127,11 +201,20 @@ describe('CallReportExcelBuilder', () => {
         domain: 'alfacentr.bitrix24.ru',
         from: FROM,
         to: TO,
+        smartEntityTypeId: 1056,
+        transcripts: [],
+        presentations: [],
         rows: [
             {
                 callDate: new Date('2026-08-26T08:25:00Z'),
                 managerId: 7,
                 durationMin: 14,
+                durationSec: 840,
+                smartItemId: 206,
+                companyId: 33,
+                contactId: 44,
+                hvostSteps: { offer: true, complect: false, price: null },
+                fiveKItems: { clientWhat: true, colleagues: false },
                 entityType: 'deal',
                 entityId: 555,
                 activityId: '101',
@@ -184,15 +267,18 @@ describe('CallReportExcelBuilder', () => {
         ],
     };
 
-    it('строит книгу: три листа, закреплённая шапка, автофильтр, ширины', async () => {
+    it('строит книгу: все листы, закреплённая шапка, автофильтр, ширины', async () => {
         const buffer = await new CallReportExcelBuilder().build(dataset);
 
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
         expect(workbook.worksheets.map(sheet => sheet.name)).toEqual([
-            'Звонки',
-            'Разделы разговора',
             'Сводка',
+            'Звонки',
+            'Звонки от 5 минут',
+            'Презентации (хвост и 5К)',
+            'Разделы разговора',
+            'Транскрипции',
         ]);
 
         const calls = workbook.getWorksheet('Звонки');
@@ -218,14 +304,77 @@ describe('CallReportExcelBuilder', () => {
         expect(value.length).toBeLessThanOrEqual(32_100);
         expect(value).toContain('текст обрезан под лимит ячейки Excel');
     });
+
+    it('связи CRM — кликабельные гиперссылки на карточки портала', async () => {
+        const buffer = await new CallReportExcelBuilder().build(dataset);
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+        const calls = workbook.getWorksheet('Звонки');
+        const headers = (calls?.getRow(1).values as string[]) ?? [];
+
+        const entityCell = calls
+            ?.getRow(2)
+            .getCell(headers.indexOf('Объект CRM')).value as {
+            text?: string;
+            hyperlink?: string;
+        };
+        expect(entityCell.hyperlink).toBe(
+            'https://alfacentr.bitrix24.ru/crm/deal/details/555/',
+        );
+        expect(entityCell.text).toBe('Сделка 555');
+
+        const smartCell = calls
+            ?.getRow(2)
+            .getCell(headers.indexOf('Карточка разбора')).value as {
+            hyperlink?: string;
+        };
+        expect(smartCell.hyperlink).toBe(
+            'https://alfacentr.bitrix24.ru/crm/type/1056/details/206/',
+        );
+
+        const companyCell = calls
+            ?.getRow(2)
+            .getCell(headers.indexOf('Компания')).value as {
+            hyperlink?: string;
+        };
+        expect(companyCell.hyperlink).toBe(
+            'https://alfacentr.bitrix24.ru/crm/company/details/33/',
+        );
+    });
+
+    it('лист «Звонки от 5 минут» отбирает только длинные разговоры', async () => {
+        const shortCall = {
+            ...dataset.rows[0],
+            durationSec: 120,
+            durationMin: 2,
+            activityId: '102',
+        };
+        const buffer = await new CallReportExcelBuilder().build({
+            ...dataset,
+            rows: [...dataset.rows, shortCall],
+        });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+
+        expect(workbook.getWorksheet('Звонки')?.rowCount).toBe(3);
+        // Короткий звонок на лист длинных не попал.
+        expect(workbook.getWorksheet('Звонки от 5 минут')?.rowCount).toBe(2);
+    });
 });
 
 describe('SendCallReportWeeklyUseCase', () => {
-    const makeDeps = (options?: { recipients?: number[]; calls?: number }) => {
+    const makeDeps = (options?: {
+        recipients?: number[];
+        calls?: number;
+        delivery?: 'chat' | 'task' | 'notify';
+    }) => {
         const dataset: CallReportWeeklyDataset = {
             domain: 'alfacentr.bitrix24.ru',
             from: FROM,
             to: TO,
+            smartEntityTypeId: 1056,
+            transcripts: [],
+            presentations: [],
             rows: Array.from(
                 { length: options?.calls ?? 1 },
                 () => ({}) as CallReportWeeklyDataset['rows'][number],
@@ -244,13 +393,17 @@ describe('SendCallReportWeeklyUseCase', () => {
             getByDomain: jest.fn().mockResolvedValue({
                 weeklyReportRecipients: options?.recipients ?? [12, 25],
                 weeklyReportFolderId: 4321,
+                weeklyReportDelivery: options?.delivery ?? null,
             }),
         };
         const data = { collect: jest.fn().mockResolvedValue(dataset) };
         const excel = {
             build: jest.fn().mockResolvedValue(Buffer.from('xlsx')),
         };
+        const recipients = options?.recipients ?? [12, 25];
         const delivery = {
+            sendToChat: jest.fn().mockResolvedValue(recipients),
+            createTask: jest.fn().mockResolvedValue(777),
             upload: jest.fn().mockResolvedValue({
                 fileId: 8891,
                 fileUrl: 'https://alfacentr.bitrix24.ru/disk/showFile/8891/',
@@ -269,7 +422,7 @@ describe('SendCallReportWeeklyUseCase', () => {
         return { useCase, delivery, excel, data };
     };
 
-    it('строит файл, кладёт в папку из настроек и уведомляет получателей', async () => {
+    it('строит файл и кладёт его в папку из настроек портала', async () => {
         const { useCase, delivery } = makeDeps();
         const result = await useCase.execute('alfacentr.bitrix24.ru');
 
@@ -283,7 +436,7 @@ describe('SendCallReportWeeklyUseCase', () => {
             expect.any(Buffer),
             4321,
         );
-        const message = (delivery.notify.mock.calls[0] as unknown[])[2];
+        const message = (delivery.sendToChat.mock.calls[0] as unknown[])[4];
         expect(String(message)).toContain('Недельный отчёт по звонкам');
     });
 
@@ -305,6 +458,105 @@ describe('SendCallReportWeeklyUseCase', () => {
         expect(delivery.upload).toHaveBeenCalled();
         expect(delivery.notify).not.toHaveBeenCalled();
         expect(result.notifiedUserIds).toEqual([]);
+    });
+
+    it('по умолчанию файл уходит СООБЩЕНИЕМ В ЧАТ каждому получателю', async () => {
+        const { useCase, delivery } = makeDeps();
+        const result = await useCase.execute('alfacentr.bitrix24.ru');
+
+        expect(delivery.sendToChat).toHaveBeenCalledWith(
+            expect.anything(),
+            [12, 25],
+            expect.stringMatching(/\.xlsx$/),
+            expect.any(Buffer),
+            expect.stringContaining('Недельный отчёт по звонкам'),
+        );
+        expect(delivery.notify).not.toHaveBeenCalled();
+        expect(result.notifiedUserIds).toEqual([12, 25]);
+    });
+
+    it('чат не сработал для части получателей — им уходит уведомление со ссылкой', async () => {
+        const { useCase, delivery } = makeDeps();
+        delivery.sendToChat.mockResolvedValue([12]);
+        delivery.notify.mockResolvedValue([25]);
+
+        const result = await useCase.execute('alfacentr.bitrix24.ru');
+
+        expect(delivery.notify).toHaveBeenCalledWith(
+            expect.anything(),
+            [25],
+            expect.any(String),
+        );
+        expect(result.notifiedUserIds).toEqual([12, 25]);
+    });
+
+    it('режим task: создаётся задача с файлом с Диска', async () => {
+        const { useCase, delivery } = makeDeps({ delivery: 'task' });
+        const result = await useCase.execute('alfacentr.bitrix24.ru');
+
+        expect(delivery.createTask).toHaveBeenCalledWith(
+            expect.anything(),
+            [12, 25],
+            expect.stringContaining('Недельный отчёт по звонкам'),
+            expect.any(String),
+            8891,
+        );
+        expect(delivery.sendToChat).not.toHaveBeenCalled();
+        expect(result.notifiedUserIds).toEqual([12, 25]);
+    });
+
+    it('режим notify: только уведомление со ссылкой', async () => {
+        const { useCase, delivery } = makeDeps({ delivery: 'notify' });
+        await useCase.execute('alfacentr.bitrix24.ru');
+
+        expect(delivery.notify).toHaveBeenCalled();
+        expect(delivery.sendToChat).not.toHaveBeenCalled();
+        expect(delivery.createTask).not.toHaveBeenCalled();
+    });
+
+    it('ручная отправка: получатели из запроса перекрывают настройки портала', async () => {
+        const { useCase, delivery } = makeDeps();
+        const result = await useCase.execute('alfacentr.bitrix24.ru', {
+            recipients: [622],
+        });
+
+        // Настройки портала (12, 25) не участвуют — файл ушёл только 622.
+        expect(delivery.sendToChat).toHaveBeenCalledWith(
+            expect.anything(),
+            [622],
+            expect.any(String),
+            expect.any(Buffer),
+            expect.any(String),
+        );
+        expect(result.delivery).toBe('chat');
+    });
+
+    it('ручная отправка: способ доставки из запроса перекрывает настройки', async () => {
+        const { useCase, delivery } = makeDeps({ delivery: 'chat' });
+        await useCase.execute('alfacentr.bitrix24.ru', {
+            recipients: [622],
+            delivery: 'notify',
+        });
+
+        expect(delivery.notify).toHaveBeenCalledWith(
+            expect.anything(),
+            [622],
+            expect.any(String),
+        );
+        expect(delivery.sendToChat).not.toHaveBeenCalled();
+    });
+
+    it('пустой список в запросе не отменяет получателей из настроек', async () => {
+        const { useCase, delivery } = makeDeps();
+        await useCase.execute('alfacentr.bitrix24.ru', { recipients: [] });
+
+        expect(delivery.sendToChat).toHaveBeenCalledWith(
+            expect.anything(),
+            [12, 25],
+            expect.any(String),
+            expect.any(Buffer),
+            expect.any(String),
+        );
     });
 });
 

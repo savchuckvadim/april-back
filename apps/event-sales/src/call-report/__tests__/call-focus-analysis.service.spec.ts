@@ -48,7 +48,13 @@ const makeDeps = (options?: {
         appSettings as never,
         reportSettings as never,
     );
-    return { service, vibeCodeClient, appSettings, reportSettings };
+    return {
+        service,
+        vibeCodeClient,
+        appSettings,
+        reportSettings,
+        knowledgeContent,
+    };
 };
 
 describe('контракт фокусов', () => {
@@ -147,5 +153,64 @@ describe('CallFocusAnalysisService', () => {
         const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
         expect(dto).not.toBeNull();
         expect(dto?.summary).toBeUndefined();
+    });
+
+    it('материалы базы знаний влияют на ВСЕ проходы: базовый слой + слой типа', async () => {
+        const { service, vibeCodeClient, knowledgeContent } = makeDeps();
+        knowledgeContent.readAll.mockImplementation(
+            (_domain: string, kind: string) =>
+                Promise.resolve(
+                    kind === 'call-analysis-base'
+                        ? [{ kind, text: 'СКРИПТ ПРОДАЖ: сначала вопросы' }]
+                        : [
+                              {
+                                  kind,
+                                  text: 'КРИТЕРИИ ПРЕЗЕНТАЦИИ: показ под задачи',
+                              },
+                          ],
+                ),
+        );
+
+        await service.run('test.bitrix24.ru', 'текст', 'presentation');
+
+        // Базовый слой читается всегда, типовой — по типу звонка.
+        expect(knowledgeContent.readAll).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            'call-analysis-base',
+        );
+        expect(knowledgeContent.readAll).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            'call-analysis-presentation',
+        );
+        // Оба слоя попали в системный контекст КАЖДОГО прохода и синтеза.
+        const systemPrompts =
+            vibeCodeClient.structuredCompletion.mock.calls.map(call =>
+                String((call as unknown[])[0]),
+            );
+        expect(systemPrompts).toHaveLength(4);
+        for (const prompt of systemPrompts) {
+            expect(prompt).toContain('СКРИПТ ПРОДАЖ: сначала вопросы');
+            expect(prompt).toContain('КРИТЕРИИ ПРЕЗЕНТАЦИИ: показ под задачи');
+        }
+    });
+
+    it('огромные методички усекаются под контекст модели', async () => {
+        const { service, vibeCodeClient, knowledgeContent } = makeDeps();
+        knowledgeContent.readAll.mockImplementation(
+            (_domain: string, kind: string) =>
+                Promise.resolve(
+                    kind === 'call-analysis-base'
+                        ? [{ kind, text: 'я'.repeat(80_000) }]
+                        : [],
+                ),
+        );
+
+        await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        const prompt = String(
+            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+        );
+        expect(prompt).toContain('материалы усечены по размеру контекста');
+        expect(prompt.length).toBeLessThan(40_000);
     });
 });

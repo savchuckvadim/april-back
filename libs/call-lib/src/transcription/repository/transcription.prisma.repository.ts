@@ -66,6 +66,13 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             where: { id: BigInt(id) },
         });
     }
+    async findByDedupKey(dedupKey: string): Promise<Transcription | null> {
+        return await this.prisma.transcription.findFirst({
+            where: { dedup_key: dedupKey },
+            orderBy: { created_at: 'desc' },
+        });
+    }
+
     async findMany(): Promise<Transcription[] | null> {
         return this.prisma.transcription.findMany();
     }

@@ -29,6 +29,17 @@ import {
 
 const FALLBACK_CALL_TYPE = 'other';
 
+/**
+ * Базовый вид документов базы знаний: скрипты продаж, регламенты,
+ * стандарты качества. Подмешивается в КАЖДЫЙ разбор независимо от типа
+ * звонка — так загруженные материалы влияют на весь анализ, а не на
+ * отдельные поля (запрос владельца 27.08.2026).
+ */
+export const BASE_KNOWLEDGE_KIND = 'call-analysis-base';
+
+/** Потолок материалов в промпте, символов (контекст модели не резиновый). */
+const MATERIALS_BUDGET_CHARS = 24000;
+
 /** Описание одного фокус-прохода. */
 interface FocusPass {
     key: CallFocusKey;
@@ -232,25 +243,77 @@ export class CallFocusAnalysisService {
                 `Реестр типов недоступен (${domain}): ${(error as Error).message}`,
             );
         }
+        // ДВА СЛОЯ МАТЕРИАЛОВ (запрос владельца 27.08.2026: «загруженные
+        // скрипты и регламенты должны фундаментально влиять на весь
+        // анализ, а не на два окна GigaChat»):
+        //   1) БАЗОВЫЙ слой (kind call-analysis-base) — скрипты продаж,
+        //      регламенты, стандарты качества: подмешивается в КАЖДЫЙ
+        //      разбор независимо от типа звонка;
+        //   2) типовой слой (call-analysis-{тип}) — критерии и эталонные
+        //      разборы конкретного этапа.
+        // Контекст общий для всех трёх фокус-проходов и синтеза, поэтому
+        // материалы влияют на все оценки и рекомендации сразу.
+        const base = await this.readMaterials(domain, BASE_KNOWLEDGE_KIND);
+        const typed =
+            kind === BASE_KNOWLEDGE_KIND
+                ? []
+                : await this.readMaterials(domain, kind);
+        if (!base.length && !typed.length) return profileBlock;
+
+        const blocks: string[] = [];
+        if (base.length) {
+            blocks.push(
+                'СТАНДАРТЫ КОМПАНИИ (скрипты, регламенты, требования к ' +
+                    'разговору) — обязательны к применению в любом разборе:\n\n' +
+                    base.join('\n\n---\n\n'),
+            );
+        }
+        if (typed.length) {
+            blocks.push(
+                'МАТЕРИАЛЫ ПО ЭТОМУ ТИПУ ЗВОНКА (критерии оценки, эталонные ' +
+                    `разборы):\n\n${typed.join('\n\n---\n\n')}`,
+            );
+        }
+        const materialsBlock = this.fitToBudget(blocks.join('\n\n===\n\n'));
+        return profileBlock
+            ? `${profileBlock}\n\n${materialsBlock}`
+            : materialsBlock;
+    }
+
+    /** Тексты документов базы знаний одного вида (пустой список — не беда). */
+    private async readMaterials(
+        domain: string,
+        kind: string,
+    ): Promise<string[]> {
         try {
             const documents = await this.knowledgeContent.readAll(domain, kind);
-            const materials = documents
+            return documents
                 .filter(doc => doc.kind === kind)
                 .map(doc => doc.text.trim())
                 .filter(Boolean);
-            if (materials.length) {
-                return (
-                    `${profileBlock}\n\n` +
-                    `МАТЕРИАЛЫ КОМПАНИИ (скрипты, критерии оценки, эталонные разборы) — ` +
-                    `опирайся на них при оценке:\n\n${materials.join('\n\n---\n\n')}`
-                );
-            }
         } catch (error) {
             this.logger.warn(
                 `База знаний ${kind} недоступна (${domain}): ${(error as Error).message}`,
             );
+            return [];
         }
-        return profileBlock;
+    }
+
+    /**
+     * Бюджет материалов в промпте: методички клиента могут быть на сотни
+     * страниц, а контекст модели не резиновый — режем с явной пометкой,
+     * чтобы транскрипт и инструкции разбора точно поместились.
+     */
+    private fitToBudget(text: string): string {
+        if (text.length <= MATERIALS_BUDGET_CHARS) return text;
+        this.logger.warn(
+            `Материалы базы знаний ${text.length} симв. — усечены до ` +
+                `${MATERIALS_BUDGET_CHARS} (контекст модели)`,
+        );
+        return (
+            `${text.slice(0, MATERIALS_BUDGET_CHARS)}\n\n` +
+            '… материалы усечены по размеру контекста'
+        );
     }
 
     private buildUserContent(

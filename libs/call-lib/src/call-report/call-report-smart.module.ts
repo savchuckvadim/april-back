@@ -6,6 +6,7 @@ import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { AiModule } from '../ai/ai.module';
 import { TranscriptionModule } from '../transcription/transcription.module';
 import { CallReportBaseItemService } from './services/call-report-base-item.service';
+import { CallReportDealFamilyService } from './services/call-report-deal-family.service';
 import { CallReportSmartResolverService } from './services/call-report-smart-resolver.service';
 import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-smart.use-case';
 
@@ -30,11 +31,13 @@ import { InstallCallReportSmartUseCase } from './use-cases/install-call-report-s
         CallReportSmartResolverService,
         InstallCallReportSmartUseCase,
         CallReportBaseItemService,
+        CallReportDealFamilyService,
     ],
     exports: [
         CallReportSmartResolverService,
         InstallCallReportSmartUseCase,
         CallReportBaseItemService,
+        CallReportDealFamilyService,
     ],
 })
 export class CallReportSmartModule {}
