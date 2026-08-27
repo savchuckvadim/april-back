@@ -124,6 +124,17 @@ export interface CallReportSmartItemInput {
         competitor?: boolean | null;
         criteria?: boolean | null;
     };
+    /**
+     * Проверка по регламенту (Фаза 3 rag-driven-analysis-plan.md):
+     * считает штуки, а не «в целом хорошо» — сколько нарушений, сколько
+     * пропущено пунктов скрипта, сколько неверных утверждений о продукте.
+     */
+    complianceDone?: boolean;
+    complianceSeverity?: string;
+    complianceViolations?: number;
+    scriptMissed?: number;
+    productFactErrors?: number;
+    complianceSummary?: string;
     productsOffered?: string;
     objections?: string;
     objectionsHandling?: string;
@@ -979,6 +990,18 @@ export class CallReportSmartWriterService {
             input.employeeRecommendations,
         );
         this.setUf(fields, 'RECOMMENDATIONS', input.recommendations);
+        // Проверка по регламенту: числа — в поля (по ним фильтруют и
+        // считают), полный разбор нарушений — в таймлайн элемента.
+        this.setBoolUf(fields, 'COMPLIANCE_DONE', input.complianceDone);
+        this.setEnumUf(fields, 'COMPLIANCE_SEVERITY', input.complianceSeverity);
+        this.setUf(fields, 'COMPLIANCE_VIOLATIONS', input.complianceViolations);
+        this.setUf(fields, 'SCRIPT_MISSED', input.scriptMissed);
+        this.setUf(fields, 'PRODUCT_FACT_ERRORS', input.productFactErrors);
+        this.setShortTextUf(
+            fields,
+            'COMPLIANCE_SUMMARY',
+            input.complianceSummary,
+        );
 
         // — Разделы анализа —
         for (const section of input.sections ?? []) {

@@ -56,6 +56,14 @@ export class GigaChatProvider implements LlmProvider {
     private readonly limiter: Semaphore;
     /** Максимум символов транскрипта для объединённого вызова. */
     private readonly combinedMaxChars: number;
+    /**
+     * Тип доступа GigaChat (env GIGACHAT_SCOPE): GIGACHAT_API_PERS —
+     * физлицо, GIGACHAT_API_B2B — юрлицо, GIGACHAT_API_CORP —
+     * корпоративный. Передаём ЯВНО и в чат, и в эмбеддинги: SDK по
+     * умолчанию подставляет PERS, поэтому смена ключа на юрлицо без этой
+     * переменной молча ломает авторизацию (боевой переход 27.08.2026).
+     */
+    private readonly scope: string | undefined;
 
     constructor(
         configService: ConfigService,
@@ -65,6 +73,7 @@ export class GigaChatProvider implements LlmProvider {
         private readonly combinedAnalysis: CombinedCallAnalysisService,
     ) {
         this.apiKey = configService.get<string>('GIGACHAT_API_KEY');
+        this.scope = configService.get<string>('GIGACHAT_SCOPE');
         this.httpsAgent = this.buildHttpsAgent(configService);
         this.limiter = new Semaphore(
             parseConcurrency(
@@ -213,8 +222,16 @@ export class GigaChatProvider implements LlmProvider {
         if (!this.llmInstance) {
             this.llmInstance = new GigaChat({
                 credentials: this.requireApiKey(),
+                scope: this.scope,
                 httpsAgent: this.httpsAgent,
             });
+            this.logger.log(
+                `GigaChat: тип доступа ${
+                    this.scope ??
+                    'GIGACHAT_API_PERS (по умолчанию — ФИЗЛИЦО; для ключа ' +
+                        'юрлица задайте GIGACHAT_SCOPE)'
+                }`,
+            );
         }
         return this.llmInstance;
     }
@@ -223,6 +240,7 @@ export class GigaChatProvider implements LlmProvider {
         if (!this.embeddingsInstance) {
             this.embeddingsInstance = new GigaChatEmbeddings({
                 credentials: this.requireApiKey(),
+                scope: this.scope,
                 httpsAgent: this.httpsAgent,
             });
         }

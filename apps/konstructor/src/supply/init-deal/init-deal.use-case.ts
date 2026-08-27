@@ -17,6 +17,9 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
+import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
+import { JobNames } from '@lib/queue/constants/job-names.enum';
+import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import {
     EnumOrkEventAction,
     EnumOrkEventType,
@@ -30,6 +33,7 @@ export class InitDealUseCase {
         private readonly copyInnerDealService: CopyInnerDealService,
         private readonly telegram: TelegramService,
         private readonly orkHistoryBxListService: OrkHistoryBxListService,
+        private readonly dispatcher: QueueDispatcherService,
     ) {}
 
     async execute(dto: InitDealDto) {
@@ -168,6 +172,19 @@ export class InitDealUseCase {
                 domain,
             );
         }
+        // Задачи ОРК живут в event-service — отдаём их туда джобой, как только
+        // поставка доехала до сервисной сделки.
+        await this.dispatcher.dispatch(
+            QueueNames.SERVICE_ORK_TASKS,
+            JobNames.SERVICE_ORK_SUPPLY_TASKS,
+            {
+                domain,
+                rpaTypeId: entityTypeId,
+                rpaId: itemId,
+                dealId: Number(newDealId),
+            },
+        );
+
         const elementCode = `ork_pere_contract_${oldDealId}_${responsibleId}`;
         const listResult =
             await this.orkHistoryBxListService.setOrkHistoryBxListItem(domain, {
@@ -356,6 +373,11 @@ export class InitDealUseCase {
         rpaTypeId: number,
         fieldBitrixId: number | string,
     ): string {
+        // Тот же контракт, что в PortalModel.getRpaFieldBitrixId: в pbx у части
+        // порталов bitrixId уже с префиксом — второй раз клеить нельзя.
+        if (String(fieldBitrixId).startsWith('UF_RPA_')) {
+            return String(fieldBitrixId);
+        }
         return `UF_RPA_${rpaTypeId}_${fieldBitrixId}`;
     }
 }

@@ -77,6 +77,9 @@ export const CALL_REPORT_CALL_TYPE_CODES = [
     'site_lead',
     'call',
     'presentation',
+    // Доработка после презентации: решение не созрело, работаем с
+    // возражениями (стадия sales_refine и событие КПИ refine).
+    'refine',
     'decision',
     'payment',
     'other',
@@ -94,6 +97,7 @@ export const CALL_REPORT_CALL_TYPE_ITEMS = [
     { CODE: 'site_lead', VALUE: 'Заявка с сайта', SORT: 150 },
     { CODE: 'call', VALUE: 'Звонок (цель — презентация)', SORT: 200 },
     { CODE: 'presentation', VALUE: 'Презентация', SORT: 300 },
+    { CODE: 'refine', VALUE: 'Доработка (после презентации)', SORT: 350 },
     { CODE: 'decision', VALUE: 'Звонок по решению', SORT: 400 },
     { CODE: 'payment', VALUE: 'Звонок по оплате', SORT: 500 },
     { CODE: 'other', VALUE: 'Другое', SORT: 600 },
@@ -196,12 +200,49 @@ export const CALL_REPORT_TYPE_PROFILES: Record<
         questionsNorm: { min: 6, max: 12 },
         knowledgeKind: 'call-analysis-presentation',
     },
+    /**
+     * ДОРАБОТКА (refine) — звонок после презентации, когда решение НЕ
+     * созрело: «подумаю», «ни да ни нет», формальное «нет», в котором
+     * менеджер слышит «попозже». Именно возражение и есть причина, по
+     * которой сделка осталась в доработке, а не ушла в звонок по решению
+     * (поэтому справочник возражений так похож на справочник отказа —
+     * возражение здесь работает как мини-отказ).
+     *
+     * Отличие от decision: там решение вызревает и обсуждается предметно,
+     * здесь — снимается неопределённость и возвращается интерес.
+     */
+    refine: {
+        focus: 'Снять неопределённость после презентации: вытащить настоящее возражение (за «подумаю» почти всегда стоит конкретная причина), вернуть ценность и договориться о звонке по решению с датой. Возражение здесь — не провал, а материал: его надо назвать вслух и отработать, иначе сделка зависает в доработке.',
+        sectionRelevance: {
+            GREETING: 40,
+            NEEDS: 70,
+            PRESENTATION: 40,
+            OBJECTIONS: 100,
+            PRICE: 60,
+            CLOSING: 90,
+            REFUSAL: 80,
+        },
+        talkRatioNorm: { min: 35, max: 55 },
+        questionsNorm: { min: 5, max: 12 },
+        knowledgeKind: 'call-analysis-refine',
+    },
+    /**
+     * ЗВОНОК ПО РЕШЕНИЮ — не «дожим», а ПЕРЕСБОРКА ЦЕННОСТИ спустя время.
+     * Продукт заново не показывают: напоминают о выявленных на презентации
+     * потребностях и болях и о том, как продукт их закрывает, — чтобы,
+     * снимая возражения, восстановить ценность. Поверх ценности продукта
+     * идут отдельные продажи: цены (что входит в пакет за эти деньги),
+     * предложения (три по цене двух, подарки, акция, год бесплатно) и
+     * продажа через недостаток конкурента.
+     */
     decision: {
-        focus: 'Дожим решения: работа с возражениями и ценой, фиксация решения/сроков.',
+        focus: 'Решение: воссоздать ценность продукта спустя время через напоминание о ЕГО задачах и болях (не повторный показ), снять возражения, продать цену и предложение (пакет/акция/подарок), при необходимости — отстроиться от конкурента. Итог — решение и сроки.',
         sectionRelevance: {
             GREETING: 30,
-            NEEDS: 40,
-            PRESENTATION: 50,
+            // Презентации нет заново, но напоминание о ценности под
+            // выявленные боли — обязательная часть звонка по решению.
+            NEEDS: 70,
+            PRESENTATION: 60,
             OBJECTIONS: 100,
             PRICE: 100,
             CLOSING: 100,
@@ -528,6 +569,23 @@ export const CALL_REPORT_LINK_STATUS_ITEMS = [
 // Полный список полей смарта
 // ---------------------------------------------------------------------------
 
+/** Серьёзность нарушений регламента (проверка по документам компании). */
+export const CALL_REPORT_COMPLIANCE_SEVERITY_CODES = [
+    'none',
+    'low',
+    'medium',
+    'high',
+] as const;
+export type CallReportComplianceSeverityCode =
+    (typeof CALL_REPORT_COMPLIANCE_SEVERITY_CODES)[number];
+
+export const CALL_REPORT_COMPLIANCE_SEVERITY_ITEMS = [
+    { CODE: 'none', VALUE: 'Нарушений нет', SORT: 100 },
+    { CODE: 'low', VALUE: 'Мелкие замечания', SORT: 200 },
+    { CODE: 'medium', VALUE: 'Нарушен порядок', SORT: 300 },
+    { CODE: 'high', VALUE: 'Риск для компании', SORT: 400 },
+] as const;
+
 export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
     // — Идентификация звонка —
     { code: 'ACTIVITY_ID', name: 'ID активности звонка', type: 'string' },
@@ -821,6 +879,42 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
     },
     { code: 'RECOMMENDATIONS', name: 'Рекомендации по сделке', type: 'string' },
 
+    // --- Проверка по регламенту (Фаза 3 rag-driven-analysis-plan.md) ---
+    // Отдельный проход сверяет разговор с документами компании: скрипт,
+    // регламент, факты о продукте. Считает не «в целом хорошо», а штуки:
+    // сколько пунктов пропущено и сколько неверных утверждений о продукте.
+    {
+        code: 'COMPLIANCE_DONE',
+        name: 'Проверка по регламенту выполнена',
+        type: 'boolean',
+    },
+    {
+        code: 'COMPLIANCE_SEVERITY',
+        name: 'Серьёзность нарушений',
+        type: 'enumeration',
+        items: CALL_REPORT_COMPLIANCE_SEVERITY_ITEMS,
+    },
+    {
+        code: 'COMPLIANCE_VIOLATIONS',
+        name: 'Нарушений регламента, шт',
+        type: 'integer',
+    },
+    {
+        code: 'SCRIPT_MISSED',
+        name: 'Пропущено пунктов скрипта, шт',
+        type: 'integer',
+    },
+    {
+        code: 'PRODUCT_FACT_ERRORS',
+        name: 'Ошибок о продукте (фактчек), шт',
+        type: 'integer',
+    },
+    {
+        code: 'COMPLIANCE_SUMMARY',
+        name: 'Проверка по регламенту (кратко)',
+        type: 'string',
+    },
+
     // — Разделы анализа (7 × актуальность/оценка/разбор/рекомендации) —
     ...buildSectionFields(),
 
@@ -930,6 +1024,18 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
             'FIVE_K_CRITERI',
             'FIVE_K_ANALYSIS',
             'FIVE_K_MANAGER',
+        ],
+    },
+    {
+        name: 'compliance',
+        title: 'Проверка по регламенту',
+        codes: [
+            'COMPLIANCE_DONE',
+            'COMPLIANCE_SEVERITY',
+            'COMPLIANCE_VIOLATIONS',
+            'SCRIPT_MISSED',
+            'PRODUCT_FACT_ERRORS',
+            'COMPLIANCE_SUMMARY',
         ],
     },
     {

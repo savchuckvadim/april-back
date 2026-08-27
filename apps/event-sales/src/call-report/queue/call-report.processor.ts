@@ -10,6 +10,7 @@ import {
     TranscriptionStoreService,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import { CallComplianceReviewService } from '../services/call-compliance-review.service';
 import { CallContextBuilderService } from '../services/call-context-builder.service';
 import { CallDeepAnalysisService } from '../services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
@@ -68,6 +69,7 @@ export class CallReportProcessor {
         private readonly focusAnalysis: CallFocusAnalysisService,
         private readonly contextBuilder: CallContextBuilderService,
         private readonly analysisIntake: AgentAnalysisIntakeService,
+        private readonly complianceReview: CallComplianceReviewService,
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly settingsService: CallReportSettingsService,
     ) {}
@@ -135,6 +137,13 @@ export class CallReportProcessor {
             // связями и транскриптом уже стоит, разбор дополняет его по
             // xmlId. Если разбор не удался — остаётся базовый элемент.
             await this.runDeepAnalysis(
+                result.transcriptionId,
+                result.callType,
+                job.data,
+            );
+            // Проверка по документам компании — ПОСЛЕ разбора: ей нужны
+            // установленные факты звонка (продукты, возражения, хвост/5К).
+            await this.runComplianceReview(
                 result.transcriptionId,
                 result.callType,
                 job.data,
@@ -227,6 +236,37 @@ export class CallReportProcessor {
             this.logger.warn(
                 `Глубокий разбор не записан (${payload.domain}, activity ` +
                     `${payload.activityId}): ${(error as Error).message}`,
+            );
+        }
+    }
+
+    /**
+     * Проверка звонка по документам компании (скрипт, регламент, факты
+     * о продукте, методология презентации) — Фаза 3 плана
+     * ai/tasks/rag-driven-analysis-plan.md.
+     *
+     * Отдельный дешёвый вызов, выключен по умолчанию. Ошибка не роняет
+     * джоб: разбор звонка уже записан.
+     */
+    private async runComplianceReview(
+        transcriptionId: string,
+        callType: string | null,
+        payload: CallReportJobPayload,
+    ): Promise<void> {
+        try {
+            const settings = await this.settingsService.resolve(payload.domain);
+            if (!settings.complianceReviewEnabled) return;
+            const row =
+                await this.transcriptionStore.findPipelineById(transcriptionId);
+            await this.complianceReview.run(
+                row,
+                callType,
+                settings.deepAnalysisModel ?? undefined,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Проверка по регламенту не выполнена (${payload.domain}, ` +
+                    `activity ${payload.activityId}): ${(error as Error).message}`,
             );
         }
     }

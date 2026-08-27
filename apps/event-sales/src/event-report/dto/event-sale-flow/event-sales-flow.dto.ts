@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+    IsArray,
     IsBoolean,
     IsIn,
     IsNumber,
@@ -21,6 +22,7 @@ import { IBXDeal } from 'src/modules/bitrix';
 import { PlanDto } from './plan.dto';
 import { ReportDto } from './report.dto';
 import { EventTaskDto } from './task.dto';
+import { OpenEventTaskDto } from './open-task.dto';
 import { PlacementDto } from './placement.dto';
 import { EvFlowContextDto } from './flow-context.dto';
 import { ContactDto } from './contact.dto';
@@ -234,6 +236,22 @@ export class EventSalesFlowDto {
     @ValidateNested()
     @Type(() => EventTaskDto)
     currentTask?: EventTaskDto;
+
+    @ApiPropertyOptional({
+        description:
+            'ВСЕ открытые дела клиента (включая ту задачу, по которой идёт ' +
+            'отчёт — бэк исключит её сам). По ним считаются «дата следующего ' +
+            'события» и «дата назначенной презентации»: у клиента может быть ' +
+            'несколько открытых дел, и ближайшим окажется не обязательно то, ' +
+            'которое планирует этот отчёт. Поле НЕ прислано — прежнее ' +
+            'поведение (даты пишутся планом вслепую).',
+        type: [OpenEventTaskDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => OpenEventTaskDto)
+    openTasks?: OpenEventTaskDto[];
 
     @ApiPropertyOptional({
         description:

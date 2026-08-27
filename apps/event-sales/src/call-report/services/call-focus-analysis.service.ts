@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { KnowledgeContentService } from '@lib/ai-rag';
-import { CallTypeDefinition, CallTypeRegistryService } from '@lib/call-lib';
+import {
+    CallTypeDefinition,
+    CallTypeRegistryService,
+    KnowledgeMaterialRequest,
+    KnowledgeMaterialsService,
+    renderMaterialBlock,
+} from '@lib/call-lib';
+import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import {
     EnumPortalAppCode,
     PortalAppSettingsService,
@@ -10,6 +16,8 @@ import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
+    DECISION_CALL_BLOCK,
+    REFINE_CALL_BLOCK,
     renderCallTypeProfile,
     renderPresentationStrictnessBlock,
 } from '../contracts/call-deep-analysis.contract';
@@ -39,6 +47,18 @@ export const BASE_KNOWLEDGE_KIND = 'call-analysis-base';
 
 /** Потолок материалов в промпте, символов (контекст модели не резиновый). */
 const MATERIALS_BUDGET_CHARS = 24000;
+
+/** Материалы разбора: общий слой и добавки конкретных проходов. */
+interface FocusMaterials {
+    /** Идёт во все проходы и в синтез. */
+    shared: string;
+    /** Плейбук возражений — фокус «содержание продажи». */
+    content: string;
+    /** Регламент отдела — фокус «движение сделки». */
+    movement: string;
+    /** Эталонные разборы — синтез (калибровка оценок). */
+    synthesis: string;
+}
 
 /** Описание одного фокус-прохода. */
 interface FocusPass {
@@ -93,11 +113,23 @@ export class CallFocusAnalysisService {
     constructor(
         private readonly vibeCodeClient: VibeCodeClient,
         private readonly vibeKeyResolver: VibeKeyResolverService,
-        private readonly knowledgeContent: KnowledgeContentService,
+        private readonly materials: KnowledgeMaterialsService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
         private readonly reportSettings: CallReportSettingsService,
     ) {}
+
+    /**
+     * Блок этапа воронки: доработка и звонок по решению разбираются
+     * иначе, чем презентация (доменные правила от владельца 27.08.2026).
+     * Доработка — вытащить настоящее возражение из-под «подумаю»;
+     * решение — воссоздать ценность и продать цену/предложение.
+     */
+    private buildStageBlock(callType: string | null): string {
+        if (callType === 'refine') return REFINE_CALL_BLOCK;
+        if (callType === 'decision') return DECISION_CALL_BLOCK;
+        return '';
+    }
 
     /** Поправка строгости презентации (настройка портала) — fail-open. */
     private async buildStrictnessBlock(domain: string): Promise<string> {
@@ -154,8 +186,11 @@ export class CallFocusAnalysisService {
         }
         try {
             const apiKey = await this.vibeKeyResolver.resolve(domain);
-            const context =
-                (await this.buildSharedContext(domain, callType)) +
+            const materials = await this.buildMaterials(domain, callType);
+            // Общие поправки разбора (строгость презентации, требование
+            // закрытия хвоста/5К) идут в КАЖДЫЙ проход вместе с материалами.
+            const commonTail =
+                this.buildStageBlock(callType) +
                 (await this.buildAfterPresentationBlock(domain, callType)) +
                 (await this.buildStrictnessBlock(domain));
             const userContent = this.buildUserContent(
@@ -168,7 +203,7 @@ export class CallFocusAnalysisService {
                 FOCUS_PASSES.map(pass =>
                     this.runFocus(
                         pass,
-                        context,
+                        this.contextFor(materials, pass.key) + commonTail,
                         userContent,
                         apiKey,
                         domain,
@@ -188,9 +223,14 @@ export class CallFocusAnalysisService {
                 return null;
             }
 
+            // Синтез выставляет итоговую оценку — ему дополнительно идут
+            // эталонные разборы РОПа, чтобы шкала не «плавала».
+            const synthesisContext = materials.synthesis
+                ? `${materials.shared}\n\n${materials.synthesis}${commonTail}`
+                : materials.shared + commonTail;
             const synthesis = await this.runSynthesis(
                 byKey,
-                context,
+                synthesisContext,
                 userContent,
                 apiKey,
                 domain,
@@ -223,80 +263,124 @@ export class CallFocusAnalysisService {
         }
     }
 
-    /** Профиль типа + методички — общие для всех проходов (один резолв). */
-    private async buildSharedContext(
+    /**
+     * Материалы базы знаний по ролям + профиль типа звонка.
+     *
+     * Каждый вид получает СВОЙ бюджет и СВОЮ точку подмешивания
+     * (Фаза 2 плана ai/tasks/rag-driven-analysis-plan.md):
+     * - общий слой (все проходы и синтез): профиль типа, скрипт разговора,
+     *   устаревший `call-analysis-base` как алиас скрипта, материалы типа
+     *   звонка и общие материалы компании;
+     * - «содержание продажи» дополнительно получает плейбук возражений;
+     * - «движение сделки» — регламент отдела;
+     * - синтез — эталонные разборы РОПа (калибровка шкалы оценок).
+     *
+     * ПРЕЗЕНТАЦИИ — отдельный усиленный контур (требование владельца
+     * 27.08.2026): методология показа, хвоста и 5К подмешивается во ВСЕ
+     * проходы и с большим бюджетом, потому что презентация — самый
+     * дорогой звонок воронки.
+     */
+    private async buildMaterials(
         domain: string,
         callType: string | null,
-    ): Promise<string> {
+    ): Promise<FocusMaterials> {
         let profileBlock = '';
-        let kind = `call-analysis-${callType ?? FALLBACK_CALL_TYPE}`;
+        let typedKind = `call-analysis-${callType ?? FALLBACK_CALL_TYPE}`;
         try {
             const registry = await this.callTypeRegistry.resolve(domain);
             const profile: CallTypeDefinition | null =
                 registry.types[callType ?? FALLBACK_CALL_TYPE] ?? null;
             if (profile) {
                 profileBlock = renderCallTypeProfile(profile);
-                kind = profile.knowledgeKind ?? kind;
+                typedKind = profile.knowledgeKind ?? typedKind;
             }
         } catch (error) {
             this.logger.warn(
                 `Реестр типов недоступен (${domain}): ${(error as Error).message}`,
             );
         }
-        // ДВА СЛОЯ МАТЕРИАЛОВ (запрос владельца 27.08.2026: «загруженные
-        // скрипты и регламенты должны фундаментально влиять на весь
-        // анализ, а не на два окна GigaChat»):
-        //   1) БАЗОВЫЙ слой (kind call-analysis-base) — скрипты продаж,
-        //      регламенты, стандарты качества: подмешивается в КАЖДЫЙ
-        //      разбор независимо от типа звонка;
-        //   2) типовой слой (call-analysis-{тип}) — критерии и эталонные
-        //      разборы конкретного этапа.
-        // Контекст общий для всех трёх фокус-проходов и синтеза, поэтому
-        // материалы влияют на все оценки и рекомендации сразу.
-        const base = await this.readMaterials(domain, BASE_KNOWLEDGE_KIND);
-        const typed =
-            kind === BASE_KNOWLEDGE_KIND
-                ? []
-                : await this.readMaterials(domain, kind);
-        if (!base.length && !typed.length) return profileBlock;
 
-        const blocks: string[] = [];
-        if (base.length) {
-            blocks.push(
-                'СТАНДАРТЫ КОМПАНИИ (скрипты, регламенты, требования к ' +
-                    'разговору) — обязательны к применению в любом разборе:\n\n' +
-                    base.join('\n\n---\n\n'),
-            );
+        // Презентационный контур: показ, дожим решения И ДОРАБОТКА —
+        // в доработке добивают то, что не закрыли на презентации
+        // (невыясненные 5К, несогласованная дата).
+        const isPresentation =
+            callType === 'presentation' ||
+            callType === 'decision' ||
+            callType === 'refine';
+        const requests: KnowledgeMaterialRequest[] = [
+            { kind: KNOWLEDGE_KINDS.salesScript, budgetChars: 6000 },
+            { kind: KNOWLEDGE_KINDS.callAnalysisBase, budgetChars: 4000 },
+            { kind: KNOWLEDGE_KINDS.general, budgetChars: 2000 },
+            {
+                kind: KNOWLEDGE_KINDS.presentationPlaybook,
+                budgetChars: isPresentation ? 6000 : 1500,
+            },
+            { kind: KNOWLEDGE_KINDS.objectionPlaybook, budgetChars: 3000 },
+            { kind: KNOWLEDGE_KINDS.salesRegulation, budgetChars: 3000 },
+            { kind: KNOWLEDGE_KINDS.callEtalon, budgetChars: 3000 },
+        ];
+        if (typedKind !== KNOWLEDGE_KINDS.callAnalysisBase) {
+            requests.push({ kind: typedKind, budgetChars: 6000 });
         }
-        if (typed.length) {
-            blocks.push(
-                'МАТЕРИАЛЫ ПО ЭТОМУ ТИПУ ЗВОНКА (критерии оценки, эталонные ' +
-                    `разборы):\n\n${typed.join('\n\n---\n\n')}`,
-            );
-        }
-        const materialsBlock = this.fitToBudget(blocks.join('\n\n===\n\n'));
-        return profileBlock
-            ? `${profileBlock}\n\n${materialsBlock}`
-            : materialsBlock;
+        const blocks = await this.materials.collect(domain, requests);
+        const byKind = new Map(blocks.map(block => [block.kind, block]));
+
+        const shared = [
+            profileBlock,
+            renderMaterialBlock(
+                'СТАНДАРТЫ КОМПАНИИ (скрипт разговора) — обязательны к ' +
+                    'применению в любом разборе:',
+                byKind.get(KNOWLEDGE_KINDS.salesScript),
+            ),
+            renderMaterialBlock(
+                'СТАНДАРТЫ КОМПАНИИ (базовый слой):',
+                byKind.get(KNOWLEDGE_KINDS.callAnalysisBase),
+            ),
+            renderMaterialBlock(
+                'ОБЩИЕ МАТЕРИАЛЫ КОМПАНИИ:',
+                byKind.get(KNOWLEDGE_KINDS.general),
+            ),
+            renderMaterialBlock(
+                'МАТЕРИАЛЫ ПО ЭТОМУ ТИПУ ЗВОНКА (критерии оценки):',
+                byKind.get(typedKind),
+            ),
+            isPresentation
+                ? renderMaterialBlock(
+                      'МЕТОДОЛОГИЯ ПРЕЗЕНТАЦИИ (показ под задачи, хвост, 5К) — ' +
+                          'по ней судим этот звонок:',
+                      byKind.get(KNOWLEDGE_KINDS.presentationPlaybook),
+                  )
+                : '',
+        ]
+            .filter(Boolean)
+            .join('\n\n');
+
+        return {
+            shared: this.fitToBudget(shared),
+            content: renderMaterialBlock(
+                'ПЛЕЙБУК ОТРАБОТКИ ВОЗРАЖЕНИЙ:',
+                byKind.get(KNOWLEDGE_KINDS.objectionPlaybook),
+            ),
+            movement: renderMaterialBlock(
+                'РЕГЛАМЕНТ ОТДЕЛА (обещания, сроки, что запрещено):',
+                byKind.get(KNOWLEDGE_KINDS.salesRegulation),
+            ),
+            synthesis: renderMaterialBlock(
+                'ЭТАЛОННЫЕ РАЗБОРЫ (калибровка шкалы оценок):',
+                byKind.get(KNOWLEDGE_KINDS.callEtalon),
+            ),
+        };
     }
 
-    /** Тексты документов базы знаний одного вида (пустой список — не беда). */
-    private async readMaterials(
-        domain: string,
-        kind: string,
-    ): Promise<string[]> {
-        try {
-            const documents = await this.knowledgeContent.readAll(domain, kind);
-            return documents
-                .filter(doc => doc.kind === kind)
-                .map(doc => doc.text.trim())
-                .filter(Boolean);
-        } catch (error) {
-            this.logger.warn(
-                `База знаний ${kind} недоступна (${domain}): ${(error as Error).message}`,
-            );
-            return [];
-        }
+    /** Контекст конкретного прохода: общий слой + слой этого фокуса. */
+    private contextFor(materials: FocusMaterials, key: CallFocusKey): string {
+        const extra =
+            key === 'content'
+                ? materials.content
+                : key === 'movement'
+                  ? materials.movement
+                  : '';
+        return extra ? `${materials.shared}\n\n${extra}` : materials.shared;
     }
 
     /**

@@ -18,10 +18,13 @@ import {
     EventReportContext,
 } from '../services/context/event-report.context';
 import { EventReportEntityFlowService } from '../services/entity/event-report-entity-flow.service';
+import {
+    DEFAULT_FIELD_POLICY_SETTINGS,
+    EventFieldPolicySettings,
+} from '../services/entity/field-policy';
 import { EventReportDealFlowService } from '../services/deal/event-report-deal-flow.service';
 import { EventReportTaskFlowService } from '../services/task/event-report-task-flow.service';
 import { EventReportKpiFlowService } from '../services/kpi-list/event-report-kpi-flow.service';
-import { EventReportPresentationListService } from '../services/kpi-list/event-report-presentation-list.service';
 import { EventReportPostFailService } from '../services/post-fail/event-report-post-fail.service';
 import { EventReportLeadRelationService } from '../services/lead/event-report-lead-relation.service';
 import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
@@ -80,6 +83,11 @@ export class EventReportUseCase {
 
         const init = await this.initService.loadContext(dto, bitrix, portal);
         const ctx = new EventReportContext(dto, portal, init);
+        // Классы поведения полей карточки — одним чтением настроек на отчёт:
+        // модель полей собирается шесть раз (компания, лид, 4 роли сделок).
+        ctx.setFieldPolicySettings(
+            await this.resolveFieldPolicySettings(dto.domain),
+        );
 
         const entityFlow = new EventReportEntityFlowService(bitrix, portal);
         const dealFlow = new EventReportDealFlowService(bitrix, portal);
@@ -89,10 +97,6 @@ export class EventReportUseCase {
             await this.isTaskChecklistEnabled(dto.domain),
         );
         const kpiFlow = new EventReportKpiFlowService(bitrix, portal);
-        const presentationList = new EventReportPresentationListService(
-            bitrix,
-            portal,
-        );
         const postFail = new EventReportPostFailService(bitrix, portal);
         const leadRelation = new EventReportLeadRelationService(bitrix, portal);
         const returnToTmc = new EventReportReturnToTmcService(bitrix, portal);
@@ -115,7 +119,13 @@ export class EventReportUseCase {
         // await: дедуп финалов/уникальных читает существующие элементы
         // прямыми вызовами (batch-аккумулятор не трогается — см. flowDedup).
         await kpiFlow.queue(ctx, deals, buffer);
-        presentationList.queue(ctx, deals);
+        /*
+         * Список «ОП Презентации» НЕ пишем: его ведёт легаси-хук
+         * (Laravel), и там он работает — решение владельца 27.08.
+         * Две записи об одной презентации из двух систем были бы
+         * хуже отсутствия одной. Новый контур ведёт СМАРТ
+         * «Презентации» (presentation-flow), он и заменит список.
+         */
         postFail.queue(ctx);
         leadRelation.queue(ctx);
         if (ctx.strategy !== EEventReportFlowStrategy.LEAD_ONLY) {
@@ -376,6 +386,36 @@ export class EventReportUseCase {
                     `(${(error as Error).message})`,
             );
             return false;
+        }
+    }
+
+    /**
+     * Настройки классов поведения полей карточки.
+     *
+     * Настройки недоступны — работаем на дефолтах СХЕМЫ, а не выключаем
+     * расчёт: в отличие от чек-листов (там включение меняет вид задач у
+     * всех менеджеров, и «по умолчанию выключено» — осознанная страховка)
+     * здесь дефолт схемы и есть штатное поведение, а упавший Redis не
+     * повод возвращать заведомо врущие даты в карточку.
+     */
+    private async resolveFieldPolicySettings(
+        domain: string,
+    ): Promise<EventFieldPolicySettings> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return {
+                calculatedNextEvent: Boolean(settings.withCalculatedNextEvent),
+                resetOnFinal: Boolean(settings.withFinalFieldsReset),
+            };
+        } catch (error) {
+            this.logger.warn(
+                `настройки ${domain} недоступны — политики полей на дефолтах ` +
+                    `схемы (${(error as Error).message})`,
+            );
+            return DEFAULT_FIELD_POLICY_SETTINGS;
         }
     }
 

@@ -7,6 +7,7 @@ import { KonstructorInitModule } from './init/konstructor-init.module';
 import { PBXModule } from '@lib/pbx';
 import { InitSupplyModule } from './supply/init-supply/init-supply.module';
 import { SupplyInitDealModule } from './supply/init-deal/supply-init-deal.module';
+import { SupplyInitTaskAccountantModule } from './supply/init-task-accountant/supply-init-task-accountant.module';
 import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
         PBXModule,
         InitSupplyModule,
         SupplyInitDealModule,
+        SupplyInitTaskAccountantModule,
         InnerDealModule,
     ],
 
@@ -27,6 +29,7 @@ import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
         OfferModule,
         KonstructorInitModule,
         SupplyInitDealModule,
+        SupplyInitTaskAccountantModule,
     ],
 })
 export class KonstructorModule {}

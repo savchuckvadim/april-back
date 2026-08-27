@@ -47,6 +47,8 @@ describe('CallTypeRegistryService', () => {
             'site_lead',
             'call',
             'presentation',
+            // Доработка после презентации: решение не созрело.
+            'refine',
             'decision',
             'payment',
             'other',
@@ -123,7 +125,7 @@ describe('CallTypeRegistryService', () => {
         const { service } = makeService({ readError: true });
         const registry = await service.resolve(DOMAIN);
         expect(registry.source).toBe('builtin');
-        expect(registry.codes).toHaveLength(8);
+        expect(registry.codes).toHaveLength(9);
     });
 
     it('кэш: одно чтение на серию вызовов; invalidate сбрасывает', async () => {

@@ -40,6 +40,13 @@ export enum QueueNames {
     SERVICE_DEALS_ORDER = 'service-deals-order',
     SERVICE_GENERATE_ACTS = 'service-generate-acts',
     SERVICE_CALL_EVENT = 'service-call-event',
+    /**
+     * Задачи ОРК по поставке: konstructor доводит поставку до сервисной
+     * сделки и ставит джобу, воркер — в event-service. Отдельная очередь,
+     * а не SERVICE_DEALS: у той потребитель в konstructor, и джобы делились
+     * бы между двумя воркерами.
+     */
+    SERVICE_ORK_TASKS = 'service-ork-tasks',
 
     /** Offer Word: PDF в Redis, файлы на диске не храним */
     OFFER_WORD_EPHEMERAL_PDF = 'offer-word-ephemeral-pdf',

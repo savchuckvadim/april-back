@@ -2,7 +2,10 @@ import { EUserFieldType } from '@/modules/bitrix';
 import { PbxSalesEventFieldType } from '../type/sales/event/pbx-sales-event-field.type';
 import { PbxSalesKonstructorFieldType } from '../type/sales/konstructor/pbx-sales-konstructor-field.type';
 
-type PortalFieldType = PbxSalesEventFieldType | PbxSalesKonstructorFieldType;
+type PortalFieldType =
+    | PbxSalesEventFieldType
+    | PbxSalesKonstructorFieldType
+    | 'file';
 export const mapFieldTypeToBitrixType = (
     type: PortalFieldType,
 ): EUserFieldType => {
@@ -18,6 +21,8 @@ export const mapFieldTypeToBitrixType = (
         crm: EUserFieldType.CRM,
         multiple: EUserFieldType.STRING,
         money: EUserFieldType.MONEY,
+        // Поле-файл: Bitrix хранит id файла на Диске (userTypeId=file).
+        file: EUserFieldType.FILE,
     };
     return typeMap[type] ?? EUserFieldType.STRING;
 };

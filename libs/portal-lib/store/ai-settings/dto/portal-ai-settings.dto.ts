@@ -52,6 +52,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.weeklyReportRecipients = source.weeklyReportRecipients ?? null;
         this.weeklyReportFolderId = source.weeklyReportFolderId ?? null;
         this.weeklyReportDelivery = source.weeklyReportDelivery ?? null;
+        this.complianceReviewEnabled = source.complianceReviewEnabled ?? null;
     }
 
     @ApiProperty({
@@ -320,6 +321,18 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     weeklyReportDelivery: WeeklyReportDeliveryMode | null;
+
+    @ApiProperty({
+        description:
+            'Проверка звонка по документам компании после разбора: скрипт, ' +
+            'регламент, фактчек продукта, методология презентации. ' +
+            'Требует загруженных материалов и одного дополнительного ' +
+            'дешёвого вызова модели на звонок.',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    complianceReviewEnabled: boolean | null;
 }
 
 /**
@@ -616,4 +629,16 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsString()
     @IsIn(WEEKLY_REPORT_DELIVERY_MODES as unknown as string[])
     weeklyReportDelivery?: WeeklyReportDeliveryMode | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Проверка звонка по документам компании (скрипт, регламент, ' +
+            'фактчек продукта, методология презентации).',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    complianceReviewEnabled?: boolean | null;
 }

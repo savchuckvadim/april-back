@@ -59,11 +59,14 @@ const makeDeps = () => {
     const focusAnalysis = {
         run: jest.fn().mockResolvedValue({ callType: 'cold', score: 8 }),
     };
+    // Проверка по документам компании: по умолчанию выключена настройкой.
+    const complianceReview = { run: jest.fn().mockResolvedValue(null) };
     // Настройки портала: глубокий разбор включён, модель не переопределена.
     const settingsService = {
         resolve: jest.fn().mockResolvedValue({
             deepAnalysisEnabled: true,
             deepAnalysisModel: null,
+            complianceReviewEnabled: false,
         }),
     };
     const processor = new CallReportProcessor(
@@ -74,6 +77,7 @@ const makeDeps = () => {
         focusAnalysis as never,
         contextBuilder as never,
         analysisIntake as never,
+        complianceReview as never,
         transcriptionStore as never,
         settingsService as never,
     );

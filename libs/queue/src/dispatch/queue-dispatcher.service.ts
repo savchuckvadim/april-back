@@ -36,6 +36,8 @@ export class QueueDispatcherService {
         private readonly serviceGenerateActsQueue: Queue,
         @InjectQueue(QueueNames.SERVICE_CALL_EVENT)
         private readonly serviceCallEventQueue: Queue,
+        @InjectQueue(QueueNames.SERVICE_ORK_TASKS)
+        private readonly serviceOrkTasksQueue: Queue,
 
         // event-sales-app
         @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL)
@@ -116,6 +118,8 @@ export class QueueDispatcherService {
                 return this.serviceGenerateActsQueue;
             case QueueNames.SERVICE_CALL_EVENT:
                 return this.serviceCallEventQueue;
+            case QueueNames.SERVICE_ORK_TASKS:
+                return this.serviceOrkTasksQueue;
             case QueueNames.ORK_KPI_REPORT:
                 return this.orkKpiReportQueue;
             case QueueNames.OFFER_WORD_EPHEMERAL_PDF:

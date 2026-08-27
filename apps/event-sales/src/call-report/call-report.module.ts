@@ -10,6 +10,7 @@ import {
     CallReportAnalyticsModule,
     CallReportSmartModule,
     CallTypeRegistryModule,
+    KnowledgeMaterialsModule,
 } from '@lib/call-lib';
 import { CallReportWeeklyModule } from '@lib/call-lib/call-report/weekly-report/call-report-weekly.module';
 import { AiRagModule } from '@lib/ai-rag';
@@ -25,6 +26,7 @@ import { CallDeepAnalysisService } from './services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from './services/call-focus-analysis.service';
 import { CallReportSettingsService } from './services/call-report-settings.service';
 import { CallRevisionService } from './services/call-revision.service';
+import { CallComplianceReviewService } from './services/call-compliance-review.service';
 import { PresentationAuditService } from './services/presentation-audit.service';
 import { PresentationPlanFactService } from './services/presentation-plan-fact.service';
 import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
@@ -66,6 +68,9 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallReportAnalyticsModule,
         // Реестр типов звонков (встроенные + общие/клиентские из базы знаний)
         CallTypeRegistryModule,
+        // Материалы базы знаний по ролям (скрипт, регламент, факты,
+        // плейбуки, эталоны) — Фаза 2 rag-driven-analysis-plan.md
+        KnowledgeMaterialsModule,
         // Фильтр сканера «только менеджеры отдела продаж»
         BxDepartmentModule,
         // Настройки AI на портал: пороги, модели и расписание берутся из БД,
@@ -89,6 +94,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallFocusAnalysisService,
         CallReportSettingsService,
         CallRevisionService,
+        // Проверка по документам компании (Фаза 3 rag-driven-analysis-plan)
+        CallComplianceReviewService,
         CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
         CallReportScanUseCase,

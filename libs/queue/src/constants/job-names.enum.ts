@@ -57,6 +57,8 @@ export enum JobNames {
     SERVICE_DEALS_ORDER = 'service-deals-order',
     SERVICE_GENERATE_ACTS = 'service-generate-acts',
     SERVICE_CALL_EVENT = 'service-call-event',
+    /** Первичное обучение + Поставка менеджеру ОРК (воркер в event-service) */
+    SERVICE_ORK_SUPPLY_TASKS = 'service-ork-supply-tasks',
 
     OFFER_WORD_EPHEMERAL_PDF_GENERATE = 'offer-word-ephemeral-pdf-generate',
 

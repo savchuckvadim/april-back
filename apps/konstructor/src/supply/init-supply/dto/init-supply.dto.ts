@@ -40,6 +40,37 @@ export class ContactIdDto {
     ID: string;
 }
 
+/**
+ * Момент, который оформляет заявка:
+ * - `supply` — переход из отдела продаж в отдел сервиса (Поставка);
+ * - `renewal` — сервис → сервис (Перезаключение).
+ *
+ * Отличаются названием заявки, флагом продления и подписями в таймлайнах;
+ * остальная сборка полей общая. По умолчанию `renewal` — так ручку звал
+ * сервисный отдел до появления флага.
+ */
+export enum InitSupplyFlow {
+    SUPPLY = 'supply',
+    RENEWAL = 'renewal',
+}
+
+/** Файл, приложенный менеджером в конструкторе (легаси слал его multipart-ом). */
+export class InitSupplyFileDto {
+    @ApiProperty({
+        description: 'Код поля формы: current_contract | current_invoice',
+    })
+    @IsString()
+    code: string;
+
+    @ApiProperty({ description: 'Имя файла вместе с расширением' })
+    @IsString()
+    filename: string;
+
+    @ApiProperty({ description: 'Содержимое файла в base64, без data:-префикса' })
+    @IsString()
+    base64: string;
+}
+
 export class InitSupplyDto {
     @ApiProperty({ description: 'Domain of the supply' })
     @IsString({ message: 'domain must be a string' })
@@ -178,4 +209,27 @@ export class InitSupplyDto {
     })
     @Type(() => ProductRowDto)
     total: ProductRowDto[];
+
+    @ApiProperty({
+        description: 'Поставка или перезаключение',
+        enum: InitSupplyFlow,
+        required: false,
+        default: InitSupplyFlow.RENEWAL,
+    })
+    @IsOptional()
+    @IsEnum(InitSupplyFlow)
+    flow?: InitSupplyFlow;
+
+    @ApiProperty({
+        description:
+            'Файлы, приложенные менеджером в конструкторе (договор/счёт). ' +
+            'Уходят и в поле RPA, и в поле сделки.',
+        type: [InitSupplyFileDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => InitSupplyFileDto)
+    files?: InitSupplyFileDto[];
 }

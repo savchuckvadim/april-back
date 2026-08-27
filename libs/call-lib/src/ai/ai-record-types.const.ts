@@ -11,3 +11,9 @@ export const CALL_CLASSIFY_TYPE = 'call-classify';
 export const CALL_RESUME_TYPE = 'call-resume';
 export const CALL_RECOMENDATION_TYPE = 'call-recomendation';
 export const AGENT_ANALYSIS_TYPE = 'agent-analysis';
+/**
+ * Проверка звонка по документам компании (Фаза 3 плана
+ * ai/tasks/rag-driven-analysis-plan.md). Запись служит и результатом,
+ * и маркером идемпотентности: есть запись — проверка уже выполнена.
+ */
+export const CALL_COMPLIANCE_REVIEW_TYPE = 'call-compliance-review';

@@ -29,6 +29,8 @@ export const FIELD_TYPE_VALUES = [
     'money',
     'crm',
     'employee',
+    // Поля-файлы (договор, скан) — приходят из Excel-шаблонов установки.
+    'file',
 ] as const satisfies readonly FieldType[];
 
 export class ListItemDto implements ListItem {

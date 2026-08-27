@@ -7,7 +7,17 @@
 import { PbxSalesEventFieldType } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import { PbxSalesKonstructorFieldType } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 
-export type FieldType = PbxSalesEventFieldType | PbxSalesKonstructorFieldType;
+/**
+ * Тип устанавливаемого поля. Помимо типов из реестров портала
+ * поддерживается 'file': поля-файлы (договор, скан) приходят из
+ * Excel-шаблонов установки и в реестрах не описаны, но Bitrix такой
+ * пользовательский тип принимает (боевой кейс 27.08.2026 — установка
+ * полей сделки падала с 400 на «Текущий договор»).
+ */
+export type FieldType =
+    | PbxSalesEventFieldType
+    | PbxSalesKonstructorFieldType
+    | 'file';
 
 export interface ListItem {
     VALUE: string;

@@ -102,6 +102,12 @@ export interface PortalAiSettingsRecord {
      * файлом; notify — уведомлением со ссылкой на Диск.
      */
     weeklyReportDelivery: WeeklyReportDeliveryMode | null;
+    /**
+     * ПРОВЕРКА ПО ДОКУМЕНТАМ КОМПАНИИ после разбора (Фаза 3 плана
+     * rag-driven-analysis-plan.md): скрипт, регламент, фактчек продукта,
+     * методология презентации. NULL — выключена (лишний вызов модели).
+     */
+    complianceReviewEnabled: boolean | null;
 }
 
 /** Способы доставки недельного отчёта (runtime-константа для DTO). */
@@ -154,6 +160,7 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     weeklyReportRecipients: null,
     weeklyReportFolderId: null,
     weeklyReportDelivery: null,
+    complianceReviewEnabled: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

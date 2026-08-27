@@ -31,6 +31,11 @@ const DEFAULTS = {
     presentationAuditEnabled: false,
     /** Строгость определения презентации: по умолчанию строго. */
     presentationStrictness: 'strict' as PresentationStrictnessLevel,
+    /**
+     * Проверка по документам компании: лишний вызов модели на звонок и
+     * бессмысленна без загруженных материалов — включается сознательно.
+     */
+    complianceReviewEnabled: false,
 } as const;
 
 /**
@@ -70,6 +75,8 @@ export interface EffectiveCallReportSettings {
      * strict / normal / soft — см. PRESENTATION_STRICTNESS_LEVELS.
      */
     presentationStrictness: PresentationStrictnessLevel;
+    /** Проверка звонка по документам компании (скрипт, регламент, факты). */
+    complianceReviewEnabled: boolean;
     /** Откуда взялись значения — для диагностики в логах. */
     source: 'portal' | 'default';
 }
@@ -138,6 +145,9 @@ export class CallReportSettingsService {
             presentationStrictness:
                 portal?.presentationStrictness ??
                 DEFAULTS.presentationStrictness,
+            complianceReviewEnabled:
+                portal?.complianceReviewEnabled ??
+                DEFAULTS.complianceReviewEnabled,
             source: portal ? 'portal' : 'default',
         };
     }

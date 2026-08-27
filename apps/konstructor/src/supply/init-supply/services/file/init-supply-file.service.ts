@@ -42,7 +42,42 @@ export class InitSupplyFileService {
         return [filename, base64];
     }
 
-    private getFilenameFromDisposition(header: string): string | undefined {
+    /**
+     * Файл, который уже лежит в поле сделки: фронт присылает относительный
+     * `downloadUrl`. Bitrix отдаёт такие ссылки по GET, но легаси-версия на
+     * питоне ходила POST-ом — оставляем его запасным вариантом.
+     */
+    public async downloadPortalFileAndConvertToBase64(
+        domain: string,
+        downloadUrl: string,
+        name?: string,
+    ): Promise<[string, string]> {
+        const url = downloadUrl.startsWith('http')
+            ? downloadUrl
+            : `https://${domain}${downloadUrl.startsWith('/') ? '' : '/'}${downloadUrl}`;
+
+        try {
+            return await this.downloadBitrixFileAndConvertToBase64(url, name);
+        } catch {
+            const response = await axios.post(
+                url,
+                {},
+                { responseType: 'arraybuffer' },
+            );
+            const filename =
+                this.getFilenameFromDisposition(
+                    response.headers['content-disposition'],
+                ) || `${name ?? 'file'}.docx`;
+            return [filename, Buffer.from(response.data).toString('base64')];
+        }
+    }
+
+    private getFilenameFromDisposition(
+        header: string | undefined,
+    ): string | undefined {
+        if (!header) {
+            return undefined;
+        }
         // Пробуем сначала filename*=utf-8''
         const utf8Match = header.match(/filename\*\=utf-8''([^;]+)/i);
         if (utf8Match) {

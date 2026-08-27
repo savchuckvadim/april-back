@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { InitSupplyService } from './init-supply.service';
 import { InitSupplyBxrqService } from './services/bxrq/init-supply-bxrq.service';
 import { InitSupplyController } from './init-supply.controller';
 import { PBXModule } from '@lib/pbx';
@@ -11,6 +10,7 @@ import { InitSupplyRpaCrmFieldsService } from './services/rpa-fields/crm-fields.
 import { InitSupplyRpaSupplyReportFieldsService } from './services/rpa-fields/supply-report-fields.service';
 import { InitSupplyRpaPbxItemsFieldsService } from './services/rpa-fields/pbx-items-fields.service';
 import { InitSupplyFileService } from './services/file/init-supply-file.service';
+import { InitSupplyDealFileFieldsService } from './services/file/init-supply-deal-file-fields.service';
 import { InitSupplyTimelineCommentService } from './services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { ProviderCommentService } from './services/rpa-timeline-comment/provider-comment.service';
 import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
@@ -31,7 +31,6 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
     controllers: [InitSupplyController],
     providers: [
         InitSupplyUseCase,
-        InitSupplyService,
 
         // RPA fields
         InitSupplyBxrqService,
@@ -42,6 +41,7 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
         InitSupplyRpaCrmFieldsService,
         InitSupplyRpaSupplyReportFileFieldService,
         InitSupplyFileService,
+        InitSupplyDealFileFieldsService,
 
         // RPA timeline comment
         InitSupplyTimelineCommentService,

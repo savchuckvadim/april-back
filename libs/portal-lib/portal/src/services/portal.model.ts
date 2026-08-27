@@ -94,7 +94,10 @@ export class PortalModel {
         code:
             | 'sales_kpi'
             | 'sales_history'
-            | 'presentation'
+            // Ключ строится как `${group}_${type}`: у списка презентаций это
+            // 'sales_presentation'. Короткое 'presentation' в сигнатуре было
+            // ловушкой — тип разрешал значение, которое НИКОГДА не находилось.
+            | 'sales_presentation'
             | 'service_ork_history',
     ): IPBXList | undefined {
         let result = this.portal.lists?.find(

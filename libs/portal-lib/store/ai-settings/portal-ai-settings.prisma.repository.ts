@@ -140,7 +140,8 @@ export class PortalAiSettingsPrismaRepository
             update.weeklyReportEnabled !== undefined ||
             update.weeklyReportRecipients !== undefined ||
             update.weeklyReportFolderId !== undefined ||
-            update.weeklyReportDelivery !== undefined
+            update.weeklyReportDelivery !== undefined ||
+            update.complianceReviewEnabled !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -174,6 +175,10 @@ export class PortalAiSettingsPrismaRepository
                 json.weeklyReportDelivery =
                     update.weeklyReportDelivery ?? undefined;
             }
+            if (update.complianceReviewEnabled !== undefined) {
+                json.complianceReviewEnabled =
+                    update.complianceReviewEnabled ?? undefined;
+            }
             data.settings = JSON.parse(
                 JSON.stringify(json),
             ) as Prisma.InputJsonValue;
@@ -191,6 +196,7 @@ export class PortalAiSettingsPrismaRepository
         weeklyReportRecipients?: number[];
         weeklyReportFolderId?: number;
         weeklyReportDelivery?: WeeklyReportDeliveryMode;
+        complianceReviewEnabled?: boolean;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -212,6 +218,10 @@ export class PortalAiSettingsPrismaRepository
             weeklyReportFolderId:
                 Number.isFinite(folderId) && folderId > 0
                     ? folderId
+                    : undefined,
+            complianceReviewEnabled:
+                typeof raw.complianceReviewEnabled === 'boolean'
+                    ? raw.complianceReviewEnabled
                     : undefined,
             weeklyReportDelivery: (
                 WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
@@ -277,6 +287,9 @@ export class PortalAiSettingsPrismaRepository
                 this.toJsonSettings(row.settings).weeklyReportFolderId ?? null,
             weeklyReportDelivery:
                 this.toJsonSettings(row.settings).weeklyReportDelivery ?? null,
+            complianceReviewEnabled:
+                this.toJsonSettings(row.settings).complianceReviewEnabled ??
+                null,
         };
     }
 

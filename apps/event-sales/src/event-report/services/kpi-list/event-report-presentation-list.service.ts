@@ -27,6 +27,18 @@ interface PresentationListItem {
  * Bitrix list-item add: пишем поля как `PROPERTY_<bitrixCamelId>` если они
  * сконфигурированы. Если списка нет — мягко выходим.
  */
+/**
+ * @deprecated НЕ ПОДКЛЮЧЁН к flow (решение владельца 27.08).
+ *
+ * Список «ОП Презентации» ведёт легаси-хук на Laravel, и там он
+ * работает. Запись из april-next дала бы ВТОРУЮ запись о той же
+ * презентации. Новый контур ведёт смарт «Презентации»
+ * (apps/event-sales/src/presentation-flow) — он и заменит список
+ * целиком, см. front/docs/presentation-unification.md.
+ *
+ * Код оставлен как справка о составе полей списка (и на случай
+ * отключения легаси-хука), а не как рабочий путь.
+ */
 export class EventReportPresentationListService {
     private readonly logger = new Logger(
         EventReportPresentationListService.name,
@@ -38,7 +50,7 @@ export class EventReportPresentationListService {
     ) {}
 
     queue(ctx: EventReportContext, deals: DealFlowResult): void {
-        const list = this.portal.getListByCode('presentation');
+        const list = this.portal.getListByCode('sales_presentation');
         if (!list) {
             this.logger.warn('presentation list not configured on portal');
             return;
@@ -106,7 +118,7 @@ export class EventReportPresentationListService {
         const fields: Record<string, unknown> = {
             NAME: item.name,
         };
-        const list = this.portal.getListByCode('presentation');
+        const list = this.portal.getListByCode('sales_presentation');
         if (!list) return fields;
 
         const set = (code: string, value: unknown) => {
@@ -116,13 +128,35 @@ export class EventReportPresentationListService {
             }
         };
 
-        set('date_event', ctx.dateTime.crmDateTime(ctx.nowDate));
-        set('event_action', item.action);
-        set('event_type', 'presentation');
-        set('responsible', ctx.planResponsibleId);
-        // Комментарий уходит batch-командой (lists.element.add строкой):
-        // сырой \n доезжает до элемента подчёркиванием — только %0A.
-        set('comment', toBatchText(ctx.reportComment));
+        /*
+         * Коды полей — из шаблона установки списка
+         * (storage/app/install/data/sales/lists/sales-list-presentation.json):
+         * все с префиксом `pres_`. Прежние короткие имена (`date_event`,
+         * `responsible`, `comment`) не существуют ни на одном портале —
+         * `set` молча пропускал их, и элемент уходил с одним лишь NAME.
+         */
+        set('pres_event_date', ctx.dateTime.crmDateTime(ctx.nowDate));
+        set('pres_responsible', ctx.planResponsibleId);
+        set('pres_plan_author', ctx.planCreatedById || ctx.planResponsibleId);
+        // План и факт живут в РАЗНЫХ полях: смысл списка в том, чтобы
+        // «когда назначили» и «когда провели» были видны раздельно.
+        if (item.action === 'plan') {
+            set('pres_plan_date', ctx.planDeadline?.toCrmDateTime() ?? null);
+            // Комментарий уходит batch-командой (lists.element.add
+            // строкой): сырой перенос доезжает подчёркиванием — только %0A.
+            set('pres_plan_comment', toBatchText(ctx.reportComment));
+        }
+        if (item.action === 'done') {
+            set('pres_done_date', ctx.dateTime.crmDateTime(ctx.nowDate));
+            set('pres_done_comment', toBatchText(ctx.reportComment));
+        }
+        if (item.action === 'expired') {
+            set('pres_pound_date', ctx.dateTime.crmDateTime(ctx.nowDate));
+            set('pres_plan_date', ctx.planDeadline?.toCrmDateTime() ?? null);
+        }
+        if (item.action === 'fail') {
+            set('pres_done_comment', toBatchText(ctx.reportComment));
+        }
         const crm: Record<string, string> = {};
         let i = 0;
         const pushCrm = (v: string) => {

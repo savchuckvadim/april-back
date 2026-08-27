@@ -103,6 +103,8 @@ export class PbxFieldEntityDto {
     type:
         | EUserFieldType
         | 'multiple'
+        // Поле-файл из Excel-шаблона установки (см. PbxFieldEntity.type).
+        | 'file'
         | PbxSalesEventFieldType
         | PbxSalesKonstructorFieldType;
 

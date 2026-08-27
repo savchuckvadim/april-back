@@ -17,6 +17,13 @@ import {
     IEventReportInitContext,
 } from '../init/event-report-init.types';
 import { EventTaskChecklistOutcome } from '../task/event-task-checklist.catalog';
+import {
+    buildClientEventAxis,
+    ClientEvent,
+    DEFAULT_FIELD_POLICY_SETTINGS,
+    EventFieldPolicySettings,
+    PlannedEventInput,
+} from '../entity/field-policy';
 
 /**
  * Стратегия flow по типу владельца события:
@@ -136,6 +143,75 @@ export class EventReportContext {
     }
     private taskChecklistVo: EventTaskChecklistOutcome | null = null;
 
+    // === Политики полей: настройки портала + ось открытых дел ===
+    /**
+     * Настройки портала, управляющие классами поведения полей.
+     *
+     * Ставятся ОДИН раз в use-case, до прогонки flow-сервисов (как и итог
+     * чек-листа): читателей у них несколько — модель полей собирается для
+     * компании, лида и четырёх ролей сделок, и дёргать сервис настроек в
+     * каждом из них значило бы шесть Redis-обращений на отчёт.
+     *
+     * Прогон без явной установки (тесты, легаси-вызовы) работает на
+     * дефолтах схемы — см. {@link DEFAULT_FIELD_POLICY_SETTINGS}.
+     */
+    get fieldPolicySettings(): EventFieldPolicySettings {
+        return this.fieldPolicySettingsVo;
+    }
+    setFieldPolicySettings(settings: EventFieldPolicySettings): void {
+        this.fieldPolicySettingsVo = settings;
+    }
+    private fieldPolicySettingsVo: EventFieldPolicySettings =
+        DEFAULT_FIELD_POLICY_SETTINGS;
+
+    /**
+     * Ось событий клиента ПОСЛЕ этого отчёта: открытые дела без закрываемой
+     * задачи + событие, которое отчёт ставит. `null` — фрейм списка дел не
+     * прислал, считать нечего.
+     */
+    get clientEventAxis(): readonly ClientEvent[] | null {
+        if (this.clientEventAxisVo === undefined) {
+            this.clientEventAxisVo = buildClientEventAxis({
+                openTasks: this.dto.openTasks,
+                closingTaskId: Number(this.dto.currentTask?.id) || null,
+                planned: this.plannedEvent,
+                dateTime: this.dateTime,
+            });
+        }
+        return this.clientEventAxisVo;
+    }
+    private clientEventAxisVo?: ClientEvent[] | null;
+
+    /**
+     * Событие, которое ставит ЭТОТ отчёт; `null` — не ставит.
+     *
+     * Гейт — `plan.isActive` (а не {@link isPlanned}): при ПЕРЕНОСЕ тип
+     * плана не перевыбирают, событие остаётся тем же и просто уезжает на
+     * другую дату — но на оси оно после отчёта есть. Тип и название при
+     * переносе берутся с отчёта: план их не содержит.
+     */
+    get plannedEvent(): PlannedEventInput | null {
+        if (this.plannedEventVo === undefined) {
+            this.plannedEventVo = this.buildPlannedEvent();
+        }
+        return this.plannedEventVo;
+    }
+    private plannedEventVo?: PlannedEventInput | null;
+
+    private buildPlannedEvent(): PlannedEventInput | null {
+        if (!this.dto.plan?.isActive) return null;
+        const deadline = this.planDeadline;
+        if (!deadline) return null;
+        const eventType = this.planEventType ?? this.reportEventType;
+        if (!eventType) return null;
+        return {
+            eventType,
+            name: this.planEventName || this.reportEventName,
+            deadline,
+            responsibleId: this.planResponsibleId || null,
+        };
+    }
+
     // === Result/work-status flags ===
     get resultStatus(): EnumEventItemResultType | null {
         // null — отчёт из списка (недозвон / возврат в ТМЦ): меню результата не открывали.
@@ -167,6 +243,15 @@ export class EventReportContext {
     }
     get isSuccessSale(): boolean {
         return this.workStatusCode === EnumWorkStatusCode.success;
+    }
+    /**
+     * Работа с клиентом ОКОНЧЕНА: продажа либо отказ (в т.ч. «не ЦА» — он
+     * едет по проводам отказным статусом). Общий признак «финала» для
+     * правил обнуления полей: ось следующего события после финала врёт по
+     * определению — следующего события нет.
+     */
+    get isFinalOutcome(): boolean {
+        return this.isFail || this.isSuccessSale;
     }
     /**
      * ПРИЧИНА ОТКАЗА, которую менеджер действительно выбрал; `null` — селект

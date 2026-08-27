@@ -45,9 +45,23 @@ export class AiSettingsService {
             }));
     }
 
-    /** Разделы базы знаний, доступные клиенту (реестр kind'ов). */
+    /**
+     * Разделы базы знаний, доступные клиенту. Виды с clientEditable=false
+     * ведёт April: эталонные разборы правит не та сторона, которую по ним
+     * оценивают.
+     */
     kinds(): readonly KnowledgeKindInfo[] {
-        return KNOWN_KNOWLEDGE_KINDS;
+        return KNOWN_KNOWLEDGE_KINDS.filter(kind => kind.clientEditable);
+    }
+
+    /** Раздел закрыт для клиентской правки — 403, а не молчаливая запись. */
+    private assertKindEditable(kind: string): void {
+        const known = KNOWN_KNOWLEDGE_KINDS.find(item => item.kind === kind);
+        if (known && !known.clientEditable) {
+            throw new ForbiddenException(
+                `Раздел «${known.title}» ведёт April — редактирование недоступно`,
+            );
+        }
     }
 
     /**
@@ -123,6 +137,7 @@ export class AiSettingsService {
         content: string,
     ): Promise<void> {
         await this.assertClientDomain(clientId, domain);
+        this.assertKindEditable(kind);
         await this.knowledgeStorage.saveTextDocument(
             kind,
             fileName,

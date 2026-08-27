@@ -24,6 +24,9 @@ export class PbxFieldEntity {
     type:
         | EUserFieldType
         | 'multiple'
+        // Поля-файлы приходят из Excel-шаблонов установки и в реестрах
+        // портала не описаны (строковый литерал ≠ член string-enum).
+        | 'file'
         | PbxSalesEventFieldType
         | PbxSalesKonstructorFieldType;
 

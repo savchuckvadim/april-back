@@ -26,7 +26,22 @@ const makeDeps = (options?: {
         ),
     };
     const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key') };
-    const knowledgeContent = { readAll: jest.fn().mockResolvedValue([]) };
+    // Сервис материалов по ролям: по умолчанию база пуста.
+    const materials = {
+        collect: jest
+            .fn()
+            .mockImplementation(
+                (_domain: string, requests: { kind: string }[]) =>
+                    Promise.resolve(
+                        requests.map(request => ({
+                            kind: request.kind,
+                            text: '',
+                            chars: 0,
+                            truncated: false,
+                        })),
+                    ),
+            ),
+    };
     const callTypeRegistry = {
         resolve: jest.fn().mockResolvedValue({ types: {} }),
     };
@@ -43,7 +58,7 @@ const makeDeps = (options?: {
     const service = new CallFocusAnalysisService(
         vibeCodeClient as never,
         vibeKeyResolver as never,
-        knowledgeContent as never,
+        materials as never,
         callTypeRegistry as never,
         appSettings as never,
         reportSettings as never,
@@ -53,7 +68,7 @@ const makeDeps = (options?: {
         vibeCodeClient,
         appSettings,
         reportSettings,
-        knowledgeContent,
+        materials,
     };
 };
 
@@ -155,62 +170,88 @@ describe('CallFocusAnalysisService', () => {
         expect(dto?.summary).toBeUndefined();
     });
 
-    it('материалы базы знаний влияют на ВСЕ проходы: базовый слой + слой типа', async () => {
-        const { service, vibeCodeClient, knowledgeContent } = makeDeps();
-        knowledgeContent.readAll.mockImplementation(
-            (_domain: string, kind: string) =>
+    it('материалы по ролям: скрипт во всех проходах, возражения — в «содержании», регламент — в «движении», эталоны — в синтезе', async () => {
+        const { service, vibeCodeClient, materials } = makeDeps();
+        materials.collect.mockImplementation(
+            (_domain: string, requests: { kind: string }[]) =>
                 Promise.resolve(
-                    kind === 'call-analysis-base'
-                        ? [{ kind, text: 'СКРИПТ ПРОДАЖ: сначала вопросы' }]
-                        : [
-                              {
-                                  kind,
-                                  text: 'КРИТЕРИИ ПРЕЗЕНТАЦИИ: показ под задачи',
-                              },
-                          ],
-                ),
-        );
-
-        await service.run('test.bitrix24.ru', 'текст', 'presentation');
-
-        // Базовый слой читается всегда, типовой — по типу звонка.
-        expect(knowledgeContent.readAll).toHaveBeenCalledWith(
-            'test.bitrix24.ru',
-            'call-analysis-base',
-        );
-        expect(knowledgeContent.readAll).toHaveBeenCalledWith(
-            'test.bitrix24.ru',
-            'call-analysis-presentation',
-        );
-        // Оба слоя попали в системный контекст КАЖДОГО прохода и синтеза.
-        const systemPrompts =
-            vibeCodeClient.structuredCompletion.mock.calls.map(call =>
-                String((call as unknown[])[0]),
-            );
-        expect(systemPrompts).toHaveLength(4);
-        for (const prompt of systemPrompts) {
-            expect(prompt).toContain('СКРИПТ ПРОДАЖ: сначала вопросы');
-            expect(prompt).toContain('КРИТЕРИИ ПРЕЗЕНТАЦИИ: показ под задачи');
-        }
-    });
-
-    it('огромные методички усекаются под контекст модели', async () => {
-        const { service, vibeCodeClient, knowledgeContent } = makeDeps();
-        knowledgeContent.readAll.mockImplementation(
-            (_domain: string, kind: string) =>
-                Promise.resolve(
-                    kind === 'call-analysis-base'
-                        ? [{ kind, text: 'я'.repeat(80_000) }]
-                        : [],
+                    requests.map(request => ({
+                        kind: request.kind,
+                        text: `ТЕКСТ[${request.kind}]`,
+                        chars: 12,
+                        truncated: false,
+                    })),
                 ),
         );
 
         await service.run('test.bitrix24.ru', 'текст', 'call');
 
-        const prompt = String(
-            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+        const prompts = vibeCodeClient.structuredCompletion.mock.calls.map(
+            call => String((call as unknown[])[0]),
         );
-        expect(prompt).toContain('материалы усечены по размеру контекста');
-        expect(prompt.length).toBeLessThan(40_000);
+        expect(prompts).toHaveLength(4);
+        // Скрипт компании — в каждом проходе и в синтезе.
+        for (const prompt of prompts) {
+            expect(prompt).toContain('ТЕКСТ[sales-script]');
+        }
+        // Узкие материалы — только в своём проходе.
+        const [form, content, movement, synthesis] = prompts;
+        expect(content).toContain('ТЕКСТ[objection-playbook]');
+        expect(form).not.toContain('ТЕКСТ[objection-playbook]');
+        expect(movement).toContain('ТЕКСТ[sales-regulation]');
+        expect(content).not.toContain('ТЕКСТ[sales-regulation]');
+        expect(synthesis).toContain('ТЕКСТ[call-etalon]');
+        expect(form).not.toContain('ТЕКСТ[call-etalon]');
+    });
+
+    it('презентация: методология показа запрашивается с увеличенным бюджетом и идёт во все проходы', async () => {
+        const { service, vibeCodeClient, materials } = makeDeps();
+        materials.collect.mockImplementation(
+            (_domain: string, requests: { kind: string }[]) =>
+                Promise.resolve(
+                    requests.map(request => ({
+                        kind: request.kind,
+                        text:
+                            request.kind === 'presentation-playbook'
+                                ? 'МЕТОДОЛОГИЯ ПОКАЗА'
+                                : '',
+                        chars: 18,
+                        truncated: false,
+                    })),
+                ),
+        );
+
+        await service.run('test.bitrix24.ru', 'текст', 'presentation');
+
+        const requests = (materials.collect.mock.calls[0] as unknown[])[1] as {
+            kind: string;
+            budgetChars: number;
+        }[];
+        const playbook = requests.find(
+            request => request.kind === 'presentation-playbook',
+        );
+        expect(playbook?.budgetChars).toBe(6000);
+
+        const prompts = vibeCodeClient.structuredCompletion.mock.calls.map(
+            call => String((call as unknown[])[0]),
+        );
+        for (const prompt of prompts) {
+            expect(prompt).toContain('МЕТОДОЛОГИЯ ПОКАЗА');
+        }
+    });
+
+    it('обычный звонок: методология презентации запрашивается по остаточному бюджету', async () => {
+        const { service, materials } = makeDeps();
+
+        await service.run('test.bitrix24.ru', 'текст', 'cold');
+
+        const requests = (materials.collect.mock.calls[0] as unknown[])[1] as {
+            kind: string;
+            budgetChars: number;
+        }[];
+        const playbook = requests.find(
+            request => request.kind === 'presentation-playbook',
+        );
+        expect(playbook?.budgetChars).toBe(1500);
     });
 });

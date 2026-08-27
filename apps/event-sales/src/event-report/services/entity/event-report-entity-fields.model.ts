@@ -22,6 +22,17 @@ import {
     EEventReportEntityType,
     EventReportEntityType,
 } from '../init/event-report-init.types';
+import {
+    CALL_LAST_DATE_POLICY,
+    CALL_NEXT_DATE_POLICY,
+    CALL_NEXT_NAME_POLICY,
+    FieldPolicy,
+    FieldPolicyInput,
+    NEXT_PRES_PLAN_DATE_POLICY,
+    POLICY_KEEP,
+    PRES_COUNT_POLICY,
+    resolveFieldValue,
+} from './field-policy';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;
@@ -162,6 +173,29 @@ export interface DealFieldsOptions {
  *   презентации; для plan/fail презентации стартует с -1 → ++ = 0).
  * - `ASSIGNED_BY_ID` для сделок не ставится — он уже выставляется
  *   deal-сервисом в base-полях.
+ *
+ * ПОЛИТИКИ ПОЛЕЙ (`./field-policy`). Часть полей описана декларативно —
+ * одно описание на поле: как значение получается и когда обнуляется.
+ * Через политики проходят те, где слепая перезапись реально врала:
+ *  - `call_next_date` / `call_next_name` / `next_pres_plan_date` — «ось
+ *    следующего события», считается по ОТКРЫТЫМ ДЕЛАМ клиента;
+ *  - `call_last_date` — политика `overwrite` (перезапись здесь верна);
+ *  - `pres_count` — политика `increment`.
+ *
+ * Остальные поля осознанно оставлены на прямой записи:
+ *  - `xo_date` / `xo_name` / `xo_responsible` / `xo_created` — не «ось», а
+ *    снимок ТЕКУЩЕЙ холодной работы: у клиента она по инварианту домена
+ *    одна, а cold-hook пишет те же поля своим путём. Считать их по оси —
+ *    значит завести второго хозяина у полей ХО;
+ *  - `last_pres_plan_date` / `last_pres_done_date` / `*_responsible` —
+ *    штампы «когда назначили / когда провели». Событие произошло СЕЙЧАС,
+ *    вычислять нечего; гейт по роли сделки — про «чей это штамп», а не про
+ *    способ расчёта;
+ *  - `op_current_status`, `op_work_status`, `op_prospects_type`,
+ *    `op_*_reason` — резолверы кодов, а не даты: их «расчёт» уже вынесен в
+ *    отдельные методы и в политику не укладывается;
+ *  - `op_move_count` живёт в отдельном сервисе (`DealMoveCountService`):
+ *    он пишется вне стадийных update'ов и модели полей не касается.
  */
 export class EventReportEntityFieldsModel {
     constructor(
@@ -176,9 +210,12 @@ export class EventReportEntityFieldsModel {
 
         // ===== Always =====
         if (this.ctx.planEventType || this.ctx.reportEventType) {
-            this.setScalar(out, 'call_last_date', this.nowCrmDate());
-            this.setScalar(out, 'next_pres_plan_date', null);
-            this.setScalar(out, 'call_next_date', null);
+            // «Последний звонок» — политика `overwrite`: контакт только что
+            // состоялся, вычислять там нечего (см. CALL_LAST_DATE_POLICY).
+            this.applyPolicy(out, CALL_LAST_DATE_POLICY, {
+                value: this.nowCrmDate(),
+            });
+            this.applyNextEventAxis(out);
             this.setScalar(out, 'manager_op', this.ctx.planResponsibleId);
         }
 
@@ -322,6 +359,126 @@ export class EventReportEntityFieldsModel {
         return out;
     }
 
+    // ---------- private: политики полей ----------
+
+    /**
+     * Ось «следующего события» — три поля, которые раньше писались вслепую.
+     *
+     * Слепая запись врала в самом обычном сценарии: у клиента открыты
+     * презентация на 5-е и звонок на 3-е, отчёт планирует звонок на 7-е —
+     * в «дату следующего звонка» уезжало 7-е (хотя следующим будет 5-е), а
+     * «дата назначенной презентации» обнулялась (хотя презентация никуда
+     * не делась). Теперь обе считаются по ОСИ открытых дел клиента.
+     *
+     * Фрейм списка дел не прислал либо настройка портала выключена — ветка
+     * ровно прежняя: оба поля обнуляются здесь и переписываются планом
+     * ниже. `call_next_name` в прежней ветке НЕ обнулялся — так и
+     * оставляем, иначе отчёт без плана стирал бы тему, которую сам не
+     * заменяет.
+     */
+    private applyNextEventAxis(out: EntityFieldsMap): void {
+        const input: FieldPolicyInput = {
+            events: this.ctx.clientEventAxis ?? [],
+            /*
+             * Правило `final` включается настройкой портала: гейт живёт
+             * здесь, а не в таблице политик, — таблица описывает СМЫСЛ поля
+             * и от настроек конкретного портала не зависит.
+             */
+            isFinal:
+                this.ctx.isFinalOutcome &&
+                this.ctx.fieldPolicySettings.resetOnFinal,
+        };
+
+        if (this.isNextCallAxisCalculated) {
+            this.applyPolicy(out, CALL_NEXT_DATE_POLICY, input);
+            this.applyPolicy(out, CALL_NEXT_NAME_POLICY, input);
+        } else {
+            this.setScalar(out, 'call_next_date', null);
+        }
+
+        if (this.isNextPresentationAxisCalculated) {
+            this.applyPolicy(out, NEXT_PRES_PLAN_DATE_POLICY, input);
+        } else {
+            this.setScalar(out, 'next_pres_plan_date', null);
+        }
+    }
+
+    /**
+     * Считается ли ось «следующего звонка» политикой. Требуется И настройка
+     * портала, И присланный фреймом список дел: без списка ось пуста, и
+     * расчёт стёр бы дату, которую отчёт просто не видит.
+     */
+    private get isNextCallAxisCalculated(): boolean {
+        return (
+            this.ctx.fieldPolicySettings.calculatedNextEvent &&
+            this.ctx.clientEventAxis !== null
+        );
+    }
+
+    /**
+     * То же для «даты назначенной презентации», НО не на pres-сделке.
+     *
+     * Pres-сделка — сам «элемент презентации», и поле на ней означает дату
+     * ЕЁ презентации, а не ближайшей по клиенту (та же причина, по которой
+     * у неё особые `pres_count` и отметка проведения). Клиентские носители
+     * — компания, лид, основная/ХО/ТМЦ сделки — считают по оси.
+     */
+    private get isNextPresentationAxisCalculated(): boolean {
+        return this.isNextCallAxisCalculated && !this.isPresentationCarrier;
+    }
+
+    /** Носитель — сделка-презентация (роль `presentation`). */
+    private get isPresentationCarrier(): boolean {
+        return (
+            this.entityType === EEventReportEntityType.DEAL &&
+            this.dealOptions?.role === EDealRole.PRESENTATION
+        );
+    }
+
+    /**
+     * Запись поля оси «следующего звонка» ПЛАНОМ — только когда ось не
+     * считается политикой. Иначе план не имеет права перебивать расчёт:
+     * запланированное событие уже учтено на оси и победит там, где оно
+     * действительно ближайшее.
+     */
+    private setNextCallAxis(
+        out: EntityFieldsMap,
+        code: 'call_next_date' | 'call_next_name',
+        value: EntityFieldValue,
+    ): void {
+        if (this.isNextCallAxisCalculated) return;
+        this.setScalar(out, code, value);
+    }
+
+    /** То же для «даты назначенной презентации». */
+    private setNextPresentationAxis(
+        out: EntityFieldsMap,
+        value: EntityFieldValue,
+    ): void {
+        if (this.isNextPresentationAxisCalculated) return;
+        this.setScalar(out, 'next_pres_plan_date', value);
+    }
+
+    /**
+     * Применить политику: резолвер решает, что писать, модель — куда.
+     * `POLICY_KEEP` («не трогать») и `null` («обнулить») различаются
+     * принципиально, поэтому проверка именно на `undefined`.
+     */
+    private applyPolicy(
+        out: EntityFieldsMap,
+        policy: FieldPolicy,
+        input: Partial<FieldPolicyInput>,
+    ): void {
+        const value = resolveFieldValue(policy, {
+            events: input.events ?? [],
+            isFinal: input.isFinal ?? false,
+            value: input.value,
+            current: input.current,
+        });
+        if (value === POLICY_KEEP) return;
+        this.setScalar(out, policy.code, value);
+    }
+
     // ---------- private ----------
 
     /**
@@ -338,7 +495,9 @@ export class EventReportEntityFieldsModel {
      * в историю (`appendHistory`) и комментарий задачи.
      *
      * «Дата следующей коммуникации» отдельного действия не требует:
-     * `call_next_date` уже выставляется планом, а без плана даты и нет.
+     * `call_next_date` считается по оси открытых дел клиента
+     * ({@link applyNextEventAxis}) — галка в задаче ничего к ней не
+     * добавляет.
      */
     private applyChecklistFacts(out: EntityFieldsMap): void {
         if (this.ctx.isPresentationDone) return;
@@ -382,15 +541,14 @@ export class EventReportEntityFieldsModel {
     /** Pres-сделка, на которой презентации НЕ было (заведена под план). */
     private isPresentationDealWithoutPresentation(): boolean {
         return (
-            this.entityType === EEventReportEntityType.DEAL &&
-            this.dealOptions?.role === EDealRole.PRESENTATION &&
-            !this.dealOptions.presentationHappenedHere
+            this.isPresentationCarrier &&
+            !this.dealOptions?.presentationHappenedHere
         );
     }
 
     private applyPlannedFields(out: EntityFieldsMap): void {
-        this.setScalar(out, 'call_next_date', this.planDeadlineCrm());
-        this.setScalar(out, 'call_next_name', this.ctx.planEventName);
+        this.setNextCallAxis(out, 'call_next_date', this.planDeadlineCrm());
+        this.setNextCallAxis(out, 'call_next_name', this.ctx.planEventName);
         this.setScalar(
             out,
             'op_current_status',
@@ -423,17 +581,15 @@ export class EventReportEntityFieldsModel {
                 );
                 break;
             case 'presentation':
+                // «Последняя НАЗНАЧЕННАЯ презентация» — штамп момента, когда
+                // её назначили. Слепая запись здесь верна: назначили сейчас.
                 this.setScalar(out, 'last_pres_plan_date', this.nowCrmDate());
                 this.setScalar(
                     out,
                     'last_pres_plan_responsible',
                     this.ctx.planResponsibleId,
                 );
-                this.setScalar(
-                    out,
-                    'next_pres_plan_date',
-                    this.planDeadlineCrm(),
-                );
+                this.setNextPresentationAxis(out, this.planDeadlineCrm());
                 this.setScalar(
                     out,
                     'op_current_status',
@@ -466,11 +622,7 @@ export class EventReportEntityFieldsModel {
                 );
                 break;
             case 'presentation':
-                this.setScalar(
-                    out,
-                    'next_pres_plan_date',
-                    this.planDeadlineCrm(),
-                );
+                this.setNextPresentationAxis(out, this.planDeadlineCrm());
                 this.appendMultiple(
                     out,
                     'pres_comments',
@@ -588,8 +740,14 @@ export class EventReportEntityFieldsModel {
             return;
         }
 
-        out[this.bitrixKey(field)] =
-            this.readNumber(this.entityRecord(), field) + 1;
+        // Стратегия `increment` из таблицы политик: «текущее + шаг».
+        const value = resolveFieldValue(PRES_COUNT_POLICY, {
+            events: [],
+            isFinal: false,
+            current: this.readNumber(this.entityRecord(), field),
+        });
+        if (value === POLICY_KEEP) return;
+        out[this.bitrixKey(field)] = value;
     }
 
     /**
