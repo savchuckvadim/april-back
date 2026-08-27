@@ -60,11 +60,15 @@ describe('ParseSmartService — const-ветка (реестр const-смарт�
         // categories/stages: InstallSmartUseCase поставит стадии тем же
         // InstallSmartCategoriesService, что и шаблоны из файла.
         expect(smart.categories).toHaveLength(1);
-        expect(smart.categories[0].stages).toHaveLength(5);
+        // Три закрывающие стадии вместо двух: «дозвонились и работаем»
+        // и «дозвонились, но клиент отказал прямо в разговоре» — разные
+        // исходы для отчётности (zpr_result_fail добавлена 26.08.2026).
+        expect(smart.categories[0].stages).toHaveLength(6);
         expect(smart.categories[0].stages.map(stage => stage.code)).toEqual([
             'zpr_plan',
             'zpr_pending',
             'zpr_success',
+            'zpr_result_fail',
             'zpr_noresult',
             'zpr_fail',
         ]);

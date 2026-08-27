@@ -236,7 +236,9 @@ describe('InstallZprSmartUseCase', () => {
         expect(categoriesCall.smartGroup).toBe('sales');
         expect(categoriesCall.entityTypeId).toBe(1038);
         expect(categoriesCall.templateCategories).toHaveLength(1);
-        expect(categoriesCall.templateCategories[0].stages).toHaveLength(5);
+        // 6 стадий: план, перенос и ЧЕТЫРЕ исхода (в работе, отказ в
+        // разговоре, не дозвонились, отменён).
+        expect(categoriesCall.templateCategories[0].stages).toHaveLength(6);
 
         // Кэши: online-слепок и in-memory резолв ЗПР.
         expect(portalCache.invalidate).toHaveBeenCalledWith(DOMAIN);
@@ -313,7 +315,7 @@ describe('InstallZprSmartUseCase', () => {
 });
 
 describe('buildZprInstallCategories', () => {
-    it('одна воронка, 5 стадий с суффиксами STATUS_ID и явной семантикой', () => {
+    it('одна воронка, 6 стадий с суффиксами STATUS_ID и явной семантикой', () => {
         const categories = buildZprInstallCategories();
         expect(categories).toHaveLength(1);
         expect(categories[0].isDefault).toBe(true);
@@ -325,12 +327,17 @@ describe('buildZprInstallCategories', () => {
         expect(byCode['zpr_plan'].semantics).toBe('');
         expect(byCode['zpr_pending'].bitrixId).toBe('PENDING');
         expect(byCode['zpr_success'].semantics).toBe('S');
+        // «Состоялся: отказ» — звонок сам по себе успешный (дозвонились и
+        // поговорили), но клиент отказал прямо в разговоре: для воронки
+        // это проигрышный исход.
+        expect(byCode['zpr_result_fail'].bitrixId).toBe('RESULT_FAIL');
+        expect(byCode['zpr_result_fail'].semantics).toBe('F');
         // Эвристика стратегии NORESULT не знает — семантика обязана быть явной.
         expect(byCode['zpr_noresult'].semantics).toBe('F');
         expect(byCode['zpr_fail'].semantics).toBe('F');
-        // Порядок SORT: план → ожидание → исходы.
+        // Порядок SORT: план → перенос → четыре исхода.
         expect(categories[0].stages.map(stage => stage.order)).toEqual([
-            10, 20, 30, 40, 50,
+            10, 20, 30, 40, 50, 60,
         ]);
     });
 });
