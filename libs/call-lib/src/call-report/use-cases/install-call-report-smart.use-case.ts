@@ -275,7 +275,9 @@ export class InstallCallReportSmartUseCase {
             }
             throw error;
         }
-        const existingNames = new Set(existing.map(field => field.fieldName));
+        const existingByName = new Map(
+            existing.map(field => [field.fieldName, field]),
+        );
 
         const fieldsAdded: string[] = [];
         const fieldsExisting: string[] = [];
@@ -283,8 +285,14 @@ export class InstallCallReportSmartUseCase {
 
         for (const def of CALL_REPORT_SMART_FIELDS) {
             const fieldName = buildCallReportUfName(typeId, def.code);
-            if (existingNames.has(fieldName)) {
+            const existingField = existingByName.get(fieldName);
+            if (existingField) {
                 fieldsExisting.push(fieldName);
+                // Поля, созданные ДО 22.07.2026, не имеют settings с
+                // привязкой к DEAL — Битрикс молча не сохраняет в них
+                // ['D_123'], и «Сделка (основная)» вечно пустая. Пропуск
+                // существующего поля этого не чинил: доводим настройку.
+                await this.repairCrmFieldSettings(bitrix, def, existingField);
                 continue;
             }
             try {
@@ -302,6 +310,53 @@ export class InstallCallReportSmartUseCase {
         }
 
         return { fieldsAdded, fieldsExisting, fieldsFailed };
+    }
+
+    /**
+     * Доводит привязку существующего crm-поля (DEAL_MAIN и т.п.) до эталона.
+     *
+     * Симптом без этого: значения ['D_123'] уходят в Битрикс с успехом, а
+     * поле в карточке остаётся пустым — у поля не отмечена ни одна сущность
+     * (settings.DEAL). Так создавались поля до 22.07.2026; переустановка
+     * смарта их не чинила, потому что существующие поля пропускались.
+     * Fail-open: сбой одного поля не должен валить установку смарта.
+     */
+    private async repairCrmFieldSettings(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        def: CallReportSmartFieldDef,
+        field: IUserFieldConfig,
+    ): Promise<void> {
+        if (def.type !== 'crm' || !def.crmEntities?.length) return;
+        // Без id поле не обновить (list его всегда отдаёт — страховка типов).
+        if (field.id === undefined) return;
+        const settings = field.settings ?? {};
+        const missing = def.crmEntities.filter(
+            entity => settings[entity] !== 'Y',
+        );
+        if (!missing.length) return;
+        try {
+            await bitrix.userFieldConfig.update({
+                moduleId: 'crm',
+                id: field.id,
+                field: {
+                    settings: {
+                        ...settings,
+                        ...Object.fromEntries(
+                            def.crmEntities.map(entity => [entity, 'Y']),
+                        ),
+                    },
+                },
+            });
+            this.logger.log(
+                `Поле ${field.fieldName}: восстановлена привязка к [${missing.join(', ')}] — ` +
+                    `значения вида D_123 теперь сохраняются`,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Поле ${field.fieldName}: привязку к [${missing.join(', ')}] восстановить не удалось: ` +
+                    (error as Error).message,
+            );
+        }
     }
 
     /** user.admin тем же ключом: true/false, null — метод недоступен. */

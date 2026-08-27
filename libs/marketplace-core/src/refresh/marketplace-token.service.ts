@@ -306,7 +306,9 @@ export class MarketplaceTokenService {
             identity.memberId
                 ? localAppSecretCodeByMemberId(identity.memberId)
                 : null,
-            identity.domain ? localAppSecretCodeByDomain(identity.domain) : null,
+            identity.domain
+                ? localAppSecretCodeByDomain(identity.domain)
+                : null,
             SHARED_APP_SECRET_CODE,
         ].filter((code): code is string => code !== null);
 

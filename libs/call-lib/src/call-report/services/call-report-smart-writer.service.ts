@@ -193,7 +193,7 @@ export class CallReportSmartWriterService {
             }
         }
 
-        const fields = this.buildFields(input);
+        const fields = this.buildFields(input, { isCreate: true });
         if (xmlId) fields.xmlId = xmlId;
         const { response, dropped } = await this.writeWithDegradation(
             fields as Record<string, unknown>,
@@ -212,6 +212,7 @@ export class CallReportSmartWriterService {
                 `crm.item.add не вернул id элемента (activity ${input.activityId})`,
             );
         }
+        this.verifyLinks(fields, response, input, itemId);
         await this.postDroppedToTimeline(itemId, dropped, input, {
             isCreate: true,
         });
@@ -246,8 +247,9 @@ export class CallReportSmartWriterService {
         input: CallReportSmartItemInput,
     ): Promise<void> {
         try {
-            const { dropped } = await this.writeWithDegradation(
-                this.buildFields(input),
+            const sent = this.buildFields(input) as Record<string, unknown>;
+            const { response, dropped } = await this.writeWithDegradation(
+                sent,
                 fields =>
                     this.bitrix.item.update(
                         existingId,
@@ -255,6 +257,7 @@ export class CallReportSmartWriterService {
                         fields as Partial<IBXItem>,
                     ),
             );
+            this.verifyLinks(sent, response, input, existingId);
             await this.postDroppedToTimeline(existingId, dropped, input, {
                 isCreate: false,
             });
@@ -267,6 +270,80 @@ export class CallReportSmartWriterService {
                 { telegram: true, itemId: existingId },
             );
         }
+    }
+
+    /**
+     * Контроль факта сохранения связей (прод-урок 26.08.2026: «ни одной
+     * привязанной сделки», а в логах всё зелёное).
+     *
+     * Bitrix на crm.item.add/update отвечает HTTP 200 и МОЛЧА отбрасывает
+     * поля, которых у типа нет: нет relations.parent — нет parentId{N};
+     * isClientEnabled='N' — нет companyId/contactId; crm-поле без settings
+     * (привязки к DEAL) не сохраняет ['D_123']. Ошибки «неизвестное поле»
+     * у метода не существует, тело запроса логируется только при отказе —
+     * поэтому дроп связей был неотличим от «на портале нечего привязывать».
+     *
+     * Сверяем отправленное с эхом созданного/обновлённого элемента:
+     * - связь отправляли, а в эхе её нет → дефект портала/установки (алерт);
+     * - связей не было в input вовсе → нечего привязывать (warn, не алерт).
+     * Сравнение мягкое: Битрикс возвращает id строкой, crm-поля — массивом.
+     */
+    private verifyLinks(
+        sent: Record<string, unknown>,
+        response: unknown,
+        input: CallReportSmartItemInput,
+        itemId: number,
+    ): void {
+        const echo = (
+            response as { result?: { item?: Record<string, unknown> } } | null
+        )?.result?.item;
+        const linkKeys = [
+            `parentId${BitrixOwnerTypeId.DEAL}`,
+            `parentId${BitrixOwnerTypeId.LEAD}`,
+            'companyId',
+            'contactId',
+            this.ufName('DEAL_MAIN'),
+        ];
+        const sentLinks = linkKeys.filter(key => sent[key] !== undefined);
+
+        if (!sentLinks.length) {
+            // Нечего привязывать: у звонка нет CRM-владельца/клиента.
+            this.logger.warn(
+                `Элемент #${itemId} (activity ${input.activityId}): связи НЕ отправлялись — ` +
+                    `в разборе нет ни сделки, ни лида, ни компании/контакта`,
+            );
+            return;
+        }
+        // Эхо элемента доступно не во всех ответах библиотеки — без него
+        // проверять нечего (молчим, чтобы не сыпать ложными алертами).
+        if (!echo) return;
+
+        // Связи — это id и ссылки вида 'D_555'; объектов тут не бывает,
+        // но на всякий случай приводим их к JSON, а не к [object Object].
+        const scalar = (value: unknown): string => {
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value as string | number | boolean);
+        };
+        const normalize = (value: unknown): string =>
+            Array.isArray(value) ? value.map(scalar).join(',') : scalar(value);
+        const lost = sentLinks.filter(
+            key => normalize(echo[key]) !== normalize(sent[key]),
+        );
+        if (!lost.length) return;
+
+        this.logger.error(
+            `Элемент #${itemId} (activity ${input.activityId}): Битрикс НЕ СОХРАНИЛ связи ` +
+                `[${lost.join(', ')}] — отправлено ${lost
+                    .map(key => `${key}=${normalize(sent[key])}`)
+                    .join(', ')}, в ответе ${lost
+                    .map(key => `${key}=${normalize(echo[key]) || '—'}`)
+                    .join(', ')}. ` +
+                `Причина обычно в настройках смарта: нет relations.parent (сделка/лид), ` +
+                `isClientEnabled='N' (компания/контакт) или crm-поле без привязки к DEAL — ` +
+                `лечится переустановкой смарта (POST /call-report/install-smart)`,
+            { telegram: true, itemId },
+        );
     }
 
     /**
@@ -342,6 +419,13 @@ export class CallReportSmartWriterService {
     private static readonly LONG_FIELD_BYTES = 700;
 
     /**
+     * Сколько байт строки элемента отдаём под ВСЕ тексты разом.
+     * InnoDB даёт ~8126 байт на строку; часть съедают числа, enum'ы,
+     * связи и служебные колонки — под тексты остаётся ~6.5к с запасом.
+     */
+    private static readonly ROW_TEXT_BUDGET_BYTES = 6500;
+
+    /**
      * Коды текстовых полей, которые важнее всего оставить В ПОЛЯХ элемента
      * (для фильтров/списков); остальные длинные тексты при деградации
      * уезжают полным текстом в таймлайн.
@@ -373,24 +457,24 @@ export class CallReportSmartWriterService {
         const byteLength = (value: string): number =>
             Buffer.byteLength(value, 'utf8');
         /** Обрезка строки до лимита БАЙТ по границе символов. */
-        const shrink = (value: string): string => {
+        const shrinkTo = (value: string, limitBytes: number): string => {
             let result = value;
-            while (
-                byteLength(result) >
-                CallReportSmartWriterService.LONG_FIELD_BYTES - 2
-            ) {
+            while (byteLength(result) > limitBytes - 2 && result.length > 1) {
                 result = result.slice(
                     0,
-                    Math.floor(
-                        (result.length *
-                            (CallReportSmartWriterService.LONG_FIELD_BYTES -
-                                2)) /
-                            byteLength(result),
+                    Math.max(
+                        1,
+                        Math.floor(
+                            (result.length * (limitBytes - 2)) /
+                                byteLength(result),
+                        ),
                     ),
                 );
             }
             return `${result}…`;
         };
+        const shrink = (value: string): string =>
+            shrinkTo(value, CallReportSmartWriterService.LONG_FIELD_BYTES);
         const isLongText = (value: unknown): value is string =>
             typeof value === 'string' &&
             byteLength(value) > CallReportSmartWriterService.LONG_FIELD_BYTES;
@@ -420,6 +504,44 @@ export class CallReportSmartWriterService {
             }
         }
 
+        // БЮДЖЕТНОЕ УЖАТИЕ (прод-урок 27.08.2026: «оценка есть, а разбора
+        // нет»). Раньше следующим шагом после транскрипта длинные
+        // НЕприоритетные тексты выбрасывались целиком — и в карточке
+        // пустели именно разборы разделов и 5К, самое ценное для РОПа.
+        // Теперь тексты не выбрасываются, а ужимаются под общий бюджет
+        // строки: каждому текстовому полю достаётся равная доля, полные
+        // версии по-прежнему уходят в таймлайн (и в недельный Excel).
+        // Несколько запросов подряд эту физику не обходят: лимит — на
+        // ШИРИНУ СТРОКИ таблицы, а не на размер одного запроса.
+        const budgeted: Record<string, unknown> = {};
+        const droppedBudgeted: DroppedField[] = [...droppedTranscript];
+        const textEntries = Object.entries(withoutTranscript).filter(
+            ([, value]) => typeof value === 'string' && byteLength(value) > 120,
+        );
+        const perFieldBudget = textEntries.length
+            ? Math.min(
+                  CallReportSmartWriterService.LONG_FIELD_BYTES,
+                  Math.max(
+                      200,
+                      Math.floor(
+                          CallReportSmartWriterService.ROW_TEXT_BUDGET_BYTES /
+                              textEntries.length,
+                      ),
+                  ),
+              )
+            : CallReportSmartWriterService.LONG_FIELD_BYTES;
+        for (const [key, value] of Object.entries(withoutTranscript)) {
+            if (
+                typeof value !== 'string' ||
+                byteLength(value) <= perFieldBudget
+            ) {
+                budgeted[key] = value;
+                continue;
+            }
+            droppedBudgeted.push({ key, value });
+            budgeted[key] = shrinkTo(value, perFieldBudget);
+        }
+
         const summaryKey = this.ufName('SUMMARY');
         const minimal: Record<string, unknown> = {};
         const droppedMinimal: DroppedField[] = [...droppedTranscript];
@@ -440,6 +562,11 @@ export class CallReportSmartWriterService {
                 label: 'без транскрипта',
                 fields: withoutTranscript,
                 dropped: droppedTranscript,
+            },
+            {
+                label: 'все тексты ужаты под бюджет строки',
+                fields: budgeted,
+                dropped: droppedBudgeted,
             },
             {
                 label: 'приоритетные тексты <700 байт, остальное — в таймлайн',
@@ -607,7 +734,8 @@ export class CallReportSmartWriterService {
      * «Исходящий звонок от 24.06.2026 15:02 · 12 мин». Без даты/длительности —
      * fallback на технический формат с activityId.
      */
-    private buildTitle(input: CallReportSmartItemInput): string {
+    /** Название из паспорта звонка; null — паспорта в этом проходе нет. */
+    private buildTitle(input: CallReportSmartItemInput): string | null {
         const direction =
             input.callDirection === 'incoming'
                 ? 'Входящий звонок'
@@ -631,9 +759,9 @@ export class CallReportSmartWriterService {
         const minutes = input.durationSec
             ? `${Math.max(1, Math.round(input.durationSec / 60))} мин`
             : null;
-        if (!date && !minutes) {
-            return `${CALL_REPORT_SMART_TITLE}: звонок #${input.activityId}`;
-        }
+        // Ни даты, ни длительности — паспорта звонка в этом проходе нет:
+        // название не строим (решение о fallback принимает buildFields).
+        if (!date && !minutes) return null;
         return [
             direction,
             date ? `от ${date}` : null,
@@ -663,10 +791,20 @@ export class CallReportSmartWriterService {
         }
     }
 
-    private buildFields(input: CallReportSmartItemInput): Partial<IBXItem> {
-        const fields: Record<string, unknown> = {
-            title: this.buildTitle(input),
-        };
+    private buildFields(
+        input: CallReportSmartItemInput,
+        options?: { isCreate?: boolean },
+    ): Partial<IBXItem> {
+        const fields: Record<string, unknown> = {};
+        // Название строится из паспорта звонка (дата/длительность), который
+        // есть только у каркаса. Дописывающие проходы (ревизор, сверка
+        // презентаций) паспорт не передают — им название трогать НЕЛЬЗЯ,
+        // иначе карточка обезличивается («AI-анализ звонков: звонок #101»).
+        const title = this.buildTitle(input);
+        if (title) fields.title = title;
+        else if (options?.isCreate) {
+            fields.title = `${CALL_REPORT_SMART_TITLE}: звонок #${input.activityId}`;
+        }
 
         // — Нативные связи смарта (работают при relations.parent у типа) —
         if (input.dealId) {
@@ -885,7 +1023,48 @@ export class CallReportSmartWriterService {
         value: string | number | undefined,
     ): void {
         if (value === undefined || value === '') return;
-        fields[this.ufName(code)] = value;
+        fields[this.ufName(code)] = this.coerceScalar(code, value);
+    }
+
+    /**
+     * Защита от «Array» и «[object Object]» в текстовых полях карточки.
+     *
+     * Битрикс — PHP: массив, попавший в строковое поле, сохраняется как
+     * литерал «Array» (боевой кейс 27.08.2026: «Предложенные продукты:
+     * Array»). Из LLM значения иногда приезжают структурой там, где
+     * ожидалась строка, поэтому приводим к тексту в единственной точке
+     * записи и громко логируем, чтобы чинить источник.
+     */
+    private coerceScalar(
+        code: string,
+        value: string | number | undefined,
+    ): string | number | undefined {
+        if (typeof value === 'string' || typeof value === 'number') {
+            return value;
+        }
+        const raw: unknown = value;
+        if (Array.isArray(raw)) {
+            const text = raw
+                .map(item =>
+                    typeof item === 'object' && item !== null
+                        ? JSON.stringify(item)
+                        : String(item as string | number | boolean),
+                )
+                .filter(Boolean)
+                .join('\n');
+            this.logger.warn(
+                `Поле ${code}: пришёл массив вместо строки — склеил по ` +
+                    `строкам (иначе Битрикс сохранил бы «Array»)`,
+            );
+            return text || undefined;
+        }
+        if (raw !== null && typeof raw === 'object') {
+            this.logger.warn(
+                `Поле ${code}: пришёл объект вместо строки — записываю JSON`,
+            );
+            return JSON.stringify(raw);
+        }
+        return undefined;
     }
 
     private setBoolUf(

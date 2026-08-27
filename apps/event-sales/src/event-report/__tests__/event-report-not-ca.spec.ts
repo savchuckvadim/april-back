@@ -98,12 +98,19 @@ describe('KPI: «Не ЦА» вместо «Отказа»', () => {
         expect(final!.items.op_prospects_type).toBe('op_prospects_nopersp');
     });
 
-    it('обычный отказ не задет: имя «Отказ», тип и причина на месте', () => {
+    /*
+     * Отказ типа «Гарант/Запрет»: селект ПРИЧИНЫ фронт не показывал, но
+     * дефолт («Не было времени») по проводам прислал. Подписью финала идёт
+     * ТИП отказа, а причина в items не пишется вовсе — раньше и подпись, и
+     * KPI получали выдуманную причину.
+     */
+    it('обычный отказ не задет: имя «Отказ», тип на месте, причина не выдумана', () => {
         const final = build(makeCtx()).find(
             p => p.items.event_type === 'ev_fail',
         );
-        expect(final!.name).toBe('Отказ: Звонок по решению — Не было времени');
+        expect(final!.name).toBe('Отказ: Звонок по решению — Гарант/Запрет');
         expect(final!.items.op_fail_type).toBe('garant');
+        expect(final!.items.op_fail_reason).toBeUndefined();
         expect(final!.items.op_prospects_type).toBe('op_prospects_garant');
     });
 });

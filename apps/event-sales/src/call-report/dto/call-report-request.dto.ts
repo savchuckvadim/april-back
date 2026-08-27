@@ -400,3 +400,31 @@ export class PresentationPlanFactRequestDto {
     @Max(720)
     windowHours?: number;
 }
+
+/** Ручной запуск недельного Excel-отчёта по звонкам. */
+export class CallReportWeeklyRequestDto {
+    @ApiProperty({
+        description:
+            'Домен портала Bitrix24, по звонкам которого собирается отчёт.',
+        example: 'alfacentr.bitrix24.ru',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Глубина отчёта в днях: сколько дней назад от текущего момента ' +
+            'брать разобранные звонки. По умолчанию 7 (рабочая неделя).',
+        example: 7,
+        type: Number,
+        minimum: 1,
+        maximum: 92,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(92)
+    days?: number;
+}

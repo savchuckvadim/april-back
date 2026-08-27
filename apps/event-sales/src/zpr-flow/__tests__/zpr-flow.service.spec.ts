@@ -35,6 +35,7 @@ const INFO = {
         zpr_pending: 'DT1038_9:PENDING',
         zpr_success: 'DT1038_9:SUCCESS',
         zpr_noresult: 'DT1038_9:NORESULT',
+        zpr_result_fail: 'DT1038_9:RESULT_FAIL',
         zpr_fail: 'DT1038_9:FAIL',
     },
 };
@@ -362,5 +363,69 @@ describe('ZprFlowService', () => {
 
         expect(added[0].ufCrm7BaseDeal).toBeUndefined();
         expect(added[0].ufCrm7Company).toEqual(['CO_431']);
+    });
+
+    it('состоялся + отказ → отдельная стадия «Состоялся: отказ»', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(job({ kind: 'report', isResult: true, isFail: true }));
+
+        // Дозвон СОСТОЯЛСЯ — это не «не состоялся»; но и не успех работы.
+        expect(updatedItems[0].fields.stageId).toBe('DT1038_9:RESULT_FAIL');
+    });
+
+    it('состоялся без отказа → «Состоялся: в работе»', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(job({ kind: 'report', isResult: true }));
+
+        expect(updatedItems[0].fields.stageId).toBe('DT1038_9:SUCCESS');
+    });
+
+    it('старая установка без стадии отказа — фолбэк на «Состоялся»', async () => {
+        const legacyInfo = {
+            ...INFO,
+            stageIdByCode: { ...INFO.stageIdByCode },
+        };
+        delete (legacyInfo.stageIdByCode as Record<string, string>)
+            .zpr_result_fail;
+        const { service, updatedItems } = makeHarness({
+            info: legacyInfo,
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(job({ kind: 'report', isResult: true, isFail: true }));
+
+        expect(updatedItems[0].fields.stageId).toBe('DT1038_9:SUCCESS');
+    });
+
+    it('элемент получает системных РОДИТЕЛЕЙ (вкладка и фильтр в карточке)', async () => {
+        const { service, added } = makeHarness();
+        await service.handle(job());
+
+        // parentId{entityTypeId}: 2 — сделка, 4 — компания, 1 — лид, 3 — контакт.
+        expect(added[0].parentId2).toBe(100);
+        expect(added[0].parentId4).toBe(431);
+        expect(added[0].parentId1).toBe(42);
+        expect(added[0].parentId3).toBe(9);
     });
 });

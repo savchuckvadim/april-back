@@ -225,12 +225,16 @@ describe('MarketplaceTokenService (refresh токенов маркетплейс
         expect(httpGet).not.toHaveBeenCalled();
     }, 10000);
 
-    it('креды из bitrix_app_secrets приоритетнее env (источник истины — БД)', async () => {
-        repo.findActiveInstall.mockResolvedValue(makeInstall(0));
-        repo.findAppSecrets.mockResolvedValue({
-            clientId: 'db.client.id',
-            clientSecret: 'db-secret',
-        });
+    /** Параметры OAuth-запроса N-го вызова http.get */
+    const oauthParams = (call = 0): Record<string, string> => {
+        const [, requestConfig] = httpGet.mock.calls[call] as [
+            string,
+            { params: Record<string, string> },
+        ];
+        return requestConfig.params;
+    };
+
+    const okRefresh = (): void => {
         httpGet.mockReturnValue(
             of(
                 axiosResponse({
@@ -240,16 +244,142 @@ describe('MarketplaceTokenService (refresh токенов маркетплейс
                 }),
             ),
         );
+    };
 
-        await service.getFreshAccessToken({ memberId: 'member-1' });
+    describe('резолв OAuth-кред (тиражное vs локальные приложения)', () => {
+        it('тиражный портал: локальных кред нет → фолбэк на garant_manager', async () => {
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            // строки локального приложения отсутствуют, тиражная — есть
+            repo.findAppSecrets.mockImplementation((code: string) =>
+                Promise.resolve(
+                    code === 'garant_manager'
+                        ? {
+                              clientId: 'db.client.id',
+                              clientSecret: 'db-secret',
+                          }
+                        : null,
+                ),
+            );
+            okRefresh();
 
-        expect(repo.findAppSecrets).toHaveBeenCalledWith('garant_manager');
-        const [, requestConfig] = httpGet.mock.calls[0] as [
-            string,
-            { params: Record<string, string> },
-        ];
-        expect(requestConfig.params.client_id).toBe('db.client.id');
-        expect(requestConfig.params.client_secret).toBe('db-secret');
+            await service.getFreshAccessToken({ memberId: 'member-1' });
+
+            // порядок кандидатов: member_id → домен → тиражные
+            expect(repo.findAppSecrets.mock.calls.map(c => c[0])).toEqual([
+                'garant_local:mid:member-1',
+                'garant_local:april-dev.bitrix24.ru',
+                'garant_manager',
+            ]);
+            expect(oauthParams().client_id).toBe('db.client.id');
+            expect(oauthParams().client_secret).toBe('db-secret');
+        });
+
+        it('локальное приложение: креды по member_id, тиражные НЕ запрашиваются', async () => {
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            repo.findAppSecrets.mockImplementation((code: string) =>
+                Promise.resolve(
+                    code === 'garant_local:mid:member-1'
+                        ? {
+                              clientId: 'local.client.id',
+                              clientSecret: 'local-secret',
+                          }
+                        : null,
+                ),
+            );
+            okRefresh();
+
+            await service.getFreshAccessToken({ memberId: 'member-1' });
+
+            expect(oauthParams().client_id).toBe('local.client.id');
+            expect(repo.findAppSecrets).not.toHaveBeenCalledWith(
+                'garant_manager',
+            );
+        });
+
+        it('креды заведены клиентом ДО установки — находятся по домену', async () => {
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            repo.findAppSecrets.mockImplementation((code: string) =>
+                Promise.resolve(
+                    code === 'garant_local:april-dev.bitrix24.ru'
+                        ? {
+                              clientId: 'by.domain.id',
+                              clientSecret: 'by-domain-secret',
+                          }
+                        : null,
+                ),
+            );
+            okRefresh();
+
+            await service.getFreshAccessToken({ memberId: 'member-1' });
+
+            expect(oauthParams().client_id).toBe('by.domain.id');
+        });
+
+        it('ИЗОЛЯЦИЯ: второй портал не получает креды первого (кэш по коду)', async () => {
+            repo.findAppSecrets.mockImplementation((code: string) =>
+                Promise.resolve(
+                    code === 'garant_local:mid:member-1'
+                        ? { clientId: 'portal-A', clientSecret: 'secret-A' }
+                        : code === 'garant_local:mid:member-2'
+                          ? { clientId: 'portal-B', clientSecret: 'secret-B' }
+                          : null,
+                ),
+            );
+            okRefresh();
+
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            await service.getFreshAccessToken({ memberId: 'member-1' });
+
+            const installB = makeInstall(0);
+            (installB.portals as { member_id: string }).member_id = 'member-2';
+            (installB.portals as { domain: string }).domain =
+                'romashka.bitrix24.ru';
+            repo.findActiveInstall.mockResolvedValue(installB);
+            await service.getFreshAccessToken({ memberId: 'member-2' });
+
+            expect(oauthParams(0).client_id).toBe('portal-A');
+            expect(oauthParams(1).client_id).toBe('portal-B');
+        });
+
+        it('кэш по коду: повторный refresh того же портала не бьёт в БД', async () => {
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            repo.findAppSecrets.mockResolvedValue({
+                clientId: 'local.client.id',
+                clientSecret: 'local-secret',
+            });
+            okRefresh();
+
+            await service.getFreshAccessToken({ memberId: 'member-1' });
+            const callsAfterFirst = repo.findAppSecrets.mock.calls.length;
+            await service.getFreshAccessToken({ memberId: 'member-1' });
+
+            expect(repo.findAppSecrets.mock.calls.length).toBe(callsAfterFirst);
+        });
+
+        it('домен нормализуется: клиент ввёл его с протоколом и в верхнем регистре', async () => {
+            const install = makeInstall(0);
+            (install.portals as { domain: string }).domain =
+                'https://April-Dev.bitrix24.ru/';
+            (install.portals as { member_id: string | null }).member_id = null;
+            repo.findActiveInstall.mockResolvedValue(install);
+            repo.findAppSecrets.mockImplementation((code: string) =>
+                Promise.resolve(
+                    code === 'garant_local:april-dev.bitrix24.ru'
+                        ? {
+                              clientId: 'normalized.id',
+                              clientSecret: 'normalized-secret',
+                          }
+                        : null,
+                ),
+            );
+            okRefresh();
+
+            await service.getFreshAccessToken({ domain: 'april-dev' });
+
+            // без нормализации ключ был бы «garant_local:https://april-dev…/»
+            // и креды, заведённые клиентом, просто не нашлись бы
+            expect(oauthParams().client_id).toBe('normalized.id');
+        });
     });
 
     it('нет ни строки в БД, ни env-кред → OAUTH_UNAVAILABLE с понятным текстом', async () => {

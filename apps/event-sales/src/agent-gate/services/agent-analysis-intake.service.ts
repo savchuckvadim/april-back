@@ -25,6 +25,7 @@ import {
     CALL_CLASSIFY_TYPE,
 } from './agent-call-package.service';
 import { computeSpeechMetrics } from './speech-metrics.util';
+import { sanitizeLatex } from './text-sanitize.util';
 
 /** Итог записи смарт-элемента + контекст для таймлайнов. */
 interface SmartItemWriteResult {
@@ -802,9 +803,7 @@ export class AgentAnalysisIntakeService {
      */
     private sanitizeAgentStrings<T>(value: T): T {
         if (typeof value === 'string') {
-            return value
-                .replace(/\$\s*\\?r?ightarrow\s*\$/g, '→')
-                .replace(/\\?r?ightarrow/g, '→') as unknown as T;
+            return sanitizeLatex(value) as unknown as T;
         }
         if (Array.isArray(value)) {
             return (value as unknown[]).map(item =>

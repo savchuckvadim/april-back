@@ -79,6 +79,23 @@ export interface PortalAiSettingsRecord {
      * soft — любое содержательное обсуждение продукта. NULL — strict.
      */
     presentationStrictness: PresentationStrictnessLevel | null;
+    /**
+     * Недельный EXCEL-отчёт по звонкам (пятница вечером): всё, что не
+     * помещается в карточку смарта — полные разборы, транскрипты, сверка
+     * с отчётами менеджеров. NULL — выключен.
+     */
+    weeklyReportEnabled: boolean | null;
+    /**
+     * Получатели недельного отчёта: bitrix-id сотрудников (в админке
+     * вводятся через запятую). Пусто — отчёт собирается, но не рассылается
+     * (лежит на Диске портала).
+     */
+    weeklyReportRecipients: number[] | null;
+    /**
+     * ID папки на Диске портала, куда класть файл (папка группы «Продажи»
+     * и т.п.). NULL — папка приложения на Диске.
+     */
+    weeklyReportFolderId: number | null;
 }
 
 /** Уровни строгости определения презентации (runtime-константа для DTO). */
@@ -122,6 +139,9 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     revisorEnabled: null,
     presentationAuditEnabled: null,
     presentationStrictness: null,
+    weeklyReportEnabled: null,
+    weeklyReportRecipients: null,
+    weeklyReportFolderId: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

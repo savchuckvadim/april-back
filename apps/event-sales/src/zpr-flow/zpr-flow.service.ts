@@ -203,6 +203,7 @@ export class ZprFlowService {
         );
         this.setUf(fields, info, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
         this.applyLinks(fields, info, job);
+        this.applyParents(fields, job);
 
         const response = await bitrix.item.add(
             String(info.entityTypeId),
@@ -272,8 +273,7 @@ export class ZprFlowService {
             );
             return { action: 'moved', elementId: Number(open.id) || null };
         }
-        const targetStage =
-            info.stageIdByCode[job.isResult ? 'zpr_success' : 'zpr_noresult'];
+        const targetStage = this.resolveClosingStage(info, job);
         const reportEntry = job.reportComment
             ? `${now} Отчёт: ${job.reportComment}`
             : `${now} Отчёт: ${job.isResult ? 'состоялся' : 'не состоялся'}`;
@@ -319,6 +319,7 @@ export class ZprFlowService {
         this.setUf(fields, info, 'ZPR_REPORT_COMMENT', job.reportComment);
         this.setUf(fields, info, 'ZPR_COMMENTS', [reportEntry]);
         this.applyLinks(fields, info, job);
+        this.applyParents(fields, job);
 
         const response = await bitrix.item.add(
             String(info.entityTypeId),
@@ -445,6 +446,48 @@ export class ZprFlowService {
         }
     }
 
+    /**
+     * Стадия закрытия звонка (правило владельца 26.08):
+     *  - не дозвонились → «Не состоялся»;
+     *  - дозвонились, и клиент отказал этим же отчётом → «Состоялся: отказ»
+     *    (дозвон состоялся — это не то же самое, что недозвон);
+     *  - дозвонились, работа продолжается → «Состоялся: в работе».
+     * Что случится со сделкой дальше (продажа, отказ, «не ЦА») читается по
+     * самой сделке — элемент привязан к ней родителем.
+     *
+     * Стадии «Состоялся: отказ» может не быть на портале со СТАРОЙ
+     * установкой смарта — тогда честный фолбэк на «Состоялся», а не
+     * запись в несуществующую стадию.
+     */
+    private resolveClosingStage(
+        info: ZprSmartInfo,
+        job: ZprFlowJobData,
+    ): string {
+        if (!job.isResult) return info.stageIdByCode['zpr_noresult'];
+        if (job.isFail) {
+            return (
+                info.stageIdByCode['zpr_result_fail'] ??
+                info.stageIdByCode['zpr_success']
+            );
+        }
+        return info.stageIdByCode['zpr_success'];
+    }
+
+    /**
+     * РОДИТЕЛИ элемента — системные поля `parentId{entityTypeId}`.
+     *
+     * Наши crm-поля (ZPR_BASE_DEAL и прочие) хранят связь для нашего же
+     * кода, но Битрикс показывает дочерние элементы в карточке и фильтрует
+     * их ТОЛЬКО по системному родителю. Без него вкладка ЗПР в сделке
+     * оставалась бы пустой, а отчёт «все звонки по решению этой сделки»
+     * не собирался бы штатными средствами (замечание владельца 26.08).
+     */
+    private applyParents(fields: BxRow, job: ZprFlowJobData): void {
+        if (job.baseDealId) fields['parentId2'] = job.baseDealId;
+        if (job.companyId) fields['parentId4'] = job.companyId;
+        if (job.leadId) fields['parentId1'] = job.leadId;
+        if (job.contactId) fields['parentId3'] = job.contactId;
+    }
     private applyLinks(
         fields: BxRow,
         info: ZprSmartInfo,

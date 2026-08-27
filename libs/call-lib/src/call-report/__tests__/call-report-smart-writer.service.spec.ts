@@ -354,6 +354,140 @@ describe('CallReportSmartWriterService', () => {
         expect(bitrix.item.add).not.toHaveBeenCalled();
     });
 
+    it('связи потеряны Битриксом (нет в эхе элемента) — error-алерт с перечнем полей', async () => {
+        const bitrix = makeBitrix();
+        // Битрикс молча отбросил связи: HTTP 200, но в созданном элементе их нет.
+        bitrix.item.add.mockResolvedValue({
+            result: { item: { id: 7, title: 'Звонок' } },
+        });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const error = jest
+            .spyOn(
+                (writer as unknown as { logger: { error: () => void } }).logger,
+                'error',
+            )
+            .mockImplementation(() => undefined);
+
+        await writer.addItem({
+            activityId: '101',
+            dealId: 555,
+            companyId: 33,
+            mainDealId: 555,
+        });
+
+        expect(error).toHaveBeenCalledTimes(1);
+        const [message, meta] = error.mock.calls[0] as unknown as [
+            string,
+            { telegram?: boolean },
+        ];
+        expect(message).toContain('НЕ СОХРАНИЛ связи');
+        expect(message).toContain('parentId2');
+        expect(message).toContain('companyId');
+        expect(meta.telegram).toBe(true);
+        error.mockRestore();
+    });
+
+    it('связи сохранились (есть в эхе) — алерта нет', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.add.mockResolvedValue({
+            // Битрикс возвращает id строками — сравнение мягкое.
+            result: {
+                item: {
+                    id: 7,
+                    parentId2: '555',
+                    companyId: '33',
+                    ufCrm128DealMain: ['D_555'],
+                },
+            },
+        });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const error = jest
+            .spyOn(
+                (writer as unknown as { logger: { error: () => void } }).logger,
+                'error',
+            )
+            .mockImplementation(() => undefined);
+
+        await writer.addItem({
+            activityId: '101',
+            dealId: 555,
+            companyId: 33,
+            mainDealId: 555,
+        });
+
+        expect(error).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+
+    it('связей нет во входе — warn «нечего привязывать», не алерт', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const logger = (
+            writer as unknown as {
+                logger: { warn: () => void; error: () => void };
+            }
+        ).logger;
+        const warn = jest
+            .spyOn(logger, 'warn')
+            .mockImplementation(() => undefined);
+        const error = jest
+            .spyOn(logger, 'error')
+            .mockImplementation(() => undefined);
+
+        await writer.addItem({ activityId: '101' });
+
+        expect(error).not.toHaveBeenCalled();
+        expect(
+            (warn.mock.calls as unknown as [string][]).some(([message]) =>
+                message.includes('связи НЕ отправлялись'),
+            ),
+        ).toBe(true);
+        warn.mockRestore();
+        error.mockRestore();
+    });
+
+    it('дописывающий проход (без паспорта звонка) НЕ перезаписывает название элемента', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.list.mockResolvedValue({ result: { items: [{ id: 42 }] } });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+
+        // Ревизор/сверка: связи и рекомендации есть, паспорта звонка нет.
+        await writer.updateExisting({
+            activityId: '101',
+            dealId: 555,
+            recommendations: 'Отправить КП',
+        });
+
+        const updateCall = bitrix.item.update.mock.calls[0] as unknown[];
+        const fields = updateCall[2] as Record<string, unknown>;
+        expect(fields).not.toHaveProperty('title');
+        expect(fields.parentId2).toBe(555);
+    });
+
+    it('создание без паспорта звонка всё же получает техническое название', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({ activityId: '101' });
+        const addCall = bitrix.item.add.mock.calls[0] as unknown[];
+        const fields = addCall[1] as Record<string, unknown>;
+        expect(fields.title).toContain('звонок #101');
+    });
+
     it('сломанный поиск по xmlId не блокирует запись (fail-open)', async () => {
         const bitrix = makeBitrix();
         bitrix.item.list.mockRejectedValue(new Error('list down'));
@@ -412,7 +546,7 @@ describe('CallReportSmartWriterService', () => {
         expect(second.ufCrm128Transcript1).toBeUndefined();
     });
 
-    it('Row size: ретрай без транскрипта, затем приоритетные тексты <700 байт, остальное — в таймлайн', async () => {
+    it('Row size: ретрай без транскрипта, затем ВСЕ тексты ужимаются под бюджет строки (ничего не пропадает)', async () => {
         const bitrix = makeBitrix();
         const rowSize = new Error(
             'Mysql query error: (1118) Row size too large (> 8126)',
@@ -430,8 +564,19 @@ describe('CallReportSmartWriterService', () => {
         const itemId = await writer.addItem({
             activityId: '101',
             transcript: 'т'.repeat(100_000),
-            scoreExplanation: longText, // приоритетное — ужмётся
-            speechAnalysis: longText, // неприоритетное — уедет в таймлайн
+            scoreExplanation: longText,
+            // Прод-жалоба 27.08.2026: раньше неприоритетные разборы просто
+            // исчезали из карточки («оценка есть, а разбора нет»).
+            speechAnalysis: longText,
+            sections: [
+                {
+                    section: 'GREETING',
+                    relevance: 100,
+                    score: 5,
+                    analysis: longText,
+                    advice: 'быстрый вход: имя, компания, причина звонка',
+                },
+            ],
             score: 8,
         });
 
@@ -451,13 +596,26 @@ describe('CallReportSmartWriterService', () => {
         // 1-я попытка — с транскриптом; 2-я — без него.
         expect(first.ufCrm128Transcript1).toBeDefined();
         expect(second.ufCrm128Transcript1).toBeUndefined();
-        // 3-я: приоритетный текст ужат до <700 байт, неприоритетный удалён.
+        // 3-я: ВСЕ длинные тексты ужаты под бюджет строки и остались в
+        // полях — включая разбор раздела и спич (раньше их выбрасывало).
         const explanation = String(third.ufCrm128ScoreExplanation);
         expect(explanation.endsWith('…')).toBe(true);
         expect(Buffer.byteLength(explanation, 'utf8')).toBeLessThanOrEqual(
             700 + 3,
         );
-        expect(third.ufCrm128SpeechAnalysis).toBeUndefined();
+        const speech = String(third.ufCrm128SpeechAnalysis);
+        expect(speech.endsWith('…')).toBe(true);
+        const greeting = String(third.ufCrm128GreetingAnalysis);
+        expect(greeting.endsWith('…')).toBe(true);
+        // Суммарно тексты укладываются в бюджет строки (~6.5к байт).
+        const textBytes = Object.values(third)
+            .filter((value): value is string => typeof value === 'string')
+            .reduce((sum, value) => sum + Buffer.byteLength(value, 'utf8'), 0);
+        expect(textBytes).toBeLessThanOrEqual(6500 + 500);
+        // Короткая рекомендация раздела не тронута.
+        expect(third.ufCrm128GreetingAdvice).toBe(
+            'быстрый вход: имя, компания, причина звонка',
+        );
         // Короткие значения не трогаются ни в одном варианте.
         expect(third.ufCrm128Score).toBe(8);
         // Выброшенные тексты ушли полным текстом в таймлайн элемента,

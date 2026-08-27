@@ -91,10 +91,13 @@ const EVENT_TYPE_TO_KPI_ITEM: Record<EventReportEventType, EventTypeCode> = {
     presentation: 'presentation',
     hot: 'call_in_progress',
     /*
-     * Доработка в СВОДКЕ считается «Звонком» (решение владельца): свой
-     * item `refine` уходит только в историю через historyItems-override
-     * (см. buildReport/buildPlan) — лента различает доработку, сводка
-     * не раздувается новыми рядами.
+     * Доработка ВЕЗДЕ считается «Звонком» — и в сводке, и в истории
+     * (решение владельца, подтверждено 27.08).
+     *
+     * Свой item `refine` в истории был ошибкой: на портале он не
+     * установлен в поле EVENT_TYPE списков, и Битрикс показывал у записи
+     * пустой тип — «событие неопределён». Доработку по-прежнему видно по
+     * имени записи: `withRefineMark` ставит префикс «Доработка: ».
      */
     refine: 'call',
     moneyAwait: 'call_in_money',
@@ -183,6 +186,20 @@ function mapFailReason(
     return known.includes(code as OpFailReasonCode)
         ? (code as OpFailReasonCode)
         : undefined;
+}
+
+/**
+ * Причина отказа для KPI — ровно та, что выбрал менеджер.
+ *
+ * Гейт целиком в `ctx.failReasonCode` (см. EventReportContext): причина
+ * существует только при типе отказа «Отказ» и не при «не ЦА». Без него
+ * дефолт селекта («Не было времени») ложился в KPI при восьми типах отказа
+ * из девяти, и отчёт по причинам отказа врал.
+ */
+function mapFailReasonGuarded(
+    ctx: EventReportContext,
+): OpFailReasonCode | undefined {
+    return mapFailReason(ctx.failReasonCode);
 }
 
 function mapNoresultReason(
@@ -330,9 +347,7 @@ export class EventReportKpiPayloadBuilder {
             crm: this.crmLinks(),
             // История различает доработку своим item'ом; сводка KPI — нет.
             historyItems:
-                ctx.reportEventType === 'refine'
-                    ? { event_type: 'refine' }
-                    : undefined,
+undefined,
         });
     }
 
@@ -403,9 +418,7 @@ export class EventReportKpiPayloadBuilder {
                 : PLAN_EVENT_DATE_OFFSET_SEC,
             // История различает доработку своим item'ом; сводка KPI — нет.
             historyItems:
-                ctx.planEventType === 'refine'
-                    ? { event_type: 'refine' }
-                    : undefined,
+undefined,
         });
     }
 
@@ -681,14 +694,29 @@ export class EventReportKpiPayloadBuilder {
         const reason = ctx.isNotCa
             ? this.notCaTypeName()
             : ctx.isFail
-              ? (ctx.dto.report?.failReason?.current?.name ??
-                ctx.dto.report?.failType?.current?.name ??
-                '')
+              ? this.failReasonLabel()
               : '';
 
         let name = occasion ? `${base}: ${occasion}` : base;
         if (reason) name += ` — ${reason}`;
         return name;
+    }
+
+    /**
+     * Подпись отказа в имени финальной записи.
+     *
+     * Причина («Нет денег») — только когда менеджер её ВЫБИРАЛ, то есть при
+     * типе отказа «Отказ»; при остальных восьми типах подписью идёт сам тип
+     * («Гарант/Запрет», «Покупает ГО», …). Раньше здесь всегда выигрывало
+     * имя причины — фронт присылает её дефолт, и финал по гаранту читался
+     * как «Отказ: Звонок — Не было времени».
+     */
+    private failReasonLabel(): string {
+        const report = this.ctx.dto.report;
+        if (this.ctx.failReasonCode) {
+            return report?.failReason?.current?.name ?? '';
+        }
+        return report?.failType?.current?.name ?? '';
     }
 
     /** Имя типа «не ЦА» по коду из leadSync (поле лида в слепке портала). */
@@ -758,15 +786,13 @@ export class EventReportKpiPayloadBuilder {
                 op_result_status: mapResultStatus(ctx.isResult),
                 op_noresult_reason: mapNoresultReasonGuarded(ctx),
                 op_work_status: mapWorkStatus(ctx),
-                // При «не ЦА» отказные селекты не выбирались — в DTO лежат
-                // дефолты («Гарант/Запрет», «Не было времени»), писать их
-                // значило бы выдумать тип и причину отказа.
-                op_fail_type: ctx.isNotCa
-                    ? undefined
-                    : mapFailType(failTypeCode),
-                op_fail_reason: ctx.isNotCa
-                    ? undefined
-                    : mapFailReason(ctx.dto.report?.failReason?.current?.code),
+                // Тип и причина отказа — только у настоящего отказа: гейты
+                // целиком в контексте (ctx.failTypeCode / ctx.failReasonCode).
+                // Фронт шлёт оба селекта всегда, дефолтами «Гарант/Запрет» и
+                // «Не было времени», и без гейтов они уезжали в сводку при
+                // отчётах, где отказа не было вовсе.
+                op_fail_type: mapFailType(ctx.failTypeCode),
+                op_fail_reason: mapFailReasonGuarded(ctx),
                 op_prospects_type: mapProspects(failTypeCode, ctx),
             },
             historyItems: input.historyItems,

@@ -301,6 +301,18 @@ export class CallRevisionService {
             const input = {
                 // Связи владельца звонка из CRM (источник истины) — update
                 // дополняет существующий элемент, пустые значения не шлются.
+                // НАТИВНЫЕ связи (parentId2/parentId1) обязательны наравне с
+                // crm-полем DEAL_MAIN: без dealId/leadId «долив связей» чинил
+                // только компанию и контакт, а сделка у элемента так и
+                // оставалась непривязанной (карточка-сирота).
+                dealId:
+                    passport.entityType === 'deal'
+                        ? (passport.entityId ?? undefined)
+                        : undefined,
+                leadId:
+                    passport.entityType === 'lead'
+                        ? (passport.entityId ?? undefined)
+                        : undefined,
                 mainDealId:
                     passport.entityType === 'deal'
                         ? (passport.entityId ?? undefined)

@@ -218,6 +218,7 @@ export class PresentationFlowService {
         );
         this.setUf(fields, info, 'PRES_NEXT_CALL_DATE', job.planDeadline);
         this.applyLinks(fields, info, job);
+        this.applyParents(fields, job);
 
         const response = await bitrix.item.add(
             String(info.entityTypeId),
@@ -347,6 +348,7 @@ export class PresentationFlowService {
             this.applySurvey(fields, info, job);
         }
         this.applyLinks(fields, info, job);
+        this.applyParents(fields, job);
 
         const response = await bitrix.item.add(
             String(info.entityTypeId),
@@ -510,6 +512,23 @@ export class PresentationFlowService {
         for (const [code, value] of Object.entries(job.survey ?? {})) {
             this.setUf(fields, info, code as PresentationSmartFieldCode, value);
         }
+    }
+
+    /**
+     * РОДИТЕЛИ элемента — системные поля `parentId{entityTypeId}`.
+     *
+     * Зеркало zpr-flow: наши crm-поля хранят связь для нашего кода, а
+     * вкладку в карточке и штатный фильтр «презентации этой сделки»
+     * Битрикс строит ТОЛЬКО по системному родителю.
+     */
+    private applyParents(
+        fields: BxRow,
+        job: PresentationFlowJobData,
+    ): void {
+        if (job.baseDealId) fields['parentId2'] = job.baseDealId;
+        if (job.companyId) fields['parentId4'] = job.companyId;
+        if (job.leadId) fields['parentId1'] = job.leadId;
+        if (job.contactId) fields['parentId3'] = job.contactId;
     }
 
     private applyLinks(

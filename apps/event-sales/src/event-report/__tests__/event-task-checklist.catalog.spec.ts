@@ -63,9 +63,16 @@ describe('Каталог чек-листов задач — состав по т
         expect(sorts).toEqual([...sorts].sort((a, b) => a - b));
     });
 
-    it('под «решение» и «возражение» полей в реестре нет — список для владельца', () => {
+    /*
+     * «Дата следующей коммуникации» объявляла fieldCode `call_next_date`,
+     * которого не читает никто: аппликатор в модели полей один и захардкожен
+     * под presentationDone, а само поле выставляет ПЛАН отчёта. Каталог
+     * обещал контракт, которого код не исполняет, — обещание убрано.
+     */
+    it('пункты без собственного аппликатора — список для владельца', () => {
         expect(EVENT_TASK_CHECKLIST_FIELDLESS_CODES).toEqual([
             EVENT_TASK_CHECKLIST_ITEM.decisionConfirmed,
+            EVENT_TASK_CHECKLIST_ITEM.nextCommunicationSet,
             EVENT_TASK_CHECKLIST_ITEM.objectionRecorded,
         ]);
     });

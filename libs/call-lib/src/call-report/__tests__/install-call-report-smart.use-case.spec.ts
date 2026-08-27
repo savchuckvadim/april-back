@@ -37,6 +37,7 @@ const makeDeps = (options: {
                 })),
             ),
             add: jest.fn().mockResolvedValue({ result: {} }),
+            update: jest.fn().mockResolvedValue({ result: {} }),
         },
     };
     const pbxService = { init: jest.fn().mockResolvedValue({ bitrix }) };
@@ -118,6 +119,44 @@ describe('InstallCallReportSmartUseCase', () => {
         expect(result.fieldsAdded).toHaveLength(
             CALL_REPORT_SMART_FIELDS.length - 2,
         );
+    });
+
+    it('чинит существующее crm-поле без привязки к сделке (иначе D_123 не сохраняется)', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        bitrix.userFieldConfig.getAllWithItems.mockResolvedValue([
+            // Создано до 22.07.2026 — settings пустые, значения молча теряются.
+            { id: 900, fieldName: 'UF_CRM_128_DEAL_MAIN' },
+            // Уже с привязкой — трогать не надо.
+            {
+                id: 901,
+                fieldName: 'UF_CRM_128_DEAL_PRESENTATION',
+                settings: { DEAL: 'Y' },
+            },
+            // Не crm-поле — привязка не применима.
+            { id: 902, fieldName: 'UF_CRM_128_SUMMARY' },
+        ]);
+
+        await useCase.execute(DOMAIN);
+
+        expect(bitrix.userFieldConfig.update).toHaveBeenCalledTimes(1);
+        expect(bitrix.userFieldConfig.update).toHaveBeenCalledWith({
+            moduleId: 'crm',
+            id: 900,
+            field: { settings: { DEAL: 'Y' } },
+        });
+    });
+
+    it('сбой починки привязки не роняет установку', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        bitrix.userFieldConfig.getAllWithItems.mockResolvedValue([
+            { id: 900, fieldName: 'UF_CRM_128_DEAL_MAIN' },
+        ]);
+        bitrix.userFieldConfig.update.mockRejectedValue(
+            new Error('access denied'),
+        );
+
+        const result = await useCase.execute(DOMAIN);
+        expect(result.entityTypeId).toBe(1056);
     });
 
     it('ошибка создания одного поля не прерывает установку остальных', async () => {

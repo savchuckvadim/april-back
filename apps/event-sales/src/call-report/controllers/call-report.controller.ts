@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InstallCallReportSmartUseCase } from '@lib/call-lib';
+import { SendCallReportWeeklyUseCase } from '@lib/call-lib/call-report/weekly-report/send-call-report-weekly.use-case';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { CallReportAnalyzeUseCase } from '../use-cases/call-report-analyze.use-case';
 import { CallRevisionService } from '../services/call-revision.service';
@@ -8,6 +9,7 @@ import { PresentationAuditService } from '../services/presentation-audit.service
 import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
 import {
     AnalyzeCallDto,
+    CallReportWeeklyRequestDto,
     InstallCallReportSmartDto,
     PresentationAuditRequestDto,
     PresentationPlanFactRequestDto,
@@ -17,6 +19,7 @@ import {
 import {
     AnalyzeCallsResponseDto,
     CallReportScanResponseDto,
+    CallReportWeeklyResponseDto,
     InstallCallReportSmartResponseDto,
     PresentationAuditResponseDto,
     PresentationPlanFactResponseDto,
@@ -40,6 +43,7 @@ export class CallReportController {
         private readonly revisionService: CallRevisionService,
         private readonly presentationAudit: PresentationAuditService,
         private readonly planFact: PresentationPlanFactService,
+        private readonly sendWeekly: SendCallReportWeeklyUseCase,
     ) {}
 
     @Post('install-smart')
@@ -223,5 +227,34 @@ export class CallReportController {
             to.getTime() - (dto.windowHours ?? 30) * 60 * 60 * 1000,
         );
         return this.planFact.runForDomain(dto.domain, from, to);
+    }
+    @Post('weekly-report')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Недельный Excel-отчёт по звонкам (ручной запуск)',
+        description:
+            'Собирает по порталу все разобранные звонки за период, кладёт ' +
+            'книгу Excel на Диск (в папку из настроек портала, иначе — в ' +
+            'хранилище приложения) и уведомляет получателей из настроек. ' +
+            'В файле — то, что физически не помещается в карточку смарта: ' +
+            'полные разборы разделов, анализ речи, хвост и 5К, сверка с ' +
+            'отчётом менеджера и транскрипт. Ручной аналог пятничного крона.',
+    })
+    @ApiBody({
+        type: CallReportWeeklyRequestDto,
+        description: 'Домен и глубина отчёта в днях.',
+    })
+    @ApiOkResponse({
+        type: CallReportWeeklyResponseDto,
+        description: 'Период, число звонков, файл на Диске и получатели.',
+    })
+    async weeklyReport(
+        @Body() dto: CallReportWeeklyRequestDto,
+    ): Promise<CallReportWeeklyResponseDto> {
+        const to = new Date();
+        const from = new Date(
+            to.getTime() - (dto.days ?? 7) * 24 * 60 * 60 * 1000,
+        );
+        return this.sendWeekly.execute(dto.domain, { from, to });
     }
 }

@@ -246,6 +246,8 @@ export class EventReportUseCase {
             planComment: ctx.reportComment || null,
             reportComment: ctx.reportComment || null,
             isResult: ctx.isResult,
+            // Отказ (в т.ч. «не ЦА») закрывает звонок своей стадией.
+            isFail: ctx.isFail || ctx.isNotCa,
         };
 
         for (const kind of kinds) {

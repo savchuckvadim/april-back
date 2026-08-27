@@ -501,3 +501,60 @@ export class PresentationPlanFactResponseDto
     })
     items: PresentationPlanFactItemDto[];
 }
+
+/** Итог недельного Excel-отчёта: что собрали, куда положили, кому ушло. */
+export class CallReportWeeklyResponseDto {
+    @ApiProperty({
+        description: 'Домен портала.',
+        example: 'alfacentr.bitrix24.ru',
+        type: String,
+    })
+    domain: string;
+
+    @ApiProperty({
+        description: 'Начало периода отчёта (ISO).',
+        example: '2026-08-20T16:00:00.000Z',
+        type: String,
+    })
+    from: string;
+
+    @ApiProperty({
+        description: 'Конец периода отчёта (ISO).',
+        example: '2026-08-27T16:00:00.000Z',
+        type: String,
+    })
+    to: string;
+
+    @ApiProperty({
+        description: 'Сколько звонков попало в файл.',
+        example: 143,
+        type: Number,
+    })
+    calls: number;
+
+    @ApiProperty({
+        description:
+            'ID файла на Диске Битрикса; null — файл не загрузился ' +
+            '(причина в логе и телеграм-алерте).',
+        example: 8891,
+        type: Number,
+        nullable: true,
+    })
+    fileId: number | null;
+
+    @ApiProperty({
+        description: 'Ссылка на файл, если Битрикс её вернул.',
+        example: 'https://alfacentr.bitrix24.ru/disk/showFile/8891/',
+        type: String,
+        nullable: true,
+    })
+    fileUrl: string | null;
+
+    @ApiProperty({
+        description:
+            'Кому доставлено уведомление (bitrix-id из настроек портала).',
+        example: [12, 25],
+        type: [Number],
+    })
+    notifiedUserIds: number[];
+}

@@ -61,7 +61,8 @@ const FAIL_COMMENTS_LIMIT = 18;
 
 /**
  * Анкета после презентации: сводные («Хвост», «Пять К») + девять детальных
- * ответов «5К». Значения пишет ФРЕЙМ прямо в ЛИД; event-report при
+ * ответов «5К» + шесть обязательных вопросов «Разговора» (op_talk_*).
+ * Значения пишет ФРЕЙМ прямо в ЛИД; event-report при
  * проведённой презентации разносит их тем же каркасом, что
  * `pres_comments`/`pres_count`, по правилам владельца:
  *  - основная (sales_base) сделка — всегда, ПЕРЕЗАТИРАЯ: смысл —
@@ -80,6 +81,16 @@ const FAIL_COMMENTS_LIMIT = 18;
 export const PRESENTATION_SURVEY_FIELD_CODES = [
     'op_presentation_xvost',
     'op_presentation_5k',
+    // Шесть обязательных вопросов «Разговора»: до появления op_talk_* они
+    // жили только в тексте комментария к презентации — прочитать их мог
+    // человек, отфильтровать не мог никто. Переносятся тем же каркасом,
+    // что и «5К»: источник — лид, приёмник — сделки.
+    'op_talk_impression',
+    'op_talk_remembered',
+    'op_talk_desire',
+    'op_talk_decision_process',
+    'op_talk_price_opinion',
+    'op_talk_boss_readiness',
     'op_5k_client_what',
     'op_5k_client_ready',
     'op_5k_client_price',
@@ -173,12 +184,7 @@ export class EventReportEntityFieldsModel {
 
         // ===== isPresentationDone =====
         if (this.ctx.isPresentationDone) {
-            this.setScalar(out, 'last_pres_done_date', this.nowCrmDate());
-            this.setScalar(
-                out,
-                'last_pres_done_responsible',
-                this.ctx.planResponsibleId,
-            );
+            this.applyPresentationDoneStamp(out);
             this.bumpPresCount(out);
             this.appendMultiple(
                 out,
@@ -252,27 +258,41 @@ export class EventReportEntityFieldsModel {
         );
 
         // ===== Enumeration: noresult / fail reason =====
-        if (!this.ctx.isResult && this.ctx.dto.report?.noresultReason) {
+        /*
+         * Причина нерезультативности — только у НЕсостоявшегося разговора.
+         * `isNew` («новое событие») из гейта исключён: отчёт по кнопке
+         * «новое событие» разговором не был вовсе, и недозвон там —
+         * выдумка. Гейт обязан совпадать с KPI-билдером
+         * (`mapNoresultReasonGuarded`, легаси legacy-flow.php:234-256):
+         * раньше карточка клиента получала причину, которой в отчётности
+         * не было.
+         */
+        if (
+            !this.ctx.isResult &&
+            !this.ctx.isNew &&
+            this.ctx.dto.report?.noresultReason
+        ) {
             const code = this.ctx.dto.report.noresultReason.current?.code;
             if (code) {
                 this.applyEnumeration(out, 'op_noresult_reason', code);
             }
         }
-        // При «не ЦА» причина отказа не выбиралась — в DTO лежит дефолт
-        // селекта, писать его в поле значило бы выдумать причину.
-        if (
-            this.ctx.isFail &&
-            !this.ctx.isNotCa &&
-            this.ctx.dto.report?.failReason
-        ) {
-            const failReasonCode = this.ctx.dto.report.failReason.current?.code;
-            if (failReasonCode) {
-                this.applyEnumeration(
-                    out,
-                    'op_efield_fail_reason',
-                    `op_efield_fail_${failReasonCode}`,
-                );
-            }
+        /*
+         * ИНВАРИАНТ: `op_efield_fail_reason` — поле ФИНАЛЬНОГО отказа и
+         * больше ничьё. Возражение живого клиента пишется в
+         * `op_objection_reason` (чек-лист «Доработка»), иначе финал
+         * перезатирал бы возражение, а возражение — причину отказа.
+         *
+         * Гейт целиком живёт в `ctx.failReasonCode`: причина существует
+         * только при типе отказа «Отказ» и не при «не ЦА» (см. getter).
+         */
+        const failReasonCode = this.ctx.failReasonCode;
+        if (failReasonCode) {
+            this.applyEnumeration(
+                out,
+                'op_efield_fail_reason',
+                `op_efield_fail_${failReasonCode}`,
+            );
         }
 
         // ===== История op_history / op_mhistory =====
@@ -331,11 +351,40 @@ export class EventReportEntityFieldsModel {
             return;
         }
 
+        this.applyPresentationDoneStamp(out);
+    }
+
+    /**
+     * «Последняя ПРОВЕДЁННАЯ презентация» — дата и тот, кто её провёл.
+     *
+     * Гейт по роли сделки симметричен {@link bumpPresCount} и
+     * {@link copyPresentationSurvey}: pres-сделка — сам «элемент
+     * презентации», и отвечает только за СВОЮ. Плановой pres-сделке,
+     * создаваемой ЭТИМ ЖЕ отчётом, презентации не было — раньше она
+     * рождалась с отметкой «презентация проведена сейчас», и по такому
+     * полю нельзя было отличить проведённую презентацию от назначенной.
+     *
+     * Компания, основная сделка и лид — вне гейта: у них поле означает
+     * «последняя проведённая по клиенту», и она действительно только что
+     * состоялась.
+     */
+    private applyPresentationDoneStamp(out: EntityFieldsMap): void {
+        if (this.isPresentationDealWithoutPresentation()) return;
+
         this.setScalar(out, 'last_pres_done_date', this.nowCrmDate());
         this.setScalar(
             out,
             'last_pres_done_responsible',
             this.ctx.planResponsibleId,
+        );
+    }
+
+    /** Pres-сделка, на которой презентации НЕ было (заведена под план). */
+    private isPresentationDealWithoutPresentation(): boolean {
+        return (
+            this.entityType === EEventReportEntityType.DEAL &&
+            this.dealOptions?.role === EDealRole.PRESENTATION &&
+            !this.dealOptions.presentationHappenedHere
         );
     }
 
@@ -574,12 +623,7 @@ export class EventReportEntityFieldsModel {
          * своих ответов. Основная сделка — вне гейта: на ней всегда
          * «последняя проведённая».
          */
-        if (
-            role === EDealRole.PRESENTATION &&
-            !this.dealOptions?.presentationHappenedHere
-        ) {
-            return;
-        }
+        if (this.isPresentationDealWithoutPresentation()) return;
         // Deal-only хвост (op_xvost_*) — отдельным снимком с БАЗОВОЙ сделки:
         // на лиде этих полей нет, общий цикл ниже их не увидит.
         this.copyXvostSnapshot(out);

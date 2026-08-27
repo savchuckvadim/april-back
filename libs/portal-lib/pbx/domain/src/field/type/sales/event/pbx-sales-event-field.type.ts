@@ -2237,6 +2237,234 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    /*
+     * ВОЗРАЖЕНИЕ клиента — своя пара полей, отдельно от причины отказа.
+     *
+     * Раньше чек-лист «Доработка» писал возражение в `op_efield_fail_reason`,
+     * то есть в поле ПРИЧИНЫ ОТКАЗА, и финальный отказ его перезатирал: два
+     * разных смысла в одном поле, и историю «что мешало купить» свести было
+     * нельзя. Теперь причина отказа принадлежит ТОЛЬКО финалу, а возражение
+     * живёт по своей шкале времени и меняется от звонка к звонку.
+     *
+     * Состав справочника — тот же, что у `op_efield_fail_reason`: менеджер
+     * называет одно и то же одинаково, и связку «возражал → отказался»
+     * можно считать только на общей шкале. Коды свои (op_objection_*):
+     * item-код уникален в пределах поля и уезжает в Битрикс как xmlId.
+     */
+    {
+        name: 'ОП Возражение клиента',
+        appType: 'calling',
+        type: 'enumeration',
+        items: [
+            { code: 'op_objection_notime', name: 'Не было времени' },
+            { code: 'op_objection_c_habit', name: 'Конкуренты - привыкли' },
+            { code: 'op_objection_c_prepay', name: 'Конкуренты - оплачено' },
+            { code: 'op_objection_c_price', name: 'Конкуренты - цена' },
+            { code: 'op_objection_to_expensive', name: 'Слишком дорого' },
+            { code: 'op_objection_to_cheap', name: 'Слишком дешево' },
+            { code: 'op_objection_nomoney', name: 'Нет денег' },
+            { code: 'op_objection_noneed', name: 'Не видят надобности' },
+            { code: 'op_objection_lpr', name: 'ЛПР против' },
+            {
+                code: 'op_objection_employee',
+                name: 'Ключевой сотрудник против',
+            },
+            { code: 'op_objection_off', name: 'Не хотят общаться' },
+        ],
+        code: 'op_objection_reason',
+        lead: 'OP_OBJECTION_REASON',
+        company: 'OP_OBJECTION_REASON',
+        deal: 'OP_OBJECTION_REASON',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 720,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Формулировка клиента СВОИМИ СЛОВАМИ: справочник огрубляет
+        // («Нет денег»), а дожимает следующий звонок дословная фраза.
+        name: 'ОП Возражение клиента (формулировка)',
+        appType: 'calling',
+        type: 'string',
+        items: [],
+        code: 'op_objection_comment',
+        lead: 'OP_OBJECTION_COMMENT',
+        company: 'OP_OBJECTION_COMMENT',
+        deal: 'OP_OBJECTION_COMMENT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 721,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    /*
+     * РЕШЕНИЕ клиента (todo2508 №13, пункт чек-листа «Решение подтверждено»).
+     * Раньше исход звонка по решению жил только в тексте комментария —
+     * фильтровать и считать «сколько решений отложено» было нечем.
+     *
+     * Компании поля нет намеренно: решение принимается по КОНКРЕТНОМУ
+     * предложению, то есть по сделке (и по заявке-лиду до неё), а не по
+     * клиенту вообще.
+     */
+    {
+        name: 'ОП Исход решения',
+        appType: 'calling',
+        type: 'enumeration',
+        items: [
+            { code: 'op_decision_accepted', name: 'Решение принято' },
+            { code: 'op_decision_postponed', name: 'Решение отложено' },
+            { code: 'op_decision_refused', name: 'Отказ' },
+        ],
+        code: 'op_decision_outcome',
+        lead: 'OP_DECISION_OUTCOME',
+        company: '',
+        deal: 'OP_DECISION_OUTCOME',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 722,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Дата решения — ТОЛЬКО сделка: она и есть цикл сделки, по ней
+        // считается срок «от презентации до решения».
+        name: 'ОП Дата решения',
+        appType: 'calling',
+        type: 'date',
+        items: [],
+        code: 'op_decision_date',
+        lead: '',
+        company: '',
+        deal: 'OP_DECISION_DATE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 723,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    /*
+     * Вопросы опросника «Разговор» (обязательные шесть) — в свои поля.
+     *
+     * До этого ответы жили ТОЛЬКО в тексте комментария к презентации:
+     * прочитать их мог человек, а отфильтровать «кому цена дорога» — никто.
+     * Префикс op_talk_* намеренный: xo_* занят холодным обзвоном, и эти
+     * ответы к нему отношения не имеют.
+     *
+     * Сущности lead+company+deal: анкету пишет ФРЕЙМ в лид, а event-report
+     * разносит «последнюю проведённую» по сделкам тем же каркасом, что и
+     * «5К» (PRESENTATION_SURVEY_FIELD_CODES).
+     */
+    {
+        name: 'РАЗГОВОР: Первое впечатление',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_talk_impression',
+        lead: 'OP_TALK_IMPRESSION',
+        company: 'OP_TALK_IMPRESSION',
+        deal: 'OP_TALK_IMPRESSION',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 724,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'РАЗГОВОР: Что запомнили',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_talk_remembered',
+        lead: 'OP_TALK_REMEMBERED',
+        company: 'OP_TALK_REMEMBERED',
+        deal: 'OP_TALK_REMEMBERED',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 725,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'РАЗГОВОР: Желание работать',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_talk_desire',
+        lead: 'OP_TALK_DESIRE',
+        company: 'OP_TALK_DESIRE',
+        deal: 'OP_TALK_DESIRE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 726,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'РАЗГОВОР: Как принимается решение',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_talk_decision_process',
+        lead: 'OP_TALK_DECISION_PROCESS',
+        company: 'OP_TALK_DECISION_PROCESS',
+        deal: 'OP_TALK_DECISION_PROCESS',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 727,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'РАЗГОВОР: Мнение о цене',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_talk_price_opinion',
+        lead: 'OP_TALK_PRICE_OPINION',
+        company: 'OP_TALK_PRICE_OPINION',
+        deal: 'OP_TALK_PRICE_OPINION',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 728,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'РАЗГОВОР: Готовность подойти к руководителю',
+        appType: 'pres',
+        type: 'string',
+        items: [],
+        code: 'op_talk_boss_readiness',
+        lead: 'OP_TALK_BOSS_READINESS',
+        company: 'OP_TALK_BOSS_READINESS',
+        deal: 'OP_TALK_BOSS_READINESS',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 729,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
 ] as const;
 
 export type PbxSalesEventField = (typeof PBX_SALES_EVENT_FIELDS)[number];

@@ -260,6 +260,40 @@ export const PRESENTATION_SMART_FIELDS = [
         type: 'string',
     },
 
+    // === «Разговор»: шесть обязательных вопросов опросника ===
+    // До появления полей op_talk_* эти ответы жили только в тексте
+    // комментария: у элемента презентации не было своего снимка разговора.
+    {
+        code: 'PRES_TALK_IMPRESSION',
+        name: 'РАЗГОВОР: Первое впечатление',
+        type: 'string',
+    },
+    {
+        code: 'PRES_TALK_REMEMBERED',
+        name: 'РАЗГОВОР: Что запомнили',
+        type: 'string',
+    },
+    {
+        code: 'PRES_TALK_DESIRE',
+        name: 'РАЗГОВОР: Желание работать',
+        type: 'string',
+    },
+    {
+        code: 'PRES_TALK_DECISION_PROCESS',
+        name: 'РАЗГОВОР: Как принимается решение',
+        type: 'string',
+    },
+    {
+        code: 'PRES_TALK_PRICE_OPINION',
+        name: 'РАЗГОВОР: Мнение о цене',
+        type: 'string',
+    },
+    {
+        code: 'PRES_TALK_BOSS_READINESS',
+        name: 'РАЗГОВОР: Готовность подойти к руководителю',
+        type: 'string',
+    },
+
     // === «Хвост»: сводка + вопросы «Разговора», выдернутые в фича-поля ===
     { code: 'PRES_XVOST', name: 'Хвост (сводно)', type: 'string' },
     {
@@ -351,6 +385,10 @@ export interface PresentationSurveyMirrorEntry {
  * XVOST_DEAL_FIELD_CODES). Смарт получает СВОЙ снимок на каждую
  * презентацию: следующая презентация перезатрёт значения на лиде и сделке,
  * а история по каждой останется в своём элементе.
+ *
+ * Состав: 2 сводных («5К»/«Хвост») + 9 детальных «5К» + 6 вопросов
+ * «Разговора» (op_talk_*, с лида) + 6 полей «Хвоста» (op_xvost_*, только
+ * со сделки) = 23 записи; длину фиксирует спека.
  */
 export const PRESENTATION_SMART_SURVEY_MIRROR: readonly PresentationSurveyMirrorEntry[] =
     [
@@ -397,7 +435,39 @@ export const PRESENTATION_SMART_SURVEY_MIRROR: readonly PresentationSurveyMirror
             from: 'lead',
         },
         { source: 'op_5k_criteri', target: 'PRES_5K_CRITERI', from: 'lead' },
-        // Вопросы «Разговора» — только сделка (на лиде таких полей нет).
+        // Шесть обязательных вопросов «Разговора»: анкету пишет фрейм в ЛИД
+        // (как и «5К»), элемент получает СВОЙ снимок на каждую презентацию.
+        {
+            source: 'op_talk_impression',
+            target: 'PRES_TALK_IMPRESSION',
+            from: 'lead',
+        },
+        {
+            source: 'op_talk_remembered',
+            target: 'PRES_TALK_REMEMBERED',
+            from: 'lead',
+        },
+        {
+            source: 'op_talk_desire',
+            target: 'PRES_TALK_DESIRE',
+            from: 'lead',
+        },
+        {
+            source: 'op_talk_decision_process',
+            target: 'PRES_TALK_DECISION_PROCESS',
+            from: 'lead',
+        },
+        {
+            source: 'op_talk_price_opinion',
+            target: 'PRES_TALK_PRICE_OPINION',
+            from: 'lead',
+        },
+        {
+            source: 'op_talk_boss_readiness',
+            target: 'PRES_TALK_BOSS_READINESS',
+            from: 'lead',
+        },
+        // Булевы вопросы и даты «Хвоста» — только сделка (на лиде их нет).
         {
             source: 'op_xvost_decision_call_date',
             target: 'PRES_DECISION_CALL_DATE',

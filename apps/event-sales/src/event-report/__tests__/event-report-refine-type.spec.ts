@@ -235,6 +235,9 @@ describe('Доработка — KPI-записи', () => {
                 report: {
                     resultStatus: 'result',
                     workStatus: { current: { code: 'fail' } },
+                    // Причина отказа существует только при типе «Отказ» —
+                    // при остальных типах фронт селект не показывает.
+                    failType: { current: { code: 'failure', name: 'Отказ' } },
                     failReason: {
                         current: { code: 'nomoney', name: 'Нет денег' },
                     },

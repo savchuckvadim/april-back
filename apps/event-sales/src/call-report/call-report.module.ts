@@ -11,6 +11,7 @@ import {
     CallReportSmartModule,
     CallTypeRegistryModule,
 } from '@lib/call-lib';
+import { CallReportWeeklyModule } from '@lib/call-lib/call-report/weekly-report/call-report-weekly.module';
 import { AiRagModule } from '@lib/ai-rag';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
@@ -33,6 +34,7 @@ import { CallReportProcessor } from './queue/call-report.processor';
 import { CallReportDomainRosterService } from './cron/call-report-domain-roster.service';
 import { CallReportScheduler } from './cron/call-report.scheduler';
 import { CallReportCatchUpScheduler } from './cron/call-report-catch-up.scheduler';
+import { CallReportWeeklyScheduler } from './cron/call-report-weekly.scheduler';
 import { CallRevisionScheduler } from './cron/call-revision.scheduler';
 import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler';
 
@@ -57,6 +59,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         AiModule,
         AiRagModule,
         CallReportSmartModule,
+        // Недельный Excel-отчёт: всё, что не помещается в карточку смарта
+        CallReportWeeklyModule,
         // Отчёты по накопленной аналитике: /call-report/analytics/*
         // (переносимый модуль, см. его README)
         CallReportAnalyticsModule,
@@ -92,6 +96,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallReportDomainRosterService,
         CallReportScheduler,
         CallReportCatchUpScheduler,
+        // Недельный Excel-отчёт получателям (пятница 19:00 МСК)
+        CallReportWeeklyScheduler,
         // Ночной ревизор (Фаза 3): свод по сущностям в 23:30 МСК
         CallRevisionScheduler,
         // Сверка по презентациям (Фаза 4): отчёт менеджера vs разбор, 08:00 МСК

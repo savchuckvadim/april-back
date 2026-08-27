@@ -46,6 +46,9 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.revisorEnabled = source.revisorEnabled ?? null;
         this.presentationAuditEnabled = source.presentationAuditEnabled ?? null;
         this.presentationStrictness = source.presentationStrictness ?? null;
+        this.weeklyReportEnabled = source.weeklyReportEnabled ?? null;
+        this.weeklyReportRecipients = source.weeklyReportRecipients ?? null;
+        this.weeklyReportFolderId = source.weeklyReportFolderId ?? null;
     }
 
     @ApiProperty({
@@ -271,6 +274,38 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     presentationStrictness: PresentationStrictnessLevel | null;
+
+    @ApiProperty({
+        description:
+            'Недельный Excel-отчёт по звонкам (пятница, 19:00 МСК): полные ' +
+            'разборы, транскрипты и сверка с отчётами менеджеров — всё, что ' +
+            'физически не помещается в карточку смарта.',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    weeklyReportEnabled: boolean | null;
+
+    @ApiProperty({
+        description:
+            'Получатели недельного отчёта — bitrix-id сотрудников. Каждому ' +
+            'приходит уведомление со ссылкой на файл. Пусто — отчёт только ' +
+            'кладётся на Диск портала.',
+        example: [12, 25],
+        type: [Number],
+        nullable: true,
+    })
+    weeklyReportRecipients: number[] | null;
+
+    @ApiProperty({
+        description:
+            'ID папки на Диске портала для файлов отчёта (например, папка ' +
+            'рабочей группы «Продажи»). Пусто — папка приложения на Диске.',
+        example: 4321,
+        type: Number,
+        nullable: true,
+    })
+    weeklyReportFolderId: number | null;
 }
 
 /**
@@ -516,4 +551,41 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsString()
     @IsIn(PRESENTATION_STRICTNESS_LEVELS as unknown as string[])
     presentationStrictness?: PresentationStrictnessLevel | null;
+
+    @ApiPropertyOptional({
+        description: 'Недельный Excel-отчёт по звонкам (пятница, 19:00 МСК).',
+        example: true,
+        type: Boolean,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    weeklyReportEnabled?: boolean | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Получатели недельного отчёта — bitrix-id сотрудников ' +
+            '(в интерфейсе вводятся через запятую).',
+        example: [12, 25],
+        type: [Number],
+        nullable: true,
+    })
+    @IsOptional()
+    @IsArray()
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    weeklyReportRecipients?: number[] | null;
+
+    @ApiPropertyOptional({
+        description:
+            'ID папки на Диске портала для файлов отчёта (папка рабочей ' +
+            'группы). Пусто — папка приложения.',
+        example: 4321,
+        type: Number,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    weeklyReportFolderId?: number | null;
 }

@@ -108,17 +108,19 @@ describe('константы смарта «Презентации»', () => {
         const smartCodes = new Set(
             PRESENTATION_SMART_FIELDS.map(field => field.code),
         );
-        // 17 ответов: 2 сводных («5К»/«Хвост») + 9 детальных «5К» +
-        // 6 вопросов «Разговора» (deal-only op_xvost_*).
-        expect(PRESENTATION_SMART_SURVEY_MIRROR).toHaveLength(17);
+        // 23 ответа: 2 сводных («5К»/«Хвост») + 9 детальных «5К» +
+        // 6 вопросов «Разговора» (op_talk_*, с лида) + 6 полей «Хвоста»
+        // (deal-only op_xvost_*).
+        expect(PRESENTATION_SMART_SURVEY_MIRROR).toHaveLength(23);
         for (const entry of PRESENTATION_SMART_SURVEY_MIRROR) {
             expect(registryCodes.has(entry.source)).toBe(true);
             expect(smartCodes.has(entry.target)).toBe(true);
         }
-        // Детальные «5К» живут ТОЛЬКО на лиде, вопросы «Разговора» — на сделке.
+        // Анкету («5К» + «Разговор») фрейм пишет на ЛИД, поля «Хвоста»
+        // (op_xvost_*) установлены только на сделке.
         const leadSources = PRESENTATION_SMART_SURVEY_MIRROR.filter(
             entry => entry.from === 'lead',
         );
-        expect(leadSources).toHaveLength(11);
+        expect(leadSources).toHaveLength(17);
     });
 });

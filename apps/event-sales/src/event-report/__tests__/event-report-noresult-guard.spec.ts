@@ -2,8 +2,10 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { EventReportContext } from '../services/context/event-report.context';
+import { EventReportEntityFieldsModel } from '../services/entity/event-report-entity-fields.model';
 import { EventReportKpiPayloadBuilder } from '../services/kpi-list/event-report-kpi-payload.builder';
 import { DealFlowResult } from '../services/deal/event-report-deal-flow.service';
+import { EEventReportEntityType } from '../services/init/event-report-init.types';
 import { KpiEventItemModel } from '../../shared/kpi-list-flow/models/kpi-event-item.model';
 import { KpiEventPayload } from '../../shared/kpi-list-flow/type/kpi-event-payload.type';
 
@@ -21,7 +23,11 @@ dayjs.extend(timezone);
  */
 const NOW = new Date('2026-08-18T09:00:00.000Z');
 
-const makePortal = () => ({ getTimezone: () => 'Europe/Moscow' });
+const makePortal = () => ({
+    getTimezone: () => 'Europe/Moscow',
+    // Домен нужен модели полей: лимит истории на gsirk другой.
+    getPortal: () => ({ domain: 'd.b24.ru' }),
+});
 
 const makeCtx = (resultStatus: string, workStatusCode = 'inJob') =>
     new EventReportContext(
@@ -100,6 +106,54 @@ describe('KPI: гард op_noresult_reason', () => {
         const final = payloads.find(p => p.items.event_type === 'ev_fail');
         expect(final).toBeDefined();
         expect(final!.items.op_noresult_reason).toBeNull();
+    });
+});
+
+/**
+ * Поля КАРТОЧКИ клиента обязаны гейтиться тем же правилом, что KPI.
+ *
+ * Расхождение было живым багом: `op_noresult_reason` в карточке писался при
+ * любом нерезультативном статусе, включая «новое событие» — отчёт по кнопке
+ * «новое событие» разговором не был, и клиент получал причину недозвона,
+ * которой в отчётности (KPI) не существовало.
+ */
+describe('Поля сущности: op_noresult_reason тем же гейтом, что KPI', () => {
+    const NORESULT_KEY = 'UF_CRM_OP_NORESULT_REASON';
+
+    const portalWithField = () => ({
+        getTimezone: () => 'Europe/Moscow',
+        getPortal: () => ({ domain: 'd.b24.ru' }),
+        getEntityFieldByCode: (_entity: string, code: string) =>
+            code === 'op_noresult_reason'
+                ? {
+                      bitrixId: 'OP_NORESULT_REASON',
+                      items: [{ code: 'nopickup', bitrixId: 77 }],
+                  }
+                : undefined,
+        getFieldItemByCode: (
+            field: { items: { code: string; bitrixId: number }[] },
+            itemCode: string,
+        ) => field.items.find(item => item.code === itemCode),
+    });
+
+    const fieldsFor = (resultStatus: string) =>
+        new EventReportEntityFieldsModel(
+            portalWithField() as never,
+            makeCtx(resultStatus),
+            EEventReportEntityType.COMPANY,
+            null,
+        ).toFields();
+
+    it('недозвон — причина пишется', () => {
+        expect(fieldsFor('noresult')[NORESULT_KEY]).toBe(77);
+    });
+
+    it('результативный разговор — причина не пишется', () => {
+        expect(NORESULT_KEY in fieldsFor('result')).toBe(false);
+    });
+
+    it('НОВОЕ событие — причина недозвона не выдумывается', () => {
+        expect(NORESULT_KEY in fieldsFor('new')).toBe(false);
     });
 });
 

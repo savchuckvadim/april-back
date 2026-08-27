@@ -188,7 +188,11 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 activityId: '102',
                 riskFlags: ['promise'],
                 coachingPriority: 'planned',
-                // Долив CRM-связей из паспорта владельца звонка.
+                // Долив CRM-связей из паспорта владельца звонка: НАТИВНАЯ
+                // связь (dealId → parentId2) наравне с crm-полем DEAL_MAIN —
+                // без неё «долив» чинил только компанию/контакт, а сделка у
+                // элемента оставалась непривязанной.
+                dealId: 555,
                 mainDealId: 555,
                 companyId: 33,
                 contactId: 44,

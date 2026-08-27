@@ -41,6 +41,10 @@ const makeCtx = (over: Record<string, unknown> = {}) =>
             report: {
                 resultStatus: 'result',
                 workStatus: { current: { code: 'fail' } },
+                // Тип отказа «Отказ» обязателен: только при нём фронт
+                // ПОКАЗЫВАЕТ селект причины, и только тогда причина
+                // считается выбранной (EventReportContext.failReasonCode).
+                failType: { current: { code: 'failure', name: 'Отказ' } },
                 failReason: { current: { code: 'nomoney', name: 'Нет денег' } },
             },
             ...((over.dto as object) ?? {}),
@@ -178,6 +182,9 @@ describe('Финальная запись продажи/отказа (лега�
                         resultStatus: 'noresult',
                         workStatus: { current: { code: 'fail' } },
                         noresultReason: { current: { code: 'nopickup' } },
+                        failType: {
+                            current: { code: 'failure', name: 'Отказ' },
+                        },
                         failReason: {
                             current: { code: 'nomoney', name: 'Нет денег' },
                         },

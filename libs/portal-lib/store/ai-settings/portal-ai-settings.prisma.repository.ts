@@ -134,7 +134,10 @@ export class PortalAiSettingsPrismaRepository
             update.irrelevantConfidence !== undefined ||
             update.revisorEnabled !== undefined ||
             update.presentationAuditEnabled !== undefined ||
-            update.presentationStrictness !== undefined
+            update.presentationStrictness !== undefined ||
+            update.weeklyReportEnabled !== undefined ||
+            update.weeklyReportRecipients !== undefined ||
+            update.weeklyReportFolderId !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -152,6 +155,18 @@ export class PortalAiSettingsPrismaRepository
                 json.presentationStrictness =
                     update.presentationStrictness ?? undefined;
             }
+            if (update.weeklyReportEnabled !== undefined) {
+                json.weeklyReportEnabled =
+                    update.weeklyReportEnabled ?? undefined;
+            }
+            if (update.weeklyReportRecipients !== undefined) {
+                json.weeklyReportRecipients =
+                    update.weeklyReportRecipients ?? undefined;
+            }
+            if (update.weeklyReportFolderId !== undefined) {
+                json.weeklyReportFolderId =
+                    update.weeklyReportFolderId ?? undefined;
+            }
             data.settings = JSON.parse(
                 JSON.stringify(json),
             ) as Prisma.InputJsonValue;
@@ -165,13 +180,31 @@ export class PortalAiSettingsPrismaRepository
         revisorEnabled?: boolean;
         presentationAuditEnabled?: boolean;
         presentationStrictness?: PresentationStrictnessLevel;
+        weeklyReportEnabled?: boolean;
+        weeklyReportRecipients?: number[];
+        weeklyReportFolderId?: number;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
         }
         const raw = value as Record<string, unknown>;
         const confidence = Number(raw.irrelevantConfidence);
+        const folderId = Number(raw.weeklyReportFolderId);
         return {
+            weeklyReportEnabled:
+                typeof raw.weeklyReportEnabled === 'boolean'
+                    ? raw.weeklyReportEnabled
+                    : undefined,
+            // Получатели вводятся строкой «12, 25, 7» — принимаем и массив,
+            // и строку (в БД могло лечь и то, и другое).
+            weeklyReportRecipients:
+                this.toUserIds(
+                    raw.weeklyReportRecipients as Prisma.JsonValue,
+                ) ?? undefined,
+            weeklyReportFolderId:
+                Number.isFinite(folderId) && folderId > 0
+                    ? folderId
+                    : undefined,
             irrelevantConfidence:
                 Number.isFinite(confidence) && confidence > 0 && confidence <= 1
                     ? confidence
@@ -222,6 +255,13 @@ export class PortalAiSettingsPrismaRepository
             presentationStrictness:
                 this.toJsonSettings(row.settings).presentationStrictness ??
                 null,
+            weeklyReportEnabled:
+                this.toJsonSettings(row.settings).weeklyReportEnabled ?? null,
+            weeklyReportRecipients:
+                this.toJsonSettings(row.settings).weeklyReportRecipients ??
+                null,
+            weeklyReportFolderId:
+                this.toJsonSettings(row.settings).weeklyReportFolderId ?? null,
         };
     }
 
@@ -230,8 +270,14 @@ export class PortalAiSettingsPrismaRepository
      * поэтому массив фильтруется до конечных положительных чисел.
      */
     private toUserIds(value: Prisma.JsonValue): number[] | null {
-        if (!Array.isArray(value)) return null;
-        const ids = value
+        // Получатели отчёта в админке вводятся строкой через запятую —
+        // принимаем и «12, 25, 7», и массив (в БД лежит и то, и другое).
+        const source: unknown[] = Array.isArray(value)
+            ? value
+            : typeof value === 'string'
+              ? value.split(/[,;\s]+/)
+              : [];
+        const ids = source
             .map(item => Number(item))
             .filter(id => Number.isFinite(id) && id > 0);
         return ids.length ? ids : null;
