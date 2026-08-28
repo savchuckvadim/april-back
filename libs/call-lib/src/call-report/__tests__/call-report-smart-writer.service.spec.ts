@@ -137,11 +137,13 @@ describe('CallReportSmartWriterService', () => {
 
         const addCall = bitrix.item.add.mock.calls[0] as unknown[];
         const fields = addCall[1] as Record<string, unknown>;
-        // Поля привязаны к ОДНОЙ сущности (DEAL) — Битрикс хранит голый
-        // id; значение 'D_555' такое поле молча отбрасывает (прод 27.08.2026).
-        expect(fields.ufCrm128DealMain).toEqual(['555']);
-        expect(fields.ufCrm128DealPresentation).toEqual(['601']);
-        expect(fields.ufCrm128DealXo).toEqual(['602']);
+        // Формат задаёт САМО ПОЛЕ: привязано к одной сущности (DEAL) —
+        // хранится голый id ('D_555' отбрасывается, прод 27.08.2026);
+        // поле одиночное — значение скаляр, а не массив (массив PHP-Битрикс
+        // сохранял литералом «Array», прод-алерт 28.08.2026).
+        expect(fields.ufCrm128DealMain).toBe('555');
+        expect(fields.ufCrm128DealPresentation).toBe('601');
+        expect(fields.ufCrm128DealXo).toBe('602');
         expect(fields.ufCrm128KpiItemId).toBe('9001');
         expect(fields.ufCrm128KpiItemStatus).toBe(60);
         expect(fields.ufCrm128HistoryItemStatus).toBe(71);
@@ -152,6 +154,24 @@ describe('CallReportSmartWriterService', () => {
         );
         expect(fields.ufCrm128PriceRelevance).toBe(0);
         expect(fields.ufCrm128PriceScore).toBeUndefined();
+    });
+
+
+    it('одиночное crm-поле получает СКАЛЯР: массив Битрикс сохранил бы литералом «Array»', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({ activityId: '101', mainDealId: 179514 });
+
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        // Прод-алерт 28.08.2026: отправляли ['179514'] — в эхе приходило
+        // «Array», то есть PHP приводил массив к строке и связь терялась.
+        expect(Array.isArray(fields.ufCrm128DealMain)).toBe(false);
+        expect(fields.ufCrm128DealMain).toBe('179514');
     });
 
     it('v3: next step, событийные флаги, multi-enum справочники и метрики речи', async () => {
@@ -401,7 +421,7 @@ describe('CallReportSmartWriterService', () => {
                     id: 7,
                     parentId2: '555',
                     companyId: '33',
-                    ufCrm128DealMain: ['555'],
+                    ufCrm128DealMain: '555',
                 },
             },
         });

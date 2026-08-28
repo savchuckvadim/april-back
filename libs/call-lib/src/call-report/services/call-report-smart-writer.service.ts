@@ -1153,9 +1153,12 @@ export class CallReportSmartWriterService {
             field => field.code === code,
         );
         const allowedTypes = definition?.crmEntities ?? [];
-        fields[this.ufName(code)] = [
-            buildCrmRefValue(allowedTypes, 'DEAL', dealId),
-        ];
+        const value = buildCrmRefValue(allowedTypes, 'DEAL', dealId);
+        // МНОЖЕСТВЕННОСТЬ ТОЖЕ ЗАДАЁТ ПОЛЕ (прод-алерт 28.08.2026):
+        // наши crm-поля одиночные (multiple='N'), а массив в такое поле
+        // PHP-Битрикс приводит к строке и сохраняет литерал «Array» —
+        // ровно это возвращалось в эхе элемента.
+        fields[this.ufName(code)] = definition?.isMultiple ? [value] : value;
     }
 
     /** Multi-enum: массив числовых id значений; неизвестные коды — warn и skip. */
