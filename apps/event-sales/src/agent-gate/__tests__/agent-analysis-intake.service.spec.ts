@@ -221,6 +221,57 @@ describe('AgentAnalysisIntakeService', () => {
         );
     });
 
+    it('модель не прислала текст разбора 5К — он собирается кодом из чеклиста', async () => {
+        const { service, addItem } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            hvostDone: false,
+            hvostAnalysis: '1. Вопросы ценности — ✗ не выявлены задачи',
+            // Итог и чеклист есть, а текста нет — прод 28.08.2026:
+            // «5К: разбор AI — не заполнено» при заполненном хвосте.
+            fiveKDone: false,
+            fiveKAnalysis: null,
+            fiveKItems: {
+                clientWhat: true,
+                clientReady: false,
+                clientPrice: null,
+                companyWho: false,
+                companyHow: null,
+                companyRight: null,
+                colleagues: false,
+                competitor: null,
+                criteria: null,
+            },
+        } as never);
+
+        const written = (
+            addItem.mock.calls[0] as [
+                { fiveKAnalysis?: string; hvostAnalysis?: string },
+            ]
+        )[0];
+        expect(written.fiveKAnalysis).toContain('✓ КЛИЕНТ: что хочет');
+        expect(written.fiveKAnalysis).toContain('✗ КЛИЕНТ: готов работать');
+        expect(written.fiveKAnalysis).toContain('— КРИТЕРИИ выбора СПС');
+        // Текст модели не перезаписывается, когда он есть.
+        expect(written.hvostAnalysis).toBe(
+            '1. Вопросы ценности — ✗ не выявлены задачи',
+        );
+    });
+
+    it('без чеклиста и без текста разбор не выдумывается', async () => {
+        const { service, addItem } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            fiveKDone: null,
+            fiveKAnalysis: null,
+        } as never);
+
+        const written = (
+            addItem.mock.calls[0] as [{ fiveKAnalysis?: string }]
+        )[0];
+        expect(written.fiveKAnalysis).toBeUndefined();
+    });
+
     it('черновик flow (plan+report) сохраняется в ais.report_result', async () => {
         const { service, aiService } = makeDeps();
         await service.intake('42', 'claw-main', {

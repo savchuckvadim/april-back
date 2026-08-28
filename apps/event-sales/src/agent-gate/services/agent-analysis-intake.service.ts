@@ -69,6 +69,7 @@ export class AgentAnalysisIntakeService {
         dto = this.sanitizeAgentStrings(dto);
         dto = this.applySpeechMetrics(transcriptionId, dto);
         dto = this.enforceConsistency(transcriptionId, dto);
+        dto = this.fillMethodologyAnalysis(dto);
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.domain) {
@@ -297,6 +298,60 @@ export class AgentAnalysisIntakeService {
                     `(пересчёт по гранулярному чеклисту; transcription ${transcriptionId})`,
             );
             fixed.fiveKDone = fiveKFromItems;
+        }
+        return fixed;
+    }
+
+    /**
+     * Достройка разборов хвоста и 5К КОДОМ.
+     *
+     * Модель иногда возвращает итог (hvostDone/fiveKDone) и гранулярный
+     * чеклист, но текст разбора оставляет пустым — в карточке появлялось
+     * «5К: разбор AI — не заполнено» при заполненном хвосте (прод
+     * 28.08.2026). Текст из чеклиста собирается детерминированно: он и так
+     * состоит из тех же пунктов, что менеджер видит в своём отчёте.
+     */
+    private fillMethodologyAnalysis(
+        dto: AgentCallAnalysisDto,
+    ): AgentCallAnalysisDto {
+        const mark = (value: boolean | null | undefined): string =>
+            value === true ? '✓' : value === false ? '✗' : '—';
+        const hasAnswer = (items: object | null | undefined): boolean =>
+            Boolean(items) &&
+            Object.values(items as object).some(
+                value => typeof value === 'boolean',
+            );
+
+        const fixed = { ...dto };
+        if (!fixed.hvostAnalysis?.trim() && hasAnswer(fixed.hvostSteps)) {
+            const steps = fixed.hvostSteps;
+            fixed.hvostAnalysis = [
+                `${mark(steps?.offer)} КП предложено`,
+                `${mark(steps?.complect)} Наполнение комплекта озвучено`,
+                `${mark(steps?.price)} Цена озвучена`,
+                `${mark(steps?.decisionDate)} Дата звонка по решению назначена`,
+                `${mark(steps?.dateAgreed)} Дата согласована с клиентом`,
+            ].join('\n');
+            this.logger.log(
+                'Разбор хвоста собран кодом из чеклиста (модель текст не прислала)',
+            );
+        }
+        if (!fixed.fiveKAnalysis?.trim() && hasAnswer(fixed.fiveKItems)) {
+            const items = fixed.fiveKItems;
+            fixed.fiveKAnalysis = [
+                `${mark(items?.clientWhat)} КЛИЕНТ: что хочет`,
+                `${mark(items?.clientReady)} КЛИЕНТ: готов работать`,
+                `${mark(items?.clientPrice)} КЛИЕНТ: укладываемся в цену`,
+                `${mark(items?.companyWho)} КОМПАНИЯ: кто принимает решение`,
+                `${mark(items?.companyHow)} КОМПАНИЯ: как принимается решение`,
+                `${mark(items?.companyRight)} Цена и комплект подобраны верно`,
+                `${mark(items?.colleagues)} КОЛЛЕГИ: кто будет работать`,
+                `${mark(items?.competitor)} КОНКУРЕНТ: критерии сравнения`,
+                `${mark(items?.criteria)} КРИТЕРИИ выбора СПС`,
+            ].join('\n');
+            this.logger.log(
+                'Разбор 5К собран кодом из чеклиста (модель текст не прислала)',
+            );
         }
         return fixed;
     }
